@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
-import { X, Trash2, Star, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, getGoogleMapsApiKey } from '../utils';
 
@@ -63,6 +63,12 @@ const TOOLTIP_CLEAN_STYLE = [
   'style=feature:landscape.natural|element:geometry.stroke|color:0xa7c9e6|weight:1.4|visibility:on',
   'style=feature:water|element:labels.text.fill|color:0x9e9e9e',
 ].join('&');
+
+const TOOLTIP_WIDTH = 620;
+const TOOLTIP_MIN_HEIGHT = 270;
+const TOOLTIP_MAX_HEIGHT = 420;
+const TOOLTIP_BASE_HEIGHT = 180;
+const TOOLTIP_PER_CITY_HEIGHT = 26;
 
 const COUNTRY_BY_NAME = new Map(
   COUNTRIES.map(country => [normalizeCountryToken(country.name), country] as const)
@@ -149,7 +155,11 @@ const formatTripDateRange = (trip: ITrip): string => {
   const start = addDays(baseStart, Math.floor(range.startOffset));
   const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
 
-  const fmt: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+  const currentYear = new Date().getFullYear();
+  const includeYear = start.getFullYear() !== currentYear || end.getFullYear() !== currentYear;
+  const fmt: Intl.DateTimeFormatOptions = includeYear
+    ? { month: 'short', day: 'numeric', year: 'numeric' }
+    : { month: 'short', day: 'numeric' };
   return `${start.toLocaleDateString(undefined, fmt)} - ${end.toLocaleDateString(undefined, fmt)}`;
 };
 
@@ -178,10 +188,9 @@ const formatTripSummaryLine = (trip: ITrip): string => {
   return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip)} • ${cityCount} ${cityLabel}`;
 };
 
-const formatCityStay = (duration: number): string => {
+const formatCityStayLabel = (duration: number): string => {
   const days = Math.max(1, Math.ceil(Number.isFinite(duration) ? duration : 1));
-  const nights = Math.max(0, days - 1);
-  return `${days} ${days === 1 ? 'day' : 'days'} • ${nights} ${nights === 1 ? 'night' : 'nights'}`;
+  return `${days} ${days === 1 ? 'day' : 'days'}`;
 };
 
 const getCountryFromToken = (token: string): CountryMatch | null => {
@@ -261,21 +270,26 @@ const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null =
 
   if (coordinates.length === 0) return null;
 
-  const routeCoordinates = coordinates.slice(0, 24);
+  const routeCoordinates = coordinates.slice(0, 30);
   const formatCoord = (coord: { lat: number; lng: number }) =>
     `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
 
   const markerParams: string[] = [];
+  const visibleParams: string[] = [];
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
 
-  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x16a34a|label:S|${formatCoord(start)}`)}`);
+  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x8b5cf6|label:S|${formatCoord(start)}`)}`);
   if (routeCoordinates.length > 1) {
-    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0xdc2626|label:E|${formatCoord(end)}`)}`);
+    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0xa78bfa|label:E|${formatCoord(end)}`)}`);
   }
 
   routeCoordinates.slice(1, -1).slice(0, 18).forEach(coord => {
     markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x7c3aed|${formatCoord(coord)}`)}`);
+  });
+
+  routeCoordinates.forEach(coord => {
+    visibleParams.push(`visible=${encodeURIComponent(formatCoord(coord))}`);
   });
 
   const pathParams: string[] = [];
@@ -283,48 +297,13 @@ const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null =
     pathParams.push(
       `path=${encodeURIComponent(`color:0x7c3aed|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
     );
-
-    // Draw tiny chevrons near each segment end to indicate direction.
-    for (let i = 0; i < routeCoordinates.length - 1; i++) {
-      const a = routeCoordinates[i];
-      const b = routeCoordinates[i + 1];
-      const dx = b.lng - a.lng;
-      const dy = b.lat - a.lat;
-      const segmentLength = Math.hypot(dx, dy);
-      if (!Number.isFinite(segmentLength) || segmentLength < 0.00001) continue;
-
-      const ux = dx / segmentLength;
-      const uy = dy / segmentLength;
-      const arrowPointLng = a.lng + dx * 0.78;
-      const arrowPointLat = a.lat + dy * 0.78;
-      const arrowLength = segmentLength * 0.12;
-      const arrowWidth = segmentLength * 0.06;
-
-      const backLng = arrowPointLng - ux * arrowLength;
-      const backLat = arrowPointLat - uy * arrowLength;
-
-      const left = {
-        lat: backLat + ux * arrowWidth,
-        lng: backLng - uy * arrowWidth,
-      };
-      const right = {
-        lat: backLat - ux * arrowWidth,
-        lng: backLng + uy * arrowWidth,
-      };
-
-      pathParams.push(
-        `path=${encodeURIComponent(`color:0x6d28d9CC|weight:2|${arrowPointLat.toFixed(6)},${arrowPointLng.toFixed(6)}|${formatCoord(left)}`)}`
-      );
-      pathParams.push(
-        `path=${encodeURIComponent(`color:0x6d28d9CC|weight:2|${arrowPointLat.toFixed(6)},${arrowPointLng.toFixed(6)}|${formatCoord(right)}`)}`
-      );
-    }
   }
 
   const markerQuery = markerParams.join('&');
+  const visibleQuery = visibleParams.join('&');
   const pathQuery = pathParams.length > 0 ? `&${pathParams.join('&')}` : '';
 
-  return `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
+  return `https://maps.googleapis.com/maps/api/staticmap?size=480x640&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
 };
 
 const bucketTripsByRecency = (trips: ITrip[]): TripBuckets => {
@@ -348,9 +327,15 @@ const bucketTripsByRecency = (trips: ITrip[]): TripBuckets => {
   return buckets;
 };
 
-const computeTooltipPosition = (anchorRect: DOMRect): TooltipPosition => {
-  const width = 560;
-  const height = 290;
+const getTooltipHeight = (cityCount: number): number => {
+  const safeCityCount = Math.max(1, cityCount);
+  const estimated = TOOLTIP_BASE_HEIGHT + safeCityCount * TOOLTIP_PER_CITY_HEIGHT;
+  return Math.max(TOOLTIP_MIN_HEIGHT, Math.min(estimated, TOOLTIP_MAX_HEIGHT));
+};
+
+const computeTooltipPosition = (anchorRect: DOMRect, cityCount: number): TooltipPosition => {
+  const width = TOOLTIP_WIDTH;
+  const height = getTooltipHeight(cityCount);
   const gutter = 12;
   const margin = 8;
 
@@ -543,32 +528,53 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
     >
-      <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden">
-        <div className="grid grid-cols-2 h-full">
-          <div className="p-3.5 flex flex-col gap-3 border-r border-gray-100 min-h-0">
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
-              <div className="text-sm font-semibold text-purple-600 mt-1">{formatTripDateRange(trip)}</div>
-            </div>
+      <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
+        <div className="px-3.5 py-3 border-b border-gray-100">
+          <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
+          <div className="mt-1 flex items-center gap-1.5 text-purple-600 text-sm font-semibold">
+            <CalendarDays size={14} />
+            <span>{formatTripDateRange(trip)}</span>
+          </div>
+        </div>
 
-            <div className="min-h-0 flex-1 flex flex-col">
-              <span className="uppercase tracking-wide text-[10px] text-gray-400 font-semibold">City Stays</span>
-              <div className="mt-1.5 space-y-1.5 overflow-y-auto pr-1">
-                {cityStops.length === 0 ? (
-                  <div className="text-[11px] text-gray-400">No city stops yet</div>
-                ) : (
-                  cityStops.map((stop, idx) => (
-                    <div key={stop.id} className="text-[11px] text-gray-600 leading-tight">
-                      <div className="font-medium text-gray-700">{idx + 1}. {stop.title}</div>
-                      <div className="text-gray-400">{formatCityStay(stop.duration)}</div>
+        <div className="grid grid-cols-2 flex-1 min-h-0">
+          <div className="p-3.5 border-r border-gray-100 min-h-0">
+            <div className="h-full overflow-y-auto space-y-0">
+              {cityStops.length === 0 ? (
+                <div className="text-[11px] text-gray-400">No city stops yet</div>
+              ) : (
+                cityStops.map((stop, idx) => {
+                  const isStart = idx === 0;
+                  const isEnd = idx === cityStops.length - 1;
+                  const pinClass = isStart && !isEnd ? 'text-purple-500' : isEnd && !isStart ? 'text-purple-300' : 'text-purple-500';
+                  return (
+                    <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5 py-0.5">
+                      <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch">
+                        {cityStops.length > 1 && (
+                          <span
+                            className={`absolute left-1/2 w-px -translate-x-1/2 bg-purple-200 ${
+                              isStart ? 'top-1/2 bottom-0' : isEnd ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
+                            }`}
+                          />
+                        )}
+                        {isStart || isEnd ? (
+                          <MapPin size={13} className={`relative z-10 ${pinClass}`} />
+                        ) : (
+                          <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-purple-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                        <span className="text-[15px] font-medium text-gray-700 leading-5 break-words">{stop.title}</span>
+                        <span className="text-[12px] font-medium text-purple-500/75 leading-5">{formatCityStayLabel(stop.duration)}</span>
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          <div className="p-2.5 bg-gray-50">
+          <div className="p-2 bg-gray-50 min-h-0">
             <div className="h-full w-full rounded-lg border border-gray-200 bg-gray-100 overflow-hidden relative">
               {shouldLoadMap ? (
                 mapUrl && !mapError ? (
@@ -893,9 +899,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, [hoverAnchor, filteredTrips]);
 
   const tooltipPosition = React.useMemo(() => {
-    if (!hoverAnchor) return null;
-    return computeTooltipPosition(hoverAnchor.rect);
-  }, [hoverAnchor]);
+    if (!hoverAnchor || !hoveredTrip) return null;
+    return computeTooltipPosition(hoverAnchor.rect, getTripCityItems(hoveredTrip).length);
+  }, [hoverAnchor, hoveredTrip]);
 
   const hoverBridgeStyle = React.useMemo(() => {
     if (!hoverAnchor || !tooltipPosition) return null;
