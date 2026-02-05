@@ -1,75 +1,78 @@
-# TravelFlow - AI Itinerary Planner
+# TravelFlow
 
-TravelFlow is a modern, AI-powered travel itinerary builder designed to help you plan, visualize, and edit your perfect trip. 
+TravelFlow is a React + TypeScript + Vite app for generating and managing travel itineraries.
 
-## Features
+## Requirements
 
--   **AI-Powered Generation**: Create detailed itineraries in seconds using Gemini 2.0 Flash. Just enter a destination and preferences.
--   **Interactive Map**: Visualize your route with Google Maps integration, showing city markers and travel paths.
--   **Drag & Drop Planning**: Reorder cities and activities easily with intuitive drag-and-drop functionality.
--   **Smart Timeline**: Visual timeline of your trip, with support for vertical and horizontal layouts.
--   **Activity Suggestions**: Get AI-powered suggestions for what to see, eat, and do in each location.
--   **Travel Logistics**: Automatically calculates travel days and suggests transport modes between cities.
--   **Print & Share**: Export your itinerary to a clean print view or share a read-only link with friends.
+- Node.js 18+
+- npm
 
-## Getting Started
+## Local Setup
 
-### Prerequisites
+1. Install dependencies:
 
--   Node.js (v18 or higher)
--   npm or yarn
--   **Google Gemini API Key**: [Get it here](https://aistudio.google.com/app/apikey)
--   **Google Maps API Key**: [Get it here](https://console.cloud.google.com/). Ensure "Maps JavaScript API" and "Places API" are enabled.
+```bash
+npm install
+```
 
-### Installation
+2. Create your local env file:
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/travelflow.git
-    cd travelflow
-    ```
+```bash
+cp .env.example .env.local
+```
 
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
+3. Add your API keys to `.env.local`:
 
-3.  Configure Environment Variables:
-    -   Copy `.env.example` to `.env.local`:
-        ```bash
-        cp .env.example .env.local
-        ```
-    -   Open `.env.local` and paste your API keys:
-        ```env
-        VITE_GEMINI_API_KEY=your_gemini_key_here
-        VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key_here
-        ```
+```env
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+```
 
-### Running Locally
-
-Start the development server:
+4. Start the app:
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
-
-### Building for Production
-
-To create a production build:
+## Build
 
 ```bash
 npm run build
 ```
 
-The output will be in the `dist` folder, ready to be deployed to Vercel, Netlify, or any static host.
+The production output is generated in `dist/`.
 
-## Technologies Used
+## Deploy To Vercel
 
--   **Frontend**: React, TypeScript, Vite
--   **Styling**: Tailwind CSS
--   **Maps**: Google Maps JavaScript API (Manual Integration for robustness)
--   **AI**: Google Generative AI SDK (Gemini)
--   **Icons**: Lucide React
--   **State/Storage**: LocalStorage & URL Hash Compression (lz-string) for serverless persistence.
+This repo includes `vercel.json` for Vite + SPA routing.
+
+1. Push this repo to GitHub.
+2. In Vercel, import the GitHub repository.
+3. In Vercel project settings, add:
+   - `VITE_GEMINI_API_KEY`
+   - `VITE_GOOGLE_MAPS_API_KEY`
+4. Deploy.
+
+## Deploy To Netlify
+
+This repo includes `netlify.toml` for build settings + SPA redirects.
+
+1. Push this repo to GitHub.
+2. In Netlify, create a new site from Git.
+3. Confirm build settings:
+   - Build command: `npm run build`
+   - Publish directory: `dist`
+4. In Netlify environment variables, add:
+   - `VITE_GEMINI_API_KEY`
+   - `VITE_GOOGLE_MAPS_API_KEY`
+5. Deploy.
+
+## Create The GitHub Repo (CLI)
+
+If GitHub CLI is authenticated, run:
+
+```bash
+gh repo create travelflow --source=. --remote=origin --public --push
+```
+
+Use `--private` instead of `--public` if you want a private repo.
