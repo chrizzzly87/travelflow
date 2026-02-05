@@ -548,12 +548,12 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                   const isEnd = idx === cityStops.length - 1;
                   const pinClass = isStart && !isEnd ? 'text-purple-500' : isEnd && !isStart ? 'text-purple-300' : 'text-purple-500';
                   return (
-                    <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5 py-0.5">
+                    <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5">
                       <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch">
                         {cityStops.length > 1 && (
                           <span
-                            className={`absolute left-1/2 w-px -translate-x-1/2 bg-purple-200 ${
-                              isStart ? 'top-1/2 bottom-0' : isEnd ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
+                            className={`absolute left-1/2 w-0.5 -translate-x-1/2 bg-purple-200 ${
+                              isStart ? 'top-1/2 -bottom-px' : isEnd ? '-top-px bottom-1/2' : '-top-px -bottom-px'
                             }`}
                           />
                         )}
