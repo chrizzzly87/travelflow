@@ -51,8 +51,7 @@ export const getApiKey = (): string => {
     
     // Check if key is in invalid list or too short to be real
     if (!key || key.length < 10 || invalidKeys.some(k => key.includes(k))) {
-        // FALLBACK KEY INLINED AS REQUESTED
-        // This ensures the app works even if environment variables fail during deployment.
+        // Never inline secrets in source; rely on environment configuration.
         return "";
     }
     
