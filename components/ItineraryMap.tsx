@@ -16,6 +16,7 @@ interface ItineraryMapProps {
     showCityNames?: boolean;
     onShowCityNamesChange?: (enabled: boolean) => void;
     focusLocationQuery?: string;
+    fitToRouteKey?: string;
 }
 
 const MAP_STYLES = {
@@ -127,17 +128,12 @@ const MAP_STYLES = {
         { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
         { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f9f9f9" }, { "weight": 2 }] },
         { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#a8a8a8" }, { "weight": 1.6 }, { "visibility": "on" }] },
+        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#a8a8a8" }, { "weight": 1 }, { "visibility": "on" }] },
         { "featureType": "administrative.province", "elementType": "geometry", "stylers": [{ "visibility": "off" }] },
         { "featureType": "administrative.province", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
         { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#bdbdbd" }] },
         { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-        { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "road.arterial", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-        { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#e0e0e0" }, { "weight": 0.5 }] },
-        { "featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
-        { "featureType": "road.local", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] },
+        { "featureType": "road", "stylers": [{ "visibility": "off" }] },
         { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
         { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#e3f2fd" }] }, // Very light blue
         { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
@@ -155,7 +151,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     onRouteModeChange,
     showCityNames = true,
     onShowCityNamesChange,
-    focusLocationQuery
+    focusLocationQuery,
+    fitToRouteKey
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
@@ -164,6 +161,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const transportMarkersRef = useRef<any[]>([]); // google.maps.Marker[]
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
+    const lastFitToRouteKeyRef = useRef<string | null>(null);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
@@ -676,6 +674,16 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
            setTimeout(handleFit, 200); 
         }
     }, [mapInitialized]);
+
+    // Re-center when an external "active route" key changes (e.g., opening a different saved plan).
+    useEffect(() => {
+        if (!fitToRouteKey || !mapInitialized || cities.length === 0) return;
+        if (lastFitToRouteKeyRef.current === fitToRouteKey) return;
+
+        lastFitToRouteKeyRef.current = fitToRouteKey;
+        const timer = setTimeout(handleFit, 200);
+        return () => clearTimeout(timer);
+    }, [fitToRouteKey, mapInitialized, cities.length]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
     useEffect(() => {

@@ -1222,6 +1222,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     showCityNames={showCityNames}
                                     onShowCityNamesChange={setShowCityNames}
                                     focusLocationQuery={initialMapFocusQuery}
+                                    fitToRouteKey={trip.id}
                                 />
                              </div>
                            </>
@@ -1241,6 +1242,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                       showCityNames={showCityNames}
                                       onShowCityNamesChange={setShowCityNames}
                                       focusLocationQuery={initialMapFocusQuery}
+                                      fitToRouteKey={trip.id}
                                   />
                              </div>
                              <div className="h-1 bg-gray-100 hover:bg-indigo-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
