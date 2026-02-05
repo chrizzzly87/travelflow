@@ -1,0 +1,1461 @@
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings } from '../types';
+import { Timeline } from './Timeline';
+import { VerticalTimeline } from './VerticalTimeline';
+import { DetailsPanel } from './DetailsPanel';
+import { SelectedCitiesPanel } from './SelectedCitiesPanel';
+import { ItineraryMap } from './ItineraryMap';
+import { CountryInfo } from './CountryInfo';
+import { PrintLayout } from './PrintLayout';
+import { GoogleMapsLoader } from './GoogleMapsLoader';
+import { AddActivityModal } from './AddActivityModal';
+import { AddCityModal } from './AddCityModal';
+import { 
+    Pencil, Share2, Folder, Printer, Calendar, List, 
+    ZoomIn, ZoomOut, Plane, Layout, Columns, Rows, Plus, History, Star, Trash2, Info
+} from 'lucide-react';
+import { BASE_PIXELS_PER_DAY, getActivityColorByTypes, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
+
+type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
+
+interface ToastState {
+    tone: ChangeTone;
+    title: string;
+    message: string;
+}
+
+const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
+
+const resolveChangeTone = (label: string): ChangeTone => {
+    const normalized = label.toLowerCase();
+
+    if (/\b(add|added|create|created)\b/.test(normalized)) return 'add';
+    if (/\b(remove|removed|delete|deleted)\b/.test(normalized)) return 'remove';
+    if (
+        /\b(update|updated|change|changed|rename|renamed|reschedule|rescheduled|reorder|reordered|adjust|adjusted|saved)\b/.test(normalized) ||
+        normalized.startsWith('visual:')
+    ) {
+        return 'update';
+    }
+
+    return 'info';
+};
+
+const getToneMeta = (tone: ChangeTone) => {
+    switch (tone) {
+        case 'add':
+            return {
+                label: 'Added',
+                iconClass: 'bg-emerald-100 text-emerald-700',
+                badgeClass: 'bg-emerald-100 text-emerald-700',
+                toastBorderClass: 'border-emerald-200',
+                toastTitleClass: 'text-emerald-700',
+                Icon: Plus,
+            };
+        case 'remove':
+            return {
+                label: 'Removed',
+                iconClass: 'bg-red-100 text-red-700',
+                badgeClass: 'bg-red-100 text-red-700',
+                toastBorderClass: 'border-red-200',
+                toastTitleClass: 'text-red-700',
+                Icon: Trash2,
+            };
+        case 'update':
+            return {
+                label: 'Updated',
+                iconClass: 'bg-blue-100 text-blue-700',
+                badgeClass: 'bg-blue-100 text-blue-700',
+                toastBorderClass: 'border-blue-200',
+                toastTitleClass: 'text-blue-700',
+                Icon: Pencil,
+            };
+        case 'neutral':
+            return {
+                label: 'Notice',
+                iconClass: 'bg-amber-100 text-amber-700',
+                badgeClass: 'bg-amber-100 text-amber-700',
+                toastBorderClass: 'border-amber-200',
+                toastTitleClass: 'text-amber-700',
+                Icon: Info,
+            };
+        default:
+            return {
+                label: 'Saved',
+                iconClass: 'bg-slate-100 text-slate-700',
+                badgeClass: 'bg-slate-100 text-slate-700',
+                toastBorderClass: 'border-slate-200',
+                toastTitleClass: 'text-slate-700',
+                Icon: Info,
+            };
+    }
+};
+
+const MIN_SIDEBAR_WIDTH = 300;
+const MIN_TIMELINE_HEIGHT = 200;
+const MIN_BOTTOM_MAP_HEIGHT = 200;
+const MIN_MAP_WIDTH = 320;
+const MIN_TIMELINE_COLUMN_WIDTH = 420;
+const MIN_DETAILS_WIDTH = 360;
+const HARD_MIN_DETAILS_WIDTH = 260;
+const DEFAULT_DETAILS_WIDTH = 440;
+const RESIZER_WIDTH = 4;
+
+interface TripViewProps {
+    trip: ITrip;
+    onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
+    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string }) => void;
+    onOpenManager: () => void;
+    onOpenSettings: () => void;
+    initialViewSettings?: IViewSettings;
+    onViewSettingsChange?: (settings: IViewSettings) => void;
+    initialMapFocusQuery?: string;
+}
+
+export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // View State
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+    const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const [viewMode, setViewMode] = useState<'planner' | 'print'>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('mode') === 'print' ? 'print' : 'planner';
+        }
+        return 'planner';
+    });
+
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+    const [toastState, setToastState] = useState<ToastState | null>(null);
+    const [showAllHistory, setShowAllHistory] = useState(false);
+    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingHistoryLabelRef = useRef<string | null>(null);
+    const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
+    const suppressCommitRef = useRef(false);
+    const skipViewDiffRef = useRef(false);
+    const appliedViewKeyRef = useRef<string | null>(null);
+    const lastNavActionRef = useRef<'undo' | 'redo' | null>(null);
+    const lastNavFromLabelRef = useRef<string | null>(null);
+    const prevViewRef = useRef<IViewSettings | null>(null);
+
+    const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
+       if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
+       if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'clean';
+       return 'clean';
+    });
+    const [routeMode, setRouteMode] = useState<RouteMode>(() => {
+       if (initialViewSettings?.routeMode) return initialViewSettings.routeMode;
+       if (typeof window !== 'undefined') return (localStorage.getItem('tf_route_mode') as RouteMode) || 'simple';
+       return 'simple';
+    });
+    const [showCityNames, setShowCityNames] = useState<boolean>(() => {
+       if (initialViewSettings?.showCityNames !== undefined) return initialViewSettings.showCityNames;
+       if (typeof window !== 'undefined') {
+           const stored = localStorage.getItem('tf_city_names');
+           if (stored !== null) return stored === 'true';
+       }
+       return true;
+    });
+    
+    // Layout State
+    const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
+        if (initialViewSettings) return initialViewSettings.layoutMode;
+        if (typeof window !== 'undefined') return (localStorage.getItem('tf_layout_mode') as 'vertical' | 'horizontal') || 'horizontal';
+        return 'horizontal';
+    });
+
+    const [timelineView, setTimelineView] = useState<'horizontal' | 'vertical'>(() => {
+        if (initialViewSettings) return initialViewSettings.timelineView;
+        if (typeof window !== 'undefined') return (localStorage.getItem('tf_timeline_view') as 'horizontal' | 'vertical') || 'horizontal';
+        return 'horizontal';
+    });
+
+    const [sidebarWidth, setSidebarWidth] = useState(() => {
+        if (initialViewSettings && initialViewSettings.sidebarWidth) return initialViewSettings.sidebarWidth;
+        if (typeof window !== 'undefined') return parseInt(localStorage.getItem('tf_sidebar_width') || '550', 10);
+        return 550;
+    });
+
+    const [timelineHeight, setTimelineHeight] = useState(() => {
+        if (initialViewSettings && initialViewSettings.timelineHeight) return initialViewSettings.timelineHeight;
+        if (typeof window !== 'undefined') return parseInt(localStorage.getItem('tf_timeline_height') || '400', 10);
+        return 400;
+    });
+
+    const [detailsWidth, setDetailsWidth] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = parseInt(localStorage.getItem('tf_details_width') || `${DEFAULT_DETAILS_WIDTH}`, 10);
+            if (Number.isFinite(stored)) return stored;
+        }
+        return DEFAULT_DETAILS_WIDTH;
+    });
+    const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
+    const detailsResizeStartXRef = useRef(0);
+    const detailsResizeStartWidthRef = useRef(detailsWidth);
+
+    // Zoom
+    const [zoomLevel, setZoomLevel] = useState(initialViewSettings?.zoomLevel || 1.0);
+    const pixelsPerDay = BASE_PIXELS_PER_DAY * zoomLevel;
+
+    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
+        setToastState({
+            tone: options?.tone || 'info',
+            title: options?.title || 'Saved',
+            message,
+        });
+        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
+    }, []);
+
+    const showSavedToastForLabel = useCallback((label: string) => {
+        const tone = resolveChangeTone(label);
+        const { label: actionLabel } = getToneMeta(tone);
+        showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
+    }, [showToast]);
+
+    const refreshHistory = useCallback(() => {
+        setHistoryEntries(getHistoryEntries(trip.id));
+    }, [trip.id]);
+
+    const setPendingLabel = useCallback((label: string) => {
+        pendingHistoryLabelRef.current = label;
+    }, []);
+
+    const debugHistory = useCallback((message: string, data?: any) => {
+        if (typeof window === 'undefined') return;
+        const enabled = (window as any).__TF_DEBUG_HISTORY;
+        if (!enabled) return;
+        if (data !== undefined) {
+            console.log(`[History] ${message}`, data);
+        } else {
+            console.log(`[History] ${message}`);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if ((window as any).__TF_DEBUG_HISTORY === undefined) {
+            (window as any).__TF_DEBUG_HISTORY = true;
+        }
+        (window as any).tfSetHistoryDebug = (enabled: boolean) => {
+            (window as any).__TF_DEBUG_HISTORY = enabled;
+            console.log(`[History] debug ${enabled ? 'enabled' : 'disabled'}`);
+        };
+        (window as any).__tfOnCommit = (window as any).__tfOnCommit || null;
+    }, []);
+
+    // Header State
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [editTitleValue, setEditTitleValue] = useState('');
+
+    // Modals State
+    const [addActivityState, setAddActivityState] = useState<{ isOpen: boolean, dayOffset: number, location: string }>({ isOpen: false, dayOffset: 0, location: '' });
+    const [isAddCityModalOpen, setIsAddCityModalOpen] = useState(false);
+
+    // Persistence
+    useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
+    useEffect(() => { localStorage.setItem('tf_route_mode', routeMode); }, [routeMode]);
+    useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
+    useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
+    useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
+
+    // Update URL with View State
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            const settings: IViewSettings = {
+                layoutMode,
+                timelineView,
+                mapStyle,
+                routeMode,
+                showCityNames,
+                zoomLevel,
+                sidebarWidth,
+                timelineHeight
+            };
+            
+            // Call parent handler if provided
+            if (onViewSettingsChange) {
+                onViewSettingsChange(settings);
+            }
+
+            // Also update local URL for immediate feedback (can be redundant if parent updates, but good for standalone)
+            // Actually, if parent updates URL, we might double update?
+            // If parent updates URL via navigate(), it might re-render us.
+            // Let's rely on parent if provided, otherwise fallback to local history replace.
+            if (!onViewSettingsChange) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('layout', layoutMode);
+                url.searchParams.set('zoom', zoomLevel.toFixed(2));
+                url.searchParams.set('mapStyle', mapStyle);
+                url.searchParams.set('timelineView', timelineView);
+                url.searchParams.set('routeMode', routeMode);
+                url.searchParams.set('cityNames', showCityNames ? '1' : '0');
+                if (viewMode === 'print') url.searchParams.set('mode', 'print');
+                else url.searchParams.delete('mode');
+                window.history.replaceState({}, '', url.toString());
+            }
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
+
+    const currentViewSettings: IViewSettings = useMemo(() => ({
+        layoutMode,
+        timelineView,
+        mapStyle,
+        routeMode,
+        showCityNames,
+        zoomLevel,
+        sidebarWidth,
+        timelineHeight
+    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+
+    useEffect(() => {
+        if (!initialViewSettings) return;
+        const key = JSON.stringify(initialViewSettings);
+        const currentKey = JSON.stringify(currentViewSettings);
+        if (key === currentKey) {
+            appliedViewKeyRef.current = key;
+            return;
+        }
+        if (appliedViewKeyRef.current === key) return;
+
+        appliedViewKeyRef.current = key;
+        suppressCommitRef.current = true;
+        skipViewDiffRef.current = true;
+
+        if (initialViewSettings.mapStyle) setMapStyle(initialViewSettings.mapStyle);
+        if (initialViewSettings.routeMode) setRouteMode(initialViewSettings.routeMode);
+        if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
+        if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
+        if (initialViewSettings.zoomLevel) setZoomLevel(initialViewSettings.zoomLevel);
+        if (initialViewSettings.sidebarWidth) setSidebarWidth(initialViewSettings.sidebarWidth);
+        if (initialViewSettings.timelineHeight) setTimelineHeight(initialViewSettings.timelineHeight);
+        const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
+        setShowCityNames(desiredShowCityNames);
+
+        prevViewRef.current = initialViewSettings;
+    }, [initialViewSettings, currentViewSettings]);
+
+    const currentUrl = location.pathname + location.search;
+
+    useEffect(() => {
+        const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
+
+        if (selectedCityIds.some(id => !cityIdSet.has(id))) {
+            setSelectedCityIds(prev => prev.filter(id => cityIdSet.has(id)));
+        }
+
+        if (selectedItemId && !trip.items.some(item => item.id === selectedItemId)) {
+            setSelectedItemId(null);
+        }
+    }, [trip.items, selectedCityIds, selectedItemId]);
+
+    const tripSummary = useMemo(() => {
+        const cityItems = trip.items
+            .filter(i => i.type === 'city')
+            .sort((a, b) => a.startDateOffset - b.startDateOffset);
+        const cityCount = cityItems.length;
+        const maxEnd = cityItems.reduce((max, c) => Math.max(max, c.startDateOffset + c.duration), 0);
+        const totalDaysRaw = Math.round(maxEnd * 2) / 2;
+        const totalDays = Number.isFinite(totalDaysRaw) ? totalDaysRaw : 0;
+
+        const startDate = new Date(trip.startDate);
+        const endOffsetDays = Math.max(0, Math.ceil(maxEnd) - 1);
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + endOffsetDays);
+
+        const formatDate = (d: Date) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        const dateRange = startDate.toDateString() === endDate.toDateString()
+            ? formatDate(startDate)
+            : `${formatDate(startDate)} – ${formatDate(endDate)}`;
+
+        const daysLabel = totalDays % 1 === 0 ? totalDays.toFixed(0) : totalDays.toFixed(1);
+        const citiesLabel = cityCount === 1 ? '1 city' : `${cityCount} cities`;
+        return `${dateRange} • ${daysLabel} days • ${citiesLabel}`;
+    }, [trip.items, trip.startDate]);
+
+    const handleShare = useCallback(async () => {
+        const url = window.location.href;
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const input = document.createElement('input');
+                input.value = url;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+            }
+            showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
+        } catch (e) {
+            showToast('Could not copy link', { tone: 'remove', title: 'Share link' });
+            console.error('Copy failed', e);
+        }
+    }, [showToast]);
+
+    const formatHistoryTime = useCallback((ts: number) => {
+        const diffMs = Date.now() - ts;
+        const absMs = Math.abs(diffMs);
+        const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+        const sec = Math.round(absMs / 1000);
+        if (sec < 60) return rtf.format(-sec, 'second');
+        const min = Math.round(sec / 60);
+        if (min < 60) return rtf.format(-min, 'minute');
+        const hrs = Math.round(min / 60);
+        if (hrs < 24) return rtf.format(-hrs, 'hour');
+        const days = Math.round(hrs / 24);
+        if (days < 7) return rtf.format(-days, 'day');
+        return new Date(ts).toLocaleString();
+    }, []);
+
+    const displayHistoryEntries = useMemo(() => {
+        if (showAllHistory) return historyEntries;
+        const seen = new Set<string>();
+        return historyEntries.filter(entry => {
+            if (seen.has(entry.label)) return false;
+            seen.add(entry.label);
+            return true;
+        });
+    }, [historyEntries, showAllHistory]);
+
+    useEffect(() => {
+        if (isHistoryOpen) refreshHistory();
+    }, [isHistoryOpen, refreshHistory]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (isHistoryOpen && e.key === 'Escape') {
+                setIsHistoryOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isHistoryOpen]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement | null;
+            const isEditable = !!target && (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                (target as HTMLElement).isContentEditable
+            );
+            if (isEditable) return;
+
+            const isMeta = e.metaKey || e.ctrlKey;
+            if (!isMeta) return;
+
+            if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                lastNavActionRef.current = 'undo';
+                const fromEntry = findHistoryEntryByUrl(trip.id, window.location.pathname + window.location.search);
+                lastNavFromLabelRef.current = fromEntry?.label || null;
+                window.history.back();
+            } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+                e.preventDefault();
+                lastNavActionRef.current = 'redo';
+                lastNavFromLabelRef.current = null;
+                window.history.forward();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [trip.id]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            suppressCommitRef.current = true;
+            const url = window.location.pathname + window.location.search;
+            const entry = findHistoryEntryByUrl(trip.id, url);
+            const action = lastNavActionRef.current;
+            if (action === 'undo' && lastNavFromLabelRef.current) {
+                const label = lastNavFromLabelRef.current;
+                showToast(stripHistoryPrefix(label), { tone: 'neutral', title: 'Undo' });
+            } else if (entry) {
+                showToast(stripHistoryPrefix(entry.label), { tone: 'neutral', title: action === 'redo' ? 'Redo' : 'Undo' });
+            } else {
+                showToast(action === 'redo' ? 'Moved forward in history' : 'Moved backward in history', {
+                    tone: 'neutral',
+                    title: action === 'redo' ? 'Redo' : 'Undo',
+                });
+            }
+            lastNavActionRef.current = null;
+            lastNavFromLabelRef.current = null;
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [trip.id, showToast]);
+
+    const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
+        if (!onCommitState) return;
+        if (suppressCommitRef.current) {
+            suppressCommitRef.current = false;
+            debugHistory('Suppressed commit due to popstate');
+            return;
+        }
+        const tripToCommit = nextTrip || trip;
+        const viewToCommit = nextView || currentViewSettings;
+        pendingCommitRef.current = { trip: tripToCommit, view: viewToCommit };
+        debugHistory('Scheduled commit', { label: pendingHistoryLabelRef.current || 'Data: Updated trip' });
+
+        if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+        const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
+        const commitDelay = /^Data:\s+(Added|Removed)\b/i.test(pendingLabel) ? 150 : 700;
+        commitTimerRef.current = setTimeout(() => {
+            const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
+            const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
+            debugHistory('Committing', { label });
+            onCommitState(payload.trip, payload.view, { replace: false, label });
+            pendingHistoryLabelRef.current = null;
+            refreshHistory();
+            showSavedToastForLabel(label);
+            if (typeof window !== 'undefined') {
+                (window as any).__tfLastCommit = { label, ts: Date.now() };
+                const hook = (window as any).__tfOnCommit;
+                if (typeof hook === 'function') hook({ label, ts: Date.now() });
+            }
+        }, commitDelay);
+    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory]);
+
+    useEffect(() => {
+        const prev = prevViewRef.current;
+        if (!prev) {
+            prevViewRef.current = currentViewSettings;
+            return;
+        }
+        if (skipViewDiffRef.current) {
+            skipViewDiffRef.current = false;
+            prevViewRef.current = currentViewSettings;
+            return;
+        }
+
+        const changes: string[] = [];
+        if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
+        if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
+        if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
+        if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
+        if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
+        if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
+
+        if (changes.length === 1) {
+            setPendingLabel(`Visual: ${changes[0]}`);
+            scheduleCommit(undefined, currentViewSettings);
+        } else if (changes.length > 1) {
+            setPendingLabel(`Visual: ${changes.join(' · ')}`);
+            scheduleCommit(undefined, currentViewSettings);
+        }
+
+        prevViewRef.current = currentViewSettings;
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+
+    const handleToggleFavorite = useCallback(() => {
+        const nextFavorite = !trip.isFavorite;
+        const updatedTrip: ITrip = {
+            ...trip,
+            isFavorite: nextFavorite,
+            updatedAt: Date.now(),
+        };
+
+        setPendingLabel(nextFavorite ? 'Data: Added to favorites' : 'Data: Removed from favorites');
+        onUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+        showToast(nextFavorite ? 'Trip added to favorites' : 'Trip removed from favorites', {
+            tone: nextFavorite ? 'add' : 'remove',
+            title: nextFavorite ? 'Added' : 'Removed',
+        });
+    }, [trip, onUpdateTrip, scheduleCommit, currentViewSettings, setPendingLabel, showToast]);
+
+    const selectedCitiesInTimeline = useMemo(() => {
+        if (selectedCityIds.length === 0) return [];
+        const selectedSet = new Set(selectedCityIds);
+        return trip.items
+            .filter(item => item.type === 'city' && selectedSet.has(item.id))
+            .sort((a, b) => a.startDateOffset - b.startDateOffset);
+    }, [trip.items, selectedCityIds]);
+
+    const showSelectedCitiesPanel = selectedCitiesInTimeline.length > 1;
+    const detailsPanelVisible = showSelectedCitiesPanel || !!selectedItemId;
+
+    const clearSelection = useCallback(() => {
+        setSelectedItemId(null);
+        setSelectedCityIds([]);
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape') return;
+            if (isHistoryOpen) return;
+            if (!selectedItemId && selectedCityIds.length === 0) return;
+            clearSelection();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [clearSelection, selectedItemId, selectedCityIds, isHistoryOpen]);
+
+    const handleTimelineSelect = useCallback((id: string | null, options?: { multi?: boolean; isCity?: boolean }) => {
+        if (!id) {
+            clearSelection();
+            return;
+        }
+
+        const selectedItem = trip.items.find(item => item.id === id);
+        if (!selectedItem) {
+            setSelectedItemId(id);
+            setSelectedCityIds([]);
+            return;
+        }
+
+        if (selectedItem.type !== 'city') {
+            setSelectedItemId(id);
+            setSelectedCityIds([]);
+            return;
+        }
+
+        if (!options?.multi) {
+            setSelectedItemId(id);
+            setSelectedCityIds([id]);
+            return;
+        }
+
+        setSelectedCityIds(prev => {
+            const baseSelection = prev.length > 0
+                ? prev
+                : (selectedItemId && trip.items.some(item => item.id === selectedItemId && item.type === 'city')
+                    ? [selectedItemId]
+                    : []);
+            const exists = baseSelection.includes(id);
+            const next = exists
+                ? baseSelection.filter(cityId => cityId !== id)
+                : [...baseSelection, id];
+
+            if (next.length > 1) setSelectedItemId(null);
+            else if (next.length === 1) setSelectedItemId(next[0]);
+            else setSelectedItemId(null);
+
+            return next;
+        });
+    }, [clearSelection, trip.items, selectedItemId]);
+
+
+    // Handlers
+    const handleUpdateItems = (items: ITimelineItem[], options?: { deferCommit?: boolean }) => {
+        const normalizedItems = normalizeCityColors(items);
+
+        if (options?.deferCommit) {
+            if (!pendingHistoryLabelRef.current) {
+                pendingHistoryLabelRef.current = 'Data: Adjusted timeline items';
+            }
+            const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
+            onUpdateTrip(updatedTrip, { persist: false });
+            return;
+        }
+
+        const prevItems = trip.items;
+        const prevById = new Map(prevItems.map(i => [i.id, i]));
+        const nextById = new Map(normalizedItems.map(i => [i.id, i]));
+
+        const added = normalizedItems.filter(i => !prevById.has(i.id));
+        const removed = prevItems.filter(i => !nextById.has(i.id));
+
+        if (added.length === 1) {
+            const a = added[0];
+            if (a.type === 'city') setPendingLabel(`Data: Added city ${a.title}`);
+            else if (a.type === 'activity') setPendingLabel(`Data: Added activity ${a.title}`);
+            else setPendingLabel('Data: Added transport');
+        } else if (removed.length === 1) {
+            const r = removed[0];
+            if (r.type === 'city') setPendingLabel(`Data: Removed city ${r.title}`);
+            else if (r.type === 'activity') setPendingLabel(`Data: Removed activity ${r.title}`);
+            else setPendingLabel('Data: Removed transport');
+        } else {
+            for (const next of normalizedItems) {
+                const prev = prevById.get(next.id);
+                if (!prev) continue;
+                if (next.type === 'city') {
+                    const durationChanged = prev.duration !== next.duration;
+                    const startChanged = prev.startDateOffset !== next.startDateOffset;
+                    if (durationChanged || startChanged) {
+                        if (durationChanged) {
+                            setPendingLabel(`Data: Changed city duration in ${next.title}`);
+                        } else {
+                            setPendingLabel(`Data: Rescheduled city ${next.title}`);
+                        }
+                        break;
+                    }
+                    if (JSON.stringify(prev.hotels || []) !== JSON.stringify(next.hotels || [])) {
+                        setPendingLabel(`Data: Updated accommodation in ${next.title}`);
+                        break;
+                    }
+                    if ((prev.description || '') !== (next.description || '')) {
+                        setPendingLabel(`Data: Updated notes for ${next.title}`);
+                        break;
+                    }
+                }
+                if (next.type === 'travel' || next.type === 'travel-empty') {
+                    if ((prev.transportMode || '') !== (next.transportMode || '')) {
+                        setPendingLabel('Data: Changed transport type');
+                        break;
+                    }
+                }
+                if (next.type === 'activity') {
+                    if (prev.title !== next.title || (prev.description || '') !== (next.description || '')) {
+                        setPendingLabel(`Data: Updated activity ${next.title}`);
+                        break;
+                    }
+                    if (JSON.stringify(normalizeActivityTypes(prev.activityType)) !== JSON.stringify(normalizeActivityTypes(next.activityType))) {
+                        setPendingLabel(`Data: Updated activity types for ${next.title}`);
+                        break;
+                    }
+                    if (prev.startDateOffset !== next.startDateOffset || prev.duration !== next.duration) {
+                        setPendingLabel(`Data: Rescheduled activity ${next.title}`);
+                        break;
+                    }
+                }
+            }
+        }
+
+        const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
+        onUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+    };
+
+    const applySelectedCityOrder = useCallback((orderedCityIds: string[]) => {
+        if (selectedCityIds.length < 2) return;
+
+        const selectedSet = new Set(selectedCityIds);
+        const normalizedOrder = orderedCityIds.filter(id => selectedSet.has(id));
+        if (normalizedOrder.length !== selectedSet.size) return;
+
+        const reorderedItems = reorderSelectedCities(trip.items, selectedCityIds, normalizedOrder);
+        if (reorderedItems === trip.items) return;
+
+        setPendingLabel('Data: Reordered selected cities');
+        handleUpdateItems(reorderedItems);
+        setSelectedItemId(null);
+        setSelectedCityIds(normalizedOrder);
+    }, [selectedCityIds, trip.items, setPendingLabel, handleUpdateItems]);
+
+    const handleReverseSelectedCities = useCallback(() => {
+        if (selectedCitiesInTimeline.length < 2) return;
+        const reversedOrder = [...selectedCitiesInTimeline].map(city => city.id).reverse();
+        applySelectedCityOrder(reversedOrder);
+    }, [selectedCitiesInTimeline, applySelectedCityOrder]);
+
+    const handleUpdateItem = (id: string, updates: Partial<ITimelineItem>) => {
+        const item = trip.items.find(i => i.id === id);
+        if (item) {
+            if (item.type === 'city') {
+                if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
+                    if (updates.duration !== undefined) {
+                        setPendingLabel(`Data: Changed city duration in ${item.title}`);
+                    } else {
+                        setPendingLabel(`Data: Rescheduled city ${item.title}`);
+                    }
+                } else if (updates.hotels !== undefined) {
+                    setPendingLabel(`Data: Updated accommodation in ${item.title}`);
+                } else if (updates.description !== undefined) {
+                    setPendingLabel(`Data: Updated notes for ${item.title}`);
+                } else if (updates.title !== undefined) {
+                    setPendingLabel(`Data: Renamed city ${item.title}`);
+                }
+            } else if (item.type === 'travel' || item.type === 'travel-empty') {
+                if (updates.transportMode !== undefined) {
+                    setPendingLabel('Data: Changed transport type');
+                } else if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
+                    setPendingLabel('Data: Adjusted transport timing');
+                }
+            } else if (item.type === 'activity') {
+                if (updates.title !== undefined || updates.description !== undefined) {
+                    setPendingLabel(`Data: Updated activity ${item.title}`);
+                } else if (updates.activityType !== undefined) {
+                    setPendingLabel(`Data: Updated activity types for ${item.title}`);
+                } else if (updates.startDateOffset !== undefined || updates.duration !== undefined) {
+                    setPendingLabel(`Data: Rescheduled activity ${item.title}`);
+                }
+            }
+        }
+        const newItems = trip.items.map(i => i.id === id ? { ...i, ...updates } : i);
+        handleUpdateItems(newItems);
+    };
+
+    const handleForceFill = (id: string) => {
+        const cities = trip.items
+            .filter(i => i.type === 'city')
+            .sort((a, b) => a.startDateOffset - b.startDateOffset);
+
+        const targetIndex = cities.findIndex(i => i.id === id);
+        if (targetIndex === -1) return;
+
+        const targetCity = cities[targetIndex];
+        setPendingLabel(`Data: Changed city duration (fill space) in ${targetCity.title}`);
+        const prevCity = targetIndex > 0 ? cities[targetIndex - 1] : null;
+        const nextCity = targetIndex < cities.length - 1 ? cities[targetIndex + 1] : null;
+
+        const prevEnd = prevCity ? prevCity.startDateOffset + prevCity.duration : 0;
+        const newStart = prevCity ? prevEnd : 0;
+        let newDuration = targetCity.duration;
+
+        if (nextCity) {
+            const availableDuration = nextCity.startDateOffset - newStart;
+            newDuration = Math.max(0.5, availableDuration);
+        }
+
+        const newItems = trip.items.map(item => {
+            if (item.id === id) {
+                return { ...item, startDateOffset: newStart, duration: Math.max(0.5, newDuration) };
+            }
+            return item;
+        });
+
+        handleUpdateItems(newItems);
+    };
+
+    const selectedCityForceFill = React.useMemo<{ mode: 'stretch' | 'shrink'; label: string } | null>(() => {
+        if (!selectedItemId) return null;
+        const cities = trip.items
+            .filter(i => i.type === 'city')
+            .sort((a, b) => a.startDateOffset - b.startDateOffset);
+
+        const targetIndex = cities.findIndex(i => i.id === selectedItemId);
+        if (targetIndex === -1) return null;
+
+        const targetCity = cities[targetIndex];
+        const prevCity = targetIndex > 0 ? cities[targetIndex - 1] : null;
+        const nextCity = targetIndex < cities.length - 1 ? cities[targetIndex + 1] : null;
+
+        const prevEnd = prevCity ? prevCity.startDateOffset + prevCity.duration : 0;
+        const nextStart = nextCity ? nextCity.startDateOffset : null;
+        const currentStart = targetCity.startDateOffset;
+        const currentEnd = targetCity.startDateOffset + targetCity.duration;
+
+        const gapBefore = currentStart > prevEnd + 0.05;
+        const overlapBefore = currentStart < prevEnd - 0.05;
+        const gapAfter = nextStart !== null ? currentEnd < nextStart - 0.05 : false;
+        const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
+
+        if (!(gapBefore || gapAfter || overlapBefore || overlapAfter)) return null;
+
+        const mode = (overlapBefore && overlapAfter) ? 'shrink' : 'stretch';
+        const label = (overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space';
+        return { mode, label };
+    }, [trip.items, selectedItemId]);
+
+    const handleDeleteItem = (id: string, strategy: 'item-only' | 'shift-gap' | 'pull-back' = 'item-only') => {
+        const item = trip.items.find(i => i.id === id);
+        if (item) {
+            if (item.type === 'city') {
+                pendingHistoryLabelRef.current = `Data: Removed city ${item.title}`;
+            } else if (item.type === 'activity') {
+                pendingHistoryLabelRef.current = `Data: Removed activity ${item.title}`;
+            } else {
+                pendingHistoryLabelRef.current = `Data: Removed transport ${item.title}`;
+            }
+        }
+        const newItems = trip.items.filter(i => i.id !== id);
+        // Note: Complex strategies omitted for simplicity as they require logic function imports like deleteItemWithStrategy
+        // If critical, we should import that helper. For now, basic delete.
+        handleUpdateItems(newItems);
+        setSelectedItemId(null);
+        setSelectedCityIds(prev => prev.filter(cityId => cityId !== id));
+    };
+
+    useEffect(() => {
+        const handleDeleteKey = (e: KeyboardEvent) => {
+            if (isHistoryOpen || addActivityState.isOpen || isAddCityModalOpen) return;
+            if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+
+            const target = e.target as HTMLElement | null;
+            const isEditable = !!target && (
+                target.tagName === 'INPUT' ||
+                target.tagName === 'TEXTAREA' ||
+                target.isContentEditable
+            );
+            if (isEditable) return;
+            if (!selectedItemId) return;
+
+            const selectedItem = trip.items.find(item => item.id === selectedItemId);
+            if (!selectedItem) return;
+            if (selectedItem.type !== 'city' && selectedItem.type !== 'activity') return;
+
+            e.preventDefault();
+            handleDeleteItem(selectedItem.id);
+        };
+
+        window.addEventListener('keydown', handleDeleteKey);
+        return () => window.removeEventListener('keydown', handleDeleteKey);
+    }, [selectedItemId, trip.items, isHistoryOpen, addActivityState.isOpen, isAddCityModalOpen, handleDeleteItem]);
+
+    // Modal Handlers
+    const handleOpenAddActivity = (dayOffset: number) => {
+         // Find city at this time
+         const city = trip.items.find(i => i.type === 'city' && dayOffset >= i.startDateOffset && dayOffset < i.startDateOffset + i.duration);
+         setAddActivityState({ isOpen: true, dayOffset, location: city?.title || trip.title });
+    };
+
+    const handleAddActivityItem = (itemProps: Partial<ITimelineItem>) => {
+        const normalizedTypes = normalizeActivityTypes(itemProps.activityType);
+        const newItem: ITimelineItem = {
+            id: crypto.randomUUID(),
+            type: 'activity',
+            title: itemProps.title || 'New Activity',
+            startDateOffset: itemProps.startDateOffset || addActivityState.dayOffset,
+            duration: itemProps.duration || (1 / 24), // 1 hour default
+            description: itemProps.description || '',
+            location: itemProps.location || addActivityState.location,
+            ...itemProps,
+            activityType: normalizedTypes,
+            color: itemProps.color || getActivityColorByTypes(normalizedTypes),
+        } as ITimelineItem;
+        suppressCommitRef.current = false;
+        setPendingLabel(`Data: Added activity ${newItem.title}`);
+        handleUpdateItems([...trip.items, newItem]);
+        showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
+    };
+
+    const handleAddCityItem = (itemProps: Partial<ITimelineItem>) => {
+        // Logic to insert city? Or simple append?
+        // App.tsx usually had logic to find gap.
+        // For now, append at end of default logic:
+        const lastItem = trip.items.reduce((max, item) => Math.max(max, item.startDateOffset + item.duration), 0);
+        const newItem: ITimelineItem = {
+            id: crypto.randomUUID(),
+            type: 'city',
+            title: itemProps.title || 'New City',
+            startDateOffset: lastItem,
+            duration: itemProps.duration || 2,
+            color: itemProps.color || 'bg-emerald-100 border-emerald-200 text-emerald-700',
+            loading: false,
+            ...itemProps
+        } as ITimelineItem;
+        suppressCommitRef.current = false;
+        setPendingLabel(`Data: Added city ${newItem.title}`);
+        handleUpdateItems([...trip.items, newItem]);
+        setSelectedItemId(newItem.id);
+        setSelectedCityIds([newItem.id]);
+        showToast(`City "${newItem.title}" added`, { tone: 'add', title: 'Added' });
+        setIsAddCityModalOpen(false);
+    };
+
+    const clampDetailsWidth = useCallback((rawWidth: number) => {
+        if (typeof window === 'undefined') return Math.max(MIN_DETAILS_WIDTH, rawWidth);
+
+        if (layoutMode === 'horizontal') {
+            const maxWidth = window.innerWidth - sidebarWidth - MIN_MAP_WIDTH - (RESIZER_WIDTH * 2);
+            const boundedMax = Math.max(HARD_MIN_DETAILS_WIDTH, maxWidth);
+            const boundedMin = Math.min(MIN_DETAILS_WIDTH, boundedMax);
+            return Math.max(boundedMin, Math.min(boundedMax, rawWidth));
+        }
+
+        const maxWidth = window.innerWidth - MIN_TIMELINE_COLUMN_WIDTH;
+        const boundedMax = Math.max(HARD_MIN_DETAILS_WIDTH, maxWidth);
+        const boundedMin = Math.min(MIN_DETAILS_WIDTH, boundedMax);
+        return Math.max(boundedMin, Math.min(boundedMax, rawWidth));
+    }, [layoutMode, sidebarWidth]);
+
+    useEffect(() => {
+        setDetailsWidth(prev => clampDetailsWidth(prev));
+    }, [clampDetailsWidth]);
+
+    useEffect(() => {
+        const handleResize = () => setDetailsWidth(prev => clampDetailsWidth(prev));
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [clampDetailsWidth]);
+
+    // Resizing Logic
+    const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
+        isResizingRef.current = type;
+        if (type === 'details') {
+            detailsResizeStartWidthRef.current = detailsWidth;
+            detailsResizeStartXRef.current = startClientX || 0;
+        }
+        document.body.style.cursor = type === 'timeline-h' ? 'row-resize' : 'col-resize';
+        document.body.style.userSelect = 'none';
+    }, [detailsWidth]);
+
+    const stopResizing = useCallback(() => {
+        if (isResizingRef.current === 'sidebar') localStorage.setItem('tf_sidebar_width', sidebarWidth.toString());
+        if (isResizingRef.current === 'details') localStorage.setItem('tf_details_width', Math.round(detailsWidth).toString());
+        if (isResizingRef.current === 'timeline-h') localStorage.setItem('tf_timeline_height', timelineHeight.toString());
+        isResizingRef.current = null;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+    }, [sidebarWidth, detailsWidth, timelineHeight]);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isResizingRef.current) return;
+        if (isResizingRef.current === 'sidebar') {
+            const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
+            const maxSidebar = window.innerWidth - reservedForDetails - MIN_MAP_WIDTH - (RESIZER_WIDTH * 2);
+            const boundedMax = Math.max(MIN_SIDEBAR_WIDTH, maxSidebar);
+            setSidebarWidth(Math.max(MIN_SIDEBAR_WIDTH, Math.min(boundedMax, e.clientX)));
+        } else if (isResizingRef.current === 'details') {
+            const deltaX = e.clientX - detailsResizeStartXRef.current;
+            const nextWidth = detailsResizeStartWidthRef.current + deltaX;
+            setDetailsWidth(clampDetailsWidth(nextWidth));
+        } else if (isResizingRef.current === 'timeline-h') {
+            const maxH = window.innerHeight - MIN_BOTTOM_MAP_HEIGHT;
+            setTimelineHeight(Math.max(MIN_TIMELINE_HEIGHT, Math.min(maxH, window.innerHeight - e.clientY)));
+        }
+    }, [detailsPanelVisible, detailsWidth, clampDetailsWidth]);
+
+    useEffect(() => {
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', stopResizing);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', stopResizing);
+        };
+    }, [handleMouseMove, stopResizing]);
+
+    const activeToastMeta = toastState ? getToneMeta(toastState.tone) : null;
+
+    if (viewMode === 'print') {
+        return (
+            <GoogleMapsLoader>
+                <PrintLayout trip={trip} onClose={() => setViewMode('planner')} onUpdateTrip={handleUpdateItems} />
+            </GoogleMapsLoader>
+        );
+    }
+
+    return (
+        <GoogleMapsLoader>
+            <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+                
+                {/* Header */}
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div 
+                            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => window.location.href = '/'}
+                            title="Go to Homepage"
+                        >
+                            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg transform rotate-3">
+                                <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
+                            </div>
+                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-indigo-600">Flow</span></span>
+                        </div>
+                        <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
+                        <div className="flex items-start gap-2">
+                            <div className="flex flex-col leading-tight">
+                                {isEditingTitle ? (
+                                    <input 
+                                        value={editTitleValue}
+                                        onChange={e => setEditTitleValue(e.target.value)}
+                                        onBlur={() => { 
+                                            const updatedTrip = { ...trip, title: editTitleValue, updatedAt: Date.now() };
+                                            setPendingLabel('Data: Renamed trip');
+                                            onUpdateTrip(updatedTrip);
+                                            scheduleCommit(updatedTrip, currentViewSettings);
+                                            setIsEditingTitle(false);
+                                        }}
+                                        onKeyDown={e => { 
+                                            if (e.key === 'Enter') { 
+                                                const updatedTrip = { ...trip, title: editTitleValue, updatedAt: Date.now() };
+                                                setPendingLabel('Data: Renamed trip');
+                                                onUpdateTrip(updatedTrip);
+                                                scheduleCommit(updatedTrip, currentViewSettings);
+                                                setIsEditingTitle(false);
+                                            } 
+                                        }}
+                                        autoFocus
+                                        className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-indigo-500 outline-none pb-0.5"
+                                    />
+                                ) : (
+                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { setEditTitleValue(trip.title); setIsEditingTitle(true); }}>
+                                        <h1 className="font-bold text-lg text-gray-900 truncate max-w-[200px] sm:max-w-md">{trip.title}</h1>
+                                        <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                )}
+                                <div className="text-xs font-semibold text-purple-600 mt-0.5">{tripSummary}</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleToggleFavorite}
+                                className="mt-0.5 p-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+                                title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                                aria-label={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                            >
+                                <Star
+                                    size={17}
+                                    className={trip.isFavorite ? 'text-amber-500 fill-amber-400' : 'text-gray-300 hover:text-amber-500'}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 sm:gap-3">
+                         <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-2">
+                            <button onClick={() => setViewMode('print')} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md" title="Print View">
+                                <Printer size={18} />
+                            </button>
+                        </div>
+                        <button onClick={() => setIsHistoryOpen(true)} className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" title="History">
+                            <History size={18} />
+                        </button>
+                        <button onClick={onOpenManager} className="hidden sm:flex items-center gap-2 p-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium">
+                            <Folder size={18} /> <span className="hidden lg:inline">My Trips</span>
+                        </button>
+                        <button onClick={handleShare} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
+                            <Share2 size={16} /> <span className="hidden sm:inline">Share</span>
+                        </button>
+                    </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="flex-1 relative overflow-hidden flex flex-col">
+                     <div className={`w-full h-full flex ${layoutMode === 'horizontal' ? 'flex-row' : 'flex-col'}`}>
+                        
+                        {layoutMode === 'horizontal' ? (
+                           <>
+                             {/* Left Sidebar (Timeline) */}
+                             <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
+                                <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
+                                    {trip.countryInfo && (
+                                        <div className="p-4 border-b border-gray-100 bg-white z-10">
+                                            <CountryInfo info={trip.countryInfo} />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 w-full overflow-hidden relative min-w-0">
+                                        {timelineView === 'vertical' ? (
+                                            <VerticalTimeline 
+                                                trip={trip}
+                                                onUpdateItems={handleUpdateItems}
+                                                onSelect={handleTimelineSelect}
+                                                selectedItemId={selectedItemId}
+                                                selectedCityIds={selectedCityIds}
+                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                onAddActivity={handleOpenAddActivity}
+                                                onForceFill={handleForceFill}
+                                                onSwapSelectedCities={handleReverseSelectedCities}
+                                                pixelsPerDay={pixelsPerDay}
+                                            />
+                                        ) : (
+                                            <Timeline
+                                                trip={trip}
+                                                onUpdateItems={handleUpdateItems}
+                                                onSelect={handleTimelineSelect}
+                                                selectedItemId={selectedItemId}
+                                                selectedCityIds={selectedCityIds}
+                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                onAddActivity={handleOpenAddActivity}
+                                                onForceFill={handleForceFill}
+                                                onSwapSelectedCities={handleReverseSelectedCities}
+                                                pixelsPerDay={pixelsPerDay}
+                                            />
+                                        )}
+
+                                        {/* CONTROLS OVERLAY */}
+                                        <div className="absolute top-4 right-4 z-20 flex gap-2">
+                                            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
+                                                <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                            </div>
+                                            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
+                                                <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
+                                                    {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                             </div>
+
+                             {/* Resizer */}
+                             <div className="w-1 bg-gray-100 hover:bg-indigo-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group" onMouseDown={() => startResizing('sidebar')}>
+                                <div className="h-8 w-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                             </div>
+
+                             {/* Details (Center/Inline) */}
+                             {detailsPanelVisible && (
+                                <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
+                                    {showSelectedCitiesPanel ? (
+                                        <SelectedCitiesPanel
+                                            selectedCities={selectedCitiesInTimeline}
+                                            onClose={clearSelection}
+                                            onApplyOrder={applySelectedCityOrder}
+                                            onReverse={handleReverseSelectedCities}
+                                        />
+                                    ) : (
+                                        <DetailsPanel 
+                                            item={trip.items.find(i => i.id === selectedItemId) || null}
+                                            isOpen={!!selectedItemId}
+                                            onClose={clearSelection}
+                                            onUpdate={handleUpdateItem}
+                                            onDelete={handleDeleteItem}
+                                            tripStartDate={trip.startDate}
+                                            onForceFill={handleForceFill}
+                                            forceFillMode={selectedCityForceFill?.mode}
+                                            forceFillLabel={selectedCityForceFill?.label}
+                                            variant="sidebar"
+                                        />
+                                    )}
+                                    <div
+                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-indigo-50/60 transition-colors"
+                                        onMouseDown={(e) => startResizing('details', e.clientX)}
+                                        title="Resize details panel"
+                                    >
+                                        <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-indigo-400 transition-colors" />
+                                    </div>
+                                </div>
+                             )}
+
+                             {/* Right (Map) */}
+                             <div className="flex-1 h-full relative bg-gray-100 min-w-0">
+                                <ItineraryMap 
+                                    items={trip.items} 
+                                    selectedItemId={selectedItemId}
+                                    layoutMode={layoutMode}
+                                    onLayoutChange={setLayoutMode}
+                                    activeStyle={mapStyle}
+                                    onStyleChange={setMapStyle}
+                                    routeMode={routeMode}
+                                    onRouteModeChange={setRouteMode}
+                                    showCityNames={showCityNames}
+                                    onShowCityNamesChange={setShowCityNames}
+                                    focusLocationQuery={initialMapFocusQuery}
+                                />
+                             </div>
+                           </>
+                        ) : (
+                           // VERTICAL LAYOUT
+                           <>
+                             <div className="flex-1 relative bg-gray-100 min-h-0 w-full">
+                                  <ItineraryMap 
+                                      items={trip.items} 
+                                      selectedItemId={selectedItemId}
+                                      layoutMode={layoutMode}
+                                      onLayoutChange={setLayoutMode}
+                                      activeStyle={mapStyle}
+                                      onStyleChange={setMapStyle}
+                                      routeMode={routeMode}
+                                      onRouteModeChange={setRouteMode}
+                                      showCityNames={showCityNames}
+                                      onShowCityNamesChange={setShowCityNames}
+                                      focusLocationQuery={initialMapFocusQuery}
+                                  />
+                             </div>
+                             <div className="h-1 bg-gray-100 hover:bg-indigo-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
+                                  <div className="w-12 h-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                             </div>
+                             <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
+                                 <div className="flex-1 h-full relative border-r border-gray-100 min-w-0">
+                                    <div className="w-full h-full relative min-w-0">
+                                        {timelineView === 'vertical' ? (
+                                            <VerticalTimeline 
+                                                trip={trip}
+                                                onUpdateItems={handleUpdateItems}
+                                                onSelect={handleTimelineSelect}
+                                                selectedItemId={selectedItemId}
+                                                selectedCityIds={selectedCityIds}
+                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                onAddActivity={handleOpenAddActivity}
+                                                onForceFill={handleForceFill}
+                                                onSwapSelectedCities={handleReverseSelectedCities}
+                                                pixelsPerDay={pixelsPerDay}
+                                            />
+                                        ) : (
+                                            <Timeline
+                                                trip={trip}
+                                                onUpdateItems={handleUpdateItems}
+                                                onSelect={handleTimelineSelect}
+                                                selectedItemId={selectedItemId}
+                                                selectedCityIds={selectedCityIds}
+                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                onAddActivity={handleOpenAddActivity}
+                                                onForceFill={handleForceFill}
+                                                onSwapSelectedCities={handleReverseSelectedCities}
+                                                pixelsPerDay={pixelsPerDay}
+                                            />
+                                        )}
+                                        {/* Controls Overlay */}
+                                        <div className="absolute top-4 right-4 z-20 flex gap-2">
+                                            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
+                                                <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                            </div>
+                                            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
+                                                <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
+                                                    {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                 </div>
+                                 {detailsPanelVisible && (
+                                    <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
+                                        {showSelectedCitiesPanel ? (
+                                            <SelectedCitiesPanel
+                                                selectedCities={selectedCitiesInTimeline}
+                                                onClose={clearSelection}
+                                                onApplyOrder={applySelectedCityOrder}
+                                                onReverse={handleReverseSelectedCities}
+                                            />
+                                        ) : (
+                                            <DetailsPanel 
+                                                item={trip.items.find(i => i.id === selectedItemId) || null}
+                                                isOpen={!!selectedItemId}
+                                                onClose={clearSelection}
+                                                onUpdate={handleUpdateItem}
+                                                onDelete={handleDeleteItem}
+                                                tripStartDate={trip.startDate}
+                                                onForceFill={handleForceFill}
+                                                forceFillMode={selectedCityForceFill?.mode}
+                                                forceFillLabel={selectedCityForceFill?.label}
+                                                variant="sidebar"
+                                            />
+                                        )}
+                                        <div
+                                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-indigo-50/60 transition-colors"
+                                            onMouseDown={(e) => startResizing('details', e.clientX)}
+                                            title="Resize details panel"
+                                        >
+                                            <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-indigo-400 transition-colors" />
+                                        </div>
+                                    </div>
+                                 )}
+                             </div>
+                           </>
+                        )}
+                     </div>
+
+                     {/* Modals */}
+                     <AddActivityModal 
+                         isOpen={addActivityState.isOpen}
+                         onClose={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                         dayOffset={addActivityState.dayOffset}
+                         location={addActivityState.location}
+                         onAdd={handleAddActivityItem}
+                         trip={trip}
+                         notes="" // TODO
+                     />
+                     
+                     <AddCityModal
+                        isOpen={isAddCityModalOpen}
+                        onClose={() => setIsAddCityModalOpen(false)}
+                        onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
+                     />
+
+                     {/* History Panel */}
+                     {isHistoryOpen && (
+                        <div className="fixed inset-0 z-[1500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsHistoryOpen(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">Change History</h3>
+                                        <p className="text-xs text-gray-500">Undo/redo works with browser history and Cmd+Z / Cmd+Y.</p>
+                                    </div>
+                                    <button onClick={() => setIsHistoryOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                                        Close
+                                    </button>
+                                </div>
+                                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                                    <button
+                                        onClick={() => { 
+                                            lastNavActionRef.current = 'undo'; 
+                                            const fromEntry = findHistoryEntryByUrl(trip.id, window.location.pathname + window.location.search);
+                                            lastNavFromLabelRef.current = fromEntry?.label || null;
+                                            window.history.back(); 
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                    >
+                                        Undo
+                                    </button>
+                                    <button
+                                        onClick={() => { 
+                                            lastNavActionRef.current = 'redo'; 
+                                            lastNavFromLabelRef.current = null;
+                                            window.history.forward(); 
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                    >
+                                        Redo
+                                    </button>
+                                    <button
+                                        onClick={() => setShowAllHistory(v => !v)}
+                                        className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                    >
+                                        {showAllHistory ? 'Show Recent' : 'Show All'}
+                                    </button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto">
+                                    {displayHistoryEntries.length === 0 ? (
+                                        <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
+                                    ) : (
+                                        <ul className="divide-y divide-gray-100">
+                                            {displayHistoryEntries.map(entry => {
+                                                const isCurrent = entry.url === currentUrl;
+                                                const tone = resolveChangeTone(entry.label);
+                                                const details = stripHistoryPrefix(entry.label);
+                                                const meta = getToneMeta(tone);
+                                                const Icon = meta.Icon;
+                                                return (
+                                                <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-indigo-50/70' : 'hover:bg-gray-50/80'}`}>
+                                                    <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
+                                                        <Icon size={15} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
+                                                            <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
+                                                            {isCurrent && <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Current</span>}
+                                                        </div>
+                                                        <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        <button
+                                                        onClick={() => {
+                                                            setIsHistoryOpen(false);
+                                                            lastNavActionRef.current = null;
+                                                            navigate(entry.url);
+                                                            showToast(details, { tone, title: 'Opened from history' });
+                                                        }}
+                                                        className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                                        >
+                                                            Go
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            )})}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                     )}
+
+                     {/* Toast */}
+                     {toastState && activeToastMeta && (
+                        <div className={`fixed bottom-6 right-6 z-[1600] w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border bg-white/95 shadow-2xl backdrop-blur px-4 py-3 ${activeToastMeta.toastBorderClass}`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${activeToastMeta.iconClass}`}>
+                                    <activeToastMeta.Icon size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className={`text-[11px] uppercase tracking-[0.08em] font-semibold ${activeToastMeta.toastTitleClass}`}>{toastState.title}</div>
+                                    <div className="text-sm font-semibold text-gray-900 leading-snug">{toastState.message}</div>
+                                </div>
+                                <button
+                                    onClick={() => setToastState(null)}
+                                    className="ml-auto text-xs text-gray-400 hover:text-gray-600"
+                                    aria-label="Dismiss notification"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                     )}
+
+                </main>
+            </div>
+        </GoogleMapsLoader>
+    );
+};

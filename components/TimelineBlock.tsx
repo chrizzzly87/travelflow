@@ -1,0 +1,290 @@
+import React, { useRef } from 'react';
+import { ITimelineItem, ActivityType } from '../types';
+import { getActivityColorByTypes, pickPrimaryActivityType } from '../utils';
+import { Plane, Train, Bus, Ship, Car, Map, Maximize, Minimize, ArrowUpDown } from 'lucide-react';
+import { ActivityTypeIcon } from './ActivityTypeVisuals';
+
+interface TimelineBlockProps {
+  item: ITimelineItem;
+  isSelected: boolean;
+  onSelect: (id: string, options?: { multi?: boolean; isCity?: boolean }) => void;
+  onResizeStart: (e: React.MouseEvent, id: string, direction: 'left' | 'right') => void;
+  onMoveStart: (e: React.MouseEvent, id: string) => void;
+  onForceFill?: (id: string) => void;
+  onSwapSelectedCities?: () => void;
+  isCity?: boolean;
+  hasGapOrOverlap?: boolean;
+  forceFillMode?: 'stretch' | 'shrink';
+  forceFillLabel?: string;
+  showSwapSelectedButton?: boolean;
+  swapSelectedLabel?: string;
+  pixelsPerDay: number;
+  vertical?: boolean;
+}
+
+const TransportIcon = ({ mode, className }: { mode?: string, className?: string }) => {
+    switch(mode) {
+        case 'na': return <Map size={16} className={className} />;
+        case 'plane': return <Plane size={16} className={className} />;
+        case 'train': return <Train size={16} className={className} />;
+        case 'bus': return <Bus size={16} className={className} />;
+        case 'boat': return <Ship size={16} className={className} />;
+        case 'car': return <Car size={16} className={className} />;
+        default: return <Plane size={16} className={className} />;
+    }
+}
+
+export const TimelineBlock: React.FC<TimelineBlockProps> = ({
+  item,
+  isSelected,
+  onSelect,
+  onResizeStart,
+  onMoveStart,
+  onForceFill,
+  onSwapSelectedCities,
+  isCity = false,
+  hasGapOrOverlap = false,
+  forceFillMode,
+  forceFillLabel,
+  showSwapSelectedButton = false,
+  swapSelectedLabel,
+  pixelsPerDay,
+  vertical = false,
+}) => {
+  const isTravel = item.type === 'travel';
+  const isEmptyTravel = item.type === 'travel-empty';
+  const isLoadingItem = !!item.loading;
+  
+  // Drag detection refs
+  const dragStartPos = useRef<{x: number, y: number} | null>(null);
+  
+  // Visual Dimensions
+  const dimensionCheck = item.duration * pixelsPerDay;
+  const size = Math.max(dimensionCheck, (isTravel || isEmptyTravel) ? 40 : 20); 
+  const position = item.startDateOffset * pixelsPerDay;
+
+  // Buffer calculations (Minutes -> Days -> Pixels)
+  const bufferBeforePx = item.bufferBefore ? (item.bufferBefore / 1440) * pixelsPerDay : 0;
+  const bufferAfterPx = item.bufferAfter ? (item.bufferAfter / 1440) * pixelsPerDay : 0;
+
+  // Handle Legacy or Array Activity Type
+  const primaryActivityType = item.type === 'activity'
+    ? pickPrimaryActivityType(item.activityType)
+    : undefined;
+  const resolvedColor = item.type === 'activity' ? getActivityColorByTypes(item.activityType) : item.color;
+  const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
+  const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent ghost creation on parent
+      if (isCity && (e.shiftKey || e.metaKey || e.ctrlKey)) return;
+      dragStartPos.current = { x: e.clientX, y: e.clientY };
+      // Initiate move immediately
+      onMoveStart(e, item.id);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onSelect(item.id, { multi: isCity && (e.shiftKey || e.metaKey || e.ctrlKey), isCity });
+  };
+
+  const style: React.CSSProperties = vertical ? {
+      top: `${position}px`,
+      height: `${size}px`,
+      left: 0,
+      right: 0,
+      cursor: isCity ? 'pointer' : 'grab',
+  } : {
+      left: `${position}px`,
+      width: `${size}px`,
+      cursor: isCity ? 'pointer' : 'grab',
+  };
+
+  return (
+    <div
+      className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
+        ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColor}
+        ${isCity ? 'opacity-80 rounded-sm border-r border-white/20 cursor-pointer' : 'rounded-lg border shadow-sm'} 
+        ${!vertical && isCity ? 'top-0 bottom-0' : ''}
+        ${isSelected ? 'ring-2 ring-offset-1 ring-blue-500 z-30 opacity-100' : 'z-10'}
+        ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
+        ${isEmptyTravel ? 'border-dashed cursor-pointer hover:bg-gray-50' : ''}
+      `}
+      style={style}
+      onMouseDown={handleMouseDown}
+      onClick={handleClick}
+    >
+      {/* Visual Buffers (Travel Only) */}
+      {isTravel && (
+        <>
+            {bufferBeforePx > 0 && (
+                <div 
+                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-l-2 border-gray-300 border-dashed rounded-l-lg bg-gray-100/40 pointer-events-none"
+                    style={{ right: '100%', width: `${bufferBeforePx}px` }}
+                    title={`Buffer before: ${item.bufferBefore}m`}
+                >
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-gray-400 text-center font-bold overflow-hidden">
+                        {item.bufferBefore}m
+                    </div>
+                </div>
+            )}
+            {bufferAfterPx > 0 && (
+                <div 
+                    className="absolute top-1/2 -translate-y-1/2 h-[80%] border-t-2 border-b-2 border-r-2 border-gray-300 border-dashed rounded-r-lg bg-gray-100/40 pointer-events-none"
+                    style={{ left: '100%', width: `${bufferAfterPx}px` }}
+                    title={`Buffer after: ${item.bufferAfter}m`}
+                >
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full text-[8px] text-gray-400 text-center font-bold overflow-hidden">
+                        {item.bufferAfter}m
+                    </div>
+                </div>
+            )}
+        </>
+      )}
+
+      {/* Main Content Container */}
+      <div className={`flex items-center px-1 relative h-full w-full pointer-events-none overflow-hidden
+          ${vertical 
+             ? (
+                isCompactVerticalActivity
+                  ? 'justify-center text-center'
+                  : (size < 40 ? 'hidden' : size < 60 ? 'flex-row justify-center gap-1.5' : 'flex-col justify-center text-center py-1')
+               )
+             : 'justify-center flex-col text-center'}
+      `}>
+        
+        {isTravel && (
+            <div className={`flex items-center gap-1 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}>
+                <TransportIcon mode={item.transportMode} className="flex-shrink-0" />
+            </div>
+        )}
+
+        {isEmptyTravel && (
+            <span className="text-[10px] font-medium text-gray-400 select-none">Add</span>
+        )}
+
+        {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
+             <ActivityTypeIcon type={primaryActivityType || 'general'} size={14} className={`opacity-70 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`} />
+        )}
+
+        {!isEmptyTravel && (
+            <span
+                className={`font-semibold select-none leading-tight 
+                    ${isCompactVerticalActivity
+                        ? 'w-full truncate whitespace-nowrap text-center'
+                        : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal'}
+                           ${!isTravel && 'line-clamp-2'}
+                           ${vertical 
+                               ? (item.duration * pixelsPerDay < 60 ? 'truncate whitespace-nowrap' : 'w-full break-words') 
+                               : 'truncate'}`
+                    }
+                `}
+                style={isCompactVerticalActivity ? { fontSize: `${compactVerticalTitleSize}px` } : undefined}
+            >
+                {isLoadingItem ? 'Loading city...' : item.title}
+                {isTravel && item.departureTime && (
+                    <span className="block text-[9px] opacity-75 font-normal mt-0.5">
+                        {item.departureTime}
+                    </span>
+                )}
+            </span>
+        )}
+
+        {/* Duration Display */}
+        {!isTravel && !isEmptyTravel && (
+            <span className={`text-[10px] opacity-80 select-none 
+                ${vertical 
+                    ? (item.duration * pixelsPerDay < 60 ? 'hidden' : 'mt-0.5 block')
+                    : 'hidden sm:block'}
+            `}>
+                {isCity 
+                    ? `${Number(item.duration.toFixed(1))} Nights` 
+                    : (item.duration * pixelsPerDay > 30 ? (item.duration === 1 ? '1D' : `${Number(item.duration.toFixed(1))}D`) : '') 
+                }
+            </span>
+        )}
+      </div>
+      
+      {/* Duration Display (Activities - Horizontal Backup) */}
+      {!vertical && !isTravel && !isEmptyTravel && !isCity && item.duration * pixelsPerDay > 50 && (
+        <span className="sm:hidden text-[10px] opacity-70 truncate select-none px-3 pb-1 w-full text-center">
+             {item.duration === 1 ? '1 Day' : `${Number(item.duration.toFixed(1))} Days`}
+        </span>
+      )}
+      
+      {/* City quick actions */}
+      {isCity && !isLoadingItem && ((onForceFill && (forceFillMode || hasGapOrOverlap)) || (onSwapSelectedCities && showSwapSelectedButton)) && (
+          <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto flex items-center gap-1">
+             {onSwapSelectedCities && showSwapSelectedButton && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onSwapSelectedCities(); }}
+                    className="bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full hover:bg-indigo-50 hover:scale-110 transition-transform"
+                    title={swapSelectedLabel || 'Reverse selected cities'}
+                >
+                    <ArrowUpDown size={12} strokeWidth={3} />
+                </button>
+             )}
+             {onForceFill && (forceFillMode || hasGapOrOverlap) && (
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onForceFill(item.id); }}
+                    className="bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full hover:bg-indigo-50 hover:scale-110 transition-transform"
+                    title={forceFillLabel || 'Occupy available space'}
+                >
+                    {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
+                </button>
+             )}
+          </div>
+      )}
+
+      {/* Resize Handle (Start/Top/Left) - City Only */}
+      {isCity && !isLoadingItem && (
+        <div
+            className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
+                ${vertical 
+                    ? 'top-0 left-0 right-0 h-4 cursor-row-resize' 
+                    : '-left-1 top-0 bottom-0 w-6 cursor-col-resize'
+                }
+                ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+            `}
+            onMouseDown={(e) => { e.preventDefault(); onResizeStart(e, item.id, 'left'); }}
+        >
+            <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
+                ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
+                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-indigo-500 group-hover/handle:border-indigo-600'}
+            `}>
+               <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+               </div>
+            </div>
+        </div>
+      )}
+
+      {/* Resize Handle (End/Bottom/Right) - City Only */}
+      {isCity && !isLoadingItem && (
+        <div
+            className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
+                ${vertical 
+                    ? 'bottom-0 left-0 right-0 h-4 cursor-row-resize' 
+                    : '-right-1 top-0 bottom-0 w-6 cursor-col-resize'
+                }
+                ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+            `}
+            onMouseDown={(e) => { e.preventDefault(); onResizeStart(e, item.id, 'right'); }}
+        >
+            <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
+                ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
+                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-indigo-500 group-hover/handle:border-indigo-600'}
+            `}>
+               <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+                 <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
+               </div>
+            </div>
+        </div>
+      )}
+    </div>
+  );
+};

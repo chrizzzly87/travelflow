@@ -1,0 +1,634 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { ITrip, ITimelineItem, IDragState } from '../types';
+import { addDays, findTravelBetweenCities, getTripDuration, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { TimelineBlock } from './TimelineBlock';
+import { Plus, Plane, Train, Bus, Ship, Car, Map } from 'lucide-react';
+
+interface VerticalTimelineProps {
+  trip: ITrip;
+  selectedCityIds?: string[];
+  selectedItemId: string | null;
+  onSelect: (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => void;
+  onUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean }) => void;
+  onAddActivity: (dayOffset: number) => void;
+  onForceFill?: (id: string) => void;
+  onSwapSelectedCities?: () => void;
+  onAddCity: () => void;
+  pixelsPerDay: number;
+}
+
+export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
+  trip,
+  selectedCityIds = [],
+  selectedItemId,
+  onSelect,
+  onUpdateItems,
+  onAddActivity,
+  onForceFill,
+  onSwapSelectedCities,
+  onAddCity,
+  pixelsPerDay
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const travelLaneRef = useRef<HTMLDivElement>(null);
+  const ignoreClickRef = useRef<boolean>(false);
+  const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
+  const latestDragItemsRef = useRef<ITimelineItem[] | null>(null);
+  const lastAutoScrollSelectionRef = useRef<string | null>(null);
+  
+  // Use Refs for synchronous drag tracking
+  const isDraggingRef = useRef(false);
+  const dragStartPosRef = useRef(0);
+
+  const [dragState, setDragState] = useState<IDragState>({
+    isDragging: false,
+    itemId: null,
+    action: null,
+    startX: 0,
+    originalOffset: 0,
+    originalDuration: 0,
+  });
+
+  const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+
+  const tripLength = getTripDuration(trip.items);
+  const totalHeight = tripLength * pixelsPerDay;
+  
+  const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
+  const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
+  const activities = trip.items.filter(i => i.type === 'activity');
+
+  const travelLinks = React.useMemo(() => {
+      return cities.slice(0, -1).map((city, idx) => {
+          const nextCity = cities[idx + 1];
+          const travelItem = findTravelBetweenCities(trip.items, city, nextCity);
+          return {
+              id: travelItem?.id || `travel-link-${city.id}-${nextCity.id}`,
+              fromCity: city,
+              toCity: nextCity,
+              travelItem
+          };
+      });
+  }, [cities, trip.items]);
+
+  const getTransportIcon = (mode?: string) => {
+      switch (mode) {
+          case 'plane': return <Plane size={12} />;
+          case 'train': return <Train size={12} />;
+          case 'bus': return <Bus size={12} />;
+          case 'boat': return <Ship size={12} />;
+          case 'car': return <Car size={12} />;
+          case 'na':
+          default: return <Map size={12} />;
+      }
+  };
+
+  // Vertical packing logic for activities
+  // Similar to horizontal but we think in Y axis
+  const activityLanes: ITimelineItem[][] = [];
+  activities.sort((a, b) => {
+      if (a.startDateOffset === b.startDateOffset) return b.duration - a.duration;
+      return a.startDateOffset - b.startDateOffset;
+  }).forEach(item => {
+    let placed = false;
+    for (const lane of activityLanes) {
+        const lastInLane = lane[lane.length - 1];
+        if (lastInLane.startDateOffset + lastInLane.duration + 0.05 <= item.startDateOffset) {
+            lane.push(item);
+            placed = true;
+            break;
+        }
+    }
+    if (!placed) activityLanes.push([item]);
+  });
+  while (activityLanes.length < 1) activityLanes.push([]);
+
+  // --- Actions ---
+
+  const handleBlockSelect = (id: string | null, options?: { multi?: boolean; isCity?: boolean }) => {
+      if (ignoreClickRef.current) {
+          ignoreClickRef.current = false;
+          return;
+      }
+      onSelect(id, options);
+  };
+
+  const handleAddTravel = () => {
+    let newStart = 0;
+    if (travelItems.length > 0) {
+        const lastTravel = travelItems[travelItems.length - 1];
+        newStart = lastTravel.startDateOffset + lastTravel.duration + 0.1;
+    } else if (cities.length > 1) {
+        newStart = cities[0].startDateOffset + cities[0].duration;
+    }
+    createTravelItem(newStart, 0.2); 
+  };
+
+  const createTravelItem = (startOffset: number, duration: number) => {
+    const id = `travel-new-${Date.now()}`;
+    const newTravel: ITimelineItem = {
+        id,
+        type: 'travel',
+        title: 'New Travel',
+        startDateOffset: startOffset,
+        duration: duration,
+        color: TRAVEL_COLOR,
+        description: 'Travel segment',
+        transportMode: 'car'
+    };
+    onUpdateItems([...trip.items, newTravel]);
+    onSelect(id);
+  };
+
+  const handleSelectOrCreateTravel = (fromCity: ITimelineItem, toCity: ITimelineItem, existing?: ITimelineItem | null) => {
+      if (existing) {
+          onSelect(existing.id);
+          return;
+      }
+      const startOffset = fromCity.startDateOffset + fromCity.duration;
+      const newItem: ITimelineItem = {
+          id: `travel-new-${Date.now()}`,
+          type: 'travel-empty',
+          title: `Travel to ${toCity.title}`,
+          startDateOffset: startOffset,
+          duration: 0.2,
+          color: TRAVEL_EMPTY_COLOR,
+          description: 'Transport not set'
+      };
+      onUpdateItems([...trip.items, newItem]);
+      onSelect(newItem.id);
+  };
+
+  // --- Travel Lane Interaction (Vertical) ---
+
+  const handleTravelMouseMove = (e: React.MouseEvent) => {
+      if (!travelLaneRef.current) return;
+      const target = e.target as HTMLElement;
+      if (target.closest('.timeline-block-item')) {
+          setHoverTravelStart(null);
+          return;
+      }
+
+      const rect = travelLaneRef.current.getBoundingClientRect();
+      const offsetY = e.clientY - rect.top; // Vertical offset
+      const rawDay = offsetY / pixelsPerDay;
+      
+      let start = rawDay - 0.5;
+      const snapStep = 0.5;
+      start = Math.round(start / snapStep) * snapStep;
+      if (start < 0) start = 0;
+      
+      setHoverTravelStart(start);
+  };
+
+  const handleTravelMouseLeave = () => {
+      setHoverTravelStart(null);
+  };
+
+  const handleTravelClick = () => {
+      if (hoverTravelStart !== null) {
+          createTravelItem(hoverTravelStart, 1.0);
+          setHoverTravelStart(null);
+      }
+  };
+
+  // --- Resize/Drag Logic (Vertical) ---
+  // In vertical mode:
+  // X axis -> Lane/Width (ignored for now for resize)
+  // Y axis -> Time/Duration
+
+  const handleResizeStart = (e: React.MouseEvent, id: string, direction: 'left' | 'right') => {
+    // direction 'left' maps to 'top' (start time), 'right' maps to 'bottom' (end time)
+    e.stopPropagation();
+    const item = trip.items.find(i => i.id === id);
+    if (!item) return;
+
+    isDraggingRef.current = false;
+    dragStartPosRef.current = e.clientY; // Track Y
+    dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
+
+    setDragState({
+      isDragging: false, 
+      itemId: id,
+      action: direction === 'left' ? 'resize-left' : 'resize-right',
+      startX: e.clientY,
+      originalOffset: item.startDateOffset,
+      originalDuration: item.duration,
+    });
+  };
+
+  const handleMoveStart = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const item = trip.items.find(i => i.id === id);
+    if (!item) return;
+
+    isDraggingRef.current = false;
+    dragStartPosRef.current = e.clientY; // Track Y
+    dragStartItemsRef.current = trip.items.map(i => ({ ...i }));
+
+    setDragState({
+      isDragging: false, 
+      itemId: id,
+      action: 'move',
+      startX: e.clientY,
+      originalOffset: item.startDateOffset,
+      originalDuration: item.duration,
+    });
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragState.itemId || !dragState.action) return;
+
+      const deltaY = e.clientY - dragStartPosRef.current; // Vertical delta
+      const deltaDays = deltaY / pixelsPerDay; 
+
+      if (!isDraggingRef.current) {
+        if (Math.abs(deltaY) < 5) return;
+        isDraggingRef.current = true;
+        setDragState(prev => ({ ...prev, isDragging: true }));
+      }
+
+      const baseItems = dragStartItemsRef.current || trip.items;
+      const currentItemIndex = baseItems.findIndex(i => i.id === dragState.itemId);
+      if (currentItemIndex === -1) return;
+      
+      const currentItem = baseItems[currentItemIndex];
+      const newItems = baseItems.map(i => ({ ...i }));
+
+      const isTravel = currentItem.type === 'travel' || currentItem.type === 'travel-empty';
+      const snap = isTravel ? 0.05 : 0.5;
+      const roundToStep = (value: number, step: number) => Math.round(value / step) * step;
+
+      // New Snapping Logic: Snap the TARGET value, not just the delta
+      // This ensures we always land on the grid (e.g. 0, 0.5, 1.0) regardless of initial offset errors
+      
+      if (dragState.action === 'move') {
+          const rawStart = dragState.originalOffset + deltaDays;
+          let newStart = roundToStep(rawStart, snap);
+          
+          if (newStart < 0) newStart = 0;
+          if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return; // Float safety
+          
+          newItems[currentItemIndex] = { ...currentItem, startDateOffset: newStart };
+          latestDragItemsRef.current = newItems;
+          onUpdateItems(newItems, { deferCommit: true });
+      } 
+      else if (dragState.action === 'resize-right') { // Bottom resize
+        const rawDuration = dragState.originalDuration + deltaDays;
+        const minDuration = isTravel ? 0.05 : 0.5;
+        const newDuration = Math.max(minDuration, roundToStep(rawDuration, snap));
+        const diff = newDuration - dragState.originalDuration;
+        
+        if (Math.abs(diff) < 0.000001) return; 
+
+        if (currentItem.type === 'city') {
+            const currentEnd = dragState.originalOffset + dragState.originalDuration;
+            newItems[currentItemIndex] = { ...currentItem, duration: newDuration };
+            shiftLaterItems(newItems, currentEnd, diff, currentItem.id);
+        } else {
+            newItems[currentItemIndex] = { ...currentItem, duration: newDuration };
+        }
+        latestDragItemsRef.current = newItems;
+        onUpdateItems(newItems, { deferCommit: true });
+      } else if (dragState.action === 'resize-left') { // Top resize
+        const rawStart = dragState.originalOffset + deltaDays;
+        let newStart = roundToStep(rawStart, snap);
+        
+        // Calculate new duration based on locked end time
+        const oldEnd = dragState.originalOffset + dragState.originalDuration;
+        let newDuration = roundToStep(oldEnd - newStart, snap);
+
+        if (newDuration < (isTravel ? 0.05 : 0.5)) {
+            newDuration = isTravel ? 0.05 : 0.5;
+            newStart = roundToStep(oldEnd - newDuration, snap);
+        }
+        if (newStart < 0) newStart = 0;
+        
+        if (Math.abs(currentItem.startDateOffset - newStart) < 0.000001) return;
+
+        const prevCity = newItems.find(i => i.type === 'city' && i.startDateOffset < currentItem.startDateOffset && i.id !== currentItem.id);
+        if (prevCity && currentItem.type === 'city') {
+            const prevEnd = prevCity.startDateOffset + prevCity.duration;
+            if (newStart < prevEnd) {
+                newStart = roundToStep(prevEnd, snap);
+                newDuration = roundToStep(oldEnd - newStart, snap);
+            }
+        }
+        newItems[currentItemIndex] = { ...currentItem, startDateOffset: newStart, duration: newDuration };
+        latestDragItemsRef.current = newItems;
+        onUpdateItems(newItems, { deferCommit: true });
+      }
+    };
+
+    const shiftLaterItems = (items: ITimelineItem[], thresholdStart: number, diff: number, excludeId: string) => {
+         const epsilon = 0.051; // include items attached at the boundary (e.g. travel at end)
+         items.forEach((item, idx) => {
+             if (item.type === 'city' && item.startDateOffset >= (thresholdStart - epsilon) && item.id !== excludeId) {
+                 items[idx].startDateOffset += diff;
+             }
+             if ((item.type === 'travel' || item.type === 'travel-empty' || item.type === 'activity') && item.startDateOffset >= (thresholdStart - epsilon)) {
+                  items[idx].startDateOffset += diff;
+             }
+         });
+    }
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        ignoreClickRef.current = true;
+        if (latestDragItemsRef.current) {
+          onUpdateItems(latestDragItemsRef.current, { deferCommit: false });
+        }
+      }
+      isDraggingRef.current = false;
+      dragStartItemsRef.current = null;
+      latestDragItemsRef.current = null;
+      setDragState({
+        isDragging: false,
+        itemId: null,
+        action: null,
+        startX: 0,
+        originalOffset: 0,
+        originalDuration: 0
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragState, trip.items, onUpdateItems, pixelsPerDay]);
+
+  // Determine Zoom Level aesthetics
+  const isZoomedOut = pixelsPerDay < 50;
+
+  useEffect(() => {
+    if (!selectedItemId) return;
+    if (lastAutoScrollSelectionRef.current === selectedItemId) return;
+
+    const targetItem = trip.items.find(item => item.id === selectedItemId);
+    if (!targetItem || !containerRef.current) return;
+
+    const container = containerRef.current;
+    const targetCenter = ((targetItem.startDateOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
+    const visibleStart = container.scrollTop + 80;
+    const visibleEnd = container.scrollTop + container.clientHeight - 80;
+
+    if (targetCenter >= visibleStart && targetCenter <= visibleEnd) {
+        lastAutoScrollSelectionRef.current = selectedItemId;
+        return;
+    }
+
+    container.scrollTo({
+        top: Math.max(0, targetCenter - (container.clientHeight / 2)),
+        behavior: 'smooth',
+    });
+    lastAutoScrollSelectionRef.current = selectedItemId;
+  }, [selectedItemId, trip.items, pixelsPerDay]);
+
+  return (
+    <div 
+      className="h-full overflow-auto bg-white relative timeline-scroll" 
+      ref={containerRef}
+      onClick={() => handleBlockSelect(null)}
+    >
+        <div className="relative flex" style={{ height: `${Math.max(totalHeight, 800)}px` }}>
+            
+            {/* Header (Dates) - Vertical Column */}
+            <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white z-20 shadow-sm sticky left-0 flex flex-col h-full">
+                {/* Header matches Stays/Travel/Activities headers */}
+                <div className="sticky top-0 h-8 flex items-center justify-center z-40 bg-white/95 backdrop-blur border-b border-gray-100 flex-shrink-0">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Day</span>
+                </div>
+
+                <div className="relative w-full flex-1">
+                    {Array.from({ length: tripLength }).map((_, i) => {
+                        const date = addDays(new Date(trip.startDate), i);
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        
+                        return (
+                            <div 
+                                key={i} 
+                                className={`flex-shrink-0 border-b border-gray-100 flex flex-col justify-center px-1 select-none group absolute w-full
+                                    ${isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                `}
+                                style={{ 
+                                    height: `${pixelsPerDay}px`,
+                                    top: `${i * pixelsPerDay}px`,
+                                    left: 0
+                                }}
+                            >
+                                {isZoomedOut ? (
+                                    // Compact View: "M  12"
+                                    <div className="flex items-center justify-between w-full px-1">
+                                        <span className={`text-xs font-bold uppercase ${isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {date.toLocaleDateString('en-US', { weekday: 'narrow' })}
+                                        </span>
+                                        <span className="text-sm font-semibold text-gray-700">
+                                            {date.getDate()}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    // Detailed View (Standard)
+                                    <div className="text-center">
+                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        </span>
+                                        <span className="text-lg font-bold text-gray-700 block leading-tight">
+                                            {date.getDate()}
+                                        </span>
+                                        <span className="text-[10px] text-gray-400 uppercase leading-none">
+                                            {date.toLocaleDateString('en-US', { month: 'short' })}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Grid Background Lines (Horizontal) */}
+            <div className="absolute top-8 bottom-0 left-16 right-0 pointer-events-none flex flex-col z-0">
+                {Array.from({ length: tripLength }).map((_, i) => (
+                    <div 
+                        key={i} 
+                        className="flex-shrink-0 border-b border-dashed border-gray-100 w-full"
+                        style={{ height: `${pixelsPerDay}px` }}
+                    />
+                ))}
+            </div>
+
+            {/* Content Area - Columns */}
+            <div className="flex-1 flex flex-row h-full relative z-10">
+                
+                {/* Cities Column */}
+                <div className="relative w-32 border-r border-gray-100 group/cities">
+                     {/* Sticky Header */}
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
+                         <button 
+                             onClick={(e) => { e.stopPropagation(); onAddCity(); }}
+                             className="opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full p-0.5"
+                         >
+                             <Plus size={12} />
+                         </button>
+                     </div>
+
+                     <div className="relative w-full h-full">
+                         {cities.map((city, index) => {
+                             const prev = index > 0 ? cities[index - 1] : null;
+                             const next = index < cities.length - 1 ? cities[index + 1] : null;
+                             const idealStart = prev ? prev.startDateOffset + prev.duration : 0;
+                             const startDiff = Math.abs(city.startDateOffset - idealStart);
+                             let endDiff = 0;
+                             if (next) {
+                                 const currentEnd = city.startDateOffset + city.duration;
+                                 endDiff = Math.abs(next.startDateOffset - currentEnd);
+                             }
+                             const hasGapOrOverlap = startDiff > 0.05 || endDiff > 0.05;
+                             const prevEnd = prev ? prev.startDateOffset + prev.duration : 0;
+                             const nextStart = next ? next.startDateOffset : null;
+                             const currentStart = city.startDateOffset;
+                             const currentEnd = city.startDateOffset + city.duration;
+                             const gapBefore = currentStart > prevEnd + 0.05;
+                             const overlapBefore = currentStart < prevEnd - 0.05;
+                             const gapAfter = nextStart !== null ? currentEnd < nextStart - 0.05 : false;
+                             const overlapAfter = nextStart !== null ? currentEnd > nextStart + 0.05 : false;
+                             const shouldShowForceFill = hasGapOrOverlap || overlapBefore || overlapAfter || gapBefore || gapAfter;
+                             const forceFillMode = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'shrink' : 'stretch') : undefined;
+                             const forceFillLabel = shouldShowForceFill ? ((overlapBefore && overlapAfter) ? 'Occupy available space' : 'Stretch to fill space') : undefined;
+
+                             return (
+                                 <TimelineBlock
+                                     key={city.id}
+                                     item={city}
+                                     isSelected={selectedItemId === city.id || selectedCityIds.includes(city.id)}
+                                     onSelect={handleBlockSelect}
+                                     onResizeStart={handleResizeStart}
+                                     onMoveStart={handleMoveStart}
+                                     onForceFill={onForceFill}
+                                     onSwapSelectedCities={onSwapSelectedCities}
+                                     isCity={true}
+                                     hasGapOrOverlap={shouldShowForceFill}
+                                     forceFillMode={forceFillMode}
+                                     forceFillLabel={forceFillLabel}
+                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
+                                     swapSelectedLabel="Reverse selected cities"
+                                     pixelsPerDay={pixelsPerDay}
+                                     vertical={true}
+                                 />
+                             );
+                         })}
+                     </div>
+                </div>
+
+                {/* Travel Column */}
+                <div className="relative w-16 border-r border-gray-100 group/travel overflow-visible">
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Travel</span>
+                         <button 
+                             onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
+                             className="opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full p-0.5"
+                         >
+                             <Plus size={12} />
+                         </button>
+                     </div>
+
+                    <div className="relative w-full h-full overflow-visible" ref={travelLaneRef}>
+                         {travelLinks.map(link => {
+                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
+                             const toStart = link.toCity.startDateOffset;
+                             const top = fromEnd * pixelsPerDay;
+                             const bottom = toStart * pixelsPerDay;
+                             const height = Math.max(16, bottom - top);
+                             const mid = top + height / 2;
+                             const chipHeight = 36;
+                             const chipTop = Math.max(0, mid - chipHeight / 2);
+                             const chipBottom = chipTop + chipHeight;
+                             const travel = link.travelItem;
+                             const mode = travel?.transportMode || 'na';
+                             const isSelected = travel && selectedItemId === travel.id;
+                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
+                             const connectorWidth = 14;
+                             const connectorGap = 4;
+
+                             return (
+                                 <div key={link.id} className="absolute left-0 right-0">
+                                     {/* Horizontal ticks from city column into travel column */}
+                                     <div className="absolute h-px bg-stone-200" style={{ top, left: -connectorWidth, width: connectorWidth }} />
+                                     <div className="absolute h-px bg-stone-200" style={{ top: bottom, left: -connectorWidth, width: connectorWidth }} />
+
+                                     {/* Connect chip top/bottom to city edge */}
+                                     <div className="absolute h-px bg-stone-200" style={{ top: chipTop, left: -connectorWidth, width: connectorWidth - connectorGap }} />
+                                     <div className="absolute h-px bg-stone-200" style={{ top: chipBottom, left: -connectorWidth, width: connectorWidth - connectorGap }} />
+
+                                     {/* Main connection line between cities */}
+                                     <div className="absolute left-1/2 -translate-x-1/2 w-0.5 bg-stone-100" style={{ top, height }} />
+                                     <button
+                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
+                                         className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-1 shadow-sm transition-colors
+                                             ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}
+                                         `}
+                                         style={{ top: chipTop, height: chipHeight, width: 46 }}
+                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                     >
+                                         <span className="text-gray-500">{getTransportIcon(mode)}</span>
+                                         <span className="uppercase">{mode === 'na' ? 'N/A' : mode}</span>
+                                         {durationHours !== null && (
+                                             <span className="text-[9px] font-normal text-gray-400">{durationHours}h</span>
+                                         )}
+                                     </button>
+                                 </div>
+                             );
+                         })}
+                    </div>
+                </div>
+
+                {/* Activities Column (Expands) */}
+                {/* Activities Column (Expands) */}
+                <div className="flex-1 relative min-w-[200px] group/activities">
+                     <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
+                         <button 
+                             onClick={(e) => { e.stopPropagation(); onAddActivity(0); }}
+                             className="opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full p-0.5"
+                             title="Add Activity"
+                         >
+                             <Plus size={12} />
+                         </button>
+                     </div>
+                     
+                     {/* Add Buttons per Day (Horizontal Overlay strips?) No, tricky in vertical. 
+                         Maybe hover overlay on the main grid?
+                         For now, let's just render the blocks.
+                     */}
+                     
+                     <div className="flex flex-row gap-2 h-full p-2">
+                         {activityLanes.map((lane, laneIdx) => (
+                             <div key={laneIdx} className="relative w-full h-full min-w-[100px] hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
+                                 {lane.map(item => (
+                                     <TimelineBlock
+                                         key={item.id}
+                                         item={item}
+                                         isSelected={selectedItemId === item.id}
+                                         onSelect={handleBlockSelect}
+                                         onResizeStart={handleResizeStart}
+                                         onMoveStart={handleMoveStart}
+                                         pixelsPerDay={pixelsPerDay}
+                                         vertical={true}
+                                     />
+                                 ))}
+                             </div>
+                         ))}
+                     </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+  );
+};
