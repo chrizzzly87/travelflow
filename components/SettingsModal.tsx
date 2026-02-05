@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X, Layout, Map, Globe, Check } from 'lucide-react';
-import { MapStyle } from '../types';
+import { AppLanguage, MapStyle } from '../types';
 
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    timelineView: 'horizontal' | 'vertical';
-    onToggleView: (view: 'horizontal' | 'vertical') => void;
-    mapStyle: MapStyle;
-    onMapStyleChange: (style: MapStyle) => void;
+    timelineView?: 'horizontal' | 'vertical';
+    onToggleView?: (view: 'horizontal' | 'vertical') => void;
+    mapStyle?: MapStyle;
+    onMapStyleChange?: (style: MapStyle) => void;
+    appLanguage?: AppLanguage;
+    onAppLanguageChange?: (language: AppLanguage) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, timelineView, onToggleView, mapStyle, onMapStyleChange }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+    isOpen,
+    onClose,
+    timelineView = 'horizontal',
+    onToggleView,
+    mapStyle = 'standard',
+    onMapStyleChange,
+    appLanguage = 'en',
+    onAppLanguageChange
+}) => {
     const [activeTab, setActiveTab] = useState<'layout' | 'appearance' | 'language'>('layout');
 
     useEffect(() => {
@@ -74,8 +85,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                                     <h4 className="text-sm font-bold text-gray-900 mb-3">Timeline Orientation</h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <button 
-                                            onClick={() => onToggleView('horizontal')}
-                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'horizontal' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}
+                                            onClick={() => onToggleView?.('horizontal')}
+                                            disabled={!onToggleView}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'horizontal' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className={`font-semibold ${timelineView === 'horizontal' ? 'text-indigo-900' : 'text-gray-700'}`}>Horizontal</span>
@@ -88,8 +100,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                                         </button>
 
                                         <button 
-                                            onClick={() => onToggleView('vertical')}
-                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'vertical' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'}`}
+                                            onClick={() => onToggleView?.('vertical')}
+                                            disabled={!onToggleView}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all relative ${timelineView === 'vertical' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'} ${!onToggleView ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className={`font-semibold ${timelineView === 'vertical' ? 'text-indigo-900' : 'text-gray-700'}`}>Vertical</span>
@@ -115,29 +128,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
                                     <h4 className="text-sm font-bold text-gray-900 mb-3">Map Tiles</h4>
                                     <div className="grid grid-cols-2 gap-3">
                                         <button 
-                                            onClick={() => onMapStyleChange('minimal')}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'minimal' ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-100 hover:bg-gray-200'}`}
+                                            onClick={() => onMapStyleChange?.('minimal')}
+                                            disabled={!onMapStyleChange}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'minimal' ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-100 hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-gray-800 text-sm">Minimal</span>
                                             <span className="text-xs text-gray-500 mt-1">Clean & Focused</span>
                                         </button>
                                         <button 
-                                            onClick={() => onMapStyleChange('standard')}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'standard' ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-100 hover:bg-gray-200'}`}
+                                            onClick={() => onMapStyleChange?.('standard')}
+                                            disabled={!onMapStyleChange}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'standard' ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-100 hover:bg-gray-200'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-gray-800 text-sm">Standard</span>
                                             <span className="text-xs text-gray-500 mt-1">Google Default</span>
                                         </button>
                                         <button 
-                                            onClick={() => onMapStyleChange('dark')}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'dark' ? 'border-indigo-500 bg-gray-800' : 'border-transparent bg-gray-800 hover:bg-gray-700'}`}
+                                            onClick={() => onMapStyleChange?.('dark')}
+                                            disabled={!onMapStyleChange}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'dark' ? 'border-indigo-500 bg-gray-800' : 'border-transparent bg-gray-800 hover:bg-gray-700'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-white text-sm">Dark</span>
                                             <span className="text-xs text-gray-400 mt-1">Night Mode</span>
                                         </button>
                                         <button 
-                                            onClick={() => onMapStyleChange('satellite')}
-                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'satellite' ? 'border-indigo-500 bg-green-900' : 'border-transparent bg-green-900 hover:bg-green-800'}`}
+                                            onClick={() => onMapStyleChange?.('satellite')}
+                                            disabled={!onMapStyleChange}
+                                            className={`aspect-video rounded-lg flex flex-col items-center justify-center p-2 border-2 transition-all ${mapStyle === 'satellite' ? 'border-indigo-500 bg-green-900' : 'border-transparent bg-green-900 hover:bg-green-800'} ${!onMapStyleChange ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             <span className="font-semibold text-white text-sm">Satellite</span>
                                             <span className="text-xs text-gray-300 mt-1">Aerial View</span>
@@ -149,17 +166,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, t
 
                         {activeTab === 'language' && (
                             <div className="space-y-6">
-                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-yellow-800">
-                                    <strong>TODO: Localization</strong>
-                                    <p className="mt-1">Future feature: Change application language, date formats (DD/MM vs MM/DD), and currency display.</p>
+                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-800">
+                                    <strong>Map language</strong>
+                                    <p className="mt-1">Map labels follow this setting. English is currently the only supported language.</p>
                                 </div>
-                                <div className="opacity-50 pointer-events-none">
+                                <div>
                                      <label className="block text-sm font-bold text-gray-700 mb-1">App Language</label>
-                                     <select className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50">
-                                         <option>English (US)</option>
-                                         <option>German</option>
-                                         <option>French</option>
-                                         <option>Japanese</option>
+                                     <select
+                                        value={appLanguage}
+                                        onChange={(e) => onAppLanguageChange?.(e.target.value as AppLanguage)}
+                                        className="w-full p-2 border border-gray-300 rounded-lg bg-white"
+                                     >
+                                         <option value="en">English (US)</option>
                                      </select>
                                 </div>
                             </div>

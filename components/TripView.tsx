@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
 import { DetailsPanel } from './DetailsPanel';
@@ -112,9 +112,10 @@ interface TripViewProps {
     initialViewSettings?: IViewSettings;
     onViewSettingsChange?: (settings: IViewSettings) => void;
     initialMapFocusQuery?: string;
+    appLanguage?: AppLanguage;
 }
 
-export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery }) => {
+export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en' }) => {
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -146,8 +147,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
-       if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'clean';
-       return 'clean';
+       if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'standard';
+       return 'standard';
     });
     const [routeMode, setRouteMode] = useState<RouteMode>(() => {
        if (initialViewSettings?.routeMode) return initialViewSettings.routeMode;
@@ -1020,14 +1021,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     if (viewMode === 'print') {
         return (
-            <GoogleMapsLoader>
+            <GoogleMapsLoader language={appLanguage}>
                 <PrintLayout trip={trip} onClose={() => setViewMode('planner')} onUpdateTrip={handleUpdateItems} />
             </GoogleMapsLoader>
         );
     }
 
     return (
-        <GoogleMapsLoader>
+        <GoogleMapsLoader language={appLanguage}>
             <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
                 
                 {/* Header */}

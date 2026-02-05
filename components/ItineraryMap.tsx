@@ -26,6 +26,8 @@ const MAP_STYLES = {
         { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
         { "elementType": "labels.text.fill", "stylers": [{ "color": "#616161" }] },
         { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f5f5f5" }] },
+        { "featureType": "administrative.country", "elementType": "geometry.stroke", "stylers": [{ "color": "#9aa6b2" }, { "weight": 1.4 }, { "visibility": "on" }] },
+        { "featureType": "administrative.province", "elementType": "geometry.stroke", "stylers": [{ "color": "#d5dce3" }, { "weight": 0.5 }] },
         { "featureType": "administrative.land_parcel", "elementType": "labels.text.fill", "stylers": [{ "color": "#bdbdbd" }] },
         { "featureType": "poi", "elementType": "geometry", "stylers": [{ "color": "#eeeeee" }] },
         { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
@@ -123,7 +125,7 @@ const MAP_STYLES = {
         }
     ],
     clean: [
-        { "elementType": "geometry", "stylers": [{ "color": "#f9f9f9" }] },
+        { "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
         { "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
         { "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
         { "elementType": "labels.text.stroke", "stylers": [{ "color": "#f9f9f9" }, { "weight": 2 }] },
@@ -135,7 +137,8 @@ const MAP_STYLES = {
         { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
         { "featureType": "road", "stylers": [{ "visibility": "off" }] },
         { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#e3f2fd" }] }, // Very light blue
+        { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#dcefff" }] }, // Higher-contrast water fill
+        { "featureType": "landscape.natural", "elementType": "geometry.stroke", "stylers": [{ "color": "#a7c9e6" }, { "weight": 1.4 }, { "visibility": "on" }] },
         { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
     ]
 };
@@ -145,7 +148,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     selectedItemId, 
     layoutMode, 
     onLayoutChange, 
-    activeStyle = 'clean', 
+    activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
     onRouteModeChange,
@@ -166,7 +169,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
     
-    // Internal state for menu, but style comes from props (or defaults to minimal if not provided)
+    // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
     // Initial Map Setup
@@ -179,7 +182,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 zoom: 2,
                 disableDefaultUI: true,
                 gestureHandling: 'cooperative',
-                styles: MAP_STYLES.clean // Default start, updated immediately by next effect
+                styles: null
             });
             setMapInitialized(true);
         } catch (e) {

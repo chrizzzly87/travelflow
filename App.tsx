@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { CreateTripForm } from './components/CreateTripForm';
 import { TripView } from './components/TripView';
-import { ITrip, IViewSettings } from './types';
+import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManager } from './components/TripManager';
 import { SettingsModal } from './components/SettingsModal';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry } from './services/historyService';
-import { compressTrip, decompressTrip } from './utils';
+import { compressTrip, decompressTrip, getStoredAppLanguage, setStoredAppLanguage } from './utils';
 
 // Wrapper to handle navigation after trip generation
 const HomeRequestRedirect = ({ trip }: { trip: ITrip | null }) => {
@@ -28,14 +28,16 @@ const TripLoader = ({
     handleUpdateTrip, 
     handleCommitState,
     setIsManagerOpen, 
-    setIsSettingsOpen 
+    setIsSettingsOpen,
+    appLanguage
 }: { 
     trip: ITrip | null, 
     onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
     handleUpdateTrip: (t: ITrip, options?: { persist?: boolean }) => void,
     handleCommitState: (t: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string }) => void,
     setIsManagerOpen: (o: boolean) => void,
-    setIsSettingsOpen: (o: boolean) => void
+    setIsSettingsOpen: (o: boolean) => void,
+    appLanguage: AppLanguage
 }) => {
     const { tripData } = useParams(); // changed from tripId to tripData to reflect dual nature
     const navigate = useNavigate();
@@ -93,6 +95,7 @@ const TripLoader = ({
             }}
             onOpenManager={() => setIsManagerOpen(true)}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            appLanguage={appLanguage}
         />
     );
 };
@@ -101,7 +104,12 @@ const AppContent: React.FC = () => {
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const navigate = useNavigate();
+
+    useEffect(() => {
+        setStoredAppLanguage(appLanguage);
+    }, [appLanguage]);
 
     // Persist trip changes
     const handleUpdateTrip = (updatedTrip: ITrip, options?: { persist?: boolean }) => {
@@ -159,6 +167,7 @@ const AppContent: React.FC = () => {
                             handleCommitState={handleCommitState}
                             setIsManagerOpen={setIsManagerOpen}
                             setIsSettingsOpen={setIsSettingsOpen}
+                            appLanguage={appLanguage}
                         />
                     } 
                 />
@@ -176,11 +185,14 @@ const AppContent: React.FC = () => {
                     if (!trip || trip.id !== updatedTrip.id) return;
                     handleUpdateTrip(updatedTrip, { persist: false });
                 }}
+                mapLanguage={appLanguage}
             />
             
             <SettingsModal 
                 isOpen={isSettingsOpen} 
                 onClose={() => setIsSettingsOpen(false)} 
+                appLanguage={appLanguage}
+                onAppLanguageChange={setAppLanguage}
             />
         </>
     );

@@ -7,6 +7,7 @@ export type ActivityType =
 
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
+export type AppLanguage = 'en';
 
 export interface ICoordinates {
     lat: number;

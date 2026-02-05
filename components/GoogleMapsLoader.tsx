@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getGoogleMapsApiKey } from '../utils';
+import { AppLanguage } from '../types';
+import { getGoogleMapsApiKey, getStoredAppLanguage, normalizeAppLanguage } from '../utils';
 
 interface GoogleMapsContextType {
     isLoaded: boolean;
@@ -10,9 +11,15 @@ const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false
 
 export const useGoogleMaps = () => useContext(GoogleMapsContext);
 
-export const GoogleMapsLoader: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface GoogleMapsLoaderProps {
+    children: React.ReactNode;
+    language?: AppLanguage;
+}
+
+export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<Error | null>(null);
+    const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
 
     useEffect(() => {
         if (window.google?.maps) {
@@ -27,7 +34,8 @@ export const GoogleMapsLoader: React.FC<{ children: React.ReactNode }> = ({ chil
         }
 
         const scriptId = 'google-maps-script';
-        if (document.getElementById(scriptId)) {
+        const existingScript = document.getElementById(scriptId);
+        if (existingScript) {
              // Script already exists, wait for it
              const checkLoop = setInterval(() => {
                  if (window.google?.maps) {
@@ -40,7 +48,8 @@ export const GoogleMapsLoader: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}`;
+        script.dataset.language = requestedLanguage;
         script.async = true;
         script.defer = true;
         
@@ -52,7 +61,7 @@ export const GoogleMapsLoader: React.FC<{ children: React.ReactNode }> = ({ chil
         return () => {
             // Optional cleanup if needed
         };
-    }, []);
+    }, [requestedLanguage]);
 
     return (
         <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>

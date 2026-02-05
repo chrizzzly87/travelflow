@@ -61,7 +61,7 @@ This doc is a compact, structured overview of the app to help future agents make
 
 **Map Behavior**
 - `components/ItineraryMap.tsx` uses Google Maps API.
-- Default map style is `clean`, but user can change.
+- Default map style is `standard`, but user can change.
 - Pins are colored by city and highlight selected city.
 - Routes draw directional arrow and transport icon at midpoint.
 - Travel mode icons are consistent with timeline `transportMode`.

@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import { ActivityType, ITrip, ITimelineItem, IViewSettings, ISharedState } from './types';
+import { ActivityType, AppLanguage, ITrip, ITimelineItem, IViewSettings, ISharedState } from './types';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -17,6 +17,24 @@ export const getGoogleMapsApiKey = (): string => {
 
 export const getApiKey = (): string => {
    return getGeminiApiKey(); // Backwards compatibility for now, but should be replaced
+};
+
+export const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';
+export const DEFAULT_APP_LANGUAGE: AppLanguage = 'en';
+
+export const normalizeAppLanguage = (value?: string | null): AppLanguage => {
+    if (value === 'en') return 'en';
+    return DEFAULT_APP_LANGUAGE;
+};
+
+export const getStoredAppLanguage = (): AppLanguage => {
+    if (typeof window === 'undefined') return DEFAULT_APP_LANGUAGE;
+    return normalizeAppLanguage(window.localStorage.getItem(APP_LANGUAGE_STORAGE_KEY));
+};
+
+export const setStoredAppLanguage = (language: AppLanguage): void => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, normalizeAppLanguage(language));
 };
 
 // --- HELPERS ---

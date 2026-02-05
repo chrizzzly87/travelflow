@@ -1,8 +1,8 @@
 import React from 'react';
-import { ITrip, ITimelineItem } from '../types';
+import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
-import { COUNTRIES, getGoogleMapsApiKey } from '../utils';
+import { COUNTRIES, DEFAULT_APP_LANGUAGE, getGoogleMapsApiKey } from '../utils';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface TripManagerProps {
   onSelectTrip: (trip: ITrip) => void;
   currentTripId?: string;
   onUpdateTrip?: (trip: ITrip) => void;
+  mapLanguage?: AppLanguage;
 }
 
 interface TripBuckets {
@@ -43,6 +44,25 @@ interface CountryMatch {
 }
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
+
+const TOOLTIP_CLEAN_STYLE = [
+  'style=element:geometry|color:0xf9f9f9',
+  'style=element:labels.icon|visibility:off',
+  'style=element:labels.text.fill|color:0x757575',
+  'style=element:labels.text.stroke|color:0xf9f9f9|weight:2',
+  'style=feature:administrative|element:geometry|visibility:off',
+  'style=feature:administrative.country|element:geometry.stroke|color:0xa8a8a8|weight:1.6|visibility:on',
+  'style=feature:administrative.province|element:geometry|visibility:off',
+  'style=feature:administrative.province|element:labels|visibility:off',
+  'style=feature:administrative.land_parcel|element:labels.text.fill|color:0xbdbdbd',
+  'style=feature:poi|visibility:off',
+  'style=feature:road|visibility:off',
+  'style=feature:transit|visibility:off',
+  'style=feature:water|element:geometry|color:0xdcefff',
+  'style=feature:water|element:geometry.stroke|color:0x8fb6d9|weight:2.2|visibility:on',
+  'style=feature:landscape.natural|element:geometry.stroke|color:0xa7c9e6|weight:1.4|visibility:on',
+  'style=feature:water|element:labels.text.fill|color:0x9e9e9e',
+].join('&');
 
 const COUNTRY_BY_NAME = new Map(
   COUNTRIES.map(country => [normalizeCountryToken(country.name), country] as const)
@@ -229,7 +249,7 @@ const getTripFlags = (trip: ITrip): string[] => {
   return flags.length > 0 ? flags : ['🌍'];
 };
 
-const buildMiniMapUrl = (trip: ITrip): string | null => {
+const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
   const apiKey = getGoogleMapsApiKey();
   if (!apiKey) return null;
 
@@ -241,33 +261,70 @@ const buildMiniMapUrl = (trip: ITrip): string | null => {
 
   if (coordinates.length === 0) return null;
 
-  const markerParams = coordinates
-    .slice(0, 20)
-    .map(coord => `markers=${encodeURIComponent(`size:tiny|color:0x7c3aed|${coord.lat},${coord.lng}`)}`)
-    .join('&');
+  const routeCoordinates = coordinates.slice(0, 24);
+  const formatCoord = (coord: { lat: number; lng: number }) =>
+    `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
 
-  const path = coordinates.length > 1
-    ? `&path=${encodeURIComponent(`color:0x7c3aed|weight:3|${coordinates.slice(0, 30).map(coord => `${coord.lat},${coord.lng}`).join('|')}`)}`
-    : '';
+  const markerParams: string[] = [];
+  const start = routeCoordinates[0];
+  const end = routeCoordinates[routeCoordinates.length - 1];
 
-  const cleanStyle = [
-    'style=element:geometry|color:0xf9f9f9',
-    'style=element:labels.icon|visibility:off',
-    'style=element:labels.text.fill|color:0x757575',
-    'style=element:labels.text.stroke|color:0xf9f9f9|weight:2',
-    'style=feature:administrative|element:geometry|visibility:off',
-    'style=feature:administrative.country|element:geometry.stroke|color:0xa8a8a8|weight:1.6|visibility:on',
-    'style=feature:administrative.province|element:geometry|visibility:off',
-    'style=feature:administrative.province|element:labels|visibility:off',
-    'style=feature:administrative.land_parcel|element:labels.text.fill|color:0xbdbdbd',
-    'style=feature:poi|visibility:off',
-    'style=feature:road|visibility:off',
-    'style=feature:transit|visibility:off',
-    'style=feature:water|element:geometry|color:0xe3f2fd',
-    'style=feature:water|element:labels.text.fill|color:0x9e9e9e',
-  ].join('&');
+  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x16a34a|label:S|${formatCoord(start)}`)}`);
+  if (routeCoordinates.length > 1) {
+    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0xdc2626|label:E|${formatCoord(end)}`)}`);
+  }
 
-  return `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=roadmap&${cleanStyle}&${markerParams}${path}&key=${encodeURIComponent(apiKey)}`;
+  routeCoordinates.slice(1, -1).slice(0, 18).forEach(coord => {
+    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x7c3aed|${formatCoord(coord)}`)}`);
+  });
+
+  const pathParams: string[] = [];
+  if (routeCoordinates.length > 1) {
+    pathParams.push(
+      `path=${encodeURIComponent(`color:0x7c3aed|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
+    );
+
+    // Draw tiny chevrons near each segment end to indicate direction.
+    for (let i = 0; i < routeCoordinates.length - 1; i++) {
+      const a = routeCoordinates[i];
+      const b = routeCoordinates[i + 1];
+      const dx = b.lng - a.lng;
+      const dy = b.lat - a.lat;
+      const segmentLength = Math.hypot(dx, dy);
+      if (!Number.isFinite(segmentLength) || segmentLength < 0.00001) continue;
+
+      const ux = dx / segmentLength;
+      const uy = dy / segmentLength;
+      const arrowPointLng = a.lng + dx * 0.78;
+      const arrowPointLat = a.lat + dy * 0.78;
+      const arrowLength = segmentLength * 0.12;
+      const arrowWidth = segmentLength * 0.06;
+
+      const backLng = arrowPointLng - ux * arrowLength;
+      const backLat = arrowPointLat - uy * arrowLength;
+
+      const left = {
+        lat: backLat + ux * arrowWidth,
+        lng: backLng - uy * arrowWidth,
+      };
+      const right = {
+        lat: backLat - ux * arrowWidth,
+        lng: backLng + uy * arrowWidth,
+      };
+
+      pathParams.push(
+        `path=${encodeURIComponent(`color:0x6d28d9CC|weight:2|${arrowPointLat.toFixed(6)},${arrowPointLng.toFixed(6)}|${formatCoord(left)}`)}`
+      );
+      pathParams.push(
+        `path=${encodeURIComponent(`color:0x6d28d9CC|weight:2|${arrowPointLat.toFixed(6)},${arrowPointLng.toFixed(6)}|${formatCoord(right)}`)}`
+      );
+    }
+  }
+
+  const markerQuery = markerParams.join('&');
+  const pathQuery = pathParams.length > 0 ? `&${pathParams.join('&')}` : '';
+
+  return `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
 };
 
 const bucketTripsByRecency = (trips: ITrip[]): TripBuckets => {
@@ -456,9 +513,10 @@ interface TripTooltipProps {
   position: TooltipPosition;
   onHoverStart: () => void;
   onHoverEnd: () => void;
+  mapLanguage: AppLanguage;
 }
 
-const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart, onHoverEnd }) => {
+const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart, onHoverEnd, mapLanguage }) => {
   const [shouldLoadMap, setShouldLoadMap] = React.useState(false);
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
@@ -473,8 +531,8 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   const mapUrl = React.useMemo(() => {
     if (!shouldLoadMap) return null;
-    return buildMiniMapUrl(trip);
-  }, [shouldLoadMap, trip]);
+    return buildMiniMapUrl(trip, mapLanguage);
+  }, [shouldLoadMap, trip, mapLanguage]);
 
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
 
@@ -593,6 +651,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   onSelectTrip,
   currentTripId,
   onUpdateTrip,
+  mapLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -1020,6 +1079,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
             position={tooltipPosition}
             onHoverStart={cancelHoverClose}
             onHoverEnd={scheduleHoverClose}
+            mapLanguage={mapLanguage}
           />
         </>
       )}
