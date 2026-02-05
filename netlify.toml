@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  # Vite exposes VITE_* vars to browser bundles by design.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_GOOGLE_MAPS_API_KEY"
 
 [[redirects]]
   from = "/*"
