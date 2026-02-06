@@ -1,10 +1,11 @@
 import React from 'react';
 import { ITrip, ITimelineItem } from '../types';
-import { addDays, formatDate, getTripDuration } from '../utils';
-import { MapPin, Calendar, Clock, ArrowRight, Plane, Train, Bus, Ship, Car, Hotel, StickyNote } from 'lucide-react';
+import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getTripDistanceKm, getTripDuration } from '../utils';
+import { MapPin, Calendar, Clock, ArrowRight, Hotel, StickyNote } from 'lucide-react';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
 import { MarkdownEditor } from './MarkdownEditor';
+import { TransportModeIcon } from './TransportModeIcon';
 
 interface PrintLayoutProps {
   trip: ITrip;
@@ -202,6 +203,10 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
 export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip }) => {
   const tripStartDate = parseLocalDate(trip.startDate);
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
+  const totalDistanceKm = getTripDistanceKm(trip.items);
+  const distanceLabel = totalDistanceKm > 0
+    ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+    : null;
 
   const handleScrollTo = (cityId: string) => {
       const element = document.getElementById(`city-detail-${cityId}`);
@@ -253,6 +258,9 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                             <div className="text-gray-500 font-medium flex gap-4">
                                 <span className="flex items-center gap-1"><Calendar size={16}/> {formatDate(tripStartDate)} - {formatDate(addDays(tripStartDate, getTripDuration(trip.items)))}</span>
                                 <span className="flex items-center gap-1"><Clock size={16}/> {Math.ceil(getTripDuration(trip.items))} Days</span>
+                                {distanceLabel && (
+                                    <span className="flex items-center gap-1"><MapPin size={16}/> {distanceLabel}</span>
+                                )}
                             </div>
                         </div>
                         <div className="text-right hidden sm:block">
@@ -349,8 +357,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                                                     <ArrowRight size={12} /> Arrival
                                                 </div>
                                                 <div className="font-bold text-gray-800 flex items-center gap-2">
-                                                    {arrivalTransport.transportMode === 'plane' && <Plane size={16}/>}
-                                                    {arrivalTransport.transportMode === 'train' && <Train size={16}/>}
+                                                    <TransportModeIcon mode={arrivalTransport.transportMode} size={16} />
                                                     {arrivalTransport.title}
                                                 </div>
                                                 {arrivalTransport.description && <div className="text-xs text-gray-500 mt-1">{arrivalTransport.description}</div>}

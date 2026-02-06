@@ -2,7 +2,7 @@ import React from 'react';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
-import { COUNTRIES, DEFAULT_APP_LANGUAGE, getGoogleMapsApiKey } from '../utils';
+import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -185,7 +185,12 @@ const formatTripSummaryLine = (trip: ITrip): string => {
   const days = getTripDurationDays(trip);
   const cityCount = getTripCityItems(trip).length;
   const cityLabel = cityCount === 1 ? 'city' : 'cities';
-  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip)} • ${cityCount} ${cityLabel}`;
+  const totalDistanceKm = getTripDistanceKm(trip.items);
+  const distanceLabel = totalDistanceKm > 0
+    ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+    : null;
+  const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
+  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip)} • ${cityCount} ${cityLabel}${distancePart}`;
 };
 
 const formatCityStayLabel = (duration: number): string => {
@@ -520,6 +525,12 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
   }, [shouldLoadMap, trip, mapLanguage]);
 
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
+  const distanceLabel = React.useMemo(() => {
+    const totalDistanceKm = getTripDistanceKm(trip.items);
+    return totalDistanceKm > 0
+      ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+      : null;
+  }, [trip.items]);
 
   return (
     <div
@@ -534,6 +545,8 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
           <div className="mt-1 flex items-center gap-1.5 text-purple-600 text-sm font-semibold">
             <CalendarDays size={14} />
             <span>{formatTripDateRange(trip)}</span>
+            {distanceLabel && <span className="text-purple-300">•</span>}
+            {distanceLabel && <span>{distanceLabel}</span>}
           </div>
         </div>
 

@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ITimelineItem, TransportMode, ActivityType, IHotel } from '../types';
-import { X, MapPin, Clock, Trash2, Plane, Train, Bus, Ship, Car, Hotel, PlusCircle, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Map } from 'lucide-react';
+import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode } from '../types';
+import { X, MapPin, Clock, Trash2, Hotel, PlusCircle, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette } from 'lucide-react';
 import { suggestActivityDetails, generateCityNotesAddition } from '../services/geminiService';
 import type { CityNotesEnhancementMode } from '../services/geminiService';
-import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, formatDate, getStoredAppLanguage, PRESET_COLORS, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
+import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, formatDate, getStoredAppLanguage, PRESET_COLORS, getActivityColorByTypes, normalizeActivityTypes, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { MarkdownEditor } from './MarkdownEditor';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
+import { TransportModeIcon } from './TransportModeIcon';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -17,6 +18,9 @@ interface DetailsPanelProps {
   onUpdate: (id: string, updates: Partial<ITimelineItem>) => void;
   onDelete: (id: string) => void;
   tripStartDate: string;
+  tripItems?: ITimelineItem[];
+  routeMode?: RouteMode;
+  routeStatus?: 'calculating' | 'ready' | 'failed' | 'idle';
   onForceFill?: (id: string) => void;
   forceFillMode?: 'stretch' | 'shrink';
   forceFillLabel?: string;
@@ -62,6 +66,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     onUpdate, 
     onDelete, 
     tripStartDate, 
+    tripItems = [],
+    routeMode = 'simple',
+    routeStatus,
     onForceFill,
     forceFillMode,
     forceFillLabel,
@@ -343,6 +350,43 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const isValidDate = !isNaN(tripStart.getTime());
   const itemStartDate = isValidDate ? addDays(tripStart, displayItem.startDateOffset) : new Date();
   const itemEndDate = isValidDate ? addDays(tripStart, displayItem.startDateOffset + displayItem.duration) : new Date();
+  const travelLegMetrics = React.useMemo(() => {
+      if (!isTransport || !displayItem.id || tripItems.length === 0) return null;
+      return getTravelLegMetricsForItem(tripItems, displayItem.id);
+  }, [displayItem.id, isTransport, tripItems]);
+  const airDistanceLabel = React.useMemo(() => {
+      if (!travelLegMetrics?.distanceKm) return null;
+      return formatDistance(travelLegMetrics.distanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 });
+  }, [travelLegMetrics?.distanceKm]);
+  const routeDistanceKm = React.useMemo(() => {
+      const value = displayItem.routeDistanceKm;
+      return Number.isFinite(value) ? (value as number) : null;
+  }, [displayItem.routeDistanceKm]);
+  const routeDistanceDisplayKm = React.useMemo(() => {
+      if (displayItem.transportMode === 'plane') return travelLegMetrics?.distanceKm ?? null;
+      return routeDistanceKm;
+  }, [displayItem.transportMode, routeDistanceKm, travelLegMetrics?.distanceKm]);
+  const routeDistanceLabel = React.useMemo(() => {
+      if (!routeDistanceDisplayKm) return null;
+      return formatDistance(routeDistanceDisplayKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 });
+  }, [routeDistanceDisplayKm]);
+  const routeDistanceText = React.useMemo(() => {
+      if (routeDistanceLabel) return routeDistanceLabel;
+      const canRoute =
+          routeMode === 'realistic' &&
+          !!travelLegMetrics?.distanceKm &&
+          !['plane', 'boat', 'na'].includes(displayItem.transportMode || 'na');
+      if (routeStatus === 'calculating' || (canRoute && routeStatus !== 'failed')) return 'Calculating…';
+      return 'N/A';
+  }, [routeDistanceLabel, routeStatus, routeMode, travelLegMetrics?.distanceKm, displayItem.transportMode]);
+  const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
+  const estimatedHours = React.useMemo(() => {
+      if (!effectiveDistanceKm) return null;
+      return estimateTravelHours(effectiveDistanceKm, displayItem.transportMode);
+  }, [effectiveDistanceKm, displayItem.transportMode]);
+  const estimatedLabel = React.useMemo(() => {
+      return formatDurationHours(estimatedHours);
+  }, [estimatedHours]);
   const handleUpdateStart = (delta: number) => onUpdate(displayItem.id, { startDateOffset: Math.max(0, displayItem.startDateOffset + delta), duration: Math.max(0.5, displayItem.duration - delta) });
   const handleUpdateEnd = (delta: number) => onUpdate(displayItem.id, { duration: Math.max(0.5, displayItem.duration + delta) });
   
@@ -350,6 +394,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const colorParts = effectiveColor ? effectiveColor.split(' ') : ['bg-gray-100'];
   const bgClass = colorParts[0] || 'bg-gray-100';
   const textClass = colorParts[2] || 'text-gray-800';
+  const routeModeLabel = displayItem.transportMode && displayItem.transportMode !== 'na'
+      ? displayItem.transportMode
+      : 'route';
+  const showRouteDistance = routeMode === 'realistic';
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -395,18 +443,36 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              />
              
              <div className="flex flex-col gap-3 mt-4">
-                 <div className="flex items-center text-gray-600">
-                    <Clock size={18} className="mr-3 text-indigo-500" />
+                 <div className="flex items-start text-gray-600">
+                    <Clock size={18} className="mr-3 text-indigo-500 mt-0.5" />
                     {isTransport ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Duration:</span>
-                            <input type="number" min="0.5" value={Math.round(displayItem.duration * 24 * 10) / 10} onChange={(e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) onUpdate(displayItem.id, { duration: h / 24 }); }} className="w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 focus:border-indigo-500 outline-none"/>
-                            <span className="font-medium text-sm">hours</span>
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">Duration:</span>
+                                <input type="number" min="0.5" value={Math.round(displayItem.duration * 24 * 10) / 10} onChange={(e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) onUpdate(displayItem.id, { duration: h / 24 }); }} className="w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 focus:border-indigo-500 outline-none"/>
+                                <span className="font-medium text-sm">hours</span>
+                            </div>
+                            <span className="text-[11px] text-gray-400">
+                                Estimated {estimatedLabel ?? '—'}
+                            </span>
                         </div>
                     ) : (
                         <span className="font-medium">{Number(displayItem.duration.toFixed(1))} day{displayItem.duration !== 1 ? 's' : ''}</span>
                     )}
                  </div>
+                 {isTransport && (
+                    <div className="flex items-start text-gray-600">
+                        <MapPin size={18} className="mr-3 text-indigo-500 mt-0.5" />
+                        <div className="flex flex-col gap-0.5">
+                            <span className="font-medium">Air distance: {airDistanceLabel ?? '—'}</span>
+                            {showRouteDistance && (
+                                <span className="text-[11px] text-gray-400">
+                                    Route distance ({routeModeLabel}): {routeDistanceText}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                 )}
                  {displayItem.location && ( <div className="flex items-center text-gray-600"><MapPin size={18} className="mr-3 text-indigo-500" /><span className="font-medium">{displayItem.location}</span></div> )}
              </div>
           </div>
@@ -455,18 +521,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
-                         {(['na', 'plane', 'train', 'bus', 'car', 'boat'] as TransportMode[]).map(mode => (
+                         {(['na', 'plane', 'train', 'bus', 'car', 'motorcycle', 'bicycle', 'walk', 'boat'] as TransportMode[]).map(mode => (
                              <button 
                                  key={mode} 
                                  onClick={() => handleTransportConvert(mode)} 
                                  className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
                              >
-                                 {mode === 'na' && <Map size={24} />}
-                                 {mode === 'plane' && <Plane size={24} />}
-                                 {mode === 'train' && <Train size={24} />}
-                                 {mode === 'bus' && <Bus size={24} />}
-                                 {mode === 'car' && <Car size={24} />}
-                                 {mode === 'boat' && <Ship size={24} />}
+                                 <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>
                              </button>
                          ))}

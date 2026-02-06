@@ -1,6 +1,6 @@
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
-export type TransportMode = 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'na';
+export type TransportMode = 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'walk' | 'bicycle' | 'motorcycle' | 'na';
 export type ActivityType = 
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
@@ -63,6 +63,8 @@ export interface ITimelineItem {
   bufferBefore?: number; // Minutes
   bufferAfter?: number; // Minutes
   departureTime?: string; // HH:MM
+  routeDistanceKm?: number; // Cached route distance (mode-specific)
+  routeDurationHours?: number; // Cached route duration (mode-specific)
   loading?: boolean;
 }
 

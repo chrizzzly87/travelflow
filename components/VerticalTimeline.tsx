@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
 import { addDays, findTravelBetweenCities, getTripDuration, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
-import { Plus, Plane, Train, Bus, Ship, Car, Map } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { TransportModeIcon } from './TransportModeIcon';
 
 interface VerticalTimelineProps {
   trip: ITrip;
@@ -72,15 +73,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   }, [cities, trip.items]);
 
   const getTransportIcon = (mode?: string) => {
-      switch (mode) {
-          case 'plane': return <Plane size={12} />;
-          case 'train': return <Train size={12} />;
-          case 'bus': return <Bus size={12} />;
-          case 'boat': return <Ship size={12} />;
-          case 'car': return <Car size={12} />;
-          case 'na':
-          default: return <Map size={12} />;
-      }
+      return <TransportModeIcon mode={mode} size={12} />;
   };
 
   // Vertical packing logic for activities

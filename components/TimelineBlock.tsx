@@ -1,8 +1,9 @@
 import React, { useRef } from 'react';
 import { ITimelineItem, ActivityType } from '../types';
 import { getActivityColorByTypes, pickPrimaryActivityType } from '../utils';
-import { Plane, Train, Bus, Ship, Car, Map, Maximize, Minimize, ArrowUpDown } from 'lucide-react';
+import { Maximize, Minimize, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
+import { TransportModeIcon } from './TransportModeIcon';
 
 interface TimelineBlockProps {
   item: ITimelineItem;
@@ -20,18 +21,6 @@ interface TimelineBlockProps {
   swapSelectedLabel?: string;
   pixelsPerDay: number;
   vertical?: boolean;
-}
-
-const TransportIcon = ({ mode, className }: { mode?: string, className?: string }) => {
-    switch(mode) {
-        case 'na': return <Map size={16} className={className} />;
-        case 'plane': return <Plane size={16} className={className} />;
-        case 'train': return <Train size={16} className={className} />;
-        case 'bus': return <Bus size={16} className={className} />;
-        case 'boat': return <Ship size={16} className={className} />;
-        case 'car': return <Car size={16} className={className} />;
-        default: return <Plane size={16} className={className} />;
-    }
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -155,7 +144,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         
         {isTravel && (
             <div className={`flex items-center gap-1 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}>
-                <TransportIcon mode={item.transportMode} className="flex-shrink-0" />
+                <TransportModeIcon mode={item.transportMode} size={16} className="flex-shrink-0" />
             </div>
         )}
 

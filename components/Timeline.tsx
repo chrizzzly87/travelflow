@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
 import { addDays, findTravelBetweenCities, getTripDuration, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
-import { Plus, Plane, Train, Bus, Ship, Car, Map } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { TransportModeIcon } from './TransportModeIcon';
 
 interface TimelineProps {
   trip: ITrip;
@@ -73,15 +74,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [cities, trip.items]);
 
   const getTransportIcon = (mode?: string) => {
-      switch (mode) {
-          case 'plane': return <Plane size={14} />;
-          case 'train': return <Train size={14} />;
-          case 'bus': return <Bus size={14} />;
-          case 'boat': return <Ship size={14} />;
-          case 'car': return <Car size={14} />;
-          case 'na':
-          default: return <Map size={14} />;
-      }
+      return <TransportModeIcon mode={mode} size={14} />;
   };
 
   // Robust "Packing" algorithm for activities to handle same-day overlapping

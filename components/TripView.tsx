@@ -15,7 +15,7 @@ import {
     Pencil, Share2, Folder, Printer, Calendar, List, 
     ZoomIn, ZoomOut, Plane, Layout, Columns, Rows, Plus, History, Star, Trash2, Info
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, getActivityColorByTypes, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, buildRouteCacheKey, formatDistance, getActivityColorByTypes, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
@@ -118,6 +118,8 @@ interface TripViewProps {
 export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en' }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const tripRef = useRef(trip);
+    tripRef.current = trip;
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -163,7 +165,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
        }
        return true;
     });
-    
+
     // Layout State
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
         if (initialViewSettings) return initialViewSettings.layoutMode;
@@ -378,7 +380,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
         const daysLabel = totalDays % 1 === 0 ? totalDays.toFixed(0) : totalDays.toFixed(1);
         const citiesLabel = cityCount === 1 ? '1 city' : `${cityCount} cities`;
-        return `${dateRange} • ${daysLabel} days • ${citiesLabel}`;
+        const totalDistanceKm = getTripDistanceKm(trip.items);
+        const distanceLabel = totalDistanceKm > 0
+            ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+            : null;
+        const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
+        return `${dateRange} • ${daysLabel} days • ${citiesLabel}${distancePart}`;
     }, [trip.items, trip.startDate]);
 
     const handleShare = useCallback(async () => {
@@ -752,6 +759,21 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const handleUpdateItem = (id: string, updates: Partial<ITimelineItem>) => {
         const item = trip.items.find(i => i.id === id);
+        let sanitizedUpdates = updates;
+        if (
+            item &&
+            (item.type === 'travel' || item.type === 'travel-empty') &&
+            updates.transportMode !== undefined &&
+            updates.transportMode !== item.transportMode
+        ) {
+            sanitizedUpdates = { ...updates, routeDistanceKm: undefined, routeDurationHours: undefined };
+            setRouteStatusById(prev => {
+                if (!prev[item.id]) return prev;
+                const next = { ...prev };
+                delete next[item.id];
+                return next;
+            });
+        }
         if (item) {
             if (item.type === 'city') {
                 if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
@@ -783,9 +805,76 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 }
             }
         }
-        const newItems = trip.items.map(i => i.id === id ? { ...i, ...updates } : i);
+        const newItems = trip.items.map(i => i.id === id ? { ...i, ...sanitizedUpdates } : i);
         handleUpdateItems(newItems);
     };
+
+    const [routeStatusById, setRouteStatusById] = useState<Record<string, 'calculating' | 'ready' | 'failed' | 'idle'>>({});
+
+    const handleRouteMetrics = useCallback((travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => {
+        const currentTrip = tripRef.current;
+        const item = currentTrip.items.find(i => i.id === travelItemId);
+        if (!item) return;
+        if (metrics.mode && item.transportMode !== metrics.mode) return;
+
+        if (metrics.routeKey) {
+            const leg = getTravelLegMetricsForItem(currentTrip.items, travelItemId);
+            if (!leg?.fromCity.coordinates || !leg?.toCity.coordinates) return;
+            const expectedKey = buildRouteCacheKey(
+                leg.fromCity.coordinates,
+                leg.toCity.coordinates,
+                item.transportMode || 'na'
+            );
+            if (expectedKey !== metrics.routeKey) return;
+        }
+
+        const updates: Partial<ITimelineItem> = {};
+        if (Number.isFinite(metrics.routeDistanceKm)) {
+            const next = metrics.routeDistanceKm as number;
+            if (!Number.isFinite(item.routeDistanceKm) || Math.abs((item.routeDistanceKm as number) - next) > 0.01) {
+                updates.routeDistanceKm = next;
+            }
+        }
+        if (Number.isFinite(metrics.routeDurationHours)) {
+            const next = metrics.routeDurationHours as number;
+            if (!Number.isFinite(item.routeDurationHours) || Math.abs((item.routeDurationHours as number) - next) > 0.01) {
+                updates.routeDurationHours = next;
+            }
+        }
+
+        if (Object.keys(updates).length === 0) return;
+
+        const newItems = currentTrip.items.map(i => i.id === travelItemId ? { ...i, ...updates } : i);
+        const updatedTrip = { ...currentTrip, items: newItems, updatedAt: Date.now() };
+        tripRef.current = updatedTrip;
+        if (pendingCommitRef.current?.trip?.id === updatedTrip.id) {
+            pendingCommitRef.current = { ...pendingCommitRef.current, trip: updatedTrip };
+        }
+        onUpdateTrip(updatedTrip);
+    }, [onUpdateTrip]);
+
+    const handleRouteStatus = useCallback((travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => {
+        const currentTrip = tripRef.current;
+        const item = currentTrip.items.find(i => i.id === travelItemId);
+        if (!item) return;
+        if (meta?.mode && item.transportMode !== meta.mode) return;
+
+        if (meta?.routeKey) {
+            const leg = getTravelLegMetricsForItem(currentTrip.items, travelItemId);
+            if (!leg?.fromCity.coordinates || !leg?.toCity.coordinates) return;
+            const expectedKey = buildRouteCacheKey(
+                leg.fromCity.coordinates,
+                leg.toCity.coordinates,
+                item.transportMode || 'na'
+            );
+            if (expectedKey !== meta.routeKey) return;
+        }
+
+        setRouteStatusById(prev => {
+            if (prev[travelItemId] === status) return prev;
+            return { ...prev, [travelItemId]: status };
+        });
+    }, []);
 
     const handleForceFill = (id: string) => {
         const cities = trip.items
@@ -1193,6 +1282,9 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             onUpdate={handleUpdateItem}
                                             onDelete={handleDeleteItem}
                                             tripStartDate={trip.startDate}
+                                            tripItems={trip.items}
+                                            routeMode={routeMode}
+                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
                                             onForceFill={handleForceFill}
                                             forceFillMode={selectedCityForceFill?.mode}
                                             forceFillLabel={selectedCityForceFill?.label}
@@ -1211,40 +1303,44 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
                              {/* Right (Map) */}
                              <div className="flex-1 h-full relative bg-gray-100 min-w-0">
-                                <ItineraryMap 
-                                    items={trip.items} 
-                                    selectedItemId={selectedItemId}
-                                    layoutMode={layoutMode}
-                                    onLayoutChange={setLayoutMode}
-                                    activeStyle={mapStyle}
-                                    onStyleChange={setMapStyle}
-                                    routeMode={routeMode}
-                                    onRouteModeChange={setRouteMode}
-                                    showCityNames={showCityNames}
-                                    onShowCityNamesChange={setShowCityNames}
-                                    focusLocationQuery={initialMapFocusQuery}
-                                    fitToRouteKey={trip.id}
-                                />
+                                    <ItineraryMap 
+                                        items={trip.items} 
+                                        selectedItemId={selectedItemId}
+                                        layoutMode={layoutMode}
+                                        onLayoutChange={setLayoutMode}
+                                        activeStyle={mapStyle}
+                                        onStyleChange={setMapStyle}
+                                        routeMode={routeMode}
+                                        onRouteModeChange={setRouteMode}
+                                        showCityNames={showCityNames}
+                                        onShowCityNamesChange={setShowCityNames}
+                                        focusLocationQuery={initialMapFocusQuery}
+                                        onRouteMetrics={handleRouteMetrics}
+                                        onRouteStatus={handleRouteStatus}
+                                        fitToRouteKey={trip.id}
+                                    />
                              </div>
                            </>
                         ) : (
                            // VERTICAL LAYOUT
                            <>
                              <div className="flex-1 relative bg-gray-100 min-h-0 w-full">
-                                  <ItineraryMap 
-                                      items={trip.items} 
-                                      selectedItemId={selectedItemId}
-                                      layoutMode={layoutMode}
-                                      onLayoutChange={setLayoutMode}
-                                      activeStyle={mapStyle}
-                                      onStyleChange={setMapStyle}
-                                      routeMode={routeMode}
-                                      onRouteModeChange={setRouteMode}
-                                      showCityNames={showCityNames}
-                                      onShowCityNamesChange={setShowCityNames}
-                                      focusLocationQuery={initialMapFocusQuery}
-                                      fitToRouteKey={trip.id}
-                                  />
+                                      <ItineraryMap 
+                                        items={trip.items} 
+                                        selectedItemId={selectedItemId}
+                                        layoutMode={layoutMode}
+                                        onLayoutChange={setLayoutMode}
+                                        activeStyle={mapStyle}
+                                        onStyleChange={setMapStyle}
+                                        routeMode={routeMode}
+                                        onRouteModeChange={setRouteMode}
+                                        showCityNames={showCityNames}
+                                        onShowCityNamesChange={setShowCityNames}
+                                        focusLocationQuery={initialMapFocusQuery}
+                                        onRouteMetrics={handleRouteMetrics}
+                                        onRouteStatus={handleRouteStatus}
+                                        fitToRouteKey={trip.id}
+                                      />
                              </div>
                              <div className="h-1 bg-gray-100 hover:bg-indigo-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
                                   <div className="w-12 h-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -1310,6 +1406,9 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onUpdate={handleUpdateItem}
                                                 onDelete={handleDeleteItem}
                                                 tripStartDate={trip.startDate}
+                                                tripItems={trip.items}
+                                                routeMode={routeMode}
+                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
                                                 onForceFill={handleForceFill}
                                                 forceFillMode={selectedCityForceFill?.mode}
                                                 forceFillLabel={selectedCityForceFill?.label}

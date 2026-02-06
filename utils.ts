@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import { ActivityType, AppLanguage, ITrip, ITimelineItem, IViewSettings, ISharedState } from './types';
+import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, TransportMode } from './types';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -38,6 +38,82 @@ export const setStoredAppLanguage = (language: AppLanguage): void => {
 };
 
 // --- HELPERS ---
+
+export type DistanceUnit = 'km' | 'mi';
+export const DEFAULT_DISTANCE_UNIT: DistanceUnit = 'km';
+const KM_PER_MILE = 1.60934;
+
+export const convertDistance = (distanceKm: number, unit: DistanceUnit): number => {
+    return unit === 'mi' ? distanceKm / KM_PER_MILE : distanceKm;
+};
+
+export const formatDistance = (
+    distanceKm: number | null | undefined,
+    unit: DistanceUnit = DEFAULT_DISTANCE_UNIT,
+    options: { maximumFractionDigits?: number; minimumFractionDigits?: number } = {}
+): string | null => {
+    if (!Number.isFinite(distanceKm)) return null;
+    const value = convertDistance(distanceKm as number, unit);
+    const { maximumFractionDigits = value >= 10 ? 0 : 1, minimumFractionDigits = 0 } = options;
+    const formatted = value.toLocaleString(undefined, { maximumFractionDigits, minimumFractionDigits });
+    return `${formatted} ${unit}`;
+};
+
+export const getDistanceKm = (from: ICoordinates, to: ICoordinates): number => {
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(to.lat - from.lat);
+    const dLng = toRad(to.lng - from.lng);
+    const lat1 = toRad(from.lat);
+    const lat2 = toRad(to.lat);
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const earthRadiusKm = 6371;
+    return earthRadiusKm * c;
+};
+
+const TRAVEL_SPEEDS_KMPH: Record<TransportMode, number> = {
+    walk: 4.5,
+    bicycle: 16,
+    motorcycle: 60,
+    car: 80,
+    bus: 60,
+    train: 120,
+    boat: 35,
+    plane: 750,
+    na: 0,
+};
+
+const TRAVEL_OVERHEAD_HOURS: Partial<Record<TransportMode, number>> = {
+    plane: 2,
+    train: 0.5,
+    bus: 0.3,
+    boat: 0.5,
+    car: 0.2,
+    motorcycle: 0.2,
+};
+
+export const estimateTravelHours = (distanceKm: number, mode?: TransportMode | string): number | null => {
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0) return null;
+    if (!mode || mode === 'na') return null;
+    const speed = TRAVEL_SPEEDS_KMPH[mode as TransportMode];
+    if (!speed) return null;
+    const base = distanceKm / speed;
+    const overhead = TRAVEL_OVERHEAD_HOURS[mode as TransportMode] ?? 0;
+    return Math.max(0.1, base + overhead);
+};
+
+export const formatDurationHours = (hours: number | null | undefined): string | null => {
+    if (!Number.isFinite(hours)) return null;
+    const totalMinutes = Math.max(1, Math.round((hours as number) * 60));
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h <= 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+};
 
 export const formatDate = (date: Date): string => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
@@ -87,6 +163,58 @@ export const findTravelBetweenCities = (
     return candidates.sort((a, b) =>
         Math.abs(a.startDateOffset - fromEnd) - Math.abs(b.startDateOffset - fromEnd)
     )[0];
+};
+
+export interface TravelLegMetrics {
+    travelItem: ITimelineItem;
+    fromCity: ITimelineItem;
+    toCity: ITimelineItem;
+    distanceKm: number | null;
+}
+
+export const getTravelLegMetrics = (items: ITimelineItem[]): TravelLegMetrics[] => {
+    const cities = items
+        .filter(item => item.type === 'city')
+        .sort((a, b) => a.startDateOffset - b.startDateOffset);
+
+    const legs: TravelLegMetrics[] = [];
+    for (let i = 0; i < cities.length - 1; i++) {
+        const fromCity = cities[i];
+        const toCity = cities[i + 1];
+        const travelItem = findTravelBetweenCities(items, fromCity, toCity);
+        if (!travelItem) continue;
+        const distanceKm = fromCity.coordinates && toCity.coordinates
+            ? getDistanceKm(fromCity.coordinates, toCity.coordinates)
+            : null;
+        legs.push({ travelItem, fromCity, toCity, distanceKm });
+    }
+
+    return legs;
+};
+
+export const getTravelLegMetricsForItem = (
+    items: ITimelineItem[],
+    travelItemId: string
+): TravelLegMetrics | null => {
+    const legs = getTravelLegMetrics(items);
+    return legs.find(leg => leg.travelItem.id === travelItemId) || null;
+};
+
+export const getTripDistanceKm = (items: ITimelineItem[]): number => {
+    return getTravelLegMetrics(items)
+        .map((leg) => {
+            const airDistance = leg.distanceKm;
+            if (!Number.isFinite(airDistance)) return null;
+
+            const mode = leg.travelItem.transportMode;
+            const routeDistance = leg.travelItem.routeDistanceKm;
+
+            if (mode === 'plane') return airDistance;
+            if (Number.isFinite(routeDistance)) return routeDistance as number;
+            return airDistance;
+        })
+        .filter((distance): distance is number => Number.isFinite(distance))
+        .reduce((sum, distance) => sum + distance, 0);
 };
 
 const isTravelItem = (item: ITimelineItem): boolean =>
@@ -534,6 +662,11 @@ export const normalizeCityColors = (items: ITimelineItem[]): ITimelineItem[] => 
 export const getHexFromColorClass = (colorClass: string): string => {
     const match = PRESET_COLORS.find(c => c.class === colorClass);
     return match ? match.hex : '#4f46e5'; // Default indigo
+};
+
+export const buildRouteCacheKey = (start: ICoordinates, end: ICoordinates, mode: string): string => {
+    const round = (value: number) => value.toFixed(5);
+    return `${round(start.lat)},${round(start.lng)}|${round(end.lat)},${round(end.lng)}|${mode}`;
 };
 
 // Comprehensive Countries Data

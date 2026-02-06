@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapStyle, RouteMode } from '../types';
 import { Focus, Columns, Rows, Layers } from 'lucide-react';
-import { findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { buildRouteCacheKey, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 
 interface ItineraryMapProps {
@@ -17,6 +17,8 @@ interface ItineraryMapProps {
     onShowCityNamesChange?: (enabled: boolean) => void;
     focusLocationQuery?: string;
     fitToRouteKey?: string;
+    onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
+    onRouteStatus?: (travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => void;
 }
 
 const MAP_STYLES = {
@@ -143,6 +145,63 @@ const MAP_STYLES = {
     ]
 };
 
+type RouteCacheEntry = {
+    status: 'ok' | 'failed';
+    updatedAt: number;
+    path?: google.maps.LatLngLiteral[];
+    distanceKm?: number;
+    durationHours?: number;
+};
+
+const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
+const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
+const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
+const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+let routeCacheHydrated = false;
+
+const hydrateRouteCache = () => {
+    if (routeCacheHydrated) return;
+    if (typeof window === 'undefined') return;
+    routeCacheHydrated = true;
+    try {
+        const raw = window.localStorage.getItem(ROUTE_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw) as Record<string, RouteCacheEntry>;
+        const now = Date.now();
+        Object.entries(parsed).forEach(([key, entry]) => {
+            if (!entry || !entry.updatedAt || !entry.status) return;
+            if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return;
+            if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return;
+            ROUTE_CACHE.set(key, entry);
+        });
+    } catch (e) {
+        console.warn('Failed to hydrate route cache', e);
+    }
+};
+
+const persistRouteCache = () => {
+    if (typeof window === 'undefined') return;
+    try {
+        const now = Date.now();
+        const payload: Record<string, RouteCacheEntry> = {};
+        ROUTE_CACHE.forEach((entry, key) => {
+            if (!entry || !entry.updatedAt || !entry.status) return;
+            if (entry.status === 'failed') {
+                if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
+                    payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
+                }
+                return;
+            }
+            if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
+                payload[key] = entry;
+            }
+        });
+        window.localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.warn('Failed to persist route cache', e);
+    }
+};
+
 export const ItineraryMap: React.FC<ItineraryMapProps> = ({ 
     items, 
     selectedItemId, 
@@ -155,7 +214,9 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     showCityNames = true,
     onShowCityNamesChange,
     focusLocationQuery,
-    fitToRouteKey
+    fitToRouteKey,
+    onRouteMetrics,
+    onRouteStatus
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
@@ -165,12 +226,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     const cityLabelOverlaysRef = useRef<any[]>([]);
     const lastFocusQueryRef = useRef<string | null>(null);
     const lastFitToRouteKeyRef = useRef<string | null>(null);
+    const onRouteMetricsRef = useRef<typeof onRouteMetrics>(onRouteMetrics);
+    const onRouteStatusRef = useRef<typeof onRouteStatus>(onRouteStatus);
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
+
+    useEffect(() => {
+        onRouteMetricsRef.current = onRouteMetrics;
+    }, [onRouteMetrics]);
+
+    useEffect(() => {
+        onRouteStatusRef.current = onRouteStatus;
+    }, [onRouteStatus]);
 
     // Initial Map Setup
     useEffect(() => {
@@ -235,12 +306,6 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             .join('||');
         return `${citySignature}__${routeSignature}`;
     }, [cities, items]);
-
-    // Helper: Find transport mode between cities
-    const getTransportBetween = (city1: ITimelineItem, city2: ITimelineItem) => {
-        const travelItem = findTravelBetweenCities(items, city1, city2);
-        return travelItem?.transportMode || 'na';
-    };
 
     // Update Markers & Routes
     useEffect(() => {
@@ -314,6 +379,32 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         <path d="M9 17h6" />
                         <circle cx="17" cy="17" r="2" />
                     `;
+                case 'motorcycle':
+                    return `
+                        <circle cx="6" cy="17" r="3" />
+                        <circle cx="18" cy="17" r="3" />
+                        <path d="M6 17l4-5h6l2 5" />
+                        <path d="M10 12h5" />
+                        <path d="M12 9l3-2" />
+                        <path d="M15 7h3" />
+                    `;
+                case 'bicycle':
+                    return `
+                        <circle cx="6" cy="17" r="3" />
+                        <circle cx="18" cy="17" r="3" />
+                        <path d="M6 17l4-7h5l3 7" />
+                        <path d="M10 10l-2-3" />
+                        <path d="M15 10l2-2" />
+                        <path d="M11 10h4" />
+                    `;
+                case 'walk':
+                    return `
+                        <ellipse cx="8" cy="17" rx="2.6" ry="3.6" />
+                        <ellipse cx="16.5" cy="9.5" rx="2.2" ry="3.1" />
+                        <circle cx="15.6" cy="5.7" r="0.7" />
+                        <circle cx="17" cy="5.4" r="0.6" />
+                        <circle cx="18.2" cy="5.9" r="0.55" />
+                    `;
                 case 'plane':
                 default:
                     return `<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />`;
@@ -350,6 +441,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             const offsetHeading = heading + 90;
             const result = geometry.computeOffset(midLatLng, offset, offsetHeading);
             return { lat: result.lat(), lng: result.lng() };
+        };
+
+        const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
+            const line = new window.google.maps.Polyline({
+                path,
+                geodesic: true,
+                strokeColor: color,
+                strokeOpacity: 0.7,
+                strokeWeight: weight,
+                clickable: false,
+                icons: [{
+                    icon: {
+                        path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                        strokeColor: color,
+                        strokeOpacity: 0.9,
+                        scale: 2.5
+                    },
+                    offset: '50%'
+                }],
+                map: googleMapRef.current
+            });
+            routesRef.current.push(line);
+            return line;
         };
 
         // 2. Add Markers
@@ -482,6 +596,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         // 3. Draw Routes
         const drawRoutes = async () => {
+             hydrateRouteCache();
              const directionsService = new window.google.maps.DirectionsService();
 
              for (let i = 0; i < cities.length - 1; i++) {
@@ -489,81 +604,61 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                  const end = cities[i+1];
                  if (!start.coordinates || !end.coordinates) continue;
 
-                 const mode = getTransportBetween(start, end);
+                 const travelItem = findTravelBetweenCities(items, start, end);
+                 const mode = travelItem?.transportMode || 'na';
                  const startColor = getHexFromColorClass(start.color); // Color based on start city
+                 const cacheKey = start.coordinates && end.coordinates
+                     ? buildRouteCacheKey(start.coordinates, end.coordinates, mode)
+                     : null;
+                 let routingAttempted = false;
+                 let routingFailed = false;
 
-                 const useRealRoute = routeMode === 'realistic' && ['car', 'bus', 'train'].includes(mode);
+                 const travelModes = window.google.maps.TravelMode;
 
-                 if (useRealRoute) {
-                     let primaryMode = window.google.maps.TravelMode.DRIVING;
-                     if (mode === 'train' || mode === 'bus') primaryMode = window.google.maps.TravelMode.TRANSIT;
+                 const getDirectionsMode = (transportMode: string): google.maps.TravelMode | null => {
+                     switch (transportMode) {
+                         case 'train':
+                         case 'bus':
+                             return (travelModes.TRANSIT ?? 'TRANSIT') as google.maps.TravelMode;
+                         case 'walk':
+                             return (travelModes.WALKING ?? 'WALKING') as google.maps.TravelMode;
+                         case 'bicycle':
+                             return (travelModes.BICYCLING ?? 'BICYCLING') as google.maps.TravelMode;
+                         case 'motorcycle':
+                         case 'car':
+                             return (travelModes.DRIVING ?? 'DRIVING') as google.maps.TravelMode;
+                         default:
+                             return null;
+                     }
+                 };
 
-                     const tryRoute = async (travelMode: google.maps.TravelMode) => {
-                         const result = await directionsService.route({
-                             origin: { lat: start.coordinates.lat, lng: start.coordinates.lng },
-                             destination: { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                             travelMode
-                         });
+                 const wantsRealRoute = routeMode === 'realistic';
+                 const primaryMode = getDirectionsMode(mode);
+                 const useRealRoute = wantsRealRoute && !!primaryMode;
 
-                         const path = result.routes?.[0]?.overview_path;
-                         const shouldUseTransitPolylineOnly =
-                             routeMode === 'realistic' &&
-                             (mode === 'train' || mode === 'bus') &&
-                             travelMode === window.google.maps.TravelMode.TRANSIT;
+                 const requiresDirections = mode !== 'plane' && mode !== 'boat' && mode !== 'na';
+                 if (wantsRealRoute && requiresDirections && !primaryMode) {
+                     routingAttempted = true;
+                     routingFailed = true;
+                     if (travelItem && onRouteStatusRef.current) {
+                         onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey ?? undefined });
+                     }
+                 }
 
-                         if (shouldUseTransitPolylineOnly && path?.length) {
-                             const line = new window.google.maps.Polyline({
-                                 path,
-                                 geodesic: true,
-                                 strokeColor: startColor,
-                                 strokeOpacity: 0.7,
-                                 strokeWeight: 3,
-                                 clickable: false,
-                                 icons: [{
-                                     icon: {
-                                         path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                         strokeColor: startColor,
-                                         strokeOpacity: 0.9,
-                                         scale: 2.5
-                                     },
-                                     offset: '50%'
-                                 }],
-                                 map: googleMapRef.current
-                             });
-                             routesRef.current.push(line);
-                         } else {
-                             const renderer = new window.google.maps.DirectionsRenderer({
-                                 map: googleMapRef.current,
-                                 directions: result,
-                                 suppressMarkers: true,
-                                 suppressInfoWindows: true,
-                                 preserveViewport: true,
-                                 polylineOptions: {
-                                     strokeColor: startColor,
-                                     strokeOpacity: 0.7,
-                                     strokeWeight: 3,
-                                     clickable: false,
-                                     icons: [{
-                                         icon: {
-                                             path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                                             strokeColor: startColor,
-                                             strokeOpacity: 0.9,
-                                             scale: 2.5
-                                         },
-                                         offset: '50%'
-                                     }]
-                                 }
-                             });
-                             routesRef.current.push(renderer);
-                         }
+                 if (useRealRoute && primaryMode && cacheKey) {
+                     const cached = ROUTE_CACHE.get(cacheKey);
+                     const isCachedFailureFresh = cached?.status === 'failed' && (Date.now() - cached.updatedAt) < ROUTE_FAILURE_TTL_MS;
 
-                         if (mode !== 'na' && path && path.length) {
-                             const midPoint = path[Math.floor(path.length / 2)];
-                             const mid = { lat: midPoint.lat(), lng: midPoint.lng() };
+                     if (cached?.status === 'ok' && cached.path?.length) {
+                         routingAttempted = true;
+                         drawRoutePath(cached.path, startColor, 3);
+
+                         if (mode !== 'na') {
+                             const midPoint = cached.path[Math.floor(cached.path.length / 2)];
                              const offsetPos = getOffsetPosition(
                                  { lat: start.coordinates.lat, lng: start.coordinates.lng },
                                  { lat: end.coordinates.lat, lng: end.coordinates.lng },
-                                 mid
+                                 midPoint
                              );
                              const transportMarker = new window.google.maps.Marker({
                                  map: googleMapRef.current,
@@ -574,27 +669,182 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                              });
                              transportMarkersRef.current.push(transportMarker);
                          }
-                     };
 
-                     try {
-                         await tryRoute(primaryMode);
+                         if (travelItem && onRouteMetricsRef.current) {
+                             onRouteMetricsRef.current(travelItem.id, {
+                                 routeDistanceKm: cached.distanceKm,
+                                 routeDurationHours: cached.durationHours,
+                                 mode,
+                                 routeKey: cacheKey
+                             });
+                         }
+                         if (travelItem && onRouteStatusRef.current) {
+                             onRouteStatusRef.current(travelItem.id, 'ready', { mode, routeKey: cacheKey });
+                         }
                          continue;
-                     } catch (e) {
-                         // Transit can fail for long distances or low coverage; fallback to driving
-                         if (primaryMode === window.google.maps.TravelMode.TRANSIT) {
-                             try {
-                                 await tryRoute(window.google.maps.TravelMode.DRIVING);
-                                 continue;
-                             } catch (e2) {
-                                 console.warn("Routing failed, falling back to line", e2);
+                     }
+
+                     if (isCachedFailureFresh) {
+                         routingAttempted = true;
+                         routingFailed = true;
+                         if (travelItem && onRouteStatusRef.current) {
+                             onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                         }
+                     } else {
+                         routingAttempted = true;
+                         if (travelItem && onRouteStatusRef.current) {
+                             onRouteStatusRef.current(travelItem.id, 'calculating', { mode, routeKey: cacheKey });
+                         }
+                         const tryRoute = async (travelMode: google.maps.TravelMode) => {
+                             const origin = { lat: start.coordinates.lat, lng: start.coordinates.lng };
+                             const destination = { lat: end.coordinates.lat, lng: end.coordinates.lng };
+                             const request: google.maps.DirectionsRequest = {
+                                 origin,
+                                 destination,
+                                 travelMode
+                             };
+
+                             const isWalking = (
+                                 travelMode === travelModes.WALKING ||
+                                 travelMode === 'WALKING'
+                             );
+                             const isBicycling = (
+                                 travelMode === travelModes.BICYCLING ||
+                                 travelMode === 'BICYCLING'
+                             );
+                             if (isWalking) {
+                                 request.avoidHighways = true;
+                                 request.avoidTolls = true;
+                             } else if (isBicycling) {
+                                 request.avoidTolls = true;
                              }
-                         } else {
-                             console.warn("Routing failed, falling back to line", e);
+                             if (travelMode === travelModes.TRANSIT || travelMode === 'TRANSIT') {
+                                 const transitModeValues: google.maps.TransitMode[] = [];
+                                 if (mode === 'train') {
+                                     if (window.google.maps.TransitMode?.TRAIN) {
+                                         transitModeValues.push(window.google.maps.TransitMode.TRAIN);
+                                     }
+                                     if (window.google.maps.TransitMode?.RAIL) {
+                                         transitModeValues.push(window.google.maps.TransitMode.RAIL);
+                                     }
+                                 }
+                                 if (mode === 'bus' && window.google.maps.TransitMode?.BUS) {
+                                     transitModeValues.push(window.google.maps.TransitMode.BUS);
+                                 }
+                                 if (transitModeValues.length > 0) {
+                                     request.transitOptions = { modes: transitModeValues };
+                                 }
+                             }
+
+                             const result = await directionsService.route(request);
+                             const rawPath = result.routes?.[0]?.overview_path;
+                             const path = rawPath?.map((point) => ({ lat: point.lat(), lng: point.lng() }));
+
+                             if (!path || path.length === 0) {
+                                 throw new Error('No route path returned');
+                             }
+                             const geometry = window.google?.maps?.geometry?.spherical;
+                             if (geometry) {
+                                 const toLatLng = (point: google.maps.LatLngLiteral) => new window.google.maps.LatLng(point.lat, point.lng);
+                                 const straightMeters = geometry.computeDistanceBetween(
+                                     new window.google.maps.LatLng(origin.lat, origin.lng),
+                                     new window.google.maps.LatLng(destination.lat, destination.lng)
+                                 );
+                                 let pathMeters = 0;
+                                 for (let idx = 1; idx < path.length; idx++) {
+                                     pathMeters += geometry.computeDistanceBetween(
+                                         toLatLng(path[idx - 1]),
+                                         toLatLng(path[idx])
+                                     );
+                                 }
+                                 const ratio = straightMeters > 0 ? pathMeters / straightMeters : 0;
+                                 if (path.length <= 2 || (ratio > 0 && ratio < 1.01)) {
+                                     throw new Error('Route path is straight');
+                                 }
+                             } else if (path.length <= 2) {
+                                 throw new Error('Route path is straight');
+                             }
+
+                             drawRoutePath(path, startColor, 3);
+
+                             if (mode !== 'na') {
+                                 const midPoint = path[Math.floor(path.length / 2)];
+                                 const offsetPos = getOffsetPosition(
+                                     { lat: start.coordinates.lat, lng: start.coordinates.lng },
+                                     { lat: end.coordinates.lat, lng: end.coordinates.lng },
+                                     midPoint
+                                 );
+                                 const transportMarker = new window.google.maps.Marker({
+                                     map: googleMapRef.current,
+                                     position: offsetPos,
+                                     icon: buildTransportIcon(mode, startColor),
+                                     clickable: false,
+                                     zIndex: 50
+                                 });
+                                 transportMarkersRef.current.push(transportMarker);
+                             }
+
+                             const legs = result.routes?.[0]?.legs ?? [];
+                             const distanceMeters = legs.reduce((sum, leg) => sum + (leg.distance?.value ?? 0), 0);
+                             const durationSeconds = legs.reduce((sum, leg) => sum + (leg.duration?.value ?? 0), 0);
+                             const distanceKm = distanceMeters > 0 ? distanceMeters / 1000 : undefined;
+                             const durationHours = durationSeconds > 0 ? durationSeconds / 3600 : undefined;
+
+                             ROUTE_CACHE.set(cacheKey, {
+                                 status: 'ok',
+                                 updatedAt: Date.now(),
+                                 path,
+                                 distanceKm,
+                                 durationHours
+                             });
+                             persistRouteCache();
+
+                             if (travelItem && onRouteMetricsRef.current) {
+                                 onRouteMetricsRef.current(travelItem.id, {
+                                     routeDistanceKm: distanceKm,
+                                     routeDurationHours: durationHours,
+                                     mode,
+                                     routeKey: cacheKey
+                                 });
+                             }
+                             if (travelItem && onRouteStatusRef.current) {
+                                 onRouteStatusRef.current(travelItem.id, 'ready', { mode, routeKey: cacheKey });
+                             }
+                         };
+
+                         try {
+                             await tryRoute(primaryMode);
+                             continue;
+                         } catch (e) {
+                             routingFailed = true;
+                             ROUTE_CACHE.set(cacheKey, { status: 'failed', updatedAt: Date.now() });
+                             persistRouteCache();
+                             if (travelItem && onRouteStatusRef.current) {
+                                 onRouteStatusRef.current(travelItem.id, 'failed', { mode, routeKey: cacheKey });
+                             }
+                             console.warn(`Routing failed for ${mode}, falling back to line`, e);
                          }
                      }
                  }
 
                  // Fallback / Flight: Draw Geodesic Polyline
+                 const isDashedFallback = mode !== 'plane';
+                 const arrowIcon = { 
+                     path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
+                     strokeColor: startColor, 
+                     strokeOpacity: 0.9,
+                     scale: 2.5 
+                 };
+                 const icons = isDashedFallback
+                     ? [
+                         {
+                             icon: { path: 'M 0,-1 0,1', strokeColor: startColor, strokeOpacity: 0.9, scale: 2.5 },
+                             offset: '0',
+                             repeat: '12px'
+                         },
+                         { icon: arrowIcon, offset: '50%' }
+                       ]
+                     : [{ icon: arrowIcon, offset: '50%' }];
                  const line = new window.google.maps.Polyline({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
@@ -602,18 +852,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      ],
                      geodesic: true,
                      strokeColor: startColor,
-                     strokeOpacity: 0.6,
+                     strokeOpacity: isDashedFallback ? 0 : 0.6,
                      strokeWeight: 2,
                      clickable: false,
-                     icons: [{
-                         icon: { 
-                             path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW, 
-                             strokeColor: startColor, 
-                             strokeOpacity: 0.9,
-                             scale: 2.5 
-                         },
-                         offset: '50%'
-                     }],
+                     icons,
                      map: googleMapRef.current
                  });
                  routesRef.current.push(line);

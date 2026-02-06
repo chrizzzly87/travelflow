@@ -62,7 +62,7 @@ const itinerarySchema = {
         properties: {
             fromCityIndex: { type: Type.NUMBER },
             toCityIndex: { type: Type.NUMBER },
-            transportMode: { type: Type.STRING, enum: ['plane', 'train', 'bus', 'boat', 'car'] },
+            transportMode: { type: Type.STRING, enum: ['plane', 'train', 'bus', 'boat', 'car', 'walk', 'bicycle', 'motorcycle'] },
             description: { type: Type.STRING, description: "e.g. 2h Flight" },
             duration: { type: Type.NUMBER, description: "Duration in hours (e.g. 1.5 for 1h 30m)" }
         },
