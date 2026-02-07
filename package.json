@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@google/genai": "latest",
-    "@types/google.maps": "^3.58.1",
     "@supabase/supabase-js": "^2.49.1",
+    "@types/google.maps": "^3.58.1",
     "lucide-react": "0.378.0",
     "lz-string": "1.5.0",
     "react": "18.3.1",
@@ -22,8 +22,10 @@
     "three": "^0.182.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "tailwindcss": "^4.1.18",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
