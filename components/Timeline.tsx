@@ -814,7 +814,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     
                     <div className="flex flex-col gap-3">
                         {activityLanes.map((lane, laneIdx) => (
-                             <div key={laneIdx} className="relative h-20 w-full group/lane hover:bg-gray-50 transition-colors rounded-lg border border-transparent hover:border-gray-100">
+                             <div key={laneIdx} className="relative h-20 w-full group/lane rounded-lg border border-transparent">
                                 {lane.map(item => (
                                     <TimelineBlock
                                         key={item.id}
