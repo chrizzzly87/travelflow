@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { addDays, findTravelBetweenCities, getTripDuration, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -73,7 +73,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
 
-  const tripLength = getTripDuration(trip.items);
+  const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
+  const visualStartOffset = timelineBounds.startOffset;
+  const tripLength = timelineBounds.dayCount;
   const totalHeight = tripLength * pixelsPerDay;
   const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
 
@@ -108,11 +110,11 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
     const offset = Math.round((todayAtNoon.getTime() - startAtNoon.getTime()) / MS_PER_DAY);
     if (!Number.isFinite(offset)) return null;
-    if (offset < 0 || offset >= tripLength) return null;
+    if (offset < visualStartOffset || offset >= (visualStartOffset + tripLength)) return null;
     if (offset < tripDayRange.start || offset >= tripDayRange.end) return null;
 
-    return offset;
-  }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start]);
+    return offset - visualStartOffset;
+  }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start, visualStartOffset]);
   
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -230,12 +232,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
       const rect = travelLaneRef.current.getBoundingClientRect();
       const offsetY = e.clientY - rect.top; // Vertical offset
-      const rawDay = offsetY / pixelsPerDay;
+      const rawDay = visualStartOffset + (offsetY / pixelsPerDay);
       
       let start = rawDay - 0.5;
       const snapStep = 0.5;
       start = Math.round(start / snapStep) * snapStep;
-      if (start < 0) start = 0;
+      if (start < visualStartOffset) start = visualStartOffset;
       
       setHoverTravelStart(start);
   };
@@ -435,7 +437,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     if (!targetItem || !containerRef.current) return;
 
     const container = containerRef.current;
-    const targetCenter = ((targetItem.startDateOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
+    const targetCenter = ((targetItem.startDateOffset - visualStartOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
     const visibleStart = container.scrollTop + 80;
     const visibleEnd = container.scrollTop + container.clientHeight - 80;
 
@@ -449,7 +451,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
         behavior: 'smooth',
     });
     lastAutoScrollSelectionRef.current = selectedItemId;
-  }, [selectedItemId, trip.items, pixelsPerDay]);
+  }, [selectedItemId, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
     <div 
@@ -495,7 +497,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                 <div className="relative w-full flex-1">
                     {Array.from({ length: tripLength }).map((_, i) => {
-                        const date = addDays(parsedTripStartDate || new Date(trip.startDate), i);
+                        const date = addDays(parsedTripStartDate || new Date(trip.startDate), visualStartOffset + i);
                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                         const isToday = i === todayRowIndex;
                         
@@ -610,6 +612,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
                                      swapSelectedLabel="Reverse selected cities"
                                      pixelsPerDay={pixelsPerDay}
+                                     timelineStartOffset={visualStartOffset}
                                      vertical={true}
                                      canEdit={canEdit}
                                  />
@@ -635,8 +638,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          {travelLinks.map(link => {
                              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                              const toStart = link.toCity.startDateOffset;
-                             const top = fromEnd * pixelsPerDay;
-                             const bottom = toStart * pixelsPerDay;
+                             const top = (fromEnd - visualStartOffset) * pixelsPerDay;
+                             const bottom = (toStart - visualStartOffset) * pixelsPerDay;
                              const height = Math.max(16, bottom - top);
                              const mid = top + height / 2;
                              const chipHeight = 36;
@@ -689,7 +692,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
                          <button 
-                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(0); }}
+                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-indigo-50 text-indigo-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-indigo-100' : 'opacity-50 cursor-not-allowed'}`}
                              title="Add Activity"
@@ -715,6 +718,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          onResizeStart={handleResizeStart}
                                          onMoveStart={handleMoveStart}
                                          pixelsPerDay={pixelsPerDay}
+                                         timelineStartOffset={visualStartOffset}
                                          vertical={true}
                                          canEdit={canEdit}
                                      />

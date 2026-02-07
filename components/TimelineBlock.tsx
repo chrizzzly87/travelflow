@@ -20,6 +20,7 @@ interface TimelineBlockProps {
   showSwapSelectedButton?: boolean;
   swapSelectedLabel?: string;
   pixelsPerDay: number;
+  timelineStartOffset?: number;
   vertical?: boolean;
   canEdit?: boolean;
 }
@@ -39,6 +40,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   showSwapSelectedButton = false,
   swapSelectedLabel,
   pixelsPerDay,
+  timelineStartOffset = 0,
   vertical = false,
   canEdit = true,
 }) => {
@@ -52,7 +54,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   // Visual Dimensions
   const dimensionCheck = item.duration * pixelsPerDay;
   const size = Math.max(dimensionCheck, (isTravel || isEmptyTravel) ? 40 : 20); 
-  const position = item.startDateOffset * pixelsPerDay;
+  const position = (item.startDateOffset - timelineStartOffset) * pixelsPerDay;
 
   // Buffer calculations (Minutes -> Days -> Pixels)
   const bufferBeforePx = item.bufferBefore ? (item.bufferBefore / 1440) * pixelsPerDay : 0;
