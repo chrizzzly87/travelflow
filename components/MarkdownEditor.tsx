@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bot, Sparkles, Bold, Italic, List, CheckSquare, Heading1, Heading2, Heading3, Link2 } from 'lucide-react';
+import { useAppDialog } from './AppDialogProvider';
 
 export interface MarkdownAiAction {
     id: string;
@@ -303,6 +304,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     readOnly = false,
     className = ''
 }) => {
+    const { prompt } = useAppDialog();
     const [isAiPopoverOpen, setIsAiPopoverOpen] = useState(false);
 
     const aiPopoverRef = useRef<HTMLDivElement>(null);
@@ -377,16 +379,51 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         syncMarkdownFromEditor();
     };
 
-    const handleLink = () => {
+    const handleLink = async () => {
         focusEditor();
-        const selectedText = window.getSelection()?.toString().trim() || '';
-        const url = window.prompt('Enter URL', 'https://');
+        const selection = window.getSelection();
+        const selectedText = selection?.toString().trim() || '';
+        const selectionRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
+
+        const url = await prompt({
+            title: 'Insert Link',
+            message: 'Enter a URL for the selected text or insert a new link.',
+            label: 'URL',
+            placeholder: 'https://example.com',
+            defaultValue: 'https://',
+            confirmLabel: 'Insert Link',
+            cancelLabel: 'Cancel',
+            inputType: 'url',
+            validate: (value) => {
+                if (!value) return 'Please enter a URL.';
+                try {
+                    const parsed = new URL(value);
+                    if (!parsed.protocol.startsWith('http')) {
+                        return 'URL must start with http:// or https://';
+                    }
+                    return null;
+                } catch {
+                    return 'Please enter a valid URL.';
+                }
+            },
+        });
         if (!url) return;
 
+        focusEditor();
+        if (selectionRange) {
+            const nextSelection = window.getSelection();
+            if (nextSelection) {
+                nextSelection.removeAllRanges();
+                nextSelection.addRange(selectionRange);
+            }
+        }
+
+        const normalizedUrl = url.trim();
+
         if (selectedText) {
-            document.execCommand('createLink', false, url);
+            document.execCommand('createLink', false, normalizedUrl);
         } else {
-            const safeUrl = escapeHtml(url);
+            const safeUrl = escapeHtml(normalizedUrl);
             document.execCommand('insertHTML', false, `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeUrl}</a>`);
         }
 

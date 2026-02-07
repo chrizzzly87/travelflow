@@ -4,6 +4,7 @@ import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDay
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { useAppDialog } from './AppDialogProvider';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -673,6 +674,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   onUpdateTrip,
   mapLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
+  const { confirm } = useAppDialog();
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [favoritesOpen, setFavoritesOpen] = React.useState(true);
@@ -867,16 +869,23 @@ export const TripManager: React.FC<TripManagerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm("Are you sure you want to delete this trip?")) {
-      deleteTrip(id);
-      if (DB_ENABLED) {
-        void dbDeleteTrip(id);
-      }
-      if (hoverAnchor?.tripId === id) hideHoverNow();
-      void refreshTrips();
+    const shouldDelete = await confirm({
+      title: 'Delete Trip?',
+      message: 'Are you sure you want to delete this trip? This action cannot be undone.',
+      confirmLabel: 'Delete Trip',
+      cancelLabel: 'Cancel',
+      tone: 'danger',
+    });
+    if (!shouldDelete) return;
+
+    deleteTrip(id);
+    if (DB_ENABLED) {
+      void dbDeleteTrip(id);
     }
+    if (hoverAnchor?.tripId === id) hideHoverNow();
+    void refreshTrips();
   };
 
   const handleToggleFavorite = (trip: ITrip) => {

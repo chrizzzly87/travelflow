@@ -168,6 +168,44 @@ export const getTripDuration = (items: any[]): number => {
   return Math.max(maxEnd + 2, 10); // Add some buffer
 };
 
+export interface TimelineBounds {
+    startOffset: number;
+    endOffset: number;
+    dayCount: number;
+}
+
+export const getTimelineBounds = (
+    items: ITimelineItem[],
+    options: { minDays?: number } = {}
+): TimelineBounds => {
+    const minDays = Math.max(1, Math.floor(options.minDays ?? 1));
+    let minStart = Number.POSITIVE_INFINITY;
+    let maxEnd = Number.NEGATIVE_INFINITY;
+
+    items.forEach(item => {
+        if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
+        minStart = Math.min(minStart, item.startDateOffset);
+        maxEnd = Math.max(maxEnd, item.startDateOffset + Math.max(item.duration, 0));
+    });
+
+    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd)) {
+        return {
+            startOffset: 0,
+            endOffset: minDays,
+            dayCount: minDays,
+        };
+    }
+
+    const startOffset = Math.floor(minStart);
+    const endOffset = Math.max(startOffset + minDays, Math.ceil(maxEnd));
+
+    return {
+        startOffset,
+        endOffset,
+        dayCount: endOffset - startOffset,
+    };
+};
+
 export const findTravelBetweenCities = (
     items: ITimelineItem[],
     fromCity: ITimelineItem,

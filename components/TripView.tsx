@@ -103,6 +103,59 @@ const MIN_DETAILS_WIDTH = 360;
 const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
 const RESIZER_WIDTH = 4;
+const NEGATIVE_OFFSET_EPSILON = 0.001;
+
+const parseTripStartDate = (value: string): Date => {
+    if (!value) return new Date();
+    const parts = value.split('-').map(Number);
+    if (parts.length === 3 && parts.every(part => Number.isFinite(part))) {
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+};
+
+const formatTripDateValue = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const normalizeNegativeOffsetsForTrip = (
+    items: ITimelineItem[],
+    startDate: string
+): { items: ITimelineItem[]; startDate: string; shiftedDays: number } => {
+    let minStart = Number.POSITIVE_INFINITY;
+
+    items.forEach(item => {
+        if (!Number.isFinite(item.startDateOffset)) return;
+        minStart = Math.min(minStart, item.startDateOffset);
+    });
+
+    if (!Number.isFinite(minStart) || minStart >= -NEGATIVE_OFFSET_EPSILON) {
+        return { items, startDate, shiftedDays: 0 };
+    }
+
+    const shiftedDays = Math.ceil(-minStart);
+    if (shiftedDays <= 0) {
+        return { items, startDate, shiftedDays: 0 };
+    }
+
+    const shiftedItems = items.map(item => {
+        if (!Number.isFinite(item.startDateOffset)) return item;
+        return { ...item, startDateOffset: item.startDateOffset + shiftedDays };
+    });
+
+    const nextStartDate = parseTripStartDate(startDate);
+    nextStartDate.setDate(nextStartDate.getDate() - shiftedDays);
+
+    return {
+        items: shiftedItems,
+        startDate: formatTripDateValue(nextStartDate),
+        shiftedDays,
+    };
+};
 
 interface TripViewProps {
     trip: ITrip;
@@ -856,12 +909,16 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
 
     // Handlers
-    const handleUpdateItems = (items: ITimelineItem[], options?: { deferCommit?: boolean }) => {
+    const handleUpdateItems = (items: ITimelineItem[], options?: { deferCommit?: boolean; skipPendingLabel?: boolean }) => {
         markUserEdit();
-        const normalizedItems = normalizeCityColors(items);
+        const normalizedOffsets = options?.deferCommit
+            ? { items, startDate: trip.startDate, shiftedDays: 0 }
+            : normalizeNegativeOffsetsForTrip(items, trip.startDate);
+        const normalizedItems = normalizeCityColors(normalizedOffsets.items);
+        const nextTripStartDate = normalizedOffsets.startDate;
 
         if (options?.deferCommit) {
-            if (!pendingHistoryLabelRef.current) {
+            if (!options.skipPendingLabel && !pendingHistoryLabelRef.current) {
                 pendingHistoryLabelRef.current = 'Data: Adjusted timeline items';
             }
             const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
@@ -933,7 +990,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             }
         }
 
-        const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
+        const updatedTrip = { ...trip, startDate: nextTripStartDate, items: normalizedItems, updatedAt: Date.now() };
         safeUpdateTrip(updatedTrip, { persist: true });
         scheduleCommit(updatedTrip, currentViewSettings);
     };
@@ -992,6 +1049,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     setPendingLabel(`Data: Updated notes for ${item.title}`);
                 } else if (updates.title !== undefined) {
                     setPendingLabel(`Data: Renamed city ${item.title}`);
+                } else if (updates.location !== undefined || updates.coordinates !== undefined) {
+                    setPendingLabel(`Data: Changed city in ${item.title}`);
                 }
             } else if (item.type === 'travel' || item.type === 'travel-empty') {
                 if (updates.transportMode !== undefined) {
@@ -1012,6 +1071,31 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         const newItems = trip.items.map(i => i.id === id ? { ...i, ...sanitizedUpdates } : i);
         handleUpdateItems(newItems);
     };
+
+    const handleBatchItemUpdate = useCallback((
+        changes: Array<{ id: string; updates: Partial<ITimelineItem> }>,
+        options?: { label?: string; deferCommit?: boolean; skipPendingLabel?: boolean }
+    ) => {
+        if (changes.length === 0) return;
+
+        const updatesById = new Map(changes.map(change => [change.id, change.updates]));
+        let hasChanges = false;
+        const newItems = trip.items.map(item => {
+            const updates = updatesById.get(item.id);
+            if (!updates) return item;
+            hasChanges = true;
+            return { ...item, ...updates };
+        });
+
+        if (!hasChanges) return;
+        if (options?.label) setPendingLabel(options.label);
+        handleUpdateItems(
+            newItems,
+            options?.deferCommit
+                ? { deferCommit: true, skipPendingLabel: options?.skipPendingLabel }
+                : undefined
+        );
+    }, [trip.items, handleUpdateItems, setPendingLabel]);
 
     const [routeStatusById, setRouteStatusById] = useState<Record<string, 'calculating' | 'ready' | 'failed' | 'idle'>>({});
 
@@ -1531,6 +1615,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             isOpen={!!selectedItemId}
                                             onClose={clearSelection}
                                             onUpdate={handleUpdateItem}
+                                            onBatchUpdate={handleBatchItemUpdate}
                                             onDelete={handleDeleteItem}
                                             tripStartDate={trip.startDate}
                                             tripItems={trip.items}
@@ -1659,6 +1744,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             isOpen={!!selectedItemId}
                                             onClose={clearSelection}
                                             onUpdate={handleUpdateItem}
+                                            onBatchUpdate={handleBatchItemUpdate}
                                             onDelete={handleDeleteItem}
                                             tripStartDate={trip.startDate}
                                             tripItems={trip.items}

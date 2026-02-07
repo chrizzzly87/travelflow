@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { addDays, findTravelBetweenCities, getTripDuration, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -55,7 +55,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
 
-  const tripLength = getTripDuration(trip.items);
+  const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
+  const visualStartOffset = timelineBounds.startOffset;
+  const tripLength = timelineBounds.dayCount;
   const totalWidth = tripLength * pixelsPerDay;
   
   // Separate items into lanes
@@ -181,7 +183,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
       const rect = travelLaneRef.current.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
-      const rawDay = offsetX / pixelsPerDay;
+      const rawDay = visualStartOffset + (offsetX / pixelsPerDay);
       
       // Calculate start time so that the block (duration=1.0) is centered on mouse
       // Center = Start + 0.5  =>  Start = Center - 0.5
@@ -191,7 +193,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       const snapStep = 0.5;
       start = Math.round(start / snapStep) * snapStep;
       
-      if (start < 0) start = 0;
+      if (start < visualStartOffset) start = visualStartOffset;
       
       setHoverTravelStart(start);
   };
@@ -400,9 +402,11 @@ export const Timeline: React.FC<TimelineProps> = ({
   // Process Dates for Headers
   const dateHeaders = React.useMemo(() => {
     const days = Array.from({ length: tripLength }).map((_, i) => {
-        const date = addDays(new Date(trip.startDate), i);
+        const dayOffset = visualStartOffset + i;
+        const date = addDays(new Date(trip.startDate), dayOffset);
         return { 
             index: i,
+            dayOffset,
             date,
             isWeekend: date.getDay() === 0 || date.getDay() === 6,
             dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
@@ -442,7 +446,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
 
     return { view: 'grouped', days, months };
-  }, [trip.startDate, tripLength, isZoomedOut]);
+  }, [trip.startDate, tripLength, isZoomedOut, visualStartOffset]);
 
   useEffect(() => {
     if (!selectedItemId) return;
@@ -452,7 +456,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (!targetItem || !containerRef.current) return;
 
     const container = containerRef.current;
-    const targetCenter = ((targetItem.startDateOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
+    const targetCenter = ((targetItem.startDateOffset - visualStartOffset + (targetItem.duration / 2)) * pixelsPerDay) + 32;
     const visibleStart = container.scrollLeft + 80;
     const visibleEnd = container.scrollLeft + container.clientWidth - 80;
 
@@ -466,7 +470,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         behavior: 'smooth',
     });
     lastAutoScrollSelectionRef.current = selectedItemId;
-  }, [selectedItemId, trip.items, pixelsPerDay]);
+  }, [selectedItemId, trip.items, pixelsPerDay, visualStartOffset]);
 
   return (
     <div 
@@ -609,6 +613,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
                                     swapSelectedLabel="Reverse selected cities"
                                     pixelsPerDay={pixelsPerDay}
+                                    timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
                                 />
                             );
@@ -636,8 +641,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
-                            const left = fromEnd * pixelsPerDay;
-                            const right = toStart * pixelsPerDay;
+                            const left = (fromEnd - visualStartOffset) * pixelsPerDay;
+                            const right = (toStart - visualStartOffset) * pixelsPerDay;
                             const width = Math.max(16, right - left);
                             const mid = left + width / 2;
                             const chipWidth = 140;
@@ -716,10 +721,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 }}
                              >
                                  <button
-                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(i); }}
+                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(dateHeaders.days[i]?.dayOffset ?? i); }}
                                      disabled={!canEdit}
                                      className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-indigo-500' : 'cursor-not-allowed opacity-40'}`}
-                                     title={`Add activity for day ${i + 1}`}
+                                     title={`Add activity for ${dateHeaders.days[i]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || `day ${i + 1}`}`}
                                  >
                                      <Plus size={16} />
                                  </button>
@@ -739,6 +744,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         onResizeStart={handleResizeStart}
                                         onMoveStart={handleMoveStart}
                                         pixelsPerDay={pixelsPerDay}
+                                        timelineStartOffset={visualStartOffset}
                                         canEdit={canEdit}
                                     />
                                 ))}
