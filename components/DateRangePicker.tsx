@@ -40,9 +40,21 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
     const sDate = parseDate(startDate);
     const eDate = parseDate(endDate);
 
+    const getViewDateForMode = (targetMode: 'start' | 'end') => {
+        if (targetMode === 'end') {
+            if (eDate) return new Date(eDate);
+            if (sDate) return new Date(sDate);
+            return new Date();
+        }
+
+        if (sDate) return new Date(sDate);
+        return new Date();
+    };
+
     useEffect(() => {
-        if (sDate) setViewDate(new Date(sDate));
-    }, [isOpen]); 
+        if (!isOpen) return;
+        setViewDate(getViewDateForMode(mode));
+    }, [isOpen, mode, startDate, endDate]); 
 
     // Handle clicks outside (needs to account for Portal)
     useEffect(() => {
@@ -146,39 +158,77 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
         return formatDate(res);
     };
 
+    const openCalendar = (targetMode: 'start' | 'end') => {
+        setMode(targetMode);
+        setViewDate(getViewDateForMode(targetMode));
+        setIsOpen(true);
+    };
+
+    const isSameDay = (a: Date | null, b: Date | null) => {
+        if (!a || !b) return false;
+        return (
+            a.getFullYear() === b.getFullYear() &&
+            a.getMonth() === b.getMonth() &&
+            a.getDate() === b.getDate()
+        );
+    };
+
+    const shiftDate = (date: Date, days: number) => {
+        const shifted = new Date(date);
+        shifted.setDate(shifted.getDate() + days);
+        return shifted;
+    };
+
+    const isDateInRange = (date: Date) => {
+        let inRange = false;
+
+        if (sDate && eDate && date > sDate && date < eDate) inRange = true;
+
+        if (mode === 'end' && sDate && hoverDate) {
+            if (date > sDate && date <= hoverDate) inRange = true;
+            if (eDate && formatDate(date) === endDate && !isSameDay(hoverDate, eDate)) inRange = true;
+        }
+
+        return inRange;
+    };
+
     const getDayClass = (date: Date, isCurrent: boolean) => {
         const str = formatDate(date);
         const isStart = str === startDate;
         const isEnd = str === endDate;
-        
-        let inRange = false;
-        if (sDate && eDate && date > sDate && date < eDate) inRange = true;
-        
-        if (mode === 'end' && sDate && hoverDate && !eDate) {
-             if (date > sDate && date <= hoverDate) inRange = true;
-        }
-        if (mode === 'end' && sDate && hoverDate) {
-             if (date > sDate && date <= hoverDate) inRange = true;
-             if (str === endDate && hoverDate !== eDate) inRange = true;
-        }
+        const inRange = isDateInRange(date);
+        const connectsRight = isStart && !isEnd && isDateInRange(shiftDate(date, 1));
+        const connectsLeft = isEnd && !isStart && isDateInRange(shiftDate(date, -1));
 
-        let base = "h-9 w-full flex items-center justify-center text-sm relative z-10 cursor-pointer rounded-full transition-all ";
+        let base = "group h-9 w-full flex items-center justify-center text-sm relative isolate z-10 cursor-pointer rounded-none transition-colors ";
         
         if (isStart || isEnd) {
-             // Selected State: Force white text
-            base += "bg-indigo-600 text-white hover:bg-indigo-700 shadow-md ";
+            base += "font-medium ";
+
+            if (connectsRight || connectsLeft) {
+                base += "before:content-[''] before:absolute before:z-0 before:top-0 before:bottom-0 before:bg-indigo-50 before:pointer-events-none ";
+                if (connectsRight) base += "before:right-0 before:w-1/2 ";
+                if (connectsLeft) base += "before:left-0 before:w-1/2 ";
+            }
         } else if (inRange) {
              // Range State: Indigo text
             base += "bg-indigo-50 text-indigo-700 rounded-none ";
              if (!isCurrent) base += "opacity-40 ";
         } else {
              // Default State
-            base += "hover:bg-gray-100 ";
+            base += "hover:bg-gray-100 rounded-none ";
             if (!isCurrent) base += "text-gray-300 ";
             else base += "text-gray-700 font-medium ";
         }
 
         return base;
+    };
+
+    const getDayInnerClass = (date: Date) => {
+        const str = formatDate(date);
+        const isSelected = str === startDate || str === endDate;
+        if (!isSelected) return "";
+        return "relative z-10 h-9 w-9 flex items-center justify-center rounded-full bg-indigo-600 text-white shadow-md transition-colors group-hover:bg-indigo-700";
     };
 
     const days = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());
@@ -193,7 +243,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
             <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 transition-all ${isOpen ? 'ring-2 ring-indigo-500 bg-white' : ''} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
                  <div 
                     className={`flex-1 cursor-pointer ${mode === 'start' && isOpen ? 'text-indigo-600' : ''}`}
-                    onClick={() => { if(!disabled) { setIsOpen(true); setMode('start'); } }}
+                    onClick={() => { if(!disabled) { openCalendar('start'); } }}
                  >
                     <span className="text-xs text-gray-400 font-semibold block">Start</span>
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
@@ -207,7 +257,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                  
                  <div 
                     className={`flex-1 text-right cursor-pointer ${mode === 'end' && isOpen ? 'text-indigo-600' : ''}`}
-                    onClick={() => { if(!disabled) { setIsOpen(true); setMode('end'); } }}
+                    onClick={() => { if(!disabled) { openCalendar('end'); } }}
                  >
                     <span className="text-xs text-gray-400 font-semibold block text-right">End</span>
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
@@ -258,7 +308,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                                 onClick={() => handleDateClick(d.date)}
                                 onMouseEnter={() => setHoverDate(d.date)}
                             >
-                                {d.date.getDate()}
+                                <span className={getDayInnerClass(d.date)}>
+                                    {d.date.getDate()}
+                                </span>
                             </div>
                         ))}
                     </div>
