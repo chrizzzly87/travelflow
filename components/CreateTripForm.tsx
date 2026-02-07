@@ -8,6 +8,7 @@ import { getDefaultTripDates, addDays, generateTripId } from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';
+import { HeroWebGLBackground } from './HeroWebGLBackground';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
@@ -196,9 +197,13 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     }
 
   return (
-      <div className="w-full h-full flex flex-col relative bg-gray-50/50">
+      <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-50">
+           <HeroWebGLBackground className="z-0" />
+           <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
+           <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl" />
+           <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-indigo-300/30 blur-3xl" />
            {/* Navigation Header */}
-           <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-10">
+           <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20">
                <div className="flex items-center gap-2">
                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg transform rotate-3">
                        <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
@@ -214,9 +219,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                </button>
            </header>
 
-           <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto w-full">
+           <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto w-full">
                <div className="text-center mb-8 mt-12">
-                   <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Plan your next adventure</h1>
+                   <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Plan your next adventure</h1>
                    <p className="text-gray-500">AI-powered itinerary generation in seconds.</p>
                </div>
 
