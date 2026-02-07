@@ -86,13 +86,30 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
 
     // Calculate position synchronous to paint to avoid "flying" effect
     useLayoutEffect(() => {
-        if (isOpen && containerRef.current) {
+        if (!isOpen || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const width = 288; // w-72
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+
+        setPosition({
+            // fixed-position portal uses viewport coordinates directly
+            top: rect.bottom + 8,
+            left
+        });
+    }, [isOpen, startDate, endDate, mode]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handleResize = () => {
+            if (!containerRef.current) return;
             const rect = containerRef.current.getBoundingClientRect();
-            setPosition({
-                top: rect.bottom + window.scrollY + 8,
-                left: rect.left + window.scrollX
-            });
-        }
+            const width = 288;
+            const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+            setPosition({ top: rect.bottom + 8, left });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, [isOpen]);
 
     const getDaysInMonth = (year: number, month: number) => {

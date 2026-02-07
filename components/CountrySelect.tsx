@@ -1,6 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { COUNTRIES } from '../utils';
-import { MapPin, Search, X, Plus } from 'lucide-react';
+import { MapPin, Search, Plus } from 'lucide-react';
+import { CountryTag } from './CountryTag';
 
 interface CountrySelectProps {
     value: string;
@@ -12,6 +14,8 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
     // Parse existing value into array (comma separated)
     const selectedCountries = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -21,9 +25,46 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
         !selectedCountries.includes(c.name)
     );
 
+    const updateDropdownPosition = useCallback(() => {
+        if (!wrapperRef.current) return;
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const width = Math.max(220, Math.min(rect.width, window.innerWidth - 16));
+        const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+        setDropdownPosition({
+            top: rect.bottom + 8,
+            left,
+            width,
+        });
+    }, []);
+
+    const openDropdown = useCallback(() => {
+        if (disabled) return;
+        updateDropdownPosition();
+        setIsOpen(true);
+    }, [disabled, updateDropdownPosition]);
+
+    useLayoutEffect(() => {
+        if (!isOpen) return;
+        updateDropdownPosition();
+    }, [isOpen, search, selectedCountries.length, updateDropdownPosition]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const handlePositionChange = () => updateDropdownPosition();
+        window.addEventListener('resize', handlePositionChange);
+        window.addEventListener('scroll', handlePositionChange, true);
+        return () => {
+            window.removeEventListener('resize', handlePositionChange);
+            window.removeEventListener('scroll', handlePositionChange, true);
+        };
+    }, [isOpen, updateDropdownPosition]);
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            const inWrapper = wrapperRef.current?.contains(target);
+            const inDropdown = dropdownRef.current?.contains(target);
+            if (!inWrapper && !inDropdown) {
                 setIsOpen(false);
             }
         };
@@ -52,23 +93,19 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
             
             <div 
                 className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:bg-white transition-all flex flex-wrap items-center gap-2 cursor-text min-h-[3rem] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
-                onClick={() => { if(!disabled) setIsOpen(true); }}
+                onClick={openDropdown}
             >
                 {/* Selected Tags */}
                 {selectedCountries.map((countryName) => {
                     const countryData = COUNTRIES.find(c => c.name === countryName);
                     return (
-                        <span key={countryName} className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-1 rounded-lg text-sm font-medium text-gray-800 shadow-sm animate-in fade-in zoom-in duration-200">
-                            <span>{countryData?.flag || '🌍'}</span>
-                            <span>{countryName}</span>
-                            {!disabled && (
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); removeCountry(countryName); }}
-                                    className="ml-1 p-0.5 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
+                        <span key={countryName} className="animate-in fade-in zoom-in duration-200">
+                            <CountryTag
+                                countryName={countryName}
+                                flag={countryData?.flag || '🌍'}
+                                removable={!disabled}
+                                onRemove={() => removeCountry(countryName)}
+                            />
                         </span>
                     );
                 })}
@@ -79,17 +116,28 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                     <input 
                         type="text"
                         value={search}
-                        onChange={(e) => { setSearch(e.target.value); setIsOpen(true); }}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            openDropdown();
+                        }}
                         placeholder={selectedCountries.length === 0 ? "Search countries..." : "Add another..."}
                         className="bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
-                        onFocus={() => setIsOpen(true)}
+                        onFocus={openDropdown}
                     />
                 </div>
             </div>
 
             {/* Dropdown */}
-            {isOpen && (search || filtered.length > 0) && (
-                <div className="absolute z-50 left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+            {isOpen && dropdownPosition && (search || filtered.length > 0) && typeof document !== 'undefined' && createPortal(
+                <div
+                    ref={dropdownRef}
+                    className="fixed z-[9999] bg-white rounded-xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200"
+                    style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                    }}
+                >
                     {filtered.length > 0 ? filtered.map(country => (
                         <div 
                             key={country.code}
@@ -107,7 +155,8 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             {search ? "No matching countries" : "Type to search"}
                         </div>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
