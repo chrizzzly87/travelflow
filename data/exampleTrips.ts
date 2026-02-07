@@ -239,12 +239,12 @@ export const THAILAND_TEMPLATE: Partial<ITrip> = {
         {
             id: 'city-bkk-end',
             type: 'city',
-            title: 'Bangkok (Shopping)',
+            title: 'Bangkok',
             startDateOffset: 24,
             duration: 2,
             color: 'bg-rose-200 border-rose-300 text-rose-900',
-            location: 'Siam, Bangkok',
-            coordinates: { lat: 13.7469, lng: 100.5349 },
+            location: 'Bangkok, Thailand',
+            coordinates: { lat: 13.7563, lng: 100.5018 },
             description: "Last minute shopping at MBK and Siam Paragon."
         }
     ]

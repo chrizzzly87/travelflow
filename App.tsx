@@ -20,6 +20,7 @@ import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
 import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
+import { AppDialogProvider } from './components/AppDialogProvider';
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -507,7 +508,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
     return (
         <Router>
-            <AppContent />
+            <AppDialogProvider>
+                <AppContent />
+            </AppDialogProvider>
         </Router>
     );
 };
