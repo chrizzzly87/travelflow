@@ -11,7 +11,7 @@ interface TripManagerProps {
   onSelectTrip: (trip: ITrip) => void;
   currentTripId?: string;
   onUpdateTrip?: (trip: ITrip) => void;
-  mapLanguage?: AppLanguage;
+  appLanguage?: AppLanguage;
 }
 
 interface TripBuckets {
@@ -150,7 +150,7 @@ const getTripCityStops = (trip: ITrip) =>
     duration: item.duration,
   }));
 
-const formatTripDateRange = (trip: ITrip): string => {
+const formatTripDateRange = (trip: ITrip, locale: AppLanguage): string => {
   const baseStart = parseLocalDate(trip.startDate);
   const range = getTripRangeOffsets(trip);
   const start = addDays(baseStart, Math.floor(range.startOffset));
@@ -161,10 +161,10 @@ const formatTripDateRange = (trip: ITrip): string => {
   const fmt: Intl.DateTimeFormatOptions = includeYear
     ? { month: 'short', day: 'numeric', year: 'numeric' }
     : { month: 'short', day: 'numeric' };
-  return `${start.toLocaleDateString(undefined, fmt)} - ${end.toLocaleDateString(undefined, fmt)}`;
+  return `${start.toLocaleDateString(locale, fmt)} - ${end.toLocaleDateString(locale, fmt)}`;
 };
 
-const formatTripMonths = (trip: ITrip): string => {
+const formatTripMonths = (trip: ITrip, locale: AppLanguage): string => {
   const baseStart = parseLocalDate(trip.startDate);
   const range = getTripRangeOffsets(trip);
   const start = addDays(baseStart, Math.floor(range.startOffset));
@@ -175,14 +175,14 @@ const formatTripMonths = (trip: ITrip): string => {
   const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
 
   while (cursor <= endMonth) {
-    names.push(cursor.toLocaleDateString(undefined, { month: 'long' }));
+    names.push(cursor.toLocaleDateString(locale, { month: 'long' }));
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
   return names.join('/');
 };
 
-const formatTripSummaryLine = (trip: ITrip): string => {
+const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage): string => {
   const days = getTripDurationDays(trip);
   const cityCount = getTripCityItems(trip).length;
   const cityLabel = cityCount === 1 ? 'city' : 'cities';
@@ -191,7 +191,7 @@ const formatTripSummaryLine = (trip: ITrip): string => {
     ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
     : null;
   const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
-  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip)} • ${cityCount} ${cityLabel}${distancePart}`;
+  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip, locale)} • ${cityCount} ${cityLabel}${distancePart}`;
 };
 
 const formatCityStayLabel = (duration: number): string => {
@@ -415,6 +415,7 @@ const FolderHeader: React.FC<FolderHeaderProps> = ({ label, count, isOpen, onTog
 interface TripRowProps {
   trip: ITrip;
   currentTripId?: string;
+  locale: AppLanguage;
   onSelectTrip: (trip: ITrip) => void;
   onToggleFavorite: (trip: ITrip) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
@@ -425,6 +426,7 @@ interface TripRowProps {
 const TripRow: React.FC<TripRowProps> = ({
   trip,
   currentTripId,
+  locale,
   onSelectTrip,
   onToggleFavorite,
   onDelete,
@@ -464,7 +466,7 @@ const TripRow: React.FC<TripRowProps> = ({
             {trip.title}
           </span>
         </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">{formatTripSummaryLine(trip)}</div>
+        <div className="text-[11px] text-gray-400 mt-0.5">{formatTripSummaryLine(trip, locale)}</div>
       </button>
 
       <div className="flex items-center gap-0.5">
@@ -504,10 +506,10 @@ interface TripTooltipProps {
   position: TooltipPosition;
   onHoverStart: () => void;
   onHoverEnd: () => void;
-  mapLanguage: AppLanguage;
+  locale: AppLanguage;
 }
 
-const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart, onHoverEnd, mapLanguage }) => {
+const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart, onHoverEnd, locale }) => {
   const [shouldLoadMap, setShouldLoadMap] = React.useState(false);
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
@@ -522,8 +524,8 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   const mapUrl = React.useMemo(() => {
     if (!shouldLoadMap) return null;
-    return buildMiniMapUrl(trip, mapLanguage);
-  }, [shouldLoadMap, trip, mapLanguage]);
+    return buildMiniMapUrl(trip, locale);
+  }, [shouldLoadMap, trip, locale]);
 
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
   const distanceLabel = React.useMemo(() => {
@@ -545,7 +547,7 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
           <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
           <div className="mt-1 flex items-center gap-1.5 text-purple-600 text-sm font-semibold">
             <CalendarDays size={14} />
-            <span>{formatTripDateRange(trip)}</span>
+            <span>{formatTripDateRange(trip, locale)}</span>
             {distanceLabel && <span className="text-purple-300">•</span>}
             {distanceLabel && <span>{distanceLabel}</span>}
           </div>
@@ -625,6 +627,7 @@ interface BucketListProps {
   label: string;
   trips: ITrip[];
   currentTripId?: string;
+  locale: AppLanguage;
   onSelectTrip: (trip: ITrip) => void;
   onToggleFavorite: (trip: ITrip) => void;
   onDelete: (e: React.MouseEvent, id: string) => void;
@@ -636,6 +639,7 @@ const BucketList: React.FC<BucketListProps> = ({
   label,
   trips,
   currentTripId,
+  locale,
   onSelectTrip,
   onToggleFavorite,
   onDelete,
@@ -653,6 +657,7 @@ const BucketList: React.FC<BucketListProps> = ({
             key={trip.id}
             trip={trip}
             currentTripId={currentTripId}
+            locale={locale}
             onSelectTrip={onSelectTrip}
             onToggleFavorite={onToggleFavorite}
             onDelete={onDelete}
@@ -671,7 +676,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   onSelectTrip,
   currentTripId,
   onUpdateTrip,
-  mapLanguage = DEFAULT_APP_LANGUAGE,
+  appLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -996,6 +1001,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                       label="This week"
                       trips={favoriteBuckets.thisWeek}
                       currentTripId={currentTripId}
+                      locale={appLanguage}
                       onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDelete}
@@ -1006,6 +1012,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                       label="This month"
                       trips={favoriteBuckets.thisMonth}
                       currentTripId={currentTripId}
+                      locale={appLanguage}
                       onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDelete}
@@ -1028,6 +1035,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                               label=""
                               trips={favoriteBuckets.older}
                               currentTripId={currentTripId}
+                              locale={appLanguage}
                               onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                               onToggleFavorite={handleToggleFavorite}
                               onDelete={handleDelete}
@@ -1055,6 +1063,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                       label="This week"
                       trips={regularBuckets.thisWeek}
                       currentTripId={currentTripId}
+                      locale={appLanguage}
                       onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDelete}
@@ -1065,6 +1074,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                       label="This month"
                       trips={regularBuckets.thisMonth}
                       currentTripId={currentTripId}
+                      locale={appLanguage}
                       onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDelete}
@@ -1087,6 +1097,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                               label=""
                               trips={regularBuckets.older}
                               currentTripId={currentTripId}
+                              locale={appLanguage}
                               onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
                               onToggleFavorite={handleToggleFavorite}
                               onDelete={handleDelete}
@@ -1119,7 +1130,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
             position={tooltipPosition}
             onHoverStart={cancelHoverClose}
             onHoverEnd={scheduleHoverClose}
-            mapLanguage={mapLanguage}
+            locale={appLanguage}
           />
         </>
       )}

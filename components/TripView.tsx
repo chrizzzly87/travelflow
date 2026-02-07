@@ -1494,7 +1494,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         )}
 
                                         {/* CONTROLS OVERLAY */}
-                                        <div className="absolute top-4 right-4 z-20 flex gap-2">
+                                        <div className="absolute top-4 right-4 z-40 flex gap-2">
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                 <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
                                                 <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
@@ -1630,7 +1630,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             />
                                         )}
                                         {/* Controls Overlay */}
-                                        <div className="absolute top-4 right-4 z-20 flex gap-2">
+                                        <div className="absolute top-4 right-4 z-40 flex gap-2">
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                 <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
                                                 <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>

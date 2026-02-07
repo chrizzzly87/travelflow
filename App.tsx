@@ -464,7 +464,7 @@ const AppContent: React.FC = () => {
                     if (!trip || trip.id !== updatedTrip.id) return;
                     handleUpdateTrip(updatedTrip, { persist: false });
                 }}
-                mapLanguage={appLanguage}
+                appLanguage={appLanguage}
             />
             
             <SettingsModal 

@@ -19,6 +19,24 @@ interface VerticalTimelineProps {
   readOnly?: boolean;
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const parseLocalTripDate = (value: string): Date | null => {
+  if (!value) return null;
+
+  const plainDate = value.includes('T') ? value.slice(0, 10) : value;
+  const parts = plainDate.split('-').map(Number);
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   trip,
   selectedCityIds = [],
@@ -57,6 +75,44 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
   const tripLength = getTripDuration(trip.items);
   const totalHeight = tripLength * pixelsPerDay;
+  const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
+
+  const tripDayRange = React.useMemo(() => {
+    let minStart = Number.POSITIVE_INFINITY;
+    let maxEnd = Number.NEGATIVE_INFINITY;
+
+    trip.items.forEach((item) => {
+      if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
+      minStart = Math.min(minStart, item.startDateOffset);
+      maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
+    });
+
+    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
+      return { start: 0, end: 0 };
+    }
+
+    return {
+      start: Math.floor(minStart),
+      end: Math.ceil(maxEnd),
+    };
+  }, [trip.items]);
+
+  const todayRowIndex = React.useMemo(() => {
+    if (!parsedTripStartDate) return null;
+
+    const startAtNoon = new Date(parsedTripStartDate);
+    startAtNoon.setHours(12, 0, 0, 0);
+
+    const todayAtNoon = new Date();
+    todayAtNoon.setHours(12, 0, 0, 0);
+
+    const offset = Math.round((todayAtNoon.getTime() - startAtNoon.getTime()) / MS_PER_DAY);
+    if (!Number.isFinite(offset)) return null;
+    if (offset < 0 || offset >= tripLength) return null;
+    if (offset < tripDayRange.start || offset >= tripDayRange.end) return null;
+
+    return offset;
+  }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start]);
   
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -402,6 +458,33 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       onClick={() => handleBlockSelect(null)}
     >
         <div className="relative flex" style={{ height: `${Math.max(totalHeight, 800)}px` }}>
+            {todayRowIndex !== null && (
+                <>
+                    <div
+                        className="absolute left-0 right-0 pointer-events-none z-[2]"
+                        style={{
+                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
+                            height: `${pixelsPerDay}px`,
+                        }}
+                        aria-hidden="true"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-b from-red-50/40 via-red-50/15 to-red-50/40" />
+                    </div>
+                    <div
+                        className="absolute left-0 right-0 pointer-events-none z-[25]"
+                        style={{
+                            top: `${32 + (todayRowIndex * pixelsPerDay)}px`,
+                            height: `${pixelsPerDay}px`,
+                        }}
+                        aria-hidden="true"
+                    >
+                        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-red-400/60" />
+                        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-red-200/90 bg-white/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm">
+                            Today
+                        </span>
+                    </div>
+                </>
+            )}
             
             {/* Header (Dates) - Vertical Column */}
             <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white z-20 shadow-sm sticky left-0 flex flex-col h-full">
@@ -412,14 +495,15 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                 <div className="relative w-full flex-1">
                     {Array.from({ length: tripLength }).map((_, i) => {
-                        const date = addDays(new Date(trip.startDate), i);
+                        const date = addDays(parsedTripStartDate || new Date(trip.startDate), i);
                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        const isToday = i === todayRowIndex;
                         
                         return (
                             <div 
                                 key={i} 
                                 className={`flex-shrink-0 border-b border-gray-100 flex flex-col justify-center px-1 select-none group absolute w-full
-                                    ${isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                    ${isToday ? 'bg-red-50/70' : isWeekend ? 'bg-gray-50' : 'bg-white'}
                                 `}
                                 style={{ 
                                     height: `${pixelsPerDay}px`,
@@ -430,23 +514,23 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                 {isZoomedOut ? (
                                     // Compact View: "M  12"
                                     <div className="flex items-center justify-between w-full px-1">
-                                        <span className={`text-xs font-bold uppercase ${isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                        <span className={`text-xs font-bold uppercase ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                             {date.toLocaleDateString('en-US', { weekday: 'narrow' })}
                                         </span>
-                                        <span className="text-sm font-semibold text-gray-700">
+                                        <span className={`text-sm font-semibold ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
                                             {date.getDate()}
                                         </span>
                                     </div>
                                 ) : (
                                     // Detailed View (Standard)
                                     <div className="text-center">
-                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                        <span className={`text-[10px] font-bold uppercase block leading-none ${isToday ? 'text-red-500' : isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                             {date.toLocaleDateString('en-US', { weekday: 'short' })}
                                         </span>
-                                        <span className="text-lg font-bold text-gray-700 block leading-tight">
+                                        <span className={`text-lg font-bold block leading-tight ${isToday ? 'text-red-700' : 'text-gray-700'}`}>
                                             {date.getDate()}
                                         </span>
-                                        <span className="text-[10px] text-gray-400 uppercase leading-none">
+                                        <span className={`text-[10px] uppercase leading-none ${isToday ? 'text-red-500' : 'text-gray-400'}`}>
                                             {date.toLocaleDateString('en-US', { month: 'short' })}
                                         </span>
                                     </div>
@@ -621,7 +705,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      
                      <div className="flex flex-row gap-2 h-full p-2">
                          {activityLanes.map((lane, laneIdx) => (
-                             <div key={laneIdx} className="relative w-full h-full min-w-[100px] hover:bg-gray-50 rounded-lg transition-colors border border-transparent hover:border-gray-100">
+                             <div key={laneIdx} className="relative w-full h-full min-w-[100px] rounded-lg border border-transparent">
                                  {lane.map(item => (
                                      <TimelineBlock
                                          key={item.id}

@@ -19,6 +19,24 @@ interface TimelineProps {
   readOnly?: boolean;
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+const parseLocalTripDate = (value: string): Date | null => {
+  if (!value) return null;
+
+  const plainDate = value.includes('T') ? value.slice(0, 10) : value;
+  const parts = plainDate.split('-').map(Number);
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+      return new Date(year, month - 1, day);
+    }
+  }
+
+  const fallback = new Date(value);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
 export const Timeline: React.FC<TimelineProps> = ({
   trip,
   selectedCityIds = [],
@@ -57,6 +75,44 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const tripLength = getTripDuration(trip.items);
   const totalWidth = tripLength * pixelsPerDay;
+  const parsedTripStartDate = React.useMemo(() => parseLocalTripDate(trip.startDate), [trip.startDate]);
+
+  const tripDayRange = React.useMemo(() => {
+    let minStart = Number.POSITIVE_INFINITY;
+    let maxEnd = Number.NEGATIVE_INFINITY;
+
+    trip.items.forEach((item) => {
+      if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
+      minStart = Math.min(minStart, item.startDateOffset);
+      maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
+    });
+
+    if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
+      return { start: 0, end: 0 };
+    }
+
+    return {
+      start: Math.floor(minStart),
+      end: Math.ceil(maxEnd),
+    };
+  }, [trip.items]);
+
+  const todayColumnIndex = React.useMemo(() => {
+    if (!parsedTripStartDate) return null;
+
+    const startAtNoon = new Date(parsedTripStartDate);
+    startAtNoon.setHours(12, 0, 0, 0);
+
+    const todayAtNoon = new Date();
+    todayAtNoon.setHours(12, 0, 0, 0);
+
+    const offset = Math.round((todayAtNoon.getTime() - startAtNoon.getTime()) / MS_PER_DAY);
+    if (!Number.isFinite(offset)) return null;
+    if (offset < 0 || offset >= tripLength) return null;
+    if (offset < tripDayRange.start || offset >= tripDayRange.end) return null;
+
+    return offset;
+  }, [parsedTripStartDate, tripLength, tripDayRange.end, tripDayRange.start]);
   
   // Separate items into lanes
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
@@ -399,11 +455,13 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Process Dates for Headers
   const dateHeaders = React.useMemo(() => {
+    const baseStartDate = parsedTripStartDate || new Date(trip.startDate);
     const days = Array.from({ length: tripLength }).map((_, i) => {
-        const date = addDays(new Date(trip.startDate), i);
+        const date = addDays(baseStartDate, i);
         return { 
             index: i,
             date,
+            isToday: i === todayColumnIndex,
             isWeekend: date.getDay() === 0 || date.getDay() === 6,
             dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
             dayNum: date.getDate(),
@@ -442,7 +500,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
 
     return { view: 'grouped', days, months };
-  }, [trip.startDate, tripLength, isZoomedOut]);
+  }, [parsedTripStartDate, trip.startDate, tripLength, isZoomedOut, todayColumnIndex]);
 
   useEffect(() => {
     if (!selectedItemId) return;
@@ -475,6 +533,33 @@ export const Timeline: React.FC<TimelineProps> = ({
       onClick={() => handleBlockSelect(null)}
     >
         <div className="relative min-h-full" style={{ minWidth: '100%', width: `${totalWidth}px` }}>
+            {todayColumnIndex !== null && (
+                <>
+                    <div
+                        className="absolute top-0 bottom-0 pointer-events-none z-[2]"
+                        style={{
+                            left: `${32 + (todayColumnIndex * pixelsPerDay)}px`,
+                            width: `${pixelsPerDay}px`,
+                        }}
+                        aria-hidden="true"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-50/40 via-red-50/15 to-red-50/40" />
+                    </div>
+                    <div
+                        className="absolute top-0 bottom-0 pointer-events-none z-[25]"
+                        style={{
+                            left: `${32 + (todayColumnIndex * pixelsPerDay)}px`,
+                            width: `${pixelsPerDay}px`,
+                        }}
+                        aria-hidden="true"
+                    >
+                        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-red-400/60" />
+                        <span className="absolute top-1 left-1/2 -translate-x-1/2 rounded-full border border-red-200/90 bg-white/90 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-red-500 shadow-sm">
+                            Today
+                        </span>
+                    </div>
+                </>
+            )}
             
             {/* Header (Adaptive) */}
             <div className={`border-b border-gray-200 flex flex-col sticky top-0 bg-white/95 backdrop-blur z-20 shadow-sm pl-8 transition-all duration-200 ${isZoomedOut ? 'h-20' : 'h-16'}`}>
@@ -486,14 +571,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                             <div 
                                 key={day.index} 
                                 className={`flex-shrink-0 border-r border-gray-100 flex flex-col justify-center px-2 select-none relative
-                                    ${day.isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                    ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                 `}
                                 style={{ width: `${pixelsPerDay}px` }}
                             >
-                                <span className={`text-xs font-bold ${day.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
+                                <span className={`text-xs font-bold ${day.isToday ? 'text-red-500' : day.isWeekend ? 'text-red-400' : 'text-gray-400'}`}>
                                     {day.dayName}
                                 </span>
-                                <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">
+                                <span className={`text-sm font-semibold whitespace-nowrap ${day.isToday ? 'text-red-700' : 'text-gray-700'}`}>
                                     {day.dayNum} {day.monthShort}
                                 </span>
                             </div>
@@ -520,11 +605,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 <div 
                                     key={day.index} 
                                     className={`flex-shrink-0 border-r border-gray-100 flex items-center justify-center select-none relative
-                                        ${day.isWeekend ? 'bg-gray-50' : 'bg-white'}
+                                        ${day.isToday ? 'bg-red-50/70' : day.isWeekend ? 'bg-gray-50' : 'bg-white'}
                                     `}
                                     style={{ width: `${pixelsPerDay}px` }}
                                 >
-                                    <span className={`text-xs font-semibold ${day.isWeekend ? 'text-red-500' : 'text-gray-600'}`}>
+                                    <span className={`text-xs font-semibold ${day.isToday ? 'text-red-600' : day.isWeekend ? 'text-red-500' : 'text-gray-600'}`}>
                                         {day.dayNum}
                                     </span>
                                 </div>
