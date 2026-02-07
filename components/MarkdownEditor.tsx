@@ -413,6 +413,15 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         a: ({node, ...props}) => (
                             <a {...props} className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer" />
                         ),
+                        input: ({node, ...props}) => (
+                            <input
+                                {...props}
+                                disabled
+                                readOnly
+                                className="mr-2"
+                                style={{ pointerEvents: 'none' }}
+                            />
+                        ),
                         h1: ({node, ...props}) => <h1 {...props} className={H1_CLASS} />,
                         h2: ({node, ...props}) => <h2 {...props} className={H2_CLASS} />,
                         h3: ({node, ...props}) => <h3 {...props} className={H3_CLASS} />,

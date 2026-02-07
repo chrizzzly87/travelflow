@@ -22,6 +22,32 @@ export const getApiKey = (): string => {
 export const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';
 export const DEFAULT_APP_LANGUAGE: AppLanguage = 'en';
 
+export const generateTripId = (): string => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+    return `trip-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+export const generateVersionId = (): string => {
+    return `v-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+export const buildTripUrl = (tripId: string, versionId?: string | null): string => {
+    const base = `/trip/${encodeURIComponent(tripId)}`;
+    if (!versionId) return base;
+    const params = new URLSearchParams();
+    params.set('v', versionId);
+    return `${base}?${params.toString()}`;
+};
+
+export const buildShareUrl = (token: string): string => `/s/${encodeURIComponent(token)}`;
+
+export const isUuid = (value?: string | null): boolean => {
+    if (!value) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+};
+
 export const normalizeAppLanguage = (value?: string | null): AppLanguage => {
     if (value === 'en') return 'en';
     return DEFAULT_APP_LANGUAGE;

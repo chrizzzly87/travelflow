@@ -25,6 +25,7 @@ interface DetailsPanelProps {
   forceFillMode?: 'stretch' | 'shrink';
   forceFillLabel?: string;
   variant?: 'overlay' | 'sidebar'; // New Prop
+  readOnly?: boolean;
 }
 
 interface PendingCityNotesProposal {
@@ -72,8 +73,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     onForceFill,
     forceFillMode,
     forceFillLabel,
-    variant = 'overlay'
+    variant = 'overlay',
+    readOnly = false
 }) => {
+  const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [aiStatus, setAiStatus] = useState<string | null>(null);
@@ -183,13 +186,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
   const displayItem = item || cachedItem;
 
+  const handleUpdate = (id: string, updates: Partial<ITimelineItem>) => {
+      if (!canEdit) return;
+      onUpdate(id, updates);
+  };
+
+  const handleDeleteItem = (id: string) => {
+      if (!canEdit) return;
+      onDelete(id);
+  };
+
   // -- Data Fetching & Helpers (Same as before) --
   const fetchDetails = async () => {
+      if (!canEdit) return;
       if (!displayItem) return;
       setLoading(true);
       try {
           const details = await suggestActivityDetails(displayItem.title, displayItem.location || "");
-          onUpdate(displayItem.id, {
+          handleUpdate(displayItem.id, {
               aiInsights: { cost: details.cost, bestTime: details.bestTime, tips: details.tips },
           });
       } finally {
@@ -198,6 +212,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const handleEnhanceNotes = async (mode: CityNotesEnhancementMode) => {
+      if (!canEdit) return;
       if (!displayItem) return;
       const action = CITY_NOTES_AI_ACTIONS.find((entry) => entry.id === mode);
       const actionLabel = action?.label || 'Enhance notes';
@@ -235,15 +250,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
 
   const handleAcceptNotesProposal = () => {
+      if (!canEdit) return;
       if (!displayItem || !pendingNotesProposal) return;
       const nextNotes = appendNotes(displayItem.description || '', pendingNotesProposal.addition);
-      onUpdate(displayItem.id, { description: nextNotes });
+      handleUpdate(displayItem.id, { description: nextNotes });
       setPendingNotesProposal(null);
       setAiError(null);
       setAiStatus('AI update applied to notes.');
   };
 
   const handleDeclineNotesProposal = () => {
+      if (!canEdit) return;
       setPendingNotesProposal(null);
       setAiError(null);
       setAiStatus('Draft discarded.');
@@ -251,17 +268,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
   // Hotel & Link handlers...
   const addHotel = () => {
+      if (!canEdit) return;
       if (!displayItem) return;
       const newHotel: IHotel = { id: `hotel-${Date.now()}`, name: '', address: '' };
-      onUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), newHotel] });
+      handleUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), newHotel] });
   };
   const updateHotel = (hotelId: string, updates: Partial<IHotel>) => {
+      if (!canEdit) return;
       if (!displayItem?.hotels) return;
-      onUpdate(displayItem.id, { hotels: displayItem.hotels.map(h => h.id === hotelId ? { ...h, ...updates } : h) });
+      handleUpdate(displayItem.id, { hotels: displayItem.hotels.map(h => h.id === hotelId ? { ...h, ...updates } : h) });
   };
   const removeHotel = (hotelId: string) => {
+      if (!canEdit) return;
       if (!displayItem?.hotels) return;
-      onUpdate(displayItem.id, { hotels: displayItem.hotels.filter(h => h.id !== hotelId) });
+      handleUpdate(displayItem.id, { hotels: displayItem.hotels.filter(h => h.id !== hotelId) });
   };
   
   const handleHotelSearch = () => {
@@ -294,8 +314,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   };
   
   const selectHotelResult = (result: {name: string, address: string}) => {
+      if (!canEdit) return;
       if (!displayItem) return;
-      onUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), { id: `hotel-${Date.now()}`, name: result.name, address: result.address }] });
+      handleUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), { id: `hotel-${Date.now()}`, name: result.name, address: result.address }] });
       setHotelResults([]);
       setHotelQuery('');
   };
@@ -332,6 +353,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   let selectedActivityTypes: ActivityType[] = [];
   if (isActivity) selectedActivityTypes = normalizeActivityTypes(displayItem.activityType);
   const toggleActivityType = (type: ActivityType) => {
+      if (!canEdit) return;
       let newTypes = [...selectedActivityTypes];
       if (newTypes.includes(type)) {
           if (newTypes.length > 1) {
@@ -341,10 +363,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           newTypes.push(type);
       }
       const normalizedTypes = normalizeActivityTypes(newTypes);
-      onUpdate(displayItem.id, { activityType: normalizedTypes, color: getActivityColorByTypes(normalizedTypes) });
+      handleUpdate(displayItem.id, { activityType: normalizedTypes, color: getActivityColorByTypes(normalizedTypes) });
   };
   const handleTransportConvert = (mode: TransportMode) => {
-      onUpdate(displayItem.id, { type: 'travel', transportMode: mode, title: `${mode.charAt(0).toUpperCase() + mode.slice(1)} Travel`, color: TRAVEL_COLOR, duration: Math.max(0.1, displayItem.duration) });
+      if (!canEdit) return;
+      handleUpdate(displayItem.id, { type: 'travel', transportMode: mode, title: `${mode.charAt(0).toUpperCase() + mode.slice(1)} Travel`, color: TRAVEL_COLOR, duration: Math.max(0.1, displayItem.duration) });
   };
   const tripStart = new Date(tripStartDate);
   const isValidDate = !isNaN(tripStart.getTime());
@@ -387,8 +410,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const estimatedLabel = React.useMemo(() => {
       return formatDurationHours(estimatedHours);
   }, [estimatedHours]);
-  const handleUpdateStart = (delta: number) => onUpdate(displayItem.id, { startDateOffset: Math.max(0, displayItem.startDateOffset + delta), duration: Math.max(0.5, displayItem.duration - delta) });
-  const handleUpdateEnd = (delta: number) => onUpdate(displayItem.id, { duration: Math.max(0.5, displayItem.duration + delta) });
+  const handleUpdateStart = (delta: number) => handleUpdate(displayItem.id, { startDateOffset: Math.max(0, displayItem.startDateOffset + delta), duration: Math.max(0.5, displayItem.duration - delta) });
+  const handleUpdateEnd = (delta: number) => handleUpdate(displayItem.id, { duration: Math.max(0.5, displayItem.duration + delta) });
   
   const effectiveColor = isActivity ? getActivityColorByTypes(displayItem.activityType) : displayItem.color;
   const colorParts = effectiveColor ? effectiveColor.split(' ') : ['bg-gray-100'];
@@ -417,27 +440,53 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${bgClass} ${textClass} bg-opacity-50 transition-colors`}>{displayItem.type}</div>
                       {isCity && (
                         <div className="relative">
-                            <button onClick={() => setIsColorPickerOpen(!isColorPickerOpen)} className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-indigo-600 transition-colors"><Palette size={14} /></button>
+                            <button
+                                onClick={() => { if (!canEdit) return; setIsColorPickerOpen(!isColorPickerOpen); }}
+                                disabled={!canEdit}
+                                className={`p-1 rounded-full text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <Palette size={14} />
+                            </button>
                             {isColorPickerOpen && (
                                 <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 grid grid-cols-4 gap-2 w-48">
                                     {PRESET_COLORS.map((color) => (
-                                        <button key={color.name} onClick={() => { onUpdate(displayItem.id, { color: color.class }); setIsColorPickerOpen(false); }} className={`w-8 h-8 rounded-full border-2 hover:scale-110 transition-transform ${displayItem.color === color.class ? 'border-gray-900 shadow-inner' : 'border-transparent hover:border-gray-200'}`} style={{ backgroundColor: color.hex }} title={color.name} />
+                                        <button
+                                            key={color.name}
+                                            onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: color.class }); setIsColorPickerOpen(false); }}
+                                            disabled={!canEdit}
+                                            className={`w-8 h-8 rounded-full border-2 transition-transform ${displayItem.color === color.class ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+                                            style={{ backgroundColor: color.hex }}
+                                            title={color.name}
+                                        />
                                     ))}
                                 </div>
                             )}
                         </div>
                       )}
                   </div>
-                  <button onClick={() => { onDelete(displayItem.id); onClose(); }} className="p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors sm:hidden"><Trash2 size={20} /></button>
-                  <button onClick={() => { onDelete(displayItem.id); onClose(); }} className="hidden sm:block text-red-400 hover:text-red-600 transition-colors text-xs font-medium px-2 py-1">Delete</button>
+                  <button
+                      onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); onClose(); }}
+                      disabled={!canEdit}
+                      className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                  >
+                      <Trash2 size={20} />
+                  </button>
+                  <button
+                      onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); onClose(); }}
+                      disabled={!canEdit}
+                      className={`hidden sm:block text-red-400 transition-colors text-xs font-medium px-2 py-1 ${canEdit ? 'hover:text-red-600' : 'opacity-50 cursor-not-allowed'}`}
+                  >
+                      Delete
+                  </button>
                   {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button onClick={onClose} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-gray-600"><X size={18} /></button></div>}
                   {variant === 'sidebar' && <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"><X size={16} /></button>}
              </div>
              
              <textarea 
                 value={displayItem.title} 
-                onChange={(e) => onUpdate(displayItem.id, { title: e.target.value })} 
-                className="text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent border-none placeholder-gray-300 focus:ring-0 p-0 w-full resize-none overflow-hidden leading-tight" 
+                onChange={canEdit ? ((e) => handleUpdate(displayItem.id, { title: e.target.value })) : undefined} 
+                readOnly={!canEdit}
+                className={`text-2xl sm:text-3xl font-bold text-gray-900 bg-transparent border-none placeholder-gray-300 focus:ring-0 p-0 w-full resize-none overflow-hidden leading-tight ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
                 rows={1} placeholder="Title" 
                 style={{ fieldSizing: 'content', minHeight: '2.5rem' } as any}
              />
@@ -449,7 +498,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">Duration:</span>
-                                <input type="number" min="0.5" value={Math.round(displayItem.duration * 24 * 10) / 10} onChange={(e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) onUpdate(displayItem.id, { duration: h / 24 }); }} className="w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 focus:border-indigo-500 outline-none"/>
+                                <input
+                                    type="number"
+                                    min="0.5"
+                                    value={Math.round(displayItem.duration * 24 * 10) / 10}
+                                    onChange={canEdit ? ((e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) handleUpdate(displayItem.id, { duration: h / 24 }); }) : undefined}
+                                    disabled={!canEdit}
+                                    className={`w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 outline-none ${canEdit ? 'focus:border-indigo-500' : 'cursor-not-allowed opacity-70'}`}
+                                />
                                 <span className="font-medium text-sm">hours</span>
                             </div>
                             <span className="text-[11px] text-gray-400">
@@ -487,8 +543,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <div className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{Number(displayItem.duration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
                                 <button
-                                    onClick={() => onForceFill(displayItem.id)}
-                                    className="px-2 py-1 hover:bg-gray-100 rounded text-gray-500 hover:text-indigo-600 flex items-center gap-1 text-[10px] font-semibold"
+                                    onClick={() => { if (!canEdit) return; onForceFill(displayItem.id); }}
+                                    disabled={!canEdit}
+                                    className={`px-2 py-1 rounded text-gray-500 flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
                                     title={forceFillLabel || 'Occupy available space'}
                                 >
                                     {(forceFillMode === 'shrink') ? <Minimize size={12} /> : <Maximize size={12} />}
@@ -497,23 +554,155 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center justify-between"><div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase">Arrival</span><span className="text-sm font-bold text-gray-800">{formatDate(itemStartDate)}</span></div><div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1"><button onClick={() => handleUpdateStart(-1)} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-indigo-600"><Minus size={14} /></button><span className="text-[10px] font-bold text-gray-400 px-1 select-none">START</span><button onClick={() => handleUpdateStart(1)} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-indigo-600"><Plus size={14} /></button></div></div>
-                    <div className="flex items-center justify-between"><div className="flex flex-col"><span className="text-[10px] font-bold text-gray-400 uppercase">Departure</span><span className="text-sm font-bold text-gray-800">{formatDate(itemEndDate)}</span></div><div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1"><button onClick={() => handleUpdateEnd(-1)} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-indigo-600"><Minus size={14} /></button><span className="text-[10px] font-bold text-gray-400 px-1 select-none">END</span><button onClick={() => handleUpdateEnd(1)} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-indigo-600"><Plus size={14} /></button></div></div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Arrival</span>
+                            <span className="text-sm font-bold text-gray-800">{formatDate(itemStartDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                            <button
+                                onClick={() => handleUpdateStart(-1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <Minus size={14} />
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">START</span>
+                            <button
+                                onClick={() => handleUpdateStart(1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <Plus size={14} />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Departure</span>
+                            <span className="text-sm font-bold text-gray-800">{formatDate(itemEndDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-gray-50 rounded-lg p-1">
+                            <button
+                                onClick={() => handleUpdateEnd(-1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <Minus size={14} />
+                            </button>
+                            <span className="text-[10px] font-bold text-gray-400 px-1 select-none">END</span>
+                            <button
+                                onClick={() => handleUpdateEnd(1)}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <Plus size={14} />
+                            </button>
+                        </div>
+                    </div>
                 </div>
              )}
              
              {isCity && (
                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                     <div className="flex justify-between items-center mb-4"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3><button onClick={addHotel} className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 p-1 rounded transition-colors text-xs font-medium">+ Manual</button></div>
+                     <div className="flex justify-between items-center mb-4">
+                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5"><Hotel size={14} /> Accomodation</h3>
+                         <button
+                             onClick={addHotel}
+                             disabled={!canEdit}
+                             className={`text-indigo-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-indigo-800 hover:bg-indigo-50' : 'opacity-50 cursor-not-allowed'}`}
+                         >
+                             + Manual
+                         </button>
+                     </div>
                      <div className="mb-4 relative">
                         {/* Hidden Places Service Container */}
                         <div ref={placesServiceDivRef} className="hidden"></div>
 
                         {apiKeyError ? <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 flex items-start gap-2"><AlertTriangle size={14} className="mt-0.5 flex-shrink-0" /><div><strong>Maps Search Unavailable</strong><br/>No valid API Key.</div></div> : (
-                            <><div className="flex gap-2"><div className="relative flex-1"><input type="text" value={hotelQuery} onChange={(e) => setHotelQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleHotelSearch()} placeholder="Search hotels..." className="w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-indigo-500 outline-none"/><Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" /></div><button onClick={handleHotelSearch} disabled={isSearchingHotels || !hotelQuery || !placesService} className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:opacity-50">{isSearchingHotels ? '...' : 'Find'}</button></div>{hotelResults.length > 0 && <div className="mt-2 space-y-2">{hotelResults.map((result, idx) => <div key={idx} onClick={() => selectHotelResult(result)} className="bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-lg p-2 cursor-pointer transition-all"><div className="font-bold text-sm text-gray-800">{result.name}</div><div className="text-xs text-gray-500 truncate">{result.address}</div></div>)}</div>}</>
+                            <>
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <input
+                                            type="text"
+                                            value={hotelQuery}
+                                            onChange={canEdit ? ((e) => setHotelQuery(e.target.value)) : undefined}
+                                            onKeyDown={canEdit ? ((e) => e.key === 'Enter' && handleHotelSearch()) : undefined}
+                                            placeholder="Search hotels..."
+                                            disabled={!canEdit}
+                                            className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-indigo-500' : 'opacity-60 cursor-not-allowed'}`}
+                                        />
+                                        <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
+                                    </div>
+                                    <button
+                                        onClick={handleHotelSearch}
+                                        disabled={!canEdit || isSearchingHotels || !hotelQuery || !placesService}
+                                        className={`px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-50`}
+                                    >
+                                        {isSearchingHotels ? '...' : 'Find'}
+                                    </button>
+                                </div>
+                                {hotelResults.length > 0 && (
+                                    <div className="mt-2 space-y-2">
+                                        {hotelResults.map((result, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => selectHotelResult(result)}
+                                                className={`bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                            >
+                                                <div className="font-bold text-sm text-gray-800">{result.name}</div>
+                                                <div className="text-xs text-gray-500 truncate">{result.address}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
                         )}
                      </div>
-                     <div className="space-y-6">{displayItem.hotels?.map((hotel) => (<div key={hotel.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 group"><div className="flex justify-between items-start mb-2"><input type="text" value={hotel.name} onChange={(e) => updateHotel(hotel.id, { name: e.target.value })} placeholder="Hotel Name" className="font-bold text-gray-800 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 text-sm"/><button onClick={() => removeHotel(hotel.id)} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button></div><div className="flex items-start gap-2 mb-3"><MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" /><input type="text" value={hotel.address} onChange={(e) => updateHotel(hotel.id, { address: e.target.value })} placeholder="Address" className="text-xs text-gray-600 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400"/></div>{hotel.address && <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-gray-300 relative"><iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} title="Hotel"></iframe></div>}</div>))}{(!displayItem.hotels || displayItem.hotels.length === 0) && <div className="text-xs text-center text-gray-400 py-2 border-2 border-dashed border-gray-100 rounded-lg">No accomodation</div>}</div>
+                     <div className="space-y-6">
+                        {displayItem.hotels?.map((hotel) => (
+                            <div key={hotel.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 group">
+                                <div className="flex justify-between items-start mb-2">
+                                    <input
+                                        type="text"
+                                        value={hotel.name}
+                                        onChange={canEdit ? ((e) => updateHotel(hotel.id, { name: e.target.value })) : undefined}
+                                        placeholder="Hotel Name"
+                                        readOnly={!canEdit}
+                                        disabled={!canEdit}
+                                        className={`font-bold text-gray-800 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 text-sm ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
+                                    />
+                                    <button
+                                        onClick={() => removeHotel(hotel.id)}
+                                        disabled={!canEdit}
+                                        className={`text-gray-400 opacity-0 group-hover:opacity-100 ${canEdit ? 'hover:text-red-500' : 'opacity-50 cursor-not-allowed'}`}
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                                <div className="flex items-start gap-2 mb-3">
+                                    <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                                    <input
+                                        type="text"
+                                        value={hotel.address}
+                                        onChange={canEdit ? ((e) => updateHotel(hotel.id, { address: e.target.value })) : undefined}
+                                        placeholder="Address"
+                                        readOnly={!canEdit}
+                                        disabled={!canEdit}
+                                        className={`text-xs text-gray-600 bg-transparent border-none p-0 focus:ring-0 w-full placeholder-gray-400 ${canEdit ? '' : 'cursor-not-allowed opacity-70'}`}
+                                    />
+                                </div>
+                                {hotel.address && (
+                                    <div className="rounded-lg overflow-hidden h-32 w-full bg-gray-200 border border-gray-300 relative">
+                                        <iframe width="100%" height="100%" frameBorder="0" style={{ border: 0 }} src={`https://maps.google.com/maps?q=${encodeURIComponent(hotel.address)}&t=&z=13&ie=UTF8&iwloc=&output=embed&hl=${encodeURIComponent(mapLanguage)}`} title="Hotel"></iframe>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {(!displayItem.hotels || displayItem.hotels.length === 0) && (
+                            <div className="text-xs text-center text-gray-400 py-2 border-2 border-dashed border-gray-100 rounded-lg">No accomodation</div>
+                        )}
+                     </div>
                  </div>
              )}
 
@@ -525,7 +714,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                              <button 
                                  key={mode} 
                                  onClick={() => handleTransportConvert(mode)} 
-                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-400 hover:border-gray-200'}`}
+                                 disabled={!canEdit}
+                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-400'} ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>
@@ -545,7 +735,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <button
                                     key={type}
                                     onClick={() => toggleActivityType(type)}
-                                    className={`flex items-center px-3 py-2 rounded-lg border transition-all text-xs font-bold uppercase tracking-wide ${getActivityTypeButtonClass(type, isSelectedType)}`}
+                                    disabled={!canEdit}
+                                    className={`flex items-center px-3 py-2 rounded-lg border transition-all text-xs font-bold uppercase tracking-wide ${getActivityTypeButtonClass(type, isSelectedType)} ${canEdit ? '' : 'opacity-60 cursor-not-allowed'}`}
                                 >
                                     <ActivityTypeIcon type={type} size={13} className="mr-1.5" />
                                     <span>{formatActivityTypeLabel(type)}</span>
@@ -563,15 +754,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 <MarkdownEditor
                     key={displayItem.id}
                     value={displayItem.description || ''}
-                    onChange={(val) => onUpdate(displayItem.id, { description: val })}
-                    aiActions={isCity ? CITY_NOTES_AI_ACTIONS : undefined}
-                    onAiActionSelect={isCity ? ((actionId) => {
+                    onChange={canEdit ? ((val) => handleUpdate(displayItem.id, { description: val })) : undefined}
+                    aiActions={isCity && canEdit ? CITY_NOTES_AI_ACTIONS : undefined}
+                    onAiActionSelect={isCity && canEdit ? ((actionId) => {
                         if (actionId === 'expand-checklists' || actionId === 'local-tips' || actionId === 'day-plan') {
                             handleEnhanceNotes(actionId);
                         }
                     }) : undefined}
                     isGenerating={isEnhancing}
                     aiStatus={isCity ? aiStatus : null}
+                    readOnly={!canEdit}
                 />
                 {aiError && (
                     <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
@@ -592,13 +784,15 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <div className="px-4 py-3 bg-indigo-50 border-t border-indigo-100 flex items-center justify-end gap-2">
                             <button
                                 onClick={handleDeclineNotesProposal}
-                                className="px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
+                                disabled={!canEdit}
+                                className={`px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-md ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 Decline
                             </button>
                             <button
                                 onClick={handleAcceptNotesProposal}
-                                className="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                                disabled={!canEdit}
+                                className={`px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-md ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 Accept and Apply
                             </button>
@@ -612,7 +806,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <Sparkles size={16} className="text-indigo-500 animate-pulse" />
                                 <h3 className="text-sm font-semibold text-indigo-900">AI Insights</h3>
                             </div>
-                            <button onClick={fetchDetails} className={`p-1.5 rounded-full hover:bg-white text-indigo-500 ${loading ? 'animate-spin' : ''}`}><RefreshCw size={16} /></button>
+                            <button
+                                onClick={fetchDetails}
+                                disabled={!canEdit}
+                                className={`p-1.5 rounded-full text-indigo-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-white' : 'opacity-50 cursor-not-allowed'}`}
+                            >
+                                <RefreshCw size={16} />
+                            </button>
                         </div>
                         {loading && !aiDetails ? (
                             <div className="text-sm text-indigo-600/70 py-2">Loading...</div>

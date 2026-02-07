@@ -16,6 +16,7 @@ interface TimelineProps {
   onSwapSelectedCities?: () => void;
   onAddCity: () => void;
   pixelsPerDay: number;
+  readOnly?: boolean;
 }
 
 export const Timeline: React.FC<TimelineProps> = ({
@@ -28,8 +29,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   onForceFill,
   onSwapSelectedCities,
   onAddCity,
-  pixelsPerDay
+  pixelsPerDay,
+  readOnly = false
 }) => {
+  const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef<boolean>(false);
@@ -111,6 +114,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const handleAddTravel = () => {
+    if (!canEdit) return;
     // Legacy button handler - adds to end or gap
     let newStart = 0;
     if (travelItems.length > 0) {
@@ -127,6 +131,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           onSelect(existing.id);
           return;
       }
+      if (!canEdit) return;
       const startOffset = fromCity.startDateOffset + fromCity.duration;
       const newItem: ITimelineItem = {
           id: `travel-new-${Date.now()}`,
@@ -142,6 +147,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const createTravelItem = (startOffset: number, duration: number) => {
+    if (!canEdit) return;
     const id = `travel-new-${Date.now()}`;
     const newTravel: ITimelineItem = {
         id,
@@ -160,6 +166,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   // --- Travel Lane Interaction ---
 
   const handleTravelMouseMove = (e: React.MouseEvent) => {
+      if (!canEdit) {
+          if (hoverTravelStart !== null) setHoverTravelStart(null);
+          return;
+      }
       if (!travelLaneRef.current) return;
       
       // Prevent ghost from showing up if we are hovering over an existing block
@@ -191,6 +201,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const handleTravelClick = () => {
+      if (!canEdit) return;
       if (hoverTravelStart !== null) {
           createTravelItem(hoverTravelStart, 1.0);
           setHoverTravelStart(null);
@@ -200,6 +211,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   // --- Resize/Drag Logic ---
 
   const handleResizeStart = (e: React.MouseEvent, id: string, direction: 'left' | 'right') => {
+    if (!canEdit) return;
     e.stopPropagation();
     const item = trip.items.find(i => i.id === id);
     if (!item) return;
@@ -221,6 +233,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const handleMoveStart = (e: React.MouseEvent, id: string) => {
+    if (!canEdit) return;
     e.stopPropagation();
     const item = trip.items.find(i => i.id === id);
     if (!item) return;
@@ -543,12 +556,13 @@ export const Timeline: React.FC<TimelineProps> = ({
                              Cities & Stays
                          </span>
                          <button 
-                            onClick={(e) => { e.stopPropagation(); onAddCity(); }}
-                            className="opacity-0 group-hover/cities:opacity-100 transition-opacity bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-full p-1"
+                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
+                            disabled={!canEdit}
+                            className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-indigo-100 text-indigo-700 rounded-full p-1 ${canEdit ? 'hover:bg-indigo-200' : 'opacity-50 cursor-not-allowed'}`}
                             title="Add City to end"
                         >
                              <Plus size={14} />
-                         </button>
+                        </button>
                     </div>
                     <div className="relative h-28 w-full">
                         {cities.map((city, index) => {
@@ -595,6 +609,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     showSwapSelectedButton={selectedCityIds.length > 1 && selectedCityIds.includes(city.id)}
                                     swapSelectedLabel="Reverse selected cities"
                                     pixelsPerDay={pixelsPerDay}
+                                    canEdit={canEdit}
                                 />
                             );
                         })}
@@ -608,12 +623,13 @@ export const Timeline: React.FC<TimelineProps> = ({
                              Travel
                          </span>
                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
-                            className="opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-full p-1"
+                            onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
+                            disabled={!canEdit}
+                            className={`opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 text-stone-700 rounded-full p-1 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
                             title="Add Travel"
                         >
                              <Plus size={14} />
-                         </button>
+                        </button>
                     </div>
                     
                     <div className="relative h-20 w-full overflow-visible" ref={travelLaneRef}>
@@ -660,10 +676,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors
-                                            ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}
+                                            ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}
+                                            ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                        disabled={!travel && !canEdit}
                                     >
                                         <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                         <span className="uppercase tracking-wider">{mode === 'na' ? 'N/A' : mode}</span>
@@ -698,8 +716,9 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 }}
                              >
                                  <button
-                                     onClick={(e) => { e.stopPropagation(); onAddActivity(i); }}
-                                     className="w-full h-full mx-1 rounded-md border border-dashed border-transparent hover:border-gray-300 hover:bg-gray-50 flex items-center justify-center text-gray-300 hover:text-indigo-500 transition-all"
+                                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(i); }}
+                                     disabled={!canEdit}
+                                     className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-indigo-500' : 'cursor-not-allowed opacity-40'}`}
                                      title={`Add activity for day ${i + 1}`}
                                  >
                                      <Plus size={16} />
@@ -720,6 +739,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         onResizeStart={handleResizeStart}
                                         onMoveStart={handleMoveStart}
                                         pixelsPerDay={pixelsPerDay}
+                                        canEdit={canEdit}
                                     />
                                 ))}
                              </div>

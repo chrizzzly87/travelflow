@@ -1,9 +1,487 @@
-// Placeholder for future database integration.
-// Intentionally inactive: enable and implement when DB is ready.
+import { ISharedTripResult, ITrip, IViewSettings, IUserSettings, ShareMode } from '../types';
+import { isUuid } from '../utils';
+import { supabase, isSupabaseEnabled } from './supabaseClient';
+import { getAllTrips, setAllTrips } from './storageService';
 
-export const DB_ENABLED = false;
+export const DB_ENABLED = isSupabaseEnabled;
 
-export const saveHistoryEntryToDb = async (_payload: unknown) => {
+let cachedUserId: string | null = null;
+let isReauthInFlight = false;
+let sessionPromise: Promise<string | null> | null = null;
+let lastAuthAttemptAt = 0;
+let lastReauthAt = 0;
+let debugAuthChecked = false;
+let authBlockedUntil = 0;
+
+const AUTH_COOLDOWN_MS = 3000;
+const SESSION_POLL_MS = 200;
+const SESSION_POLL_ATTEMPTS = 6;
+
+const isDebugEnabled = () => {
+    if (typeof window === 'undefined') return false;
+    try {
+        if (window.localStorage.getItem('tf_debug_db') === '1') return true;
+    } catch {
+        // ignore
+    }
+    return import.meta.env.VITE_DEBUG_DB === 'true';
+};
+
+const debugLog = (...args: unknown[]) => {
+    if (!isDebugEnabled()) return;
+    console.log('[db]', ...args);
+};
+
+const maybeLogAuthContext = async () => {
+    if (!isDebugEnabled()) return;
+    if (debugAuthChecked) return;
+    debugAuthChecked = true;
+    try {
+        const client = requireSupabase();
+        const { data, error } = await client.rpc('debug_auth_context');
+        if (error) {
+            debugLog('debug_auth_context:missing', { message: error.message });
+            return;
+        }
+        debugLog('debug_auth_context', data);
+    } catch (e) {
+        debugLog('debug_auth_context:error', e);
+    }
+};
+
+const requireSupabase = () => {
+    if (!supabase) {
+        throw new Error('Supabase client not configured');
+    }
+    return supabase;
+};
+
+export const ensureDbSession = async (): Promise<string | null> => {
+    if (!DB_ENABLED) return null;
+    if (sessionPromise) return sessionPromise;
+    const client = requireSupabase();
+    sessionPromise = (async () => {
+        try {
+            debugLog('ensureDbSession:start');
+            const pollForSession = async () => {
+                for (let i = 0; i < SESSION_POLL_ATTEMPTS; i += 1) {
+                    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+                    if (sessionError) {
+                        console.warn('Supabase session error', sessionError);
+                    }
+                    const sessionUserId = sessionData?.session?.user?.id ?? null;
+                    if (sessionUserId) {
+                        debugLog('ensureDbSession:session', { userId: sessionUserId, expiresAt: sessionData?.session?.expires_at });
+                        return sessionUserId;
+                    }
+                    if (i < SESSION_POLL_ATTEMPTS - 1) {
+                        await new Promise(resolve => setTimeout(resolve, SESSION_POLL_MS));
+                    }
+                }
+                return null;
+            };
+
+            const existingSessionUserId = await pollForSession();
+            if (existingSessionUserId) {
+                cachedUserId = existingSessionUserId;
+                await maybeLogAuthContext();
+                return cachedUserId;
+            }
+
+            cachedUserId = null;
+            const now = Date.now();
+            if (authBlockedUntil && now < authBlockedUntil) {
+                debugLog('ensureDbSession:blocked', { until: authBlockedUntil });
+                return null;
+            }
+            if (now - lastAuthAttemptAt < AUTH_COOLDOWN_MS) {
+                return null;
+            }
+            lastAuthAttemptAt = now;
+
+            const { data, error } = await client.auth.signInAnonymously();
+            if (error) {
+                console.error('Supabase anonymous sign-in failed', error);
+                if (error.status === 429 || /rate limit/i.test(error.message || '')) {
+                    authBlockedUntil = Date.now() + 60000;
+                }
+                return null;
+            }
+            if (data?.session) {
+                try {
+                    await client.auth.setSession({
+                        access_token: data.session.access_token,
+                        refresh_token: data.session.refresh_token,
+                    });
+                } catch (e) {
+                    console.warn('Supabase setSession failed after anonymous sign-in', e);
+                }
+                if (data.session.user?.id) {
+                    debugLog('ensureDbSession:signIn', { userId: data.session.user.id });
+                    cachedUserId = data.session.user.id;
+                    await maybeLogAuthContext();
+                    return cachedUserId;
+                }
+            }
+            const sessionAfterSignIn = await pollForSession();
+            if (sessionAfterSignIn) {
+                cachedUserId = sessionAfterSignIn;
+                await maybeLogAuthContext();
+                return cachedUserId;
+            }
+            return null;
+        } finally {
+            sessionPromise = null;
+        }
+    })();
+
+    return sessionPromise;
+};
+
+const isRlsViolation = (error: { code?: string; message?: string } | null) => {
+    if (!error) return false;
+    if (error.code === '42501') return true;
+    return typeof error.message === 'string' && /row-level security/i.test(error.message);
+};
+
+const forceAnonymousSession = async (): Promise<string | null> => {
+    if (!DB_ENABLED) return null;
+    if (isReauthInFlight) return cachedUserId;
+    const now = Date.now();
+    if (now - lastReauthAt < AUTH_COOLDOWN_MS) return cachedUserId;
+    lastReauthAt = now;
+    isReauthInFlight = true;
+    const client = requireSupabase();
+    try {
+        await client.auth.signOut();
+    } catch (e) {
+        console.warn('Supabase signOut failed during reauth', e);
+    }
+    cachedUserId = null;
+    const userId = await ensureDbSession();
+    isReauthInFlight = false;
+    return userId;
+};
+
+const normalizeTripPayload = (trip: ITrip, view?: IViewSettings | null) => {
+    const startDate = trip.startDate ? trip.startDate.split('T')[0] : null;
+    return {
+        id: trip.id,
+        title: trip.title || 'Untitled trip',
+        start_date: startDate,
+        data: trip,
+        view_settings: view ?? null,
+        is_favorite: Boolean(trip.isFavorite),
+        forked_from_trip_id: trip.forkedFromTripId ?? null,
+        forked_from_share_token: trip.forkedFromShareToken ?? null,
+    };
+};
+
+export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    const ownerId = await ensureDbSession();
+    if (!ownerId) return null;
+
+    debugLog('dbUpsertTrip:start', { tripId: trip.id, ownerId });
+
+    const startDate = trip.startDate ? trip.startDate.split('T')[0] : null;
+    const { data, error } = await client.rpc('upsert_trip', {
+        p_id: trip.id,
+        p_data: trip,
+        p_view: view ?? null,
+        p_title: trip.title || 'Untitled trip',
+        p_start_date: startDate,
+        p_is_favorite: Boolean(trip.isFavorite),
+        p_forked_from_trip_id: trip.forkedFromTripId ?? null,
+        p_forked_from_share_token: trip.forkedFromShareToken ?? null,
+    });
+
+    if (error) {
+        if (isRlsViolation(error)) {
+            debugLog('dbUpsertTrip:rls', { code: error.code, message: error.message });
+        }
+        console.error('Failed to upsert trip', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+        debugLog('dbUpsertTrip:empty', { tripId: trip.id });
+    }
+    return (row?.trip_id ?? row?.id) ?? null;
+};
+
+export const dbGetTrip = async (tripId: string) => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client
+        .from('trips')
+        .select('id, data, view_settings')
+        .eq('id', tripId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Failed to fetch trip', error);
+        return null;
+    }
+
+    if (!data) return null;
+    const trip = data.data as ITrip;
+    const normalized = trip && trip.id !== data.id ? { ...trip, id: data.id } : trip;
+    return { trip: normalized, view: data.view_settings as IViewSettings | null };
+};
+
+export const dbGetTripVersion = async (tripId: string, versionId: string) => {
+    if (!isUuid(versionId)) return null;
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client
+        .from('trip_versions')
+        .select('id, data, view_settings, label')
+        .eq('id', versionId)
+        .eq('trip_id', tripId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Failed to fetch trip version', error);
+        return null;
+    }
+
+    if (!data) return null;
+    const trip = data.data as ITrip;
+    const normalized = trip && trip.id !== tripId ? { ...trip, id: tripId } : trip;
+    return {
+        trip: normalized,
+        view: data.view_settings as IViewSettings | null,
+        label: data.label as string | null,
+        versionId: data.id as string
+    };
+};
+
+export const dbCreateTripVersion = async (
+    trip: ITrip,
+    view: IViewSettings | undefined,
+    label?: string | null
+) => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const payload = {
+        p_trip_id: trip.id,
+        p_data: trip,
+        p_view: view ?? null,
+        p_label: label ?? null,
+    };
+
+    const { data, error } = await client.rpc('add_trip_version', payload);
+
+    if (error) {
+        if (isRlsViolation(error)) {
+            debugLog('dbCreateTripVersion:rls', { code: error.code, message: error.message });
+        }
+        console.error('Failed to create trip version', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    return (row?.trip_id ?? row?.id) ?? null;
+};
+
+export const dbListTrips = async (): Promise<ITrip[]> => {
+    if (!DB_ENABLED) return [];
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client
+        .from('trips')
+        .select('data')
+        .order('updated_at', { ascending: false });
+
+    if (error) {
+        console.error('Failed to list trips', error);
+        return [];
+    }
+
+    return (data || []).map(row => row.data as ITrip).filter(Boolean);
+};
+
+export const uploadLocalTripsToDb = async () => {
     if (!DB_ENABLED) return;
-    // TODO: Implement persistence via SQLite or remote DB.
+    const trips = getAllTrips();
+    if (trips.length === 0) return;
+    const userId = await ensureDbSession();
+    if (!userId) return;
+    for (const trip of trips) {
+        await dbUpsertTrip(trip);
+    }
+};
+
+export const syncTripsFromDb = async () => {
+    if (!DB_ENABLED) return;
+    const trips = await dbListTrips();
+    if (trips.length > 0) {
+        setAllTrips(trips);
+    }
+};
+
+export const dbDeleteTrip = async (tripId: string) => {
+    if (!DB_ENABLED) return;
+    const client = requireSupabase();
+    await ensureDbSession();
+    const { error } = await client.from('trips').delete().eq('id', tripId);
+    if (error) {
+        console.error('Failed to delete trip', error);
+    }
+};
+
+export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    const userId = await ensureDbSession();
+    if (!userId) return null;
+
+    const { data, error } = await client
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Failed to fetch user settings', error);
+        return null;
+    }
+
+    if (!data) return null;
+
+    return {
+        language: data.language ?? undefined,
+        mapStyle: data.map_style ?? undefined,
+        routeMode: data.route_mode ?? undefined,
+        layoutMode: data.layout_mode ?? undefined,
+        timelineView: data.timeline_view ?? undefined,
+        showCityNames: data.show_city_names ?? undefined,
+        zoomLevel: typeof data.zoom_level === 'number' ? data.zoom_level : undefined,
+        sidebarWidth: typeof data.sidebar_width === 'number' ? data.sidebar_width : undefined,
+        timelineHeight: typeof data.timeline_height === 'number' ? data.timeline_height : undefined,
+    } as IUserSettings;
+};
+
+export const dbUpsertUserSettings = async (settings: IUserSettings) => {
+    if (!DB_ENABLED) return;
+    const client = requireSupabase();
+    const userId = await ensureDbSession();
+    if (!userId) return;
+
+    const payload = {
+        user_id: userId,
+        language: settings.language,
+        map_style: settings.mapStyle,
+        route_mode: settings.routeMode,
+        layout_mode: settings.layoutMode,
+        timeline_view: settings.timelineView,
+        show_city_names: settings.showCityNames,
+        zoom_level: settings.zoomLevel,
+        sidebar_width: settings.sidebarWidth,
+        timeline_height: settings.timelineHeight,
+    };
+
+    const { error } = await client.from('user_settings').upsert(payload, { onConflict: 'user_id' });
+    if (error) {
+        console.error('Failed to save user settings', error);
+    }
+};
+
+export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promise<{ token?: string; error?: string }> => {
+    if (!DB_ENABLED) return { error: 'Database disabled' };
+    const client = requireSupabase();
+    const sessionId = await ensureDbSession();
+    if (!sessionId) {
+        return { error: 'Anonymous auth is disabled or failed to start' };
+    }
+
+    const { data, error } = await client
+        .rpc('create_share_token', {
+            p_trip_id: tripId,
+            p_mode: mode,
+            p_allow_copy: true
+        });
+
+    if (error) {
+        console.error('Failed to create share link', error);
+        return { error: error.message || 'Unknown error' };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { error: 'No share token returned' };
+    const token = row.token as string | undefined;
+    return token ? { token } : { error: 'Invalid share token' };
+};
+
+export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client.rpc('get_shared_trip', { p_token: token });
+    if (error) {
+        console.error('Failed to load shared trip', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+
+    const trip = row.data as ITrip;
+    const normalized = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    return {
+        trip: normalized,
+        view: row.view_settings as IViewSettings | null,
+        mode: row.mode as ShareMode,
+        allowCopy: Boolean(row.allow_copy),
+    };
+};
+
+export const dbUpdateSharedTrip = async (
+    token: string,
+    trip: ITrip,
+    view: IViewSettings | undefined,
+    label?: string | null
+) => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client.rpc('update_shared_trip', {
+        p_token: token,
+        p_data: trip,
+        p_view: view ?? null,
+        p_label: label ?? null
+    });
+
+    if (error) {
+        console.error('Failed to update shared trip', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return row.version_id as string | null;
+};
+
+export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) => {
+    if (!settings || typeof window === 'undefined') return;
+    if (settings.mapStyle) localStorage.setItem('tf_map_style', settings.mapStyle);
+    if (settings.routeMode) localStorage.setItem('tf_route_mode', settings.routeMode);
+    if (settings.layoutMode) localStorage.setItem('tf_layout_mode', settings.layoutMode);
+    if (settings.timelineView) localStorage.setItem('tf_timeline_view', settings.timelineView);
+    if (typeof settings.showCityNames === 'boolean') localStorage.setItem('tf_city_names', String(settings.showCityNames));
+    if (typeof settings.zoomLevel === 'number') localStorage.setItem('tf_zoom_level', settings.zoomLevel.toFixed(2));
+    if (typeof settings.sidebarWidth === 'number') localStorage.setItem('tf_sidebar_width', String(settings.sidebarWidth));
+    if (typeof settings.timelineHeight === 'number') localStorage.setItem('tf_timeline_height', String(settings.timelineHeight));
 };

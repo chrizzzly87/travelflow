@@ -34,6 +34,12 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 npm run dev
 ```
 
+## Supabase Setup And Troubleshooting
+
+For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
+
+- `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/docs/SUPABASE_RUNBOOK.md`
+
 ## Build
 
 ```bash

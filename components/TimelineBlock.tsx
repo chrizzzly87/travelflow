@@ -21,6 +21,7 @@ interface TimelineBlockProps {
   swapSelectedLabel?: string;
   pixelsPerDay: number;
   vertical?: boolean;
+  canEdit?: boolean;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -39,6 +40,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   swapSelectedLabel,
   pixelsPerDay,
   vertical = false,
+  canEdit = true,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -65,6 +67,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
 
   const handleMouseDown = (e: React.MouseEvent) => {
+      if (!canEdit) return;
       e.stopPropagation(); // Prevent ghost creation on parent
       if (isCity && (e.shiftKey || e.metaKey || e.ctrlKey)) return;
       dragStartPos.current = { x: e.clientX, y: e.clientY };
@@ -77,16 +80,20 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       onSelect(item.id, { multi: isCity && (e.shiftKey || e.metaKey || e.ctrlKey), isCity });
   };
 
+  const baseCursor = canEdit
+      ? (isCity ? 'pointer' : (isEmptyTravel ? 'pointer' : 'grab'))
+      : (isEmptyTravel ? 'not-allowed' : 'pointer');
+
   const style: React.CSSProperties = vertical ? {
       top: `${position}px`,
       height: `${size}px`,
       left: 0,
       right: 0,
-      cursor: isCity ? 'pointer' : 'grab',
+      cursor: baseCursor,
   } : {
       left: `${position}px`,
       width: `${size}px`,
-      cursor: isCity ? 'pointer' : 'grab',
+      cursor: baseCursor,
   };
 
   return (
@@ -97,7 +104,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
         ${isSelected ? 'ring-2 ring-offset-1 ring-blue-500 z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
-        ${isEmptyTravel ? 'border-dashed cursor-pointer hover:bg-gray-50' : ''}
+        ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
       style={style}
       onMouseDown={handleMouseDown}
@@ -206,8 +213,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto flex items-center gap-1">
              {onSwapSelectedCities && showSwapSelectedButton && (
                 <button
-                    onClick={(e) => { e.stopPropagation(); onSwapSelectedCities(); }}
-                    className="bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full hover:bg-indigo-50 hover:scale-110 transition-transform"
+                    onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
+                    disabled={!canEdit}
+                    className={`bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-indigo-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
                     <ArrowUpDown size={12} strokeWidth={3} />
@@ -215,8 +223,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              )}
              {onForceFill && (forceFillMode || hasGapOrOverlap) && (
                 <button 
-                    onClick={(e) => { e.stopPropagation(); onForceFill(item.id); }}
-                    className="bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full hover:bg-indigo-50 hover:scale-110 transition-transform"
+                    onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
+                    disabled={!canEdit}
+                    className={`bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-indigo-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
                     title={forceFillLabel || 'Occupy available space'}
                 >
                     {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
@@ -230,12 +239,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         <div
             className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
                 ${vertical 
-                    ? 'top-0 left-0 right-0 h-4 cursor-row-resize' 
-                    : '-left-1 top-0 bottom-0 w-6 cursor-col-resize'
+                    ? `top-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}` 
+                    : `-left-1 top-0 bottom-0 w-6 ${canEdit ? 'cursor-col-resize' : 'cursor-not-allowed'}`
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
             `}
-            onMouseDown={(e) => { e.preventDefault(); onResizeStart(e, item.id, 'left'); }}
+            onMouseDown={(e) => { e.preventDefault(); if (!canEdit) return; onResizeStart(e, item.id, 'left'); }}
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
@@ -255,12 +264,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         <div
             className={`absolute z-40 pointer-events-auto flex items-center justify-center group/handle
                 ${vertical 
-                    ? 'bottom-0 left-0 right-0 h-4 cursor-row-resize' 
-                    : '-right-1 top-0 bottom-0 w-6 cursor-col-resize'
+                    ? `bottom-0 left-0 right-0 h-4 ${canEdit ? 'cursor-row-resize' : 'cursor-not-allowed'}` 
+                    : `-right-1 top-0 bottom-0 w-6 ${canEdit ? 'cursor-col-resize' : 'cursor-not-allowed'}`
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
             `}
-            onMouseDown={(e) => { e.preventDefault(); onResizeStart(e, item.id, 'right'); }}
+            onMouseDown={(e) => { e.preventDefault(); if (!canEdit) return; onResizeStart(e, item.id, 'right'); }}
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}

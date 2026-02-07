@@ -16,6 +16,7 @@ interface VerticalTimelineProps {
   onSwapSelectedCities?: () => void;
   onAddCity: () => void;
   pixelsPerDay: number;
+  readOnly?: boolean;
 }
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
@@ -28,8 +29,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   onForceFill,
   onSwapSelectedCities,
   onAddCity,
-  pixelsPerDay
+  pixelsPerDay,
+  readOnly = false
 }) => {
+  const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef<boolean>(false);
@@ -107,6 +110,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   };
 
   const handleAddTravel = () => {
+    if (!canEdit) return;
     let newStart = 0;
     if (travelItems.length > 0) {
         const lastTravel = travelItems[travelItems.length - 1];
@@ -118,6 +122,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   };
 
   const createTravelItem = (startOffset: number, duration: number) => {
+    if (!canEdit) return;
     const id = `travel-new-${Date.now()}`;
     const newTravel: ITimelineItem = {
         id,
@@ -138,6 +143,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
           onSelect(existing.id);
           return;
       }
+      if (!canEdit) return;
       const startOffset = fromCity.startDateOffset + fromCity.duration;
       const newItem: ITimelineItem = {
           id: `travel-new-${Date.now()}`,
@@ -155,6 +161,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   // --- Travel Lane Interaction (Vertical) ---
 
   const handleTravelMouseMove = (e: React.MouseEvent) => {
+      if (!canEdit) {
+          if (hoverTravelStart !== null) setHoverTravelStart(null);
+          return;
+      }
       if (!travelLaneRef.current) return;
       const target = e.target as HTMLElement;
       if (target.closest('.timeline-block-item')) {
@@ -179,6 +189,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   };
 
   const handleTravelClick = () => {
+      if (!canEdit) return;
       if (hoverTravelStart !== null) {
           createTravelItem(hoverTravelStart, 1.0);
           setHoverTravelStart(null);
@@ -191,6 +202,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   // Y axis -> Time/Duration
 
   const handleResizeStart = (e: React.MouseEvent, id: string, direction: 'left' | 'right') => {
+    if (!canEdit) return;
     // direction 'left' maps to 'top' (start time), 'right' maps to 'bottom' (end time)
     e.stopPropagation();
     const item = trip.items.find(i => i.id === id);
@@ -211,6 +223,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   };
 
   const handleMoveStart = (e: React.MouseEvent, id: string) => {
+    if (!canEdit) return;
     e.stopPropagation();
     const item = trip.items.find(i => i.id === id);
     if (!item) return;
@@ -464,8 +477,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Stays</span>
                          <button 
-                             onClick={(e) => { e.stopPropagation(); onAddCity(); }}
-                             className="opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full p-0.5"
+                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
+                             disabled={!canEdit}
+                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-indigo-50 text-indigo-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-indigo-100' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              <Plus size={12} />
                          </button>
@@ -513,6 +527,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      swapSelectedLabel="Reverse selected cities"
                                      pixelsPerDay={pixelsPerDay}
                                      vertical={true}
+                                     canEdit={canEdit}
                                  />
                              );
                          })}
@@ -524,8 +539,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Travel</span>
                          <button 
-                             onClick={(e) => { e.stopPropagation(); handleAddTravel(); }}
-                             className="opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full p-0.5"
+                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
+                             disabled={!canEdit}
+                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 text-stone-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              <Plus size={12} />
                          </button>
@@ -564,10 +580,12 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-1 shadow-sm transition-colors
-                                             ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}
+                                             ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}
+                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: 46 }}
                                          title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
+                                         disabled={!travel && !canEdit}
                                      >
                                          <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                          <span className="uppercase">{mode === 'na' ? 'N/A' : mode}</span>
@@ -587,8 +605,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Activities</span>
                          <button 
-                             onClick={(e) => { e.stopPropagation(); onAddActivity(0); }}
-                             className="opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full p-0.5"
+                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(0); }}
+                             disabled={!canEdit}
+                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-indigo-50 text-indigo-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-indigo-100' : 'opacity-50 cursor-not-allowed'}`}
                              title="Add Activity"
                          >
                              <Plus size={12} />
@@ -613,6 +632,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                          onMoveStart={handleMoveStart}
                                          pixelsPerDay={pixelsPerDay}
                                          vertical={true}
+                                         canEdit={canEdit}
                                      />
                                  ))}
                              </div>

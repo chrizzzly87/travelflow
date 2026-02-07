@@ -77,6 +77,8 @@ export interface ITrip {
   createdAt: number;
   updatedAt: number;
   isFavorite?: boolean;
+  forkedFromTripId?: string;
+  forkedFromShareToken?: string;
 }
 
 export interface IDragState {
@@ -104,4 +106,25 @@ export interface IViewSettings {
 export interface ISharedState {
     trip: ITrip;
     view?: IViewSettings;
+}
+
+export type ShareMode = 'view' | 'edit';
+
+export interface ISharedTripResult {
+    trip: ITrip;
+    view?: IViewSettings | null;
+    mode: ShareMode;
+    allowCopy?: boolean;
+}
+
+export interface IUserSettings {
+    language?: AppLanguage;
+    mapStyle?: MapStyle;
+    routeMode?: RouteMode;
+    layoutMode?: 'vertical' | 'horizontal';
+    timelineView?: 'horizontal' | 'vertical';
+    showCityNames?: boolean;
+    zoomLevel?: number;
+    sidebarWidth?: number;
+    timelineHeight?: number;
 }

@@ -79,3 +79,14 @@ export const getTripById = (id: string): ITrip | undefined => {
     const trips = getAllTrips();
     return trips.find(t => t.id === id);
 };
+
+export const setAllTrips = (trips: ITrip[]): void => {
+    try {
+        const normalized = trips
+            .map(normalizeTrip)
+            .filter((trip): trip is ITrip => Boolean(trip));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    } catch (e) {
+        console.error("Failed to replace trips in storage", e);
+    }
+};

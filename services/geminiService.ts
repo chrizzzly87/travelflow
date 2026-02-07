@@ -9,6 +9,7 @@ import {
     TRAVEL_COLOR,
     getGeminiApiKey,
     normalizeActivityTypes,
+    generateTripId,
 } from "../utils";
 
 /**
@@ -324,7 +325,7 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
 
     const now = Date.now();
     return {
-      id: `trip-${now}`,
+      id: generateTripId(),
       title: data.tripTitle || "My Trip",
       startDate: startDate || new Date().toISOString(),
       items: normalizedItems,

@@ -4,7 +4,7 @@ import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { generateItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip } from '../types';
-import { getDefaultTripDates, addDays } from '../utils';
+import { getDefaultTripDates, addDays, generateTripId } from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';
@@ -135,7 +135,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
     const handleCreateBlank = () => {
          const blankTrip: ITrip = {
-             id: crypto.randomUUID(),
+             id: generateTripId(),
              title: `Trip to ${destination || 'Unknown'}`,
              startDate: startDate,
              items: [],
@@ -165,6 +165,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                     onOpenManager={onOpenManager}
                     onOpenSettings={NOOP}
                     onViewSettingsChange={NOOP}
+                    canShare={false}
                     initialMapFocusQuery={primaryCountry}
                 />
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">

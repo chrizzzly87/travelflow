@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
 import { DetailsPanel } from './DetailsPanel';
@@ -15,8 +15,9 @@ import {
     Pencil, Share2, Folder, Printer, Calendar, List, 
     ZoomIn, ZoomOut, Plane, Layout, Columns, Rows, Plus, History, Star, Trash2, Info
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, buildRouteCacheKey, formatDistance, getActivityColorByTypes, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
+import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -113,13 +114,18 @@ interface TripViewProps {
     onViewSettingsChange?: (settings: IViewSettings) => void;
     initialMapFocusQuery?: string;
     appLanguage?: AppLanguage;
+    readOnly?: boolean;
+    canShare?: boolean;
+    shareStatus?: ShareMode;
+    onCopyTrip?: () => void;
 }
 
-export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en' }) => {
+export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en', readOnly = false, canShare = true, shareStatus, onCopyTrip }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const tripRef = useRef(trip);
     tripRef.current = trip;
+    const canEdit = !readOnly;
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -146,6 +152,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const lastNavActionRef = useRef<'undo' | 'redo' | null>(null);
     const lastNavFromLabelRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
+    const currentUrlRef = useRef<string>('');
 
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
@@ -203,7 +210,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const detailsResizeStartWidthRef = useRef(detailsWidth);
 
     // Zoom
-    const [zoomLevel, setZoomLevel] = useState(initialViewSettings?.zoomLevel || 1.0);
+    const [zoomLevel, setZoomLevel] = useState(() => {
+        if (typeof initialViewSettings?.zoomLevel === 'number') return initialViewSettings.zoomLevel;
+        if (typeof window !== 'undefined') {
+            const stored = parseFloat(localStorage.getItem('tf_zoom_level') || '');
+            if (Number.isFinite(stored)) return stored;
+        }
+        return 1.0;
+    });
     const pixelsPerDay = BASE_PIXELS_PER_DAY * zoomLevel;
 
     const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
@@ -216,6 +230,44 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
     }, []);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        let raw: string | null = null;
+        try {
+            raw = window.sessionStorage.getItem('tf_trip_copy_notice');
+        } catch (e) {
+            raw = null;
+        }
+        if (!raw) return;
+        try {
+            const payload = JSON.parse(raw);
+            if (payload?.tripId !== trip.id) return;
+            window.sessionStorage.removeItem('tf_trip_copy_notice');
+            const sourceTitle = typeof payload.sourceTitle === 'string' && payload.sourceTitle.trim().length > 0
+                ? payload.sourceTitle.trim()
+                : null;
+            const message = sourceTitle ? `Copied "${sourceTitle}"` : 'Trip copied successfully';
+            showToast(message, { tone: 'add', title: 'Copied' });
+        } catch (e) {
+            try {
+                window.sessionStorage.removeItem('tf_trip_copy_notice');
+            } catch (err) {
+                // ignore
+            }
+        }
+    }, [trip.id, showToast]);
+
+    const requireEdit = useCallback(() => {
+        if (canEdit) return true;
+        showToast('View-only link. Copy the trip to edit.', { tone: 'neutral', title: 'View only' });
+        return false;
+    }, [canEdit, showToast]);
+
+    const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
+        if (!requireEdit()) return;
+        onUpdateTrip(updatedTrip, options);
+    }, [onUpdateTrip, requireEdit]);
+
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);
         const { label: actionLabel } = getToneMeta(tone);
@@ -226,8 +278,71 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         setHistoryEntries(getHistoryEntries(trip.id));
     }, [trip.id]);
 
+    const baseUrl = useMemo(() => {
+        if (location.pathname.startsWith('/trip/')) {
+            return `/trip/${encodeURIComponent(trip.id)}`;
+        }
+        if (location.pathname.startsWith('/s/')) {
+            return location.pathname;
+        }
+        return location.pathname;
+    }, [location.pathname, trip.id]);
+
+    const resolvedHistoryEntries = useMemo(() => {
+        const base = baseUrl;
+        const filtered = historyEntries.filter(entry => entry.url !== base);
+        const latestEntry: HistoryEntry = {
+            id: 'latest',
+            tripId: trip.id,
+            url: base,
+            label: 'Data: Latest version',
+            ts: typeof trip.updatedAt === 'number' ? trip.updatedAt : Date.now(),
+        };
+        return [latestEntry, ...filtered];
+    }, [historyEntries, baseUrl, trip.id, trip.updatedAt]);
+
+    useEffect(() => {
+        refreshHistory();
+    }, [refreshHistory]);
+
+    const getHistoryIndex = useCallback((url: string) => {
+        const idx = resolvedHistoryEntries.findIndex(entry => entry.url === url);
+        return idx >= 0 ? idx : null;
+    }, [resolvedHistoryEntries]);
+
+    const getHistoryEntryForAction = useCallback((action: 'undo' | 'redo') => {
+        if (resolvedHistoryEntries.length === 0) return null;
+        const currentIndex = getHistoryIndex(currentUrlRef.current);
+        const baseIndex = currentIndex ?? 0;
+        const nextIndex = action === 'undo' ? baseIndex + 1 : baseIndex - 1;
+        if (nextIndex < 0 || nextIndex >= resolvedHistoryEntries.length) return null;
+        return resolvedHistoryEntries[nextIndex];
+    }, [resolvedHistoryEntries, getHistoryIndex]);
+
+    const navigateHistory = useCallback((action: 'undo' | 'redo') => {
+        const target = getHistoryEntryForAction(action);
+        if (!target) {
+            showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
+                tone: 'neutral',
+                title: action === 'undo' ? 'Undo' : 'Redo',
+            });
+            return;
+        }
+        suppressCommitRef.current = true;
+        lastNavActionRef.current = action;
+        lastNavFromLabelRef.current = null;
+        navigate(target.url, { replace: true });
+        showToast(stripHistoryPrefix(target.label), { tone: 'neutral', title: action === 'undo' ? 'Undo' : 'Redo' });
+    }, [getHistoryEntryForAction, navigate, showToast]);
+
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
+    }, []);
+
+    const markUserEdit = useCallback(() => {
+        suppressCommitRef.current = false;
+        lastNavActionRef.current = null;
+        lastNavFromLabelRef.current = null;
     }, []);
 
     const debugHistory = useCallback((message: string, data?: any) => {
@@ -261,12 +376,18 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const [addActivityState, setAddActivityState] = useState<{ isOpen: boolean, dayOffset: number, location: string }>({ isOpen: false, dayOffset: 0, location: '' });
     const [isAddCityModalOpen, setIsAddCityModalOpen] = useState(false);
 
+    const [isShareOpen, setIsShareOpen] = useState(false);
+    const [shareMode, setShareMode] = useState<ShareMode>('view');
+    const [shareUrl, setShareUrl] = useState<string | null>(null);
+    const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+
     // Persistence
     useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
     useEffect(() => { localStorage.setItem('tf_route_mode', routeMode); }, [routeMode]);
     useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
     useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
     useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
+    useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
 
     // Update URL with View State
     useEffect(() => {
@@ -348,6 +469,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const currentUrl = location.pathname + location.search;
 
     useEffect(() => {
+        currentUrlRef.current = currentUrl;
+    }, [currentUrl]);
+
+    useEffect(() => {
         const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
 
         if (selectedCityIds.some(id => !cityIdSet.has(id))) {
@@ -388,25 +513,85 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         return `${dateRange} • ${daysLabel} days • ${citiesLabel}${distancePart}`;
     }, [trip.items, trip.startDate]);
 
+    const forkMeta = useMemo(() => {
+        if (trip.forkedFromShareToken) {
+            return {
+                label: 'Copied from shared trip',
+                url: buildShareUrl(trip.forkedFromShareToken),
+            };
+        }
+        if (trip.forkedFromTripId) {
+            return {
+                label: 'Copied from another trip',
+                url: null,
+            };
+        }
+        return null;
+    }, [trip.forkedFromShareToken, trip.forkedFromTripId]);
+
+    const copyToClipboard = useCallback(async (value: string) => {
+        if (navigator?.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            return;
+        }
+        const input = document.createElement('input');
+        input.value = value;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+    }, []);
+
     const handleShare = useCallback(async () => {
-        const url = window.location.href;
-        try {
-            if (navigator?.clipboard?.writeText) {
-                await navigator.clipboard.writeText(url);
-            } else {
-                const input = document.createElement('input');
-                input.value = url;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
+        if (!canShare) return;
+        if (!DB_ENABLED) {
+            const url = window.location.href;
+            try {
+                await copyToClipboard(url);
+                showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
+            } catch (e) {
+                showToast('Could not copy link', { tone: 'remove', title: 'Share link' });
+                console.error('Copy failed', e);
             }
+            return;
+        }
+        setShareUrl(null);
+        setIsShareOpen(true);
+    }, [canShare, copyToClipboard, showToast]);
+
+    const handleGenerateShare = useCallback(async () => {
+        if (!DB_ENABLED) return;
+        setIsGeneratingShare(true);
+        try {
+            const sessionId = await ensureDbSession();
+            if (!sessionId) {
+                showToast('Anonymous auth is disabled. Enable it in Supabase.', { tone: 'remove', title: 'Share link' });
+                return;
+            }
+            const upserted = await dbUpsertTrip(trip, currentViewSettings);
+            if (!upserted) {
+                const existing = await dbGetTrip(trip.id);
+                if (!existing?.trip) {
+                    showToast('Could not save trip before sharing.', { tone: 'remove', title: 'Share link' });
+                    return;
+                }
+            }
+            const result = await dbCreateShareLink(trip.id, shareMode);
+            if (!result?.token) {
+                showToast(result?.error || 'Could not create share link', { tone: 'remove', title: 'Share link' });
+                return;
+            }
+            const url = new URL(buildShareUrl(result.token), window.location.origin).toString();
+            setShareUrl(url);
+            await copyToClipboard(url);
             showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
         } catch (e) {
-            showToast('Could not copy link', { tone: 'remove', title: 'Share link' });
-            console.error('Copy failed', e);
+            showToast('Could not create share link', { tone: 'remove', title: 'Share link' });
+            console.error('Share failed', e);
+        } finally {
+            setIsGeneratingShare(false);
         }
-    }, [showToast]);
+    }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings]);
 
     const formatHistoryTime = useCallback((ts: number) => {
         const diffMs = Date.now() - ts;
@@ -424,18 +609,29 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, []);
 
     const displayHistoryEntries = useMemo(() => {
-        if (showAllHistory) return historyEntries;
+        if (showAllHistory) return resolvedHistoryEntries;
         const seen = new Set<string>();
-        return historyEntries.filter(entry => {
+        return resolvedHistoryEntries.filter(entry => {
             if (seen.has(entry.label)) return false;
             seen.add(entry.label);
             return true;
         });
-    }, [historyEntries, showAllHistory]);
+    }, [resolvedHistoryEntries, showAllHistory]);
 
     useEffect(() => {
         if (isHistoryOpen) refreshHistory();
     }, [isHistoryOpen, refreshHistory]);
+
+    useEffect(() => {
+        const handleHistoryUpdate = (event: Event) => {
+            const detail = (event as CustomEvent).detail as { tripId?: string };
+            if (!detail || detail.tripId !== trip.id) return;
+            refreshHistory();
+        };
+        if (typeof window === 'undefined') return;
+        window.addEventListener('tf:history', handleHistoryUpdate);
+        return () => window.removeEventListener('tf:history', handleHistoryUpdate);
+    }, [trip.id, refreshHistory]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -462,36 +658,39 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
             if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
                 e.preventDefault();
-                lastNavActionRef.current = 'undo';
-                const fromEntry = findHistoryEntryByUrl(trip.id, window.location.pathname + window.location.search);
-                lastNavFromLabelRef.current = fromEntry?.label || null;
-                window.history.back();
+                navigateHistory('undo');
             } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
                 e.preventDefault();
-                lastNavActionRef.current = 'redo';
-                lastNavFromLabelRef.current = null;
-                window.history.forward();
+                navigateHistory('redo');
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [trip.id]);
+    }, [trip.id, navigateHistory]);
 
     useEffect(() => {
         const handlePopState = () => {
+            const nextPath = window.location.pathname;
+            const nextUrl = nextPath + window.location.search;
+            const expectedTripPrefix = `/trip/${encodeURIComponent(trip.id)}`;
+            const isTripRoute = nextPath.startsWith('/trip/');
+            const isShareRoute = nextPath.startsWith('/s/');
+            if ((!isTripRoute && !isShareRoute) || (isTripRoute && !nextPath.startsWith(expectedTripPrefix))) {
+                navigate(currentUrlRef.current || '/', { replace: true });
+                showToast('Reached start of history', { tone: 'neutral', title: 'Undo' });
+                return;
+            }
             suppressCommitRef.current = true;
-            const url = window.location.pathname + window.location.search;
-            const entry = findHistoryEntryByUrl(trip.id, url);
-            const action = lastNavActionRef.current;
-            if (action === 'undo' && lastNavFromLabelRef.current) {
-                const label = lastNavFromLabelRef.current;
-                showToast(stripHistoryPrefix(label), { tone: 'neutral', title: 'Undo' });
-            } else if (entry) {
-                showToast(stripHistoryPrefix(entry.label), { tone: 'neutral', title: action === 'redo' ? 'Redo' : 'Undo' });
-            } else {
-                showToast(action === 'redo' ? 'Moved forward in history' : 'Moved backward in history', {
+            const entry = findHistoryEntryByUrl(trip.id, nextUrl);
+            const prevIdx = getHistoryIndex(currentUrlRef.current);
+            const nextIdx = getHistoryIndex(nextUrl);
+            const inferredAction = (prevIdx !== null && nextIdx !== null)
+                ? (nextIdx > prevIdx ? 'undo' : 'redo')
+                : null;
+            if (entry) {
+                showToast(stripHistoryPrefix(entry.label), {
                     tone: 'neutral',
-                    title: action === 'redo' ? 'Redo' : 'Undo',
+                    title: inferredAction === 'redo' ? 'Redo' : 'Undo',
                 });
             }
             lastNavActionRef.current = null;
@@ -499,10 +698,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [trip.id, showToast]);
+    }, [trip.id, showToast, navigate, getHistoryIndex]);
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
         if (!onCommitState) return;
+        if (!canEdit) return;
         if (suppressCommitRef.current) {
             suppressCommitRef.current = false;
             debugHistory('Suppressed commit due to popstate');
@@ -530,7 +730,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 if (typeof hook === 'function') hook({ label, ts: Date.now() });
             }
         }, commitDelay);
-    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory]);
+    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory, canEdit]);
 
     useEffect(() => {
         const prev = prevViewRef.current;
@@ -564,6 +764,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const handleToggleFavorite = useCallback(() => {
+        if (!requireEdit()) return;
+        markUserEdit();
         const nextFavorite = !trip.isFavorite;
         const updatedTrip: ITrip = {
             ...trip,
@@ -572,13 +774,13 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         };
 
         setPendingLabel(nextFavorite ? 'Data: Added to favorites' : 'Data: Removed from favorites');
-        onUpdateTrip(updatedTrip, { persist: true });
+        safeUpdateTrip(updatedTrip, { persist: true });
         scheduleCommit(updatedTrip, currentViewSettings);
         showToast(nextFavorite ? 'Trip added to favorites' : 'Trip removed from favorites', {
             tone: nextFavorite ? 'add' : 'remove',
             title: nextFavorite ? 'Added' : 'Removed',
         });
-    }, [trip, onUpdateTrip, scheduleCommit, currentViewSettings, setPendingLabel, showToast]);
+    }, [trip, safeUpdateTrip, scheduleCommit, currentViewSettings, setPendingLabel, showToast, requireEdit, markUserEdit]);
 
     const selectedCitiesInTimeline = useMemo(() => {
         if (selectedCityIds.length === 0) return [];
@@ -655,6 +857,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     // Handlers
     const handleUpdateItems = (items: ITimelineItem[], options?: { deferCommit?: boolean }) => {
+        markUserEdit();
         const normalizedItems = normalizeCityColors(items);
 
         if (options?.deferCommit) {
@@ -662,7 +865,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 pendingHistoryLabelRef.current = 'Data: Adjusted timeline items';
             }
             const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
-            onUpdateTrip(updatedTrip, { persist: false });
+            safeUpdateTrip(updatedTrip, { persist: false });
             return;
         }
 
@@ -731,7 +934,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
 
         const updatedTrip = { ...trip, items: normalizedItems, updatedAt: Date.now() };
-        onUpdateTrip(updatedTrip, { persist: true });
+        safeUpdateTrip(updatedTrip, { persist: true });
         scheduleCommit(updatedTrip, currentViewSettings);
     };
 
@@ -775,6 +978,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             });
         }
         if (item) {
+            markUserEdit();
             if (item.type === 'city') {
                 if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
                     if (updates.duration !== undefined) {
@@ -939,6 +1143,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [trip.items, selectedItemId]);
 
     const handleDeleteItem = (id: string, strategy: 'item-only' | 'shift-gap' | 'pull-back' = 'item-only') => {
+        markUserEdit();
         const item = trip.items.find(i => i.id === id);
         if (item) {
             if (item.type === 'city') {
@@ -953,6 +1158,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         // Note: Complex strategies omitted for simplicity as they require logic function imports like deleteItemWithStrategy
         // If critical, we should import that helper. For now, basic delete.
         handleUpdateItems(newItems);
+        if (item) {
+            const label = stripHistoryPrefix(pendingHistoryLabelRef.current || 'Removed item');
+            showToast(label, { tone: 'remove', title: 'Removed' });
+        }
         setSelectedItemId(null);
         setSelectedCityIds(prev => prev.filter(cityId => cityId !== id));
     };
@@ -974,6 +1183,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             const selectedItem = trip.items.find(item => item.id === selectedItemId);
             if (!selectedItem) return;
             if (selectedItem.type !== 'city' && selectedItem.type !== 'activity') return;
+            if (!requireEdit()) return;
 
             e.preventDefault();
             handleDeleteItem(selectedItem.id);
@@ -981,16 +1191,19 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
         window.addEventListener('keydown', handleDeleteKey);
         return () => window.removeEventListener('keydown', handleDeleteKey);
-    }, [selectedItemId, trip.items, isHistoryOpen, addActivityState.isOpen, isAddCityModalOpen, handleDeleteItem]);
+    }, [selectedItemId, trip.items, isHistoryOpen, addActivityState.isOpen, isAddCityModalOpen, handleDeleteItem, requireEdit]);
 
     // Modal Handlers
     const handleOpenAddActivity = (dayOffset: number) => {
+         if (!requireEdit()) return;
          // Find city at this time
          const city = trip.items.find(i => i.type === 'city' && dayOffset >= i.startDateOffset && dayOffset < i.startDateOffset + i.duration);
          setAddActivityState({ isOpen: true, dayOffset, location: city?.title || trip.title });
     };
 
     const handleAddActivityItem = (itemProps: Partial<ITimelineItem>) => {
+        if (!requireEdit()) return;
+        markUserEdit();
         const normalizedTypes = normalizeActivityTypes(itemProps.activityType);
         const newItem: ITimelineItem = {
             id: crypto.randomUUID(),
@@ -1011,6 +1224,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     };
 
     const handleAddCityItem = (itemProps: Partial<ITimelineItem>) => {
+        if (!requireEdit()) return;
+        markUserEdit();
         // Logic to insert city? Or simple append?
         // App.tsx usually had logic to find gap.
         // For now, append at end of default logic:
@@ -1143,7 +1358,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         onBlur={() => { 
                                             const updatedTrip = { ...trip, title: editTitleValue, updatedAt: Date.now() };
                                             setPendingLabel('Data: Renamed trip');
-                                            onUpdateTrip(updatedTrip);
+                                            safeUpdateTrip(updatedTrip);
                                             scheduleCommit(updatedTrip, currentViewSettings);
                                             setIsEditingTitle(false);
                                         }}
@@ -1151,7 +1366,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             if (e.key === 'Enter') { 
                                                 const updatedTrip = { ...trip, title: editTitleValue, updatedAt: Date.now() };
                                                 setPendingLabel('Data: Renamed trip');
-                                                onUpdateTrip(updatedTrip);
+                                                safeUpdateTrip(updatedTrip);
                                                 scheduleCommit(updatedTrip, currentViewSettings);
                                                 setIsEditingTitle(false);
                                             } 
@@ -1160,17 +1375,31 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-indigo-500 outline-none pb-0.5"
                                     />
                                 ) : (
-                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { setEditTitleValue(trip.title); setIsEditingTitle(true); }}>
+                                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { if (!requireEdit()) return; setEditTitleValue(trip.title); setIsEditingTitle(true); }}>
                                         <h1 className="font-bold text-lg text-gray-900 truncate max-w-[200px] sm:max-w-md">{trip.title}</h1>
                                         <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
                                 )}
                                 <div className="text-xs font-semibold text-purple-600 mt-0.5">{tripSummary}</div>
+                                {forkMeta && (
+                                    <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-2">
+                                        <span>{forkMeta.label}</span>
+                                        {forkMeta.url && (
+                                            <a
+                                                href={forkMeta.url}
+                                                className="text-[11px] text-indigo-500 hover:underline"
+                                            >
+                                                View source
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <button
                                 type="button"
                                 onClick={handleToggleFavorite}
-                                className="mt-0.5 p-1.5 rounded-lg hover:bg-amber-50 transition-colors"
+                                disabled={!canEdit}
+                                className={`mt-0.5 p-1.5 rounded-lg transition-colors ${canEdit ? 'hover:bg-amber-50' : 'opacity-50 cursor-not-allowed'}`}
                                 title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                                 aria-label={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                             >
@@ -1194,11 +1423,30 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         <button onClick={onOpenManager} className="hidden sm:flex items-center gap-2 p-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium">
                             <Folder size={18} /> <span className="hidden lg:inline">My Trips</span>
                         </button>
-                        <button onClick={handleShare} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
-                            <Share2 size={16} /> <span className="hidden sm:inline">Share</span>
-                        </button>
+                        {canShare && (
+                            <button onClick={handleShare} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
+                                <Share2 size={16} /> <span className="hidden sm:inline">Share</span>
+                            </button>
+                        )}
                     </div>
                 </header>
+
+                {shareStatus && (
+                    <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
+                        <span>
+                            {shareStatus === 'view' ? 'View-only shared trip' : 'Shared trip · Editing enabled'}
+                        </span>
+                        {shareStatus === 'view' && onCopyTrip && (
+                            <button
+                                type="button"
+                                onClick={onCopyTrip}
+                                className="px-3 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
+                            >
+                                Copy trip
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
@@ -1222,7 +1470,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onSelect={handleTimelineSelect}
                                                 selectedItemId={selectedItemId}
                                                 selectedCityIds={selectedCityIds}
-                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                readOnly={readOnly}
+                                                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                 onAddActivity={handleOpenAddActivity}
                                                 onForceFill={handleForceFill}
                                                 onSwapSelectedCities={handleReverseSelectedCities}
@@ -1235,7 +1484,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onSelect={handleTimelineSelect}
                                                 selectedItemId={selectedItemId}
                                                 selectedCityIds={selectedCityIds}
-                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                readOnly={readOnly}
+                                                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                 onAddActivity={handleOpenAddActivity}
                                                 onForceFill={handleForceFill}
                                                 onSwapSelectedCities={handleReverseSelectedCities}
@@ -1273,6 +1523,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             onClose={clearSelection}
                                             onApplyOrder={applySelectedCityOrder}
                                             onReverse={handleReverseSelectedCities}
+                                            readOnly={readOnly}
                                         />
                                     ) : (
                                         <DetailsPanel 
@@ -1289,6 +1540,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             forceFillMode={selectedCityForceFill?.mode}
                                             forceFillLabel={selectedCityForceFill?.label}
                                             variant="sidebar"
+                                            readOnly={readOnly}
                                         />
                                     )}
                                     <div
@@ -1355,7 +1607,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onSelect={handleTimelineSelect}
                                                 selectedItemId={selectedItemId}
                                                 selectedCityIds={selectedCityIds}
-                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                readOnly={readOnly}
+                                                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                 onAddActivity={handleOpenAddActivity}
                                                 onForceFill={handleForceFill}
                                                 onSwapSelectedCities={handleReverseSelectedCities}
@@ -1368,7 +1621,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onSelect={handleTimelineSelect}
                                                 selectedItemId={selectedItemId}
                                                 selectedCityIds={selectedCityIds}
-                                                onAddCity={() => setIsAddCityModalOpen(true)}
+                                                readOnly={readOnly}
+                                                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                 onAddActivity={handleOpenAddActivity}
                                                 onForceFill={handleForceFill}
                                                 onSwapSelectedCities={handleReverseSelectedCities}
@@ -1397,24 +1651,26 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onClose={clearSelection}
                                                 onApplyOrder={applySelectedCityOrder}
                                                 onReverse={handleReverseSelectedCities}
-                                            />
-                                        ) : (
-                                            <DetailsPanel 
-                                                item={trip.items.find(i => i.id === selectedItemId) || null}
-                                                isOpen={!!selectedItemId}
-                                                onClose={clearSelection}
-                                                onUpdate={handleUpdateItem}
-                                                onDelete={handleDeleteItem}
-                                                tripStartDate={trip.startDate}
-                                                tripItems={trip.items}
-                                                routeMode={routeMode}
-                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                onForceFill={handleForceFill}
-                                                forceFillMode={selectedCityForceFill?.mode}
-                                                forceFillLabel={selectedCityForceFill?.label}
-                                                variant="sidebar"
-                                            />
-                                        )}
+                                            readOnly={readOnly}
+                                        />
+                                    ) : (
+                                        <DetailsPanel 
+                                            item={trip.items.find(i => i.id === selectedItemId) || null}
+                                            isOpen={!!selectedItemId}
+                                            onClose={clearSelection}
+                                            onUpdate={handleUpdateItem}
+                                            onDelete={handleDeleteItem}
+                                            tripStartDate={trip.startDate}
+                                            tripItems={trip.items}
+                                            routeMode={routeMode}
+                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                            onForceFill={handleForceFill}
+                                            forceFillMode={selectedCityForceFill?.mode}
+                                            forceFillLabel={selectedCityForceFill?.label}
+                                            variant="sidebar"
+                                            readOnly={readOnly}
+                                        />
+                                    )}
                                         <div
                                             className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-indigo-50/60 transition-colors"
                                             onMouseDown={(e) => startResizing('details', e.clientX)}
@@ -1446,8 +1702,77 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
                      />
 
-                     {/* History Panel */}
-                     {isHistoryOpen && (
+                     {isShareOpen && (
+                        <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsShareOpen(false)}>
+                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900">Share trip</h3>
+                                        <p className="text-xs text-gray-500">Choose view-only or collaboration editing.</p>
+                                    </div>
+                                    <button onClick={() => setIsShareOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                                        Close
+                                    </button>
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    <label className="flex items-start gap-3 text-sm cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="share-mode"
+                                            className="mt-1"
+                                            checked={shareMode === 'view'}
+                                            onChange={() => setShareMode('view')}
+                                        />
+                                        <span>
+                                            <span className="font-semibold text-gray-900">View only</span>
+                                            <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
+                                        </span>
+                                    </label>
+                                    <label className="flex items-start gap-3 text-sm cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="share-mode"
+                                            className="mt-1"
+                                            checked={shareMode === 'edit'}
+                                            onChange={() => setShareMode('edit')}
+                                        />
+                                        <span>
+                                            <span className="font-semibold text-gray-900">Allow editing</span>
+                                            <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
+                                        </span>
+                                    </label>
+                                    {shareUrl && (
+                                        <div className="mt-2">
+                                            <div className="text-xs font-semibold text-gray-600 mb-1">Share link</div>
+                                            <input
+                                                value={shareUrl}
+                                                readOnly
+                                                className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={() => setIsShareOpen(false)}
+                                        className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleGenerateShare}
+                                        disabled={isGeneratingShare}
+                                        className={`px-4 py-2 rounded-lg text-sm font-semibold text-white ${isGeneratingShare ? 'bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                    >
+                                        {isGeneratingShare ? 'Creating…' : 'Generate link'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                     )}
+
+                    {/* History Panel */}
+                    {isHistoryOpen && (
                         <div className="fixed inset-0 z-[1500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsHistoryOpen(false)}>
                             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -1462,10 +1787,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 <div className="p-3 border-b border-gray-100 flex items-center gap-2">
                                     <button
                                         onClick={() => { 
-                                            lastNavActionRef.current = 'undo'; 
-                                            const fromEntry = findHistoryEntryByUrl(trip.id, window.location.pathname + window.location.search);
-                                            lastNavFromLabelRef.current = fromEntry?.label || null;
-                                            window.history.back(); 
+                                            navigateHistory('undo');
                                         }}
                                         className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                                     >
@@ -1473,9 +1795,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     </button>
                                     <button
                                         onClick={() => { 
-                                            lastNavActionRef.current = 'redo'; 
-                                            lastNavFromLabelRef.current = null;
-                                            window.history.forward(); 
+                                            navigateHistory('redo');
                                         }}
                                         className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                                     >
@@ -1517,6 +1837,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         onClick={() => {
                                                             setIsHistoryOpen(false);
                                                             lastNavActionRef.current = null;
+                                                            suppressCommitRef.current = true;
                                                             navigate(entry.url);
                                                             showToast(details, { tone, title: 'Opened from history' });
                                                         }}
@@ -1528,7 +1849,28 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 </li>
                                             )})}
                                         </ul>
-                                    )}
+                    )}
+
+                    {shareStatus === 'view' && onCopyTrip && (
+                        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400]">
+                            <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm">
+                                <div className="font-semibold">View-only trip</div>
+                                <div className="text-xs text-amber-800 mt-1">
+                                    You can change visual settings, but edits to the itinerary are disabled.
+                                </div>
+                                <div className="mt-3 flex items-center justify-between gap-3">
+                                    <span className="text-[11px] text-amber-700">Copy to edit your own version.</span>
+                                    <button
+                                        type="button"
+                                        onClick={onCopyTrip}
+                                        className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
+                                    >
+                                        Copy trip
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                                 </div>
                             </div>
                         </div>

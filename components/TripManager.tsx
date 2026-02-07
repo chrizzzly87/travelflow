@@ -3,6 +3,7 @@ import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
+import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -774,7 +775,10 @@ export const TripManager: React.FC<TripManagerProps> = ({
     }
   }, [getCountryCacheKey, persistCountryCache]);
 
-  const loadTrips = React.useCallback(() => {
+  const refreshTrips = React.useCallback(async () => {
+    if (DB_ENABLED) {
+      await syncTripsFromDb();
+    }
     setTrips(getAllTrips());
   }, []);
 
@@ -825,6 +829,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
         const updatedTrip: ITrip = { ...trip, items: nextItems };
         saveTrip(updatedTrip, { preserveUpdatedAt: true });
+        if (DB_ENABLED) {
+          void dbUpsertTrip(updatedTrip);
+        }
         if (onUpdateTrip && currentTripId === updatedTrip.id) {
           onUpdateTrip(updatedTrip);
         }
@@ -844,10 +851,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
       const loaded = getAllTrips();
       setTrips(loaded);
       void enrichTripsWithCountryData(loaded);
+      void refreshTrips();
     } else {
       hideHoverNow();
     }
-  }, [isOpen, enrichTripsWithCountryData, hideHoverNow]);
+  }, [isOpen, enrichTripsWithCountryData, hideHoverNow, refreshTrips]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -863,8 +871,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this trip?")) {
       deleteTrip(id);
+      if (DB_ENABLED) {
+        void dbDeleteTrip(id);
+      }
       if (hoverAnchor?.tripId === id) hideHoverNow();
-      loadTrips();
+      void refreshTrips();
     }
   };
 
@@ -876,10 +887,13 @@ export const TripManager: React.FC<TripManagerProps> = ({
     };
 
     saveTrip(updatedTrip);
+    if (DB_ENABLED) {
+      void dbUpsertTrip(updatedTrip);
+    }
     if (onUpdateTrip && currentTripId === updatedTrip.id) {
       onUpdateTrip(updatedTrip);
     }
-    loadTrips();
+    void refreshTrips();
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();

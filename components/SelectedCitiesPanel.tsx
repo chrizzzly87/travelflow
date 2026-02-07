@@ -7,14 +7,17 @@ interface SelectedCitiesPanelProps {
     onClose: () => void;
     onApplyOrder: (orderedCityIds: string[]) => void;
     onReverse: () => void;
+    readOnly?: boolean;
 }
 
 export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
     selectedCities,
     onClose,
     onApplyOrder,
-    onReverse
+    onReverse,
+    readOnly = false
 }) => {
+    const canEdit = !readOnly;
     const [orderedCityIds, setOrderedCityIds] = useState<string[]>([]);
 
     useEffect(() => {
@@ -30,6 +33,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
     const hasCustomOrder = baselineOrder.some((id, index) => id !== orderedCityIds[index]);
 
     const moveCity = (fromIndex: number, toIndex: number) => {
+        if (!canEdit) return;
         if (toIndex < 0 || toIndex >= orderedCityIds.length) return;
         const next = [...orderedCityIds];
         const [moved] = next.splice(fromIndex, 1);
@@ -58,25 +62,26 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
 
             <div className="p-4 border-b border-gray-100 bg-white flex items-center gap-2">
                 <button
-                    onClick={onReverse}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+                    onClick={() => { if (!canEdit) return; onReverse(); }}
+                    disabled={!canEdit}
+                    className={`px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 flex items-center gap-1.5 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
                     title="Reverse selected city order"
                 >
                     <ArrowUpDown size={14} />
                     Reverse Selected
                 </button>
                 <button
-                    onClick={() => setOrderedCityIds(baselineOrder)}
-                    disabled={!hasCustomOrder}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => { if (!canEdit) return; setOrderedCityIds(baselineOrder); }}
+                    disabled={!hasCustomOrder || !canEdit}
+                    className={`px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
                     title="Reset panel order"
                 >
                     Reset
                 </button>
                 <button
-                    onClick={() => onApplyOrder(orderedCityIds)}
-                    disabled={!hasCustomOrder}
-                    className="ml-auto px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={() => { if (!canEdit) return; onApplyOrder(orderedCityIds); }}
+                    disabled={!hasCustomOrder || !canEdit}
+                    className={`ml-auto px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
                     title="Apply custom selected order"
                 >
                     Apply Order
@@ -102,16 +107,16 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                             <div className="ml-auto flex items-center gap-1">
                                 <button
                                     onClick={() => moveCity(index, index - 1)}
-                                    disabled={index === 0}
-                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    disabled={index === 0 || !canEdit}
+                                    className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
                                     title="Move up"
                                 >
                                     <ArrowUp size={13} />
                                 </button>
                                 <button
                                     onClick={() => moveCity(index, index + 1)}
-                                    disabled={index === orderedCityIds.length - 1}
-                                    className="p-1.5 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    disabled={index === orderedCityIds.length - 1 || !canEdit}
+                                    className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
                                     title="Move down"
                                 >
                                     <ArrowDown size={13} />

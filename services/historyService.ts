@@ -1,4 +1,4 @@
-import { DB_ENABLED, saveHistoryEntryToDb } from './dbService';
+import { ITrip, IViewSettings } from "../types";
 
 export interface HistoryEntry {
     id: string;
@@ -6,6 +6,10 @@ export interface HistoryEntry {
     url: string;
     label: string;
     ts: number;
+    snapshot?: {
+        trip: ITrip;
+        view?: IViewSettings;
+    };
 }
 
 const HISTORY_KEY = 'travelflow_history_v1';
@@ -34,10 +38,19 @@ const saveStore = (store: HistoryStore) => {
 
 export const getHistoryEntries = (tripId: string): HistoryEntry[] => {
     const store = loadStore();
-    return store[tripId] || [];
+    const list = store[tripId] || [];
+    const tripPrefix = `/trip/${encodeURIComponent(tripId)}`;
+    return list
+        .filter(entry => entry.url.startsWith(tripPrefix) || entry.url.startsWith('/s/'))
+        .sort((a, b) => b.ts - a.ts);
 };
 
-export const appendHistoryEntry = (tripId: string, url: string, label: string) => {
+export const appendHistoryEntry = (
+    tripId: string,
+    url: string,
+    label: string,
+    options?: { snapshot?: { trip: ITrip; view?: IViewSettings }; ts?: number }
+) => {
     const store = loadStore();
     const list = store[tripId] || [];
 
@@ -48,16 +61,20 @@ export const appendHistoryEntry = (tripId: string, url: string, label: string) =
         tripId,
         url,
         label,
-        ts: Date.now()
+        ts: options?.ts ?? Date.now(),
+        snapshot: options?.snapshot,
     };
 
-    const next = [entry, ...list].slice(0, MAX_HISTORY);
+    const withoutDuplicate = list.filter(existing => existing.url !== url);
+    const merged = [entry, ...withoutDuplicate].sort((a, b) => b.ts - a.ts);
+    const next = merged.slice(0, MAX_HISTORY);
     store[tripId] = next;
     saveStore(store);
 
-    if (DB_ENABLED) {
-        saveHistoryEntryToDb(entry);
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tf:history', { detail: { tripId, entry } }));
     }
+
 };
 
 export const findHistoryEntryByUrl = (tripId: string, url: string): HistoryEntry | null => {
