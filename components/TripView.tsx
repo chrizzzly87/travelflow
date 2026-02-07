@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
@@ -18,6 +18,8 @@ import {
 import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbUpsertTrip, ensureDbSession } from '../services/dbService';
+import { getLatestInAppRelease, getWebsiteVisibleItems } from '../services/releaseNotesService';
+import { ReleasePill } from './marketing/ReleasePill';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -103,6 +105,7 @@ const MIN_DETAILS_WIDTH = 360;
 const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
 const RESIZER_WIDTH = 4;
+const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 
 interface TripViewProps {
     trip: ITrip;
@@ -126,6 +129,20 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const tripRef = useRef(trip);
     tripRef.current = trip;
     const canEdit = !readOnly;
+    const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
+    const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
+        if (typeof window === 'undefined') return null;
+        try {
+            return window.localStorage.getItem(RELEASE_NOTICE_DISMISSED_KEY);
+        } catch (e) {
+            return null;
+        }
+    });
+    const latestReleaseItems = useMemo(() => {
+        if (!latestInAppRelease) return [];
+        return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
+    }, [latestInAppRelease]);
+    const showReleaseNotice = !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -541,6 +558,17 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         document.execCommand('copy');
         document.body.removeChild(input);
     }, []);
+
+    const dismissReleaseNotice = useCallback(() => {
+        if (!latestInAppRelease) return;
+        setDismissedReleaseId(latestInAppRelease.id);
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(RELEASE_NOTICE_DISMISSED_KEY, latestInAppRelease.id);
+        } catch (e) {
+            // ignore storage issues
+        }
+    }, [latestInAppRelease]);
 
     const handleShare = useCallback(async () => {
         if (!canShare) return;
@@ -1701,6 +1729,60 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         onClose={() => setIsAddCityModalOpen(false)}
                         onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
                      />
+
+                     {showReleaseNotice && latestInAppRelease && (
+                        <div className="fixed inset-0 z-[1650] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="release-update-title">
+                            <button
+                                type="button"
+                                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
+                                aria-label="Close release update"
+                                onClick={dismissReleaseNotice}
+                            />
+                            <div className="relative w-full max-w-lg rounded-3xl border border-indigo-100 bg-white shadow-2xl">
+                                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-cyan-50 px-6 py-5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                                        Latest release · {latestInAppRelease.version}
+                                    </p>
+                                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-slate-900">
+                                        {latestInAppRelease.title}
+                                    </h2>
+                                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        {new Date(latestInAppRelease.publishedAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                <div className="px-6 py-5">
+                                    {latestInAppRelease.summary && (
+                                        <p className="text-sm leading-6 text-slate-700">{latestInAppRelease.summary}</p>
+                                    )}
+                                    {latestReleaseItems.length > 0 && (
+                                        <ul className="mt-3 space-y-2">
+                                            {latestReleaseItems.map((item, index) => (
+                                                <li key={`${latestInAppRelease.id}-notice-item-${index}`} className="flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2">
+                                                    <ReleasePill item={item} />
+                                                    <span className="pt-0.5 text-sm leading-6 text-slate-700">{item.text}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
+                                    <Link
+                                        to="/updates"
+                                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                                    >
+                                        View full changelog
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={dismissReleaseNotice}
+                                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                     )}
 
                      {isShareOpen && (
                         <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsShareOpen(false)}>

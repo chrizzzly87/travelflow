@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, Sparkles, FilePlus, Settings, ChevronUp, ChevronDown, Wallet, Clock, MapPin, AlignLeft, Check, AlertTriangle, Folder, Plane } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { generateItinerary } from '../services/geminiService';
@@ -9,6 +10,7 @@ import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';
 import { HeroWebGLBackground } from './HeroWebGLBackground';
+import { SiteFooter } from './marketing/SiteFooter';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
@@ -23,6 +25,11 @@ const GENERATION_MESSAGES = [
     "Finalizing logistics and details..."
 ];
 const NOOP = () => {};
+const createNavLinkClass = ({ isActive }: { isActive: boolean }) => {
+    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 sm:after:-bottom-6 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-indigo-600 after:transition-transform';
+    if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
+    return baseClass;
+};
 
 export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated, onOpenManager }) => {
     // Generation Form State
@@ -197,31 +204,44 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     }
 
   return (
-      <div className="w-full h-full flex flex-col relative overflow-hidden bg-slate-50">
+      <div className="w-full min-h-screen flex flex-col relative overflow-hidden bg-slate-50">
            <HeroWebGLBackground className="z-0" />
            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
            <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl" />
            <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-indigo-300/30 blur-3xl" />
            {/* Navigation Header */}
-           <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20">
-               <div className="flex items-center gap-2">
+           <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20 gap-3">
+               <Link to="/" className="flex items-center gap-2">
                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg transform rotate-3">
                        <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
                    </div>
                    <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-indigo-600">Flow</span></span>
+               </Link>
+               <nav className="hidden md:flex items-center gap-5 text-sm bg-white/75 backdrop-blur px-4 py-2 rounded-full border border-slate-200">
+                   <NavLink to="/features" className={createNavLinkClass}>Features</NavLink>
+                   <NavLink to="/updates" className={createNavLinkClass}>News & Updates</NavLink>
+                   <NavLink to="/blog" className={createNavLinkClass}>Blog</NavLink>
+               </nav>
+               <div className="flex items-center gap-2">
+                   <NavLink
+                       to="/login"
+                       className="hidden sm:inline-flex px-3 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-indigo-300 rounded-full text-sm font-medium text-gray-600 hover:text-indigo-600 transition-all"
+                   >
+                       Login
+                   </NavLink>
+                   <button
+                       onClick={onOpenManager}
+                       className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-gray-600"
+                   >
+                       <Folder size={16} />
+                       <span>My Trips</span>
+                   </button>
                </div>
-               <button 
-                   onClick={onOpenManager}
-                   className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-gray-600"
-               >
-                   <Folder size={16} />
-                   <span>My Trips</span>
-               </button>
            </header>
 
-           <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto w-full">
-               <div className="text-center mb-8 mt-12">
-                   <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Plan your next adventure</h1>
+           <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 pt-28 sm:pt-32 md:pt-36 overflow-y-auto w-full">
+               <div className="text-center mb-8">
+                   <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Plan your next adventure</h1>
                    <p className="text-gray-500">AI-powered itinerary generation in seconds.</p>
                </div>
 
@@ -305,6 +325,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                <button type="button" className="px-4 py-2 bg-white border border-gray-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm" onClick={() => fillExample("Japan", 7, "Anime, Tech, and Sushi.")}>🇯🇵 7 Days in Japan</button>
                 <button type="button" className="px-4 py-2 bg-white border border-gray-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm" onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}>🇹🇭 Thailand (Test Plan)</button>
            </div>
+           </div>
+
+           <div className="relative z-10 mt-auto">
+               <SiteFooter className="bg-white/75 backdrop-blur border-slate-200/70" />
            </div>
       </div>
   );

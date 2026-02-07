@@ -1,0 +1,67 @@
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+const CONSENT_STORAGE_KEY = 'tf_cookie_consent_choice_v1';
+
+type ConsentChoice = 'all' | 'essential';
+
+const readStoredConsent = (): ConsentChoice | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+        const stored = window.localStorage.getItem(CONSENT_STORAGE_KEY);
+        return stored === 'all' || stored === 'essential' ? stored : null;
+    } catch (e) {
+        return null;
+    }
+};
+
+const saveConsent = (choice: ConsentChoice) => {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
+    } catch (e) {
+        // ignore storage issues
+    }
+};
+
+export const CookieConsentBanner: React.FC = () => {
+    const [consent, setConsent] = useState<ConsentChoice | null>(() => readStoredConsent());
+    const isVisible = useMemo(() => consent === null, [consent]);
+
+    const handleConsent = (choice: ConsentChoice) => {
+        setConsent(choice);
+        saveConsent(choice);
+    };
+
+    if (!isVisible) return null;
+
+    return (
+        <div className="fixed inset-x-0 bottom-4 z-[1200] px-4">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+                <p className="text-sm leading-6 text-slate-700">
+                    We use essential cookies to keep TravelFlow stable and optional cookies to improve experience. See our{' '}
+                    <Link to="/cookies" className="font-semibold text-indigo-700 hover:text-indigo-800">
+                        Cookie Policy
+                    </Link>
+                    .
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => handleConsent('essential')}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                    >
+                        Essential only
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleConsent('all')}
+                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                    >
+                        Accept all
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

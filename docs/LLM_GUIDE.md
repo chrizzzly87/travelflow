@@ -4,9 +4,12 @@ This doc is a compact, structured overview of the app to help future agents make
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
+- Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`.
+- Trip creation route: `/create-trip`.
 - Core data model: `ITrip` with `ITimelineItem[]` for cities, travel, activities.
 - Primary view: `components/TripView.tsx`.
 - URL-encoded persistence: `utils.ts` (`compressTrip`, `decompressTrip`) used by `App.tsx`.
+- Release updates source: `content/updates/*.md` parsed via `services/releaseNotesService.ts`.
 
 **Key Files**
 - `App.tsx`
@@ -84,3 +87,5 @@ This doc is a compact, structured overview of the app to help future agents make
 3. Keep localStorage default as fallback only.
 4. Ensure layout-specific changes handle both horizontal and vertical modes.
 5. Confirm selection and hover styles are visible against existing backgrounds.
+6. If behavior/features changed, update markdown release notes following `docs/UPDATE_FORMAT.md`.
+7. If publishing a new release entry, bump to a new strictly increasing `version`.

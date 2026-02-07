@@ -34,6 +34,14 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 npm run dev
 ```
 
+## Routes
+
+- `/` marketing landing page
+- `/create-trip` trip creation flow
+- `/trip/:tripId` planner
+- `/updates` marketing updates feed from markdown release files
+- `/admin/dashboard` admin metrics placeholder (future role-gated)
+
 ## Supabase Setup And Troubleshooting
 
 For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
@@ -47,6 +55,10 @@ npm run build
 ```
 
 The production output is generated in `dist/`.
+
+`npm run build` includes release-note validation (`npm run updates:validate`) for `content/updates/*.md`.
+
+Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
 ## Deploy To Vercel
 

@@ -1,1 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+:root {
+  --tf-font-heading: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+  font-family: var(--tf-font-heading);
+  letter-spacing: -0.015em;
+}
