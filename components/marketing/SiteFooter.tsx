@@ -1,0 +1,29 @@
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+
+interface SiteFooterProps {
+    className?: string;
+}
+
+export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
+    const year = new Date().getFullYear();
+
+    return (
+        <footer className={`border-t border-slate-200 bg-white/90 ${className || ''}`.trim()}>
+            <div className="mx-auto w-full max-w-6xl px-5 py-8 md:px-8">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <p className="text-sm text-slate-600">© {year} TravelFlow. All rights reserved.</p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <NavLink to="/imprint" className="text-slate-600 hover:text-slate-900">Imprint</NavLink>
+                        <NavLink to="/privacy" className="text-slate-600 hover:text-slate-900">Privacy</NavLink>
+                        <NavLink to="/terms" className="text-slate-600 hover:text-slate-900">Terms</NavLink>
+                        <NavLink to="/cookies" className="text-slate-600 hover:text-slate-900">Cookies</NavLink>
+                    </div>
+                </div>
+                <p className="mt-3 text-xs text-slate-400">
+                    Legal content is scaffolded and should be replaced with approved production text before public launch.
+                </p>
+            </div>
+        </footer>
+    );
+};

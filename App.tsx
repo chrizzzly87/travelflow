@@ -5,6 +5,17 @@ import { TripView } from './components/TripView';
 import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManager } from './components/TripManager';
 import { SettingsModal } from './components/SettingsModal';
+import { MarketingHomePage } from './pages/MarketingHomePage';
+import { FeaturesPage } from './pages/FeaturesPage';
+import { UpdatesPage } from './pages/UpdatesPage';
+import { BlogPage } from './pages/BlogPage';
+import { LoginPage } from './pages/LoginPage';
+import { ImprintPage } from './pages/ImprintPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
+import { CookiesPage } from './pages/CookiesPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
@@ -129,7 +140,7 @@ const TripLoader = ({
             }
 
             console.error('Failed to load trip from URL');
-            navigate('/', { replace: true });
+            navigate('/create-trip', { replace: true });
         };
 
         void load();
@@ -190,7 +201,7 @@ const SharedTripLoader = ({
 
         const load = async () => {
             if (!DB_ENABLED) {
-                navigate('/', { replace: true });
+                navigate('/create-trip', { replace: true });
                 return;
             }
 
@@ -198,7 +209,7 @@ const SharedTripLoader = ({
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
-                navigate('/', { replace: true });
+                navigate('/create-trip', { replace: true });
                 return;
             }
 
@@ -416,6 +427,10 @@ const AppContent: React.FC = () => {
             <Routes>
                 <Route 
                     path="/" 
+                    element={<MarketingHomePage />}
+                />
+                <Route
+                    path="/create-trip"
                     element={
                         <CreateTripForm 
                             onTripGenerated={handleTripGenerated} 
@@ -423,6 +438,15 @@ const AppContent: React.FC = () => {
                         />
                     } 
                 />
+                <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/updates" element={<UpdatesPage />} />
+                <Route path="/blog" element={<BlogPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/imprint" element={<ImprintPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/cookies" element={<CookiesPage />} />
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                 <Route 
                     path="/trip/:tripId" 
                     element={
@@ -452,7 +476,8 @@ const AppContent: React.FC = () => {
                     }
                 />
                  {/* Legacy Redirect */}
-                 <Route path="/trip" element={<Navigate to="/" replace />} />
+                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
+                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
             {/* Global Modals */}
@@ -474,6 +499,8 @@ const AppContent: React.FC = () => {
                 appLanguage={appLanguage}
                 onAppLanguageChange={setAppLanguage}
             />
+
+            <CookieConsentBanner />
         </>
     );
 };
