@@ -13,5 +13,6 @@ summary: "Added GDPR-aligned Umami tracking with consent mapping, marketing even
 ## Changes
 - [x] [New feature] 🚀 Added Umami analytics integration that only activates after optional consent and tracks SPA pageviews.
 - [x] [Improved] ✨ Added baseline marketing events for navigation, hero CTA clicks, consent acceptance, and trip creation.
+- [x] [Fixed] 🐛 Removed forced DNT tracking suppression in Umami script config so opted-in analytics events can be sent.
 - [x] [Improved] ✨ Added Umami + Supabase environment variable scaffolding and updated Netlify secret-scan config.
 - [x] [Improved] ✨ Updated the Cookie Policy page with explicit consent-banner mapping and implementation notes.
