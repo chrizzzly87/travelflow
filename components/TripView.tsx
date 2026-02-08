@@ -11,11 +11,11 @@ import { PrintLayout } from './PrintLayout';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
-import { 
-    Pencil, Share2, Folder, Printer, Calendar, List, 
+import {
+    Pencil, Share2, Folder, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Layout, Columns, Rows, Plus, History, Star, Trash2, Info
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems } from '../services/releaseNotesService';
@@ -105,6 +105,9 @@ const MIN_DETAILS_WIDTH = 360;
 const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
 const RESIZER_WIDTH = 4;
+const MIN_ZOOM_LEVEL = 0.2;
+const MAX_ZOOM_LEVEL = 3;
+const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
@@ -289,6 +292,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (typeof window !== 'undefined') return parseInt(localStorage.getItem('tf_timeline_height') || '400', 10);
         return 400;
     });
+    const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
 
     const [detailsWidth, setDetailsWidth] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -310,6 +314,15 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
         return 1.0;
     });
+    const clampZoomLevel = useCallback((value: number) => {
+        if (!Number.isFinite(value)) return 1;
+        return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
+    }, []);
+    const horizontalTimelineDayCount = useMemo(() => {
+        const bounds = getTimelineBounds(trip.items);
+        return Math.max(1, bounds.dayCount);
+    }, [trip.items]);
+    const previousLayoutModeRef = useRef(layoutMode);
     const pixelsPerDay = BASE_PIXELS_PER_DAY * zoomLevel;
 
     const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
@@ -1442,6 +1455,36 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         return () => window.removeEventListener('resize', handleResize);
     }, [clampDetailsWidth]);
 
+    const autoFitHorizontalTimelineForVerticalLayout = useCallback(() => {
+        if (layoutMode !== 'vertical' || timelineView !== 'horizontal') return false;
+
+        const measuredWidth = verticalLayoutTimelineRef.current?.clientWidth ?? 0;
+        if (measuredWidth <= 0) return false;
+
+        const usableTimelineWidth = Math.max(160, measuredWidth - HORIZONTAL_TIMELINE_AUTO_FIT_PADDING);
+        const targetPixelsPerDay = usableTimelineWidth / horizontalTimelineDayCount;
+        const targetZoom = clampZoomLevel(targetPixelsPerDay / BASE_PIXELS_PER_DAY);
+
+        if (!Number.isFinite(targetZoom)) return false;
+        setZoomLevel(prev => (Math.abs(prev - targetZoom) < 0.01 ? prev : targetZoom));
+        return true;
+    }, [layoutMode, timelineView, horizontalTimelineDayCount, clampZoomLevel]);
+
+    useEffect(() => {
+        const previousLayoutMode = previousLayoutModeRef.current;
+        if (previousLayoutMode === 'horizontal' && layoutMode === 'vertical' && timelineView === 'horizontal') {
+            const runAutoFit = () => {
+                if (!autoFitHorizontalTimelineForVerticalLayout()) {
+                    requestAnimationFrame(() => {
+                        autoFitHorizontalTimelineForVerticalLayout();
+                    });
+                }
+            };
+            requestAnimationFrame(runAutoFit);
+        }
+        previousLayoutModeRef.current = layoutMode;
+    }, [layoutMode, timelineView, autoFitHorizontalTimelineForVerticalLayout]);
+
     // Resizing Logic
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;
@@ -1682,8 +1725,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         {/* CONTROLS OVERLAY */}
                                         <div className="absolute top-4 right-4 z-40 flex gap-2">
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                                <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
-                                                <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
                                             </div>
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
                                                 <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
@@ -1785,7 +1828,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                   <div className="w-12 h-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                              </div>
                              <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
-                                 <div className="flex-1 h-full relative border-r border-gray-100 min-w-0">
+                                 <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                     <div className="w-full h-full relative min-w-0">
                                         {timelineView === 'vertical' ? (
                                             <VerticalTimeline 
@@ -1819,8 +1862,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         {/* Controls Overlay */}
                                         <div className="absolute top-4 right-4 z-40 flex gap-2">
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                                <button onClick={() => setZoomLevel(z => Math.max(0.2, z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
-                                                <button onClick={() => setZoomLevel(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
+                                                <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
                                             </div>
                                             <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
                                                 <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">

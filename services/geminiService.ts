@@ -146,14 +146,40 @@ const cityNotesSchema = {
     required: ["notes"]
 };
 
-interface GenerateOptions {
-    roundTrip: boolean;
+export interface GenerateOptions {
+    roundTrip?: boolean;
     totalDays?: number;
     numCities?: number;
     specificCities?: string;
     budget?: string;
     pace?: string;
     interests?: string[];
+}
+
+export interface WizardGenerateOptions {
+    countries: string[];
+    startDate?: string;
+    endDate?: string;
+    roundTrip?: boolean;
+    totalDays?: number;
+    notes?: string;
+    travelStyles?: string[];
+    travelVibes?: string[];
+    travelLogistics?: string[];
+    idealMonths?: string[];
+    shoulderMonths?: string[];
+    recommendedDurationDays?: number;
+}
+
+export interface SurpriseGenerateOptions {
+    country: string;
+    startDate?: string;
+    endDate?: string;
+    totalDays?: number;
+    monthLabels?: string[];
+    durationWeeks?: number;
+    seasonalEvents?: string[];
+    notes?: string;
 }
 
 interface ParsedCityStop {
@@ -169,33 +195,12 @@ export type CityNotesEnhancementMode =
     | 'local-tips'
     | 'day-plan';
 
-export const generateItinerary = async (prompt: string, startDate?: string, options?: GenerateOptions): Promise<ITrip> => {
-  try {
-    const apiKey = getGeminiApiKey();
-    if (!apiKey) throw new Error("API Key is missing or invalid. Please check your environment configuration.");
-    
-    const ai = new GoogleGenAI({ apiKey });
-    
-    let detailedPrompt = `Plan a detailed travel itinerary for: ${prompt}. `;
-    
-    if (options) {
-        if (options.roundTrip) {
-            detailedPrompt += ` Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
-        }
-        if (options.totalDays) detailedPrompt += ` The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
-        if (options.numCities) detailedPrompt += ` Visit exactly ${options.numCities} distinct cities/stops. `;
-        if (options.specificCities) detailedPrompt += ` You MUST include these cities: ${options.specificCities}. `;
-        if (options.budget) detailedPrompt += ` Budget level: ${options.budget}. `;
-        if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
-        if (options.interests && options.interests.length > 0) detailedPrompt += ` Focus on these interests: ${options.interests.join(", ")}. `;
-    }
-
-    detailedPrompt += `
-      Return a list of consecutive cities/stops. 
+const BASE_ITINERARY_RULES_PROMPT = `
+      Return a list of consecutive cities/stops.
       Important Rules for complex trips:
       1. Provide accurate Latitude and Longitude for each city/stop.
       2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration (days) and coordinates.
-      3. For EACH city description, you MUST include these exact markdown sections: 
+      3. For EACH city description, you MUST include these exact markdown sections:
          ### Must See (3-4 items)
          ### Must Try (3-4 local foods)
          ### Must Do (3-4 activities)
@@ -206,17 +211,11 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
          Do not return unknown activity types and do not leave activityTypes empty.
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: detailedPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: itinerarySchema,
-      },
-    });
-
-    const data = JSON.parse(response.text || '{}');
-    
+const buildTripFromModelData = (
+    data: any,
+    startDate?: string,
+    options?: Pick<GenerateOptions, 'roundTrip'>
+): ITrip => {
     const items: ITimelineItem[] = [];
     let currentDayOffset = 0;
     const cityOffsets: number[] = [];
@@ -321,24 +320,156 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
         });
     }
 
-    const normalizedItems = normalizeCityColors(items);
-
     const now = Date.now();
     return {
-      id: generateTripId(),
-      title: data.tripTitle || "My Trip",
-      startDate: startDate || new Date().toISOString(),
-      items: normalizedItems,
-      countryInfo: data.countryInfo,
-      createdAt: now,
-      updatedAt: now,
-      isFavorite: false
+        id: generateTripId(),
+        title: data.tripTitle || "My Trip",
+        startDate: startDate || new Date().toISOString(),
+        items: normalizeCityColors(items),
+        countryInfo: data.countryInfo,
+        createdAt: now,
+        updatedAt: now,
+        isFavorite: false
     };
+};
+
+const generateItineraryFromPrompt = async (
+    detailedPrompt: string,
+    startDate?: string,
+    options?: Pick<GenerateOptions, 'roundTrip'>
+): Promise<ITrip> => {
+  try {
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) throw new Error("API Key is missing or invalid. Please check your environment configuration.");
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-pro-preview",
+      contents: detailedPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: itinerarySchema,
+      },
+    });
+
+    const data = JSON.parse(response.text || '{}');
+    return buildTripFromModelData(data, startDate, options);
 
   } catch (error) {
     console.error("AI Generation failed:", error);
     throw error;
   }
+};
+
+export const generateItinerary = async (prompt: string, startDate?: string, options?: GenerateOptions): Promise<ITrip> => {
+    let detailedPrompt = `Plan a detailed travel itinerary for: ${prompt}. `;
+
+    if (options) {
+        if (options.roundTrip) {
+            detailedPrompt += ` Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
+        }
+        if (options.totalDays) detailedPrompt += ` The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
+        if (options.numCities) detailedPrompt += ` Visit exactly ${options.numCities} distinct cities/stops. `;
+        if (options.specificCities) detailedPrompt += ` You MUST include these cities: ${options.specificCities}. `;
+        if (options.budget) detailedPrompt += ` Budget level: ${options.budget}. `;
+        if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
+        if (options.interests && options.interests.length > 0) detailedPrompt += ` Focus on these interests: ${options.interests.join(", ")}. `;
+    }
+
+    detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    return generateItineraryFromPrompt(detailedPrompt, startDate, options);
+};
+
+export const generateWizardItinerary = async (options: WizardGenerateOptions): Promise<ITrip> => {
+    const countries = options.countries.map((country) => country.trim()).filter(Boolean);
+    if (countries.length === 0) {
+        throw new Error('Please select at least one country for the wizard flow.');
+    }
+
+    let detailedPrompt = `Plan a detailed, realistic multi-stop travel itinerary for these destination countries: ${countries.join(', ')}. `;
+    detailedPrompt += `This request comes from a guided travel wizard, so preference signals are important and should influence route choice, stop durations, and activity suggestions. `;
+
+    if (options.roundTrip) {
+        detailedPrompt += `Roundtrip is enabled. The FINAL city in "cities" MUST be the same place as the FIRST city (same city name and coordinates), representing the return to start. `;
+    }
+    if (options.totalDays) {
+        detailedPrompt += `The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
+    }
+    if (options.recommendedDurationDays) {
+        detailedPrompt += `Wizard recommended duration is ${options.recommendedDurationDays} days. Keep overall pacing aligned to this recommendation. `;
+    }
+
+    const styleSignals = (options.travelStyles || []).filter(Boolean);
+    const vibeSignals = (options.travelVibes || []).filter(Boolean);
+    const logisticsSignals = (options.travelLogistics || []).filter(Boolean);
+
+    if (styleSignals.length > 0) {
+        detailedPrompt += `Traveler profile styles: ${styleSignals.join(', ')}. `;
+    }
+    if (vibeSignals.length > 0) {
+        detailedPrompt += `Preferred trip vibes/interests: ${vibeSignals.join(', ')}. `;
+    }
+    if (logisticsSignals.length > 0) {
+        detailedPrompt += `Trip logistics preferences: ${logisticsSignals.join(', ')}. `;
+    }
+    if (options.idealMonths && options.idealMonths.length > 0) {
+        detailedPrompt += `Best common travel months from local season data: ${options.idealMonths.join(', ')}. `;
+    }
+    if (options.shoulderMonths && options.shoulderMonths.length > 0) {
+        detailedPrompt += `Shoulder backup months: ${options.shoulderMonths.join(', ')}. `;
+    }
+    if (options.notes && options.notes.trim()) {
+        detailedPrompt += `Additional user notes: ${options.notes.trim()}. `;
+    }
+
+    detailedPrompt += `
+      Wizard-specific constraints:
+      - Prioritize destinations and city sequence that match the selected profile signals.
+      - Keep transitions realistic and avoid overpacked travel days.
+      - Pick activities that clearly reflect both style and vibe signals.
+      - If multiple countries are selected, distribute time fairly while minimizing inefficient backtracking.
+    `;
+
+    detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    return generateItineraryFromPrompt(detailedPrompt, options.startDate, options);
+};
+
+export const generateSurpriseItinerary = async (options: SurpriseGenerateOptions): Promise<ITrip> => {
+    const country = options.country.trim();
+    if (!country) {
+        throw new Error('Please pick a destination before generating a surprise trip.');
+    }
+
+    let detailedPrompt = `Create a surprise travel itinerary for ${country}. `;
+    detailedPrompt += `This request comes from the "Surprise Me" flow, so the plan should feel exciting, varied, and season-aware while still practical. `;
+
+    if (options.totalDays) {
+        detailedPrompt += `The full itinerary MUST cover exactly ${options.totalDays} total days across all city stays. `;
+    }
+    if (options.monthLabels && options.monthLabels.length > 0) {
+        detailedPrompt += `Travel window months: ${options.monthLabels.join(', ')}. `;
+    }
+    if (options.durationWeeks && options.durationWeeks > 0) {
+        detailedPrompt += `Requested trip length is about ${options.durationWeeks} week(s). `;
+    }
+    if (options.seasonalEvents && options.seasonalEvents.length > 0) {
+        detailedPrompt += `Prioritize seasonal highlights such as: ${options.seasonalEvents.join(', ')}. `;
+    }
+    if (options.notes && options.notes.trim()) {
+        detailedPrompt += `Additional user notes: ${options.notes.trim()}. `;
+    }
+
+    detailedPrompt += `
+      Surprise-specific constraints:
+      - Include a compelling but realistic mix of highlights and local experiences.
+      - Keep logistics smooth and avoid unnecessary backtracking.
+      - Keep at least one distinctive seasonal or culturally timely experience.
+      - Favor broadly appealing pacing suitable for most travelers.
+    `;
+
+    detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    return generateItineraryFromPrompt(detailedPrompt, options.startDate, { roundTrip: true });
 };
 
 
