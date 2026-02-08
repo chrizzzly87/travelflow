@@ -695,7 +695,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
-                             title="Add Activity"
+                             aria-label="Add activity"
                          >
                              <Plus size={12} />
                          </button>

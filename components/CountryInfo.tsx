@@ -63,7 +63,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info, isExpanded: isEx
                 <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Globe size={16} className="text-accent-600"/> Destination Info
                 </h3>
-                <button type="button" className="text-gray-400 hover:text-gray-600">
+                <button type="button" className="text-gray-400 hover:text-gray-600" aria-label={isExpanded ? 'Collapse destination info' : 'Expand destination info'}>
                     {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
             </div>
@@ -89,7 +89,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info, isExpanded: isEx
                             </div>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal'); }}
-                                className="p-1.5 bg-white shadow-sm border border-gray-200 rounded-full hover:bg-gray-100 text-accent-600 flex-shrink-0"
+                                className="p-1.5 bg-white shadow-sm border border-gray-200 rounded-full hover:bg-gray-100 text-accent-600 flex-shrink-0" aria-label="Swap conversion direction"
                             >
                                 <ArrowRightLeft size={14} />
                             </button>

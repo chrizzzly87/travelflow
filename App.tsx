@@ -21,6 +21,7 @@ import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historySer
 import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
 import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
 import { AppDialogProvider } from './components/AppDialogProvider';
+import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -544,6 +545,7 @@ const AppContent: React.FC = () => {
             />
 
             <CookieConsentBanner />
+            <GlobalTooltipLayer />
         </>
     );
 };

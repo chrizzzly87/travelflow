@@ -35,7 +35,10 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
             >
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 className="text-lg font-bold text-gray-800">Delete {cityName}</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
+                    >
                         <X size={20} />
                     </button>
                 </div>
