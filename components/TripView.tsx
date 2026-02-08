@@ -1753,11 +1753,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         {!isMobile && (
                             <>
                                 <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-1">
-                                    <button onClick={() => setViewMode('print')} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md" title="Print View">
+                                    <button onClick={() => setViewMode('print')} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md" aria-label="Print view">
                                         <Printer size={18} />
                                     </button>
                                 </div>
-                                <button onClick={() => setIsHistoryOpen(true)} className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" title="History">
+                                <button onClick={() => setIsHistoryOpen(true)} className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" aria-label="History">
                                     <History size={18} />
                                 </button>
                             </>
@@ -1766,9 +1766,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             <button
                                 type="button"
                                 onClick={() => setIsTripInfoOpen(true)}
-                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                                title="Trip information"
-                                aria-label="Trip information"
+                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" aria-label="Trip information"
                             >
                                 <Info size={18} />
                             </button>
@@ -1776,7 +1774,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         <button
                             onClick={onOpenManager}
                             className={`flex items-center gap-2 rounded-lg font-medium ${isMobile ? 'p-2 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'p-2 text-gray-500 hover:bg-gray-100 text-sm'}`}
-                            title="My Plans"
+                            aria-label="My plans"
                         >
                             <Route size={18} />
                             <span className={isMobile ? 'sr-only' : 'hidden lg:inline'}>My Plans</span>
@@ -1880,11 +1878,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     )}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
-                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
+                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
                                         </div>
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
-                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
+                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
                                                 {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
                                             </button>
                                         </div>
@@ -1958,11 +1956,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                     )}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
                                                         </div>
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
-                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
+                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
                                                                 {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
                                                             </button>
                                                         </div>
@@ -2091,11 +2089,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                     )}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomOut size={16} /></button>
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600"><ZoomIn size={16} /></button>
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
                                                         </div>
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
-                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600">
+                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
                                                                 {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
                                                             </button>
                                                         </div>
@@ -2201,9 +2199,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                     <button
                                                         type="button"
                                                         onClick={handleStartTitleEdit}
-                                                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-                                                        title="Edit title"
-                                                        aria-label="Edit title"
+                                                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Edit title"
                                                     >
                                                         <Pencil size={16} />
                                                     </button>

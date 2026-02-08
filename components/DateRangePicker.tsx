@@ -293,13 +293,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                     
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label="Previous month">
                             <ChevronLeft size={20} />
                         </button>
                         <span className="font-bold text-gray-800">
                             {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
                         </span>
-                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500">
+                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label="Next month">
                             <ChevronRight size={20} />
                         </button>
                     </div>

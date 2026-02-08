@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
-import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays } from 'lucide-react';
+import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
@@ -15,11 +15,7 @@ interface TripManagerProps {
   appLanguage?: AppLanguage;
 }
 
-interface TripBuckets {
-  thisWeek: ITrip[];
-  thisMonth: ITrip[];
-  older: ITrip[];
-}
+type TripSortMode = 'updated' | 'travelDate';
 
 interface TripRangeOffsets {
   startOffset: number;
@@ -160,6 +156,12 @@ const parseLocalDate = (dateStr: string): Date => {
   return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
+const startOfDay = (date: Date): Date => {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
 const addDays = (date: Date, days: number): Date => {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -193,6 +195,14 @@ const getTripRangeOffsets = (trip: ITrip): TripRangeOffsets => {
   }
 
   return { startOffset: minStart, endOffset: maxEnd };
+};
+
+const getTripDateRange = (trip: ITrip): { start: Date; end: Date } => {
+  const baseStart = parseLocalDate(trip.startDate);
+  const range = getTripRangeOffsets(trip);
+  const start = addDays(baseStart, Math.floor(range.startOffset));
+  const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
+  return { start, end };
 };
 
 const getTripDurationDays = (trip: ITrip): number => {
@@ -371,25 +381,95 @@ const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null =
   return `https://maps.googleapis.com/maps/api/staticmap?size=480x640&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
 };
 
-const bucketTripsByRecency = (trips: ITrip[]): TripBuckets => {
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setHours(0, 0, 0, 0);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+const compareByUpdatedDesc = (a: ITrip, b: ITrip): number => {
+  const aUpdatedAt = Number.isFinite(a.updatedAt) ? a.updatedAt : 0;
+  const bUpdatedAt = Number.isFinite(b.updatedAt) ? b.updatedAt : 0;
+  return bUpdatedAt - aUpdatedAt;
+};
 
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfWeekTs = startOfWeek.getTime();
-  const startOfMonthTs = startOfMonth.getTime();
+const getDaysBetween = (target: Date, base: Date): number =>
+  Math.round((startOfDay(target).getTime() - startOfDay(base).getTime()) / (1000 * 60 * 60 * 24));
 
-  const buckets: TripBuckets = { thisWeek: [], thisMonth: [], older: [] };
-  trips.forEach(trip => {
-    const updatedAt = Number.isFinite(trip.updatedAt) ? trip.updatedAt : 0;
-    if (updatedAt >= startOfWeekTs) buckets.thisWeek.push(trip);
-    else if (updatedAt >= startOfMonthTs) buckets.thisMonth.push(trip);
-    else buckets.older.push(trip);
+const getUpcomingLabel = (trip: ITrip, locale: AppLanguage): string | null => {
+  const today = startOfDay(new Date());
+  const { start, end } = getTripDateRange(trip);
+  const startDay = startOfDay(start);
+  const endDay = startOfDay(end);
+
+  if (endDay.getTime() < today.getTime()) {
+    return null;
+  }
+
+  if (startDay.getTime() <= today.getTime() && endDay.getTime() >= today.getTime()) {
+    return 'Happening now';
+  }
+
+  const daysUntilStart = getDaysBetween(startDay, today);
+  if (daysUntilStart <= 0) return 'Starting today';
+
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  if (daysUntilStart < 14) {
+    return rtf.format(daysUntilStart, 'day');
+  }
+  if (daysUntilStart < 60) {
+    return rtf.format(Math.round(daysUntilStart / 7), 'week');
+  }
+  if (daysUntilStart < 365) {
+    return rtf.format(Math.round(daysUntilStart / 30), 'month');
+  }
+  return rtf.format(Math.round(daysUntilStart / 365), 'year');
+};
+
+const formatUpdatedTimestamp = (updatedAt: number, locale: AppLanguage): string => {
+  if (!Number.isFinite(updatedAt) || updatedAt <= 0) return 'Updated recently';
+
+  const now = Date.now();
+  const diffMs = now - updatedAt;
+  if (diffMs < 0) return 'Updated just now';
+
+  const minutes = Math.round(diffMs / (1000 * 60));
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  if (minutes < 60) return `Updated ${rtf.format(-Math.max(1, minutes), 'minute')}`;
+
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `Updated ${rtf.format(-hours, 'hour')}`;
+
+  const days = Math.round(hours / 24);
+  if (days < 45) return `Updated ${rtf.format(-days, 'day')}`;
+
+  return `Updated ${new Date(updatedAt).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+};
+
+const splitTripsByTravelDate = (trips: ITrip[]): { upcoming: ITrip[]; past: ITrip[] } => {
+  const today = startOfDay(new Date()).getTime();
+  const upcoming: ITrip[] = [];
+  const past: ITrip[] = [];
+
+  trips.forEach((trip) => {
+    const { end } = getTripDateRange(trip);
+    const isPast = startOfDay(end).getTime() < today;
+    if (isPast) {
+      past.push(trip);
+    } else {
+      upcoming.push(trip);
+    }
   });
 
-  return buckets;
+  upcoming.sort((a, b) => {
+    const aStart = startOfDay(getTripDateRange(a).start).getTime();
+    const bStart = startOfDay(getTripDateRange(b).start).getTime();
+    if (aStart !== bStart) return aStart - bStart;
+    return compareByUpdatedDesc(a, b);
+  });
+
+  past.sort((a, b) => {
+    const aEnd = startOfDay(getTripDateRange(a).end).getTime();
+    const bEnd = startOfDay(getTripDateRange(b).end).getTime();
+    if (aEnd !== bEnd) return bEnd - aEnd;
+    return compareByUpdatedDesc(a, b);
+  });
+
+  return { upcoming, past };
 };
 
 const getTooltipHeight = (cityCount: number): number => {
@@ -480,6 +560,7 @@ interface TripRowProps {
   onDelete: (e: React.MouseEvent, id: string) => void;
   onHoverAnchor: (tripId: string, rect: DOMRect) => void;
   onHoverEnd: () => void;
+  secondaryInfo?: string | null;
 }
 
 const TripRow: React.FC<TripRowProps> = ({
@@ -491,6 +572,7 @@ const TripRow: React.FC<TripRowProps> = ({
   onDelete,
   onHoverAnchor,
   onHoverEnd,
+  secondaryInfo,
 }) => {
   const rowRef = React.useRef<HTMLDivElement | null>(null);
   const flags = React.useMemo(() => getTripFlags(trip), [trip]);
@@ -525,16 +607,19 @@ const TripRow: React.FC<TripRowProps> = ({
             {trip.title}
           </span>
         </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">{formatTripSummaryLine(trip, locale)}</div>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <span className="truncate text-[11px] text-gray-400">{formatTripSummaryLine(trip, locale)}</span>
+          {secondaryInfo && (
+            <span className="shrink-0 text-[10px] font-medium text-gray-400">{secondaryInfo}</span>
+          )}
+        </div>
       </button>
 
       <div className="flex items-center gap-0.5">
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
-          title="Delete trip"
-          aria-label="Delete trip"
+          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Delete trip"
         >
           <Trash2 size={14} />
         </button>
@@ -587,6 +672,10 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
   }, [shouldLoadMap, trip, locale]);
 
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
+  const updatedAtLabel = React.useMemo(
+    () => formatUpdatedTimestamp(Number.isFinite(trip.updatedAt) ? trip.updatedAt : 0, locale),
+    [trip.updatedAt, locale]
+  );
   const distanceLabel = React.useMemo(() => {
     const totalDistanceKm = getTripDistanceKm(trip.items);
     return totalDistanceKm > 0
@@ -603,7 +692,10 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
     >
       <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="px-3.5 py-3 border-b border-gray-100">
-          <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
+            <div className="shrink-0 text-[10px] text-gray-400">{updatedAtLabel}</div>
+          </div>
           <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold">
             <CalendarDays size={14} />
             <span>{formatTripDateRange(trip, locale)}</span>
@@ -692,6 +784,7 @@ interface BucketListProps {
   onDelete: (e: React.MouseEvent, id: string) => void;
   onHoverAnchor: (tripId: string, rect: DOMRect) => void;
   onHoverEnd: () => void;
+  getSecondaryInfo?: (trip: ITrip) => string | null;
 }
 
 const BucketList: React.FC<BucketListProps> = ({
@@ -704,6 +797,7 @@ const BucketList: React.FC<BucketListProps> = ({
   onDelete,
   onHoverAnchor,
   onHoverEnd,
+  getSecondaryInfo,
 }) => {
   if (trips.length === 0) return null;
 
@@ -722,6 +816,7 @@ const BucketList: React.FC<BucketListProps> = ({
             onDelete={onDelete}
             onHoverAnchor={onHoverAnchor}
             onHoverEnd={onHoverEnd}
+            secondaryInfo={getSecondaryInfo ? getSecondaryInfo(trip) : null}
           />
         ))}
       </div>
@@ -742,8 +837,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const [searchQuery, setSearchQuery] = React.useState('');
   const [favoritesOpen, setFavoritesOpen] = React.useState(true);
   const [tripsOpen, setTripsOpen] = React.useState(true);
-  const [showOlderFavorites, setShowOlderFavorites] = React.useState(false);
-  const [showOlderTrips, setShowOlderTrips] = React.useState(false);
+  const [showPastFavorites, setShowPastFavorites] = React.useState(false);
+  const [showPastTrips, setShowPastTrips] = React.useState(false);
+  const [sortMode, setSortMode] = React.useState<TripSortMode>('updated');
   const [hoverAnchor, setHoverAnchor] = React.useState<HoverAnchor | null>(null);
 
   const closeHoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -988,9 +1084,17 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const favoriteTrips = React.useMemo(() => filteredTrips.filter(trip => !!trip.isFavorite), [filteredTrips]);
   const regularTrips = React.useMemo(() => filteredTrips.filter(trip => !trip.isFavorite), [filteredTrips]);
 
-  const favoriteBuckets = React.useMemo(() => bucketTripsByRecency(favoriteTrips), [favoriteTrips]);
-  const regularBuckets = React.useMemo(() => bucketTripsByRecency(regularTrips), [regularTrips]);
-  const forceExpandOlder = normalizedQuery.length > 0;
+  const favoriteSortedByUpdate = React.useMemo(
+    () => [...favoriteTrips].sort(compareByUpdatedDesc),
+    [favoriteTrips]
+  );
+  const regularSortedByUpdate = React.useMemo(
+    () => [...regularTrips].sort(compareByUpdatedDesc),
+    [regularTrips]
+  );
+  const favoriteByTravelDate = React.useMemo(() => splitTripsByTravelDate(favoriteTrips), [favoriteTrips]);
+  const regularByTravelDate = React.useMemo(() => splitTripsByTravelDate(regularTrips), [regularTrips]);
+  const forceExpandPast = normalizedQuery.length > 0;
 
   const hoveredTrip = React.useMemo(() => {
     if (!hoverAnchor) return null;
@@ -1029,9 +1133,37 @@ export const TripManager: React.FC<TripManagerProps> = ({
       >
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600">
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+              <button
+                type="button"
+                onClick={() => setSortMode('updated')}
+                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                  sortMode === 'updated'
+                    ? 'bg-white text-accent-600 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
+                }`}
+                aria-label="Sort by last updated"
+              >
+                <History size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortMode('travelDate')}
+                className={`group relative inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+                  sortMode === 'travelDate'
+                    ? 'bg-white text-accent-600 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-white/80'
+                }`}
+                aria-label="Sort by travel date"
+              >
+                <CalendarDays size={14} />
+              </button>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <div className="px-3 py-2 border-b border-gray-100">
@@ -1064,43 +1196,49 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 />
                 {favoritesOpen && (
                   <div className="space-y-1">
-                    <BucketList
-                      label="This week"
-                      trips={favoriteBuckets.thisWeek}
-                      currentTripId={currentTripId}
-                      locale={appLanguage}
-                      onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
-                      onToggleFavorite={handleToggleFavorite}
-                      onDelete={handleDelete}
-                      onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
-                      onHoverEnd={scheduleHoverClose}
-                    />
-                    <BucketList
-                      label="This month"
-                      trips={favoriteBuckets.thisMonth}
-                      currentTripId={currentTripId}
-                      locale={appLanguage}
-                      onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
-                      onToggleFavorite={handleToggleFavorite}
-                      onDelete={handleDelete}
-                      onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
-                      onHoverEnd={scheduleHoverClose}
-                    />
-                    {favoriteBuckets.older.length > 0 && (
+                    {sortMode === 'updated' ? (
+                      <BucketList
+                        label=""
+                        trips={favoriteSortedByUpdate}
+                        currentTripId={currentTripId}
+                        locale={appLanguage}
+                        onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
+                        onToggleFavorite={handleToggleFavorite}
+                        onDelete={handleDelete}
+                        onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
+                        onHoverEnd={scheduleHoverClose}
+                      />
+                    ) : (
+                      <>
+                        <BucketList
+                          label="Upcoming"
+                          trips={favoriteByTravelDate.upcoming}
+                          currentTripId={currentTripId}
+                          locale={appLanguage}
+                          onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
+                          onToggleFavorite={handleToggleFavorite}
+                          onDelete={handleDelete}
+                          onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
+                          onHoverEnd={scheduleHoverClose}
+                          getSecondaryInfo={(trip) => getUpcomingLabel(trip, appLanguage)}
+                        />
+                      </>
+                    )}
+                    {sortMode === 'travelDate' && favoriteByTravelDate.past.length > 0 && (
                       <div className="px-2 py-1">
                         <button
                           type="button"
-                          onClick={() => setShowOlderFavorites(prev => !prev)}
+                          onClick={() => setShowPastFavorites(prev => !prev)}
                           className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-gray-500 flex items-center gap-1"
                         >
-                          {forceExpandOlder || showOlderFavorites ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                          Older ({favoriteBuckets.older.length})
+                          {forceExpandPast || showPastFavorites ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          Past trips ({favoriteByTravelDate.past.length})
                         </button>
-                        {(forceExpandOlder || showOlderFavorites) && (
+                        {(forceExpandPast || showPastFavorites) && (
                           <div className="mt-1">
                             <BucketList
                               label=""
-                              trips={favoriteBuckets.older}
+                              trips={favoriteByTravelDate.past}
                               currentTripId={currentTripId}
                               locale={appLanguage}
                               onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
@@ -1126,43 +1264,49 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 />
                 {tripsOpen && (
                   <div className="space-y-1">
-                    <BucketList
-                      label="This week"
-                      trips={regularBuckets.thisWeek}
-                      currentTripId={currentTripId}
-                      locale={appLanguage}
-                      onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
-                      onToggleFavorite={handleToggleFavorite}
-                      onDelete={handleDelete}
-                      onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
-                      onHoverEnd={scheduleHoverClose}
-                    />
-                    <BucketList
-                      label="This month"
-                      trips={regularBuckets.thisMonth}
-                      currentTripId={currentTripId}
-                      locale={appLanguage}
-                      onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
-                      onToggleFavorite={handleToggleFavorite}
-                      onDelete={handleDelete}
-                      onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
-                      onHoverEnd={scheduleHoverClose}
-                    />
-                    {regularBuckets.older.length > 0 && (
+                    {sortMode === 'updated' ? (
+                      <BucketList
+                        label=""
+                        trips={regularSortedByUpdate}
+                        currentTripId={currentTripId}
+                        locale={appLanguage}
+                        onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
+                        onToggleFavorite={handleToggleFavorite}
+                        onDelete={handleDelete}
+                        onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
+                        onHoverEnd={scheduleHoverClose}
+                      />
+                    ) : (
+                      <>
+                        <BucketList
+                          label="Upcoming"
+                          trips={regularByTravelDate.upcoming}
+                          currentTripId={currentTripId}
+                          locale={appLanguage}
+                          onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}
+                          onToggleFavorite={handleToggleFavorite}
+                          onDelete={handleDelete}
+                          onHoverAnchor={(tripId, rect) => { cancelHoverClose(); setHoverAnchor({ tripId, rect }); }}
+                          onHoverEnd={scheduleHoverClose}
+                          getSecondaryInfo={(trip) => getUpcomingLabel(trip, appLanguage)}
+                        />
+                      </>
+                    )}
+                    {sortMode === 'travelDate' && regularByTravelDate.past.length > 0 && (
                       <div className="px-2 py-1">
                         <button
                           type="button"
-                          onClick={() => setShowOlderTrips(prev => !prev)}
+                          onClick={() => setShowPastTrips(prev => !prev)}
                           className="text-[10px] uppercase tracking-wide font-semibold text-gray-300 hover:text-gray-500 flex items-center gap-1"
                         >
-                          {forceExpandOlder || showOlderTrips ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                          Older ({regularBuckets.older.length})
+                          {forceExpandPast || showPastTrips ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          Past trips ({regularByTravelDate.past.length})
                         </button>
-                        {(forceExpandOlder || showOlderTrips) && (
+                        {(forceExpandPast || showPastTrips) && (
                           <div className="mt-1">
                             <BucketList
                               label=""
-                              trips={regularBuckets.older}
+                              trips={regularByTravelDate.past}
                               currentTripId={currentTripId}
                               locale={appLanguage}
                               onSelectTrip={(trip) => { onSelectTrip(trip); onClose(); }}

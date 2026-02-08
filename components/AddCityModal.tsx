@@ -105,7 +105,10 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                         <MapPin size={20} className="text-accent-600" />
                         Add New Destination
                     </h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
+                    >
                         <X size={20} />
                     </button>
                 </div>
@@ -142,7 +145,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                                     <button 
                                         onClick={handleManualSubmit}
                                         className="absolute right-2 top-2 p-1.5 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
-                                        disabled={!inputValue.trim()}
+                                        disabled={!inputValue.trim()} aria-label="Add destination"
                                     >
                                         <ArrowRight size={16} />
                                     </button>

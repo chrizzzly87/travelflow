@@ -520,30 +520,30 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             )}
 
             <div className="px-2 py-1.5 bg-white border-b border-gray-100 flex items-center gap-1 overflow-x-auto">
-                <button type="button" onClick={() => handleHeading(1)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Heading 1">
+                <button type="button" onClick={() => handleHeading(1)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 1">
                     <Heading1 size={14} />
                 </button>
-                <button type="button" onClick={() => handleHeading(2)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Heading 2">
+                <button type="button" onClick={() => handleHeading(2)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 2">
                     <Heading2 size={14} />
                 </button>
-                <button type="button" onClick={() => handleHeading(3)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Heading 3">
+                <button type="button" onClick={() => handleHeading(3)} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Heading 3">
                     <Heading3 size={14} />
                 </button>
                 <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                <button type="button" onClick={() => runCommand('bold')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Bold">
+                <button type="button" onClick={() => runCommand('bold')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Bold">
                     <Bold size={14} />
                 </button>
-                <button type="button" onClick={() => runCommand('italic')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Italic">
+                <button type="button" onClick={() => runCommand('italic')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Italic">
                     <Italic size={14} />
                 </button>
                 <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                <button type="button" onClick={() => runCommand('insertUnorderedList')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Bullet list">
+                <button type="button" onClick={() => runCommand('insertUnorderedList')} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Bullet list">
                     <List size={14} />
                 </button>
-                <button type="button" onClick={handleChecklist} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Checklist">
+                <button type="button" onClick={handleChecklist} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Checklist">
                     <CheckSquare size={14} />
                 </button>
-                <button type="button" onClick={handleLink} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Link">
+                <button type="button" onClick={handleLink} className="p-1.5 rounded hover:bg-gray-100 text-gray-600" aria-label="Link">
                     <Link2 size={14} />
                 </button>
             </div>
