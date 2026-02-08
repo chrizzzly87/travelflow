@@ -1024,8 +1024,8 @@ export const TripManager: React.FC<TripManagerProps> = ({
       />
 
       <div
-        className={`fixed inset-y-0 left-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ transform: isOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+        className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
       >
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>

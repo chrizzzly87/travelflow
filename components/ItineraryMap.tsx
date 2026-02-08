@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapStyle, RouteMode } from '../types';
-import { Focus, Columns, Rows, Layers } from 'lucide-react';
+import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { buildRouteCacheKey, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 
@@ -9,12 +9,15 @@ interface ItineraryMapProps {
     selectedItemId?: string | null;
     layoutMode?: 'horizontal' | 'vertical';
     onLayoutChange?: (mode: 'horizontal' | 'vertical') => void;
+    showLayoutControls?: boolean;
     activeStyle?: MapStyle;
     onStyleChange?: (style: MapStyle) => void;
     routeMode?: RouteMode;
     onRouteModeChange?: (mode: RouteMode) => void;
     showCityNames?: boolean;
     onShowCityNamesChange?: (enabled: boolean) => void;
+    isExpanded?: boolean;
+    onToggleExpanded?: () => void;
     focusLocationQuery?: string;
     fitToRouteKey?: string;
     onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
@@ -207,12 +210,15 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     selectedItemId, 
     layoutMode, 
     onLayoutChange, 
+    showLayoutControls = true,
     activeStyle = 'standard',
     onStyleChange,
     routeMode = 'simple',
     onRouteModeChange,
     showCityNames = true,
     onShowCityNamesChange,
+    isExpanded = false,
+    onToggleExpanded,
     focusLocationQuery,
     fitToRouteKey,
     onRouteMetrics,
@@ -963,11 +969,22 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             {/* Controls */}
             <div className="absolute top-4 right-4 z-[10] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
-                    {onLayoutChange && (
+                    {showLayoutControls && onLayoutChange && (
                         <>
                             <button onClick={() => onLayoutChange('vertical')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Rows size={18} /></button>
                             <button onClick={() => onLayoutChange('horizontal')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Columns size={18} /></button>
                         </>
+                    )}
+
+                    {onToggleExpanded && (
+                        <button
+                            onClick={onToggleExpanded}
+                            className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                            title={isExpanded ? 'Shrink map' : 'Expand map'}
+                            aria-label={isExpanded ? 'Shrink map' : 'Expand map'}
+                        >
+                            {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                        </button>
                     )}
                     
                     <button onClick={handleFit} className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center" title="Fit to Itinerary"><Focus size={18} /></button>
