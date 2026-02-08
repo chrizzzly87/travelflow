@@ -69,10 +69,10 @@ const getToneMeta = (tone: ChangeTone) => {
         case 'update':
             return {
                 label: 'Updated',
-                iconClass: 'bg-blue-100 text-blue-700',
-                badgeClass: 'bg-blue-100 text-blue-700',
-                toastBorderClass: 'border-blue-200',
-                toastTitleClass: 'text-blue-700',
+                iconClass: 'bg-accent-100 text-accent-700',
+                badgeClass: 'bg-accent-100 text-accent-700',
+                toastBorderClass: 'border-accent-200',
+                toastTitleClass: 'text-accent-700',
                 Icon: Pencil,
             };
         case 'neutral':
@@ -1544,7 +1544,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     return (
         <GoogleMapsLoader language={appLanguage}>
-            <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+            <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
                 
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
@@ -1554,10 +1554,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             onClick={() => window.location.href = '/'}
                             title="Go to Homepage"
                         >
-                            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg transform rotate-3">
+                            <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
                                 <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
                             </div>
-                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-indigo-600">Flow</span></span>
+                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
                         </div>
                         <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
                         <div className="flex items-start gap-2">
@@ -1583,7 +1583,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             } 
                                         }}
                                         autoFocus
-                                        className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-indigo-500 outline-none pb-0.5"
+                                        className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
                                     />
                                 ) : (
                                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => { if (!requireEdit()) return; setEditTitleValue(trip.title); setIsEditingTitle(true); }}>
@@ -1591,14 +1591,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
                                 )}
-                                <div className="text-xs font-semibold text-purple-600 mt-0.5">{tripSummary}</div>
+                                <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>
                                 {forkMeta && (
                                     <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-2">
                                         <span>{forkMeta.label}</span>
                                         {forkMeta.url && (
                                             <a
                                                 href={forkMeta.url}
-                                                className="text-[11px] text-indigo-500 hover:underline"
+                                                className="text-[11px] text-accent-500 hover:underline"
                                             >
                                                 View source
                                             </a>
@@ -1635,7 +1635,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             <Folder size={18} /> <span className="hidden lg:inline">My Trips</span>
                         </button>
                         {canShare && (
-                            <button onClick={handleShare} className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 flex items-center gap-2 text-sm font-medium">
+                            <button onClick={handleShare} className="px-4 py-2 bg-accent-600 text-white rounded-lg shadow-sm hover:bg-accent-700 flex items-center gap-2 text-sm font-medium">
                                 <Share2 size={16} /> <span className="hidden sm:inline">Share</span>
                             </button>
                         )}
@@ -1660,7 +1660,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 )}
 
                 {shareSnapshotMeta && (
-                    <div className="px-4 sm:px-6 py-2 border-b border-blue-200 bg-blue-50 text-blue-900 text-xs flex items-center justify-between gap-3">
+                    <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3">
                         <span>
                             {shareSnapshotMeta.hasNewer
                                 ? 'You are viewing an older snapshot. This trip has newer updates.'
@@ -1670,7 +1670,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             <button
                                 type="button"
                                 onClick={() => navigate(shareSnapshotMeta.latestUrl)}
-                                className="px-3 py-1 rounded-md bg-blue-100 text-blue-900 text-xs font-semibold hover:bg-blue-200"
+                                className="px-3 py-1 rounded-md bg-accent-100 text-accent-900 text-xs font-semibold hover:bg-accent-200"
                             >
                                 Open latest
                             </button>
@@ -1740,8 +1740,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                              </div>
 
                              {/* Resizer */}
-                             <div className="w-1 bg-gray-100 hover:bg-indigo-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group" onMouseDown={() => startResizing('sidebar')}>
-                                <div className="h-8 w-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                             <div className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group" onMouseDown={() => startResizing('sidebar')}>
+                                <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                              </div>
 
                              {/* Details (Center/Inline) */}
@@ -1775,11 +1775,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         />
                                     )}
                                     <div
-                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-indigo-50/60 transition-colors"
+                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
                                         onMouseDown={(e) => startResizing('details', e.clientX)}
                                         title="Resize details panel"
                                     >
-                                        <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-indigo-400 transition-colors" />
+                                        <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
                                     </div>
                                 </div>
                              )}
@@ -1825,8 +1825,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         fitToRouteKey={trip.id}
                                       />
                              </div>
-                             <div className="h-1 bg-gray-100 hover:bg-indigo-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
-                                  <div className="w-12 h-1 group-hover:bg-indigo-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                             <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
+                                  <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                              </div>
                              <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                  <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
@@ -1904,11 +1904,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         />
                                     )}
                                         <div
-                                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-indigo-50/60 transition-colors"
+                                            className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
                                             onMouseDown={(e) => startResizing('details', e.clientX)}
                                             title="Resize details panel"
                                         >
-                                            <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-indigo-400 transition-colors" />
+                                            <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
                                         </div>
                                     </div>
                                  )}
@@ -1942,9 +1942,9 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 aria-label="Close release update"
                                 onClick={dismissReleaseNotice}
                             />
-                            <div className="relative w-full max-w-lg rounded-3xl border border-indigo-100 bg-white shadow-2xl">
-                                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-cyan-50 px-6 py-5">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                            <div className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
+                                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
                                         Latest release · {latestInAppRelease.version}
                                     </p>
                                     <h2 id="release-update-title" className="mt-2 text-xl font-black text-slate-900">
@@ -1983,7 +1983,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <button
                                         type="button"
                                         onClick={dismissReleaseNotice}
-                                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
                                     >
                                         Dismiss
                                     </button>
@@ -2061,7 +2061,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <button
                                         onClick={handleGenerateShare}
                                         disabled={isGeneratingShare}
-                                        className={`px-4 py-2 rounded-lg text-sm font-semibold text-white ${isGeneratingShare ? 'bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                        className={`px-4 py-2 rounded-lg text-sm font-semibold text-white ${isGeneratingShare ? 'bg-accent-300' : 'bg-accent-600 hover:bg-accent-700'}`}
                                     >
                                         {isGeneratingShare ? 'Creating…' : (activeShareUrl ? 'Create new link' : 'Generate link')}
                                     </button>
@@ -2119,7 +2119,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 const meta = getToneMeta(tone);
                                                 const Icon = meta.Icon;
                                                 return (
-                                                <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-indigo-50/70' : 'hover:bg-gray-50/80'}`}>
+                                                <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
                                                     <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
                                                         <Icon size={15} />
                                                     </div>
@@ -2127,7 +2127,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
                                                             <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
-                                                            {isCurrent && <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-full">Current</span>}
+                                                            {isCurrent && <span className="text-[10px] font-semibold text-accent-600 bg-accent-100 px-2 py-0.5 rounded-full">Current</span>}
                                                         </div>
                                                         <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
                                                     </div>

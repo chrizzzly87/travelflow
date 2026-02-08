@@ -11,7 +11,7 @@ const PILL_CLASSES: Record<ReleaseNoteItem['typeKey'], string> = {
     improved: 'bg-sky-100 text-sky-800 border-sky-200',
     fixed: 'bg-amber-100 text-amber-800 border-amber-200',
     internal: 'bg-slate-100 text-slate-700 border-slate-200',
-    update: 'bg-violet-100 text-violet-800 border-violet-200',
+    update: 'bg-accent-100 text-accent-800 border-accent-200',
 };
 
 export const ReleasePill: React.FC<ReleasePillProps> = ({ item, className }) => {

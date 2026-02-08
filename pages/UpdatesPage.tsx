@@ -47,7 +47,7 @@ export const UpdatesPage: React.FC = () => {
                             key={release.id}
                             className={
                                 isTopNews
-                                    ? 'rounded-2xl border border-indigo-200/80 bg-gradient-to-b from-indigo-50/40 to-white p-6 shadow-[0_0_34px_rgba(99,102,241,0.20)]'
+                                    ? 'rounded-2xl border border-accent-200/80 bg-gradient-to-b from-accent-50/40 to-white p-6 shadow-accent-glow-md'
                                     : 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm'
                             }
                         >
@@ -57,7 +57,7 @@ export const UpdatesPage: React.FC = () => {
                                     <span
                                         className={
                                             isTopNews
-                                                ? 'inline-flex rounded-full border border-indigo-300 bg-indigo-100 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-800 shadow-[0_0_16px_rgba(99,102,241,0.28)]'
+                                                ? 'inline-flex rounded-full border border-accent-300 bg-accent-100 px-2.5 py-0.5 text-[11px] font-semibold text-accent-800 shadow-accent-glow-sm'
                                                 : 'inline-flex rounded-full border border-slate-300 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700'
                                         }
                                     >

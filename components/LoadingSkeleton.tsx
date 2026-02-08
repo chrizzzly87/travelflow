@@ -99,8 +99,8 @@ export const LoadingSkeleton: React.FC = () => {
                 <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-50">
                     <div className="bg-white p-8 rounded-2xl shadow-2xl border border-gray-100 max-w-sm w-full text-center flex flex-col items-center gap-5 animate-in zoom-in-95 duration-500">
                         <div className="relative">
-                            <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-30" />
-                            <div className="bg-indigo-50 p-4 rounded-full text-indigo-600 relative z-10">
+                            <div className="absolute inset-0 bg-accent-100 rounded-full animate-ping opacity-30" />
+                            <div className="bg-accent-50 p-4 rounded-full text-accent-600 relative z-10">
                                 <Loader2 className="w-8 h-8 animate-spin" />
                             </div>
                         </div>
@@ -111,7 +111,7 @@ export const LoadingSkeleton: React.FC = () => {
                         
                         {/* Progress Bar (Fake but effective) */}
                         <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-2">
-                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 animate-[loading_15s_ease-out_forwards] w-full origin-left scale-x-0" />
+                            <div className="h-full bg-gradient-to-r from-accent-500 to-accent-600 animate-[loading_15s_ease-out_forwards] w-full origin-left scale-x-0" />
                         </div>
                         <style>{`
                             @keyframes loading {

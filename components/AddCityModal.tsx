@@ -102,7 +102,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
             >
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <MapPin size={20} className="text-indigo-600" />
+                        <MapPin size={20} className="text-accent-600" />
                         Add New Destination
                     </h3>
                     <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
@@ -130,7 +130,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                                     value={inputValue}
                                     onChange={e => setInputValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder-gray-400"
+                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none text-gray-800 placeholder-gray-400"
                                     placeholder="e.g. Kyoto, Japan"
                                     autoFocus
                                 />
@@ -141,7 +141,7 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
                                 {isManualMode && (
                                     <button 
                                         onClick={handleManualSubmit}
-                                        className="absolute right-2 top-2 p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                        className="absolute right-2 top-2 p-1.5 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
                                         disabled={!inputValue.trim()}
                                     >
                                         <ArrowRight size={16} />

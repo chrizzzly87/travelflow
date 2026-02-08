@@ -8,7 +8,7 @@ interface MarketingLayoutProps {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-indigo-600 after:transition-transform';
+    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
     if (isActive) {
         return `${baseClass} text-slate-900 after:scale-x-100`;
     }
@@ -22,7 +22,7 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
             <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur">
                 <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 md:px-8">
                     <NavLink to="/" className="flex items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
                             <Plane size={16} fill="currentColor" />
                         </span>
                         <span className="text-lg font-extrabold tracking-tight">TravelFlow</span>
@@ -43,7 +43,7 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
                         </NavLink>
                         <NavLink
                             to="/create-trip"
-                            className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+                            className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                         >
                             Create Trip
                         </NavLink>

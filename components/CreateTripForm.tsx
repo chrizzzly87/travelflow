@@ -29,6 +29,7 @@ import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
 import { IdealTravelTimeline } from './IdealTravelTimeline';
 import { MonthSeasonStrip } from './MonthSeasonStrip';
+import { Checkbox } from './ui/checkbox';
 import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip } from '../types';
 import { addDays, COUNTRIES, generateTripId, getDefaultTripDates, getDaysDifference } from '../utils';
@@ -190,7 +191,7 @@ const WIZARD_LOGISTIC_CARDS: SelectionCardConfig[] = [
 const NOOP = () => {};
 
 const createNavLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 sm:after:-bottom-6 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-indigo-600 after:transition-transform';
+    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 sm:after:-bottom-6 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
     if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
     return baseClass;
 };
@@ -252,8 +253,8 @@ const SelectionCard: React.FC<{
             className={[
                 'text-left rounded-2xl border p-3.5 transition-all shadow-sm',
                 selected
-                    ? 'border-indigo-500 bg-indigo-50 shadow-indigo-100'
-                    : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40',
+                    ? 'border-accent-500 bg-accent-50 shadow-accent-100'
+                    : 'border-gray-200 bg-white hover:border-accent-300 hover:bg-accent-50/40',
             ].join(' ')}
         >
             <div className="flex items-start justify-between gap-3">
@@ -267,7 +268,7 @@ const SelectionCard: React.FC<{
                 <span
                     className={[
                         'h-5 w-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5',
-                        selected ? 'border-indigo-500 bg-indigo-500 text-white' : 'border-gray-300 text-transparent',
+                        selected ? 'border-accent-500 bg-accent-500 text-white' : 'border-gray-300 text-transparent',
                     ].join(' ')}
                 >
                     <Check size={12} />
@@ -723,13 +724,13 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                     initialMapFocusQuery={generationSummary.destination}
                 />
                 <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                    <div className="w-full max-w-xl rounded-2xl border border-indigo-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
+                    <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                            <div className="h-9 w-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
-                                <div className="text-sm font-semibold text-indigo-900 truncate">Planning Your Trip</div>
+                                <div className="text-sm font-semibold text-accent-900 truncate">Planning Your Trip</div>
                                 <div className="text-xs text-gray-600 truncate">{loadingMessage}</div>
                             </div>
                         </div>
@@ -737,7 +738,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                             {(generationSummary.destination || 'Destination')} • {formatDateRange(generationSummary.startDate, generationSummary.endDate)} • {getDaysDifference(generationSummary.startDate, generationSummary.endDate)} days
                         </div>
                         <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                            <div className="h-full w-1/2 bg-gradient-to-r from-indigo-500 to-blue-500 animate-pulse rounded-full" />
+                            <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
                         </div>
                     </div>
                 </div>
@@ -755,15 +756,15 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         <div className="w-full min-h-screen flex flex-col relative isolate overflow-hidden bg-slate-50">
             <HeroWebGLBackground className="z-0" />
             <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
-            <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-cyan-200/30 blur-3xl" />
-            <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-indigo-300/30 blur-3xl" />
+            <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-accent-200/30 blur-3xl" />
+            <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-accent-300/30 blur-3xl" />
 
             <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20 gap-3">
                 <Link to="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg transform rotate-3">
+                    <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
                         <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
                     </div>
-                    <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-indigo-600">Flow</span></span>
+                    <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-5 text-sm bg-white/75 backdrop-blur px-4 py-2 rounded-full border border-slate-200">
                     <NavLink to="/features" className={createNavLinkClass}>Features</NavLink>
@@ -773,13 +774,13 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 <div className="flex items-center gap-2">
                     <NavLink
                         to="/login"
-                        className="hidden sm:inline-flex px-3 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-indigo-300 rounded-full text-sm font-medium text-gray-600 hover:text-indigo-600 transition-all"
+                        className="hidden sm:inline-flex px-3 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-accent-300 rounded-full text-sm font-medium text-gray-600 hover:text-accent-600 transition-all"
                     >
                         Login
                     </NavLink>
                     <button
                         onClick={onOpenManager}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-gray-600"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-accent-300 hover:text-accent-600 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-gray-600"
                     >
                         <Folder size={16} />
                         <span>My Trips</span>
@@ -794,7 +795,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 </div>
 
                 <div className={`bg-white p-5 sm:p-6 rounded-3xl shadow-xl border border-gray-100 w-full ${formWidthClass} relative overflow-visible transition-all`}>
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-500 via-accent-600 to-accent-700" />
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                         {TAB_ITEMS.map((tab) => {
@@ -810,12 +811,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     className={[
                                         'rounded-2xl border px-4 py-3 text-left transition-all',
                                         isActive
-                                            ? 'border-indigo-500 bg-indigo-50 shadow-sm shadow-indigo-100'
-                                            : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40'
+                                            ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100'
+                                            : 'border-gray-200 bg-white hover:border-accent-300 hover:bg-accent-50/40'
                                     ].join(' ')}
                                 >
                                     <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                                        <span className={isActive ? 'text-indigo-600' : 'text-gray-400'}>{tab.icon}</span>
+                                        <span className={isActive ? 'text-accent-600' : 'text-gray-400'}>{tab.icon}</span>
                                         <span>{tab.title}</span>
                                         {tab.beta && (
                                             <span className="rounded-full border border-amber-300 bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
@@ -854,12 +855,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 <div className="space-y-1.5 text-left">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</label>
                                     <div className="flex items-center gap-2 px-1">
-                                        <input
-                                            type="checkbox"
+                                        <Checkbox
                                             id="roundtrip"
                                             checked={isRoundTrip}
-                                            onChange={(event) => setIsRoundTrip(event.target.checked)}
-                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            onCheckedChange={(checked) => setIsRoundTrip(checked === true)}
                                         />
                                         <label htmlFor="roundtrip" className="text-sm font-medium text-gray-600 cursor-pointer select-none">
                                             Roundtrip (end where you start)
@@ -885,7 +884,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <button
                                         type="button"
                                         onClick={() => setShowAdvanced(!showAdvanced)}
-                                        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider hover:text-indigo-600 transition-colors"
+                                        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider hover:text-accent-600 transition-colors"
                                     >
                                         <Settings size={14} />
                                         Advanced Options
@@ -901,7 +900,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                     value={specificCities}
                                                     onChange={(event) => setSpecificCities(event.target.value)}
                                                     placeholder="Paris, Lyon, Nice..."
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -909,7 +908,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 <select
                                                     value={budget}
                                                     onChange={(event) => setBudget(event.target.value)}
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                                 >
                                                     <option>Low</option>
                                                     <option>Medium</option>
@@ -922,7 +921,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 <select
                                                     value={pace}
                                                     onChange={(event) => setPace(event.target.value)}
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                                 >
                                                     <option>Relaxed</option>
                                                     <option>Balanced</option>
@@ -938,7 +937,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                     value={numCities}
                                                     onChange={(event) => setNumCities(event.target.value ? Number(event.target.value) : '')}
                                                     placeholder="Auto"
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -947,14 +946,14 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                                 <div className="space-y-1.5 text-left">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <AlignLeft size={14} className="text-indigo-500" />
+                                        <AlignLeft size={14} className="text-accent-500" />
                                         Style & Preferences
                                     </label>
                                     <textarea
                                         value={notes}
                                         onChange={(event) => setNotes(event.target.value)}
                                         placeholder="e.g. Foodie tour, hiking focus, kid friendly..."
-                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all outline-none h-20 resize-none text-gray-800 placeholder-gray-400 text-sm"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent-500 focus:bg-white transition-all outline-none h-20 resize-none text-gray-800 placeholder-gray-400 text-sm"
                                         disabled={isGenerating}
                                     />
                                 </div>
@@ -963,7 +962,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <button
                                         type="submit"
                                         disabled={isGenerating || selectedCountries.length === 0}
-                                        className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isGenerating ? <Loader2 className="animate-spin h-5 w-5" /> : <Sparkles className="fill-white/20 h-5 w-5" />}
                                         <span>Auto-Generate</span>
@@ -972,7 +971,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         type="button"
                                         onClick={handleCreateBlank}
                                         disabled={isGenerating}
-                                        className="w-14 bg-white border border-gray-200 hover:border-gray-300 text-gray-500 hover:text-indigo-600 rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center disabled:opacity-50"
+                                        className="w-14 bg-white border border-gray-200 hover:border-gray-300 text-gray-500 hover:text-accent-600 rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center disabled:opacity-50"
                                         title="Start Blank Itinerary"
                                     >
                                         <FilePlus size={22} />
@@ -983,21 +982,21 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                             <div className="mt-5 flex flex-wrap gap-2 text-xs text-gray-500">
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => fillExample('Italy', 14, 'Rome, Florence, Venice. Art & Food.')}
                                 >
                                     🇮🇹 2 Weeks in Italy
                                 </button>
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => fillExample('Japan', 7, 'Anime, Tech, and Sushi.')}
                                 >
                                     🇯🇵 7 Days in Japan
                                 </button>
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all shadow-sm"
+                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}
                                 >
                                     🇹🇭 Thailand (Test Plan)
@@ -1023,7 +1022,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                             type="button"
                                             className={[
                                                 'rounded-xl border px-3 py-2 text-left transition-all',
-                                                isActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:border-indigo-300',
+                                                isActive ? 'border-accent-500 bg-accent-50' : 'border-gray-200 bg-white hover:border-accent-300',
                                             ].join(' ')}
                                             onClick={() => setWizardStep(step)}
                                         >
@@ -1044,7 +1043,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 <section className="space-y-4">
                                     <div className="space-y-1">
                                         <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                            <Compass size={16} className="text-indigo-600" />
+                                            <Compass size={16} className="text-accent-600" />
                                             Select destination countries
                                         </div>
                                         <p className="text-xs text-gray-500">These countries are shared automatically with Classic and Surprise Me.</p>
@@ -1052,7 +1051,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                                     <div className="relative" ref={wizardSearchRef}>
                                         <div
-                                            className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 min-h-[64px] flex flex-wrap items-start gap-2 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:bg-white"
+                                            className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 min-h-[64px] flex flex-wrap items-start gap-2 focus-within:ring-2 focus-within:ring-accent-500 focus-within:bg-white"
                                             onClick={openWizardSearch}
                                         >
                                             {selectedCountries.map((countryName) => (
@@ -1103,7 +1102,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                                     <span>{country.name}</span>
                                                                 </div>
                                                             </div>
-                                                            <Plus size={14} className="text-indigo-500" />
+                                                            <Plus size={14} className="text-accent-500" />
                                                         </button>
                                                     ))
                                                 ) : (
@@ -1117,12 +1116,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <div className="space-y-1.5 text-left">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</label>
                                         <div className="flex items-center gap-2 px-1">
-                                            <input
-                                                type="checkbox"
+                                            <Checkbox
                                                 id="wizard-roundtrip"
                                                 checked={wizardRoundTrip}
-                                                onChange={(event) => setWizardRoundTrip(event.target.checked)}
-                                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                onCheckedChange={(checked) => setWizardRoundTrip(checked === true)}
                                             />
                                             <label htmlFor="wizard-roundtrip" className="text-sm font-medium text-gray-600 cursor-pointer select-none">
                                                 Roundtrip (return to starting city)
@@ -1224,14 +1221,14 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                                         <div className="space-y-1.5 text-left pt-1">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
-                                                <AlignLeft size={14} className="text-indigo-500" />
+                                                <AlignLeft size={14} className="text-accent-500" />
                                                 Extra Notes for AI (optional)
                                             </label>
                                             <textarea
                                                 value={wizardNotes}
                                                 onChange={(event) => setWizardNotes(event.target.value)}
                                                 placeholder="Anything else we should optimize for?"
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none h-20 resize-none text-gray-800 placeholder-gray-400 text-sm"
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none h-20 resize-none text-gray-800 placeholder-gray-400 text-sm"
                                             />
                                         </div>
                                     </div>
@@ -1243,7 +1240,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     type="button"
                                     disabled={wizardStep === 1}
                                     onClick={() => setWizardStep((current) => Math.max(1, current - 1) as WizardStep)}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                                    className="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:border-accent-300 hover:text-accent-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1"
                                 >
                                     <ChevronLeft size={14} />
                                     Back
@@ -1258,7 +1255,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                             (wizardStep === 3 && !wizardStepChecks[3])
                                         }
                                         onClick={() => setWizardStep((current) => Math.min(4, current + 1) as WizardStep)}
-                                        className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                                        className="px-4 py-2 rounded-xl bg-accent-600 text-white text-sm font-semibold hover:bg-accent-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                                     >
                                         Next
                                         <ChevronRight size={14} />
@@ -1268,7 +1265,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         type="button"
                                         onClick={handleWizardGenerate}
                                         disabled={!wizardCanGenerate || isGenerating}
-                                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                                     >
                                         {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                         Create Trip from Wizard
@@ -1287,8 +1284,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     className={[
                                         'rounded-xl border px-3 py-2 text-left transition-all',
                                         surpriseInputMode === 'month-duration'
-                                            ? 'border-indigo-500 bg-indigo-50'
-                                            : 'border-gray-200 bg-white hover:border-indigo-300',
+                                            ? 'border-accent-500 bg-accent-50'
+                                            : 'border-gray-200 bg-white hover:border-accent-300',
                                     ].join(' ')}
                                 >
                                     <div className="text-sm font-semibold text-gray-900">Month + Weeks</div>
@@ -1300,8 +1297,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     className={[
                                         'rounded-xl border px-3 py-2 text-left transition-all',
                                         surpriseInputMode === 'date-range'
-                                            ? 'border-indigo-500 bg-indigo-50'
-                                            : 'border-gray-200 bg-white hover:border-indigo-300',
+                                            ? 'border-accent-500 bg-accent-50'
+                                            : 'border-gray-200 bg-white hover:border-accent-300',
                                     ].join(' ')}
                                 >
                                     <div className="text-sm font-semibold text-gray-900">Start + End Dates</div>
@@ -1316,7 +1313,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         <select
                                             value={surpriseMonth}
                                             onChange={(event) => setSurpriseMonth(Number(event.target.value))}
-                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                         >
                                             {MONTH_LABELS.map((label, index) => (
                                                 <option key={label} value={index + 1}>{label}</option>
@@ -1328,7 +1325,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         <select
                                             value={surpriseWeeks}
                                             onChange={(event) => setSurpriseWeeks(Number(event.target.value))}
-                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
                                         >
                                             {[1, 2, 3, 4, 5, 6, 7, 8].map((week) => (
                                                 <option key={week} value={week}>{week} week{week > 1 ? 's' : ''}</option>
@@ -1379,8 +1376,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 className={[
                                                     'w-full rounded-xl border px-3 py-2 text-left transition-all',
                                                     selected
-                                                        ? 'border-indigo-500 bg-indigo-50 shadow-sm shadow-indigo-100'
-                                                        : 'border-gray-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40',
+                                                        ? 'border-accent-500 bg-accent-50 shadow-sm shadow-accent-100'
+                                                        : 'border-gray-200 bg-white hover:border-accent-300 hover:bg-accent-50/40',
                                                 ].join(' ')}
                                             >
                                                 <div className="flex items-center justify-between gap-3">
@@ -1412,7 +1409,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     type="button"
                                     onClick={handleSurpriseGenerate}
                                     disabled={!selectedSurpriseOption || isGenerating}
-                                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                                 >
                                     {isGenerating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
                                     Generate Surprise Trip

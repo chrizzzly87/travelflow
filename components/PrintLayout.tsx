@@ -241,7 +241,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                     </button>
                     <button 
                         onClick={() => window.print()} 
-                        className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"
+                        className="px-4 py-2 bg-accent-600 text-white hover:bg-accent-700 rounded-lg text-sm font-medium shadow-sm flex items-center gap-2"
                     >
                         <ArrowRight size={16} /> Print List
                     </button>
@@ -371,7 +371,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                                                     <div key={hIdx} className="border border-gray-200 rounded-lg overflow-hidden">
                                                         <div className="bg-gray-50 p-3 border-b border-gray-100 flex items-center justify-between">
                                                             <div className="font-bold text-sm text-gray-800 flex items-center gap-2">
-                                                                <Hotel size={14} className="text-indigo-600"/> {hotel.name}
+                                                                <Hotel size={14} className="text-accent-600"/> {hotel.name}
                                                             </div>
                                                         </div>
                                                         {hotel.address && (
@@ -435,7 +435,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                                                                         {act.description && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{act.description}</div>}
                                                                         {act.aiInsights && (
                                                                             <div className="mt-2 flex flex-wrap gap-2">
-                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Time: {act.aiInsights.bestTime}</span>}
+                                                                                {act.aiInsights.bestTime && <span className="text-[10px] bg-accent-50 text-accent-600 px-1.5 py-0.5 rounded">Time: {act.aiInsights.bestTime}</span>}
                                                                                 {act.aiInsights.cost && <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded">Cost: {act.aiInsights.cost}</span>}
                                                                             </div>
                                                                         )}

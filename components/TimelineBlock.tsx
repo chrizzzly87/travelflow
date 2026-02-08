@@ -104,7 +104,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColor}
         ${isCity ? 'opacity-80 rounded-sm border-r border-white/20 cursor-pointer' : 'rounded-lg border shadow-sm'} 
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
-        ${isSelected ? 'ring-2 ring-offset-1 ring-blue-500 z-30 opacity-100' : 'z-10'}
+        ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
@@ -217,7 +217,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onSwapSelectedCities(); }}
                     disabled={!canEdit}
-                    className={`bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-indigo-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
                     <ArrowUpDown size={12} strokeWidth={3} />
@@ -227,7 +227,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 <button 
                     onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onForceFill(item.id); }}
                     disabled={!canEdit}
-                    className={`bg-white text-indigo-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-indigo-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
+                    className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
                     title={forceFillLabel || 'Occupy available space'}
                 >
                     {(forceFillMode === 'shrink') ? <Minimize size={12} strokeWidth={3} /> : <Maximize size={12} strokeWidth={3} />}
@@ -250,7 +250,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-indigo-500 group-hover/handle:border-indigo-600'}
+                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
@@ -275,7 +275,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-indigo-500 group-hover/handle:border-indigo-600'}
+                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>

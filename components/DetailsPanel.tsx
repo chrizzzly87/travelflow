@@ -953,7 +953,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={() => { if (!canEdit) return; setIsColorPickerOpen(!isColorPickerOpen); }}
                                 disabled={!canEdit}
-                                className={`p-1 rounded-full text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1 rounded-full text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Palette size={14} />
                             </button>
@@ -1003,7 +1003,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              
              <div className="flex flex-col gap-3 mt-4">
                  <div className="flex items-start text-gray-600">
-                    <Clock size={18} className="mr-3 text-indigo-500 mt-0.5" />
+                    <Clock size={18} className="mr-3 text-accent-500 mt-0.5" />
                     {isTransport ? (
                         <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
@@ -1014,7 +1014,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     value={Math.round(displayItem.duration * 24 * 10) / 10}
                                     onChange={canEdit ? ((e) => { const h = parseFloat(e.target.value); if (!isNaN(h) && h > 0) handleUpdate(displayItem.id, { duration: h / 24 }); }) : undefined}
                                     disabled={!canEdit}
-                                    className={`w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 outline-none ${canEdit ? 'focus:border-indigo-500' : 'cursor-not-allowed opacity-70'}`}
+                                    className={`w-16 p-1 border-b border-gray-300 bg-transparent text-center font-bold text-gray-900 outline-none ${canEdit ? 'focus:border-accent-500' : 'cursor-not-allowed opacity-70'}`}
                                 />
                                 <span className="font-medium text-sm">hours</span>
                             </div>
@@ -1029,7 +1029,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <button
                                     onClick={openDurationEditor}
                                     disabled={!canEdit}
-                                    className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                     title="Edit duration"
                                 >
                                     <Pencil size={13} />
@@ -1040,7 +1040,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                  </div>
                  {isTransport && (
                     <div className="flex items-start text-gray-600">
-                        <MapPin size={18} className="mr-3 text-indigo-500 mt-0.5" />
+                        <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="flex flex-col gap-0.5">
                             <span className="font-medium">Air distance: {airDistanceLabel ?? '—'}</span>
                             {showRouteDistance && (
@@ -1053,7 +1053,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                  )}
                  {(isCity || displayItem.location) && (
                     <div className="flex items-start text-gray-600">
-                        <MapPin size={18} className="mr-3 text-indigo-500 mt-0.5" />
+                        <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
                                 {countryFlagForDisplay && (
@@ -1064,7 +1064,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <button
                                         onClick={openCityEditor}
                                         disabled={!canEdit}
-                                        className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                        className={`p-1 rounded text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                         title="Edit city"
                                     >
                                         <Pencil size={13} />
@@ -1087,12 +1087,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                         <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Schedule</h3>
                         <div className="flex items-center gap-2">
-                            <div className="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{Number(previewDuration.toFixed(1))} Nights</div>
+                            <div className="text-xs font-medium text-accent-600 bg-accent-50 px-2 py-0.5 rounded">{Number(previewDuration.toFixed(1))} Nights</div>
                             {onForceFill && forceFillLabel && (
                                 <button
                                     onClick={() => { if (!canEdit) return; handleForceFillDraft(); }}
                                     disabled={!canEdit}
-                                    className={`px-2 py-1 rounded text-gray-500 flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-gray-100 hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                    className={`px-2 py-1 rounded text-gray-500 flex items-center gap-1 text-[10px] font-semibold ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                                     title={forceFillLabel || 'Occupy available space'}
                                 >
                                     {(forceFillMode === 'shrink') ? <Minimize size={12} /> : <Maximize size={12} />}
@@ -1110,7 +1110,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={() => updateDurationStartDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1118,7 +1118,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={() => updateDurationStartDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1133,7 +1133,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={() => updateDurationEndDraft(-1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Minus size={14} />
                             </button>
@@ -1141,7 +1141,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={() => updateDurationEndDraft(1)}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-indigo-600' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-md transition-all text-gray-500 ${canEdit ? 'hover:bg-white hover:shadow-sm hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <Plus size={14} />
                             </button>
@@ -1159,7 +1159,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             onClick={handleApplyDurationEdit}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                                 canEdit && hasDurationDraftChanges
-                                    ? 'text-white bg-indigo-600 hover:bg-indigo-700'
+                                    ? 'text-white bg-accent-600 hover:bg-accent-700'
                                     : 'text-gray-400 bg-gray-100 cursor-not-allowed'
                             }`}
                             disabled={!canEdit || !hasDurationDraftChanges}
@@ -1190,7 +1190,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             onChange={canEdit ? ((e) => handleCityInputChange(e.target.value)) : undefined}
                             placeholder="e.g. Kyoto, Japan"
                             disabled={!canEdit}
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-indigo-500' : 'opacity-60 cursor-not-allowed'}`}
+                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                         />
                         <Search size={14} className="absolute left-3 top-3.5 text-gray-400" />
                     </div>
@@ -1207,7 +1207,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         </button>
                         <button
                             onClick={handleApplyCityEdit}
-                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-md ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`px-3 py-1.5 text-xs font-semibold text-white bg-accent-600 rounded-md ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'}`}
                             disabled={!canEdit || !(cityInputValue.trim() || cityDraft?.location || '').trim() || !hasCityDraftChanges}
                         >
                             Apply
@@ -1223,7 +1223,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                          <button
                              onClick={addHotel}
                              disabled={!canEdit}
-                             className={`text-indigo-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-indigo-800 hover:bg-indigo-50' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`text-accent-600 p-1 rounded transition-colors text-xs font-medium ${canEdit ? 'hover:text-accent-800 hover:bg-accent-50' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              + Manual
                          </button>
@@ -1243,14 +1243,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                             onKeyDown={canEdit ? ((e) => e.key === 'Enter' && handleHotelSearch()) : undefined}
                                             placeholder="Search hotels..."
                                             disabled={!canEdit}
-                                            className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-indigo-500' : 'opacity-60 cursor-not-allowed'}`}
+                                            className={`w-full pl-8 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 outline-none ${canEdit ? 'focus:ring-1 focus:ring-accent-500' : 'opacity-60 cursor-not-allowed'}`}
                                         />
                                         <Search size={14} className="absolute left-2.5 top-2.5 text-gray-400" />
                                     </div>
                                     <button
                                         onClick={handleHotelSearch}
                                         disabled={!canEdit || isSearchingHotels || !hotelQuery || !placesService}
-                                        className={`px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-50`}
+                                        className={`px-3 py-2 bg-accent-600 text-white rounded-lg text-xs font-bold ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-50`}
                                     >
                                         {isSearchingHotels ? '...' : 'Find'}
                                     </button>
@@ -1261,7 +1261,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                             <div
                                                 key={idx}
                                                 onClick={() => selectHotelResult(result)}
-                                                className={`bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                className={`bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                             >
                                                 <div className="font-bold text-sm text-gray-800">{result.name}</div>
                                                 <div className="text-xs text-gray-500 truncate">{result.address}</div>
@@ -1328,7 +1328,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                  key={mode} 
                                  onClick={() => handleTransportConvert(mode)} 
                                  disabled={!canEdit}
-                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'bg-gray-50 border-gray-100 text-gray-400'} ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
+                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-accent-50 border-accent-500 text-accent-700' : 'bg-gray-50 border-gray-100 text-gray-400'} ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>
@@ -1384,17 +1384,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                 )}
                 {isCity && pendingNotesProposal && (
-                    <div className="mt-4 border border-indigo-100 rounded-xl bg-indigo-50/40 overflow-hidden">
-                        <div className="px-4 py-3 border-b border-indigo-100 bg-white/80">
-                            <div className="text-xs font-semibold text-indigo-700">AI Draft Preview</div>
-                            <div className="text-[11px] text-indigo-600 mt-1">
+                    <div className="mt-4 border border-accent-100 rounded-xl bg-accent-50/40 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-accent-100 bg-white/80">
+                            <div className="text-xs font-semibold text-accent-700">AI Draft Preview</div>
+                            <div className="text-[11px] text-accent-600 mt-1">
                                 Action: {pendingNotesProposal.actionLabel}
                             </div>
                         </div>
                         <div className="p-4 bg-white">
                             <MarkdownEditor value={proposedNotesPreview} readOnly />
                         </div>
-                        <div className="px-4 py-3 bg-indigo-50 border-t border-indigo-100 flex items-center justify-end gap-2">
+                        <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2">
                             <button
                                 onClick={handleDeclineNotesProposal}
                                 disabled={!canEdit}
@@ -1405,7 +1405,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <button
                                 onClick={handleAcceptNotesProposal}
                                 disabled={!canEdit}
-                                className={`px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 rounded-md ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`px-3 py-1.5 text-xs font-semibold text-white bg-accent-600 rounded-md ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 Accept and Apply
                             </button>
@@ -1413,34 +1413,34 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     </div>
                 )}
                 {(aiDetails || loading) && isActivity && (
-                    <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100 rounded-xl p-4 mt-6">
+                    <div className="bg-gradient-to-br from-accent-50 to-accent-100 border border-accent-100 rounded-xl p-4 mt-6">
                         <div className="flex items-center mb-3 justify-between">
                             <div className="flex items-center gap-2">
-                                <Sparkles size={16} className="text-indigo-500 animate-pulse" />
-                                <h3 className="text-sm font-semibold text-indigo-900">AI Insights</h3>
+                                <Sparkles size={16} className="text-accent-500 animate-pulse" />
+                                <h3 className="text-sm font-semibold text-accent-900">AI Insights</h3>
                             </div>
                             <button
                                 onClick={fetchDetails}
                                 disabled={!canEdit}
-                                className={`p-1.5 rounded-full text-indigo-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-white' : 'opacity-50 cursor-not-allowed'}`}
+                                className={`p-1.5 rounded-full text-accent-500 ${loading ? 'animate-spin' : ''} ${canEdit ? 'hover:bg-white' : 'opacity-50 cursor-not-allowed'}`}
                             >
                                 <RefreshCw size={16} />
                             </button>
                         </div>
                         {loading && !aiDetails ? (
-                            <div className="text-sm text-indigo-600/70 py-2">Loading...</div>
+                            <div className="text-sm text-accent-600/70 py-2">Loading...</div>
                         ) : (
                             <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
-                                <div className="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
-                                    <span className="text-[10px] font-bold text-indigo-400 uppercase">Cost</span>
+                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm">
+                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Cost</span>
                                     <span className="text-sm font-medium">{aiDetails?.cost || 'N/A'}</span>
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm">
-                                    <span className="text-[10px] font-bold text-indigo-400 uppercase">Best Time</span>
+                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm">
+                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Best Time</span>
                                     <span className="text-sm font-medium">{aiDetails?.bestTime || 'N/A'}</span>
                                 </div>
-                                <div className="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm" style={{ gridColumn: '1 / -1' }}>
-                                    <span className="text-[10px] font-bold text-indigo-400 uppercase">Tip</span>
+                                <div className="bg-white p-3 rounded-lg border border-accent-100 shadow-sm" style={{ gridColumn: '1 / -1' }}>
+                                    <span className="text-[10px] font-bold text-accent-400 uppercase">Tip</span>
                                     <span className="text-sm font-medium">{aiDetails?.tips || 'N/A'}</span>
                                 </div>
                             </div>

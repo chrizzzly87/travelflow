@@ -72,6 +72,63 @@ const TOOLTIP_MAX_HEIGHT = 420;
 const TOOLTIP_BASE_HEIGHT = 180;
 const TOOLTIP_PER_CITY_HEIGHT = 26;
 
+const stripColorPrefix = (value: string): string => value.replace(/^0x/i, '').replace(/^#/, '').trim();
+
+const normalizeCssColorToHex = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const hexMatch = trimmed.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hexMatch) {
+    const rawHex = hexMatch[1];
+    return rawHex.length === 3
+      ? rawHex.split('').map(char => `${char}${char}`).join('').toLowerCase()
+      : rawHex.toLowerCase();
+  }
+
+  const rgbMatch = trimmed.match(/^rgba?\(([^)]+)\)$/i);
+  if (!rgbMatch) return null;
+
+  const channels = rgbMatch[1]
+    .split(',')
+    .map(part => Number(part.trim()))
+    .slice(0, 3);
+
+  if (channels.length !== 3 || channels.some(channel => !Number.isFinite(channel))) {
+    return null;
+  }
+
+  return channels
+    .map(channel => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0'))
+    .join('');
+};
+
+const resolveTooltipMapColors = () => {
+  const fallback = {
+    start: '4f46e5',
+    end: 'a5b4fc',
+    waypoint: '6366f1',
+    route: '4f46e5',
+  };
+
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return fallback;
+  }
+
+  const styles = window.getComputedStyle(document.documentElement);
+  const fromVar = (varName: string, fallbackHex: string) => {
+    const normalized = normalizeCssColorToHex(styles.getPropertyValue(varName));
+    return normalized || stripColorPrefix(fallbackHex);
+  };
+
+  return {
+    start: fromVar('--tf-accent-600', fallback.start),
+    end: fromVar('--tf-accent-300', fallback.end),
+    waypoint: fromVar('--tf-accent-500', fallback.waypoint),
+    route: fromVar('--tf-accent-600', fallback.route),
+  };
+};
+
 const COUNTRY_BY_NAME = new Map(
   COUNTRIES.map(country => [normalizeCountryToken(country.name), country] as const)
 );
@@ -285,14 +342,15 @@ const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null =
   const visibleParams: string[] = [];
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
+  const mapColors = resolveTooltipMapColors();
 
-  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x8b5cf6|label:S|${formatCoord(start)}`)}`);
+  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.start}|label:S|${formatCoord(start)}`)}`);
   if (routeCoordinates.length > 1) {
-    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0xa78bfa|label:E|${formatCoord(end)}`)}`);
+    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.end}|label:E|${formatCoord(end)}`)}`);
   }
 
   routeCoordinates.slice(1, -1).slice(0, 18).forEach(coord => {
-    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x7c3aed|${formatCoord(coord)}`)}`);
+    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x${mapColors.waypoint}|${formatCoord(coord)}`)}`);
   });
 
   routeCoordinates.forEach(coord => {
@@ -302,7 +360,7 @@ const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null =
   const pathParams: string[] = [];
   if (routeCoordinates.length > 1) {
     pathParams.push(
-      `path=${encodeURIComponent(`color:0x7c3aed|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
+      `path=${encodeURIComponent(`color:0x${mapColors.route}|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
     );
   }
 
@@ -449,7 +507,7 @@ const TripRow: React.FC<TripRowProps> = ({
     <div
       ref={rowRef}
       className={`group flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-colors ${
-        trip.id === currentTripId ? 'bg-indigo-50' : 'hover:bg-gray-50'
+        trip.id === currentTripId ? 'bg-accent-50' : 'hover:bg-gray-50'
       }`}
       onMouseEnter={emitHoverAnchor}
       onMouseMove={emitHoverAnchor}
@@ -463,7 +521,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm leading-none">{displayFlags}</span>
           {extraFlags > 0 && <span className="text-[10px] text-gray-300">+{extraFlags}</span>}
-          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-indigo-700' : 'text-gray-700'}`}>
+          <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700' : 'text-gray-700'}`}>
             {trip.title}
           </span>
         </div>
@@ -546,10 +604,10 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
       <div className="h-full w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden flex flex-col">
         <div className="px-3.5 py-3 border-b border-gray-100">
           <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
-          <div className="mt-1 flex items-center gap-1.5 text-purple-600 text-sm font-semibold">
+          <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold">
             <CalendarDays size={14} />
             <span>{formatTripDateRange(trip, locale)}</span>
-            {distanceLabel && <span className="text-purple-300">•</span>}
+            {distanceLabel && <span className="text-accent-300">•</span>}
             {distanceLabel && <span>{distanceLabel}</span>}
           </div>
         </div>
@@ -563,13 +621,13 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                 cityStops.map((stop, idx) => {
                   const isStart = idx === 0;
                   const isEnd = idx === cityStops.length - 1;
-                  const pinClass = isStart && !isEnd ? 'text-purple-500' : isEnd && !isStart ? 'text-purple-300' : 'text-purple-500';
+                  const pinClass = isStart && !isEnd ? 'text-accent-500' : isEnd && !isStart ? 'text-accent-300' : 'text-accent-500';
                   return (
                     <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5">
                       <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch">
                         {cityStops.length > 1 && (
                           <span
-                            className={`absolute left-1/2 w-0.5 -translate-x-1/2 bg-purple-200 ${
+                            className={`absolute left-1/2 w-0.5 -translate-x-1/2 bg-accent-200 ${
                               isStart ? 'top-1/2 -bottom-px' : isEnd ? '-top-px bottom-1/2' : '-top-px -bottom-px'
                             }`}
                           />
@@ -577,12 +635,12 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
                         {isStart || isEnd ? (
                           <MapPin size={13} className={`relative z-10 ${pinClass}`} />
                         ) : (
-                          <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-purple-400" />
+                          <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-accent-400" />
                         )}
                       </div>
                       <div className="min-w-0 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
                         <span className="text-[15px] font-medium text-gray-700 leading-5 break-words">{stop.title}</span>
-                        <span className="text-[12px] font-medium text-purple-500/75 leading-5">{formatCityStayLabel(stop.duration)}</span>
+                        <span className="text-[12px] font-medium text-accent-500/75 leading-5">{formatCityStayLabel(stop.duration)}</span>
                       </div>
                     </div>
                   );
@@ -985,7 +1043,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={hideHoverNow}
               placeholder="Search trips or cities..."
-              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white"
+              className="w-full h-9 pl-8 pr-2.5 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent focus:bg-white"
             />
           </div>
         </div>

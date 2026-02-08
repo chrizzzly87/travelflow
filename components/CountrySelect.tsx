@@ -88,11 +88,11 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
     return (
         <div className="relative" ref={wrapperRef}>
              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <MapPin size={14} className="text-indigo-500"/> Destination(s)
+                <MapPin size={14} className="text-accent-500"/> Destination(s)
             </label>
             
             <div 
-                className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-indigo-500 focus-within:bg-white transition-all flex flex-wrap items-center gap-2 cursor-text min-h-[3rem] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-accent-500 focus-within:bg-white transition-all flex flex-wrap items-center gap-2 cursor-text min-h-[3rem] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
                 onClick={openDropdown}
             >
                 {/* Selected Tags */}
@@ -148,7 +148,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                                 <span className="text-2xl">{country.flag}</span>
                                 <span className="font-medium text-gray-700">{country.name}</span>
                             </div>
-                            <Plus size={16} className="text-gray-300 group-hover:text-indigo-500" />
+                            <Plus size={16} className="text-gray-300 group-hover:text-accent-500" />
                         </div>
                     )) : (
                         <div className="p-4 text-center text-gray-400 text-sm">

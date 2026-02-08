@@ -592,11 +592,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                     // Grouped View: Month Row + Day Row
                     <div className="flex flex-col h-full">
                         {/* Month Row */}
-                        <div className="flex border-b border-gray-100 h-8 overflow-hidden bg-indigo-50">
+                        <div className="flex border-b border-gray-100 h-8 overflow-hidden bg-accent-50">
                              {dateHeaders.months?.map((month, idx) => (
                                  <div 
                                     key={idx}
-                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-indigo-900 border-r border-indigo-100 bg-indigo-50 last:border-0"
+                                    className="flex-shrink-0 flex items-center justify-center font-bold text-xs uppercase tracking-widest text-accent-900 border-r border-accent-100 bg-accent-50 last:border-0"
                                     style={{ width: `${month.width * pixelsPerDay}px` }}
                                  >
                                      {month.name}
@@ -647,7 +647,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                          <button 
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                             disabled={!canEdit}
-                            className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-indigo-100 text-indigo-700 rounded-full p-1 ${canEdit ? 'hover:bg-indigo-200' : 'opacity-50 cursor-not-allowed'}`}
+                            className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-accent-100 text-accent-700 rounded-full p-1 ${canEdit ? 'hover:bg-accent-200' : 'opacity-50 cursor-not-allowed'}`}
                             title="Add City to end"
                         >
                              <Plus size={14} />
@@ -766,7 +766,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors
-                                            ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : 'bg-white border-gray-200 text-gray-600'}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth }}
@@ -808,7 +808,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                  <button
                                      onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(dateHeaders.days[i]?.dayOffset ?? i); }}
                                      disabled={!canEdit}
-                                     className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-indigo-500' : 'cursor-not-allowed opacity-40'}`}
+                                     className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
                                      title={`Add activity for ${dateHeaders.days[i]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || `day ${i + 1}`}`}
                                  >
                                      <Plus size={16} />

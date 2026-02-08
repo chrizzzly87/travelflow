@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@radix-ui/react-checkbox": "^1.2.3",
     "@supabase/supabase-js": "^2.49.1",
     "@types/google.maps": "^3.58.1",
     "lucide-react": "0.378.0",

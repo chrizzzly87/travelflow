@@ -141,13 +141,13 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                 <div className="p-4 border-b border-gray-100 flex gap-2">
                     <button 
                         onClick={() => setMode('manual')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-indigo-100 text-indigo-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                     >
                         Manual Entry
                     </button>
                     <button 
                         onClick={() => setMode('ai')}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-purple-100 text-purple-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                     >
                         <Sparkles size={14} /> AI Suggestion
                     </button>
@@ -162,7 +162,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     type="text" 
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                     placeholder="e.g. Visit Louvre Museum"
                                     autoFocus
                                 />
@@ -187,14 +187,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 <textarea 
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
-                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none h-24 resize-none"
+                                    className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
                                     placeholder="Notes..."
                                 />
                             </div>
                             <button 
                                 onClick={handleManualAdd}
                                 disabled={!title}
-                                className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors disabled:opacity-50"
                             >
                                 Add Activity
                             </button>
@@ -208,14 +208,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         type="text" 
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
-                                        className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                        className="flex-1 p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                         placeholder="e.g. Something romantic for dinner, or kid-friendly park"
                                         onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
                                     />
                                     <button 
                                         onClick={handleGenerate}
                                         disabled={!prompt || isGenerating}
-                                        className="px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                                        className="px-4 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors disabled:opacity-50"
                                     >
                                         {isGenerating ? 'Thinking...' : 'Generate'}
                                     </button>
@@ -225,7 +225,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             {proposals.length > 0 && (
                                 <div className="grid gap-3">
                                     {proposals.map((p, i) => (
-                                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-purple-300 hover:bg-purple-50 transition-all cursor-pointer group" onClick={() => handleSelectProposal(p)}>
+                                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group" onClick={() => handleSelectProposal(p)}>
                                             {(() => {
                                                 const activityTypes = normalizeActivityTypes(p.activityTypes ?? p.type);
                                                 return (
@@ -251,7 +251,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                                 <span>💰 {p.cost}</span>
                                                 <span>🕒 {p.bestTime}</span>
                                             </div>
-                                            <div className="mt-2 text-xs text-purple-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                            <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                                                 Click to add <Check size={12} />
                                             </div>
                                         </div>
