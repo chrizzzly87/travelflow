@@ -30,11 +30,11 @@ export const MarketingHomePage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-12">
-                <div className="pointer-events-none absolute -right-28 -top-24 h-72 w-72 rounded-full bg-cyan-200/40 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-28 left-8 h-72 w-72 rounded-full bg-indigo-200/50 blur-3xl" />
+                <div className="pointer-events-none absolute -right-28 -top-24 h-72 w-72 rounded-full bg-accent-300/40 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-28 left-8 h-72 w-72 rounded-full bg-accent-200/50 blur-3xl" />
 
                 <div className="relative max-w-3xl">
-                    <span className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                    <span className="inline-flex rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-700">
                         Future-ready planning workspace
                     </span>
                     <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-5xl">
@@ -46,7 +46,7 @@ export const MarketingHomePage: React.FC = () => {
                     <div className="mt-8 flex flex-wrap items-center gap-3">
                         <Link
                             to="/create-trip"
-                            className="rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+                            className="rounded-xl bg-accent-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                         >
                             Create Trip
                         </Link>

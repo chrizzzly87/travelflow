@@ -37,7 +37,7 @@ export const MonthSeasonStrip: React.FC<MonthSeasonStripProps> = ({
                         className={[
                             'rounded-md border px-1 py-1 text-center font-medium leading-none select-none',
                             colorClass,
-                            isHighlighted ? 'ring-1 ring-indigo-400' : '',
+                            isHighlighted ? 'ring-1 ring-accent-400' : '',
                         ].join(' ').trim()}
                         title={`${label}${isIdeal ? ' • ideal' : isShoulder ? ' • shoulder' : ''}`}
                     >

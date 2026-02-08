@@ -52,7 +52,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                     <X size={16} />
                 </button>
                 <div className="pr-10">
-                    <div className="text-xs font-bold uppercase tracking-wider text-indigo-600">Selected Cities</div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-accent-600">Selected Cities</div>
                     <h2 className="text-xl font-bold text-gray-900 mt-1">{selectedCities.length} selected</h2>
                     <p className="text-xs text-gray-500 mt-2">
                         Reorder the selected stops, then apply. Activities move with their city, and changed routes are reset to N/A.
@@ -81,7 +81,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 <button
                     onClick={() => { if (!canEdit) return; onApplyOrder(orderedCityIds); }}
                     disabled={!hasCustomOrder || !canEdit}
-                    className={`ml-auto px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold ${canEdit ? 'hover:bg-indigo-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`ml-auto px-3 py-2 rounded-lg bg-accent-600 text-white text-xs font-semibold ${canEdit ? 'hover:bg-accent-700' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
                     title="Apply custom selected order"
                 >
                     Apply Order

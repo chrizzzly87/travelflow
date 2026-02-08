@@ -523,7 +523,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         subEl.textContent = subLabel;
                         subEl.style.fontSize = '10px';
                         subEl.style.fontWeight = '600';
-                        subEl.style.color = '#4f46e5';
+                        subEl.style.color = 'var(--tf-primary)';
                         subEl.style.textTransform = 'uppercase';
                         subEl.style.letterSpacing = '0.08em';
                         subEl.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
@@ -965,29 +965,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 <div className="flex flex-col gap-2 pointer-events-auto">
                     {onLayoutChange && (
                         <>
-                            <button onClick={() => onLayoutChange('vertical')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:text-indigo-600 hover:bg-gray-50'}`}><Rows size={18} /></button>
-                            <button onClick={() => onLayoutChange('horizontal')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-white border-gray-200 text-gray-600 hover:text-indigo-600 hover:bg-gray-50'}`}><Columns size={18} /></button>
+                            <button onClick={() => onLayoutChange('vertical')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Rows size={18} /></button>
+                            <button onClick={() => onLayoutChange('horizontal')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Columns size={18} /></button>
                         </>
                     )}
                     
-                    <button onClick={handleFit} className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-indigo-600 hover:bg-gray-50 transition-colors flex items-center justify-center" title="Fit to Itinerary"><Focus size={18} /></button>
+                    <button onClick={handleFit} className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center" title="Fit to Itinerary"><Focus size={18} /></button>
                     
                     {/* Style Switcher */}
                     {onStyleChange && (
                       <div className="relative">
-                          <button onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)} className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${isStyleMenuOpen ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'bg-white border-gray-200 text-gray-600 hover:text-indigo-600 hover:bg-gray-50'}`} title="Map Style"><Layers size={18} /></button>
+                          <button onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)} className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${isStyleMenuOpen ? 'bg-accent-50 border-accent-300 text-accent-600' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} title="Map Style"><Layers size={18} /></button>
                           {isStyleMenuOpen && (
                               <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-36 overflow-hidden flex flex-col z-20">
-                                  <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Minimal</button>
-                                  <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Standard</button>
-                                  <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Dark</button>
-                                  <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Satellite</button>
-                                  <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Clean</button>
+                                  <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
+                                  <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>
+                                  <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
+                                  <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
+                                  <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean</button>
                                   {onRouteModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
-                                          <button onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Simple</button>
-                                          <button onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}>Realistic</button>
+                                          <button onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
+                                          <button onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
                                       </>
                                   )}
                                   {onShowCityNamesChange && (
@@ -995,7 +995,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
                                           <button
                                               onClick={() => { onShowCityNamesChange(!showCityNames); setIsStyleMenuOpen(false); }}
-                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-indigo-600 bg-indigo-50' : 'text-gray-700'}`}
+                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
                                           >
                                               City names {showCityNames ? 'On' : 'Off'}
                                           </button>

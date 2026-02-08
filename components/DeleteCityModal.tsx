@@ -49,7 +49,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                         className="flex items-center gap-2 mb-6 cursor-pointer select-none group"
                         onClick={() => setDeleteActivities(!deleteActivities)}
                     >
-                        <div className={`transition-colors ${deleteActivities ? 'text-indigo-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
+                        <div className={`transition-colors ${deleteActivities ? 'text-accent-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
                             {deleteActivities ? <CheckSquare size={20} /> : <Square size={20} />}
                         </div>
                         <span className="text-sm font-medium text-gray-700">Delete attached activities</span>
@@ -58,9 +58,9 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                     <div className="space-y-3">
                         <button 
                             onClick={() => onConfirm('extend-prev', deleteActivities)}
-                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all group text-left"
+                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >
-                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-indigo-600 group-hover:border-indigo-200 mr-4 shadow-sm">
+                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-accent-600 group-hover:border-accent-200 mr-4 shadow-sm">
                                 <ArrowRight size={20} />
                             </div>
                             <div>
@@ -71,9 +71,9 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
 
                         <button 
                             onClick={() => onConfirm('extend-next', deleteActivities)}
-                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all group text-left"
+                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >
-                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-indigo-600 group-hover:border-indigo-200 mr-4 shadow-sm">
+                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-accent-600 group-hover:border-accent-200 mr-4 shadow-sm">
                                 <ArrowLeft size={20} />
                             </div>
                             <div>
@@ -84,9 +84,9 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
 
                         <button 
                             onClick={() => onConfirm('move-rest', deleteActivities)}
-                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-indigo-500 hover:bg-indigo-50 transition-all group text-left"
+                            className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >
-                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-indigo-600 group-hover:border-indigo-200 mr-4 shadow-sm">
+                            <div className="h-10 w-10 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-500 group-hover:text-accent-600 group-hover:border-accent-200 mr-4 shadow-sm">
                                 <ArrowLeftRight size={20} />
                             </div>
                             <div>

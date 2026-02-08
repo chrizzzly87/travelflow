@@ -16,7 +16,7 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="min-h-screen bg-slate-50 px-6 py-10 md:px-10">
             <div className="mx-auto w-full max-w-7xl">
                 <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">Admin planning scaffold</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Admin planning scaffold</p>
                     <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Admin Metrics Dashboard</h1>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                         Placeholder for the future authenticated admin area. This page will aggregate user, trip, and infrastructure/API usage metrics so operational risks can be monitored in one place.

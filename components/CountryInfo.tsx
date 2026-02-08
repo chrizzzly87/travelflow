@@ -51,7 +51,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
-                    <Globe size={16} className="text-indigo-600"/> Destination Info
+                    <Globe size={16} className="text-accent-600"/> Destination Info
                 </h3>
                 <button className="text-gray-400 hover:text-gray-600">
                     {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -79,7 +79,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                             </div>
                             <button 
                                 onClick={(e) => { e.stopPropagation(); setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal'); }}
-                                className="p-1.5 bg-white shadow-sm border border-gray-200 rounded-full hover:bg-gray-100 text-indigo-600 flex-shrink-0"
+                                className="p-1.5 bg-white shadow-sm border border-gray-200 rounded-full hover:bg-gray-100 text-accent-600 flex-shrink-0"
                             >
                                 <ArrowRightLeft size={14} />
                             </button>
@@ -104,7 +104,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         </label>
                         <div className="flex flex-wrap gap-1">
                             {info.languages.map((lang, i) => (
-                                <span key={i} className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md border border-indigo-100 whitespace-nowrap">
+                                <span key={i} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
                                     {lang}
                                 </span>
                             ))}
@@ -128,12 +128,12 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         </label>
                         <div className="flex flex-col gap-2">
                             {info.visaInfoUrl && (
-                                <a href={info.visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline flex items-center gap-1 truncate">
+                                <a href={info.visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
                                     <ExternalLink size={10} className="flex-shrink-0" /> Visa Information
                                 </a>
                             )}
                             {info.auswaertigesAmtUrl && (
-                                <a href={info.auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline flex items-center gap-1 truncate">
+                                <a href={info.auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
                                     <ExternalLink size={10} className="flex-shrink-0" /> Auswärtiges Amt (DE)
                                 </a>
                             )}

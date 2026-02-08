@@ -223,13 +223,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
             base += "font-medium ";
 
             if (connectsRight || connectsLeft) {
-                base += "before:content-[''] before:absolute before:z-0 before:top-0 before:bottom-0 before:bg-indigo-50 before:pointer-events-none ";
+                base += "before:content-[''] before:absolute before:z-0 before:top-0 before:bottom-0 before:bg-accent-50 before:pointer-events-none ";
                 if (connectsRight) base += "before:right-0 before:w-1/2 ";
                 if (connectsLeft) base += "before:left-0 before:w-1/2 ";
             }
         } else if (inRange) {
              // Range State: Indigo text
-            base += "bg-indigo-50 text-indigo-700 rounded-none ";
+            base += "bg-accent-50 text-accent-700 rounded-none ";
              if (!isCurrent) base += "opacity-40 ";
         } else {
              // Default State
@@ -245,7 +245,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
         const str = formatDate(date);
         const isSelected = str === startDate || str === endDate;
         if (!isSelected) return "";
-        return "relative z-10 h-9 w-9 flex items-center justify-center rounded-full bg-indigo-600 text-white shadow-md transition-colors group-hover:bg-indigo-700";
+        return "relative z-10 h-9 w-9 flex items-center justify-center rounded-full bg-accent-600 text-white shadow-md transition-colors group-hover:bg-accent-700";
     };
 
     const days = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());
@@ -253,13 +253,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
     return (
         <div className="relative" ref={containerRef}>
              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Calendar size={14} className="text-indigo-500"/> Trip Dates
+                <Calendar size={14} className="text-accent-500"/> Trip Dates
             </label>
 
             {/* Input Trigger */}
-            <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 transition-all ${isOpen ? 'ring-2 ring-indigo-500 bg-white' : ''} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 transition-all ${isOpen ? 'ring-2 ring-accent-500 bg-white' : ''} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
                  <div 
-                    className={`flex-1 cursor-pointer ${mode === 'start' && isOpen ? 'text-indigo-600' : ''}`}
+                    className={`flex-1 cursor-pointer ${mode === 'start' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('start'); } }}
                  >
                     <span className="text-xs text-gray-400 font-semibold block">Start</span>
@@ -273,7 +273,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                  </div>
                  
                  <div 
-                    className={`flex-1 text-right cursor-pointer ${mode === 'end' && isOpen ? 'text-indigo-600' : ''}`}
+                    className={`flex-1 text-right cursor-pointer ${mode === 'end' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('end'); } }}
                  >
                     <span className="text-xs text-gray-400 font-semibold block text-right">End</span>

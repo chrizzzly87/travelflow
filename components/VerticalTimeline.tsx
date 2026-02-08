@@ -565,7 +565,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button 
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-indigo-50 text-indigo-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-indigo-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
                          >
                              <Plus size={12} />
                          </button>
@@ -667,7 +667,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-1 shadow-sm transition-colors
-                                             ${isSelected ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-600'}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : 'bg-white border-gray-200 text-gray-600'}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: 46 }}
@@ -694,7 +694,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          <button 
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(visualStartOffset); }}
                              disabled={!canEdit}
-                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-indigo-50 text-indigo-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-indigo-100' : 'opacity-50 cursor-not-allowed'}`}
+                             className={`opacity-0 group-hover/activities:opacity-100 transition-opacity ml-1 bg-accent-50 text-accent-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-accent-100' : 'opacity-50 cursor-not-allowed'}`}
                              title="Add Activity"
                          >
                              <Plus size={12} />

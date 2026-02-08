@@ -448,7 +448,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     remarkPlugins={[remarkGfm]}
                     components={{
                         a: ({node, ...props}) => (
-                            <a {...props} className="text-indigo-600 hover:underline" target="_blank" rel="noopener noreferrer" />
+                            <a {...props} className="text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer" />
                         ),
                         input: ({node, ...props}) => (
                             <input
@@ -480,7 +480,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         <button
                             onClick={handleAiButtonClick}
                             disabled={isGenerating}
-                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded-md transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-accent-600 hover:bg-accent-50 rounded-md transition-colors disabled:opacity-50"
                             aria-haspopup={hasAiActions ? 'menu' : undefined}
                             aria-expanded={hasAiActions ? isAiPopoverOpen : undefined}
                         >
@@ -500,7 +500,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                                                 onAiActionSelect?.(action.id);
                                                 setIsAiPopoverOpen(false);
                                             }}
-                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-indigo-50 transition-colors"
+                                            className="w-full text-left px-2.5 py-2 rounded-md hover:bg-accent-50 transition-colors"
                                         >
                                             <div className="text-xs font-semibold text-gray-800">{action.label}</div>
                                             <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{action.description}</div>
@@ -514,7 +514,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             </div>
 
             {aiStatus && (
-                <div className="px-3 py-1.5 bg-purple-50/80 border-b border-purple-100 text-[11px] text-purple-700">
+                <div className="px-3 py-1.5 bg-accent-50/80 border-b border-accent-100 text-[11px] text-accent-700">
                     {aiStatus}
                 </div>
             )}
@@ -565,7 +565,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         syncMarkdownFromEditor();
                     }
                 }}
-                className="h-48 p-3 overflow-y-auto text-sm text-gray-800 leading-relaxed outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h1]:border-t [&_h1]:border-gray-100 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h2]:border-t [&_h2]:border-gray-100 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:pt-2 [&_h3]:text-xs [&_h3]:font-extrabold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-gray-700 [&_h3]:border-t [&_h3]:border-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-indigo-600 [&_a]:underline [&_input[type='checkbox']]:mr-2"
+                className="h-48 p-3 overflow-y-auto text-sm text-gray-800 leading-relaxed outline-none [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:pt-2 [&_h1]:text-base [&_h1]:font-black [&_h1]:tracking-tight [&_h1]:text-gray-800 [&_h1]:border-t [&_h1]:border-gray-100 [&_h2]:mt-4 [&_h2]:mb-2 [&_h2]:pt-2 [&_h2]:text-sm [&_h2]:font-extrabold [&_h2]:tracking-wide [&_h2]:text-gray-800 [&_h2]:border-t [&_h2]:border-gray-100 [&_h3]:mt-4 [&_h3]:mb-2 [&_h3]:pt-2 [&_h3]:text-xs [&_h3]:font-extrabold [&_h3]:uppercase [&_h3]:tracking-wide [&_h3]:text-gray-700 [&_h3]:border-t [&_h3]:border-gray-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_a]:text-accent-600 [&_a]:underline [&_input[type='checkbox']]:mr-2"
             />
 
             <div className="px-3 py-1.5 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-400 flex justify-between">

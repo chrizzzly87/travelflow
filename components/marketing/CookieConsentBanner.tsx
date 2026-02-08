@@ -40,7 +40,7 @@ export const CookieConsentBanner: React.FC = () => {
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                 <p className="text-sm leading-6 text-slate-700">
                     We use essential cookies to keep TravelFlow stable and optional cookies to improve experience. See our{' '}
-                    <Link to="/cookies" className="font-semibold text-indigo-700 hover:text-indigo-800">
+                    <Link to="/cookies" className="font-semibold text-accent-700 hover:text-accent-800">
                         Cookie Policy
                     </Link>
                     .
@@ -56,7 +56,7 @@ export const CookieConsentBanner: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => handleConsent('all')}
-                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
                     >
                         Accept all
                     </button>

@@ -49,7 +49,7 @@ const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:n
 
 const getToneButtonClass = (tone?: DialogTone): string => {
     if (tone === 'danger') return 'bg-red-600 hover:bg-red-700 focus:ring-red-400';
-    return 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-400';
+    return 'bg-accent-600 hover:bg-accent-700 focus:ring-accent-400';
 };
 
 export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -239,7 +239,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                                             setPromptValue(event.target.value);
                                             if (promptError) setPromptError(null);
                                         }}
-                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 outline-none"
+                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 focus:ring-2 focus:ring-accent-300 focus:border-accent-500 outline-none"
                                         placeholder={activeRequest.options.placeholder}
                                         onKeyDown={(event) => {
                                             if (event.key === 'Enter') {

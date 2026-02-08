@@ -3,6 +3,63 @@
 
 :root {
   --tf-font-heading: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  /* Global accent currently uses an indigo palette. */
+  --tf-accent-50: #eef2ff;
+  --tf-accent-100: #e0e7ff;
+  --tf-accent-200: #c7d2fe;
+  --tf-accent-300: #a5b4fc;
+  --tf-accent-400: #818cf8;
+  --tf-accent-500: #6366f1;
+  --tf-accent-600: #4f46e5;
+  --tf-accent-700: #4338ca;
+  --tf-accent-800: #3730a3;
+  --tf-accent-900: #312e81;
+  --tf-accent-950: #1e1b4b;
+  --tf-accent-rgb: 79 70 229;
+
+  --tf-primary: var(--tf-accent-600);
+  --tf-primary-hover: var(--tf-accent-700);
+  --tf-primary-soft: var(--tf-accent-50);
+  --tf-primary-muted: var(--tf-accent-100);
+  --tf-primary-border: var(--tf-accent-200);
+  --tf-primary-strong: var(--tf-accent-800);
+  --tf-primary-contrast: #ffffff;
+  --tf-primary-glow-sm: rgb(var(--tf-accent-rgb) / 0.2);
+  --tf-primary-glow-md: rgb(var(--tf-accent-rgb) / 0.28);
+}
+
+@theme inline {
+  --color-accent-50: var(--tf-accent-50);
+  --color-accent-100: var(--tf-accent-100);
+  --color-accent-200: var(--tf-accent-200);
+  --color-accent-300: var(--tf-accent-300);
+  --color-accent-400: var(--tf-accent-400);
+  --color-accent-500: var(--tf-accent-500);
+  --color-accent-600: var(--tf-accent-600);
+  --color-accent-700: var(--tf-accent-700);
+  --color-accent-800: var(--tf-accent-800);
+  --color-accent-900: var(--tf-accent-900);
+  --color-accent-950: var(--tf-accent-950);
+
+  --color-primary: var(--tf-primary);
+  --color-primary-hover: var(--tf-primary-hover);
+  --color-primary-soft: var(--tf-primary-soft);
+  --color-primary-muted: var(--tf-primary-muted);
+  --color-primary-border: var(--tf-primary-border);
+  --color-primary-strong: var(--tf-primary-strong);
+  --color-primary-contrast: var(--tf-primary-contrast);
+}
+
+@utility shadow-accent-glow-sm {
+  box-shadow: 0 0 16px var(--tf-primary-glow-sm);
+}
+
+@utility shadow-accent-glow-md {
+  box-shadow: 0 0 34px var(--tf-primary-glow-md);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--tf-accent-500);
 }
 
 h1,
