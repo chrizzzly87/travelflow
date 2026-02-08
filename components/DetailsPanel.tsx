@@ -945,6 +945,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 onClick={() => { if (!canEdit) return; setIsColorPickerOpen(!isColorPickerOpen); }}
                                 disabled={!canEdit}
                                 className={`p-1 rounded-full text-gray-400 transition-colors ${canEdit ? 'hover:bg-gray-100 hover:text-accent-600' : 'opacity-50 cursor-not-allowed'}`}
+                                aria-label={isColorPickerOpen ? 'Close color picker' : 'Open color picker'}
                             >
                                 <Palette size={14} />
                             </button>
@@ -971,6 +972,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
                               className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              aria-label="Delete item"
                           >
                               <Trash2 size={20} />
                           </button>
@@ -983,13 +985,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           </button>
                       </>
                   )}
-                  {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button onClick={handleClosePanel} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-gray-600"><X size={18} /></button></div>}
+                  {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button onClick={handleClosePanel} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-gray-600" aria-label="Close details"><X size={18} /></button></div>}
                   {variant === 'sidebar' && (
                       <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-5">
                           <button
                               onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
                               disabled={!canEdit}
                               className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              aria-label="Delete item"
                               title="Delete"
                           >
                               <Trash2 size={16} />
@@ -997,6 +1000,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                           <button
                               onClick={handleClosePanel}
                               className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"
+                              aria-label="Close details"
                               title="Close"
                           >
                               <X size={16} />

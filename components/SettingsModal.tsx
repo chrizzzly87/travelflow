@@ -48,7 +48,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Header */}
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h3 className="text-lg font-bold text-gray-900">Settings</h3>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full text-gray-500">
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
+                    >
                         <X size={20} />
                     </button>
                 </div>

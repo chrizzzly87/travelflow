@@ -650,7 +650,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddCity(); }}
                             disabled={!canEdit}
                             className={`opacity-0 group-hover/cities:opacity-100 transition-opacity bg-accent-100 text-accent-700 rounded-full p-1 ${canEdit ? 'hover:bg-accent-200' : 'opacity-50 cursor-not-allowed'}`}
-                            title="Add City to end"
+                            aria-label="Add city to end"
                         >
                              <Plus size={14} />
                         </button>
@@ -718,7 +718,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                             disabled={!canEdit}
                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 text-stone-700 rounded-full p-1 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
-                            title="Add Travel"
+                            aria-label="Add travel"
                         >
                              <Plus size={14} />
                         </button>
@@ -811,7 +811,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                      onClick={(e) => { e.stopPropagation(); if (!canEdit) return; onAddActivity(dateHeaders.days[i]?.dayOffset ?? i); }}
                                      disabled={!canEdit}
                                      className={`w-full h-full mx-1 rounded-md border border-dashed border-transparent flex items-center justify-center text-gray-300 transition-all ${canEdit ? 'hover:border-gray-300 hover:bg-gray-50 hover:text-accent-500' : 'cursor-not-allowed opacity-40'}`}
-                                     title={`Add activity for ${dateHeaders.days[i]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || `day ${i + 1}`}`}
+                                     aria-label={`Add activity for ${dateHeaders.days[i]?.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) || `day ${i + 1}`}`}
                                  >
                                      <Plus size={16} />
                                  </button>

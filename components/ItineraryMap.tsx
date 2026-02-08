@@ -971,8 +971,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 <div className="flex flex-col gap-2 pointer-events-auto">
                     {showLayoutControls && onLayoutChange && (
                         <>
-                            <button onClick={() => onLayoutChange('vertical')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Rows size={18} /></button>
-                            <button onClick={() => onLayoutChange('horizontal')} className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}><Columns size={18} /></button>
+                            <button
+                                onClick={() => onLayoutChange('vertical')}
+                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
+                            ><Rows size={18} /></button>
+                            <button
+                                onClick={() => onLayoutChange('horizontal')}
+                                className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
+                            ><Columns size={18} /></button>
                         </>
                     )}
 
@@ -987,12 +993,18 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                         </button>
                     )}
                     
-                    <button onClick={handleFit} className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center" title="Fit to Itinerary"><Focus size={18} /></button>
+                    <button
+                        onClick={handleFit}
+                        className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center" aria-label="Fit to itinerary"
+                    ><Focus size={18} /></button>
                     
                     {/* Style Switcher */}
                     {onStyleChange && (
                       <div className="relative">
-                          <button onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)} className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${isStyleMenuOpen ? 'bg-accent-50 border-accent-300 text-accent-600' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} title="Map Style"><Layers size={18} /></button>
+                          <button
+                              onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)}
+                              className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${isStyleMenuOpen ? 'bg-accent-50 border-accent-300 text-accent-600' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Map style"
+                          ><Layers size={18} /></button>
                           {isStyleMenuOpen && (
                               <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-36 overflow-hidden flex flex-col z-20">
                                   <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>

@@ -841,7 +841,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-start gap-3">
                             <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
                             <div className="flex-1"><span className="font-bold block mb-1">Planning Failed</span>{generationError}</div>
-                            <button onClick={() => setGenerationError(null)} className="text-red-400 hover:text-red-700">
+                            <button onClick={() => setGenerationError(null)} className="text-red-400 hover:text-red-700" aria-label="Dismiss error">
                                 <Check size={16} />
                             </button>
                         </div>

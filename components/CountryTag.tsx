@@ -40,6 +40,7 @@ export const CountryTag: React.FC<CountryTagProps> = ({
                     }}
                     className="ml-1 rounded-full p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
                     aria-label={`Remove ${countryName}`}
+                    title={`Remove ${countryName}`}
                 >
                     <X size={12} />
                 </button>

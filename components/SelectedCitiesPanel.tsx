@@ -50,7 +50,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"
-                    title="Close selection"
+                    aria-label="Close selection"
                 >
                     <X size={16} />
                 </button>
@@ -112,7 +112,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                                     onClick={() => moveCity(index, index - 1)}
                                     disabled={index === 0 || !canEdit}
                                     className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    title="Move up"
+                                    aria-label="Move up"
                                 >
                                     <ArrowUp size={13} />
                                 </button>
@@ -120,7 +120,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                                     onClick={() => moveCity(index, index + 1)}
                                     disabled={index === orderedCityIds.length - 1 || !canEdit}
                                     className={`p-1.5 rounded-md border border-gray-200 text-gray-500 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} disabled:opacity-40 disabled:cursor-not-allowed`}
-                                    title="Move down"
+                                    aria-label="Move down"
                                 >
                                     <ArrowDown size={13} />
                                 </button>
