@@ -90,6 +90,7 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 
 ## Dynamic Open Graph (Netlify Edge)
 
+- Non-trip pages (home, features, updates, blog, legal pages, etc.) use a dedicated `/api/og/site` image generator with page title + subline, TravelFlow branding, and an accent-gradient hero.
 - Shared links (`/s/:token`) use Netlify Edge Functions to inject route-specific Open Graph and Twitter meta tags into the HTML response.
 - OG images are generated at `/api/og/trip` with `og_edge` (Netlify-compatible `@vercel/og`), including:
   - trip title
@@ -123,6 +124,9 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
+
+Example non-trip image URL:
+`http://localhost:8888/api/og/site?title=Features&description=See%20everything%20TravelFlow%20can%20do&path=/features`
 
 ## Create The GitHub Repo (CLI)
 
