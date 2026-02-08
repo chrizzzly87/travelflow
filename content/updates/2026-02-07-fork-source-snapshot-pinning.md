@@ -12,7 +12,5 @@ summary: "✨ Copying shared trips is now safer and clearer: your copied trip ke
 
 ## Changes
 - [x] [New feature] Copied trips now keep a stable source reference to the exact version you copied from. 📌
-- [x] [Improved] Original shared links stay live, so people always see the newest creator updates. 🔄
-- [x] [Improved] Example: Alice shares a trip, switches the map to dark mode, Bob copies it, and Alice later switches back. Bob’s source link still opens the dark-mode snapshot he copied from, while the original shared link shows the newest version. 👀
-- [x] [Improved] This makes “copy for inspiration” workflows more trustworthy and easier to follow over time.
+- [x] [Improved] Copying for inspiration now feels more predictable over time.
 - [ ] [Internal] Extended trip metadata and shared-link URL helper support for source snapshot version tracking.

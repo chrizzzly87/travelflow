@@ -18,7 +18,7 @@ import {
 import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbUpsertTrip, ensureDbSession } from '../services/dbService';
-import { getLatestInAppRelease, getWebsiteVisibleItems } from '../services/releaseNotesService';
+import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
@@ -220,6 +220,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (!latestInAppRelease) return [];
         return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
     }, [latestInAppRelease]);
+    const latestReleaseGroups = useMemo(() => groupReleaseItemsByType(latestReleaseItems), [latestReleaseItems]);
     const showReleaseNotice = !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
 
     // View State
@@ -1957,15 +1958,19 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     {latestInAppRelease.summary && (
                                         <p className="text-sm leading-6 text-slate-700">{latestInAppRelease.summary}</p>
                                     )}
-                                    {latestReleaseItems.length > 0 && (
-                                        <ul className="mt-3 space-y-2">
-                                            {latestReleaseItems.map((item, index) => (
-                                                <li key={`${latestInAppRelease.id}-notice-item-${index}`} className="flex items-start gap-3 rounded-xl bg-slate-50 px-3 py-2">
-                                                    <ReleasePill item={item} />
-                                                    <span className="pt-0.5 text-sm leading-6 text-slate-700">{item.text}</span>
-                                                </li>
+                                    {latestReleaseGroups.length > 0 && (
+                                        <div className="mt-3 space-y-3">
+                                            {latestReleaseGroups.map((group, groupIndex) => (
+                                                <div key={`${latestInAppRelease.id}-notice-group-${group.typeKey}-${group.typeLabel}-${groupIndex}`}>
+                                                    <ReleasePill item={group.items[0]} />
+                                                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
+                                                        {group.items.map((item, itemIndex) => (
+                                                            <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>{item.text}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
                                             ))}
-                                        </ul>
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">

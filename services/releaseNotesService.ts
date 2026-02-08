@@ -7,6 +7,12 @@ export interface ReleaseNoteItem {
     text: string;
 }
 
+export interface ReleaseNoteItemGroup {
+    typeKey: ReleaseNoteItem['typeKey'];
+    typeLabel: string;
+    items: ReleaseNoteItem[];
+}
+
 export interface ReleaseNote {
     id: string;
     version: string;
@@ -178,6 +184,30 @@ export const getPublishedReleaseNotes = (): ReleaseNote[] => {
 
 export const getWebsiteVisibleItems = (note: ReleaseNote): ReleaseNoteItem[] => {
     return sortReleaseItemsByType(note.items.filter((item) => item.visibleOnWebsite));
+};
+
+export const groupReleaseItemsByType = (items: ReleaseNoteItem[]): ReleaseNoteItemGroup[] => {
+    const grouped: ReleaseNoteItemGroup[] = [];
+    const groupIndexByKey = new Map<string, number>();
+
+    for (const item of items) {
+        const key = `${item.typeKey}:${item.typeLabel}`;
+        const existingIndex = groupIndexByKey.get(key);
+
+        if (existingIndex === undefined) {
+            groupIndexByKey.set(key, grouped.length);
+            grouped.push({
+                typeKey: item.typeKey,
+                typeLabel: item.typeLabel,
+                items: [item],
+            });
+            continue;
+        }
+
+        grouped[existingIndex].items.push(item);
+    }
+
+    return grouped;
 };
 
 export const isReleaseInsideAnnouncementWindow = (note: ReleaseNote, now = Date.now()): boolean => {

@@ -3,6 +3,7 @@ import { ReleaseNoteItem } from '../../services/releaseNotesService';
 
 interface ReleasePillProps {
     item: ReleaseNoteItem;
+    className?: string;
 }
 
 const PILL_CLASSES: Record<ReleaseNoteItem['typeKey'], string> = {
@@ -13,9 +14,9 @@ const PILL_CLASSES: Record<ReleaseNoteItem['typeKey'], string> = {
     update: 'bg-violet-100 text-violet-800 border-violet-200',
 };
 
-export const ReleasePill: React.FC<ReleasePillProps> = ({ item }) => {
+export const ReleasePill: React.FC<ReleasePillProps> = ({ item, className }) => {
     return (
-        <span className={`inline-flex shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${PILL_CLASSES[item.typeKey]}`}>
+        <span className={`inline-flex shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${PILL_CLASSES[item.typeKey]} ${className ?? ''}`}>
             {item.typeLabel}
         </span>
     );
