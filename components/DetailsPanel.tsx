@@ -853,27 +853,23 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const previewDuration = cityDurationPreview?.duration ?? displayItem.duration;
   const itemStartDate = isValidDate ? addDays(tripStart, previewStartOffset) : new Date();
   const itemEndDate = isValidDate ? addDays(tripStart, previewStartOffset + previewDuration) : new Date();
-  const travelLegMetrics = React.useMemo(() => {
-      if (!isTransport || !displayItem.id || tripItems.length === 0) return null;
-      return getTravelLegMetricsForItem(tripItems, displayItem.id);
-  }, [displayItem.id, isTransport, tripItems]);
-  const airDistanceLabel = React.useMemo(() => {
-      if (!travelLegMetrics?.distanceKm) return null;
-      return formatDistance(travelLegMetrics.distanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 });
-  }, [travelLegMetrics?.distanceKm]);
-  const routeDistanceKm = React.useMemo(() => {
-      const value = displayItem.routeDistanceKm;
-      return Number.isFinite(value) ? (value as number) : null;
-  }, [displayItem.routeDistanceKm]);
-  const routeDistanceDisplayKm = React.useMemo(() => {
-      if (displayItem.transportMode === 'plane') return travelLegMetrics?.distanceKm ?? null;
-      return routeDistanceKm;
-  }, [displayItem.transportMode, routeDistanceKm, travelLegMetrics?.distanceKm]);
-  const routeDistanceLabel = React.useMemo(() => {
-      if (!routeDistanceDisplayKm) return null;
-      return formatDistance(routeDistanceDisplayKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 });
-  }, [routeDistanceDisplayKm]);
-  const routeDistanceText = React.useMemo(() => {
+  const travelLegMetrics =
+      isTransport && displayItem.id && tripItems.length > 0
+          ? getTravelLegMetricsForItem(tripItems, displayItem.id)
+          : null;
+  const airDistanceLabel = travelLegMetrics?.distanceKm
+      ? formatDistance(travelLegMetrics.distanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 })
+      : null;
+  const routeDistanceKm = Number.isFinite(displayItem.routeDistanceKm)
+      ? (displayItem.routeDistanceKm as number)
+      : null;
+  const routeDistanceDisplayKm = displayItem.transportMode === 'plane'
+      ? (travelLegMetrics?.distanceKm ?? null)
+      : routeDistanceKm;
+  const routeDistanceLabel = routeDistanceDisplayKm
+      ? formatDistance(routeDistanceDisplayKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 })
+      : null;
+  const routeDistanceText = (() => {
       if (routeDistanceLabel) return routeDistanceLabel;
       const canRoute =
           routeMode === 'realistic' &&
@@ -881,15 +877,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           !['plane', 'boat', 'na'].includes(displayItem.transportMode || 'na');
       if (routeStatus === 'calculating' || (canRoute && routeStatus !== 'failed')) return 'Calculating…';
       return 'N/A';
-  }, [routeDistanceLabel, routeStatus, routeMode, travelLegMetrics?.distanceKm, displayItem.transportMode]);
+  })();
   const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
-  const estimatedHours = React.useMemo(() => {
-      if (!effectiveDistanceKm) return null;
-      return estimateTravelHours(effectiveDistanceKm, displayItem.transportMode);
-  }, [effectiveDistanceKm, displayItem.transportMode]);
-  const estimatedLabel = React.useMemo(() => {
-      return formatDurationHours(estimatedHours);
-  }, [estimatedHours]);
+  const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, displayItem.transportMode) : null;
+  const estimatedLabel = formatDurationHours(estimatedHours);
   const displayedDurationDays = isCity ? previewDuration : displayItem.duration;
   const durationBaseline = durationBaselineRef.current;
   const hasDurationDraftChanges = !!(
@@ -945,7 +936,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                 </div>
              )}
              
-             <div className="flex justify-between items-start mb-4 pr-8">
+             <div className="flex justify-between items-start mb-4 pr-8 sm:pr-28">
                   <div className="flex items-center gap-2">
                       <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${bgClass} ${textClass} bg-opacity-50 transition-colors`}>{displayItem.type}</div>
                       {isCity && (
@@ -974,22 +965,44 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         </div>
                       )}
                   </div>
-                  <button
-                      onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
-                      disabled={!canEdit}
-                      className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
-                  >
-                      <Trash2 size={20} />
-                  </button>
-                  <button
-                      onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
-                      disabled={!canEdit}
-                      className={`hidden sm:block text-red-400 transition-colors text-xs font-medium px-2 py-1 ${canEdit ? 'hover:text-red-600' : 'opacity-50 cursor-not-allowed'}`}
-                  >
-                      Delete
-                  </button>
+                  {variant !== 'sidebar' && (
+                      <>
+                          <button
+                              onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
+                              disabled={!canEdit}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors sm:hidden ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                          >
+                              <Trash2 size={20} />
+                          </button>
+                          <button
+                              onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
+                              disabled={!canEdit}
+                              className={`hidden sm:block text-red-400 transition-colors text-xs font-medium px-2 py-1 ${canEdit ? 'hover:text-red-600' : 'opacity-50 cursor-not-allowed'}`}
+                          >
+                              Delete
+                          </button>
+                      </>
+                  )}
                   {variant === 'overlay' && <div className="hidden sm:flex absolute top-4 right-4 z-10"><button onClick={handleClosePanel} className="p-2 bg-gray-200 hover:bg-gray-300 rounded-full text-gray-600"><X size={18} /></button></div>}
-                  {variant === 'sidebar' && <button onClick={handleClosePanel} className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"><X size={16} /></button>}
+                  {variant === 'sidebar' && (
+                      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 flex items-center gap-5">
+                          <button
+                              onClick={() => { if (!canEdit) return; handleDeleteItem(displayItem.id); handleClosePanel(); }}
+                              disabled={!canEdit}
+                              className={`p-2 bg-red-50 text-red-500 rounded-full transition-colors ${canEdit ? 'hover:bg-red-100' : 'opacity-50 cursor-not-allowed'}`}
+                              title="Delete"
+                          >
+                              <Trash2 size={16} />
+                          </button>
+                          <button
+                              onClick={handleClosePanel}
+                              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-500"
+                              title="Close"
+                          >
+                              <X size={16} />
+                          </button>
+                      </div>
+                  )}
              </div>
              
              <textarea 

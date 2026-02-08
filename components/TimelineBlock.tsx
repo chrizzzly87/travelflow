@@ -9,8 +9,8 @@ interface TimelineBlockProps {
   item: ITimelineItem;
   isSelected: boolean;
   onSelect: (id: string, options?: { multi?: boolean; isCity?: boolean }) => void;
-  onResizeStart: (e: React.MouseEvent, id: string, direction: 'left' | 'right') => void;
-  onMoveStart: (e: React.MouseEvent, id: string) => void;
+  onResizeStart: (e: React.MouseEvent | React.PointerEvent, id: string, direction: 'left' | 'right') => void;
+  onMoveStart: (e: React.MouseEvent | React.PointerEvent, id: string) => void;
   onForceFill?: (id: string) => void;
   onSwapSelectedCities?: () => void;
   isCity?: boolean;
@@ -68,7 +68,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handlePointerDown = (e: React.PointerEvent) => {
       if (!canEdit) return;
       e.stopPropagation(); // Prevent ghost creation on parent
       if (isCity && (e.shiftKey || e.metaKey || e.ctrlKey)) return;
@@ -92,10 +92,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       left: 0,
       right: 0,
       cursor: baseCursor,
+      touchAction: canEdit ? 'none' : undefined,
   } : {
       left: `${position}px`,
       width: `${size}px`,
       cursor: baseCursor,
+      touchAction: canEdit ? 'none' : undefined,
   };
 
   return (
@@ -109,7 +111,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
       style={style}
-      onMouseDown={handleMouseDown}
+      onPointerDown={handlePointerDown}
       onClick={handleClick}
     >
       {/* Visual Buffers (Travel Only) */}
@@ -246,7 +248,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
             `}
-            onMouseDown={(e) => { e.preventDefault(); if (!canEdit) return; onResizeStart(e, item.id, 'left'); }}
+            onPointerDown={(e) => { e.preventDefault(); if (e.pointerType === 'touch') e.stopPropagation(); if (!canEdit) return; onResizeStart(e, item.id, 'left'); }}
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
@@ -271,7 +273,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 }
                 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
             `}
-            onMouseDown={(e) => { e.preventDefault(); if (!canEdit) return; onResizeStart(e, item.id, 'right'); }}
+            onPointerDown={(e) => { e.preventDefault(); if (e.pointerType === 'touch') e.stopPropagation(); if (!canEdit) return; onResizeStart(e, item.id, 'right'); }}
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}

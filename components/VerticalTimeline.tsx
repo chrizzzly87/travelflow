@@ -259,7 +259,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   // X axis -> Lane/Width (ignored for now for resize)
   // Y axis -> Time/Duration
 
-  const handleResizeStart = (e: React.MouseEvent, id: string, direction: 'left' | 'right') => {
+  const handleResizeStart = (e: React.MouseEvent | React.PointerEvent, id: string, direction: 'left' | 'right') => {
     if (!canEdit) return;
     // direction 'left' maps to 'top' (start time), 'right' maps to 'bottom' (end time)
     e.stopPropagation();
@@ -280,7 +280,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     });
   };
 
-  const handleMoveStart = (e: React.MouseEvent, id: string) => {
+  const handleMoveStart = (e: React.MouseEvent | React.PointerEvent, id: string) => {
     if (!canEdit) return;
     e.stopPropagation();
     const item = trip.items.find(i => i.id === id);
@@ -301,7 +301,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   };
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handlePointerMove = (e: PointerEvent) => {
       if (!dragState.itemId || !dragState.action) return;
 
       const deltaY = e.clientY - dragStartPosRef.current; // Vertical delta
@@ -397,7 +397,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
          });
     }
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       if (isDraggingRef.current) {
         ignoreClickRef.current = true;
         if (latestDragItemsRef.current) {
@@ -417,12 +417,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointercancel', handlePointerUp);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
     };
   }, [dragState, trip.items, onUpdateItems, pixelsPerDay]);
 
