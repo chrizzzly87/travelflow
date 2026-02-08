@@ -11,8 +11,8 @@ summary: "You got the first big TravelFlow jump: cleaner visuals, clearer route 
 ---
 
 ## Changes
-- [x] [New feature] Completed the initial planner rewrite foundation.
-- [x] [Improved] Updated map styles and refined itinerary and travel tooltip layouts.
-- [x] [Improved] Added deployment configuration for Netlify and Vercel with SPA routing support.
-- [ ] [Internal] Tightened Netlify secret scan defaults for public browser-side API keys.
-- [ ] [Internal] Added explicit verification steps to confirm no exposed secrets in deploy settings.
+- [x] [New feature] 🚀 Completed the initial planner rewrite foundation.
+- [x] [Improved] ✨ Updated map styles and refined itinerary and travel tooltip layouts.
+- [x] [Improved] ✨ Added deployment configuration for Netlify and Vercel with SPA routing support.
+- [ ] [Internal] 🧰 Tightened Netlify secret scan defaults for public browser-side API keys.
+- [ ] [Internal] 🧰 Added explicit verification steps to confirm no exposed secrets in deploy settings.

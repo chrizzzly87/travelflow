@@ -11,4 +11,4 @@ summary: "Adjusted reverse-city controls so icon direction matches the active ti
 ---
 
 ## Changes
-- [x] [Fixed] Updated "Reverse selected cities" controls to use horizontal arrows in horizontal timeline mode and vertical arrows in vertical timeline mode.
+- [x] [Fixed] 🐛 Updated "Reverse selected cities" controls to use horizontal arrows in horizontal timeline mode and vertical arrows in vertical timeline mode.

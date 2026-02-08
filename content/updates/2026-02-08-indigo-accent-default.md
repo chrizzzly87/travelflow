@@ -11,7 +11,7 @@ summary: "The global accent default now uses the previous indigo/blue palette ag
 ---
 
 ## Changes
-- [x] [Improved] Reset the global `accent` token scale to an indigo/blue default palette.
-- [x] [Improved] Kept all UI surfaces token-driven, so future brand color switches still apply globally from one place.
-- [x] [Fixed] Updated My Trips tooltip map fallback colors to indigo so map previews match the active accent theme.
-- [ ] [Internal] Retained token infrastructure and shadcn checkbox integration for future palette experiments.
+- [x] [Improved] ✨ Reset the global `accent` token scale to an indigo/blue default palette.
+- [x] [Improved] ✨ Kept all UI surfaces token-driven, so future brand color switches still apply globally from one place.
+- [x] [Fixed] 🐛 Updated My Trips tooltip map fallback colors to indigo so map previews match the active accent theme.
+- [ ] [Internal] 🧰 Retained token infrastructure and shadcn checkbox integration for future palette experiments.

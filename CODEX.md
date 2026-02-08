@@ -9,8 +9,11 @@ At the end of every completed feature or fix, update `content/updates/*.md`.
 
 Rules:
 - Use the schema in `docs/UPDATE_FORMAT.md`.
+- Keep exactly one release note file per worktree/feature. Keep updating that same file instead of creating multiple files for one feature.
+- Finalize the release note shortly before opening the PR, when the complete shipped scope is known.
 - Keep user-facing highlights visible with `[x]`.
 - Keep internal/infrastructure items hidden from marketing with `[ ]`.
+- Start every change line with the required emoji style from `docs/UPDATE_FORMAT.md`.
 - Put major highlights first; place fixes later.
 - Always bump to a new release `version` for every new published release.
 - Never reuse or downgrade a published release version.

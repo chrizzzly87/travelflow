@@ -11,5 +11,5 @@ summary: "Shared trips now remember whether the Destination Info panel was open 
 ---
 
 ## Changes
-- [x] [Fixed] Added Destination Info panel open/closed state to shared view settings so recipients see the same panel state.
-- [ ] [Internal] Wired the panel expansion flag into planner view-state commits and shared snapshot persistence.
+- [x] [Fixed] 🐛 Added Destination Info panel open/closed state to shared view settings so recipients see the same panel state.
+- [ ] [Internal] 🧰 Wired the panel expansion flag into planner view-state commits and shared snapshot persistence.
