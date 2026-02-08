@@ -10,6 +10,7 @@
 - Finalize/update that single release note shortly before opening the PR.
 - User-facing items: `- [x] [Type] ...`
 - Internal-only items: `- [ ] [Internal] ...`
-- Prefix each change message with the emoji style defined in `docs/UPDATE_FORMAT.md`.
+- Prefix each change message with a context-aware emoji defined in `docs/UPDATE_FORMAT.md`.
+- Do not use one fixed emoji per type; emojis must match the concrete meaning of each line.
 - Most important changes first, fixes later.
 - Bump and maintain strictly increasing release versions for published entries.

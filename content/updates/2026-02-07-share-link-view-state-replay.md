@@ -11,7 +11,7 @@ summary: "Sharing now keeps your generated links handy and opens shared trips wi
 ---
 
 ## Changes
-- [x] [Improved] ✨ Kept generated share links visible in the share popup per mode and added one-click copy for reuse.
-- [x] [Improved] ✨ Added planner UI state to share URLs (layout, map style, route mode, city names, zoom, and panel sizing) so recipients see the same setup.
-- [x] [Fixed] 🐛 Applied shared-link URL view overrides on load to replay the sharer’s visual configuration reliably.
-- [ ] [Internal] 🧰 Added utility helpers for serializing and merging view settings from query parameters.
+- [x] [Improved] 🔗 Kept generated share links visible in the share popup per mode and added one-click copy for reuse.
+- [x] [Improved] 🧠 Added planner UI state to share URLs (layout, map style, route mode, city names, zoom, and panel sizing) so recipients see the same setup.
+- [x] [Fixed] 🧠 Applied shared-link URL view overrides on load to replay the sharer’s visual configuration reliably.
+- [ ] [Internal] 🧠 Added utility helpers for serializing and merging view settings from query parameters.

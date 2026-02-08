@@ -23,10 +23,10 @@ summary: "One concise summary sentence."
 ---
 
 ## Changes
-- [x] [New feature] 🚀 User-facing highlight shown on the website updates page.
-- [x] [Improved] ✨ User-facing improvement shown on the website updates page.
-- [x] [Fixed] 🐛 User-facing fix shown on the website updates page.
-- [ ] [Internal] 🧰 Kept in markdown history, hidden from marketing website output.
+- [x] [New feature] 🧭 User-facing highlight shown on the website updates page.
+- [x] [Improved] 🎨 User-facing improvement shown on the website updates page.
+- [x] [Fixed] 🛠️ User-facing fix shown on the website updates page.
+- [ ] [Internal] 🧩 Kept in markdown history, hidden from marketing website output.
 ```
 
 ## Field rules
@@ -44,12 +44,16 @@ summary: "One concise summary sentence."
 - `[x]`: visible on marketing website (`/updates`).
 - `[ ]`: hidden from marketing website but preserved in markdown history.
 - `Type` is used for visual pills (`New feature`, `Improved`, `Fixed`, `Internal`, etc.).
-- Message must start with an emoji:
-  - `New feature` → `🚀`
-  - `Improved` → `✨`
-  - `Fixed` → `🐛`
-  - `Internal` → `🧰`
-  - Other types → `📌`
+- Message must start with a context-aware emoji that matches what changed.
+- Do not use one fixed emoji per `Type`. Emojis should vary based on meaning.
+- Examples:
+  - Navigation/maps/routes: `🧭` or `🗺️`
+  - UI/visual style/theme: `🎨`
+  - Reliability/performance: `⚡`
+  - Tooltips/modals/dialogs: `💬`
+  - Accessibility: `♿️`
+  - Data/state/history: `🧠`
+  - Infrastructure/internal tooling: `🧩`
 
 ## Recommended workflow (auto-deploy friendly)
 1. Use exactly one release note file per worktree/feature.

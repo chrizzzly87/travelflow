@@ -11,5 +11,5 @@ summary: "Mobile details got a comfy tall drawer and a quick accessibility polis
 ---
 
 ## Changes
-- [x] [Improved] ✨ Mobile details now open in a taller drawer, so you can see way more at a glance.
-- [x] [Fixed] 🐛 Added hidden dialog labels to keep screen readers happy and silence accessibility warnings.
+- [x] [Improved] 📱 Mobile details now open in a taller drawer, so you can see way more at a glance.
+- [x] [Fixed] ♿️ Added hidden dialog labels to keep screen readers happy and silence accessibility warnings.

@@ -11,6 +11,6 @@ summary: "Roundtrip toggles now use shadcn-style checkboxes with a softer orange
 ---
 
 ## Changes
-- [x] [Improved] ✨ Replaced Create Trip roundtrip native checkboxes with a shadcn-style checkbox component for consistent UI behavior.
-- [x] [Improved] ✨ Softened checkbox checked visuals to a less aggressive accent tone while preserving accessibility and focus states.
-- [ ] [Internal] 🧰 Added a reusable Radix-based checkbox primitive in `components/ui` for broader adoption in future forms.
+- [x] [Improved] 🎨 Replaced Create Trip roundtrip native checkboxes with a shadcn-style checkbox component for consistent UI behavior.
+- [x] [Improved] ✅ Softened checkbox checked visuals to a less aggressive accent tone while preserving accessibility and focus states.
+- [ ] [Internal] 🧩 Added a reusable Radix-based checkbox primitive in `components/ui` for broader adoption in future forms.

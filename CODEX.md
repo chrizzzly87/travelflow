@@ -13,7 +13,8 @@ Rules:
 - Finalize the release note shortly before opening the PR, when the complete shipped scope is known.
 - Keep user-facing highlights visible with `[x]`.
 - Keep internal/infrastructure items hidden from marketing with `[ ]`.
-- Start every change line with the required emoji style from `docs/UPDATE_FORMAT.md`.
+- Start every change line with a context-aware emoji from `docs/UPDATE_FORMAT.md`.
+- Never use one fixed emoji per `Type`; emoji choice must reflect the actual content of that bullet.
 - Put major highlights first; place fixes later.
 - Always bump to a new release `version` for every new published release.
 - Never reuse or downgrade a published release version.

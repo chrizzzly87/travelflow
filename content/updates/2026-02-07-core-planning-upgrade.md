@@ -11,11 +11,11 @@ summary: "You can now save, share, and fine-tune trips with way less friction, s
 ---
 
 ## Changes
-- [x] [New feature] 🚀 Added Supabase-backed trip persistence, version history snapshots, and share-link collaboration modes.
-- [x] [Improved] ✨ Refreshed the create-trip card and stabilized the Tailwind-based UI layer.
-- [x] [Improved] ✨ Removed noisy hover behavior from the horizontal activity lane.
-- [x] [Improved] ✨ Auto-fit horizontal timeline zoom when switching from left-right layout to top-bottom layout, so timeline hover space is used more efficiently.
-- [x] [Fixed] 🐛 Improved date range picker month focus and range highlighting behavior.
-- [x] [Fixed] 🐛 Ensured itinerary dates follow app locale formatting rules.
-- [ ] [Internal] 🧰 Added runbook and support docs for Supabase operational troubleshooting.
-- [ ] [Internal] 🧰 Updated Netlify secret scan allowlist for public VITE Supabase browser values.
+- [x] [New feature] 🗄️ Added Supabase-backed trip persistence, version history snapshots, and share-link collaboration modes.
+- [x] [Improved] 🎨 Refreshed the create-trip card and stabilized the Tailwind-based UI layer.
+- [x] [Improved] 🖱️ Removed noisy hover behavior from the horizontal activity lane.
+- [x] [Improved] 📅 Auto-fit horizontal timeline zoom when switching from left-right layout to top-bottom layout, so timeline hover space is used more efficiently.
+- [x] [Fixed] 📅 Improved date range picker month focus and range highlighting behavior.
+- [x] [Fixed] 📅 Ensured itinerary dates follow app locale formatting rules.
+- [ ] [Internal] 📚 Added runbook and support docs for Supabase operational troubleshooting.
+- [ ] [Internal] 🛡️ Updated Netlify secret scan allowlist for public VITE Supabase browser values.

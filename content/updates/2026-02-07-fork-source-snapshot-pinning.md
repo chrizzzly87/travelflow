@@ -11,6 +11,6 @@ summary: "✨ Copying shared trips is now safer and clearer: your copied trip ke
 ---
 
 ## Changes
-- [x] [New feature] 🚀 Copied trips now keep a stable source reference to the exact version you copied from. 📌
-- [x] [Improved] ✨ Copying for inspiration now feels more predictable over time.
-- [ ] [Internal] 🧰 Extended trip metadata and shared-link URL helper support for source snapshot version tracking.
+- [x] [New feature] 📌 Copied trips now keep a stable source reference to the exact version you copied from.
+- [x] [Improved] 🔗 Copying for inspiration now feels more predictable over time.
+- [ ] [Internal] 🗄️ Extended trip metadata and shared-link URL helper support for source snapshot version tracking.

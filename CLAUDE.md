@@ -12,7 +12,8 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Finalize that single release note shortly before PR creation so it reflects the final shipped scope.
 - Add user-facing items as `- [x] [Type] ...`.
 - Add internal/non-marketing items as `- [ ] [Internal] ...`.
-- Start every change line with the required emoji prefix described in `docs/UPDATE_FORMAT.md`.
+- Start every change line with a context-aware emoji prefix described in `docs/UPDATE_FORMAT.md`.
+- Do not map emojis 1:1 by type; choose emojis that match the meaning of each individual bullet.
 - Keep the most important user-facing items first, and fixes after primary highlights.
 - Bump the release `version` whenever publishing a new release entry.
 

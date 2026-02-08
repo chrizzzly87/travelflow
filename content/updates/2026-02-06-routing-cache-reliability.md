@@ -11,6 +11,6 @@ summary: "You now get steadier trip loading and more reliable route stats, so pl
 ---
 
 ## Changes
-- [x] [Improved] ✨ Improved route fallback handling across trip URLs and history navigation.
-- [x] [Improved] ✨ Added caching and distance-status stability improvements for route calculations.
-- [ ] [Internal] 🧰 Refined state guards to reduce duplicate route and history sync edge cases.
+- [x] [Improved] 🧭 Improved route fallback handling across trip URLs and history navigation.
+- [x] [Improved] ⚡ Added caching and distance-status stability improvements for route calculations.
+- [ ] [Internal] 🧠 Refined state guards to reduce duplicate route and history sync edge cases.
