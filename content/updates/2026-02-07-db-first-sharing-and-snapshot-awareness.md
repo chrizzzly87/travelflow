@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-07-db-first-sharing-and-snapshot-awareness
-version: v0.6.0
+version: v0.7.0
 title: "Major shared trip experience upgrade"
 date: 2026-02-07
 published_at: 2026-02-07T22:00:00Z

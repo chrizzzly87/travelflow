@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-07-fork-source-snapshot-pinning
-version: v0.7.0
+version: v0.8.0
 title: "Fork source snapshot pinning"
 date: 2026-02-07
 published_at: 2026-02-07T23:00:00Z

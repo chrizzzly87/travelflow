@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-07-share-link-view-state-replay
-version: v0.5.0
+version: v0.6.0
 title: "Share link persistence and view-state replay"
 date: 2026-02-07
 published_at: 2026-02-07T20:00:00Z
