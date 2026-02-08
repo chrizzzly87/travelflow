@@ -41,7 +41,51 @@ export const buildTripUrl = (tripId: string, versionId?: string | null): string 
     return `${base}?${params.toString()}`;
 };
 
-export const buildShareUrl = (token: string): string => `/s/${encodeURIComponent(token)}`;
+export const buildShareUrl = (token: string, versionId?: string | null): string => {
+    const base = `/s/${encodeURIComponent(token)}`;
+    if (!versionId) return base;
+    const params = new URLSearchParams();
+    params.set('v', versionId);
+    return `${base}?${params.toString()}`;
+};
+
+const isLayoutMode = (value: string | null): value is IViewSettings['layoutMode'] =>
+    value === 'vertical' || value === 'horizontal';
+
+const isTimelineViewMode = (value: string | null): value is IViewSettings['timelineView'] =>
+    value === 'vertical' || value === 'horizontal';
+
+const isMapStyleValue = (value: string | null): value is IViewSettings['mapStyle'] =>
+    value === 'minimal' || value === 'standard' || value === 'dark' || value === 'satellite' || value === 'clean';
+
+const isRouteModeValue = (value: string | null): value is NonNullable<IViewSettings['routeMode']> =>
+    value === 'simple' || value === 'realistic';
+
+export const applyViewSettingsToSearchParams = (
+    params: URLSearchParams,
+    view?: Partial<IViewSettings> | null
+): void => {
+    if (!view) return;
+
+    if (isLayoutMode(view.layoutMode ?? null)) params.set('layout', view.layoutMode);
+    if (isTimelineViewMode(view.timelineView ?? null)) params.set('timelineView', view.timelineView);
+    if (isMapStyleValue(view.mapStyle ?? null)) params.set('mapStyle', view.mapStyle);
+
+    if (isRouteModeValue(view.routeMode ?? null)) params.set('routeMode', view.routeMode);
+    else params.delete('routeMode');
+
+    if (typeof view.showCityNames === 'boolean') params.set('cityNames', view.showCityNames ? '1' : '0');
+    else params.delete('cityNames');
+
+    if (typeof view.zoomLevel === 'number' && Number.isFinite(view.zoomLevel)) params.set('zoom', view.zoomLevel.toFixed(2));
+    else params.delete('zoom');
+
+    if (typeof view.sidebarWidth === 'number' && Number.isFinite(view.sidebarWidth)) params.set('sidebarWidth', String(Math.round(view.sidebarWidth)));
+    else params.delete('sidebarWidth');
+
+    if (typeof view.timelineHeight === 'number' && Number.isFinite(view.timelineHeight)) params.set('timelineHeight', String(Math.round(view.timelineHeight)));
+    else params.delete('timelineHeight');
+};
 
 export const isUuid = (value?: string | null): boolean => {
     if (!value) return false;

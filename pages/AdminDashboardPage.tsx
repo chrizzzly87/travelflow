@@ -5,6 +5,8 @@ const metricTiles = [
     { label: 'Total trips created', value: 'Coming soon' },
     { label: 'Trips per user', value: 'Coming soon' },
     { label: 'Active users (7d)', value: 'Coming soon' },
+    { label: 'Active shared links', value: 'Coming soon' },
+    { label: 'Trips with sharing off', value: 'Coming soon' },
     { label: 'Gemini usage', value: 'Coming soon' },
     { label: 'Google Cloud usage', value: 'Coming soon' },
 ];
