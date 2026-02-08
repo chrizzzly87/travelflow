@@ -73,7 +73,6 @@ const ensureUmamiScript = async (): Promise<boolean> => {
     script.dataset.loaded = 'false';
     script.setAttribute('data-website-id', UMAMI_WEBSITE_ID);
     script.setAttribute('data-auto-track', 'false');
-    script.setAttribute('data-do-not-track', 'true');
 
     scriptLoadPromise = createScriptLoadPromise(script);
     document.head.appendChild(script);
