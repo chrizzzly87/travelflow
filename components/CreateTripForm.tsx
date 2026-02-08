@@ -32,7 +32,20 @@ import { MonthSeasonStrip } from './MonthSeasonStrip';
 import { Checkbox } from './ui/checkbox';
 import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip } from '../types';
-import { addDays, COUNTRIES, generateTripId, getDefaultTripDates, getDaysDifference } from '../utils';
+import {
+    addDays,
+    COUNTRIES,
+    getDestinationMetaLabel,
+    getDestinationOptionByName,
+    getDestinationPromptLabel,
+    getDestinationSeasonCountryName,
+    generateTripId,
+    getDefaultTripDates,
+    getDaysDifference,
+    isIslandDestination,
+    resolveDestinationName,
+    searchDestinationOptions,
+} from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';
@@ -217,7 +230,7 @@ const parseCountries = (value: string): string[] => {
     const seen = new Set<string>();
     const list = value
         .split(',')
-        .map((token) => token.trim())
+        .map((token) => resolveDestinationName(token))
         .filter(Boolean)
         .filter((country) => {
             const key = country.toLocaleLowerCase();
@@ -282,14 +295,17 @@ const SeasonAwareCountryTag: React.FC<{
     countryName: string;
     onRemove: () => void;
 }> = ({ countryName, onRemove }) => {
-    const season = getCountrySeasonByName(countryName);
+    const destination = getDestinationOptionByName(countryName);
+    const season = getCountrySeasonByName(getDestinationSeasonCountryName(countryName));
     const fallback = COUNTRIES.find((country) => country.name === countryName);
+    const metaLabel = getDestinationMetaLabel(countryName);
 
     return (
         <div className="group relative">
             <CountryTag
                 countryName={countryName}
-                flag={season?.flag || fallback?.flag || '🌍'}
+                flag={destination?.flag || season?.flag || fallback?.flag || '🌍'}
+                metaLabel={metaLabel}
                 removable
                 onRemove={onRemove}
             />
@@ -332,6 +348,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const [pace, setPace] = useState('Balanced');
     const [numCities, setNumCities] = useState<number | ''>('');
     const [notes, setNotes] = useState('');
+    const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
 
     // Wizard state.
     const [wizardStep, setWizardStep] = useState<WizardStep>(1);
@@ -358,25 +375,38 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const [wizardSearchPosition, setWizardSearchPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
     const destination = selectedCountries.join(', ');
+    const destinationPrompt = selectedCountries.map((country) => getDestinationPromptLabel(country)).join(', ');
+    const seasonCountryNames = useMemo(() => {
+        const seen = new Set<string>();
+        return selectedCountries
+            .map((country) => getDestinationSeasonCountryName(country))
+            .filter((country) => {
+                const key = country.toLocaleLowerCase();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+    }, [selectedCountries]);
+    const selectedIslandNames = useMemo(
+        () => selectedCountries.filter((country) => isIslandDestination(country)),
+        [selectedCountries]
+    );
+    const hasIslandSelection = selectedIslandNames.length > 0;
     const duration = getDaysDifference(startDate, endDate);
     const wizardDuration = getDaysDifference(wizardStartDate, wizardEndDate);
 
     const wizardCountryMatches = useMemo(() => {
-        const searchTerm = wizardCountrySearch.trim().toLocaleLowerCase();
-        return COUNTRIES
-            .filter((country) => {
-                if (selectedCountries.includes(country.name)) return false;
-                if (!searchTerm) return true;
-                return country.name.toLocaleLowerCase().includes(searchTerm);
-            })
-            .slice(0, 20);
+        return searchDestinationOptions(wizardCountrySearch, {
+            excludeNames: selectedCountries,
+            limit: 20,
+        });
     }, [selectedCountries, wizardCountrySearch]);
 
-    const wizardCommonMonths = useMemo(() => getCommonBestMonths(selectedCountries), [selectedCountries]);
+    const wizardCommonMonths = useMemo(() => getCommonBestMonths(seasonCountryNames), [seasonCountryNames]);
 
     const wizardDurationRecommendation = useMemo(
-        () => getDurationRecommendation(selectedCountries, [...wizardStyles, ...wizardLogistics]),
-        [selectedCountries, wizardStyles, wizardLogistics]
+        () => getDurationRecommendation(seasonCountryNames, [...wizardStyles, ...wizardLogistics]),
+        [seasonCountryNames, wizardStyles, wizardLogistics]
     );
 
     const wizardStepChecks = {
@@ -462,6 +492,11 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
         return () => clearInterval(interval);
     }, [isGenerating]);
+
+    useEffect(() => {
+        if (hasIslandSelection) return;
+        setEnforceIslandOnly(true);
+    }, [hasIslandSelection]);
 
     useLayoutEffect(() => {
         if (!wizardSearchOpen) return;
@@ -568,9 +603,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     };
 
     const addSharedCountry = (countryName: string) => {
+        const resolvedName = resolveDestinationName(countryName);
         setSelectedCountries((current) => {
-            if (current.includes(countryName)) return current;
-            return [...current, countryName];
+            if (current.includes(resolvedName)) return current;
+            return [...current, resolvedName];
         });
         setWizardCountrySearch('');
         setWizardSearchOpen(false);
@@ -600,7 +636,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         });
 
         try {
-            const trip = await generateItinerary(destination, startDate, {
+            const trip = await generateItinerary(destinationPrompt, startDate, {
                 budget,
                 pace,
                 interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
@@ -608,6 +644,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 roundTrip: isRoundTrip,
                 totalDays: duration,
                 numCities: typeof numCities === 'number' ? numCities : undefined,
+                selectedIslandNames,
+                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
             });
             setPreviewTrip(null);
             onTripGenerated(trip);
@@ -630,7 +668,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
         try {
             const trip = await generateWizardItinerary({
-                countries: selectedCountries,
+                countries: selectedCountries.map((country) => getDestinationPromptLabel(country)),
                 startDate: wizardStartDate,
                 endDate: wizardEndDate,
                 roundTrip: wizardRoundTrip,
@@ -642,6 +680,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 idealMonths: monthLabelsFromNumbers(wizardCommonMonths.ideal),
                 shoulderMonths: monthLabelsFromNumbers(wizardCommonMonths.shoulder),
                 recommendedDurationDays: wizardDurationRecommendation.recommended,
+                selectedIslandNames,
+                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
             });
             setPreviewTrip(null);
             onTripGenerated(trip);
@@ -893,6 +933,26 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                                     {showAdvanced && (
                                         <div className="grid grid-cols-2 gap-3 mt-3 animate-in fade-in slide-in-from-top-2">
+                                            {hasIslandSelection && (
+                                                <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                                                    <div className="flex items-start gap-2">
+                                                        <Checkbox
+                                                            id="island-only"
+                                                            className="mt-0.5"
+                                                            checked={enforceIslandOnly}
+                                                            onCheckedChange={(checked) => setEnforceIslandOnly(checked === true)}
+                                                        />
+                                                        <div>
+                                                            <label htmlFor="island-only" className="text-sm font-medium text-amber-900 cursor-pointer select-none">
+                                                                Keep itinerary on selected island(s)
+                                                            </label>
+                                                            <p className="text-xs text-amber-700 mt-0.5">
+                                                                Default is on. Turn this off to allow mainland or nearby non-island stops.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="col-span-2 space-y-1">
                                                 <label className="text-xs font-medium text-gray-500">Specific Cities (Optional)</label>
                                                 <input
@@ -1044,7 +1104,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <div className="space-y-1">
                                         <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                                             <Compass size={16} className="text-accent-600" />
-                                            Select destination countries
+                                            Select destination countries or islands
                                         </div>
                                         <p className="text-xs text-gray-500">These countries are shared automatically with Classic and Surprise Me.</p>
                                     </div>
@@ -1072,7 +1132,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                         openWizardSearch();
                                                     }}
                                                     onFocus={openWizardSearch}
-                                                    placeholder={selectedCountries.length === 0 ? 'Type countries...' : 'Add another country...'}
+                                                    placeholder={selectedCountries.length === 0 ? 'Type countries or islands...' : 'Add another destination...'}
                                                     className="w-full bg-transparent outline-none text-sm text-gray-800 placeholder:text-gray-400"
                                                 />
                                             </div>
@@ -1101,6 +1161,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                                     <span>{country.flag}</span>
                                                                     <span>{country.name}</span>
                                                                 </div>
+                                                                {country.kind === 'island' && country.parentCountryName && (
+                                                                    <div className="text-xs text-gray-500 mt-0.5">Island of {country.parentCountryName}</div>
+                                                                )}
                                                             </div>
                                                             <Plus size={14} className="text-accent-500" />
                                                         </button>
@@ -1217,7 +1280,31 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         <div className="text-xs text-gray-600"><span className="font-semibold text-gray-800">Vibes:</span> {wizardVibes.join(', ') || 'None'}</div>
                                         <div className="text-xs text-gray-600"><span className="font-semibold text-gray-800">Dates:</span> {formatDateRange(wizardStartDate, wizardEndDate)} ({wizardDuration} days)</div>
                                         <div className="text-xs text-gray-600"><span className="font-semibold text-gray-800">Roundtrip:</span> {wizardRoundTrip ? 'Yes' : 'No'}</div>
+                                        {hasIslandSelection && (
+                                            <div className="text-xs text-gray-600"><span className="font-semibold text-gray-800">Island-only mode:</span> {enforceIslandOnly ? 'On' : 'Off'}</div>
+                                        )}
                                         <div className="text-xs text-gray-600"><span className="font-semibold text-gray-800">Duration recommendation:</span> {wizardDurationRecommendation.recommended} days</div>
+
+                                        {hasIslandSelection && (
+                                            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                                <div className="flex items-start gap-2">
+                                                    <Checkbox
+                                                        id="wizard-island-only"
+                                                        className="mt-0.5"
+                                                        checked={enforceIslandOnly}
+                                                        onCheckedChange={(checked) => setEnforceIslandOnly(checked === true)}
+                                                    />
+                                                    <div>
+                                                        <label htmlFor="wizard-island-only" className="text-xs font-semibold text-amber-900 cursor-pointer select-none">
+                                                            Keep route on selected island(s)
+                                                        </label>
+                                                        <p className="text-[11px] text-amber-700 mt-0.5">
+                                                            Turn this off only when mainland or extra islands are intentionally needed.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         <div className="space-y-1.5 text-left pt-1">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
