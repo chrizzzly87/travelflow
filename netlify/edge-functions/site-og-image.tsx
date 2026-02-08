@@ -69,8 +69,26 @@ const FOOTER_PLANE_ICON_URI = svgToDataUri(
   `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='#ffffff' d='${PLANE_GLYPH_PATH}'/><path fill='none' stroke='rgba(255,255,255,0.42)' stroke-width='0.75' d='${PLANE_GLYPH_PATH}'/></svg>`,
 );
 
-const HERO_PLANE_ICON_URI = svgToDataUri(
-  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><defs><filter id='g' x='-50%' y='-50%' width='200%' height='200%'><feDropShadow dx='0' dy='8' stdDeviation='8' flood-color='rgba(255,255,255,0.32)'/></filter></defs><circle cx='80' cy='80' r='62' fill='rgba(255,255,255,0.16)'/><circle cx='80' cy='80' r='48' fill='rgba(255,255,255,0.1)'/><g filter='url(#g)' transform='translate(56 44) scale(2.35) rotate(-8 12 12)'><path fill='#ffffff' d='${PLANE_GLYPH_PATH}'/></g></svg>`,
+const TOPO_CONTOUR_OVERLAY_URI = svgToDataUri(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 630' preserveAspectRatio='none'>
+    <g fill='none' stroke-linecap='round' stroke-linejoin='round'>
+      <path d='M-72 72C0 20 82 18 152 56c74 40 152 44 238 8 84-36 146-34 228 2' stroke='rgba(255,255,255,0.26)' stroke-width='1.2'/>
+      <path d='M-72 118C8 62 92 62 170 98c78 36 160 38 246 2 84-36 150-36 230-2' stroke='rgba(255,255,255,0.22)' stroke-width='1.1'/>
+      <path d='M-72 168C10 112 96 114 178 148c80 34 166 34 256-4 86-36 154-38 234 0' stroke='rgba(255,255,255,0.24)' stroke-width='1.1'/>
+      <path d='M-72 216c84-56 174-58 260-20 86 38 174 38 262 0 84-36 148-36 228-6' stroke='rgba(255,255,255,0.2)' stroke-width='1'/>
+      <path d='M-72 270c90-62 188-62 280-18 88 42 176 40 262-4 82-42 146-44 226-8' stroke='rgba(255,255,255,0.2)' stroke-width='1'/>
+      <path d='M-72 324c94-64 196-64 292-18 94 46 184 42 270-10 80-48 144-52 222-14' stroke='rgba(255,255,255,0.2)' stroke-width='1'/>
+      <path d='M-72 382c98-66 202-66 302-16 98 50 188 44 272-12 76-50 140-56 218-18' stroke='rgba(255,255,255,0.19)' stroke-width='1'/>
+      <path d='M-72 442c102-68 210-70 312-18 100 52 192 46 274-12 74-52 138-60 216-22' stroke='rgba(255,255,255,0.19)' stroke-width='1'/>
+      <path d='M-72 506c106-74 218-76 324-22 100 52 192 44 274-18 70-54 134-62 212-28' stroke='rgba(255,255,255,0.18)' stroke-width='1'/>
+      <path d='M-72 568c112-80 232-84 344-28 104 52 196 42 276-26 66-56 128-68 206-36' stroke='rgba(255,255,255,0.16)' stroke-width='1'/>
+    </g>
+    <g fill='none' stroke-linecap='round' stroke-linejoin='round' stroke='rgba(199,210,254,0.34)'>
+      <path d='M28 86c38-36 92-38 136-4 42 32 94 34 144 0 50-34 110-34 152-2' stroke-width='1.2'/>
+      <path d='M56 266c44-38 100-40 146-4 46 36 102 36 154 0 48-34 106-34 146-2' stroke-width='1.1'/>
+      <path d='M74 454c48-42 108-44 156-6 50 38 108 38 160-2 50-38 108-40 148-8' stroke-width='1.1'/>
+    </g>
+  </svg>`,
 );
 
 export default async (request: Request): Promise<Response> => {
@@ -230,26 +248,24 @@ export default async (request: Request): Promise<Response> => {
                 width: "100%",
                 height: "100%",
                 display: "flex",
+                position: "relative",
                 borderRadius: 28,
                 overflow: "hidden",
                 border: "1px solid rgba(148, 163, 184, 0.35)",
                 background:
                   `radial-gradient(circle at 36% 26%, ${ACCENT_200} 0%, rgba(199,210,254,0.2) 22%, transparent 54%), radial-gradient(circle at 72% 76%, rgba(99,102,241,0.36), transparent 56%), linear-gradient(145deg, ${ACCENT_500} 0%, ${ACCENT_600} 48%, ${ACCENT_700} 100%)`,
-                alignItems: "center",
-                justifyContent: "center",
                 boxShadow: "inset 0 0 120px rgba(15,23,42,0.18)",
               }}
             >
               <img
-                src={HERO_PLANE_ICON_URI}
-                alt="Plane icon"
+                src={TOPO_CONTOUR_OVERLAY_URI}
+                alt="Topographic contours"
                 style={{
-                  width: 236,
-                  height: 236,
-                  opacity: 0.98,
+                  width: "100%",
+                  height: "100%",
                   display: "flex",
-                  filter: "drop-shadow(0 16px 32px rgba(15,23,42,0.24))",
-                  transform: "translate(4px, -2px)",
+                  objectFit: "cover",
+                  opacity: 0.72,
                 }}
               />
             </div>
