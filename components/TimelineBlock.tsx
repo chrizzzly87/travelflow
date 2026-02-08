@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { ITimelineItem, ActivityType } from '../types';
 import { getActivityColorByTypes, pickPrimaryActivityType } from '../utils';
-import { Maximize, Minimize, ArrowUpDown } from 'lucide-react';
+import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 
@@ -220,7 +220,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                     className={`bg-white text-accent-600 shadow-md border border-gray-200 p-1 rounded-full transition-transform ${canEdit ? 'hover:bg-accent-50 hover:scale-110' : 'cursor-not-allowed opacity-60'}`}
                     title={swapSelectedLabel || 'Reverse selected cities'}
                 >
-                    <ArrowUpDown size={12} strokeWidth={3} />
+                    {vertical ? <ArrowUpDown size={12} strokeWidth={3} /> : <ArrowLeftRight size={12} strokeWidth={3} />}
                 </button>
              )}
              {onForceFill && (forceFillMode || hasGapOrOverlap) && (

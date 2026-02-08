@@ -1753,6 +1753,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             onClose={clearSelection}
                                             onApplyOrder={applySelectedCityOrder}
                                             onReverse={handleReverseSelectedCities}
+                                            timelineView={timelineView}
                                             readOnly={readOnly}
                                         />
                                     ) : (
@@ -1882,27 +1883,28 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onClose={clearSelection}
                                                 onApplyOrder={applySelectedCityOrder}
                                                 onReverse={handleReverseSelectedCities}
-                                            readOnly={readOnly}
-                                        />
-                                    ) : (
-                                        <DetailsPanel 
-                                            item={trip.items.find(i => i.id === selectedItemId) || null}
-                                            isOpen={!!selectedItemId}
-                                            onClose={clearSelection}
-                                            onUpdate={handleUpdateItem}
-                                            onBatchUpdate={handleBatchItemUpdate}
-                                            onDelete={handleDeleteItem}
-                                            tripStartDate={trip.startDate}
-                                            tripItems={trip.items}
-                                            routeMode={routeMode}
-                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                            onForceFill={handleForceFill}
-                                            forceFillMode={selectedCityForceFill?.mode}
-                                            forceFillLabel={selectedCityForceFill?.label}
-                                            variant="sidebar"
-                                            readOnly={readOnly}
-                                        />
-                                    )}
+                                                timelineView={timelineView}
+                                                readOnly={readOnly}
+                                            />
+                                        ) : (
+                                            <DetailsPanel 
+                                                item={trip.items.find(i => i.id === selectedItemId) || null}
+                                                isOpen={!!selectedItemId}
+                                                onClose={clearSelection}
+                                                onUpdate={handleUpdateItem}
+                                                onBatchUpdate={handleBatchItemUpdate}
+                                                onDelete={handleDeleteItem}
+                                                tripStartDate={trip.startDate}
+                                                tripItems={trip.items}
+                                                routeMode={routeMode}
+                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                                onForceFill={handleForceFill}
+                                                forceFillMode={selectedCityForceFill?.mode}
+                                                forceFillLabel={selectedCityForceFill?.label}
+                                                variant="sidebar"
+                                                readOnly={readOnly}
+                                            />
+                                        )}
                                         <div
                                             className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
                                             onMouseDown={(e) => startResizing('details', e.clientX)}

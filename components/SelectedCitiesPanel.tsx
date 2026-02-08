@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ITimelineItem } from '../types';
-import { ArrowDown, ArrowUp, ArrowUpDown, X } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, X } from 'lucide-react';
 
 interface SelectedCitiesPanelProps {
     selectedCities: ITimelineItem[];
     onClose: () => void;
     onApplyOrder: (orderedCityIds: string[]) => void;
     onReverse: () => void;
+    timelineView?: 'horizontal' | 'vertical';
     readOnly?: boolean;
 }
 
@@ -15,10 +16,12 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
     onClose,
     onApplyOrder,
     onReverse,
+    timelineView = 'horizontal',
     readOnly = false
 }) => {
     const canEdit = !readOnly;
     const [orderedCityIds, setOrderedCityIds] = useState<string[]>([]);
+    const ReverseIcon = timelineView === 'horizontal' ? ArrowLeftRight : ArrowUpDown;
 
     useEffect(() => {
         setOrderedCityIds(selectedCities.map(city => city.id));
@@ -67,7 +70,7 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                     className={`px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 flex items-center gap-1.5 ${canEdit ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
                     title="Reverse selected city order"
                 >
-                    <ArrowUpDown size={14} />
+                    <ReverseIcon size={14} />
                     Reverse Selected
                 </button>
                 <button
