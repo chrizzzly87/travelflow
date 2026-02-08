@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ICountryInfo } from '../types';
 import { Banknote, Globe, Zap, FileText, ExternalLink, ArrowRightLeft, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CountryInfoProps {
     info: ICountryInfo;
+    isExpanded?: boolean;
+    onExpandedChange?: (expanded: boolean) => void;
 }
 
-export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
+export const CountryInfo: React.FC<CountryInfoProps> = ({ info, isExpanded: isExpandedProp, onExpandedChange }) => {
     // Converter State with Persistence
     const [amount, setAmount] = useState<number>(() => {
         if (typeof window === 'undefined') return 1;
@@ -21,11 +23,19 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
         return (saved === 'eurToLocal' || saved === 'localToEur') ? saved : 'eurToLocal';
     });
 
-    const [isExpanded, setIsExpanded] = useState(() => {
+    const [localIsExpanded, setLocalIsExpanded] = useState(() => {
         if (typeof window === 'undefined') return true;
         const saved = localStorage.getItem('tf_country_info_expanded');
         return saved !== null ? saved === 'true' : true;
     });
+    const isExpanded = typeof isExpandedProp === 'boolean' ? isExpandedProp : localIsExpanded;
+
+    const setExpanded = useCallback((expanded: boolean) => {
+        if (typeof isExpandedProp !== 'boolean') {
+            setLocalIsExpanded(expanded);
+        }
+        onExpandedChange?.(expanded);
+    }, [isExpandedProp, onExpandedChange]);
 
     // Persistence Effects
     useEffect(() => {
@@ -48,12 +58,12 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm mb-6 min-w-[300px] transition-all duration-300 ease-in-out">
             <div 
                 className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => setExpanded(!isExpanded)}
             >
                 <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider flex items-center gap-2">
                     <Globe size={16} className="text-accent-600"/> Destination Info
                 </h3>
-                <button className="text-gray-400 hover:text-gray-600">
+                <button type="button" className="text-gray-400 hover:text-gray-600">
                     {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
             </div>

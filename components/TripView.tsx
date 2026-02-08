@@ -268,6 +268,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
        }
        return true;
     });
+    const [destinationInfoExpanded, setDestinationInfoExpanded] = useState<boolean>(() => {
+       if (typeof initialViewSettings?.destinationInfoExpanded === 'boolean') return initialViewSettings.destinationInfoExpanded;
+       if (typeof window !== 'undefined') {
+           const stored = localStorage.getItem('tf_country_info_expanded');
+           if (stored !== null) return stored === 'true';
+       }
+       return true;
+    });
 
     // Layout State
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
@@ -493,6 +501,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
     useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
     useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
+    useEffect(() => { localStorage.setItem('tf_country_info_expanded', String(destinationInfoExpanded)); }, [destinationInfoExpanded]);
     useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
 
     // Update URL with View State
@@ -504,6 +513,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 mapStyle,
                 routeMode,
                 showCityNames,
+                destinationInfoExpanded,
                 zoomLevel,
                 sidebarWidth,
                 timelineHeight
@@ -527,7 +537,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             }
         }, 500);
         return () => clearTimeout(timeoutId);
-    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
+    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, destinationInfoExpanded, onViewSettingsChange]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -535,10 +545,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         mapStyle,
         routeMode,
         showCityNames,
+        destinationInfoExpanded,
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, destinationInfoExpanded, zoomLevel, sidebarWidth, timelineHeight]);
 
     useEffect(() => {
         if (!initialViewSettings) return;
@@ -563,6 +574,9 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
         setShowCityNames(desiredShowCityNames);
+        if (typeof initialViewSettings.destinationInfoExpanded === 'boolean') {
+            setDestinationInfoExpanded(initialViewSettings.destinationInfoExpanded);
+        }
 
         prevViewRef.current = initialViewSettings;
     }, [initialViewSettings, currentViewSettings]);
@@ -898,6 +912,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
+        if (prev.destinationInfoExpanded !== destinationInfoExpanded) {
+            const prevState = (prev.destinationInfoExpanded ?? true) ? 'open' : 'closed';
+            const nextState = destinationInfoExpanded ? 'open' : 'closed';
+            changes.push(`Destination info: ${prevState} → ${nextState}`);
+        }
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
@@ -911,7 +930,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, destinationInfoExpanded, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!requireEdit()) return;
@@ -1689,7 +1708,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                     {trip.countryInfo && (
                                         <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                            <CountryInfo info={trip.countryInfo} />
+                                            <CountryInfo
+                                                info={trip.countryInfo}
+                                                isExpanded={destinationInfoExpanded}
+                                                onExpandedChange={setDestinationInfoExpanded}
+                                            />
                                         </div>
                                     )}
                                     <div className="flex-1 w-full overflow-hidden relative min-w-0">
