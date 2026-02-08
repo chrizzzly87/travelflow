@@ -154,6 +154,8 @@ export interface GenerateOptions {
     budget?: string;
     pace?: string;
     interests?: string[];
+    selectedIslandNames?: string[];
+    enforceIslandOnly?: boolean;
 }
 
 export interface WizardGenerateOptions {
@@ -169,6 +171,8 @@ export interface WizardGenerateOptions {
     idealMonths?: string[];
     shoulderMonths?: string[];
     recommendedDurationDays?: number;
+    selectedIslandNames?: string[];
+    enforceIslandOnly?: boolean;
 }
 
 export interface SurpriseGenerateOptions {
@@ -210,6 +214,33 @@ const BASE_ITINERARY_RULES_PROMPT = `
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
     `;
+
+const buildIslandConstraintPrompt = (
+    selectedIslandNames: string[] | undefined,
+    enforceIslandOnly: boolean | undefined
+): string => {
+    const islands = (selectedIslandNames || []).map((name) => name.trim()).filter(Boolean);
+    if (islands.length === 0) return '';
+
+    let prompt = `Selected island destinations: ${islands.join(', ')}. `;
+    if (enforceIslandOnly !== false) {
+        prompt += `
+        Island-only mode is ON.
+        - Treat selected islands as destination boundaries.
+        - If exactly one island is selected, all city/stops MUST stay on that same island.
+        - If multiple islands are selected, you may use one or more selected islands, but do NOT add mainland or non-selected islands.
+        - Do NOT include city/stops outside the selected island set.
+        `;
+        return prompt;
+    }
+
+    prompt += `
+    Island-only mode is OFF.
+    - Prioritize the selected islands first.
+    - Nearby mainland or non-selected islands are allowed only if they clearly improve route quality.
+    `;
+    return prompt;
+};
 
 const buildTripFromModelData = (
     data: any,
@@ -375,6 +406,7 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
         if (options.budget) detailedPrompt += ` Budget level: ${options.budget}. `;
         if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
         if (options.interests && options.interests.length > 0) detailedPrompt += ` Focus on these interests: ${options.interests.join(", ")}. `;
+        detailedPrompt += buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly);
     }
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
@@ -384,10 +416,10 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
 export const generateWizardItinerary = async (options: WizardGenerateOptions): Promise<ITrip> => {
     const countries = options.countries.map((country) => country.trim()).filter(Boolean);
     if (countries.length === 0) {
-        throw new Error('Please select at least one country for the wizard flow.');
+        throw new Error('Please select at least one destination for the wizard flow.');
     }
 
-    let detailedPrompt = `Plan a detailed, realistic multi-stop travel itinerary for these destination countries: ${countries.join(', ')}. `;
+    let detailedPrompt = `Plan a detailed, realistic multi-stop travel itinerary for these destinations: ${countries.join(', ')}. `;
     detailedPrompt += `This request comes from a guided travel wizard, so preference signals are important and should influence route choice, stop durations, and activity suggestions. `;
 
     if (options.roundTrip) {
@@ -422,6 +454,7 @@ export const generateWizardItinerary = async (options: WizardGenerateOptions): P
     if (options.notes && options.notes.trim()) {
         detailedPrompt += `Additional user notes: ${options.notes.trim()}. `;
     }
+    detailedPrompt += buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly);
 
     detailedPrompt += `
       Wizard-specific constraints:

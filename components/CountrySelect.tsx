@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { COUNTRIES } from '../utils';
+import { getDestinationMetaLabel, getDestinationOptionByName, getDestinationSeasonCountryName, resolveDestinationName, searchDestinationOptions } from '../utils';
 import { MapPin, Search, Plus } from 'lucide-react';
 import { CountryTag } from './CountryTag';
+import { IdealTravelTimeline } from './IdealTravelTimeline';
+import { getCountrySeasonByName } from '../data/countryTravelData';
 
 interface CountrySelectProps {
     value: string;
@@ -18,12 +20,11 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
     const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
     // Parse existing value into array (comma separated)
-    const selectedCountries = value ? value.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const selectedCountries = value
+        ? value.split(',').map((item) => resolveDestinationName(item)).filter(Boolean)
+        : [];
 
-    const filtered = COUNTRIES.filter(c => 
-        c.name.toLowerCase().includes(search.toLowerCase()) && 
-        !selectedCountries.includes(c.name)
-    );
+    const filtered = searchDestinationOptions(search, { excludeNames: selectedCountries, limit: 30 });
 
     const updateDropdownPosition = useCallback(() => {
         if (!wrapperRef.current) return;
@@ -97,15 +98,24 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
             >
                 {/* Selected Tags */}
                 {selectedCountries.map((countryName) => {
-                    const countryData = COUNTRIES.find(c => c.name === countryName);
+                    const destination = getDestinationOptionByName(countryName);
+                    const season = getCountrySeasonByName(getDestinationSeasonCountryName(countryName));
+                    const metaLabel = getDestinationMetaLabel(countryName);
                     return (
-                        <span key={countryName} className="animate-in fade-in zoom-in duration-200">
+                        <span key={countryName} className="animate-in fade-in zoom-in duration-200 group relative">
                             <CountryTag
                                 countryName={countryName}
-                                flag={countryData?.flag || '🌍'}
+                                flag={destination?.flag || '🌍'}
+                                metaLabel={metaLabel}
                                 removable={!disabled}
                                 onRemove={() => removeCountry(countryName)}
                             />
+                            {season && (
+                                <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
+                                    <div className="text-xs font-semibold text-gray-900">Ideal travel time</div>
+                                    <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
+                                </div>
+                            )}
                         </span>
                     );
                 })}
@@ -120,7 +130,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             setSearch(e.target.value);
                             openDropdown();
                         }}
-                        placeholder={selectedCountries.length === 0 ? "Search countries..." : "Add another..."}
+                        placeholder={selectedCountries.length === 0 ? "Search countries or islands..." : "Add another destination..."}
                         className="bg-transparent border-none outline-none w-full text-gray-800 font-medium placeholder-gray-400 text-sm h-8"
                         onFocus={openDropdown}
                     />
@@ -138,21 +148,26 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                         width: dropdownPosition.width,
                     }}
                 >
-                    {filtered.length > 0 ? filtered.map(country => (
+                    {filtered.length > 0 ? filtered.map((country) => (
                         <div 
                             key={country.code}
                             className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group"
                             onClick={() => addCountry(country.name)}
                         >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
                                 <span className="text-2xl">{country.flag}</span>
-                                <span className="font-medium text-gray-700">{country.name}</span>
+                                <div className="min-w-0">
+                                    <div className="font-medium text-gray-700 truncate">{country.name}</div>
+                                    {country.kind === 'island' && country.parentCountryName && (
+                                        <div className="text-xs text-gray-500 truncate">Island of {country.parentCountryName}</div>
+                                    )}
+                                </div>
                             </div>
                             <Plus size={16} className="text-gray-300 group-hover:text-accent-500" />
                         </div>
                     )) : (
                         <div className="p-4 text-center text-gray-400 text-sm">
-                            {search ? "No matching countries" : "Type to search"}
+                            {search ? "No matching destinations" : "Type to search"}
                         </div>
                     )}
                 </div>,

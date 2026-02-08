@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
@@ -2371,7 +2373,22 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 </div>
                                 <div className="px-6 py-5">
                                     {latestInAppRelease.summary && (
-                                        <p className="text-sm leading-6 text-slate-700">{latestInAppRelease.summary}</p>
+                                        <div className="text-sm leading-6 text-slate-700">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    p: ({ node, ...props }) => <p {...props} className="m-0" />,
+                                                    a: ({ node, ...props }) => (
+                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                                    ),
+                                                    code: ({ node, ...props }) => (
+                                                        <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                    ),
+                                                }}
+                                            >
+                                                {latestInAppRelease.summary}
+                                            </ReactMarkdown>
+                                        </div>
                                     )}
                                     {latestReleaseGroups.length > 0 && (
                                         <div className="mt-3 space-y-3">
@@ -2380,7 +2397,22 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                     <ReleasePill item={group.items[0]} />
                                                     <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
                                                         {group.items.map((item, itemIndex) => (
-                                                            <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>{item.text}</li>
+                                                            <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
+                                                                <ReactMarkdown
+                                                                    remarkPlugins={[remarkGfm]}
+                                                                    components={{
+                                                                        p: ({ node, ...props }) => <p {...props} className="m-0" />,
+                                                                        a: ({ node, ...props }) => (
+                                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                                                        ),
+                                                                        code: ({ node, ...props }) => (
+                                                                            <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                                        ),
+                                                                    }}
+                                                                >
+                                                                    {item.text}
+                                                                </ReactMarkdown>
+                                                            </li>
                                                         ))}
                                                     </ul>
                                                 </div>

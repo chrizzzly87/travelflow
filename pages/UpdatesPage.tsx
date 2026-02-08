@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
 import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -69,7 +71,24 @@ export const UpdatesPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {release.summary && <p className="mt-3 max-w-[62ch] text-base leading-7 text-slate-600">{release.summary}</p>}
+                            {release.summary && (
+                                <div className="mt-3 max-w-[62ch] text-base leading-7 text-slate-600">
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            p: ({ node, ...props }) => <p {...props} className="m-0" />,
+                                            a: ({ node, ...props }) => (
+                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                            ),
+                                            code: ({ node, ...props }) => (
+                                                <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                            ),
+                                        }}
+                                    >
+                                        {release.summary}
+                                    </ReactMarkdown>
+                                </div>
+                            )}
 
                             <div className="mt-4 space-y-4">
                                 {groupedItems.map((group, groupIndex) => (
@@ -77,7 +96,22 @@ export const UpdatesPage: React.FC = () => {
                                         <ReleasePill item={group.items[0]} />
                                         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
                                             {group.items.map((item, itemIndex) => (
-                                                <li key={`${release.id}-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>{item.text}</li>
+                                                <li key={`${release.id}-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            p: ({ node, ...props }) => <p {...props} className="m-0" />,
+                                                            a: ({ node, ...props }) => (
+                                                                <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
+                                                            ),
+                                                            code: ({ node, ...props }) => (
+                                                                <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
+                                                            ),
+                                                        }}
+                                                    >
+                                                        {item.text}
+                                                    </ReactMarkdown>
+                                                </li>
                                             ))}
                                         </ul>
                                     </div>

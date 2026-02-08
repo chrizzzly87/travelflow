@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 interface CountryTagProps {
     countryName: string;
     flag?: string;
+    metaLabel?: string;
     onRemove?: () => void;
     removable?: boolean;
     size?: 'sm' | 'md';
@@ -13,6 +14,7 @@ interface CountryTagProps {
 export const CountryTag: React.FC<CountryTagProps> = ({
     countryName,
     flag = '🌍',
+    metaLabel,
     onRemove,
     removable = false,
     size = 'md',
@@ -29,7 +31,10 @@ export const CountryTag: React.FC<CountryTagProps> = ({
             ].join(' ').trim()}
         >
             <span>{flag}</span>
-            <span>{countryName}</span>
+            <span className={metaLabel && !isSmall ? 'flex flex-col leading-tight' : ''}>
+                <span>{countryName}</span>
+                {metaLabel && !isSmall && <span className="text-[10px] font-medium text-gray-500">{metaLabel}</span>}
+            </span>
             {removable && (
                 <button
                     type="button"
