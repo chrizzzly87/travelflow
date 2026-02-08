@@ -12,6 +12,7 @@ create table if not exists public.trips (
   data jsonb not null,
   view_settings jsonb,
   is_favorite boolean not null default false,
+  sharing_enabled boolean not null default true,
   forked_from_trip_id text,
   forked_from_share_token text,
   forked_at timestamptz default now(),
@@ -89,6 +90,9 @@ create table if not exists public.subscriptions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Forward-compatible schema upgrades
+alter table public.trips add column if not exists sharing_enabled boolean not null default true;
 
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
@@ -460,9 +464,20 @@ set search_path = public, extensions
 as $$
 declare
   v_token text;
+  v_existing_token text;
+  v_existing_share_id uuid;
 begin
   if p_mode not in ('view', 'edit') then
     raise exception 'Invalid share mode';
+  end if;
+
+  if exists (
+    select 1 from public.trips t
+    where t.id = p_trip_id
+      and t.owner_id = auth.uid()
+      and coalesce(t.sharing_enabled, true) = false
+  ) then
+    raise exception 'Sharing is disabled for this trip';
   end if;
 
   if not exists (
@@ -470,6 +485,21 @@ begin
     where t.id = p_trip_id and t.owner_id = auth.uid()
   ) then
     raise exception 'Not allowed';
+  end if;
+
+  select s.token, s.id
+    into v_existing_token, v_existing_share_id
+    from public.trip_shares s
+   where s.trip_id = p_trip_id
+     and s.mode = p_mode
+     and s.revoked_at is null
+     and (s.expires_at is null or s.expires_at > now())
+   order by s.created_at desc
+   limit 1;
+
+  if v_existing_token is not null then
+    return query select v_existing_token, p_mode, v_existing_share_id;
+    return;
   end if;
 
   v_token := encode(gen_random_bytes(9), 'hex');
@@ -482,20 +512,104 @@ begin
 end;
 $$;
 
+drop function if exists public.get_shared_trip(text);
 create or replace function public.get_shared_trip(p_token text)
-returns table(trip_id text, data jsonb, view_settings jsonb, mode text, allow_copy boolean)
+returns table(
+  trip_id text,
+  data jsonb,
+  view_settings jsonb,
+  mode text,
+  allow_copy boolean,
+  latest_version_id uuid
+)
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
   return query
-  select t.id, t.data, t.view_settings, s.mode, s.allow_copy
+  select
+    t.id,
+    t.data,
+    t.view_settings,
+    s.mode,
+    s.allow_copy,
+    (
+      select tv.id
+      from public.trip_versions tv
+      where tv.trip_id = t.id
+      order by tv.created_at desc
+      limit 1
+    ) as latest_version_id
     from public.trip_shares s
     join public.trips t on t.id = s.trip_id
    where s.token = p_token
      and s.revoked_at is null
      and (s.expires_at is null or s.expires_at > now());
+end;
+$$;
+
+drop function if exists public.get_shared_trip_version(text, uuid);
+create or replace function public.get_shared_trip_version(
+  p_token text,
+  p_version_id uuid
+)
+returns table(
+  trip_id text,
+  data jsonb,
+  view_settings jsonb,
+  mode text,
+  allow_copy boolean,
+  version_id uuid,
+  latest_version_id uuid
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_trip_id text;
+  v_mode text;
+  v_allow_copy boolean;
+  v_latest_version_id uuid;
+begin
+  select
+    s.trip_id,
+    s.mode,
+    s.allow_copy,
+    (
+      select tv.id
+      from public.trip_versions tv
+      where tv.trip_id = s.trip_id
+      order by tv.created_at desc
+      limit 1
+    )
+    into v_trip_id, v_mode, v_allow_copy, v_latest_version_id
+    from public.trip_shares s
+   where s.token = p_token
+     and s.revoked_at is null
+     and (s.expires_at is null or s.expires_at > now());
+
+  if v_trip_id is null then
+    raise exception 'Invalid or expired share token';
+  end if;
+
+  return query
+  select
+    v.trip_id,
+    v.data,
+    v.view_settings,
+    v_mode,
+    v_allow_copy,
+    v.id,
+    v_latest_version_id
+  from public.trip_versions v
+  where v.id = p_version_id
+    and v.trip_id = v_trip_id;
+
+  if not found then
+    raise exception 'Version not found for share token';
+  end if;
 end;
 $$;
 
@@ -555,6 +669,7 @@ $$;
 grant usage on schema public to anon, authenticated;
 grant execute on function public.create_share_token(text, text, boolean) to anon, authenticated;
 grant execute on function public.get_shared_trip(text) to anon, authenticated;
+grant execute on function public.get_shared_trip_version(text, uuid) to anon, authenticated;
 grant execute on function public.update_shared_trip(text, jsonb, jsonb, text) to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, text, text) to anon, authenticated;
 grant execute on function public.add_trip_version(text, jsonb, jsonb, text) to anon, authenticated;

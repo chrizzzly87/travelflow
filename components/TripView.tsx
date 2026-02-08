@@ -11,13 +11,13 @@ import { PrintLayout } from './PrintLayout';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
-import { 
-    Pencil, Share2, Folder, Printer, Calendar, List, 
+import {
+    Pencil, Share2, Folder, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Layout, Columns, Rows, Plus, History, Star, Trash2, Info
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
-import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbUpsertTrip, ensureDbSession } from '../services/dbService';
+import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
 
@@ -110,6 +110,24 @@ const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
+const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
+
+const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
+
+const readStoredShareLinks = (tripId: string): Partial<Record<ShareMode, string>> => {
+    if (typeof window === 'undefined') return {};
+    try {
+        const raw = window.localStorage.getItem(getShareLinksStorageKey(tripId));
+        if (!raw) return {};
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const links: Partial<Record<ShareMode, string>> = {};
+        if (typeof parsed.view === 'string' && parsed.view.trim().length > 0) links.view = parsed.view;
+        if (typeof parsed.edit === 'string' && parsed.edit.trim().length > 0) links.edit = parsed.edit;
+        return links;
+    } catch {
+        return {};
+    }
+};
 
 const parseTripStartDate = (value: string): Date => {
     if (!value) return new Date();
@@ -176,10 +194,14 @@ interface TripViewProps {
     readOnly?: boolean;
     canShare?: boolean;
     shareStatus?: ShareMode;
+    shareSnapshotMeta?: {
+        hasNewer: boolean;
+        latestUrl: string;
+    };
     onCopyTrip?: () => void;
 }
 
-export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en', readOnly = false, canShare = true, shareStatus, onCopyTrip }) => {
+export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en', readOnly = false, canShare = true, shareStatus, shareSnapshotMeta, onCopyTrip }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const tripRef = useRef(trip);
@@ -461,7 +483,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [shareMode, setShareMode] = useState<ShareMode>('view');
-    const [shareUrl, setShareUrl] = useState<string | null>(null);
+    const [shareUrlsByMode, setShareUrlsByMode] = useState<Partial<Record<ShareMode, string>>>(() => readStoredShareLinks(trip.id));
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
 
     // Persistence
@@ -497,12 +519,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             // Let's rely on parent if provided, otherwise fallback to local history replace.
             if (!onViewSettingsChange) {
                 const url = new URL(window.location.href);
-                url.searchParams.set('layout', layoutMode);
-                url.searchParams.set('zoom', zoomLevel.toFixed(2));
-                url.searchParams.set('mapStyle', mapStyle);
-                url.searchParams.set('timelineView', timelineView);
-                url.searchParams.set('routeMode', routeMode);
-                url.searchParams.set('cityNames', showCityNames ? '1' : '0');
+                applyViewSettingsToSearchParams(url.searchParams, settings);
                 if (viewMode === 'print') url.searchParams.set('mode', 'print');
                 else url.searchParams.delete('mode');
                 window.history.replaceState({}, '', url.toString());
@@ -540,14 +557,27 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (initialViewSettings.routeMode) setRouteMode(initialViewSettings.routeMode);
         if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
         if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
-        if (initialViewSettings.zoomLevel) setZoomLevel(initialViewSettings.zoomLevel);
-        if (initialViewSettings.sidebarWidth) setSidebarWidth(initialViewSettings.sidebarWidth);
-        if (initialViewSettings.timelineHeight) setTimelineHeight(initialViewSettings.timelineHeight);
+        if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
+        if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
+        if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
         setShowCityNames(desiredShowCityNames);
 
         prevViewRef.current = initialViewSettings;
     }, [initialViewSettings, currentViewSettings]);
+
+    useEffect(() => {
+        setShareUrlsByMode(readStoredShareLinks(trip.id));
+    }, [trip.id]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.setItem(getShareLinksStorageKey(trip.id), JSON.stringify(shareUrlsByMode));
+        } catch (e) {
+            // ignore storage issues
+        }
+    }, [trip.id, shareUrlsByMode]);
 
     const currentUrl = location.pathname + location.search;
 
@@ -600,7 +630,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (trip.forkedFromShareToken) {
             return {
                 label: 'Copied from shared trip',
-                url: buildShareUrl(trip.forkedFromShareToken),
+                url: buildShareUrl(trip.forkedFromShareToken, trip.forkedFromShareVersionId ?? null),
             };
         }
         if (trip.forkedFromTripId) {
@@ -610,7 +640,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             };
         }
         return null;
-    }, [trip.forkedFromShareToken, trip.forkedFromTripId]);
+    }, [trip.forkedFromShareToken, trip.forkedFromShareVersionId, trip.forkedFromTripId]);
 
     const copyToClipboard = useCallback(async (value: string) => {
         if (navigator?.clipboard?.writeText) {
@@ -636,6 +666,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
     }, [latestInAppRelease]);
 
+    const activeShareUrl = shareUrlsByMode[shareMode] ?? null;
+
     const handleShare = useCallback(async () => {
         if (!canShare) return;
         if (!DB_ENABLED) {
@@ -649,9 +681,32 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             }
             return;
         }
-        setShareUrl(null);
         setIsShareOpen(true);
-    }, [canShare, copyToClipboard, showToast]);
+        void (async () => {
+            const shares = await dbListTripShares(trip.id);
+            if (shares.length === 0) return;
+            const mapped: Partial<Record<ShareMode, string>> = {};
+            shares.forEach((share) => {
+                if (!share.isActive) return;
+                if (mapped[share.mode]) return;
+                mapped[share.mode] = new URL(buildShareUrl(share.token), window.location.origin).toString();
+            });
+            if (Object.keys(mapped).length > 0) {
+                setShareUrlsByMode(prev => ({ ...prev, ...mapped }));
+            }
+        })();
+    }, [canShare, copyToClipboard, showToast, trip.id]);
+
+    const handleCopyShareLink = useCallback(async () => {
+        if (!activeShareUrl) return;
+        try {
+            await copyToClipboard(activeShareUrl);
+            showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
+        } catch (e) {
+            showToast('Could not copy link', { tone: 'remove', title: 'Share link' });
+            console.error('Copy failed', e);
+        }
+    }, [activeShareUrl, copyToClipboard, showToast]);
 
     const handleGenerateShare = useCallback(async () => {
         if (!DB_ENABLED) return;
@@ -676,7 +731,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 return;
             }
             const url = new URL(buildShareUrl(result.token), window.location.origin).toString();
-            setShareUrl(url);
+            setShareUrlsByMode(prev => ({ ...prev, [shareMode]: url }));
             await copyToClipboard(url);
             showToast('Link copied to clipboard', { tone: 'info', title: 'Share link' });
         } catch (e) {
@@ -1603,6 +1658,25 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     </div>
                 )}
 
+                {shareSnapshotMeta && (
+                    <div className="px-4 sm:px-6 py-2 border-b border-blue-200 bg-blue-50 text-blue-900 text-xs flex items-center justify-between gap-3">
+                        <span>
+                            {shareSnapshotMeta.hasNewer
+                                ? 'You are viewing an older snapshot. This trip has newer updates.'
+                                : 'You are viewing a snapshot version of this shared trip.'}
+                        </span>
+                        {shareSnapshotMeta.hasNewer && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(shareSnapshotMeta.latestUrl)}
+                                className="px-3 py-1 rounded-md bg-blue-100 text-blue-900 text-xs font-semibold hover:bg-blue-200"
+                            >
+                                Open latest
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
                      <div className={`w-full h-full flex ${layoutMode === 'horizontal' ? 'flex-row' : 'flex-col'}`}>
@@ -1952,14 +2026,23 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
                                         </span>
                                     </label>
-                                    {shareUrl && (
+                                    {activeShareUrl && (
                                         <div className="mt-2">
                                             <div className="text-xs font-semibold text-gray-600 mb-1">Share link</div>
-                                            <input
-                                                value={shareUrl}
-                                                readOnly
-                                                className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50"
-                                            />
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    value={activeShareUrl}
+                                                    readOnly
+                                                    className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCopyShareLink}
+                                                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                >
+                                                    Copy
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -1975,7 +2058,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         disabled={isGeneratingShare}
                                         className={`px-4 py-2 rounded-lg text-sm font-semibold text-white ${isGeneratingShare ? 'bg-indigo-300' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                                     >
-                                        {isGeneratingShare ? 'Creating…' : 'Generate link'}
+                                        {isGeneratingShare ? 'Creating…' : (activeShareUrl ? 'Create new link' : 'Generate link')}
                                     </button>
                                 </div>
                             </div>

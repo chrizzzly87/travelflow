@@ -53,6 +53,7 @@ where proname in (
   'add_trip_version',
   'create_share_token',
   'get_shared_trip',
+  'get_shared_trip_version',
   'update_shared_trip'
 )
 order by proname;
@@ -122,8 +123,9 @@ Share path:
 1. `rpc('create_share_token', ...)`.
 2. Open share URL `/s/:token`.
 3. Load shared data via `rpc('get_shared_trip', ...)`.
-4. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
-5. In `view` mode, editing controls are disabled; copy creates a new owned trip.
+4. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
+5. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
+6. In `view` mode, editing controls are disabled; copy creates a new owned trip.
 
 ## Migration Behavior (LocalStorage -> DB)
 
@@ -279,4 +281,3 @@ window.tfSetHistoryDebug(true);
 Authoritative SQL source:
 
 - `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/docs/supabase.sql`
-

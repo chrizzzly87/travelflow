@@ -19,7 +19,7 @@ import { CookieConsentBanner } from './components/marketing/CookieConsentBanner'
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
+import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
 import { AppDialogProvider } from './components/AppDialogProvider';
 
 const createLocalHistoryEntry = (
@@ -187,6 +187,8 @@ const SharedTripLoader = ({
     const [shareMode, setShareMode] = useState<'view' | 'edit'>('view');
     const [allowCopy, setAllowCopy] = useState(true);
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
+    const [snapshotState, setSnapshotState] = useState<{ hasNewer: boolean; latestUrl: string } | null>(null);
+    const [sourceShareVersionId, setSourceShareVersionId] = useState<string | null>(null);
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -195,7 +197,7 @@ const SharedTripLoader = ({
 
     useEffect(() => {
         if (!token) return;
-        const loadKey = `${token}:${versionId || ''}`;
+        const loadKey = `${token}:${location.search}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
 
@@ -206,6 +208,8 @@ const SharedTripLoader = ({
             }
 
             setViewSettings(undefined);
+            setSnapshotState(null);
+            setSourceShareVersionId(null);
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
@@ -217,26 +221,57 @@ const SharedTripLoader = ({
             setAllowCopy(shared.allowCopy ?? true);
 
             if (versionId && isUuid(versionId)) {
-                const version = await dbGetTripVersion(shared.trip.id, versionId);
-                if (version?.trip) {
-                    setViewSettings(version.view ?? undefined);
-                    onTripLoaded(version.trip, version.view ?? undefined);
+                const sharedVersion = await dbGetSharedTripVersion(token, versionId);
+                if (sharedVersion?.trip) {
+                    setViewSettings(sharedVersion.view ?? undefined);
+                    onTripLoaded(sharedVersion.trip, sharedVersion.view ?? undefined);
+                    setSourceShareVersionId(sharedVersion.versionId);
+                    const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
+                    setSnapshotState({
+                        hasNewer: Boolean(latestVersionId && latestVersionId !== sharedVersion.versionId),
+                        latestUrl: buildShareUrl(token),
+                    });
                     return;
                 }
-                const localEntry = findHistoryEntryByUrl(shared.trip.id, `${buildShareUrl(token)}?v=${versionId}`);
+
+                const version = await dbGetTripVersion(shared.trip.id, versionId);
+                if (version?.trip) {
+                    const latestVersionMismatch = Boolean(shared.latestVersionId && shared.latestVersionId !== versionId);
+                    const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
+                    const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
+                    const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
+                    setViewSettings(version.view ?? undefined);
+                    onTripLoaded(version.trip, version.view ?? undefined);
+                    setSourceShareVersionId(versionId);
+                    setSnapshotState({
+                        hasNewer: latestVersionMismatch || newerByTimestamp,
+                        latestUrl: buildShareUrl(token),
+                    });
+                    return;
+                }
+            }
+
+            if (versionId) {
+                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
                     setViewSettings(localEntry.snapshot.view ?? undefined);
                     onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                    setSourceShareVersionId(isUuid(versionId) ? versionId : null);
+                    setSnapshotState({
+                        hasNewer: true,
+                        latestUrl: buildShareUrl(token),
+                    });
                     return;
                 }
             }
 
             setViewSettings(shared.view ?? undefined);
             onTripLoaded(shared.trip, shared.view ?? undefined);
+            setSourceShareVersionId(shared.latestVersionId ?? null);
         };
 
         void load();
-    }, [token, versionId, navigate, onTripLoaded]);
+    }, [token, versionId, location.search, navigate, onTripLoaded]);
 
     const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string }) => {
         if (shareMode !== 'edit' || !token) return;
@@ -255,6 +290,11 @@ const SharedTripLoader = ({
 
     const handleCopyTrip = async () => {
         if (!trip) return;
+        let resolvedSourceShareVersionId = sourceShareVersionId;
+        if (!resolvedSourceShareVersionId && token && DB_ENABLED) {
+            const sharedNow = await dbGetSharedTrip(token);
+            resolvedSourceShareVersionId = sharedNow?.latestVersionId ?? null;
+        }
         const cloned: ITrip = {
             ...trip,
             id: generateTripId(),
@@ -263,6 +303,7 @@ const SharedTripLoader = ({
             isFavorite: false,
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
+            forkedFromShareVersionId: resolvedSourceShareVersionId || undefined,
         };
         if (typeof window !== 'undefined') {
             try {
@@ -271,6 +312,7 @@ const SharedTripLoader = ({
                     sourceTripId: trip.id,
                     sourceTitle: trip.title,
                     sourceShareToken: token || null,
+                    sourceShareVersionId: resolvedSourceShareVersionId || null,
                     createdAt: Date.now(),
                 }));
             } catch (e) {
@@ -306,6 +348,7 @@ const SharedTripLoader = ({
             readOnly={shareMode === 'view'}
             canShare={false}
             shareStatus={shareMode}
+            shareSnapshotMeta={snapshotState ?? undefined}
             onCopyTrip={allowCopy ? handleCopyTrip : undefined}
         />
     );

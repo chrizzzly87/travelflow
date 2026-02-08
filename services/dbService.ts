@@ -1,4 +1,4 @@
-import { ISharedTripResult, ITrip, IViewSettings, IUserSettings, ShareMode } from '../types';
+import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, IViewSettings, IUserSettings, ShareMode } from '../types';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
 import { getAllTrips, setAllTrips } from './storageService';
@@ -444,6 +444,42 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
         view: row.view_settings as IViewSettings | null,
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
+        latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
+    };
+};
+
+export const dbGetSharedTripVersion = async (
+    token: string,
+    versionId: string
+): Promise<ISharedTripVersionResult | null> => {
+    if (!isUuid(versionId)) return null;
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const { data, error } = await client.rpc('get_shared_trip_version', {
+        p_token: token,
+        p_version_id: versionId,
+    });
+    if (error) {
+        console.error('Failed to load shared trip version', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+
+    const trip = row.data as ITrip;
+    const normalized = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    const resolvedVersionId = (row.version_id as string | undefined) || versionId;
+
+    return {
+        trip: normalized,
+        view: row.view_settings as IViewSettings | null,
+        mode: row.mode as ShareMode,
+        allowCopy: Boolean(row.allow_copy),
+        latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
+        versionId: resolvedVersionId,
     };
 };
 
@@ -472,6 +508,48 @@ export const dbUpdateSharedTrip = async (
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;
     return row.version_id as string | null;
+};
+
+export const dbListTripShares = async (tripId?: string): Promise<ITripShareRecord[]> => {
+    if (!DB_ENABLED) return [];
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    let query = client
+        .from('trip_shares')
+        .select('id, trip_id, token, mode, allow_copy, created_at, expires_at, revoked_at')
+        .order('created_at', { ascending: false });
+
+    if (tripId) {
+        query = query.eq('trip_id', tripId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+        console.error('Failed to list trip shares', error);
+        return [];
+    }
+
+    const nowMs = Date.now();
+    return (data || []).map((row) => {
+        const expiresAt = row.expires_at as string | null | undefined;
+        const revokedAt = row.revoked_at as string | null | undefined;
+        const expiresMs = expiresAt ? Date.parse(expiresAt) : null;
+        const isExpired = typeof expiresMs === 'number' && Number.isFinite(expiresMs) && expiresMs <= nowMs;
+        const isActive = !revokedAt && !isExpired;
+
+        return {
+            id: row.id as string,
+            tripId: row.trip_id as string,
+            token: row.token as string,
+            mode: row.mode as ShareMode,
+            allowCopy: Boolean(row.allow_copy),
+            createdAt: row.created_at as string,
+            expiresAt: expiresAt ?? null,
+            revokedAt: revokedAt ?? null,
+            isActive,
+        };
+    });
 };
 
 export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) => {

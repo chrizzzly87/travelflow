@@ -79,6 +79,7 @@ export interface ITrip {
   isFavorite?: boolean;
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
+  forkedFromShareVersionId?: string;
 }
 
 export interface IDragState {
@@ -115,6 +116,11 @@ export interface ISharedTripResult {
     view?: IViewSettings | null;
     mode: ShareMode;
     allowCopy?: boolean;
+    latestVersionId?: string | null;
+}
+
+export interface ISharedTripVersionResult extends ISharedTripResult {
+    versionId: string;
 }
 
 export interface IUserSettings {
@@ -127,4 +133,16 @@ export interface IUserSettings {
     zoomLevel?: number;
     sidebarWidth?: number;
     timelineHeight?: number;
+}
+
+export interface ITripShareRecord {
+    id: string;
+    tripId: string;
+    token: string;
+    mode: ShareMode;
+    allowCopy: boolean;
+    createdAt: string;
+    expiresAt?: string | null;
+    revokedAt?: string | null;
+    isActive: boolean;
 }
