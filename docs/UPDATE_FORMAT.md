@@ -23,10 +23,10 @@ summary: "One concise summary sentence."
 ---
 
 ## Changes
-- [x] [New feature] User-facing highlight shown on the website updates page.
-- [x] [Improved] User-facing improvement shown on the website updates page.
-- [x] [Fixed] User-facing fix shown on the website updates page.
-- [ ] [Internal] Kept in markdown history, hidden from marketing website output.
+- [x] [New feature] 🚀 User-facing highlight shown on the website updates page.
+- [x] [Improved] ✨ User-facing improvement shown on the website updates page.
+- [x] [Fixed] 🐛 User-facing fix shown on the website updates page.
+- [ ] [Internal] 🧰 Kept in markdown history, hidden from marketing website output.
 ```
 
 ## Field rules
@@ -44,16 +44,23 @@ summary: "One concise summary sentence."
 - `[x]`: visible on marketing website (`/updates`).
 - `[ ]`: hidden from marketing website but preserved in markdown history.
 - `Type` is used for visual pills (`New feature`, `Improved`, `Fixed`, `Internal`, etc.).
+- Message must start with an emoji:
+  - `New feature` → `🚀`
+  - `Improved` → `✨`
+  - `Fixed` → `🐛`
+  - `Internal` → `🧰`
+  - Other types → `📌`
 
 ## Recommended workflow (auto-deploy friendly)
-1. Start a file with `status: draft` for an upcoming release batch.
-2. Add/update items while work is in progress.
-3. When ready to publish, bump the version to the next release number and set:
+1. Use exactly one release note file per worktree/feature.
+2. Keep coding notes locally while implementing; avoid creating multiple incremental release files for one feature.
+3. Shortly before opening the PR, update/finalize that one release file with final shipped scope.
+4. When ready to publish, bump the version to the next release number and set:
    - `status: published`
    - `published_at` to the publish time
    - `notify_in_app` as needed
-4. Commit and push. Deploy will render it on `/updates`.
-5. Start the next draft file for the next batch.
+5. Commit and push. Deploy will render it on `/updates`.
+6. Start the next draft file only for the next distinct feature/release.
 
 ## Versioning policy
 - Every new published release must use a new version.

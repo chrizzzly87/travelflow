@@ -11,6 +11,6 @@ summary: "My Trips tooltip map previews now inherit the active accent color toke
 ---
 
 ## Changes
-- [x] [Fixed] Updated the My Trips tooltip Google Static Map route and markers to use global accent token colors.
-- [x] [Improved] Added runtime CSS-token color resolution for tooltip map styling so future accent changes propagate automatically.
-- [ ] [Internal] Added CSS-color normalization helpers for token-to-hex conversion in external map URL parameters.
+- [x] [Fixed] 🐛 Updated the My Trips tooltip Google Static Map route and markers to use global accent token colors.
+- [x] [Improved] ✨ Added runtime CSS-token color resolution for tooltip map styling so future accent changes propagate automatically.
+- [ ] [Internal] 🧰 Added CSS-color normalization helpers for token-to-hex conversion in external map URL parameters.

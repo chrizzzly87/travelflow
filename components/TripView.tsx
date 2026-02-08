@@ -13,6 +13,7 @@ import { PrintLayout } from './PrintLayout';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
+import { Drawer, DrawerContent } from './ui/drawer';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight
@@ -2147,6 +2148,48 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             </div>
                         )}
                     </div>
+                    {isMobile && (
+                        <Drawer
+                            open={detailsPanelVisible}
+                            onOpenChange={(open) => {
+                                if (!open) clearSelection();
+                            }}
+                            shouldScaleBackground={false}
+                            modal={true}
+                            dismissible={true}
+                        >
+                            <DrawerContent className="h-[82vh] p-0" accessibleTitle="Trip details" accessibleDescription="View and edit selected city, travel segment, or activity details.">
+                                {showSelectedCitiesPanel ? (
+                                    <SelectedCitiesPanel
+                                        selectedCities={selectedCitiesInTimeline}
+                                        onClose={clearSelection}
+                                        onApplyOrder={applySelectedCityOrder}
+                                        onReverse={handleReverseSelectedCities}
+                                        timelineView={timelineView}
+                                        readOnly={readOnly}
+                                    />
+                                ) : (
+                                    <DetailsPanel
+                                        item={trip.items.find(i => i.id === selectedItemId) || null}
+                                        isOpen={!!selectedItemId}
+                                        onClose={clearSelection}
+                                        onUpdate={handleUpdateItem}
+                                        onBatchUpdate={handleBatchItemUpdate}
+                                        onDelete={handleDeleteItem}
+                                        tripStartDate={trip.startDate}
+                                        tripItems={trip.items}
+                                        routeMode={routeMode}
+                                        routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                        onForceFill={handleForceFill}
+                                        forceFillMode={selectedCityForceFill?.mode}
+                                        forceFillLabel={selectedCityForceFill?.label}
+                                        variant="sidebar"
+                                        readOnly={readOnly}
+                                    />
+                                )}
+                            </DrawerContent>
+                        </Drawer>
+                    )}
 
                      {/* Modals */}
                      <AddActivityModal 
