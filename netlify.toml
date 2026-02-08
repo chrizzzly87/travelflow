@@ -21,12 +21,60 @@
   function = "trip-og-playground"
 
 [[edge_functions]]
+  path = "/api/og/site"
+  function = "site-og-image"
+
+[[edge_functions]]
   path = "/s/*"
   function = "trip-og-meta"
 
 [[edge_functions]]
   path = "/trip/*"
   function = "trip-og-meta"
+
+[[edge_functions]]
+  path = "/"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/blog"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/admin/*"
+  function = "site-og-meta"
 
 [[redirects]]
   from = "/*"
