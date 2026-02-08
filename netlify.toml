@@ -6,7 +6,8 @@
   NODE_VERSION = "20"
   # Vite exposes VITE_* vars to browser bundles by design.
   # Supabase URL + anon key are public client values (RLS must protect data).
-  SECRETS_SCAN_OMIT_KEYS = "VITE_GOOGLE_MAPS_API_KEY,VITE_GEMINI_API_KEY,VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+  # DATABASE_URL and DIRECT_DATABASE_URL are for Umami backend deployments and must stay server-side.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_GOOGLE_MAPS_API_KEY,VITE_GEMINI_API_KEY,VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_UMAMI_SCRIPT_URL,VITE_UMAMI_WEBSITE_ID,DATABASE_URL,DIRECT_DATABASE_URL"
 
 [[redirects]]
   from = "/*"

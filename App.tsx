@@ -22,6 +22,7 @@ import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVe
 import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
+import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -361,6 +362,7 @@ const AppContent: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const navigate = useNavigate();
+    const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -390,6 +392,17 @@ const AppContent: React.FC = () => {
             void dbUpsertUserSettings({ language: appLanguage });
         }
     }, [appLanguage]);
+
+    useEffect(() => {
+        const disposeAnalytics = initializeAnalytics();
+        return () => {
+            disposeAnalytics();
+        };
+    }, []);
+
+    useEffect(() => {
+        trackPageView(`${location.pathname}${location.search}`);
+    }, [location.pathname, location.search]);
 
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;
@@ -440,6 +453,16 @@ const AppContent: React.FC = () => {
     };
 
     const handleTripGenerated = (newTrip: ITrip) => {
+        const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
+        const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
+        const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
+        trackEvent('trip_created', {
+            city_count: cityCount,
+            activity_count: activityCount,
+            travel_segment_count: travelSegmentCount,
+            total_item_count: newTrip.items.length,
+        });
+
         setTrip(newTrip);
         saveTrip(newTrip);
         const createdTs = Date.now();

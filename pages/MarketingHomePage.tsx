@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { CalendarClock, MapPinned, Route, Sparkles } from 'lucide-react';
+import { trackEvent } from '../services/analyticsService';
 
 const featureCards = [
     {
@@ -27,6 +28,13 @@ const featureCards = [
 ];
 
 export const MarketingHomePage: React.FC = () => {
+    const handleHeroCtaClick = (ctaName: string) => {
+        trackEvent('marketing_hero_cta_clicked', {
+            cta_name: ctaName,
+            page: 'home',
+        });
+    };
+
     return (
         <MarketingLayout>
             <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm md:p-12">
@@ -46,12 +54,14 @@ export const MarketingHomePage: React.FC = () => {
                     <div className="mt-8 flex flex-wrap items-center gap-3">
                         <Link
                             to="/create-trip"
+                            onClick={() => handleHeroCtaClick('create_trip')}
                             className="rounded-xl bg-accent-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                         >
                             Create Trip
                         </Link>
                         <Link
                             to="/features"
+                            onClick={() => handleHeroCtaClick('see_features')}
                             className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
                         >
                             See features

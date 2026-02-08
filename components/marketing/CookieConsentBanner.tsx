@@ -1,28 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const CONSENT_STORAGE_KEY = 'tf_cookie_consent_choice_v1';
-
-type ConsentChoice = 'all' | 'essential';
-
-const readStoredConsent = (): ConsentChoice | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const stored = window.localStorage.getItem(CONSENT_STORAGE_KEY);
-        return stored === 'all' || stored === 'essential' ? stored : null;
-    } catch (e) {
-        return null;
-    }
-};
-
-const saveConsent = (choice: ConsentChoice) => {
-    if (typeof window === 'undefined') return;
-    try {
-        window.localStorage.setItem(CONSENT_STORAGE_KEY, choice);
-    } catch (e) {
-        // ignore storage issues
-    }
-};
+import { trackEvent } from '../../services/analyticsService';
+import { ConsentChoice, readStoredConsent, saveConsent } from '../../services/consentService';
 
 export const CookieConsentBanner: React.FC = () => {
     const [consent, setConsent] = useState<ConsentChoice | null>(() => readStoredConsent());
@@ -31,6 +10,9 @@ export const CookieConsentBanner: React.FC = () => {
     const handleConsent = (choice: ConsentChoice) => {
         setConsent(choice);
         saveConsent(choice);
+        if (choice === 'all') {
+            trackEvent('consent_accept_all_clicked', { source: 'cookie_banner' });
+        }
     };
 
     if (!isVisible) return null;
