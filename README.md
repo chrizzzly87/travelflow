@@ -39,6 +39,7 @@ npm run dev
 - `/` marketing landing page
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner
+- `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
 - `/admin/dashboard` admin metrics placeholder (future role-gated)
 
@@ -83,7 +84,45 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 4. In Netlify environment variables, add:
    - `VITE_GEMINI_API_KEY`
    - `VITE_GOOGLE_MAPS_API_KEY`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 5. Deploy.
+
+## Dynamic Open Graph (Netlify Edge)
+
+- Shared links (`/s/:token`) use Netlify Edge Functions to inject route-specific Open Graph and Twitter meta tags into the HTML response.
+- OG images are generated at `/api/og/trip` with `og_edge` (Netlify-compatible `@vercel/og`), including:
+  - trip title
+  - weeks/months/total distance metrics
+  - Google Static Maps route preview (matching tooltip map style)
+  - TravelFlow branding + shared URL footer
+- For shared links, OG map rendering can inherit shared view preferences when available:
+  - `mapStyle` (`minimal`, `standard`, `dark`, `satellite`, `clean`)
+  - `routeMode` (`simple`, `realistic`)
+  - `showStops` (`true`/`false`) for stop/start-end marker rendering
+  - `showCities` (`true`/`false`) for custom city-name labels near route points
+- Query overrides can force map output for testing:
+  - `mapStyle=<style>`
+  - `routeMode=<simple|realistic>`
+  - `showStops=1|0`
+  - `showCities=1|0` (`cityNames=1|0` remains a legacy alias)
+- The edge metadata function adds `u=<trip.updatedAt>` to `og:image` URLs for automatic cache busting after shared trip updates.
+- No separate CDN setup is required; caching is handled with Netlify edge cache headers.
+
+### Local testing
+
+1. Run the app through Netlify (Edge Functions only run through Netlify Dev):
+   ```bash
+   npx netlify dev
+   ```
+2. Open the playground:
+   - `http://localhost:8888/api/og/playground`
+3. Use either:
+   - real shared data via `s=<share_token>` (and optional `v=<version_uuid>`)
+   - or layout/map overrides (`title`, `weeks`, `months`, `distance`, `path`, `map`, `mapStyle`, `routeMode`, `showStops`, `showCities`) for rapid visual tuning.
+
+Example direct image URL:
+`http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
 
 ## Create The GitHub Repo (CLI)
 
