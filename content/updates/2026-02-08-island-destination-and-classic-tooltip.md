@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-08-island-destination-and-classic-tooltip
-version: v0.17.0
+version: v0.18gi.0
 title: "Island Mode: global destination coverage + on-island trip control"
 date: 2026-02-08
 published_at: 2026-02-08T20:30:00Z
