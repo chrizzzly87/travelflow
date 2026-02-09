@@ -3,7 +3,7 @@ id: rel-2026-02-09-bem-analytics-events
 version: v0.29.0
 title: "Comprehensive analytics tracking"
 date: 2026-02-09
-published_at: 2026-02-09T23:45:00Z
+published_at: 2026-02-09T22:25:00Z
 status: published
 notify_in_app: false
 in_app_hours: 24
