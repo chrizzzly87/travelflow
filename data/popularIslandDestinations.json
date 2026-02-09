@@ -4,7 +4,7 @@
   { "name": "Saadiyat Island", "countryCode": "AE" },
   { "name": "Sir Bani Yas Island", "countryCode": "AE" },
 
-  { "name": "Tasmania", "countryCode": "AU" },
+  { "name": "Tasmania", "countryCode": "AU", "code": "AU-TAS" },
   { "name": "Kangaroo Island", "countryCode": "AU" },
   { "name": "K'gari", "countryCode": "AU", "aliases": ["Fraser Island"] },
   { "name": "Whitsunday Island", "countryCode": "AU" },
@@ -45,8 +45,8 @@
   { "name": "Tobacco Caye", "countryCode": "BZ" },
 
   { "name": "Vancouver Island", "countryCode": "CA" },
-  { "name": "Newfoundland", "countryCode": "CA" },
-  { "name": "Prince Edward Island", "countryCode": "CA" },
+  { "name": "Newfoundland", "countryCode": "CA", "code": "CA-NL" },
+  { "name": "Prince Edward Island", "countryCode": "CA", "code": "CA-PE" },
   { "name": "Cape Breton Island", "countryCode": "CA" },
   { "name": "Baffin Island", "countryCode": "CA" },
   { "name": "Manitoulin Island", "countryCode": "CA" },
@@ -55,7 +55,7 @@
   { "name": "Chiloe Island", "countryCode": "CL" },
   { "name": "Robinson Crusoe Island", "countryCode": "CL" },
 
-  { "name": "Hainan", "countryCode": "CN" },
+  { "name": "Hainan", "countryCode": "CN", "code": "CN-HI" },
   { "name": "Hong Kong Island", "countryCode": "CN" },
   { "name": "Lantau Island", "countryCode": "CN" },
 
@@ -67,7 +67,7 @@
   { "name": "Isla Tortuga", "countryCode": "CR" },
   { "name": "Cocos Island (Costa Rica)", "countryCode": "CR" },
 
-  { "name": "Isla de la Juventud", "countryCode": "CU" },
+  { "name": "Isla de la Juventud", "countryCode": "CU", "code": "CU-99" },
   { "name": "Cayo Coco", "countryCode": "CU" },
   { "name": "Cayo Guillermo", "countryCode": "CU" },
   { "name": "Cayo Santa Maria", "countryCode": "CU" },
@@ -112,12 +112,12 @@
   { "name": "Mamanuca Islands", "countryCode": "FJ" },
   { "name": "Kadavu", "countryCode": "FJ" },
 
-  { "name": "Aland Islands", "countryCode": "FI" },
+  { "name": "Aland Islands", "countryCode": "FI", "code": "FI-AL" },
 
   { "name": "Corsica", "countryCode": "FR" },
-  { "name": "Reunion", "countryCode": "FR" },
-  { "name": "Guadeloupe", "countryCode": "FR" },
-  { "name": "Martinique", "countryCode": "FR" },
+  { "name": "Reunion", "countryCode": "FR", "code": "FR-RE" },
+  { "name": "Guadeloupe", "countryCode": "FR", "code": "FR-GP" },
+  { "name": "Martinique", "countryCode": "FR", "code": "FR-MQ" },
   { "name": "Saint Martin", "countryCode": "FR" },
   { "name": "Tahiti", "countryCode": "FR" },
   { "name": "Bora Bora", "countryCode": "FR" },
@@ -137,10 +137,10 @@
   { "name": "Isle of Wight", "countryCode": "GB" },
   { "name": "Anglesey", "countryCode": "GB" },
   { "name": "Lewis and Harris", "countryCode": "GB" },
-  { "name": "Orkney Mainland", "countryCode": "GB" },
-  { "name": "Shetland Mainland", "countryCode": "GB" },
+  { "name": "Orkney Mainland", "countryCode": "GB", "code": "GB-ORK" },
+  { "name": "Shetland Mainland", "countryCode": "GB", "code": "GB-ZET" },
 
-  { "name": "Crete", "countryCode": "GR", "aliases": ["Kreta"] },
+  { "name": "Crete", "countryCode": "GR", "code": "GR-M", "aliases": ["Kreta"] },
   { "name": "Rhodes", "countryCode": "GR" },
   { "name": "Corfu", "countryCode": "GR", "aliases": ["Kerkyra"] },
   { "name": "Kos", "countryCode": "GR" },
@@ -175,7 +175,7 @@
   { "name": "Mljet", "countryCode": "HR" },
   { "name": "Rab", "countryCode": "HR" },
 
-  { "name": "Bali", "countryCode": "ID" },
+  { "name": "Bali", "countryCode": "ID", "code": "ID-BA" },
   { "name": "Lombok", "countryCode": "ID" },
   { "name": "Gili Trawangan", "countryCode": "ID" },
   { "name": "Gili Air", "countryCode": "ID" },
@@ -233,8 +233,8 @@
   { "name": "Qeshm Island", "countryCode": "IR" },
   { "name": "Hormuz Island", "countryCode": "IR" },
 
-  { "name": "Sicily", "countryCode": "IT", "aliases": ["Sicilia"] },
-  { "name": "Sardinia", "countryCode": "IT", "aliases": ["Sardegna"] },
+  { "name": "Sicily", "countryCode": "IT", "code": "IT-82", "aliases": ["Sicilia"] },
+  { "name": "Sardinia", "countryCode": "IT", "code": "IT-88", "aliases": ["Sardegna"] },
   { "name": "Capri", "countryCode": "IT" },
   { "name": "Ischia", "countryCode": "IT" },
   { "name": "Procida", "countryCode": "IT" },
@@ -247,11 +247,11 @@
   { "name": "Salina", "countryCode": "IT" },
   { "name": "Favignana", "countryCode": "IT" },
 
-  { "name": "Hokkaido", "countryCode": "JP" },
+  { "name": "Hokkaido", "countryCode": "JP", "code": "JP-01" },
   { "name": "Honshu", "countryCode": "JP" },
   { "name": "Shikoku", "countryCode": "JP" },
   { "name": "Kyushu", "countryCode": "JP" },
-  { "name": "Okinawa", "countryCode": "JP" },
+  { "name": "Okinawa", "countryCode": "JP", "code": "JP-47" },
   { "name": "Ishigaki", "countryCode": "JP" },
   { "name": "Iriomote", "countryCode": "JP" },
   { "name": "Miyakojima", "countryCode": "JP" },
@@ -269,7 +269,7 @@
   { "name": "Tarawa", "countryCode": "KI" },
   { "name": "Kiritimati", "countryCode": "KI", "aliases": ["Christmas Island (Kiribati)"] },
 
-  { "name": "Jeju Island", "countryCode": "KR", "aliases": ["Jeju"] },
+  { "name": "Jeju Island", "countryCode": "KR", "code": "KR-49", "aliases": ["Jeju"] },
   { "name": "Ulleungdo", "countryCode": "KR" },
 
   { "name": "Nosy Be", "countryCode": "MG" },
@@ -294,7 +294,7 @@
   { "name": "Baa Atoll", "countryCode": "MV" },
   { "name": "Ari Atoll", "countryCode": "MV" },
 
-  { "name": "Penang", "countryCode": "MY" },
+  { "name": "Penang", "countryCode": "MY", "code": "MY-07" },
   { "name": "Langkawi", "countryCode": "MY" },
   { "name": "Tioman", "countryCode": "MY" },
   { "name": "Redang", "countryCode": "MY" },
@@ -322,7 +322,7 @@
   { "name": "Aruba", "countryCode": "NL" },
   { "name": "Sint Maarten", "countryCode": "NL" },
 
-  { "name": "Svalbard", "countryCode": "NO" },
+  { "name": "Svalbard", "countryCode": "NO", "code": "NO-21" },
   { "name": "Senja", "countryCode": "NO" },
   { "name": "Lofoten Islands", "countryCode": "NO", "aliases": ["Lofoten"] },
 
@@ -345,28 +345,28 @@
   { "name": "Manus Island", "countryCode": "PG" },
 
   { "name": "Luzon", "countryCode": "PH" },
-  { "name": "Palawan", "countryCode": "PH" },
+  { "name": "Palawan", "countryCode": "PH", "code": "PH-PLW" },
   { "name": "Boracay", "countryCode": "PH" },
-  { "name": "Cebu", "countryCode": "PH" },
-  { "name": "Bohol", "countryCode": "PH" },
+  { "name": "Cebu", "countryCode": "PH", "code": "PH-CEB" },
+  { "name": "Bohol", "countryCode": "PH", "code": "PH-BOH" },
   { "name": "Siargao", "countryCode": "PH" },
   { "name": "Coron Island", "countryCode": "PH" },
   { "name": "Busuanga", "countryCode": "PH" },
-  { "name": "Camiguin", "countryCode": "PH" },
+  { "name": "Camiguin", "countryCode": "PH", "code": "PH-CAM" },
   { "name": "Mindoro", "countryCode": "PH" },
   { "name": "Negros", "countryCode": "PH" },
   { "name": "Panay", "countryCode": "PH" },
   { "name": "Samar", "countryCode": "PH" },
-  { "name": "Leyte", "countryCode": "PH" },
+  { "name": "Leyte", "countryCode": "PH", "code": "PH-LEY" },
   { "name": "Bantayan", "countryCode": "PH" },
   { "name": "Malapascua", "countryCode": "PH" },
-  { "name": "Siquijor", "countryCode": "PH" },
-  { "name": "Catanduanes", "countryCode": "PH" },
+  { "name": "Siquijor", "countryCode": "PH", "code": "PH-SIG" },
+  { "name": "Catanduanes", "countryCode": "PH", "code": "PH-CAT" },
   { "name": "Dinagat Islands", "countryCode": "PH" },
 
   { "name": "Astola Island", "countryCode": "PK" },
 
-  { "name": "Madeira", "countryCode": "PT" },
+  { "name": "Madeira", "countryCode": "PT", "code": "PT-30" },
   { "name": "Porto Santo", "countryCode": "PT" },
   { "name": "Sao Miguel", "countryCode": "PT" },
   { "name": "Terceira", "countryCode": "PT" },
@@ -398,12 +398,12 @@
   { "name": "Denis Island", "countryCode": "SC" },
   { "name": "Bird Island", "countryCode": "SC" },
 
-  { "name": "Gotland", "countryCode": "SE" },
+  { "name": "Gotland", "countryCode": "SE", "code": "SE-I" },
   { "name": "Oland", "countryCode": "SE", "aliases": ["Oland"] },
 
   { "name": "Sentosa", "countryCode": "SG" },
 
-  { "name": "Phuket", "countryCode": "TH" },
+  { "name": "Phuket", "countryCode": "TH", "code": "TH-83" },
   { "name": "Koh Samui", "countryCode": "TH" },
   { "name": "Koh Phangan", "countryCode": "TH", "aliases": ["Ko Pha Ngan"] },
   { "name": "Koh Tao", "countryCode": "TH" },
@@ -431,12 +431,12 @@
   { "name": "Bozcaada", "countryCode": "TR" },
   { "name": "Gokceada", "countryCode": "TR", "aliases": ["Gokceada"] },
 
-  { "name": "Tobago", "countryCode": "TT" },
+  { "name": "Tobago", "countryCode": "TT", "code": "TT-TOB" },
 
-  { "name": "Penghu", "countryCode": "TW" },
+  { "name": "Penghu", "countryCode": "TW", "code": "TW-PEN" },
   { "name": "Green Island (Taiwan)", "countryCode": "TW" },
   { "name": "Orchid Island", "countryCode": "TW" },
-  { "name": "Kinmen", "countryCode": "TW" },
+  { "name": "Kinmen", "countryCode": "TW", "code": "TW-KIN" },
   { "name": "Matsu Islands", "countryCode": "TW" },
 
   { "name": "Zanzibar", "countryCode": "TZ", "aliases": ["Unguja"] },

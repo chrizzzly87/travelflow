@@ -1,5 +1,5 @@
 import LZString from 'lz-string';
-import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, TransportMode } from './types';
+import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, TransportMode, TripPrefillData } from './types';
 import popularIslandDestinationsJson from './data/popularIslandDestinations.json';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
@@ -994,10 +994,14 @@ export interface DestinationOption {
 interface IslandDestinationSeed {
     name: string;
     countryCode: string;
+    code?: string;
     aliases?: string[];
 }
 
 const COUNTRY_BY_CODE = new Map(COUNTRIES.map((country) => [country.code.toLocaleLowerCase(), country]));
+
+const buildIslandCode = (parentCode: string, name: string): string =>
+    `${parentCode}-${name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
 
 const buildIslandDestination = (
     seed: IslandDestinationSeed
@@ -1008,7 +1012,7 @@ const buildIslandDestination = (
     }
     return {
         name: seed.name,
-        code: `${parent.code}-${seed.name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`,
+        code: seed.code || buildIslandCode(parent.code, seed.name),
         flag: parent.flag,
         kind: 'island',
         parentCountryName: parent.name,
@@ -1032,6 +1036,9 @@ const DESTINATION_BY_NAME = new Map(DESTINATION_OPTIONS.map((destination) => [de
 const DESTINATION_BY_ALIAS = new Map(
     ISLAND_DESTINATIONS.flatMap((destination) => (destination.aliases || []).map((alias) => [alias.toLocaleLowerCase(), destination] as const))
 );
+const DESTINATION_BY_CODE = new Map(
+    DESTINATION_OPTIONS.map((d) => [d.code.toLowerCase(), d])
+);
 
 const normalizeDestinationKey = (value: string): string => value.trim().toLocaleLowerCase();
 
@@ -1039,6 +1046,17 @@ export const getDestinationOptionByName = (value: string): DestinationOption | u
     const normalized = normalizeDestinationKey(value);
     if (!normalized) return undefined;
     return DESTINATION_BY_NAME.get(normalized) || DESTINATION_BY_ALIAS.get(normalized);
+};
+
+export const getDestinationOptionByCode = (code: string): DestinationOption | undefined => {
+    return DESTINATION_BY_CODE.get(code.toLowerCase());
+};
+
+export const resolveDestinationCodes = (codes: string[]): string[] => {
+    return codes
+        .map((code) => getDestinationOptionByCode(code))
+        .filter((d): d is DestinationOption => d !== undefined)
+        .map((d) => d.name);
 };
 
 export const resolveDestinationName = (value: string): string => {
@@ -1119,14 +1137,14 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
     try {
         const json = LZString.decompressFromEncodedURIComponent(encoded);
         if (!json) return null;
-        
+
         const parsed = JSON.parse(json);
-        
+
         // Backward compatibility: If parsed object has 'id' and 'items', it's just a trip
         if (parsed.id && Array.isArray(parsed.items)) {
             return { trip: parsed as ITrip };
         }
-        
+
         // precise check for ISharedState structure
         if (parsed.trip) {
             return parsed as ISharedState;
@@ -1137,4 +1155,68 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
         console.error("Decompression failed", e);
         return null; // Invalid data
     }
+};
+
+// --- TRIP PREFILL (URL-encoded create-trip parameters) ---
+
+const VALID_BUDGETS = ['Low', 'Medium', 'High', 'Luxury'];
+const VALID_PACES = ['Relaxed', 'Balanced', 'Fast'];
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const encodeTripPrefill = (data: TripPrefillData): string => {
+    const json = JSON.stringify(data);
+    const bytes = new TextEncoder().encode(json);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
+    try {
+        const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+        const binary = atob(base64);
+        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+        const json = new TextDecoder().decode(bytes);
+        const parsed = JSON.parse(json);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
+
+        const result: TripPrefillData = {};
+
+        if (Array.isArray(parsed.countries)) {
+            const destinationNames = new Set(DESTINATION_OPTIONS.map((d) => d.name));
+            result.countries = parsed.countries.filter((c: unknown) => typeof c === 'string' && destinationNames.has(c));
+            if (result.countries!.length === 0) delete result.countries;
+        }
+        if (typeof parsed.startDate === 'string' && ISO_DATE_RE.test(parsed.startDate) && !isNaN(Date.parse(parsed.startDate))) {
+            result.startDate = parsed.startDate;
+        }
+        if (typeof parsed.endDate === 'string' && ISO_DATE_RE.test(parsed.endDate) && !isNaN(Date.parse(parsed.endDate))) {
+            result.endDate = parsed.endDate;
+        }
+        if (typeof parsed.budget === 'string' && VALID_BUDGETS.includes(parsed.budget)) {
+            result.budget = parsed.budget;
+        }
+        if (typeof parsed.pace === 'string' && VALID_PACES.includes(parsed.pace)) {
+            result.pace = parsed.pace;
+        }
+        if (typeof parsed.cities === 'string') result.cities = parsed.cities;
+        if (typeof parsed.notes === 'string') result.notes = parsed.notes;
+        if (typeof parsed.roundTrip === 'boolean') result.roundTrip = parsed.roundTrip;
+        if (parsed.mode === 'classic' || parsed.mode === 'wizard') result.mode = parsed.mode;
+        if (Array.isArray(parsed.styles)) result.styles = parsed.styles.filter((s: unknown) => typeof s === 'string');
+        if (Array.isArray(parsed.vibes)) result.vibes = parsed.vibes.filter((s: unknown) => typeof s === 'string');
+        if (Array.isArray(parsed.logistics)) result.logistics = parsed.logistics.filter((s: unknown) => typeof s === 'string');
+        if (typeof parsed.meta === 'object' && parsed.meta !== null && !Array.isArray(parsed.meta)) {
+            result.meta = parsed.meta;
+        }
+
+        return Object.keys(result).length > 0 ? result : null;
+    } catch {
+        return null;
+    }
+};
+
+export const buildCreateTripUrl = (data: TripPrefillData): string => {
+    const encoded = encodeTripPrefill(data);
+    return `/create-trip?prefill=${encoded}`;
 };
