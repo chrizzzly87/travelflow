@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Plane } from 'lucide-react';
+import { AirplaneTilt } from '@phosphor-icons/react';
 import { SiteFooter } from './SiteFooter';
+import { EarlyAccessBanner } from './EarlyAccessBanner';
 import { trackEvent } from '../../services/analyticsService';
 
 interface MarketingLayoutProps {
@@ -22,19 +23,20 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+        <div className="min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col">
             <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_48%),radial-gradient(circle_at_80%_30%,_rgba(15,23,42,0.10),_transparent_35%)]" />
-            <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur">
-                <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 md:px-8">
+            <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur" style={{ viewTransitionName: 'site-header' }}>
+                <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 md:px-8">
                     <NavLink to="/" onClick={() => handleNavClick('brand')} className="flex items-center gap-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
-                            <Plane size={16} fill="currentColor" />
+                            <AirplaneTilt size={16} weight="duotone" />
                         </span>
                         <span className="text-lg font-extrabold tracking-tight">TravelFlow</span>
                     </NavLink>
 
                     <nav className="hidden items-center gap-6 text-sm md:flex">
                         <NavLink to="/features" onClick={() => handleNavClick('features')} className={navLinkClass}>Features</NavLink>
+                        <NavLink to="/inspirations" onClick={() => handleNavClick('inspirations')} className={navLinkClass}>Inspirations</NavLink>
                         <NavLink to="/updates" onClick={() => handleNavClick('updates')} className={navLinkClass}>News & Updates</NavLink>
                         <NavLink to="/blog" onClick={() => handleNavClick('blog')} className={navLinkClass}>Blog</NavLink>
                     </nav>
@@ -57,8 +59,9 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
                     </div>
                 </div>
             </header>
+            <EarlyAccessBanner />
 
-            <main className="mx-auto w-full max-w-6xl flex-1 px-5 pb-16 pt-10 md:px-8 md:pt-14">
+            <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-16 pt-10 md:px-8 md:pt-14">
                 {children}
             </main>
             <SiteFooter />
