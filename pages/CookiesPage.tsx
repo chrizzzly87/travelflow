@@ -10,7 +10,9 @@ export const CookiesPage: React.FC = () => {
         setConsent(choice);
         saveConsent(choice);
         if (choice === 'all') {
-            trackEvent('consent_accept_all_clicked', { source: 'cookies_page' });
+            trackEvent('consent__page--accept', { source: 'cookies_page' });
+        } else {
+            trackEvent('consent__page--reject', { source: 'cookies_page' });
         }
     };
 

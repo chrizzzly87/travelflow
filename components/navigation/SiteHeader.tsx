@@ -30,7 +30,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const hasTrips = useHasSavedTrips();
 
     const handleNavClick = (target: string) => {
-        trackEvent('marketing_nav_clicked', { target });
+        trackEvent(`navigation__${target}`);
     };
 
     const isGlass = variant === 'glass';

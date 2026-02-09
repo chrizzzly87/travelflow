@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
+import { trackEvent } from '../../services/analyticsService';
 
 const STORAGE_KEY = 'tf_early_access_dismissed';
 
@@ -16,6 +17,7 @@ export const EarlyAccessBanner: React.FC = () => {
 
     const handleDismiss = () => {
         setDismissed(true);
+        trackEvent('banner__early_access--dismiss');
         try {
             localStorage.setItem(STORAGE_KEY, '1');
         } catch {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { trackEvent } from '../services/analyticsService';
 
 interface PricingTier {
     name: string;
@@ -151,6 +152,7 @@ export const PricingPage: React.FC = () => {
                                 ) : (
                                     <Link
                                         to={tier.ctaLink || '/create-trip'}
+                                        onClick={() => trackEvent(`pricing__tier--${tier.name.toLowerCase()}`)}
                                         className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                     >
                                         {tier.cta}
