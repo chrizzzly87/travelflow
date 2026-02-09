@@ -13,11 +13,7 @@
 [dev]
   targetPort = 5173
 
-# === TEMPORARILY: only health function active for debugging ===
-[[edge_functions]]
-  path = "/api/health"
-  function = "health"
-
+# === TEMPORARILY: health function uses v2 inline config ===
 # === ALL BELOW DISABLED — investigating 500 errors ===
 # [[edge_functions]]
 #   path = "/api/trip-map-preview"
