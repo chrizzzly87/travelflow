@@ -7,6 +7,8 @@ const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalid
 interface Metadata {
   pageTitle: string;
   description: string;
+  ogTitle: string;
+  ogDescription: string;
   canonicalUrl: string;
   ogImageUrl: string;
   robots: string;
@@ -15,6 +17,8 @@ interface Metadata {
 interface PageDefinition {
   title: string;
   description: string;
+  ogTitle?: string;
+  ogDescription?: string;
   robots?: string;
   pill?: string;
 }
@@ -102,26 +106,40 @@ const PAGE_META: Record<string, PageDefinition> = {
   },
 };
 
-const BLOG_META: Record<string, { title: string; description: string }> = {
+interface BlogMeta {
+  title: string;
+  description: string;
+  ogTitle?: string;
+  ogDescription?: string;
+}
+
+const BLOG_META: Record<string, BlogMeta> = {
   "best-time-visit-japan": {
-    title: "Best Time to Visit Japan — Month by Month",
-    description: "Cherry blossoms in spring, festivals in summer, fiery foliage in autumn, powder snow in winter — find the perfect month for your Japan trip with seasonal highlights and travel tips.",
+    title: "The Best Time to Visit Japan — A Month-by-Month Guide",
+    description: "Japan transforms with every season. From cherry blossoms to powder snow, here's when to go.",
+    ogTitle: "Best Time to Visit Japan — Month by Month",
+    ogDescription: "Cherry blossoms in spring, festivals in summer, fiery foliage in autumn, powder snow in winter — find the perfect month for your Japan trip with seasonal highlights and travel tips.",
   },
   "budget-travel-europe": {
     title: "Budget Travel Hacks for Europe",
-    description: "Smart timing, local transport passes, affordable stays, and a few practical habits that can cut your Europe trip costs in half without sacrificing the experience.",
+    description: "Smart timing, local habits, and a few practical tricks can cut your Europe costs in half.",
+    ogDescription: "Smart timing, local transport passes, affordable stays, and a few practical habits that can cut your Europe trip costs in half without sacrificing the experience.",
   },
   "festival-travel-guide": {
     title: "How to Plan a Trip Around a Festival",
-    description: "From picking the right event to booking accommodation early and building a flexible itinerary — a step-by-step guide to festival-centered travel planning.",
+    description: "Festival-centered trips are some of the most memorable journeys. Here's how to plan one.",
+    ogDescription: "From picking the right event to booking accommodation early and building a flexible itinerary — a step-by-step guide to festival-centered travel planning.",
   },
   "how-to-plan-multi-city-trip": {
-    title: "How to Plan a Multi-City Trip",
-    description: "Route sequencing, realistic day counts, transport links between stops, and packing strategies — practical advice for planning a smooth multi-destination itinerary.",
+    title: "How to Plan the Perfect Multi-City Trip",
+    description: "Practical advice on route planning, timing, and logistics for multi-destination travel.",
+    ogDescription: "Route sequencing, realistic day counts, transport links between stops, and packing strategies — practical advice for planning a smooth multi-destination itinerary.",
   },
   "weekend-getaway-tips": {
-    title: "Weekend Getaway Planning Made Simple",
-    description: "Pick a destination, book fast, pack light, and make every hour count — a concise guide to squeezing the most out of a 2–3 day trip without the planning stress.",
+    title: "Weekend Getaway Planning: From Idea to Boarding Pass",
+    description: "How to squeeze the most out of a 2–3 day trip without the stress.",
+    ogTitle: "Weekend Getaway Planning Made Simple",
+    ogDescription: "Pick a destination, book fast, pack light, and make every hour count — a concise guide to squeezing the most out of a 2–3 day trip without the planning stress.",
   },
 };
 
@@ -154,6 +172,8 @@ const getPageDefinition = (pathname: string): PageDefinition => {
     return {
       title: blog ? blog.title : pathToTitle(pathname),
       description: blog ? blog.description : "Read this article on the TravelFlow blog.",
+      ogTitle: blog?.ogTitle,
+      ogDescription: blog?.ogDescription,
       pill: "BLOG",
     };
   }
@@ -202,6 +222,8 @@ const stripSeoTags = (html: string): string => {
 const buildMetaTags = (meta: Metadata): string => {
   const title = escapeHtml(meta.pageTitle);
   const description = escapeHtml(meta.description);
+  const ogTitle = escapeHtml(meta.ogTitle);
+  const ogDescription = escapeHtml(meta.ogDescription);
   const canonicalUrl = escapeHtml(meta.canonicalUrl);
   const ogImageUrl = escapeHtml(meta.ogImageUrl);
   const robots = escapeHtml(meta.robots);
@@ -213,16 +235,16 @@ const buildMetaTags = (meta: Metadata): string => {
     `<meta name="robots" content="${robots}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
-    `<meta property="og:title" content="${title}" />`,
-    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:title" content="${ogTitle}" />`,
+    `<meta property="og:description" content="${ogDescription}" />`,
     `<meta property="og:url" content="${canonicalUrl}" />`,
     `<meta property="og:image" content="${ogImageUrl}" />`,
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
-    `<meta property="og:image:alt" content="${title}" />`,
+    `<meta property="og:image:alt" content="${ogTitle}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${title}" />`,
-    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:title" content="${ogTitle}" />`,
+    `<meta name="twitter:description" content="${ogDescription}" />`,
     `<meta name="twitter:image" content="${ogImageUrl}" />`,
   ].join("\n");
 };
@@ -247,9 +269,15 @@ const buildMetadata = (url: URL): Metadata => {
   const title = page.title === SITE_NAME ? SITE_NAME : `${page.title} | ${SITE_NAME}`;
   const canonicalSearch = buildCanonicalSearch(url);
   const canonicalUrl = new URL(url.pathname + canonicalSearch, url.origin).toString();
+
+  // OG values: use overrides if provided, fall back to page values
+  const ogTitleRaw = page.ogTitle || page.title;
+  const ogDescriptionRaw = page.ogDescription || page.description;
+  const ogTitleFull = ogTitleRaw === SITE_NAME ? SITE_NAME : `${ogTitleRaw} | ${SITE_NAME}`;
+
   const ogImage = new URL("/api/og/site", url.origin);
-  ogImage.searchParams.set("title", page.title);
-  ogImage.searchParams.set("description", page.description);
+  ogImage.searchParams.set("title", ogTitleRaw);
+  ogImage.searchParams.set("description", ogDescriptionRaw);
   ogImage.searchParams.set("path", url.pathname + canonicalSearch);
   if (page.pill) {
     ogImage.searchParams.set("pill", page.pill);
@@ -258,6 +286,8 @@ const buildMetadata = (url: URL): Metadata => {
   return {
     pageTitle: title,
     description: page.description,
+    ogTitle: ogTitleFull,
+    ogDescription: ogDescriptionRaw,
     canonicalUrl,
     ogImageUrl: ogImage.toString(),
     robots: page.robots || "index,follow,max-image-preview:large",
