@@ -12,6 +12,7 @@ This repository uses markdown release files as the source of truth for product u
 - Prefix every change line message with an emoji as defined in `docs/UPDATE_FORMAT.md`.
 - Bump the release `version` whenever a new release is published.
 - Keep versions strictly increasing; never reuse prior versions.
+- Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 - Keep entries concise, prioritized, and accurate.
 
 ## Scope
