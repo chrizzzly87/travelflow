@@ -44,13 +44,13 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         : 'hidden sm:inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900';
 
     const burgerClass = isGlass
-        ? 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 md:hidden'
-        : 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 md:hidden';
+        ? 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white/60 hover:text-slate-900 lg:hidden'
+        : 'flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden';
 
     return (
         <>
             <header className={headerClass} style={{ viewTransitionName: 'site-header' }}>
-                <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 md:px-8">
+                <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
                     <NavLink to="/" onClick={() => handleNavClick('brand')} className="flex items-center gap-2">
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
                             <AirplaneTilt size={16} weight="duotone" />
@@ -58,7 +58,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         <span className="text-lg font-extrabold tracking-tight">TravelFlow</span>
                     </NavLink>
 
-                    <nav className="hidden items-center gap-6 text-sm md:flex">
+                    <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
                         <NavLink to="/features" onClick={() => handleNavClick('features')} className={navLinkClass}>Features</NavLink>
                         <NavLink to="/inspirations" onClick={() => handleNavClick('inspirations')} className={navLinkClass}>Inspirations</NavLink>
                         <NavLink to="/updates" onClick={() => handleNavClick('updates')} className={navLinkClass}>News & Updates</NavLink>

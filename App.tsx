@@ -30,7 +30,8 @@ import { CookieConsentBanner } from './components/marketing/CookieConsentBanner'
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbGetUserSettings, dbUpsertUserSettings, ensureDbSession, syncTripsFromDb, uploadLocalTripsToDb } from './services/dbService';
+import { DB_ENABLED, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbUpsertUserSettings, ensureDbSession } from './services/dbService';
+import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
@@ -113,6 +114,7 @@ const TripLoader = ({
     setIsSettingsOpen,
     appLanguage,
     onViewSettingsChange,
+    onLanguageLoaded,
 }: {
     trip: ITrip | null,
     onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
@@ -122,6 +124,7 @@ const TripLoader = ({
     setIsSettingsOpen: (o: boolean) => void,
     appLanguage: AppLanguage,
     onViewSettingsChange: (settings: IViewSettings) => void,
+    onLanguageLoaded?: (lang: AppLanguage) => void,
 }) => {
     const { tripId } = useParams();
     const location = useLocation();
@@ -133,6 +136,8 @@ const TripLoader = ({
     }, [location.search]);
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
+
+    useDbSync(onLanguageLoaded);
 
     useEffect(() => {
         if (!tripId) return;
@@ -235,6 +240,7 @@ const SharedTripLoader = ({
     setIsSettingsOpen,
     appLanguage,
     onViewSettingsChange,
+    onLanguageLoaded,
 }: {
     trip: ITrip | null,
     onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
@@ -242,6 +248,7 @@ const SharedTripLoader = ({
     setIsSettingsOpen: (o: boolean) => void,
     appLanguage: AppLanguage,
     onViewSettingsChange: (settings: IViewSettings) => void,
+    onLanguageLoaded?: (lang: AppLanguage) => void,
 }) => {
     const { token } = useParams();
     const location = useLocation();
@@ -257,6 +264,8 @@ const SharedTripLoader = ({
         const params = new URLSearchParams(location.search);
         return params.get('v');
     }, [location.search]);
+
+    useDbSync(onLanguageLoaded);
 
     useEffect(() => {
         if (!token) return;
@@ -417,6 +426,16 @@ const SharedTripLoader = ({
     );
 };
 
+/** Thin wrapper that triggers DB sync when the create-trip page mounts. */
+const CreateTripRoute: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+};
+
 const AppContent: React.FC = () => {
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
@@ -426,29 +445,17 @@ const AppContent: React.FC = () => {
     const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        if (!DB_ENABLED) return;
-        let cancelled = false;
-        const init = async () => {
-            await ensureDbSession();
-            await uploadLocalTripsToDb();
-            await syncTripsFromDb();
-            const settings = await dbGetUserSettings();
-            if (!cancelled && settings) {
-                applyUserSettingsToLocalStorage(settings);
-                if (settings.language) {
-                    setAppLanguage(settings.language);
-                }
-            }
-        };
-        void init();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
+    // DB sync (session, upload, sync, user settings) is deferred to trip-related
+    // routes via useDbSync to avoid unnecessary network calls on marketing pages.
 
+    const isInitialLanguageRef = useRef(true);
     useEffect(() => {
         setStoredAppLanguage(appLanguage);
+        // Skip DB write on initial mount — only persist when user changes the language.
+        if (isInitialLanguageRef.current) {
+            isInitialLanguageRef.current = false;
+            return;
+        }
         if (DB_ENABLED) {
             void dbUpsertUserSettings({ language: appLanguage });
         }
@@ -562,9 +569,10 @@ const AppContent: React.FC = () => {
                 <Route
                     path="/create-trip"
                     element={
-                        <CreateTripForm 
-                            onTripGenerated={handleTripGenerated} 
+                        <CreateTripRoute
+                            onTripGenerated={handleTripGenerated}
                             onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
                         />
                     } 
                 />
@@ -589,7 +597,7 @@ const AppContent: React.FC = () => {
                 <Route 
                     path="/trip/:tripId" 
                     element={
-                        <TripLoader 
+                        <TripLoader
                             trip={trip}
                             onTripLoaded={setTrip}
                             handleUpdateTrip={handleUpdateTrip}
@@ -598,6 +606,7 @@ const AppContent: React.FC = () => {
                             setIsSettingsOpen={setIsSettingsOpen}
                             appLanguage={appLanguage}
                             onViewSettingsChange={handleViewSettingsChange}
+                            onLanguageLoaded={setAppLanguage}
                         />
                     } 
                 />
@@ -611,6 +620,7 @@ const AppContent: React.FC = () => {
                             setIsSettingsOpen={setIsSettingsOpen}
                             appLanguage={appLanguage}
                             onViewSettingsChange={handleViewSettingsChange}
+                            onLanguageLoaded={setAppLanguage}
                         />
                     }
                 />
