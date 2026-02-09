@@ -10,11 +10,9 @@ import {
     Compass,
     DiceSix as Dice6,
     FilePlus,
-    Folder,
     Info,
     SpinnerGap as Loader2,
     MapPin,
-    AirplaneTilt as Plane,
     Plus,
     MagnifyingGlass as Search,
     GearSix as Settings,
@@ -22,7 +20,6 @@ import {
     MagicWand as Wand2,
     X,
 } from '@phosphor-icons/react';
-import { Link, NavLink } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
@@ -51,6 +48,7 @@ import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';
 import { HeroWebGLBackground } from './HeroWebGLBackground';
 import { SiteFooter } from './marketing/SiteFooter';
+import { SiteHeader } from './navigation/SiteHeader';
 import {
     CountrySeasonEntry,
     getCommonBestMonths,
@@ -203,11 +201,6 @@ const WIZARD_LOGISTIC_CARDS: SelectionCardConfig[] = [
 
 const NOOP = () => {};
 
-const createNavLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 sm:after:-bottom-6 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
-    if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
-    return baseClass;
-};
 
 const toIsoDate = (date: Date): string => {
     const y = date.getFullYear();
@@ -799,37 +792,11 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-accent-200/30 blur-[80px]" />
             <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-accent-300/30 blur-[80px]" />
 
-            <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20 gap-3">
-                <Link to="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
-                        <Plane className="text-white transform -rotate-3" size={18} weight="duotone" />
-                    </div>
-                    <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
-                </Link>
-                <nav className="hidden md:flex items-center gap-5 text-sm bg-white/75 backdrop-blur px-4 py-2 rounded-full border border-slate-200">
-                    <NavLink to="/features" className={createNavLinkClass}>Features</NavLink>
-                    <NavLink to="/inspirations" className={createNavLinkClass}>Inspirations</NavLink>
-                    <NavLink to="/updates" className={createNavLinkClass}>News & Updates</NavLink>
-                    <NavLink to="/blog" className={createNavLinkClass}>Blog</NavLink>
-                </nav>
-                <div className="flex items-center gap-2">
-                    <NavLink
-                        to="/login"
-                        className="hidden sm:inline-flex px-3 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-accent-300 rounded-full text-sm font-medium text-gray-600 hover:text-accent-600 transition-all"
-                    >
-                        Login
-                    </NavLink>
-                    <button
-                        onClick={onOpenManager}
-                        className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur border border-gray-200 hover:border-accent-300 hover:text-accent-600 rounded-full shadow-sm hover:shadow transition-all text-sm font-medium text-gray-600"
-                    >
-                        <Folder size={16} />
-                        <span>My Trips</span>
-                    </button>
-                </div>
-            </header>
+            <div className="relative z-20">
+                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
+            </div>
 
-            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 pt-28 sm:pt-32 md:pt-36 overflow-y-auto w-full">
+            <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
                 <div className="text-center mb-6">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Plan your next adventure</h1>
                     <p className="text-gray-500">Choose a flow and generate your itinerary in seconds.</p>
@@ -1511,6 +1478,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             <div className="relative z-[2] mt-auto">
                 <SiteFooter className="bg-white/75 backdrop-blur border-slate-200/70" />
             </div>
+
         </div>
     );
 };

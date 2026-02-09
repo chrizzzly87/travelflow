@@ -60,6 +60,7 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
         }
         
         localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+        window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to save trip", e);
     }
@@ -70,6 +71,7 @@ export const deleteTrip = (id: string): void => {
         const trips = getAllTrips();
         const filtered = trips.filter(t => t.id !== id);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to delete trip", e);
     }
@@ -86,6 +88,7 @@ export const setAllTrips = (trips: ITrip[]): void => {
             .map(normalizeTrip)
             .filter((trip): trip is ITrip => Boolean(trip));
         localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to replace trips in storage", e);
     }

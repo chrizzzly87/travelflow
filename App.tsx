@@ -24,6 +24,8 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { PricingPage } from './pages/PricingPage';
+import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
@@ -549,7 +551,7 @@ const AppContent: React.FC = () => {
     };
 
     return (
-        <>
+        <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ScrollToTop />
             <ViewTransitionHandler />
             <Routes>
@@ -577,6 +579,7 @@ const AppContent: React.FC = () => {
                 <Route path="/updates" element={<UpdatesPage />} />
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/imprint" element={<ImprintPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
@@ -638,7 +641,7 @@ const AppContent: React.FC = () => {
 
             <CookieConsentBanner />
             <GlobalTooltipLayer />
-        </>
+        </TripManagerProvider>
     );
 };
 
