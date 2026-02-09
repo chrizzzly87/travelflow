@@ -1,7 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  # edge_functions = "netlify/edge-functions"
+  edge_functions = "netlify/edge-functions"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -13,7 +13,10 @@
 [dev]
   targetPort = 5173
 
-# === TEMPORARILY: health function uses v2 inline config ===
+[[edge_functions]]
+  path = "/api/health"
+  function = "health"
+
 # === ALL BELOW DISABLED — investigating 500 errors ===
 # [[edge_functions]]
 #   path = "/api/trip-map-preview"
