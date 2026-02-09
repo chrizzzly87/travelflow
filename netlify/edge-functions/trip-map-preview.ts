@@ -85,6 +85,3 @@ export default async (request: Request) => {
         },
     });
 };
-
-
-export const config = { onError: "bypass" };

@@ -63,7 +63,7 @@
 
 [[edge_functions]]
   path = "/login"
-  function = "login-og-test"
+  function = "site-og-meta"
 
 [[edge_functions]]
   path = "/imprint"

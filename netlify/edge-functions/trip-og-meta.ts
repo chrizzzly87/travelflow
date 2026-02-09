@@ -220,6 +220,3 @@ export default async (request: Request, context: { next: () => Promise<Response>
     return fallbackResponse;
   }
 };
-
-
-export const config = { onError: "bypass" };
