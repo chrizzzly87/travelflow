@@ -17,3 +17,5 @@ summary: "Fixed a deployment issue that caused 500 errors on all pages, and adde
 - [ ] [Internal] Validator also warns about orphaned function files and broken netlify.toml references.
 - [ ] [Internal] Created comprehensive edge function documentation (`docs/EDGE_FUNCTIONS.md`) covering architecture, routes, env vars, caching, and failure modes.
 - [ ] [Internal] Removed accidentally restored `_backup/` directory.
+- [x] [Improved] 🖼️ Open Graph images now scale headlines dynamically — long blog and page titles fit cleanly instead of overflowing.
+- [ ] [Internal] Improved blog post OG meta descriptions for better search and social previews.

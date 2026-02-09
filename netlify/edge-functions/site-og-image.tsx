@@ -60,6 +60,87 @@ const normalizePath = (value: string | null): string => {
 const truncateText = (value: string, max: number): string =>
   value.length > max ? `${value.slice(0, max - 1)}...` : value;
 
+const splitWord = (word: string, maxChars: number): string[] => {
+  if (word.length <= maxChars) return [word];
+  const chunks: string[] = [];
+  let cursor = 0;
+  while (cursor < word.length) {
+    const remaining = word.length - cursor;
+    const chunkSize = Math.min(remaining, remaining > maxChars ? maxChars - 1 : maxChars);
+    const chunk = word.slice(cursor, cursor + chunkSize);
+    cursor += chunkSize;
+    chunks.push(cursor < word.length ? `${chunk}-` : chunk);
+  }
+  return chunks;
+};
+
+const wrapTitle = (value: string, maxChars: number, maxLines: number): string[] => {
+  const words = value
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .flatMap((word) => splitWord(word, maxChars));
+
+  if (words.length === 0) return [value];
+
+  const lines: string[] = [];
+  let current = "";
+  let index = 0;
+
+  while (index < words.length) {
+    const token = words[index];
+    const candidate = current ? `${current} ${token}` : token;
+
+    if (candidate.length <= maxChars) {
+      current = candidate;
+      index += 1;
+      continue;
+    }
+
+    if (current) {
+      lines.push(current);
+      current = "";
+      if (lines.length >= maxLines) break;
+      continue;
+    }
+
+    lines.push(token);
+    index += 1;
+    if (lines.length >= maxLines) break;
+  }
+
+  if (current && lines.length < maxLines) {
+    lines.push(current);
+  }
+
+  const hasOverflow = index < words.length;
+  if (hasOverflow && lines.length > 0) {
+    const lastIndex = lines.length - 1;
+    const raw = lines[lastIndex].replace(/…+$/g, "");
+    const clipped = raw.length >= maxChars ? raw.slice(0, Math.max(1, maxChars - 1)) : raw;
+    lines[lastIndex] = `${clipped}…`;
+  }
+
+  return lines;
+};
+
+const getSiteTitleSpec = (title: string): { lines: string[]; fontSize: number } => {
+  const length = title.length;
+
+  let fontSize = 70;
+  let maxCharsPerLine = 17;
+
+  if (length > 30) { fontSize = 58; maxCharsPerLine = 22; }
+  if (length > 44) { fontSize = 48; maxCharsPerLine = 27; }
+  if (length > 62) { fontSize = 42; maxCharsPerLine = 31; }
+  if (length > 84) { fontSize = 36; maxCharsPerLine = 35; }
+
+  return {
+    lines: wrapTitle(title, maxCharsPerLine, 3),
+    fontSize,
+  };
+};
+
 const svgToDataUri = (svg: string): string => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
 const PLANE_GLYPH_PATH =
@@ -101,6 +182,8 @@ export default async (request: Request): Promise<Response> => {
     const pillText = sanitizeText(url.searchParams.get("pill"), 30) || "TravelFlow";
     const pagePath = normalizePath(url.searchParams.get("path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+
+    const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
     return new ImageResponse(
       (
@@ -149,9 +232,11 @@ export default async (request: Request): Promise<Response> => {
             <div
               style={{
                 display: "flex",
+                flexDirection: "column",
+                gap: 4,
                 marginTop: 18,
-                fontSize: 70,
-                lineHeight: 1.02,
+                fontSize: titleFontSize,
+                lineHeight: 1.08,
                 letterSpacing: -1.8,
                 fontWeight: 800,
                 textWrap: "pretty",
@@ -159,7 +244,11 @@ export default async (request: Request): Promise<Response> => {
                 fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
-              {title}
+              {titleLines.map((line, i) => (
+                <div key={`title-${i}`} style={{ display: "flex" }}>
+                  {line}
+                </div>
+              ))}
             </div>
 
             <div

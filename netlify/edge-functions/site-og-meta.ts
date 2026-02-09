@@ -104,24 +104,24 @@ const PAGE_META: Record<string, PageDefinition> = {
 
 const BLOG_META: Record<string, { title: string; description: string }> = {
   "best-time-visit-japan": {
-    title: "The Best Time to Visit Japan — A Month-by-Month Guide",
-    description: "Japan transforms with every season. From cherry blossoms to powder snow, here's when to go.",
+    title: "Best Time to Visit Japan — Month by Month",
+    description: "Cherry blossoms in spring, festivals in summer, fiery foliage in autumn, powder snow in winter — find the perfect month for your Japan trip with seasonal highlights and travel tips.",
   },
   "budget-travel-europe": {
     title: "Budget Travel Hacks for Europe",
-    description: "Smart timing, local habits, and a few practical tricks can cut your Europe costs in half.",
+    description: "Smart timing, local transport passes, affordable stays, and a few practical habits that can cut your Europe trip costs in half without sacrificing the experience.",
   },
   "festival-travel-guide": {
     title: "How to Plan a Trip Around a Festival",
-    description: "Festival-centered trips are some of the most memorable journeys. Here's how to plan one.",
+    description: "From picking the right event to booking accommodation early and building a flexible itinerary — a step-by-step guide to festival-centered travel planning.",
   },
   "how-to-plan-multi-city-trip": {
-    title: "How to Plan the Perfect Multi-City Trip",
-    description: "Practical advice on route planning, timing, and logistics for multi-destination travel.",
+    title: "How to Plan a Multi-City Trip",
+    description: "Route sequencing, realistic day counts, transport links between stops, and packing strategies — practical advice for planning a smooth multi-destination itinerary.",
   },
   "weekend-getaway-tips": {
-    title: "Weekend Getaway Planning: From Idea to Boarding Pass",
-    description: "How to squeeze the most out of a 2–3 day trip without the stress.",
+    title: "Weekend Getaway Planning Made Simple",
+    description: "Pick a destination, book fast, pack light, and make every hour count — a concise guide to squeezing the most out of a 2–3 day trip without the planning stress.",
   },
 };
 
