@@ -32,10 +32,7 @@ const ZigzagUnderline: React.FC = () => (
 
 export const HeroSection: React.FC = () => {
     const handleCtaClick = (ctaName: string) => {
-        trackEvent('marketing_hero_cta_clicked', {
-            cta_name: ctaName,
-            page: 'home',
-        });
+        trackEvent(`home__hero_cta--${ctaName}`);
     };
 
     return (

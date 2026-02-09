@@ -23,7 +23,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
 
     useEffect(() => {
         if (isOpen) {
-            trackEvent('mobile_menu_opened');
+            trackEvent('mobile_nav__menu--open');
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -43,7 +43,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     }, [isOpen, onClose]);
 
     const handleNavClick = (target: string) => {
-        trackEvent('mobile_nav_clicked', { target });
+        trackEvent(`mobile_nav__${target}`);
         onClose();
     };
 

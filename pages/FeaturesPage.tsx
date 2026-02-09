@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { trackEvent } from '../services/analyticsService';
 
 interface Feature {
     icon: Icon;
@@ -243,6 +244,7 @@ export const FeaturesPage: React.FC = () => {
                     </p>
                     <Link
                         to="/create-trip"
+                        onClick={() => trackEvent('features__bottom_cta')}
                         className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
                     >
                         Start Planning — Free

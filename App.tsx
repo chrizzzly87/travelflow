@@ -524,7 +524,7 @@ const AppContent: React.FC = () => {
         const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
         const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
         const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
-        trackEvent('trip_created', {
+        trackEvent('app__trip--create', {
             city_count: cityCount,
             activity_count: activityCount,
             travel_segment_count: travelSegmentCount,

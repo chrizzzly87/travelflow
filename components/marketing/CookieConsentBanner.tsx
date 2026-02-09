@@ -11,7 +11,9 @@ export const CookieConsentBanner: React.FC = () => {
         setConsent(choice);
         saveConsent(choice);
         if (choice === 'all') {
-            trackEvent('consent_accept_all_clicked', { source: 'cookie_banner' });
+            trackEvent('consent__banner--accept', { source: 'cookie_banner' });
+        } else {
+            trackEvent('consent__banner--reject', { source: 'cookie_banner' });
         }
     };
 

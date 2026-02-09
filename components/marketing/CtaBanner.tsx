@@ -19,10 +19,7 @@ export const CtaBanner: React.FC = () => {
                 <Link
                     to="/create-trip"
                     onClick={() =>
-                        trackEvent('marketing_hero_cta_clicked', {
-                            cta_name: 'cta_banner',
-                            page: 'home',
-                        })
+                        trackEvent('home__bottom_cta')
                     }
                     className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
                 >

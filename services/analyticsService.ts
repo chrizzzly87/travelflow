@@ -126,7 +126,26 @@ export const trackPageView = (path: string): void => {
     });
 };
 
-export const trackEvent = (eventName: string, payload?: Record<string, unknown>): void => {
+/**
+ * BEM-inspired analytics event name.
+ *
+ * Format: `{page}__{element}` or `{page}__{element}--{detail}`
+ *   - page:    page or persistent UI region (e.g. home, navigation, footer, pricing)
+ *   - element: specific widget interacted with (e.g. hero_cta, bottom_cta, tier)
+ *   - detail:  (optional) finite qualifier — meaningful action or known target
+ *
+ * Rules:
+ *   - Clicks are implicit — do NOT add `--click`.
+ *   - Use `--{detail}` only when the detail differentiates (e.g. accept/reject,
+ *     open/dismiss, a known finite target like a nav item or tier name).
+ *   - Variable/open-ended data (titles, countries from large sets) goes in payload.
+ *   - Use snake_case within each segment.
+ *
+ * See docs/ANALYTICS_CONVENTION.md for the full reference.
+ */
+type AnalyticsEventName = `${string}__${string}--${string}` | `${string}__${string}`;
+
+export const trackEvent = (eventName: AnalyticsEventName, payload?: Record<string, unknown>): void => {
     const sanitizedEventName = eventName.trim();
     if (!sanitizedEventName) return;
 
