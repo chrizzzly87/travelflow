@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
+import { TRIP_FACTORIES } from '../../data/exampleTripTemplates';
+import { trackEvent } from '../../services/analyticsService';
+import { saveTrip } from '../../services/storageService';
+import { buildTripUrl } from '../../utils';
 import { ExampleTripCard } from './ExampleTripCard';
 
 // Deterministic rotation per card index — alternating slight tilts
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.8];
 
 export const ExampleTripsCarousel: React.FC = () => {
+    const navigate = useNavigate();
     // Duplicate the cards array so the marquee loops seamlessly
     const doubledCards = [...exampleTripCards, ...exampleTripCards];
+
+    const handleCardClick = useCallback((templateId: string) => {
+        const factory = TRIP_FACTORIES[templateId];
+        if (!factory) return;
+        const trip = factory(new Date().toISOString());
+        saveTrip(trip);
+        // Default example trips to realistic route rendering
+        localStorage.setItem('tf_route_mode', 'realistic');
+        trackEvent('home__carousel_card', { template: templateId });
+        navigate(buildTripUrl(trip.id));
+    }, [navigate]);
 
     return (
         <section id="examples" className="py-16 md:py-24">
@@ -36,16 +53,15 @@ export const ExampleTripsCarousel: React.FC = () => {
                         {doubledCards.map((card, index) => {
                             const rotation = ROTATIONS[index % ROTATIONS.length];
                             return (
-                                <a
+                                <button
                                     key={`${card.id}-${index}`}
-                                    href="#"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105"
+                                    type="button"
+                                    onClick={() => card.templateId && handleCardClick(card.templateId)}
+                                    className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
                                     style={{ transform: `rotate(${rotation}deg)` }}
                                 >
                                     <ExampleTripCard card={card} />
-                                </a>
+                                </button>
                             );
                         })}
                     </div>

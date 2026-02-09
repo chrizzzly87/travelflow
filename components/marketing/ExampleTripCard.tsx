@@ -9,23 +9,35 @@ interface ExampleTripCardProps {
 export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card }) => {
     return (
         <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
-            {/* Map placeholder */}
-            <div className={`relative h-36 rounded-t-2xl ${card.mapColor} overflow-hidden`}>
-                {/* Decorative route dots */}
-                <div className={`absolute left-[20%] top-[30%] h-2.5 w-2.5 rounded-full ${card.mapAccent}`} />
-                <div className={`absolute left-[40%] top-[55%] h-2 w-2 rounded-full ${card.mapAccent} opacity-70`} />
-                <div className={`absolute left-[60%] top-[35%] h-3 w-3 rounded-full ${card.mapAccent}`} />
-                <div className={`absolute left-[75%] top-[60%] h-2 w-2 rounded-full ${card.mapAccent} opacity-60`} />
-                {/* Decorative route line */}
-                <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 144" fill="none" preserveAspectRatio="none">
-                    <path
-                        d="M68 43 L136 79 L204 50 L255 86"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeDasharray="4 4"
-                        className="text-slate-400/40"
+            {/* Map area */}
+            <div className={`relative h-36 rounded-t-2xl overflow-hidden ${card.mapImagePath ? 'bg-slate-100' : card.mapColor}`}>
+                {card.mapImagePath ? (
+                    <img
+                        src={card.mapImagePath}
+                        alt={`Route map for ${card.title}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                     />
-                </svg>
+                ) : (
+                    <>
+                        {/* Decorative route dots */}
+                        <div className={`absolute left-[20%] top-[30%] h-2.5 w-2.5 rounded-full ${card.mapAccent}`} />
+                        <div className={`absolute left-[40%] top-[55%] h-2 w-2 rounded-full ${card.mapAccent} opacity-70`} />
+                        <div className={`absolute left-[60%] top-[35%] h-3 w-3 rounded-full ${card.mapAccent}`} />
+                        <div className={`absolute left-[75%] top-[60%] h-2 w-2 rounded-full ${card.mapAccent} opacity-60`} />
+                        {/* Decorative route line */}
+                        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 144" fill="none" preserveAspectRatio="none">
+                            <path
+                                d="M68 43 L136 79 L204 50 L255 86"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                strokeDasharray="4 4"
+                                className="text-slate-400/40"
+                            />
+                        </svg>
+                    </>
+                )}
             </div>
 
             {/* Body */}

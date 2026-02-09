@@ -9,6 +9,8 @@ export interface ExampleTripCard {
   username: string;
   avatarColor: string;
   tags: string[];
+  mapImagePath?: string;
+  templateId?: string;
 }
 
 export const exampleTripCards: ExampleTripCard[] = [
@@ -23,6 +25,8 @@ export const exampleTripCards: ExampleTripCard[] = [
     username: 'sakura_wanderer',
     avatarColor: 'bg-rose-500',
     tags: ['Culture', 'Food', 'Nature'],
+    mapImagePath: '/images/trip-maps/japan-spring.png',
+    templateId: 'japan-spring',
   },
   {
     id: 'italy-classic',
@@ -35,18 +39,22 @@ export const exampleTripCards: ExampleTripCard[] = [
     username: 'dolce_vita',
     avatarColor: 'bg-amber-600',
     tags: ['Food', 'Art', 'History'],
+    mapImagePath: '/images/trip-maps/italy-classic.png',
+    templateId: 'italy-classic',
   },
   {
     id: 'thailand-islands',
     title: 'Temples & Beaches',
     countries: [{ name: 'Thailand', flag: '🇹🇭' }],
-    durationDays: 12,
-    cityCount: 4,
+    durationDays: 26,
+    cityCount: 7,
     mapColor: 'bg-emerald-100',
     mapAccent: 'bg-emerald-400',
     username: 'island_hopper',
     avatarColor: 'bg-emerald-500',
     tags: ['Beach', 'Adventure', 'Food'],
+    mapImagePath: '/images/trip-maps/thailand-islands.png',
+    templateId: 'thailand-islands',
   },
   {
     id: 'portugal-coast',
@@ -59,30 +67,36 @@ export const exampleTripCards: ExampleTripCard[] = [
     username: 'surf_nomad',
     avatarColor: 'bg-sky-600',
     tags: ['Surf', 'Culture', 'Wine'],
+    mapImagePath: '/images/trip-maps/portugal-coast.png',
+    templateId: 'portugal-coast',
   },
   {
     id: 'peru-adventure',
     title: 'Andes & Amazon Explorer',
     countries: [{ name: 'Peru', flag: '🇵🇪' }],
     durationDays: 16,
-    cityCount: 5,
+    cityCount: 6,
     mapColor: 'bg-orange-100',
     mapAccent: 'bg-orange-400',
     username: 'altitude_addict',
     avatarColor: 'bg-orange-600',
     tags: ['Adventure', 'Nature', 'History'],
+    mapImagePath: '/images/trip-maps/peru-adventure.png',
+    templateId: 'peru-adventure',
   },
   {
     id: 'new-zealand-wild',
     title: 'South Island Wilderness',
     countries: [{ name: 'New Zealand', flag: '🇳🇿' }],
     durationDays: 21,
-    cityCount: 7,
+    cityCount: 8,
     mapColor: 'bg-teal-100',
     mapAccent: 'bg-teal-400',
     username: 'kiwi_trails',
     avatarColor: 'bg-teal-600',
     tags: ['Nature', 'Hiking', 'Road Trip'],
+    mapImagePath: '/images/trip-maps/new-zealand-wild.png',
+    templateId: 'new-zealand-wild',
   },
   {
     id: 'morocco-medina',
@@ -95,6 +109,8 @@ export const exampleTripCards: ExampleTripCard[] = [
     username: 'desert_dreamer',
     avatarColor: 'bg-yellow-700',
     tags: ['Culture', 'Food', 'Desert'],
+    mapImagePath: '/images/trip-maps/morocco-medina.png',
+    templateId: 'morocco-medina',
   },
   {
     id: 'iceland-ring',
@@ -107,5 +123,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     username: 'arctic_rover',
     avatarColor: 'bg-indigo-600',
     tags: ['Nature', 'Road Trip', 'Photography'],
+    mapImagePath: '/images/trip-maps/iceland-ring.png',
+    templateId: 'iceland-ring',
   },
 ];

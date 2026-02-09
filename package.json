@@ -8,7 +8,8 @@
     "updates:validate": "node scripts/validate-updates.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "build": "npm run updates:validate && npm run blog:validate && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },
   "dependencies": {
     "@google/genai": "latest",
@@ -31,6 +32,7 @@
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.19.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

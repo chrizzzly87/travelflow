@@ -61,6 +61,24 @@ The production output is generated in `dist/`.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
+## Generate Trip Map Images
+
+The homepage trip cards display static route map PNGs. To regenerate them from current trip template coordinates:
+
+```bash
+npm run maps:generate
+```
+
+The script reads `VITE_GOOGLE_MAPS_API_KEY` from `.env.local` (or `.env`) and downloads one PNG per template into `public/images/trip-maps/`.
+
+Use `--dry-run` to preview the Google Static Maps URLs without downloading:
+
+```bash
+npm run maps:generate -- --dry-run
+```
+
+Re-run this after adding new trip templates or changing city coordinates.
+
 ## Deploy To Vercel
 
 This repo includes `vercel.json` for Vite + SPA routing.
