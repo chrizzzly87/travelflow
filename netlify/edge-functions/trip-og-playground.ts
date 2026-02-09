@@ -340,3 +340,6 @@ export default async (request: Request): Promise<Response> => {
     },
   });
 };
+
+
+export const config = { onError: "bypass" };

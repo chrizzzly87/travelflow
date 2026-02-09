@@ -28,12 +28,16 @@ const efFiles = readdirSync(EF_DIR).filter(
 for (const file of efFiles) {
   const content = readFileSync(resolve(EF_DIR, file), "utf-8");
   if (/export\s+const\s+config\s*=/.test(content)) {
-    console.error(
-      `ERROR: ${file} contains inline \`export const config\`. ` +
-        `Routes must be declared in netlify.toml only. ` +
-        `See docs/EDGE_FUNCTIONS.md for details.`
-    );
-    errors++;
+    // Allow config that only sets onError (no path routing)
+    const hasPath = /path\s*:/.test(content);
+    if (hasPath) {
+      console.error(
+        `ERROR: ${file} contains inline route config (path). ` +
+          `Routes must be declared in netlify.toml only. ` +
+          `See docs/EDGE_FUNCTIONS.md for details.`
+      );
+      errors++;
+    }
   }
 }
 
