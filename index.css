@@ -260,6 +260,28 @@ h6,
   animation: content-fade-in 0.25s ease-out both;
 }
 
+/* ── Plane window clouds animation ── */
+
+@keyframes clouds-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@utility animate-clouds-scroll {
+  animation: clouds-scroll 25s linear infinite;
+}
+
+/* Position the cloud mask inside the window opening, slightly inset to
+   prevent clouds from bleeding past the frame edges. */
+.plane-window-clouds-mask {
+  inset: 17% 17% 16% 17%;
+  border-radius: 42%;
+}
+
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

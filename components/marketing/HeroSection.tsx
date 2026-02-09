@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { trackEvent } from '../../services/analyticsService';
+import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 
 /** Animated hand-drawn zigzag underline SVG */
 const ZigzagUnderline: React.FC = () => (
@@ -41,7 +42,8 @@ export const HeroSection: React.FC = () => {
             <div className="pointer-events-none absolute -right-32 -top-20 h-[420px] w-[420px] rounded-full bg-accent-300/40 blur-[100px]" />
             <div className="pointer-events-none absolute -bottom-32 -left-20 h-[380px] w-[380px] rounded-full bg-accent-200/50 blur-[100px]" />
 
-            <div className="relative max-w-3xl">
+            <div className="relative flex items-center gap-8 lg:gap-12">
+            <div className="max-w-3xl flex-1">
                 {/* Badge pill — stagger 0 */}
                 <div className="animate-hero-stagger" style={{ '--stagger': '0ms' } as React.CSSProperties}>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
@@ -101,6 +103,12 @@ export const HeroSection: React.FC = () => {
                         Booking links
                     </span>
                 </div>
+            </div>
+
+            {/* Plane window animation — visible on lg+ */}
+            <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0 animate-hero-stagger" style={{ '--stagger': '400ms' } as React.CSSProperties}>
+                <PlaneWindowAnimation />
+            </div>
             </div>
         </section>
     );
