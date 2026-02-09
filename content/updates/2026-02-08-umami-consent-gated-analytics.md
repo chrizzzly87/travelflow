@@ -3,7 +3,7 @@ id: rel-2026-02-08-umami-consent-gated-analytics
 version: v0.20.0
 title: "Consent-gated Umami analytics"
 date: 2026-02-08
-published_at: 2026-02-08T23:59:30Z
+published_at: 2026-02-08T21:15:00Z
 status: published
 notify_in_app: true
 in_app_hours: 24

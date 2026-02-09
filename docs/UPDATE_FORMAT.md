@@ -33,7 +33,7 @@ summary: "One concise summary sentence."
 - `id`: unique stable release id.
 - `version`: release label shown in update UI (for example `v0.7.0`).
 - `date`: release date (`YYYY-MM-DD`).
-- `published_at`: exact publish timestamp (used for in-app 24h notice window).
+- `published_at`: exact publish timestamp (used for in-app 24h notice window). **Must be < 23:00 UTC** — the site renders dates in CET (UTC+1), so timestamps at or after 23:00 UTC display as the next calendar day. Set this to the current time when finalizing, and verify it stays before 23:00 UTC.
 - `status`: `published` or `draft`.
 - `notify_in_app`: if `true`, latest published release can appear inside trip view.
 - `in_app_hours`: notice lifetime in hours (current default: `24`).
@@ -83,3 +83,9 @@ Write visible items from the user's perspective — focus on the benefit, not th
 - Every new published release must use a new version.
 - Versions must be strictly increasing over publish time.
 - Reusing a previous version is not allowed and should fail validation.
+
+## Timezone rule
+The site displays dates in CET (UTC+1). To ensure the correct date appears on the `/updates` page:
+- `published_at` must always be **before 23:00 UTC** (i.e. before midnight CET).
+- If you finish work after 23:00 UTC (00:00+ CET), use `date` for the next calendar day and set `published_at` accordingly.
+- Timestamps must strictly increase with version number — the build validator (`scripts/validate-updates.mjs`) enforces this.

@@ -17,6 +17,7 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Write visible items from the user's perspective — focus on what changed for them, not how it was built.
 - Keep the most important user-facing items first, and fixes after primary highlights.
 - Bump the release `version` whenever publishing a new release entry.
+- Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.

@@ -19,6 +19,7 @@ Rules:
 - Put major highlights first; place fixes later.
 - Always bump to a new release `version` for every new published release.
 - Never reuse or downgrade a published release version.
+- Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 - Do not finish a feature task without updating release markdown when relevant.
 
 ## Validation
