@@ -13,9 +13,10 @@
 [dev]
   targetPort = 5173
 
-[[edge_functions]]
-  path = "/api/trip-map-preview"
-  function = "trip-map-preview"
+# TEMPORARILY DISABLED — investigating 500 errors
+# [[edge_functions]]
+#   path = "/api/trip-map-preview"
+#   function = "trip-map-preview"
 
 [[edge_functions]]
   path = "/api/og/trip"
