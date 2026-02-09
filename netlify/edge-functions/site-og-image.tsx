@@ -98,6 +98,7 @@ export default async (request: Request): Promise<Response> => {
 
     const title = sanitizeText(url.searchParams.get("title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(url.searchParams.get("description"), 160) || DEFAULT_SUBLINE;
+    const pillText = sanitizeText(url.searchParams.get("pill"), 30) || "TravelFlow";
     const pagePath = normalizePath(url.searchParams.get("path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
 
@@ -142,7 +143,7 @@ export default async (request: Request): Promise<Response> => {
               }}
             >
               <img src={FOOTER_PLANE_ICON_URI} alt="" style={{ width: 16, height: 16, display: "flex" }} />
-              TravelFlow
+              {pillText}
             </div>
 
             <div

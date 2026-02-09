@@ -16,28 +16,34 @@ interface PageDefinition {
   title: string;
   description: string;
   robots?: string;
+  pill?: string;
 }
 
 const PAGE_META: Record<string, PageDefinition> = {
   "/": {
     title: "TravelFlow",
     description: "Plan smarter trips with timeline + map routing and share them beautifully.",
+    pill: "TRAVELFLOW",
   },
   "/create-trip": {
     title: "Create Trip",
     description: "Build your itinerary with flexible stops, routes, and timeline planning.",
+    pill: "TRIP PLANNER",
   },
   "/features": {
     title: "Features",
     description: "See everything TravelFlow offers for planning and sharing better adventures.",
+    pill: "FEATURES",
   },
   "/updates": {
     title: "Product Updates",
     description: "Catch the latest TravelFlow improvements and recently shipped features.",
+    pill: "PRODUCT UPDATES",
   },
   "/blog": {
     title: "TravelFlow Blog",
     description: "Guides, trip-planning ideas, and practical workflow tips from the TravelFlow team.",
+    pill: "BLOG",
   },
   "/login": {
     title: "Login",
@@ -59,6 +65,64 @@ const PAGE_META: Record<string, PageDefinition> = {
     title: "Cookie Policy",
     description: "Understand how TravelFlow uses cookies and similar technologies.",
   },
+  "/inspirations": {
+    title: "Where Will You Go Next?",
+    description: "Browse curated trip ideas by theme, month, country, or upcoming festivals.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/inspirations/themes": {
+    title: "Travel by Theme",
+    description: "Find curated trip ideas that match your travel style — adventure, food, photography, and more.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/inspirations/best-time-to-travel": {
+    title: "When to Go Where",
+    description: "Month-by-month guide to the best time to visit destinations around the world.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/inspirations/countries": {
+    title: "Explore by Country",
+    description: "Country-specific travel guides with best-month picks, top cities, and local tips.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/inspirations/events-and-festivals": {
+    title: "Plan Around a Festival",
+    description: "Discover upcoming festivals and build your itinerary around the event.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/inspirations/weekend-getaways": {
+    title: "Quick Escapes for Busy Travelers",
+    description: "2–3 day getaway ideas for spontaneous adventurers — pack light and make the most of a long weekend.",
+    pill: "TRIP INSPIRATIONS",
+  },
+  "/pricing": {
+    title: "Simple, Transparent Pricing",
+    description: "Start for free and upgrade when you need more. No hidden fees, cancel anytime.",
+    pill: "PRICING",
+  },
+};
+
+const BLOG_META: Record<string, { title: string; description: string }> = {
+  "best-time-visit-japan": {
+    title: "The Best Time to Visit Japan — A Month-by-Month Guide",
+    description: "Japan transforms with every season. From cherry blossoms to powder snow, here's when to go.",
+  },
+  "budget-travel-europe": {
+    title: "Budget Travel Hacks for Europe",
+    description: "Smart timing, local habits, and a few practical tricks can cut your Europe costs in half.",
+  },
+  "festival-travel-guide": {
+    title: "How to Plan a Trip Around a Festival",
+    description: "Festival-centered trips are some of the most memorable journeys. Here's how to plan one.",
+  },
+  "how-to-plan-multi-city-trip": {
+    title: "How to Plan the Perfect Multi-City Trip",
+    description: "Practical advice on route planning, timing, and logistics for multi-destination travel.",
+  },
+  "weekend-getaway-tips": {
+    title: "Weekend Getaway Planning: From Idea to Boarding Pass",
+    description: "How to squeeze the most out of a 2–3 day trip without the stress.",
+  },
 };
 
 const pathToTitle = (pathname: string): string => {
@@ -73,6 +137,7 @@ const pathToTitle = (pathname: string): string => {
 
 const getPageDefinition = (pathname: string): PageDefinition => {
   if (PAGE_META[pathname]) return PAGE_META[pathname];
+
   if (pathname.startsWith("/admin")) {
     return {
       title: "Admin Dashboard",
@@ -80,6 +145,42 @@ const getPageDefinition = (pathname: string): PageDefinition => {
       robots: "noindex,nofollow,max-image-preview:large",
     };
   }
+
+  // /blog/:slug — look up static blog meta or fall back to pathToTitle
+  const blogMatch = pathname.match(/^\/blog\/([^/]+)\/?$/);
+  if (blogMatch) {
+    const slug = blogMatch[1];
+    const blog = BLOG_META[slug];
+    return {
+      title: blog ? blog.title : pathToTitle(pathname),
+      description: blog ? blog.description : "Read this article on the TravelFlow blog.",
+      pill: "BLOG",
+    };
+  }
+
+  // /inspirations/country/:countryName
+  const countryMatch = pathname.match(/^\/inspirations\/country\/([^/]+)\/?$/);
+  if (countryMatch) {
+    const country = decodeURIComponent(countryMatch[1])
+      .split(/[-_]+/)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+    return {
+      title: `Travel to ${country}`,
+      description: `Plan your trip to ${country} — best months, itineraries, and tips.`,
+      pill: "TRIP INSPIRATIONS",
+    };
+  }
+
+  // /inspirations/* catch-all
+  if (pathname.startsWith("/inspirations")) {
+    return {
+      title: pathToTitle(pathname),
+      description: "Explore curated trip ideas and travel inspiration on TravelFlow.",
+      pill: "TRIP INSPIRATIONS",
+    };
+  }
+
   return {
     title: pathToTitle(pathname),
     description: DEFAULT_DESCRIPTION,
@@ -150,6 +251,9 @@ const buildMetadata = (url: URL): Metadata => {
   ogImage.searchParams.set("title", page.title);
   ogImage.searchParams.set("description", page.description);
   ogImage.searchParams.set("path", url.pathname + canonicalSearch);
+  if (page.pill) {
+    ogImage.searchParams.set("pill", page.pill);
+  }
 
   return {
     pageTitle: title,

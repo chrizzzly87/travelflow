@@ -14,6 +14,10 @@
   targetPort = 5173
 
 [[edge_functions]]
+  path = "/api/trip-map-preview"
+  function = "trip-map-preview"
+
+[[edge_functions]]
   path = "/api/og/trip"
   function = "trip-og-image"
 
@@ -71,6 +75,22 @@
 
 [[edge_functions]]
   path = "/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
