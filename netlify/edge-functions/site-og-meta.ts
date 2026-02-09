@@ -134,14 +134,22 @@ const injectMetaTags = (html: string, meta: Metadata): string => {
   return cleaned.replace(/<\/head>/i, `${buildMetaTags(meta)}\n</head>`);
 };
 
+const buildCanonicalSearch = (url: URL): string => {
+  const params = new URLSearchParams(url.search);
+  params.delete("prefill");
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+};
+
 const buildMetadata = (url: URL): Metadata => {
   const page = getPageDefinition(url.pathname);
   const title = page.title === SITE_NAME ? SITE_NAME : `${page.title} | ${SITE_NAME}`;
-  const canonicalUrl = new URL(url.pathname + url.search, url.origin).toString();
+  const canonicalSearch = buildCanonicalSearch(url);
+  const canonicalUrl = new URL(url.pathname + canonicalSearch, url.origin).toString();
   const ogImage = new URL("/api/og/site", url.origin);
   ogImage.searchParams.set("title", page.title);
   ogImage.searchParams.set("description", page.description);
-  ogImage.searchParams.set("path", url.pathname + url.search);
+  ogImage.searchParams.set("path", url.pathname + canonicalSearch);
 
   return {
     pageTitle: title,

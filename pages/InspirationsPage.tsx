@@ -24,8 +24,9 @@ import {
     quickIdeas,
     getAllDestinations,
 } from '../data/inspirationsData';
-import type { Destination, FestivalEvent as FestivalEventType, WeekendGetaway as WeekendGetawayType, CountryGroup } from '../data/inspirationsData';
+import type { Destination, FestivalEvent as FestivalEventType, WeekendGetaway as WeekendGetawayType, CountryGroup, QuickIdea } from '../data/inspirationsData';
 import { getBlogPostsBySlugs } from '../services/blogService';
+import { buildCreateTripUrl, resolveDestinationCodes } from '../utils';
 
 /* ── Festival date helpers ── */
 
@@ -42,6 +43,26 @@ const getNextOccurrence = (festival: FestivalEventType, now: Date): Date => {
 
 const formatFestivalDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const toIso = (d: Date): string => d.toISOString().split('T')[0];
+
+const addDaysLocal = (d: Date, n: number): Date => {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+};
+
+const nextSaturday = (): Date => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = (6 - day + 7) % 7 || 7;
+    return addDaysLocal(now, diff);
+};
+
+const suggestedStartForDays = (days: number): Date => {
+    const now = new Date();
+    return addDaysLocal(now, Math.max(14, days));
 };
 
 /* ── Blog link helper ── */
@@ -77,9 +98,22 @@ const sections = [
 
 /* ── Destination card ── */
 
-const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }) => (
+const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }) => {
+    const start = suggestedStartForDays(destination.durationDays);
+    const end = addDaysLocal(start, destination.durationDays - 1);
+    const countries = resolveDestinationCodes(destination.destinationCodes);
+    const prefillUrl = buildCreateTripUrl({
+        countries,
+        cities: destination.cities?.join(', '),
+        startDate: toIso(start),
+        endDate: toIso(end),
+        notes: destination.description,
+        meta: { source: 'inspirations', label: destination.title },
+    });
+
+    return (
     <Link
-        to="/create-trip"
+        to={prefillUrl}
         className="group block rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
     >
         <div className={`relative h-32 rounded-t-2xl ${destination.mapColor} overflow-hidden`}>
@@ -99,17 +133,32 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
             <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">{destination.description}</p>
             <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
                 <span className="inline-flex items-center gap-1"><Clock size={13} weight="duotone" className="text-accent-400" />{destination.durationDays} days</span>
-                <span className="inline-flex items-center gap-1"><MapPin size={13} weight="duotone" className="text-accent-400" />{destination.cityCount} cities</span>
+                {destination.cities && destination.cities.length > 0 && (
+                    <span className="inline-flex items-center gap-1"><MapPin size={13} weight="duotone" className="text-accent-400" />{destination.cities.length} {destination.cities.length === 1 ? 'city' : 'cities'}</span>
+                )}
             </div>
         </div>
     </Link>
-);
+    );
+};
 
 /* ── Festival card ── */
 
-const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ event, nextDate }) => (
+const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ event, nextDate }) => {
+    const endDate = addDaysLocal(nextDate, event.durationDays - 1);
+    const countries = resolveDestinationCodes(event.destinationCodes);
+    const prefillUrl = buildCreateTripUrl({
+        countries,
+        cities: event.cities?.join(', '),
+        startDate: toIso(nextDate),
+        endDate: toIso(endDate),
+        notes: event.description,
+        meta: { source: 'inspirations', label: event.name },
+    });
+
+    return (
     <Link
-        to="/create-trip"
+        to={prefillUrl}
         className="group flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
     >
         <div className={`relative h-24 rounded-t-2xl ${event.mapColor} overflow-hidden flex items-center justify-center`}>
@@ -134,13 +183,27 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
             )}
         </div>
     </Link>
-);
+    );
+};
 
 /* ── Weekend getaway card ── */
 
-const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => (
+const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => {
+    const start = nextSaturday();
+    const end = addDaysLocal(start, getaway.durationDays - 1);
+    const countries = resolveDestinationCodes(getaway.destinationCodes);
+    const prefillUrl = buildCreateTripUrl({
+        countries,
+        cities: getaway.cities?.join(', '),
+        startDate: toIso(start),
+        endDate: toIso(end),
+        notes: getaway.description,
+        meta: { source: 'inspirations', label: getaway.title },
+    });
+
+    return (
     <Link
-        to="/create-trip"
+        to={prefillUrl}
         className="group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5"
     >
         <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
@@ -158,7 +221,8 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
         </div>
         <ArrowRight size={18} weight="bold" className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-accent-500" />
     </Link>
-);
+    );
+};
 
 /* ── Country pill ── */
 
@@ -339,15 +403,20 @@ export const InspirationsPage: React.FC = () => {
                     <section className="pb-12 animate-hero-stagger" style={{ '--stagger': '280ms' } as React.CSSProperties}>
                         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Quick start</h2>
                         <div className="flex flex-wrap gap-2">
-                            {quickIdeas.map((idea) => (
-                                <Link
-                                    key={idea.label}
-                                    to="/create-trip"
-                                    className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
-                                >
-                                    {idea.label}
-                                </Link>
-                            ))}
+                            {quickIdeas.map((idea) => {
+                                const start = suggestedStartForDays(idea.days);
+                                const end = addDaysLocal(start, idea.days - 1);
+                                const countries = resolveDestinationCodes([idea.destinationCode]);
+                                return (
+                                    <Link
+                                        key={idea.label}
+                                        to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: idea.label } })}
+                                        className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
+                                    >
+                                        {idea.label}
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </section>
 
@@ -440,15 +509,23 @@ export const InspirationsPage: React.FC = () => {
                             </h3>
                             <p className="mt-3 text-base leading-relaxed text-slate-600">{selectedMonth.description}</p>
                             <div className="mt-4 flex flex-wrap gap-2">
-                                {selectedMonth.destinations.map((dest) => (
-                                    <Link
-                                        key={dest}
-                                        to="/create-trip"
-                                        className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
-                                    >
-                                        {dest}
-                                    </Link>
-                                ))}
+                                {selectedMonth.destinations.map((dest, i) => {
+                                    const now = new Date();
+                                    const monthNum = selectedMonthIndex;
+                                    const year = monthNum >= now.getMonth() ? now.getFullYear() : now.getFullYear() + 1;
+                                    const monthStart = new Date(year, monthNum, 1);
+                                    const monthEnd = addDaysLocal(monthStart, 13);
+                                    const countries = resolveDestinationCodes([selectedMonth.destinationCodes[i]]);
+                                    return (
+                                        <Link
+                                            key={dest}
+                                            to={buildCreateTripUrl({ countries, startDate: toIso(monthStart), endDate: toIso(monthEnd), meta: { source: 'inspirations', label: `${selectedMonth.month} in ${dest}` } })}
+                                            className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700 transition-colors hover:bg-sky-100"
+                                        >
+                                            {dest}
+                                        </Link>
+                                    );
+                                })}
                             </div>
                             {selectedMonth.blogSlugs && selectedMonth.blogSlugs.length > 0 && (
                                 <div className="mt-4 pt-3 border-t border-slate-100">

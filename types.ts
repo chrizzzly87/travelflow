@@ -136,6 +136,27 @@ export interface IUserSettings {
     timelineHeight?: number;
 }
 
+export interface TripPrefillData {
+    countries?: string[];
+    startDate?: string;
+    endDate?: string;
+    budget?: string;
+    pace?: string;
+    cities?: string;
+    notes?: string;
+    roundTrip?: boolean;
+    mode?: 'classic' | 'wizard';
+    styles?: string[];
+    vibes?: string[];
+    logistics?: string[];
+    meta?: {
+        source?: string;
+        author?: string;
+        label?: string;
+        [key: string]: unknown;
+    };
+}
+
 export interface ITripShareRecord {
     id: string;
     tripId: string;

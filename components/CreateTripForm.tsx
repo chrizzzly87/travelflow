@@ -21,6 +21,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
+import { useSearchParams } from 'react-router-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
@@ -28,10 +29,11 @@ import { IdealTravelTimeline } from './IdealTravelTimeline';
 import { MonthSeasonStrip } from './MonthSeasonStrip';
 import { Checkbox } from './ui/checkbox';
 import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/geminiService';
-import { ITimelineItem, ITrip } from '../types';
+import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
     COUNTRIES,
+    decodeTripPrefill,
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
@@ -314,8 +316,10 @@ const SeasonAwareCountryTag: React.FC<{
 
 export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated, onOpenManager }) => {
     const defaultDates = getDefaultTripDates();
+    const [searchParams] = useSearchParams();
 
     const [mode, setMode] = useState<FormMode>('classic');
+    const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
 
     // Shared countries across all flows.
     const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -490,6 +494,31 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         if (hasIslandSelection) return;
         setEnforceIslandOnly(true);
     }, [hasIslandSelection]);
+
+    // Apply URL prefill data on mount
+    useEffect(() => {
+        const raw = searchParams.get('prefill');
+        if (!raw) return;
+        const data = decodeTripPrefill(raw);
+        if (!data) return;
+
+        if (data.countries && data.countries.length > 0) {
+            setSelectedCountries(data.countries);
+        }
+        if (data.startDate) { setStartDate(data.startDate); setWizardStartDate(data.startDate); }
+        if (data.endDate) { setEndDate(data.endDate); setWizardEndDate(data.endDate); }
+        if (data.budget) setBudget(data.budget);
+        if (data.pace) setPace(data.pace);
+        if (data.cities) setSpecificCities(data.cities);
+        if (data.notes) { setNotes(data.notes); setWizardNotes(data.notes); }
+        if (typeof data.roundTrip === 'boolean') { setIsRoundTrip(data.roundTrip); setWizardRoundTrip(data.roundTrip); }
+        if (data.mode) setMode(data.mode);
+        if (data.styles) setWizardStyles(data.styles);
+        if (data.vibes) setWizardVibes(data.vibes);
+        if (data.logistics) setWizardLogistics(data.logistics);
+        if (data.meta) setPrefillMeta(data.meta);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useLayoutEffect(() => {
         if (!wizardSearchOpen) return;
@@ -842,6 +871,15 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
                             <Info size={13} className="mt-0.5 shrink-0" />
                             This beta flow is still in progress and will continue to be refined.
+                        </div>
+                    )}
+
+                    {prefillMeta?.label && (
+                        <div className="mb-4 flex items-center justify-between gap-2 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-sm text-accent-800">
+                            <span>Pre-filled from: <span className="font-semibold">{prefillMeta.label}</span></span>
+                            <button type="button" onClick={() => setPrefillMeta(null)} className="text-accent-400 hover:text-accent-700" aria-label="Dismiss">
+                                <X size={14} />
+                            </button>
                         </div>
                     )}
 
