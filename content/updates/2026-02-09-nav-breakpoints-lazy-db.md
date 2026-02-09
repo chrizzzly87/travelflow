@@ -3,7 +3,7 @@ id: rel-2026-02-09-nav-breakpoints-lazy-db
 version: v0.26.0
 title: "Navigation spacing fix & faster marketing page loads"
 date: 2026-02-09
-published_at: 2026-02-09T23:00:00Z
+published_at: 2026-02-09T22:10:00Z
 status: published
 notify_in_app: false
 in_app_hours: 24

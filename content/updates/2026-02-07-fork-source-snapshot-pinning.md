@@ -3,7 +3,7 @@ id: rel-2026-02-07-fork-source-snapshot-pinning
 version: v0.8.0
 title: "Fork source snapshot pinning"
 date: 2026-02-07
-published_at: 2026-02-07T23:00:00Z
+published_at: 2026-02-07T22:30:00Z
 status: published
 notify_in_app: true
 in_app_hours: 24

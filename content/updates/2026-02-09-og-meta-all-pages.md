@@ -3,7 +3,7 @@ id: rel-2026-02-09-og-meta-all-pages
 version: v0.30.0
 title: "Better social previews for every page"
 date: 2026-02-09
-published_at: 2026-02-09T23:59:00Z
+published_at: 2026-02-09T22:30:00Z
 status: published
 notify_in_app: false
 in_app_hours: 24
