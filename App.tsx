@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
 import { CreateTripForm } from './components/CreateTripForm';
 import { TripView } from './components/TripView';
@@ -9,6 +10,14 @@ import { MarketingHomePage } from './pages/MarketingHomePage';
 import { FeaturesPage } from './pages/FeaturesPage';
 import { UpdatesPage } from './pages/UpdatesPage';
 import { BlogPage } from './pages/BlogPage';
+import { BlogPostPage } from './pages/BlogPostPage';
+import { InspirationsPage } from './pages/InspirationsPage';
+import { ThemesPage } from './pages/inspirations/ThemesPage';
+import { BestTimeToTravelPage } from './pages/inspirations/BestTimeToTravelPage';
+import { CountriesPage } from './pages/inspirations/CountriesPage';
+import { FestivalsPage } from './pages/inspirations/FestivalsPage';
+import { WeekendGetawaysPage } from './pages/inspirations/WeekendGetawaysPage';
+import { CountryDetailPage } from './pages/inspirations/CountryDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { ImprintPage } from './pages/ImprintPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -23,6 +32,56 @@ import { DB_ENABLED, applyUserSettingsToLocalStorage, dbCreateTripVersion, dbGet
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
+
+/** Scroll to top on route change */
+const ScrollToTop: React.FC = () => {
+    const { pathname } = useLocation();
+    const prevPathRef = useRef(pathname);
+
+    useLayoutEffect(() => {
+        if (prevPathRef.current === pathname) return;
+        prevPathRef.current = pathname;
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
+    return null;
+};
+
+/** Intercept internal link clicks to wrap in View Transition API.
+ *  Uses the capture phase so we run BEFORE React Router's onClick,
+ *  preventing a double-navigate that causes duplicated content. */
+const ViewTransitionHandler: React.FC = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!document.startViewTransition) return;
+
+        const handleClick = (e: MouseEvent) => {
+            const anchor = (e.target as HTMLElement).closest('a');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href');
+            if (!href || !href.startsWith('/')) return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (href.startsWith('#')) return;
+            // Skip same-page navigations
+            if (href === window.location.pathname) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            document.startViewTransition(() => {
+                flushSync(() => {
+                    navigate(href);
+                });
+            });
+        };
+
+        document.addEventListener('click', handleClick, true);
+        return () => document.removeEventListener('click', handleClick, true);
+    }, [navigate]);
+
+    return null;
+};
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -491,6 +550,8 @@ const AppContent: React.FC = () => {
 
     return (
         <>
+            <ScrollToTop />
+            <ViewTransitionHandler />
             <Routes>
                 <Route 
                     path="/" 
@@ -506,8 +567,16 @@ const AppContent: React.FC = () => {
                     } 
                 />
                 <Route path="/features" element={<FeaturesPage />} />
+                <Route path="/inspirations" element={<InspirationsPage />} />
+                <Route path="/inspirations/themes" element={<ThemesPage />} />
+                <Route path="/inspirations/best-time-to-travel" element={<BestTimeToTravelPage />} />
+                <Route path="/inspirations/countries" element={<CountriesPage />} />
+                <Route path="/inspirations/events-and-festivals" element={<FestivalsPage />} />
+                <Route path="/inspirations/weekend-getaways" element={<WeekendGetawaysPage />} />
+                <Route path="/inspirations/country/:countryName" element={<CountryDetailPage />} />
                 <Route path="/updates" element={<UpdatesPage />} />
                 <Route path="/blog" element={<BlogPage />} />
+                <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/imprint" element={<ImprintPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />

@@ -72,3 +72,264 @@ h6,
   font-family: var(--tf-font-heading);
   letter-spacing: -0.015em;
 }
+
+/* ── Scroll-driven animations ── */
+
+@keyframes scroll-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scroll-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scroll-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scroll-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes scroll-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scroll-slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes hero-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hand-drawn-zigzag {
+  from {
+    stroke-dashoffset: 360;
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.hand-drawn-zigzag {
+  stroke-dasharray: 360;
+  stroke-dashoffset: 360;
+  opacity: 0;
+  animation: hand-drawn-zigzag 1s cubic-bezier(0.25, 1, 0.5, 1) 0.9s forwards;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@utility animate-scroll-fade-up {
+  animation: scroll-fade-up ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+@utility animate-scroll-fade-in {
+  animation: scroll-fade-in ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+@utility animate-scroll-scale-in {
+  animation: scroll-scale-in ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+@utility animate-scroll-blur-in {
+  animation: scroll-blur-in ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 40%;
+}
+
+@utility animate-scroll-slide-left {
+  animation: scroll-slide-left ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+@utility animate-scroll-slide-right {
+  animation: scroll-slide-right ease-out both;
+  animation-timeline: view();
+  animation-range: entry 0% entry 35%;
+}
+
+@utility animate-hero-entrance {
+  animation: hero-entrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@utility animate-hero-stagger {
+  animation: hero-entrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+@utility animate-marquee {
+  animation: marquee-scroll var(--marquee-duration, 40s) linear infinite;
+}
+
+@utility animate-float {
+  animation: float-gentle 3s ease-in-out infinite;
+  animation-delay: var(--float-delay, 0ms);
+}
+
+@keyframes content-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-content-fade-in {
+  animation: content-fade-in 0.25s ease-out both;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ── Reading progress indicator (scroll-driven) ── */
+
+@keyframes reading-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.reading-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--tf-accent-500);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  animation: reading-progress linear both;
+  animation-timeline: scroll(root);
+  z-index: 9999;
+}
+
+@utility glass-card {
+  background: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgb(255 255 255 / 0.5);
+}
+
+/* ── View Transitions ── */
+
+@keyframes vt-slide-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+@keyframes vt-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-slide-out 0.15s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-slide-in 0.2s cubic-bezier(0, 0, 0.2, 1) 0.08s both;
+}
+
+/* Keep the header static during transitions */
+::view-transition-group(site-header) {
+  animation: none;
+}
+
+::view-transition-old(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+  mix-blend-mode: normal;
+}

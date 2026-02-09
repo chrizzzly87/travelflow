@@ -1,0 +1,111 @@
+export interface ExampleTripCard {
+  id: string;
+  title: string;
+  countries: { name: string; flag: string }[];
+  durationDays: number;
+  cityCount: number;
+  mapColor: string;
+  mapAccent: string;
+  username: string;
+  avatarColor: string;
+  tags: string[];
+}
+
+export const exampleTripCards: ExampleTripCard[] = [
+  {
+    id: 'japan-spring',
+    title: 'Cherry Blossom Trail',
+    countries: [{ name: 'Japan', flag: '🇯🇵' }],
+    durationDays: 14,
+    cityCount: 5,
+    mapColor: 'bg-rose-100',
+    mapAccent: 'bg-rose-400',
+    username: 'sakura_wanderer',
+    avatarColor: 'bg-rose-500',
+    tags: ['Culture', 'Food', 'Nature'],
+  },
+  {
+    id: 'italy-classic',
+    title: 'Italian Grand Tour',
+    countries: [{ name: 'Italy', flag: '🇮🇹' }],
+    durationDays: 18,
+    cityCount: 6,
+    mapColor: 'bg-amber-100',
+    mapAccent: 'bg-amber-500',
+    username: 'dolce_vita',
+    avatarColor: 'bg-amber-600',
+    tags: ['Food', 'Art', 'History'],
+  },
+  {
+    id: 'thailand-islands',
+    title: 'Temples & Beaches',
+    countries: [{ name: 'Thailand', flag: '🇹🇭' }],
+    durationDays: 12,
+    cityCount: 4,
+    mapColor: 'bg-emerald-100',
+    mapAccent: 'bg-emerald-400',
+    username: 'island_hopper',
+    avatarColor: 'bg-emerald-500',
+    tags: ['Beach', 'Adventure', 'Food'],
+  },
+  {
+    id: 'portugal-coast',
+    title: 'Atlantic Coast Road Trip',
+    countries: [{ name: 'Portugal', flag: '🇵🇹' }],
+    durationDays: 10,
+    cityCount: 4,
+    mapColor: 'bg-sky-100',
+    mapAccent: 'bg-sky-400',
+    username: 'surf_nomad',
+    avatarColor: 'bg-sky-600',
+    tags: ['Surf', 'Culture', 'Wine'],
+  },
+  {
+    id: 'peru-adventure',
+    title: 'Andes & Amazon Explorer',
+    countries: [{ name: 'Peru', flag: '🇵🇪' }],
+    durationDays: 16,
+    cityCount: 5,
+    mapColor: 'bg-orange-100',
+    mapAccent: 'bg-orange-400',
+    username: 'altitude_addict',
+    avatarColor: 'bg-orange-600',
+    tags: ['Adventure', 'Nature', 'History'],
+  },
+  {
+    id: 'new-zealand-wild',
+    title: 'South Island Wilderness',
+    countries: [{ name: 'New Zealand', flag: '🇳🇿' }],
+    durationDays: 21,
+    cityCount: 7,
+    mapColor: 'bg-teal-100',
+    mapAccent: 'bg-teal-400',
+    username: 'kiwi_trails',
+    avatarColor: 'bg-teal-600',
+    tags: ['Nature', 'Hiking', 'Road Trip'],
+  },
+  {
+    id: 'morocco-medina',
+    title: 'Medinas & Sahara Nights',
+    countries: [{ name: 'Morocco', flag: '🇲🇦' }],
+    durationDays: 9,
+    cityCount: 4,
+    mapColor: 'bg-yellow-100',
+    mapAccent: 'bg-yellow-500',
+    username: 'desert_dreamer',
+    avatarColor: 'bg-yellow-700',
+    tags: ['Culture', 'Food', 'Desert'],
+  },
+  {
+    id: 'iceland-ring',
+    title: 'Ring Road Circuit',
+    countries: [{ name: 'Iceland', flag: '🇮🇸' }],
+    durationDays: 7,
+    cityCount: 3,
+    mapColor: 'bg-indigo-100',
+    mapAccent: 'bg-indigo-400',
+    username: 'arctic_rover',
+    avatarColor: 'bg-indigo-600',
+    tags: ['Nature', 'Road Trip', 'Photography'],
+  },
+];

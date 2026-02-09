@@ -1,27 +1,27 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-    AlertTriangle,
-    AlignLeft,
+    Warning as AlertTriangle,
+    TextAlignLeft as AlignLeft,
     Check,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
+    CaretDown as ChevronDown,
+    CaretLeft as ChevronLeft,
+    CaretRight as ChevronRight,
     Clock,
     Compass,
-    Dice6,
+    DiceSix as Dice6,
     FilePlus,
     Folder,
     Info,
-    Loader2,
+    SpinnerGap as Loader2,
     MapPin,
-    Plane,
+    AirplaneTilt as Plane,
     Plus,
-    Search,
-    Settings,
-    Sparkles,
-    Wand2,
+    MagnifyingGlass as Search,
+    GearSix as Settings,
+    Sparkle as Sparkles,
+    MagicWand as Wand2,
     X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { Link, NavLink } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { CountrySelect } from './CountrySelect';
@@ -90,21 +90,21 @@ const TAB_ITEMS: Array<{ id: FormMode; title: string; subtitle: string; beta?: b
         id: 'classic',
         title: 'Classic',
         subtitle: 'Stable and fully supported',
-        icon: <Sparkles size={16} />,
+        icon: <Sparkles size={16} weight="duotone" />,
     },
     {
         id: 'wizard',
         title: 'Wizard',
         subtitle: 'Guided multistep flow',
         beta: true,
-        icon: <Wand2 size={16} />,
+        icon: <Wand2 size={16} weight="duotone" />,
     },
     {
         id: 'surprise',
         title: 'Surprise Me',
         subtitle: 'Timeframe-first discovery',
         beta: true,
-        icon: <Dice6 size={16} />,
+        icon: <Dice6 size={16} weight="duotone" />,
     },
 ];
 
@@ -795,19 +795,20 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     return (
         <div className="w-full min-h-screen flex flex-col relative isolate overflow-hidden bg-slate-50">
             <HeroWebGLBackground className="z-0" />
-            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/35" />
-            <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-accent-200/30 blur-3xl" />
-            <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-accent-300/30 blur-3xl" />
+            <div className="pointer-events-none absolute inset-0 z-[1] bg-white/25" />
+            <div className="pointer-events-none absolute -left-24 top-20 z-[1] h-72 w-72 rounded-full bg-accent-200/30 blur-[80px]" />
+            <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-accent-300/30 blur-[80px]" />
 
             <header className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-center z-20 gap-3">
                 <Link to="/" className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
-                        <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
+                        <Plane className="text-white transform -rotate-3" size={18} weight="duotone" />
                     </div>
                     <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-5 text-sm bg-white/75 backdrop-blur px-4 py-2 rounded-full border border-slate-200">
                     <NavLink to="/features" className={createNavLinkClass}>Features</NavLink>
+                    <NavLink to="/inspirations" className={createNavLinkClass}>Inspirations</NavLink>
                     <NavLink to="/updates" className={createNavLinkClass}>News & Updates</NavLink>
                     <NavLink to="/blog" className={createNavLinkClass}>Blog</NavLink>
                 </nav>
@@ -834,8 +835,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                     <p className="text-gray-500">Choose a flow and generate your itinerary in seconds.</p>
                 </div>
 
-                <div className={`bg-white p-5 sm:p-6 rounded-3xl shadow-xl border border-gray-100 w-full ${formWidthClass} relative overflow-visible transition-all`}>
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent-500 via-accent-600 to-accent-700" />
+                <div className={`bg-white p-5 sm:p-6 rounded-3xl shadow-2xl ring-1 ring-slate-900/5 border border-gray-100 w-full ${formWidthClass} relative overflow-visible transition-all`}>
+                    <div className="absolute top-0 left-0 w-full h-1.5 rounded-t-3xl bg-gradient-to-r from-accent-500 via-accent-600 to-accent-700 shadow-[0_1px_8px_rgb(var(--tf-accent-rgb)/0.3)]" />
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                         {TAB_ITEMS.map((tab) => {
@@ -1022,9 +1023,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <button
                                         type="submit"
                                         disabled={isGenerating || selectedCountries.length === 0}
-                                        className="flex-1 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 py-3 bg-gradient-to-r from-accent-600 to-accent-700 hover:from-accent-700 hover:to-accent-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:shadow-accent-glow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isGenerating ? <Loader2 className="animate-spin h-5 w-5" /> : <Sparkles className="fill-white/20 h-5 w-5" />}
+                                        {isGenerating ? <Loader2 className="animate-spin" size={20} weight="bold" /> : <Sparkles size={20} weight="duotone" />}
                                         <span>Auto-Generate</span>
                                     </button>
                                     <button
@@ -1354,7 +1355,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         disabled={!wizardCanGenerate || isGenerating}
                                         className="px-4 py-2 rounded-xl bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                                     >
-                                        {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                        {isGenerating ? <Loader2 size={14} className="animate-spin" weight="bold" /> : <Sparkles size={14} weight="duotone" />}
                                         Create Trip from Wizard
                                     </button>
                                 )}
@@ -1498,7 +1499,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     disabled={!selectedSurpriseOption || isGenerating}
                                     className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-accent-600 to-accent-700 text-white text-sm font-semibold hover:from-accent-700 hover:to-accent-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                                 >
-                                    {isGenerating ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+                                    {isGenerating ? <Loader2 size={15} className="animate-spin" weight="bold" /> : <Sparkles size={15} weight="duotone" />}
                                     Generate Surprise Trip
                                 </button>
                             </div>

@@ -23,10 +23,10 @@ summary: "One concise summary sentence."
 ---
 
 ## Changes
-- [x] [New feature] 🚀 User-facing highlight shown on the website updates page.
-- [x] [Improved] ✨ User-facing improvement shown on the website updates page.
-- [x] [Fixed] 🐛 User-facing fix shown on the website updates page.
-- [ ] [Internal] 🧰 Kept in markdown history, hidden from marketing website output.
+- [x] [New feature] 🗺️ Plan trips collaboratively with real-time shared cursors.
+- [x] [Improved] ⚡ Itinerary generation now completes 3x faster.
+- [x] [Fixed] 📍 Map markers no longer disappear after editing a city name.
+- [ ] [Internal] Migrated state management to Zustand.
 ```
 
 ## Field rules
@@ -44,12 +44,29 @@ summary: "One concise summary sentence."
 - `[x]`: visible on marketing website (`/updates`).
 - `[ ]`: hidden from marketing website but preserved in markdown history.
 - `Type` is used for visual pills (`New feature`, `Improved`, `Fixed`, `Internal`, etc.).
-- Message must start with an emoji:
-  - `New feature` → `🚀`
-  - `Improved` → `✨`
-  - `Fixed` → `🐛`
-  - `Internal` → `🧰`
-  - Other types → `📌`
+
+### Emoji guideline
+Each change line **must** start with a single emoji. Pick an emoji that **matches the specific content** of that line — do NOT use a fixed emoji per type. The emoji should visually hint at what the change is about.
+
+Good examples:
+- `- [x] [New feature] 🗺️ Interactive map now supports terrain and satellite layers.`
+- `- [x] [Improved] ⚡ Trip generation is 3x faster with streaming responses.`
+- `- [x] [Fixed] 📍 Fixed map markers disappearing after city rename.`
+- `- [x] [New feature] 🤝 Share trips with co-travelers via a single link.`
+
+Bad examples (do NOT do this):
+- `- [x] [New feature] 🚀 Added map layers.` (🚀 for everything — generic, says nothing)
+- `- [x] [Improved] ✨ Faster generation.` (✨ for every improvement — lazy)
+
+### Visibility guideline
+Only mark items as `[x]` (visible) when they communicate a **clear user benefit**. Ask: "Would a user care about this on a product changelog?"
+
+Mark as `[ ]` (hidden) when the item:
+- Is a technical implementation detail (e.g. dependency swaps, refactors, internal tooling).
+- Describes *how* something was built rather than *what changed* for the user.
+- Would require developer context to understand.
+
+Write visible items from the user's perspective — focus on the benefit, not the implementation.
 
 ## Recommended workflow (auto-deploy friendly)
 1. Use exactly one release note file per worktree/feature.

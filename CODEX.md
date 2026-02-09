@@ -13,7 +13,9 @@ Rules:
 - Finalize the release note shortly before opening the PR, when the complete shipped scope is known.
 - Keep user-facing highlights visible with `[x]`.
 - Keep internal/infrastructure items hidden from marketing with `[ ]`.
-- Start every change line with the required emoji style from `docs/UPDATE_FORMAT.md`.
+- Each change line must start with a **content-matching emoji** — pick one that hints at the specific change. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
+- Only mark items `[x]` when they describe a clear **user benefit**. Technical details, dependency swaps, refactors, and implementation specifics should be `[ ]`.
+- Write visible items from the user's perspective — what changed for them, not how it was built.
 - Put major highlights first; place fixes later.
 - Always bump to a new release `version` for every new published release.
 - Never reuse or downgrade a published release version.

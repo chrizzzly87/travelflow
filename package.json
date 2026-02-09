@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "updates:validate": "node scripts/validate-updates.mjs",
-    "build": "npm run updates:validate && vite build",
+    "blog:validate": "node scripts/validate-blog.mjs",
+    "build": "npm run updates:validate && npm run blog:validate && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "latest",
+    "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-checkbox": "^1.2.3",
     "@supabase/supabase-js": "^2.49.1",
     "@types/google.maps": "^3.58.1",
