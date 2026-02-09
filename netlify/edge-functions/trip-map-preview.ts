@@ -10,6 +10,8 @@
  *   scale   — 1 or 2 (default 2)
  */
 
+import { getMapsApiKeyFromEnv } from "../edge-lib/trip-og-data.ts";
+
 const CLEAN_STYLE = [
     "style=element:geometry|color:0xf9f9f9",
     "style=element:labels.icon|visibility:off",
@@ -47,7 +49,7 @@ export default async (request: Request) => {
     const scale = parseInt(url.searchParams.get("scale") || "2", 10);
     const style = url.searchParams.get("style") || "clean";
 
-    const apiKey = Deno.env.get("VITE_GOOGLE_MAPS_API_KEY") || "";
+    const apiKey = getMapsApiKeyFromEnv();
     if (!apiKey) {
         return new Response("Maps API key not configured", { status: 500 });
     }
