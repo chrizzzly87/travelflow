@@ -27,8 +27,7 @@ const efFiles = readdirSync(EF_DIR).filter(
 
 for (const file of efFiles) {
   const content = readFileSync(resolve(EF_DIR, file), "utf-8");
-  // Allow v2 typed config (export const config: Config = ...) but block untyped
-  if (/export\s+const\s+config\s*=/.test(content) && !/export\s+const\s+config\s*:\s*Config\s*=/.test(content)) {
+  if (/export\s+const\s+config\s*=/.test(content)) {
     console.error(
       `ERROR: ${file} contains inline \`export const config\`. ` +
         `Routes must be declared in netlify.toml only. ` +
