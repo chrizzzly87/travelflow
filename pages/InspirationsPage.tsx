@@ -28,6 +28,7 @@ import {
 import type { Destination, FestivalEvent as FestivalEventType, WeekendGetaway as WeekendGetawayType, CountryGroup, QuickIdea } from '../data/inspirationsData';
 import { getBlogPostsBySlugs } from '../services/blogService';
 import { buildCreateTripUrl, resolveDestinationCodes } from '../utils';
+import { destinationCardMedia, festivalCardMedia } from '../data/inspirationCardMedia';
 
 /* ── Festival date helpers ── */
 
@@ -97,9 +98,18 @@ const sections = [
     { id: 'weekends', label: 'Weekend Getaways', icon: Lightning },
 ];
 
+const CARD_IMAGE_SIZES = '(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
+const CARD_HOVER_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:transition-none';
+const CARD_IMAGE_ZOOM_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none';
+const CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/8 to-transparent opacity-70';
+const CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/10 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.7)_42%,transparent_100%)]';
+
 /* ── Destination card ── */
 
 const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }) => {
+    const media = destinationCardMedia[destination.title];
+    const [hasImageError, setHasImageError] = useState(false);
+    const showPhoto = Boolean(media) && !hasImageError;
     const start = suggestedStartForDays(destination.durationDays);
     const end = addDaysLocal(start, destination.durationDays - 1);
     const countries = resolveDestinationCodes(destination.destinationCodes);
@@ -116,28 +126,63 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__destination_card', { title: destination.title, country: destination.country })}
-        className="group block rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+        className={`group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
     >
-        <div className={`relative h-32 rounded-t-2xl ${destination.mapColor} overflow-hidden`}>
-            <div className={`absolute left-[22%] top-[28%] h-2.5 w-2.5 rounded-full ${destination.mapAccent}`} />
-            <div className={`absolute left-[48%] top-[55%] h-2 w-2 rounded-full ${destination.mapAccent} opacity-70`} />
-            <div className={`absolute left-[72%] top-[38%] h-3 w-3 rounded-full ${destination.mapAccent}`} />
-            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 128" fill="none" preserveAspectRatio="none">
-                <path d="M75 36 L163 70 L245 49" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" className="text-slate-400/40" />
-            </svg>
-            <div className="absolute bottom-2 right-2 rounded-full bg-white/80 backdrop-blur px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                {destination.flag} {destination.country}
-            </div>
+        <div className={`relative h-40 overflow-hidden rounded-t-2xl md:h-44 ${showPhoto ? 'bg-slate-100' : destination.mapColor}`}>
+            {showPhoto && media ? (
+                <>
+                    <picture className="absolute inset-0 block h-full w-full">
+                        <source
+                            type="image/webp"
+                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            sizes={CARD_IMAGE_SIZES}
+                        />
+                        <img
+                            src={media.sources.small}
+                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            sizes={CARD_IMAGE_SIZES}
+                            alt={media.alt}
+                            loading="lazy"
+                            decoding="async"
+                            fetchPriority="low"
+                            width={1536}
+                            height={1024}
+                            onError={() => setHasImageError(true)}
+                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                        />
+                    </picture>
+                    <div className={CARD_IMAGE_FADE} />
+                    <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
+                </>
+            ) : (
+                <>
+                    <div className={`absolute left-[22%] top-[28%] h-2.5 w-2.5 rounded-full ${destination.mapAccent}`} />
+                    <div className={`absolute left-[48%] top-[55%] h-2 w-2 rounded-full ${destination.mapAccent} opacity-70`} />
+                    <div className={`absolute left-[72%] top-[38%] h-3 w-3 rounded-full ${destination.mapAccent}`} />
+                    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 128" fill="none" preserveAspectRatio="none">
+                        <path d="M75 36 L163 70 L245 49" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" className="text-slate-400/40" />
+                    </svg>
+                </>
+            )}
         </div>
 
         <div className="p-4">
             <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{destination.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">{destination.description}</p>
-            <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
-                <span className="inline-flex items-center gap-1"><Clock size={13} weight="duotone" className="text-accent-400" />{destination.durationDays} days</span>
-                {destination.cities && destination.cities.length > 0 && (
-                    <span className="inline-flex items-center gap-1"><MapPin size={13} weight="duotone" className="text-accent-400" />{destination.cities.length} {destination.cities.length === 1 ? 'city' : 'cities'}</span>
-                )}
+
+            <div className="mt-4 border-t border-slate-100 pt-3">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
+                    <span className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                        <MapPin size={13} weight="duotone" className="text-accent-400" />
+                        {destination.flag} {destination.country}
+                    </span>
+                    <div className="flex items-center gap-3 text-slate-400">
+                        <span className="inline-flex items-center gap-1"><Clock size={13} weight="duotone" className="text-accent-400" />{destination.durationDays} days</span>
+                        {destination.cities && destination.cities.length > 0 && (
+                            <span className="inline-flex items-center gap-1"><MapPin size={13} weight="duotone" className="text-accent-400" />{destination.cities.length} {destination.cities.length === 1 ? 'city' : 'cities'}</span>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     </Link>
@@ -147,6 +192,13 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
 /* ── Festival card ── */
 
 const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ event, nextDate }) => {
+    const media = festivalCardMedia[event.name];
+    const [hasImageError, setHasImageError] = useState(false);
+    const showPhoto = Boolean(media) && !hasImageError;
+    const cityLabel = event.cities?.length
+        ? (event.cities.length > 1 ? `${event.cities[0]} +${event.cities.length - 1}` : event.cities[0])
+        : null;
+    const locationLabel = cityLabel ? `${event.country} · ${cityLabel}` : event.country;
     const endDate = addDaysLocal(nextDate, event.durationDays - 1);
     const countries = resolveDestinationCodes(event.destinationCodes);
     const prefillUrl = buildCreateTripUrl({
@@ -162,17 +214,43 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__festival_card', { name: event.name, country: event.country })}
-        className="group flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+        className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
     >
-        <div className={`relative h-24 rounded-t-2xl ${event.mapColor} overflow-hidden flex items-center justify-center`}>
-            <Confetti size={36} weight="duotone" className="text-slate-400/40" />
-            <div className="absolute bottom-2 right-2 rounded-full bg-white/80 backdrop-blur px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                {event.flag} {event.months}
-            </div>
+        <div className={`relative h-32 overflow-hidden rounded-t-2xl md:h-36 ${showPhoto ? 'bg-slate-100' : `${event.mapColor} flex items-center justify-center`}`}>
+            {showPhoto && media ? (
+                <>
+                    <picture className="absolute inset-0 block h-full w-full">
+                        <source
+                            type="image/webp"
+                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            sizes={CARD_IMAGE_SIZES}
+                        />
+                        <img
+                            src={media.sources.small}
+                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            sizes={CARD_IMAGE_SIZES}
+                            alt={media.alt}
+                            loading="lazy"
+                            decoding="async"
+                            fetchPriority="low"
+                            width={1536}
+                            height={1024}
+                            onError={() => setHasImageError(true)}
+                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                        />
+                    </picture>
+                    <div className={CARD_IMAGE_FADE} />
+                    <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
+                </>
+            ) : (
+                <div className="flex h-full w-full items-center justify-center">
+                    <Confetti size={36} weight="duotone" className="text-slate-400/40" />
+                </div>
+            )}
         </div>
         <div className="flex flex-1 flex-col p-4">
             <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{event.name}</h3>
-            <p className="mt-1 text-xs font-medium text-slate-400">{event.country}</p>
+            <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-400">{event.flag} {locationLabel}</p>
             <p className="mt-0.5 text-xs font-semibold text-fuchsia-600">Next: {formatFestivalDate(nextDate)}</p>
             <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-2">{event.description}</p>
             <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
@@ -208,7 +286,7 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
     <Link
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
-        className="group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5"
+        className={`group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
     >
         <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
             <AirplaneTakeoff size={24} weight="duotone" className={getaway.mapAccent.replace('bg-', 'text-')} />
@@ -234,7 +312,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
     <Link
         to={`/inspirations/country/${encodeURIComponent(group.country)}`}
         onClick={() => trackEvent('inspirations__country_pill', { country: group.country })}
-        className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5"
+        className={`group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
     >
         <span className="text-3xl">{group.flag}</span>
         <div className="min-w-0 flex-1">
