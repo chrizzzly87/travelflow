@@ -12,7 +12,7 @@ interface ImageBatchJob {
     out: string;
     size: '1536x1024' | '1024x1536';
     quality: 'medium';
-    output_format: 'webp';
+    output_format: 'webp' | 'jpeg';
 }
 
 interface BlogFrontmatter {
@@ -132,6 +132,11 @@ const variantSize = (variant: BlogImageVariant): '1536x1024' | '1024x1536' => {
     return '1536x1024';
 };
 
+const variantOutputFormat = (variant: BlogImageVariant): 'webp' | 'jpeg' => {
+    if (variant === 'ogVertical') return 'jpeg';
+    return 'webp';
+};
+
 const main = () => {
     const outputPath = parseOutputPath();
     const posts = getPublishedBlogPosts();
@@ -186,7 +191,7 @@ const main = () => {
                 out: toBatchOutPath(entry.large),
                 size: variantSize(entry.variant),
                 quality: 'medium',
-                output_format: 'webp',
+                output_format: variantOutputFormat(entry.variant),
             });
         }
     }

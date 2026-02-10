@@ -61,6 +61,22 @@ The production output is generated in `dist/`.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
+## Blog Image Workflow
+
+When publishing a new blog post, run:
+
+```bash
+npm run build:blog-images
+```
+
+This only generates missing image variants for published posts (card, header, vertical OG) and leaves existing blog images untouched.
+
+For a full pre-release workflow (generate missing blog images + run full validations/build):
+
+```bash
+npm run release:prepare
+```
+
 ## Generate Trip Map Images
 
 The homepage trip cards display static route map PNGs. To regenerate them from current trip template coordinates:
@@ -139,12 +155,19 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 3. Use either:
    - real shared data via `s=<share_token>` (and optional `v=<version_uuid>`)
    - or layout/map overrides (`title`, `weeks`, `months`, `distance`, `path`, `map`, `mapStyle`, `routeMode`, `showStops`, `showCities`) for rapid visual tuning.
+4. For blog social previews, switch playground endpoint to **Site OG** and set:
+   - `title`, `description`, `pill=BLOG`, `path=/blog/<slug>`
+   - `blog_image=/images/blog/<slug>-og-vertical.jpg`
+   - optional `blog_tint=#<hex>`
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
 
 Example non-trip image URL:
 `http://localhost:8888/api/og/site?title=Features&description=See%20everything%20TravelFlow%20can%20do&path=/features`
+
+Example blog image URL:
+`http://localhost:8888/api/og/site?title=How%20to%20Plan%20the%20Perfect%20Multi-City%20Trip&description=Plan%20a%20smooth%20multi-stop%20itinerary%20with%20smart%20routing%2C%20realistic%20timing%2C%20and%20less%20stress.&path=/blog/how-to-plan-multi-city-trip&pill=BLOG&blog_image=/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg&blog_tint=%236366f1`
 
 ## Create The GitHub Repo (CLI)
 
