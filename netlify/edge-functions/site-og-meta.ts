@@ -11,6 +11,7 @@ interface Metadata {
   ogDescription: string;
   canonicalUrl: string;
   ogImageUrl: string;
+  ogLogoUrl: string;
   robots: string;
 }
 
@@ -118,28 +119,28 @@ const BLOG_META: Record<string, BlogMeta> = {
     title: "The Best Time to Visit Japan — A Month-by-Month Guide",
     description: "Japan transforms with every season. From cherry blossoms to powder snow, here's when to go.",
     ogTitle: "Best Time to Visit Japan — Month by Month",
-    ogDescription: "Cherry blossoms in spring, festivals in summer, fiery foliage in autumn, powder snow in winter — find the perfect month for your Japan trip with seasonal highlights and travel tips.",
+    ogDescription: "Sakura, festivals, autumn foliage, and powder snow — find your perfect month to visit Japan.",
   },
   "budget-travel-europe": {
     title: "Budget Travel Hacks for Europe",
     description: "Smart timing, local habits, and a few practical tricks can cut your Europe costs in half.",
-    ogDescription: "Smart timing, local transport passes, affordable stays, and a few practical habits that can cut your Europe trip costs in half without sacrificing the experience.",
+    ogDescription: "Spend less, see more. Practical tips on timing, transport, and staying smart across Europe.",
   },
   "festival-travel-guide": {
     title: "How to Plan a Trip Around a Festival",
     description: "Festival-centered trips are some of the most memorable journeys. Here's how to plan one.",
-    ogDescription: "From picking the right event to booking accommodation early and building a flexible itinerary — a step-by-step guide to festival-centered travel planning.",
+    ogDescription: "Build your next trip around a great event — from choosing the festival to planning the days around it.",
   },
   "how-to-plan-multi-city-trip": {
     title: "How to Plan the Perfect Multi-City Trip",
     description: "Practical advice on route planning, timing, and logistics for multi-destination travel.",
-    ogDescription: "Route sequencing, realistic day counts, transport links between stops, and packing strategies — practical advice for planning a smooth multi-destination itinerary.",
+    ogDescription: "Plan a smooth multi-stop itinerary with smart routing, realistic timing, and less stress.",
   },
   "weekend-getaway-tips": {
     title: "Weekend Getaway Planning: From Idea to Boarding Pass",
     description: "How to squeeze the most out of a 2–3 day trip without the stress.",
     ogTitle: "Weekend Getaway Planning Made Simple",
-    ogDescription: "Pick a destination, book fast, pack light, and make every hour count — a concise guide to squeezing the most out of a 2–3 day trip without the planning stress.",
+    ogDescription: "Make every hour count on a 2–3 day escape. Quick to plan, easy to enjoy.",
   },
 };
 
@@ -226,6 +227,7 @@ const buildMetaTags = (meta: Metadata): string => {
   const ogDescription = escapeHtml(meta.ogDescription);
   const canonicalUrl = escapeHtml(meta.canonicalUrl);
   const ogImageUrl = escapeHtml(meta.ogImageUrl);
+  const ogLogoUrl = escapeHtml(meta.ogLogoUrl);
   const robots = escapeHtml(meta.robots);
 
   return [
@@ -242,6 +244,7 @@ const buildMetaTags = (meta: Metadata): string => {
     `<meta property="og:image:width" content="1200" />`,
     `<meta property="og:image:height" content="630" />`,
     `<meta property="og:image:alt" content="${ogTitle}" />`,
+    `<meta property="og:logo" content="${ogLogoUrl}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${ogTitle}" />`,
     `<meta name="twitter:description" content="${ogDescription}" />`,
@@ -249,12 +252,15 @@ const buildMetaTags = (meta: Metadata): string => {
   ].join("\n");
 };
 
+const collapseBlankLines = (html: string): string =>
+  html.replace(/(\n\s*){3,}/g, "\n\n");
+
 const injectMetaTags = (html: string, meta: Metadata): string => {
   if (!/<head[^>]*>/i.test(html) || !/<\/head>/i.test(html)) {
     return html;
   }
-  const cleaned = stripSeoTags(html);
-  return cleaned.replace(/<\/head>/i, `${buildMetaTags(meta)}\n</head>`);
+  const cleaned = collapseBlankLines(stripSeoTags(html));
+  return cleaned.replace(/(<head[^>]*>)/i, `$1\n${buildMetaTags(meta)}`);
 };
 
 const buildCanonicalSearch = (url: URL): string => {
@@ -290,6 +296,7 @@ const buildMetadata = (url: URL): Metadata => {
     ogDescription: ogDescriptionRaw,
     canonicalUrl,
     ogImageUrl: ogImage.toString(),
+    ogLogoUrl: new URL("/favicon.svg", url.origin).toString(),
     robots: page.robots || "index,follow,max-image-preview:large",
   };
 };
