@@ -115,6 +115,7 @@ const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
+const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
 
@@ -205,12 +206,22 @@ interface TripViewProps {
     onCopyTrip?: () => void;
 }
 
+declare global {
+    interface Window {
+        toggleExpired?: (next?: boolean) => boolean;
+    }
+}
+
 export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en', readOnly = false, canShare = true, shareStatus, shareSnapshotMeta, onCopyTrip }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const tripRef = useRef(trip);
     tripRef.current = trip;
-    const canEdit = !readOnly;
+    const [debugTripExpired, setDebugTripExpired] = useState(false);
+    const debugTripExpiredRef = useRef(debugTripExpired);
+    const canEdit = !readOnly && !debugTripExpired;
+    const effectiveReadOnly = !canEdit;
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
     const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
@@ -624,6 +635,63 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     useEffect(() => {
         currentUrlRef.current = currentUrl;
     }, [currentUrl]);
+
+    useEffect(() => {
+        debugTripExpiredRef.current = debugTripExpired;
+    }, [debugTripExpired]);
+
+    useEffect(() => {
+        if (!isTripDetailRoute) {
+            setDebugTripExpired(false);
+            debugTripExpiredRef.current = false;
+            return;
+        }
+        setDebugTripExpired(false);
+        debugTripExpiredRef.current = false;
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: true, expired: false },
+            }));
+        }
+    }, [trip.id, isTripDetailRoute]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        if (!isTripDetailRoute) {
+            if (window.toggleExpired) {
+                delete window.toggleExpired;
+            }
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: false, expired: false },
+            }));
+            return;
+        }
+
+        const toggleExpired = (next?: boolean): boolean => {
+            const resolved = typeof next === 'boolean' ? next : !debugTripExpiredRef.current;
+            debugTripExpiredRef.current = resolved;
+            setDebugTripExpired(resolved);
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: true, expired: resolved },
+            }));
+            return resolved;
+        };
+
+        window.toggleExpired = toggleExpired;
+        window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+            detail: { available: true, expired: debugTripExpiredRef.current },
+        }));
+
+        return () => {
+            if (window.toggleExpired === toggleExpired) {
+                delete window.toggleExpired;
+            }
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: false, expired: false },
+            }));
+        };
+    }, [isTripDetailRoute]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1894,6 +1962,19 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     </div>
                 )}
 
+                {isTripDetailRoute && debugTripExpired && (
+                    <div className="px-4 sm:px-6 py-2 border-b border-rose-200 bg-rose-50 text-rose-900 text-xs flex items-center justify-between gap-3">
+                        <span>This trip is marked as expired (debug mode). Editing is disabled.</span>
+                        <button
+                            type="button"
+                            onClick={() => window.toggleExpired?.(false)}
+                            className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200"
+                        >
+                            Set active
+                        </button>
+                    </div>
+                )}
+
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
                     {isMobileMapExpanded && (
@@ -1921,7 +2002,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             onSelect={handleTimelineSelect}
                                             selectedItemId={selectedItemId}
                                             selectedCityIds={selectedCityIds}
-                                            readOnly={readOnly}
+                                            readOnly={effectiveReadOnly}
                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                             onAddActivity={handleOpenAddActivity}
                                             onForceFill={handleForceFill}
@@ -1935,7 +2016,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             onSelect={handleTimelineSelect}
                                             selectedItemId={selectedItemId}
                                             selectedCityIds={selectedCityIds}
-                                            readOnly={readOnly}
+                                            readOnly={effectiveReadOnly}
                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                             onAddActivity={handleOpenAddActivity}
                                             onForceFill={handleForceFill}
@@ -2001,7 +2082,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2015,7 +2096,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2051,7 +2132,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         onApplyOrder={applySelectedCityOrder}
                                                         onReverse={handleReverseSelectedCities}
                                                         timelineView={timelineView}
-                                                        readOnly={readOnly}
+                                                        readOnly={effectiveReadOnly}
                                                     />
                                                 ) : (
                                                     <DetailsPanel
@@ -2069,7 +2150,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         forceFillMode={selectedCityForceFill?.mode}
                                                         forceFillLabel={selectedCityForceFill?.label}
                                                         variant="sidebar"
-                                                        readOnly={readOnly}
+                                                        readOnly={effectiveReadOnly}
                                                         cityColorPaletteId={cityColorPaletteId}
                                                         onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                     />
@@ -2140,7 +2221,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2154,7 +2235,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2184,7 +2265,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onApplyOrder={applySelectedCityOrder}
                                                             onReverse={handleReverseSelectedCities}
                                                             timelineView={timelineView}
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                         />
                                                     ) : (
                                                         <DetailsPanel
@@ -2202,7 +2283,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             forceFillMode={selectedCityForceFill?.mode}
                                                             forceFillLabel={selectedCityForceFill?.label}
                                                             variant="sidebar"
-                                                            readOnly={readOnly}
+                                                            readOnly={effectiveReadOnly}
                                                             cityColorPaletteId={cityColorPaletteId}
                                                             onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                         />
@@ -2240,7 +2321,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         onApplyOrder={applySelectedCityOrder}
                                         onReverse={handleReverseSelectedCities}
                                         timelineView={timelineView}
-                                        readOnly={readOnly}
+                                        readOnly={effectiveReadOnly}
                                     />
                                 ) : (
                                     <DetailsPanel
@@ -2258,7 +2339,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         forceFillMode={selectedCityForceFill?.mode}
                                         forceFillLabel={selectedCityForceFill?.label}
                                         variant="sidebar"
-                                        readOnly={readOnly}
+                                        readOnly={effectiveReadOnly}
                                         cityColorPaletteId={cityColorPaletteId}
                                         onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                     />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ConsentChoice, readStoredConsent, saveConsent } from '../services/consentService';
 
 export const CookiesPage: React.FC = () => {
@@ -58,6 +58,7 @@ export const CookiesPage: React.FC = () => {
                             type="button"
                             onClick={() => handleConsentUpdate('essential')}
                             className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
+                            {...getAnalyticsDebugAttributes('consent__page--reject', { source: 'cookies_page' })}
                         >
                             Essential only
                         </button>
@@ -65,6 +66,7 @@ export const CookiesPage: React.FC = () => {
                             type="button"
                             onClick={() => handleConsentUpdate('all')}
                             className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
+                            {...getAnalyticsDebugAttributes('consent__page--accept', { source: 'cookies_page' })}
                         >
                             Accept all
                         </button>

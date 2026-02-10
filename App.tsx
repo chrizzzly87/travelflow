@@ -37,6 +37,7 @@ import { DB_ENABLED, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersio
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
+import { OnPageDebugger } from './components/OnPageDebugger';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 
 /** Scroll to top on route change */
@@ -690,6 +691,7 @@ const AppContent: React.FC = () => {
 
             <CookieConsentBanner />
             <GlobalTooltipLayer />
+            <OnPageDebugger />
         </TripManagerProvider>
     );
 };

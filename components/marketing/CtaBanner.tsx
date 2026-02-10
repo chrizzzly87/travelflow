@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 export const CtaBanner: React.FC = () => {
     return (
@@ -22,6 +22,7 @@ export const CtaBanner: React.FC = () => {
                         trackEvent('home__bottom_cta')
                     }
                     className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
+                    {...getAnalyticsDebugAttributes('home__bottom_cta')}
                 >
                     Start Planning — It&apos;s Free
                 </Link>
