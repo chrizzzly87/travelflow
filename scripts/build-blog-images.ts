@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -97,6 +97,25 @@ const downscaleWithPillow = (python: string, sourcePath: string, targetPath: str
     run(python, ['-c', script, sourcePath, targetPath, String(maxDim)], `Downscale ${sourcePath}`);
 };
 
+const optimizeOgJpeg = (python: string, sourcePath: string, maxDim = 768, quality = 50) => {
+    const script = [
+        'from PIL import Image',
+        'import sys',
+        'source_path, max_dim, quality = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])',
+        'with Image.open(source_path) as image:',
+        '    image.load()',
+        '    width, height = image.size',
+        '    scale = min(1.0, float(max_dim) / float(max(width, height)))',
+        '    target = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))',
+        '    resized = image if target == (width, height) else image.resize(target, Image.Resampling.LANCZOS)',
+        "    if resized.mode not in ('RGB',):",
+        "        resized = resized.convert('RGB')",
+        "    resized.save(source_path, format='JPEG', quality=quality, optimize=True, progressive=True)",
+    ].join('\n');
+
+    run(python, ['-c', script, sourcePath, String(maxDim), String(quality)], `Optimize ${sourcePath}`);
+};
+
 const ensureResponsiveDownscales = (python: string, isDryRun: boolean, forceOverwrite: boolean): number => {
     if (!existsSync(OUTPUT_DIR)) {
         return 0;
@@ -129,6 +148,40 @@ const ensureResponsiveDownscales = (python: string, isDryRun: boolean, forceOver
     }
 
     return generated;
+};
+
+const ensureOptimizedOgJpegs = (python: string, isDryRun: boolean, forceOverwrite: boolean): number => {
+    if (!existsSync(OUTPUT_DIR)) {
+        return 0;
+    }
+
+    const files = readdirSync(OUTPUT_DIR)
+        .filter((file) => /-og-vertical\.jpe?g$/i.test(file))
+        .sort((a, b) => a.localeCompare(b));
+
+    let optimized = 0;
+
+    for (const file of files) {
+        const fullPath = join(OUTPUT_DIR, file);
+        const currentSize = statSync(fullPath).size;
+        const shouldOptimize = forceOverwrite || currentSize > 180_000;
+
+        if (!shouldOptimize) {
+            continue;
+        }
+
+        if (isDryRun) {
+            process.stdout.write(`[blog-images] Dry run: would optimize OG JPEG ${fullPath}\n`);
+            optimized += 1;
+            continue;
+        }
+
+        optimizeOgJpeg(python, fullPath, 768, 50);
+        optimized += 1;
+        process.stdout.write(`[blog-images] Optimized OG JPEG ${fullPath}\n`);
+    }
+
+    return optimized;
 };
 
 const main = () => {
@@ -191,6 +244,11 @@ const main = () => {
     const generatedResponsive = ensureResponsiveDownscales(python, dryRun, force);
     if (generatedResponsive > 0) {
         process.stdout.write(`[blog-images] ${dryRun ? 'Planned' : 'Generated'} ${generatedResponsive} responsive derivative(s).\n`);
+    }
+
+    const optimizedOg = ensureOptimizedOgJpegs(python, dryRun, force);
+    if (optimizedOg > 0) {
+        process.stdout.write(`[blog-images] ${dryRun ? 'Planned' : 'Optimized'} ${optimizedOg} OG JPEG asset(s).\n`);
     }
 
     if (!keepJobs) {

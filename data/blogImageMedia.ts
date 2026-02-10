@@ -60,6 +60,8 @@ export interface BlogImageMedia {
 
 const BLOG_IMAGE_PREFIX = '/images/blog/';
 const DEFAULT_ACCENT_TINT = '#6366f1';
+// Increment when blog OG source images are regenerated and should invalidate cached /api/og/site renders.
+export const BLOG_OG_IMAGE_REVISION = '2026-02-10-01';
 
 const createResponsiveSources = (slug: string, variant: 'card' | 'header'): BlogResponsiveImageSourceSet => ({
     small: `${BLOG_IMAGE_PREFIX}${slug}-${variant}-768.webp`,

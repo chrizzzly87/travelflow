@@ -36,6 +36,7 @@ export default async (request: Request): Promise<Response> => {
     pill: trimParam(url.searchParams.get("pill"), 40),
     blogImage: trimParam(url.searchParams.get("blog_image"), 200),
     blogTint: trimParam(url.searchParams.get("blog_tint"), 12),
+    blogRev: trimParam(url.searchParams.get("blog_rev"), 40),
     weeks: trimParam(url.searchParams.get("weeks"), 40),
     months: trimParam(url.searchParams.get("months"), 60),
     distance: trimParam(url.searchParams.get("distance"), 40),
@@ -166,6 +167,9 @@ export default async (request: Request): Promise<Response> => {
         font-size: 12px;
         overflow: auto;
       }
+      .sample {
+        margin-top: 10px;
+      }
       .img-wrap {
         border-radius: 16px;
         border: 1px solid #cbd5e1;
@@ -192,7 +196,11 @@ export default async (request: Request): Promise<Response> => {
     <div class="wrap">
       <section class="panel">
         <h1>OG Playground</h1>
-        <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> plus optional <code>blog_tint</code>.</p>
+        <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> (jpg path). <code>blog_tint</code> is optional.</p>
+        <div class="sample">
+          <label>Default blog test URL (copy/paste)</label>
+          <code id="sample-site-url"></code>
+        </div>
         <form id="og-form">
           <div class="full">
             <label for="mode">Endpoint</label>
@@ -234,7 +242,11 @@ export default async (request: Request): Promise<Response> => {
           </div>
           <div class="full" data-mode="site">
             <label for="blog_image">Blog image path (site OG)</label>
-            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.webp" />
+            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.jpg" />
+          </div>
+          <div data-mode="site">
+            <label for="blog_rev">Blog image revision (cache bust)</label>
+            <input id="blog_rev" name="blog_rev" value="${escapeHtml(state.blogRev)}" placeholder="2026-02-10-01" />
           </div>
 
           <div data-mode="trip">
@@ -302,6 +314,7 @@ export default async (request: Request): Promise<Response> => {
           <div class="actions">
             <button type="submit">Render</button>
             <button type="button" id="reset-btn" class="secondary">Reset</button>
+            <button type="button" id="load-blog-example-btn" class="secondary">Load Blog Example</button>
           </div>
         </form>
       </section>
@@ -325,10 +338,20 @@ export default async (request: Request): Promise<Response> => {
       const queryUrl = document.getElementById('query-url');
       const reloadBtn = document.getElementById('reload-btn');
       const resetBtn = document.getElementById('reset-btn');
+      const loadBlogExampleBtn = document.getElementById('load-blog-example-btn');
+      const sampleSiteUrl = document.getElementById('sample-site-url');
       const modeInput = document.getElementById('mode');
 
       const TRIP_KEYS = ['s', 'trip', 'v', 'title', 'weeks', 'months', 'distance', 'path', 'u', 'map', 'mapStyle', 'routeMode', 'showStops', 'showCities'];
-      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint'];
+      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint', 'blog_rev'];
+      const BLOG_SAMPLE = {
+        title: 'How to Plan the Perfect Multi-City Trip',
+        description: 'Plan a smooth multi-stop itinerary with smart routing, realistic timing, and less stress.',
+        pill: 'BLOG',
+        path: '/blog/how-to-plan-multi-city-trip',
+        blog_image: '/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg',
+        blog_rev: '2026-02-10-01',
+      };
 
       function getMode() {
         return modeInput && modeInput.value === 'site' ? 'site' : 'trip';
@@ -367,6 +390,28 @@ export default async (request: Request): Promise<Response> => {
         return { imageUrl, mode, params };
       }
 
+      function buildSampleSiteUrl() {
+        const params = new URLSearchParams(BLOG_SAMPLE);
+        return window.location.origin + '/api/og/site?' + params.toString();
+      }
+
+      function setInputValue(name, value) {
+        const input = form.elements.namedItem(name);
+        if (!input) return;
+        input.value = value;
+      }
+
+      function loadBlogExamplePreset() {
+        modeInput.value = 'site';
+        setInputValue('title', BLOG_SAMPLE.title);
+        setInputValue('description', BLOG_SAMPLE.description);
+        setInputValue('pill', BLOG_SAMPLE.pill);
+        setInputValue('path', BLOG_SAMPLE.path);
+        setInputValue('blog_image', BLOG_SAMPLE.blog_image);
+        setInputValue('blog_rev', BLOG_SAMPLE.blog_rev);
+        setInputValue('blog_tint', '');
+      }
+
       function sync() {
         applyModeVisibility();
         const { imageUrl, mode, params } = buildImageUrl();
@@ -374,6 +419,9 @@ export default async (request: Request): Promise<Response> => {
         ogImage.src = busted;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
+        if (sampleSiteUrl) {
+          sampleSiteUrl.textContent = buildSampleSiteUrl();
+        }
 
         const full = new URL(window.location.href);
         const playgroundSearch = new URLSearchParams(params);
@@ -391,6 +439,11 @@ export default async (request: Request): Promise<Response> => {
 
       resetBtn.addEventListener('click', function() {
         form.reset();
+        sync();
+      });
+
+      loadBlogExampleBtn.addEventListener('click', function() {
+        loadBlogExamplePreset();
         sync();
       });
 

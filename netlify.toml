@@ -105,3 +105,8 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/images/blog/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600, s-maxage=604800, stale-while-revalidate=2592000"
