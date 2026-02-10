@@ -8,6 +8,8 @@
     "updates:validate": "node scripts/validate-updates.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "edge:validate": "node scripts/validate-edge-functions.mjs",
+    "inspirations:images:jobs": "tsx scripts/build-inspiration-image-batch.ts",
+    "build:images": "tsx scripts/build-inspiration-images.ts",
     "build": "npm run updates:validate && npm run blog:validate && npm run edge:validate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
