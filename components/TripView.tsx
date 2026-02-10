@@ -285,15 +285,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
        }
        return true;
     });
-    const [destinationInfoExpanded, setDestinationInfoExpanded] = useState<boolean>(() => {
-       if (typeof initialViewSettings?.destinationInfoExpanded === 'boolean') return initialViewSettings.destinationInfoExpanded;
-       if (typeof window !== 'undefined') {
-           const stored = localStorage.getItem('tf_country_info_expanded');
-           if (stored !== null) return stored === 'true';
-       }
-       return true;
-    });
-
     // Layout State
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
         if (initialViewSettings) return initialViewSettings.layoutMode;
@@ -520,7 +511,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
     useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
     useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
-    useEffect(() => { localStorage.setItem('tf_country_info_expanded', String(destinationInfoExpanded)); }, [destinationInfoExpanded]);
     useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
 
     // Update URL with View State
@@ -532,7 +522,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 mapStyle,
                 routeMode,
                 showCityNames,
-                destinationInfoExpanded,
                 zoomLevel,
                 sidebarWidth,
                 timelineHeight
@@ -556,7 +545,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             }
         }, 500);
         return () => clearTimeout(timeoutId);
-    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, destinationInfoExpanded, onViewSettingsChange]);
+    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -564,11 +553,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         mapStyle,
         routeMode,
         showCityNames,
-        destinationInfoExpanded,
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, destinationInfoExpanded, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useEffect(() => {
         if (!initialViewSettings) return;
@@ -593,9 +581,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
         setShowCityNames(desiredShowCityNames);
-        if (typeof initialViewSettings.destinationInfoExpanded === 'boolean') {
-            setDestinationInfoExpanded(initialViewSettings.destinationInfoExpanded);
-        }
 
         prevViewRef.current = initialViewSettings;
     }, [initialViewSettings, currentViewSettings]);
@@ -971,11 +956,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
-        if (prev.destinationInfoExpanded !== destinationInfoExpanded) {
-            const prevState = (prev.destinationInfoExpanded ?? true) ? 'open' : 'closed';
-            const nextState = destinationInfoExpanded ? 'open' : 'closed';
-            changes.push(`Destination info: ${prevState} → ${nextState}`);
-        }
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
@@ -989,7 +969,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, destinationInfoExpanded, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!requireEdit()) return;
@@ -1030,13 +1010,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key !== 'Escape') return;
             if (isHistoryOpen) return;
+            if (isTripInfoOpen) return;
             if (!selectedItemId && selectedCityIds.length === 0) return;
             clearSelection();
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [clearSelection, selectedItemId, selectedCityIds, isHistoryOpen]);
+    }, [clearSelection, selectedItemId, selectedCityIds, isHistoryOpen, isTripInfoOpen]);
 
     const handleTimelineSelect = useCallback((id: string | null, options?: { multi?: boolean; isCity?: boolean }) => {
         if (!id) {
@@ -1784,19 +1765,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     </div>
                                 )}
                                 {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
-                                {!isMobile && forkMeta && (
-                                    <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-2">
-                                        <span>{forkMeta.label}</span>
-                                        {forkMeta.url && (
-                                            <a
-                                                href={forkMeta.url}
-                                                className="text-[11px] text-accent-500 hover:underline"
-                                            >
-                                                View source
-                                            </a>
-                                        )}
-                                    </div>
-                                )}
                             </div>
                             {!isMobile && (
                                 <button
@@ -1817,6 +1785,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsTripInfoOpen(true)}
+                            className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
+                            aria-label="Trip information"
+                        >
+                            <Info size={18} />
+                        </button>
                         {!isMobile && (
                             <>
                                 <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-1">
@@ -1828,15 +1804,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <History size={18} />
                                 </button>
                             </>
-                        )}
-                        {isMobile && (
-                            <button
-                                type="button"
-                                onClick={() => setIsTripInfoOpen(true)}
-                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" aria-label="Trip information"
-                            >
-                                <Info size={18} />
-                            </button>
                         )}
                         <button
                             onClick={onOpenManager}
@@ -1984,15 +1951,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <>
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                                {trip.countryInfo && (
-                                                    <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                                        <CountryInfo
-                                                            info={trip.countryInfo}
-                                                            isExpanded={destinationInfoExpanded}
-                                                            onExpandedChange={setDestinationInfoExpanded}
-                                                        />
-                                                    </div>
-                                                )}
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
                                                     {timelineView === 'vertical' ? (
                                                         <VerticalTimeline
@@ -2286,11 +2244,17 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
                      {isTripInfoOpen && (
                         <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh]" onClick={(e) => e.stopPropagation()}>
+                            <div
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="trip-info-title"
+                                className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh]"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Trip information</h3>
-                                        <p className="text-xs text-gray-500">Additional trip details and quick actions.</p>
+                                        <h3 id="trip-info-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
                                     </div>
                                     <button onClick={() => setIsTripInfoOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                                         Close
@@ -2368,16 +2332,31 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     </section>
 
                                     {forkMeta && (
-                                        <section className="border border-gray-200 rounded-xl p-3">
-                                            <h4 className="text-sm font-semibold text-gray-800 mb-1">Copied from</h4>
-                                            <p className="text-xs text-gray-500">{forkMeta.label}</p>
+                                        <section className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">Trip source</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-900">{forkMeta.label}</p>
+                                            <p className="mt-1 text-xs text-gray-600">
+                                                {forkMeta.url
+                                                    ? 'This itinerary was copied from a shared trip snapshot.'
+                                                    : 'This itinerary was copied from another trip in your workspace.'}
+                                            </p>
                                             {forkMeta.url && (
-                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-600 hover:underline">
+                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-700 hover:underline">
                                                     View source
                                                 </a>
                                             )}
                                         </section>
                                     )}
+
+                                    <section>
+                                        {trip.countryInfo ? (
+                                            <CountryInfo info={trip.countryInfo} />
+                                        ) : (
+                                            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-4 text-xs text-gray-500">
+                                                No destination info available for this trip yet.
+                                            </div>
+                                        )}
+                                    </section>
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         <button
@@ -2451,18 +2430,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                     Open full history
                                                 </button>
                                             </div>
-                                        )}
-                                    </section>
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        {trip.countryInfo ? (
-                                            <CountryInfo
-                                                info={trip.countryInfo}
-                                                isExpanded={destinationInfoExpanded}
-                                                onExpandedChange={setDestinationInfoExpanded}
-                                            />
-                                        ) : (
-                                            <div className="text-xs text-gray-500">No destination info available for this trip yet.</div>
                                         )}
                                     </section>
                                 </div>
