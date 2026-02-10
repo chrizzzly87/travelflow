@@ -66,7 +66,7 @@ const createResponsiveSources = (slug: string, variant: 'card' | 'header'): Blog
     large: `${BLOG_IMAGE_PREFIX}${slug}-${variant}.webp`,
 });
 
-const createOgSource = (slug: string): string => `${BLOG_IMAGE_PREFIX}${slug}-og-vertical.webp`;
+const createOgSource = (slug: string): string => `${BLOG_IMAGE_PREFIX}${slug}-og-vertical.jpg`;
 
 const toTitleCase = (value: string): string =>
     value

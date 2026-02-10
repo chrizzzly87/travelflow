@@ -61,7 +61,7 @@ const normalizePath = (value: string | null): string => {
   return `/${trimmed}`;
 };
 
-const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.webp$/;
+const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.(png|jpe?g)$/;
 
 const normalizeBlogImagePath = (value: string | null): string | null => {
   if (!value) return null;

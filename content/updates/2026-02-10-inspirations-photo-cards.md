@@ -3,7 +3,7 @@ id: rel-2026-02-10-inspirations-photo-cards
 version: v0.35.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T07:08:21Z
+published_at: 2026-02-10T07:16:03Z
 status: published
 notify_in_app: true
 in_app_hours: 24
@@ -28,3 +28,4 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [ ] [Internal] 🧩 Added per-post blog image metadata and prompt seeds for card, header, and vertical OG image variants.
 - [ ] [Internal] 🧪 Extended the OG playground to switch between trip/site previews and test blog `blog_image` + `blog_tint` rendering.
 - [ ] [Internal] 🔁 Added a release workflow command (`npm run release:prepare`) to generate missing blog images before full build validation.
+- [ ] [Internal] 🖼️ Switched blog OG side-panel source assets to JPEG for better renderer compatibility and stable social preview generation.
