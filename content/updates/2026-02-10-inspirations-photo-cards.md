@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.40.0
+version: v0.41.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T10:11:29Z
+published_at: 2026-02-10T10:24:25Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Inspiration and blog cards now use realistic generated travel photography, with a default 60% accent tint gradient on blog OG previews and controllable tint settings."
+summary: "Inspiration and blog cards now use realistic generated travel photography, with a default 60% brand tint gradient on blog OG previews and controllable tint settings."
 ---
 
 ## Changes
@@ -23,6 +23,7 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [x] [Improved] 🔗 Blog post social previews now render article-specific photography with a soft accent tint in Open Graph cards.
 - [x] [Improved] 🗜️ Blog Open Graph previews now render below common 600 KB crawler warning thresholds through heavier OG-source compression and tuned side-panel composition.
 - [x] [Improved] 🎨 Blog Open Graph previews now default to a 60% accent tint treatment for blog pages, with optional color and intensity overrides.
+- [x] [Fixed] 🎯 Blog Open Graph default tint now uses the global brand indigo color across all blog posts (instead of per-post accent colors).
 - [x] [Improved] 🎛️ OG Playground now includes native blog tint controls (enable toggle, color picker, and intensity slider) for faster visual testing.
 - [x] [Fixed] 🔄 Blog OG tint previews now redraw reliably on each render and correctly reflect color/intensity changes.
 - [x] [Fixed] ☀️ Blog OG images now render without a dark overlay when tint is disabled, preserving the original photo brightness.
