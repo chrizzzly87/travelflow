@@ -6,8 +6,10 @@ import {
   fallbackSummary,
   fetchSharedTrip,
   getMapsApiKeyFromEnv,
+  isMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
+  type MapColorMode,
   type OgMapStyle,
   type OgRouteMode,
   parseRouteTarget,
@@ -29,6 +31,7 @@ interface Metadata {
 interface OgPreferenceOverrides {
   mapStyle: OgMapStyle | null;
   routeMode: OgRouteMode | null;
+  mapColorMode: MapColorMode | null;
   showStops: boolean | null;
   showCities: boolean | null;
 }
@@ -107,6 +110,7 @@ const buildFallbackMetadata = (
     versionId: routeTarget.versionId,
     mapStyle: overrides.mapStyle,
     routeMode: overrides.routeMode,
+    mapColorMode: overrides.mapColorMode,
     showStops: overrides.showStops,
     showCities: overrides.showCities,
   });
@@ -136,6 +140,7 @@ const buildShareMetadata = async (
       mapsApiKey,
       mapStyle: overrides.mapStyle ?? sharedTrip.viewSettings?.mapStyle,
       routeMode: overrides.routeMode ?? sharedTrip.viewSettings?.routeMode,
+      mapColorMode: overrides.mapColorMode ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
       showStops: overrides.showStops ?? sharedTrip.viewSettings?.showStops,
       showCities: overrides.showCities ??
         sharedTrip.viewSettings?.showCities ??
@@ -153,6 +158,7 @@ const buildShareMetadata = async (
     updatedAt: summary.updatedAt,
     mapStyle: overrides.mapStyle ?? sharedTrip?.viewSettings?.mapStyle ?? null,
     routeMode: overrides.routeMode ?? sharedTrip?.viewSettings?.routeMode ?? null,
+    mapColorMode: overrides.mapColorMode ?? sharedTrip?.viewSettings?.mapColorMode ?? sharedTrip?.trip.mapColorMode ?? null,
     showStops: overrides.showStops ?? sharedTrip?.viewSettings?.showStops ?? null,
     showCities: overrides.showCities ??
       sharedTrip?.viewSettings?.showCities ??
@@ -174,10 +180,12 @@ export default async (request: Request, context: { next: () => Promise<Response>
   const routeTarget = parseRouteTarget(url);
   const mapStyleQuery = url.searchParams.get("mapStyle")?.trim() || "";
   const routeModeQuery = url.searchParams.get("routeMode")?.trim() || "";
+  const mapColorModeQuery = url.searchParams.get("mapColorMode")?.trim() || "";
   const showStopsOverride = parseBooleanOverride(url.searchParams.get("showStops"));
   const overrides: OgPreferenceOverrides = {
     mapStyle: isOgMapStyle(mapStyleQuery) ? mapStyleQuery : null,
     routeMode: isOgRouteMode(routeModeQuery) ? routeModeQuery : null,
+    mapColorMode: isMapColorMode(mapColorModeQuery) ? mapColorModeQuery : null,
     showStops: showStopsOverride,
     showCities: parseBooleanOverride(url.searchParams.get("showCities")) ??
       parseBooleanOverride(url.searchParams.get("cityNames")),

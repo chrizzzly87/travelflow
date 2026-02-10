@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { ITimelineItem, ActivityType } from '../types';
-import { getActivityColorByTypes, pickPrimaryActivityType } from '../utils';
+import { getActivityColorByTypes, getContrastTextColor, getHexFromColorClass, isTailwindCityColorValue, pickPrimaryActivityType, shiftHexColor } from '../utils';
 import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -64,7 +64,16 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const primaryActivityType = item.type === 'activity'
     ? pickPrimaryActivityType(item.activityType)
     : undefined;
-  const resolvedColor = item.type === 'activity' ? getActivityColorByTypes(item.activityType) : item.color;
+  const cityUsesClassColor = item.type === 'city' && isTailwindCityColorValue(item.color);
+  const resolvedColorClass =
+    item.type === 'activity'
+      ? getActivityColorByTypes(item.activityType)
+      : item.type === 'city'
+        ? (cityUsesClassColor ? item.color : 'border')
+        : item.color;
+  const cityHex = item.type === 'city'
+      ? getHexFromColorClass(item.color || '')
+      : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
 
@@ -99,18 +108,26 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       cursor: baseCursor,
       touchAction: canEdit ? 'none' : undefined,
   };
+  const mergedStyle: React.CSSProperties = cityHex
+      ? {
+          ...style,
+          backgroundColor: cityHex,
+          borderColor: shiftHexColor(cityHex, -20),
+          color: getContrastTextColor(cityHex),
+      }
+      : style;
 
   return (
     <div
       className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
-        ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColor}
-        ${isCity ? 'opacity-80 rounded-sm border-r border-white/20 cursor-pointer' : 'rounded-lg border shadow-sm'} 
+        ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColorClass}
+        ${isCity ? 'opacity-80 rounded-sm border cursor-pointer' : 'rounded-lg border shadow-sm'} 
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
         ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
-      style={style}
+      style={mergedStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
     >

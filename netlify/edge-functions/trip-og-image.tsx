@@ -6,8 +6,10 @@ import {
   fallbackSummary,
   fetchSharedTrip,
   getMapsApiKeyFromEnv,
+  isMapColorMode,
   isOgMapStyle,
   isOgRouteMode,
+  type MapColorMode,
   type OgMapStyle,
   type TripOgMapLabel,
   type OgRouteMode,
@@ -352,6 +354,7 @@ export default async (request: Request): Promise<Response> => {
     const mapOverride = sanitizeMapUrl(url.searchParams.get("map"));
     const mapStyleOverrideRaw = url.searchParams.get("mapStyle")?.trim() || "";
     const routeModeOverrideRaw = url.searchParams.get("routeMode")?.trim() || "";
+    const mapColorModeOverrideRaw = url.searchParams.get("mapColorMode")?.trim() || "";
     const showStopsOverride = parseBooleanOverride(url.searchParams.get("showStops"));
     const showCitiesOverride = parseBooleanOverride(url.searchParams.get("showCities")) ??
       parseBooleanOverride(url.searchParams.get("cityNames"));
@@ -360,6 +363,9 @@ export default async (request: Request): Promise<Response> => {
       : null;
     const routeModeOverride: OgRouteMode | null = isOgRouteMode(routeModeOverrideRaw)
       ? routeModeOverrideRaw
+      : null;
+    const mapColorModeOverride: MapColorMode | null = isMapColorMode(mapColorModeOverrideRaw)
+      ? mapColorModeOverrideRaw
       : null;
 
     let summary = fallbackSummary();
@@ -372,6 +378,7 @@ export default async (request: Request): Promise<Response> => {
           mapsApiKey,
           mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
           routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
           showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
           showCities: showCitiesOverride ??
             sharedTrip.viewSettings?.showCities ??
