@@ -11,6 +11,7 @@ interface PrintLayoutProps {
   trip: ITrip;
   onClose: () => void;
   onUpdateTrip: (items: ITimelineItem[]) => void;
+  isPaywalled?: boolean;
 }
 
 // Helper to safely parse YYYY-MM-DD to Local Date (avoiding UTC shifts)
@@ -202,7 +203,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
     );
 };
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip }) => {
+export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip, isPaywalled = false }) => {
   const tripStartDate = parseLocalDate(trip.startDate);
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const totalDistanceKm = getTripDistanceKm(trip.items);
@@ -290,7 +291,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
 
                         {/* RIGHT: Map */}
                         <div className="col-span-5 h-full bg-gray-100 rounded-xl overflow-hidden border border-gray-200 print:border-0 print:bg-white relative print:w-full print:h-[400px] print:break-inside-avoid">
-                             <ItineraryMap items={trip.items} mapColorMode={trip.mapColorMode} />
+                             <ItineraryMap items={trip.items} mapColorMode={trip.mapColorMode} isPaywalled={isPaywalled} />
                         </div>
                     </div>
                 </section>

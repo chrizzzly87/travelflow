@@ -39,9 +39,22 @@ npm run dev
 - `/` marketing landing page
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner
+- `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
 - `/admin/dashboard` admin metrics placeholder (future role-gated)
+
+## UI and Brand Guidelines
+
+For UI styling, component behavior, and accessibility standards, use:
+
+- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/BRAND_CI_GUIDELINES.md`
+
+## Paywall Guidelines
+
+For trip lifecycle state handling, lock behavior, and paywall rules, use:
+
+- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/PAYWALL_GUIDELINES.md`
 
 ## Supabase Setup And Troubleshooting
 

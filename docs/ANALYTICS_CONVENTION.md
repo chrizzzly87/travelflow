@@ -62,6 +62,20 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `home__bottom_cta` | — | — | `CtaBanner.tsx` |
 | `home__carousel_card` | — | `{ template }` | `ExampleTripsCarousel.tsx` |
 
+### Example Trips
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `example_trip__open` | — | `{ template, country_count }` | `App.tsx` |
+| `example_trip__banner--copy_trip` | — | `{ template, country_count }` | `App.tsx` |
+| `example_trip__banner--create_similar` | — | `{ template, country_count }` | `App.tsx` |
+
+### Trip Paywall
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_paywall__strip--activate` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_paywall__overlay--activate` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_paywall__overlay--faq` | — | `{ trip_id }` | `TripView.tsx` |
+
 ### Consent
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|

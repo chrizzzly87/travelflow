@@ -2,12 +2,12 @@ import React from 'react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { WipPlaceholder } from '../components/marketing/WipPlaceholder';
 
-export const LoginPage: React.FC = () => {
+export const FaqPage: React.FC = () => {
     return (
         <MarketingLayout>
             <WipPlaceholder
-                title="Login"
-                description="Authentication, reactivation for expired anonymous trips, and role-based access controls are planned. This placeholder route keeps navigation stable while account flows are built."
+                title="FAQ"
+                description="The full FAQ is currently in progress. For now, account activation and anonymous-trip access limits are described on the Pricing page while we prepare the complete help center."
             />
         </MarketingLayout>
     );

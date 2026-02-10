@@ -12,6 +12,11 @@ create table if not exists public.trips (
   data jsonb not null,
   view_settings jsonb,
   is_favorite boolean not null default false,
+  status text not null default 'active' check (status in ('active', 'archived', 'expired')),
+  trip_expires_at timestamptz,
+  archived_at timestamptz,
+  source_kind text,
+  source_template_id text,
   sharing_enabled boolean not null default true,
   forked_from_trip_id text,
   forked_from_share_token text,
@@ -93,11 +98,34 @@ create table if not exists public.subscriptions (
 
 -- Forward-compatible schema upgrades
 alter table public.trips add column if not exists sharing_enabled boolean not null default true;
+alter table public.trips add column if not exists status text not null default 'active';
+alter table public.trips add column if not exists trip_expires_at timestamptz;
+alter table public.trips add column if not exists archived_at timestamptz;
+alter table public.trips add column if not exists source_kind text;
+alter table public.trips add column if not exists source_template_id text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'trips_status_check'
+      and conrelid = 'public.trips'::regclass
+  ) then
+    alter table public.trips
+      add constraint trips_status_check
+      check (status in ('active', 'archived', 'expired'));
+  end if;
+end;
+$$;
 
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
 create index if not exists trips_updated_at_idx on public.trips(updated_at desc);
 create index if not exists trips_forked_from_idx on public.trips(forked_from_trip_id);
+create index if not exists trips_status_idx on public.trips(status);
+create index if not exists trips_owner_status_idx on public.trips(owner_id, status);
+create index if not exists trips_trip_expires_at_idx on public.trips(trip_expires_at);
 create index if not exists trip_versions_trip_id_idx on public.trip_versions(trip_id);
 create index if not exists trip_versions_created_at_idx on public.trip_versions(created_at desc);
 create index if not exists trip_shares_trip_id_idx on public.trip_shares(trip_id);
@@ -163,6 +191,45 @@ create trigger set_trip_version_creator
 before insert on public.trip_versions
 for each row execute function public.set_trip_version_creator();
 
+-- Anonymous/guest limits (trip-based)
+create or replace function public.get_trip_limit_for_user(p_user_id uuid)
+returns integer
+language sql
+stable
+as $$
+  select 3;
+$$;
+
+create or replace function public.can_create_trip()
+returns table(allow_create boolean, active_trip_count integer, max_trip_count integer)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_owner uuid;
+  v_count integer;
+  v_limit integer;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  v_limit := public.get_trip_limit_for_user(v_owner);
+
+  select count(*)
+    into v_count
+    from public.trips t
+   where t.owner_id = v_owner
+     and coalesce(t.status, 'active') <> 'archived';
+
+  return query
+  select (v_count < v_limit), v_count, v_limit;
+end;
+$$;
+
 -- RPC: Upsert trip with ownership enforcement
 create or replace function public.upsert_trip(
   p_id text,
@@ -172,7 +239,11 @@ create or replace function public.upsert_trip(
   p_start_date date,
   p_is_favorite boolean,
   p_forked_from_trip_id text,
-  p_forked_from_share_token text
+  p_forked_from_share_token text,
+  p_status text default 'active',
+  p_trip_expires_at timestamptz default null,
+  p_source_kind text default null,
+  p_source_template_id text default null
 )
 returns table(trip_id text)
 language plpgsql
@@ -182,11 +253,20 @@ set row_security = off
 as $$
 declare
   v_owner uuid;
+  v_limit integer;
+  v_count integer;
+  v_status text;
+  v_trip_expires_at timestamptz;
 begin
   v_owner := auth.uid();
   if v_owner is null then
     raise exception 'Not authenticated';
   end if;
+
+  v_status := case
+    when p_status in ('active', 'archived', 'expired') then p_status
+    else 'active'
+  end;
 
   if exists (select 1 from public.trips t where t.id = p_id) then
     if not exists (select 1 from public.trips t where t.id = p_id and t.owner_id = v_owner) then
@@ -201,9 +281,25 @@ begin
            is_favorite = coalesce(p_is_favorite, is_favorite),
            forked_from_trip_id = coalesce(p_forked_from_trip_id, forked_from_trip_id),
            forked_from_share_token = coalesce(p_forked_from_share_token, forked_from_share_token),
+           status = coalesce(v_status, status),
+           trip_expires_at = coalesce(p_trip_expires_at, trip_expires_at),
+           source_kind = coalesce(p_source_kind, source_kind),
+           source_template_id = coalesce(p_source_template_id, source_template_id),
            updated_at = now()
      where id = p_id;
   else
+    v_limit := public.get_trip_limit_for_user(v_owner);
+    select count(*)
+      into v_count
+      from public.trips t
+     where t.owner_id = v_owner
+       and coalesce(t.status, 'active') <> 'archived';
+    if v_count >= v_limit then
+      raise exception 'Trip limit reached';
+    end if;
+
+    v_trip_expires_at := coalesce(p_trip_expires_at, now() + interval '7 days');
+
     insert into public.trips (
       id,
       owner_id,
@@ -212,6 +308,10 @@ begin
       data,
       view_settings,
       is_favorite,
+      status,
+      trip_expires_at,
+      source_kind,
+      source_template_id,
       forked_from_trip_id,
       forked_from_share_token
     )
@@ -223,6 +323,10 @@ begin
       p_data,
       p_view,
       coalesce(p_is_favorite, false),
+      v_status,
+      v_trip_expires_at,
+      p_source_kind,
+      p_source_template_id,
       p_forked_from_trip_id,
       p_forked_from_share_token
     );
@@ -671,5 +775,6 @@ grant execute on function public.create_share_token(text, text, boolean) to anon
 grant execute on function public.get_shared_trip(text) to anon, authenticated;
 grant execute on function public.get_shared_trip_version(text, uuid) to anon, authenticated;
 grant execute on function public.update_shared_trip(text, jsonb, jsonb, text) to anon, authenticated;
-grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, text, text) to anon, authenticated;
+grant execute on function public.can_create_trip() to anon, authenticated;
+grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.add_trip_version(text, jsonb, jsonb, text) to anon, authenticated;
