@@ -3,7 +3,7 @@ id: rel-2026-02-10-trip-palettes-map-color-modes
 version: v0.42.0
 title: "Trip palettes and map color modes"
 date: 2026-02-10
-published_at: 2026-02-10T21:35:00Z
+published_at: 2026-02-10T13:50:00Z
 status: published
 notify_in_app: true
 in_app_hours: 24
