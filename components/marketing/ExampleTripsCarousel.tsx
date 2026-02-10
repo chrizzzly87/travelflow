@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
 import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
 import { trackEvent } from '../../services/analyticsService';
-import { saveTrip } from '../../services/storageService';
-import { buildTripUrl } from '../../utils';
 import { ExampleTripCard } from './ExampleTripCard';
 
 // Deterministic rotation per card index — alternating slight tilts
@@ -18,10 +16,8 @@ export const ExampleTripsCarousel: React.FC = () => {
     const handleCardClick = useCallback((templateId: string) => {
         const factory = TRIP_FACTORIES[templateId];
         if (!factory) return;
-        const trip = factory(new Date().toISOString());
-        saveTrip(trip);
         trackEvent('home__carousel_card', { template: templateId });
-        navigate(buildTripUrl(trip.id));
+        navigate(`/example/${encodeURIComponent(templateId)}`);
     }, [navigate]);
 
     return (

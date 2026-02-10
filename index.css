@@ -3,6 +3,7 @@
 
 :root {
   --tf-font-heading: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --tf-layer-cookie-consent: 12000;
   /* Global accent currently uses an indigo palette. */
   --tf-accent-50: #eef2ff;
   --tf-accent-100: #e0e7ff;
@@ -56,6 +57,12 @@
 
 @utility shadow-accent-glow-md {
   box-shadow: 0 0 34px var(--tf-primary-glow-md);
+}
+
+@layer utilities {
+  .z-cookie-consent {
+    z-index: var(--tf-layer-cookie-consent);
+  }
 }
 
 input[type="checkbox"] {

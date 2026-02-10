@@ -85,6 +85,14 @@ export interface ITrip {
   cityColorPaletteId?: string;
   mapColorMode?: MapColorMode;
   defaultView?: IViewSettings;
+  status?: 'active' | 'archived' | 'expired';
+  tripExpiresAt?: string | null;
+  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example';
+  sourceTemplateId?: string | null;
+  isExample?: boolean;
+  exampleTemplateId?: string;
+  exampleTemplateCountries?: string[];
+  forkedFromExampleTemplateId?: string;
 }
 
 export interface IDragState {

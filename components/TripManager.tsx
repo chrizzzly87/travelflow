@@ -5,6 +5,7 @@ import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { useAppDialog } from './AppDialogProvider';
+import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -265,6 +266,10 @@ const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage): string => {
 const formatCityStayLabel = (duration: number): string => {
   const days = Math.max(1, Math.ceil(Number.isFinite(duration) ? duration : 1));
   return `${days} ${days === 1 ? 'day' : 'days'}`;
+};
+
+const getTripLifecycleStatus = (trip: ITrip): 'active' | 'expired' | 'archived' => {
+  return getTripLifecycleState(trip);
 };
 
 const getCountryFromToken = (token: string): CountryMatch | null => {
@@ -579,6 +584,7 @@ const TripRow: React.FC<TripRowProps> = ({
   const displayFlags = flags.slice(0, 3).join(' ');
   const extraFlags = Math.max(0, flags.length - 3);
   const showFavoriteByDefault = Boolean(trip.isFavorite);
+  const lifecycleStatus = getTripLifecycleStatus(trip);
 
   const emitHoverAnchor = () => {
     if (!rowRef.current) return;
@@ -616,10 +622,18 @@ const TripRow: React.FC<TripRowProps> = ({
       </button>
 
       <div className="flex items-center gap-0.5">
+        {lifecycleStatus === 'expired' && (
+          <span
+            className="mr-1 shrink-0 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700"
+            title="This trip is expired. Activate an account to unlock editing again."
+          >
+            Expired
+          </span>
+        )}
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Delete trip"
+          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -657,6 +671,11 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
   const [shouldLoadMap, setShouldLoadMap] = React.useState(false);
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
+  const lifecycleStatus = React.useMemo(() => getTripLifecycleStatus(trip), [trip]);
+  const displayTrip = React.useMemo(
+    () => (lifecycleStatus === 'expired' ? buildPaywalledTripDisplay(trip) : trip),
+    [lifecycleStatus, trip]
+  );
 
   React.useEffect(() => {
     setShouldLoadMap(false);
@@ -668,20 +687,20 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
 
   const mapUrl = React.useMemo(() => {
     if (!shouldLoadMap) return null;
-    return buildMiniMapUrl(trip, locale);
-  }, [shouldLoadMap, trip, locale]);
+    return buildMiniMapUrl(displayTrip, locale);
+  }, [shouldLoadMap, displayTrip, locale]);
 
-  const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
+  const cityStops = React.useMemo(() => getTripCityStops(displayTrip), [displayTrip]);
   const updatedAtLabel = React.useMemo(
     () => formatUpdatedTimestamp(Number.isFinite(trip.updatedAt) ? trip.updatedAt : 0, locale),
     [trip.updatedAt, locale]
   );
   const distanceLabel = React.useMemo(() => {
-    const totalDistanceKm = getTripDistanceKm(trip.items);
+    const totalDistanceKm = getTripDistanceKm(displayTrip.items);
     return totalDistanceKm > 0
       ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
       : null;
-  }, [trip.items]);
+  }, [displayTrip.items]);
 
   return (
     <div
@@ -694,7 +713,14 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
         <div className="px-3.5 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between gap-3">
             <div className="text-sm font-semibold text-gray-800 truncate">{trip.title}</div>
-            <div className="shrink-0 text-[10px] text-gray-400">{updatedAtLabel}</div>
+            <div className="shrink-0 flex items-center gap-1.5">
+              {lifecycleStatus === 'expired' && (
+                <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                  Expired
+                </span>
+              )}
+              <div className="text-[10px] text-gray-400">{updatedAtLabel}</div>
+            </div>
           </div>
           <div className="mt-1 flex items-center gap-1.5 text-accent-600 text-sm font-semibold">
             <CalendarDays size={14} />
@@ -702,6 +728,11 @@ const TripTooltip: React.FC<TripTooltipProps> = ({ trip, position, onHoverStart,
             {distanceLabel && <span className="text-accent-300">•</span>}
             {distanceLabel && <span>{distanceLabel}</span>}
           </div>
+          {lifecycleStatus === 'expired' && (
+            <div className="mt-2 text-[11px] text-rose-600">
+              This trip is in expired mode and stays read-only until activation.
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 flex-1 min-h-0">
@@ -1028,12 +1059,22 @@ export const TripManager: React.FC<TripManagerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleDebugExpiryUpdate = () => {
+      if (!isOpen) return;
+      setTrips(getAllTrips());
+    };
+    window.addEventListener(TRIP_EXPIRY_DEBUG_EVENT, handleDebugExpiryUpdate as EventListener);
+    return () => window.removeEventListener(TRIP_EXPIRY_DEBUG_EVENT, handleDebugExpiryUpdate as EventListener);
+  }, [isOpen]);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     const shouldDelete = await confirm({
-      title: 'Delete Trip?',
-      message: 'Are you sure you want to delete this trip? This action cannot be undone.',
-      confirmLabel: 'Delete Trip',
+      title: 'Archive Trip?',
+      message: 'This trip will be removed from your list and can be restored later.',
+      confirmLabel: 'Archive Trip',
       cancelLabel: 'Cancel',
       tone: 'danger',
     });

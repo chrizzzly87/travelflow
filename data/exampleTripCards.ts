@@ -131,3 +131,6 @@ export const exampleTripCards: ExampleTripCard[] = [
     isRoundTrip: true,
   },
 ];
+
+export const getExampleTripCardByTemplateId = (templateId: string): ExampleTripCard | undefined =>
+  exampleTripCards.find((card) => card.templateId === templateId);
