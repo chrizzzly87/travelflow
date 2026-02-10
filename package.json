@@ -10,6 +10,8 @@
     "edge:validate": "node scripts/validate-edge-functions.mjs",
     "inspirations:images:jobs": "tsx scripts/build-inspiration-image-batch.ts",
     "build:images": "tsx scripts/build-inspiration-images.ts",
+    "blog:images:jobs": "tsx scripts/build-blog-image-batch.ts",
+    "build:blog-images": "tsx scripts/build-blog-images.ts",
     "build": "npm run updates:validate && npm run blog:validate && npm run edge:validate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"

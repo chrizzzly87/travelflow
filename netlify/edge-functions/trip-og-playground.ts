@@ -23,12 +23,19 @@ const isRouteMode = (value: string): boolean =>
 
 export default async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
+  const modeRaw = trimParam(url.searchParams.get("mode"), 16).toLowerCase();
+  const mode = modeRaw === "site" ? "site" : "trip";
 
   const state = {
+    mode,
     shareToken: trimParam(url.searchParams.get("s"), 120),
     tripId: trimParam(url.searchParams.get("trip"), 120),
     versionId: trimParam(url.searchParams.get("v"), 80),
     title: trimParam(url.searchParams.get("title"), 120),
+    description: trimParam(url.searchParams.get("description"), 180),
+    pill: trimParam(url.searchParams.get("pill"), 40),
+    blogImage: trimParam(url.searchParams.get("blog_image"), 200),
+    blogTint: trimParam(url.searchParams.get("blog_tint"), 12),
     weeks: trimParam(url.searchParams.get("weeks"), 40),
     months: trimParam(url.searchParams.get("months"), 60),
     distance: trimParam(url.searchParams.get("distance"), 40),
@@ -185,50 +192,78 @@ export default async (request: Request): Promise<Response> => {
     <div class="wrap">
       <section class="panel">
         <h1>OG Playground</h1>
-        <p class="sub">Edit values and render <code>/api/og/trip</code> instantly. Use <strong>s</strong> to load real shared-trip data, or override layout and map preferences for tuning.</p>
+        <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> plus optional <code>blog_tint</code>.</p>
         <form id="og-form">
           <div class="full">
+            <label for="mode">Endpoint</label>
+            <select id="mode" name="mode">
+              <option value="trip"${state.mode === "trip" ? " selected" : ""}>Trip OG (/api/og/trip)</option>
+              <option value="site"${state.mode === "site" ? " selected" : ""}>Site OG (/api/og/site)</option>
+            </select>
+          </div>
+
+          <div class="full" data-mode="trip">
             <label for="s">Share token (real data)</label>
             <input id="s" name="s" placeholder="e.g. 5f7a9b..." value="${escapeHtml(state.shareToken)}" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="trip">Trip ID (fallback)</label>
             <input id="trip" name="trip" value="${escapeHtml(state.tripId)}" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="v">Version UUID (optional)</label>
             <input id="v" name="v" value="${escapeHtml(canUseVersion ? state.versionId : "")}" />
           </div>
 
           <div class="full">
             <label for="title">Title override</label>
-            <input id="title" name="title" value="${escapeHtml(state.title)}" placeholder="Trip title shown in OG image" />
+            <input id="title" name="title" value="${escapeHtml(state.title)}" placeholder="Title shown in OG image" />
           </div>
-          <div>
+
+          <div class="full" data-mode="site">
+            <label for="description">Description/subline (site OG)</label>
+            <input id="description" name="description" value="${escapeHtml(state.description)}" placeholder="Subline for /api/og/site" />
+          </div>
+          <div data-mode="site">
+            <label for="pill">Pill label (site OG)</label>
+            <input id="pill" name="pill" value="${escapeHtml(state.pill)}" placeholder="BLOG" />
+          </div>
+          <div data-mode="site">
+            <label for="blog_tint">Blog tint hex (site OG)</label>
+            <input id="blog_tint" name="blog_tint" value="${escapeHtml(state.blogTint)}" placeholder="#6366f1" />
+          </div>
+          <div class="full" data-mode="site">
+            <label for="blog_image">Blog image path (site OG)</label>
+            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.webp" />
+          </div>
+
+          <div data-mode="trip">
             <label for="weeks">Weeks override</label>
             <input id="weeks" name="weeks" value="${escapeHtml(state.weeks)}" placeholder="e.g. 2.5 weeks" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="months">Months override</label>
             <input id="months" name="months" value="${escapeHtml(state.months)}" placeholder="e.g. May-Jun" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="distance">Distance override</label>
             <input id="distance" name="distance" value="${escapeHtml(state.distance)}" placeholder="e.g. 2,430 km" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="u">Update stamp (u)</label>
             <input id="u" name="u" value="${escapeHtml(state.updatedAt)}" placeholder="cache bust id" />
           </div>
+
           <div class="full">
             <label for="path">Footer URL path override</label>
-            <input id="path" name="path" value="${escapeHtml(state.routePath)}" placeholder="/s/my-token or /trip/my-trip?v=..." />
+            <input id="path" name="path" value="${escapeHtml(state.routePath)}" placeholder="/blog/your-slug or /s/your-token" />
           </div>
-          <div class="full">
+
+          <div class="full" data-mode="trip">
             <label for="map">Map image URL override (https only)</label>
             <input id="map" name="map" value="${escapeHtml(state.mapUrl)}" placeholder="https://.../staticmap" />
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="mapStyle">Map style override</label>
             <select id="mapStyle" name="mapStyle">
               <option value="">Share/default</option>
@@ -239,7 +274,7 @@ export default async (request: Request): Promise<Response> => {
               <option value="satellite"${canUseMapStyle && state.mapStyle === "satellite" ? " selected" : ""}>Satellite</option>
             </select>
           </div>
-          <div>
+          <div data-mode="trip">
             <label for="routeMode">Route style override</label>
             <select id="routeMode" name="routeMode">
               <option value="">Share/default</option>
@@ -247,7 +282,7 @@ export default async (request: Request): Promise<Response> => {
               <option value="realistic"${canUseRouteMode && state.routeMode === "realistic" ? " selected" : ""}>Realistic</option>
             </select>
           </div>
-          <div class="full">
+          <div class="full" data-mode="trip">
             <label for="showStops">Show stops override</label>
             <select id="showStops" name="showStops">
               <option value="">Share/default</option>
@@ -255,7 +290,7 @@ export default async (request: Request): Promise<Response> => {
               <option value="0"${canUseShowStops && state.showStops === "0" ? " selected" : ""}>Off</option>
             </select>
           </div>
-          <div class="full">
+          <div class="full" data-mode="trip">
             <label for="showCities">Show city labels override</label>
             <select id="showCities" name="showCities">
               <option value="">Share/default</option>
@@ -290,28 +325,60 @@ export default async (request: Request): Promise<Response> => {
       const queryUrl = document.getElementById('query-url');
       const reloadBtn = document.getElementById('reload-btn');
       const resetBtn = document.getElementById('reset-btn');
+      const modeInput = document.getElementById('mode');
 
-      function buildImageUrl() {
+      const TRIP_KEYS = ['s', 'trip', 'v', 'title', 'weeks', 'months', 'distance', 'path', 'u', 'map', 'mapStyle', 'routeMode', 'showStops', 'showCities'];
+      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint'];
+
+      function getMode() {
+        return modeInput && modeInput.value === 'site' ? 'site' : 'trip';
+      }
+
+      function applyModeVisibility() {
+        const mode = getMode();
+        const sections = form.querySelectorAll('[data-mode]');
+        sections.forEach((el) => {
+          if (!(el instanceof HTMLElement)) return;
+          const targetMode = el.dataset.mode;
+          el.style.display = targetMode === mode ? '' : 'none';
+        });
+      }
+
+      function buildParamsFromForm(mode) {
         const params = new URLSearchParams();
+        const allowed = mode === 'site' ? SITE_KEYS : TRIP_KEYS;
         const data = new FormData(form);
-        for (const [key, value] of data.entries()) {
-          const text = String(value || '').trim();
+
+        for (const key of allowed) {
+          const raw = data.get(key);
+          const text = String(raw || '').trim();
           if (!text) continue;
           params.set(key, text);
         }
-        const url = '/api/og/trip' + (params.toString() ? ('?' + params.toString()) : '');
-        return url;
+
+        return params;
+      }
+
+      function buildImageUrl() {
+        const mode = getMode();
+        const params = buildParamsFromForm(mode);
+        const endpoint = mode === 'site' ? '/api/og/site' : '/api/og/trip';
+        const imageUrl = endpoint + (params.toString() ? ('?' + params.toString()) : '');
+        return { imageUrl, mode, params };
       }
 
       function sync() {
-        const imageUrl = buildImageUrl();
+        applyModeVisibility();
+        const { imageUrl, mode, params } = buildImageUrl();
         const busted = imageUrl + (imageUrl.includes('?') ? '&' : '?') + '__t=' + Date.now();
         ogImage.src = busted;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
 
         const full = new URL(window.location.href);
-        full.search = imageUrl.split('?')[1] || '';
+        const playgroundSearch = new URLSearchParams(params);
+        playgroundSearch.set('mode', mode);
+        full.search = playgroundSearch.toString() ? ('?' + playgroundSearch.toString()) : '';
         history.replaceState(null, '', full.toString());
       }
 
@@ -327,6 +394,7 @@ export default async (request: Request): Promise<Response> => {
         sync();
       });
 
+      modeInput.addEventListener('change', sync);
       sync();
     </script>
   </body>

@@ -5,7 +5,15 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPosts } from '../services/blogService';
 import type { BlogPost } from '../services/blogService';
 
+const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
+const BLOG_CARD_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
+const BLOG_CARD_IMAGE_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-500 ease-out motion-reduce:transition-none';
+const BLOG_CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/30 via-slate-900/8 to-transparent';
+const BLOG_CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.65)_44%,transparent_100%)]';
+
 const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
+    const [hasImageError, setHasImageError] = useState(false);
+    const showImage = !hasImageError;
     const formattedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -15,10 +23,37 @@ const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
     return (
         <Link
             to={`/blog/${post.slug}`}
-            className="group flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
+            className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         >
-            <div className={`relative h-32 rounded-t-2xl ${post.coverColor} overflow-hidden flex items-center justify-center`}>
-                <Article size={36} weight="duotone" className="text-slate-400/40" />
+            <div className={`relative h-36 overflow-hidden rounded-t-2xl md:h-40 ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
+                {showImage ? (
+                    <>
+                        <picture className="absolute inset-0 block h-full w-full">
+                            <source
+                                type="image/webp"
+                                srcSet={`${post.images.card.sources.small} 768w, ${post.images.card.sources.large} 1536w`}
+                                sizes={BLOG_CARD_IMAGE_SIZES}
+                            />
+                            <img
+                                src={post.images.card.sources.small}
+                                srcSet={`${post.images.card.sources.small} 768w, ${post.images.card.sources.large} 1536w`}
+                                sizes={BLOG_CARD_IMAGE_SIZES}
+                                alt={post.images.card.alt}
+                                loading="lazy"
+                                decoding="async"
+                                fetchPriority="low"
+                                width={1536}
+                                height={1024}
+                                onError={() => setHasImageError(true)}
+                                className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
+                            />
+                        </picture>
+                        <div className={BLOG_CARD_IMAGE_FADE} />
+                        <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
+                    </>
+                ) : (
+                    <Article size={36} weight="duotone" className="text-slate-400/40" />
+                )}
             </div>
             <div className="flex flex-1 flex-col p-5">
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
