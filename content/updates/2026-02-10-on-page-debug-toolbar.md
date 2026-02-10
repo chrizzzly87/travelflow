@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-10-on-page-debug-toolbar
-version: v0.43.0
+version: v0.45.0
 title: "On-page debugger toolbar"
 date: 2026-02-10
-published_at: 2026-02-10T18:15:56Z
+published_at: 2026-02-10T19:05:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
