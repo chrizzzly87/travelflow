@@ -25,6 +25,9 @@ import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { PricingPage } from './pages/PricingPage';
+import { CreateTripClassicLabPage } from './pages/CreateTripClassicLabPage';
+import { CreateTripSplitWorkspaceLabPage } from './pages/CreateTripSplitWorkspaceLabPage';
+import { CreateTripJourneyArchitectLabPage } from './pages/CreateTripJourneyArchitectLabPage';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
@@ -575,6 +578,33 @@ const AppContent: React.FC = () => {
                             onLanguageLoaded={setAppLanguage}
                         />
                     } 
+                />
+                <Route
+                    path="/create-trip/labs/classic-card"
+                    element={
+                        <CreateTripClassicLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/split-workspace"
+                    element={
+                        <CreateTripSplitWorkspaceLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/journey-architect"
+                    element={
+                        <CreateTripJourneyArchitectLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
                 />
                 <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/inspirations" element={<InspirationsPage />} />
