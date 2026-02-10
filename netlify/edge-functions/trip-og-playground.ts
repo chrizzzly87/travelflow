@@ -21,6 +21,9 @@ const isMapStyle = (value: string): boolean =>
 const isRouteMode = (value: string): boolean =>
   value === "simple" || value === "realistic";
 
+const DEFAULT_BLOG_TINT_COLOR = "#6366f1";
+const DEFAULT_BLOG_TINT_INTENSITY = 60;
+
 export default async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
   const modeRaw = trimParam(url.searchParams.get("mode"), 16).toLowerCase();
@@ -36,6 +39,7 @@ export default async (request: Request): Promise<Response> => {
     pill: trimParam(url.searchParams.get("pill"), 40),
     blogImage: trimParam(url.searchParams.get("blog_image"), 200),
     blogTint: trimParam(url.searchParams.get("blog_tint"), 12),
+    blogTintIntensity: trimParam(url.searchParams.get("blog_tint_intensity"), 8),
     blogRev: trimParam(url.searchParams.get("blog_rev"), 40),
     weeks: trimParam(url.searchParams.get("weeks"), 40),
     months: trimParam(url.searchParams.get("months"), 60),
@@ -54,6 +58,12 @@ export default async (request: Request): Promise<Response> => {
   const canUseRouteMode = isRouteMode(state.routeMode);
   const canUseShowStops = state.showStops === "1" || state.showStops === "0";
   const canUseShowCities = state.showCities === "1" || state.showCities === "0";
+  const parsedTintIntensity = Number(state.blogTintIntensity);
+  const blogTintIntensityPercent = Number.isFinite(parsedTintIntensity)
+    ? Math.max(0, Math.min(100, Math.round(parsedTintIntensity)))
+    : DEFAULT_BLOG_TINT_INTENSITY;
+  const blogTintEnabled = Boolean(state.blogTint) || (state.mode === "site" && Boolean(state.blogImage));
+  const blogTintColor = state.blogTint || DEFAULT_BLOG_TINT_COLOR;
 
   const html = `<!doctype html>
 <html lang="en">
@@ -170,6 +180,45 @@ export default async (request: Request): Promise<Response> => {
       .sample {
         margin-top: 10px;
       }
+      .tint-controls {
+        display: grid;
+        grid-template-columns: 1fr 58px;
+        gap: 8px;
+        align-items: center;
+      }
+      .checkline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        font-size: 12px;
+        color: #334155;
+        cursor: pointer;
+      }
+      .checkline input {
+        width: auto;
+        margin: 0;
+      }
+      input[type="color"] {
+        width: 58px;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        padding: 4px;
+        background: #fff;
+      }
+      .range-row {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 8px;
+      }
+      .intensity-value {
+        font-size: 12px;
+        color: #475569;
+        font-weight: 600;
+      }
       .img-wrap {
         border-radius: 16px;
         border: 1px solid #cbd5e1;
@@ -196,7 +245,7 @@ export default async (request: Request): Promise<Response> => {
     <div class="wrap">
       <section class="panel">
         <h1>OG Playground</h1>
-        <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> (jpg path). <code>blog_tint</code> is optional.</p>
+        <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> (jpg path). Use tint controls to optionally pass <code>blog_tint</code> + <code>blog_tint_intensity</code>.</p>
         <div class="sample">
           <label>Default blog test URL (copy/paste)</label>
           <code id="sample-site-url"></code>
@@ -236,9 +285,20 @@ export default async (request: Request): Promise<Response> => {
             <label for="pill">Pill label (site OG)</label>
             <input id="pill" name="pill" value="${escapeHtml(state.pill)}" placeholder="BLOG" />
           </div>
-          <div data-mode="site">
-            <label for="blog_tint">Blog tint hex (site OG)</label>
-            <input id="blog_tint" name="blog_tint" value="${escapeHtml(state.blogTint)}" placeholder="#6366f1" />
+          <div class="full" data-mode="site">
+            <label for="blog_tint_enabled">Blog tint controls (site OG)</label>
+            <div class="tint-controls">
+              <label class="checkline" for="blog_tint_enabled">
+                <input id="blog_tint_enabled" type="checkbox"${blogTintEnabled ? " checked" : ""} />
+                Enable tint overlay
+              </label>
+              <input id="blog_tint_color" type="color" value="${escapeHtml(blogTintColor)}" />
+            </div>
+            <div class="range-row">
+              <label for="blog_tint_intensity">Tint intensity</label>
+              <span id="blog_tint_intensity_label" class="intensity-value"></span>
+            </div>
+            <input id="blog_tint_intensity" type="range" min="0" max="100" step="1" value="${blogTintIntensityPercent}" />
           </div>
           <div class="full" data-mode="site">
             <label for="blog_image">Blog image path (site OG)</label>
@@ -341,20 +401,54 @@ export default async (request: Request): Promise<Response> => {
       const loadBlogExampleBtn = document.getElementById('load-blog-example-btn');
       const sampleSiteUrl = document.getElementById('sample-site-url');
       const modeInput = document.getElementById('mode');
+      const blogTintEnabledInput = document.getElementById('blog_tint_enabled');
+      const blogTintColorInput = document.getElementById('blog_tint_color');
+      const blogTintIntensityInput = document.getElementById('blog_tint_intensity');
+      const blogTintIntensityLabel = document.getElementById('blog_tint_intensity_label');
 
       const TRIP_KEYS = ['s', 'trip', 'v', 'title', 'weeks', 'months', 'distance', 'path', 'u', 'map', 'mapStyle', 'routeMode', 'showStops', 'showCities'];
-      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint', 'blog_rev'];
+      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_rev'];
       const BLOG_SAMPLE = {
         title: 'How to Plan the Perfect Multi-City Trip',
         description: 'Plan a smooth multi-stop itinerary with smart routing, realistic timing, and less stress.',
         pill: 'BLOG',
         path: '/blog/how-to-plan-multi-city-trip',
         blog_image: '/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg',
+        blog_tint: DEFAULT_BLOG_TINT_COLOR,
+        blog_tint_intensity: '60',
         blog_rev: '2026-02-10-01',
       };
+      const DEFAULT_BLOG_TINT_COLOR = '${DEFAULT_BLOG_TINT_COLOR}';
+      const DEFAULT_BLOG_TINT_INTENSITY = ${DEFAULT_BLOG_TINT_INTENSITY};
 
       function getMode() {
         return modeInput && modeInput.value === 'site' ? 'site' : 'trip';
+      }
+
+      function clampTintIntensity(value) {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed)) return DEFAULT_BLOG_TINT_INTENSITY;
+        return Math.max(0, Math.min(100, Math.round(parsed)));
+      }
+
+      function updateTintControls() {
+        const tintEnabled = blogTintEnabledInput instanceof HTMLInputElement && blogTintEnabledInput.checked;
+        const tintColor = blogTintColorInput instanceof HTMLInputElement && /^#[0-9a-fA-F]{6}$/.test(blogTintColorInput.value)
+          ? blogTintColorInput.value
+          : DEFAULT_BLOG_TINT_COLOR;
+        const tintIntensity = clampTintIntensity(blogTintIntensityInput instanceof HTMLInputElement ? blogTintIntensityInput.value : DEFAULT_BLOG_TINT_INTENSITY);
+
+        if (blogTintColorInput instanceof HTMLInputElement) {
+          blogTintColorInput.value = tintColor;
+          blogTintColorInput.disabled = !tintEnabled;
+        }
+        if (blogTintIntensityInput instanceof HTMLInputElement) {
+          blogTintIntensityInput.value = String(tintIntensity);
+          blogTintIntensityInput.disabled = !tintEnabled;
+        }
+        if (blogTintIntensityLabel) {
+          blogTintIntensityLabel.textContent = String(tintIntensity) + '%';
+        }
       }
 
       function applyModeVisibility() {
@@ -377,6 +471,18 @@ export default async (request: Request): Promise<Response> => {
           const text = String(raw || '').trim();
           if (!text) continue;
           params.set(key, text);
+        }
+
+        if (mode === 'site') {
+          const tintEnabled = blogTintEnabledInput instanceof HTMLInputElement && blogTintEnabledInput.checked;
+          if (tintEnabled) {
+            const tintColor = blogTintColorInput instanceof HTMLInputElement ? blogTintColorInput.value.trim() : '';
+            const tintIntensity = clampTintIntensity(blogTintIntensityInput instanceof HTMLInputElement ? blogTintIntensityInput.value : DEFAULT_BLOG_TINT_INTENSITY);
+            if (/^#[0-9a-fA-F]{6}$/.test(tintColor)) {
+              params.set('blog_tint', tintColor);
+              params.set('blog_tint_intensity', String(tintIntensity));
+            }
+          }
         }
 
         return params;
@@ -409,11 +515,20 @@ export default async (request: Request): Promise<Response> => {
         setInputValue('path', BLOG_SAMPLE.path);
         setInputValue('blog_image', BLOG_SAMPLE.blog_image);
         setInputValue('blog_rev', BLOG_SAMPLE.blog_rev);
-        setInputValue('blog_tint', '');
+        if (blogTintEnabledInput instanceof HTMLInputElement) {
+          blogTintEnabledInput.checked = true;
+        }
+        if (blogTintColorInput instanceof HTMLInputElement) {
+          blogTintColorInput.value = DEFAULT_BLOG_TINT_COLOR;
+        }
+        if (blogTintIntensityInput instanceof HTMLInputElement) {
+          blogTintIntensityInput.value = String(DEFAULT_BLOG_TINT_INTENSITY);
+        }
       }
 
       function sync() {
         applyModeVisibility();
+        updateTintControls();
         const { imageUrl, mode, params } = buildImageUrl();
         const busted = imageUrl + (imageUrl.includes('?') ? '&' : '?') + '__t=' + Date.now();
         ogImage.src = busted;
@@ -425,6 +540,8 @@ export default async (request: Request): Promise<Response> => {
 
         const full = new URL(window.location.href);
         const playgroundSearch = new URLSearchParams(params);
+        playgroundSearch.delete('blog_tint');
+        playgroundSearch.delete('blog_tint_intensity');
         playgroundSearch.set('mode', mode);
         full.search = playgroundSearch.toString() ? ('?' + playgroundSearch.toString()) : '';
         history.replaceState(null, '', full.toString());
@@ -439,6 +556,15 @@ export default async (request: Request): Promise<Response> => {
 
       resetBtn.addEventListener('click', function() {
         form.reset();
+        if (blogTintEnabledInput instanceof HTMLInputElement) {
+          blogTintEnabledInput.checked = ${blogTintEnabled ? "true" : "false"};
+        }
+        if (blogTintColorInput instanceof HTMLInputElement) {
+          blogTintColorInput.value = '${blogTintColor}';
+        }
+        if (blogTintIntensityInput instanceof HTMLInputElement) {
+          blogTintIntensityInput.value = '${blogTintIntensityPercent}';
+        }
         sync();
       });
 
@@ -446,6 +572,16 @@ export default async (request: Request): Promise<Response> => {
         loadBlogExamplePreset();
         sync();
       });
+
+      if (blogTintEnabledInput instanceof HTMLInputElement) {
+        blogTintEnabledInput.addEventListener('change', sync);
+      }
+      if (blogTintColorInput instanceof HTMLInputElement) {
+        blogTintColorInput.addEventListener('input', sync);
+      }
+      if (blogTintIntensityInput instanceof HTMLInputElement) {
+        blogTintIntensityInput.addEventListener('input', sync);
+      }
 
       modeInput.addEventListener('change', sync);
       sync();

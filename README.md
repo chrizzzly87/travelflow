@@ -158,7 +158,7 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 4. For blog social previews, switch playground endpoint to **Site OG** and set:
    - `title`, `description`, `pill=BLOG`, `path=/blog/<slug>`
    - `blog_image=/images/blog/<slug>-og-vertical.jpg`
-   - optional `blog_tint=#<hex>` (default blog OG output is untinted)
+   - optional `blog_tint=#<hex>` + `blog_tint_intensity=<0-100>` (strict percent scale; blog pages default to accent tint at 60)
    - optional `blog_rev=<revision>` (cache-bust token; default comes from `data/blogImageMedia.ts`)
 
 Example direct image URL:

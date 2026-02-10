@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.37.0
+version: v0.40.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T07:56:50Z
+published_at: 2026-02-10T10:11:29Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Inspiration and blog cards now use realistic generated travel photography, with lighter untinted blog OG previews and cache-safe image updates."
+summary: "Inspiration and blog cards now use realistic generated travel photography, with a default 60% accent tint gradient on blog OG previews and controllable tint settings."
 ---
 
 ## Changes
@@ -22,13 +22,17 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [x] [Improved] 🏞️ Blog article pages now use wide photographic hero headers with responsive WebP sources.
 - [x] [Improved] 🔗 Blog post social previews now render article-specific photography with a soft accent tint in Open Graph cards.
 - [x] [Improved] 🗜️ Blog Open Graph previews now render below common 600 KB crawler warning thresholds through heavier OG-source compression and tuned side-panel composition.
-- [x] [Improved] 🎨 Blog Open Graph previews now default to a neutral (untinted) photo treatment, with optional tint only when explicitly provided.
+- [x] [Improved] 🎨 Blog Open Graph previews now default to a 60% accent tint treatment for blog pages, with optional color and intensity overrides.
+- [x] [Improved] 🎛️ OG Playground now includes native blog tint controls (enable toggle, color picker, and intensity slider) for faster visual testing.
+- [x] [Fixed] 🔄 Blog OG tint previews now redraw reliably on each render and correctly reflect color/intensity changes.
+- [x] [Fixed] ☀️ Blog OG images now render without a dark overlay when tint is disabled, preserving the original photo brightness.
 - [x] [Fixed] 🧷 Blog OG image endpoints now tolerate HTML-escaped query keys (e.g. `amp;blog_image`) so preview-tool links render the correct image and BLOG pill.
 - [ ] [Internal] 🧠 Added a reusable inspiration image style profile and per-card prompt seeds for consistent future generations.
 - [ ] [Internal] 🛠️ Added generation tooling (`npm run build:images`) and workflow docs to rebuild inspiration card images from metadata.
 - [ ] [Internal] 🤖 Added missing-only blog image generation tooling (`npm run build:blog-images` + `npm run blog:images:jobs`) for new published posts.
 - [ ] [Internal] 🧩 Added per-post blog image metadata and prompt seeds for card, header, and vertical OG image variants.
 - [ ] [Internal] 🧪 Extended the OG playground to switch between trip/site previews and test blog `blog_image` + `blog_tint` rendering.
+- [ ] [Internal] 🌈 Added `blog_tint_intensity` handling in `/api/og/site` so tint strength can be tuned independently from tint color.
 - [ ] [Internal] 🔁 Added a release workflow command (`npm run release:prepare`) to generate missing blog images before full build validation.
 - [ ] [Internal] 🖼️ Switched blog OG side-panel source assets to JPEG for better renderer compatibility and stable social preview generation.
 - [ ] [Internal] 🧭 Added `blog_rev` cache revision support plus Netlify cache headers for `/images/blog/*` to enable predictable cache invalidation when blog OG assets are refreshed.

@@ -84,6 +84,13 @@ const normalizeOptionalHexColor = (value: string | null): string | null => {
   return match ? `#${match[1].toLowerCase()}` : null;
 };
 
+const normalizeTintIntensity = (value: string | null, fallback = 60): number => {
+  if (!value) return fallback;
+  const parsed = Number(value.trim());
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.min(100, parsed));
+};
+
 const hexToRgba = (hex: string, alpha: number): string => {
   const safeHex = normalizeHexColor(hex, ACCENT_600);
   const clean = safeHex.slice(1);
@@ -220,13 +227,13 @@ export default async (request: Request): Promise<Response> => {
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
     const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
+    const blogTintIntensity = normalizeTintIntensity(getSearchParam(url, "blog_tint_intensity"), 60);
     const blogImageUrl = blogImagePath ? new URL(blogImagePath, url.origin).toString() : null;
-    const blogTintOverlay = blogTint
-      ? `linear-gradient(165deg, ${hexToRgba(blogTint, 0.6)} 0%, ${hexToRgba("#0f172a", 0.28)} 48%, ${hexToRgba(blogTint, 0.72)} 100%)`
-      : "linear-gradient(165deg, rgba(15,23,42,0.36) 0%, rgba(15,23,42,0.24) 48%, rgba(2,6,23,0.48) 100%)";
-    const blogTintRadial = blogTint
-      ? `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.64)} 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.58) 0%, transparent 54%)`
-      : "radial-gradient(circle at 24% 18%, rgba(255,255,255,0.14) 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.6) 0%, transparent 54%)";
+    const blogTintStrength = blogTintIntensity / 100;
+    const hasTint = Boolean(blogTint) && blogTintStrength > 0.001;
+    const blogTintGradient = hasTint && blogTint
+      ? `linear-gradient(180deg, ${hexToRgba(blogTint, 0)} 0%, ${hexToRgba(blogTint, 0.72 * blogTintStrength)} 100%)`
+      : null;
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
@@ -404,25 +411,24 @@ export default async (request: Request): Promise<Response> => {
                         height: "100%",
                         display: "flex",
                         objectFit: "cover",
-                        opacity: 0.76,
+                        opacity: 1,
                       }}
                     />
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        background: blogTintOverlay,
-                      }}
-                    />
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        display: "flex",
-                        background: blogTintRadial,
-                      }}
-                    />
+                    {blogTintGradient
+                      ? (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                            display: "flex",
+                            background: blogTintGradient,
+                          }}
+                        />
+                      )
+                      : null}
                   </>
                 )
                 : (
