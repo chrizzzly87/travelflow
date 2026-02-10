@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.33.0
-title: "Inspiration cards now use authentic travel photography"
+version: v0.34.0
+title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T04:36:00Z
+published_at: 2026-02-10T06:31:57Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Inspiration destination and festival cards now use realistic generated travel photos with responsive WebP delivery."
+summary: "Inspiration and blog cards now use realistic generated travel photography with responsive WebP delivery and blog-specific social previews."
 ---
 
 ## Changes
@@ -18,5 +18,11 @@ summary: "Inspiration destination and festival cards now use realistic generated
 - [x] [Improved] 🧾 Destination cards now move country info into the footer, while festival cards show flag + location in the subtitle without image pills.
 - [x] [Improved] 🖼️ Inspiration card images now load as responsive WebP assets with lazy loading, taller image framing, and a subtler progressive blur/gradient transition into content.
 - [x] [Improved] 🔍 Card images now use a subtle scale-down-on-hover motion for a calmer, more immersive feel.
+- [x] [Improved] 📰 Blog overview cards now show generated travel photography instead of placeholder color blocks.
+- [x] [Improved] 🏞️ Blog article pages now use wide photographic hero headers with responsive WebP sources.
+- [x] [Improved] 🔗 Blog post social previews now render article-specific photography with a soft accent tint in Open Graph cards.
 - [ ] [Internal] 🧠 Added a reusable inspiration image style profile and per-card prompt seeds for consistent future generations.
 - [ ] [Internal] 🛠️ Added generation tooling (`npm run build:images`) and workflow docs to rebuild inspiration card images from metadata.
+- [ ] [Internal] 🤖 Added missing-only blog image generation tooling (`npm run build:blog-images` + `npm run blog:images:jobs`) for new published posts.
+- [ ] [Internal] 🧩 Added per-post blog image metadata and prompt seeds for card, header, and vertical OG image variants.
+- [ ] [Internal] 🧪 Extended the OG playground to switch between trip/site previews and test blog `blog_image` + `blog_tint` rendering.

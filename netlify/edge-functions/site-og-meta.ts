@@ -1,4 +1,5 @@
 import { escapeHtml } from "../edge-lib/trip-og-data.ts";
+import { getBlogImageAccentTint, getBlogImageMedia } from "../../data/blogImageMedia.ts";
 
 const SITE_NAME = "TravelFlow";
 const DEFAULT_DESCRIPTION = "Plan and share travel routes with timeline and map previews in TravelFlow.";
@@ -22,6 +23,8 @@ interface PageDefinition {
   ogDescription?: string;
   robots?: string;
   pill?: string;
+  blogOgImagePath?: string;
+  blogAccentTint?: string;
 }
 
 const PAGE_META: Record<string, PageDefinition> = {
@@ -170,12 +173,19 @@ const getPageDefinition = (pathname: string): PageDefinition => {
   if (blogMatch) {
     const slug = blogMatch[1];
     const blog = BLOG_META[slug];
+    const media = getBlogImageMedia(
+      slug,
+      blog ? blog.title : pathToTitle(pathname),
+      getBlogImageAccentTint(slug),
+    );
     return {
       title: blog ? blog.title : pathToTitle(pathname),
       description: blog ? blog.description : "Read this article on the TravelFlow blog.",
       ogTitle: blog?.ogTitle,
       ogDescription: blog?.ogDescription,
       pill: "BLOG",
+      blogOgImagePath: media.ogVertical.source,
+      blogAccentTint: media.accentTint,
     };
   }
 
@@ -287,6 +297,12 @@ const buildMetadata = (url: URL): Metadata => {
   ogImage.searchParams.set("path", url.pathname + canonicalSearch);
   if (page.pill) {
     ogImage.searchParams.set("pill", page.pill);
+  }
+  if (page.blogOgImagePath) {
+    ogImage.searchParams.set("blog_image", page.blogOgImagePath);
+  }
+  if (page.blogAccentTint) {
+    ogImage.searchParams.set("blog_tint", page.blogAccentTint);
   }
 
   return {

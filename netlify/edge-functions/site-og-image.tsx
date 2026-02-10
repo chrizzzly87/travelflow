@@ -57,6 +57,31 @@ const normalizePath = (value: string | null): string => {
   return `/${trimmed}`;
 };
 
+const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.webp$/;
+
+const normalizeBlogImagePath = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!BLOG_IMAGE_PATH_REGEX.test(trimmed)) return null;
+  return trimmed;
+};
+
+const normalizeHexColor = (value: string | null, fallback: string): string => {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  const match = trimmed.match(/^#([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : fallback;
+};
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const safeHex = normalizeHexColor(hex, ACCENT_600);
+  const clean = safeHex.slice(1);
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+};
+
 const truncateText = (value: string, max: number): string =>
   value.length > max ? `${value.slice(0, max - 1)}...` : value;
 
@@ -182,6 +207,9 @@ export default async (request: Request): Promise<Response> => {
     const pillText = sanitizeText(url.searchParams.get("pill"), 30) || "TravelFlow";
     const pagePath = normalizePath(url.searchParams.get("path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+    const blogImagePath = normalizeBlogImagePath(url.searchParams.get("blog_image"));
+    const blogTint = normalizeHexColor(url.searchParams.get("blog_tint"), ACCENT_600);
+    const blogImageUrl = blogImagePath ? new URL(blogImagePath, url.origin).toString() : null;
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
@@ -342,22 +370,56 @@ export default async (request: Request): Promise<Response> => {
                 borderRadius: 28,
                 overflow: "hidden",
                 border: "1px solid rgba(148, 163, 184, 0.35)",
-                background:
-                  `radial-gradient(circle at 36% 26%, ${ACCENT_200} 0%, rgba(199,210,254,0.2) 22%, transparent 54%), radial-gradient(circle at 72% 76%, rgba(99,102,241,0.36), transparent 56%), linear-gradient(145deg, ${ACCENT_500} 0%, ${ACCENT_600} 48%, ${ACCENT_700} 100%)`,
+                background: blogImageUrl
+                  ? "#0f172a"
+                  : `radial-gradient(circle at 36% 26%, ${ACCENT_200} 0%, rgba(199,210,254,0.2) 22%, transparent 54%), radial-gradient(circle at 72% 76%, rgba(99,102,241,0.36), transparent 56%), linear-gradient(145deg, ${ACCENT_500} 0%, ${ACCENT_600} 48%, ${ACCENT_700} 100%)`,
                 boxShadow: "inset 0 0 120px rgba(15,23,42,0.18)",
               }}
             >
-              <img
-                src={TOPO_CONTOUR_OVERLAY_URI}
-                alt="Topographic contours"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  objectFit: "cover",
-                  opacity: 0.72,
-                }}
-              />
+              {blogImageUrl
+                ? (
+                  <>
+                    <img
+                      src={blogImageUrl}
+                      alt="Blog social preview"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        background: `linear-gradient(165deg, ${hexToRgba(blogTint, 0.3)} 0%, ${hexToRgba("#0f172a", 0.12)} 46%, ${hexToRgba(blogTint, 0.48)} 100%)`,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        background: `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.42)} 0%, transparent 46%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.42) 0%, transparent 58%)`,
+                      }}
+                    />
+                  </>
+                )
+                : (
+                  <img
+                    src={TOPO_CONTOUR_OVERLAY_URI}
+                    alt="Topographic contours"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      objectFit: "cover",
+                      opacity: 0.72,
+                    }}
+                  />
+                )}
             </div>
           </div>
         </div>
