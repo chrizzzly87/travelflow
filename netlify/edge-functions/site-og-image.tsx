@@ -41,6 +41,10 @@ const sanitizeText = (value: string | null, max: number): string | null => {
   return trimmed.length > max ? `${trimmed.slice(0, max - 1)}...` : trimmed;
 };
 
+const getSearchParam = (url: URL, key: string): string | null => {
+  return url.searchParams.get(key) ?? url.searchParams.get(`amp;${key}`);
+};
+
 const normalizePath = (value: string | null): string => {
   if (!value) return "/";
   const trimmed = value.trim();
@@ -202,13 +206,13 @@ export default async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     const headingFontData = await loadHeadingFont();
 
-    const title = sanitizeText(url.searchParams.get("title"), 110) || DEFAULT_TITLE;
-    const subline = sanitizeText(url.searchParams.get("description"), 160) || DEFAULT_SUBLINE;
-    const pillText = sanitizeText(url.searchParams.get("pill"), 30) || "TravelFlow";
-    const pagePath = normalizePath(url.searchParams.get("path"));
+    const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
+    const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
+    const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || "TravelFlow";
+    const pagePath = normalizePath(getSearchParam(url, "path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
-    const blogImagePath = normalizeBlogImagePath(url.searchParams.get("blog_image"));
-    const blogTint = normalizeHexColor(url.searchParams.get("blog_tint"), ACCENT_600);
+    const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
+    const blogTint = normalizeHexColor(getSearchParam(url, "blog_tint"), ACCENT_600);
     const blogImageUrl = blogImagePath ? new URL(blogImagePath, url.origin).toString() : null;
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);

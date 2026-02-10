@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.34.0
+version: v0.35.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T06:31:57Z
+published_at: 2026-02-10T07:08:21Z
 status: published
 notify_in_app: true
 in_app_hours: 24
@@ -21,8 +21,10 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [x] [Improved] 📰 Blog overview cards now show generated travel photography instead of placeholder color blocks.
 - [x] [Improved] 🏞️ Blog article pages now use wide photographic hero headers with responsive WebP sources.
 - [x] [Improved] 🔗 Blog post social previews now render article-specific photography with a soft accent tint in Open Graph cards.
+- [x] [Fixed] 🧷 Blog OG image endpoints now tolerate HTML-escaped query keys (e.g. `amp;blog_image`) so preview-tool links render the correct image and BLOG pill.
 - [ ] [Internal] 🧠 Added a reusable inspiration image style profile and per-card prompt seeds for consistent future generations.
 - [ ] [Internal] 🛠️ Added generation tooling (`npm run build:images`) and workflow docs to rebuild inspiration card images from metadata.
 - [ ] [Internal] 🤖 Added missing-only blog image generation tooling (`npm run build:blog-images` + `npm run blog:images:jobs`) for new published posts.
 - [ ] [Internal] 🧩 Added per-post blog image metadata and prompt seeds for card, header, and vertical OG image variants.
 - [ ] [Internal] 🧪 Extended the OG playground to switch between trip/site previews and test blog `blog_image` + `blog_tint` rendering.
+- [ ] [Internal] 🔁 Added a release workflow command (`npm run release:prepare`) to generate missing blog images before full build validation.
