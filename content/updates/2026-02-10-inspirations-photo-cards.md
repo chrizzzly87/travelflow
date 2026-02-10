@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.36.0
+version: v0.37.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
-published_at: 2026-02-10T07:52:18Z
+published_at: 2026-02-10T07:56:50Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Inspiration and blog cards now use realistic generated travel photography, with optimized blog social previews and cache-safe OG image updates."
+summary: "Inspiration and blog cards now use realistic generated travel photography, with lighter untinted blog OG previews and cache-safe image updates."
 ---
 
 ## Changes
@@ -22,6 +22,7 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [x] [Improved] 🏞️ Blog article pages now use wide photographic hero headers with responsive WebP sources.
 - [x] [Improved] 🔗 Blog post social previews now render article-specific photography with a soft accent tint in Open Graph cards.
 - [x] [Improved] 🗜️ Blog Open Graph previews now render below common 600 KB crawler warning thresholds through heavier OG-source compression and tuned side-panel composition.
+- [x] [Improved] 🎨 Blog Open Graph previews now default to a neutral (untinted) photo treatment, with optional tint only when explicitly provided.
 - [x] [Fixed] 🧷 Blog OG image endpoints now tolerate HTML-escaped query keys (e.g. `amp;blog_image`) so preview-tool links render the correct image and BLOG pill.
 - [ ] [Internal] 🧠 Added a reusable inspiration image style profile and per-card prompt seeds for consistent future generations.
 - [ ] [Internal] 🛠️ Added generation tooling (`npm run build:images`) and workflow docs to rebuild inspiration card images from metadata.
@@ -31,3 +32,4 @@ summary: "Inspiration and blog cards now use realistic generated travel photogra
 - [ ] [Internal] 🔁 Added a release workflow command (`npm run release:prepare`) to generate missing blog images before full build validation.
 - [ ] [Internal] 🖼️ Switched blog OG side-panel source assets to JPEG for better renderer compatibility and stable social preview generation.
 - [ ] [Internal] 🧭 Added `blog_rev` cache revision support plus Netlify cache headers for `/images/blog/*` to enable predictable cache invalidation when blog OG assets are refreshed.
+- [ ] [Internal] 🧪 Added a built-in OG playground blog preset plus copy-ready default test URL to speed up QA checks without manual query assembly.

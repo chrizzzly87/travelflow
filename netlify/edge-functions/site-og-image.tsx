@@ -77,6 +77,13 @@ const normalizeHexColor = (value: string | null, fallback: string): string => {
   return match ? `#${match[1].toLowerCase()}` : fallback;
 };
 
+const normalizeOptionalHexColor = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const match = trimmed.match(/^#([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : null;
+};
+
 const hexToRgba = (hex: string, alpha: number): string => {
   const safeHex = normalizeHexColor(hex, ACCENT_600);
   const clean = safeHex.slice(1);
@@ -212,8 +219,14 @@ export default async (request: Request): Promise<Response> => {
     const pagePath = normalizePath(getSearchParam(url, "path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
-    const blogTint = normalizeHexColor(getSearchParam(url, "blog_tint"), ACCENT_600);
+    const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
     const blogImageUrl = blogImagePath ? new URL(blogImagePath, url.origin).toString() : null;
+    const blogTintOverlay = blogTint
+      ? `linear-gradient(165deg, ${hexToRgba(blogTint, 0.6)} 0%, ${hexToRgba("#0f172a", 0.28)} 48%, ${hexToRgba(blogTint, 0.72)} 100%)`
+      : "linear-gradient(165deg, rgba(15,23,42,0.36) 0%, rgba(15,23,42,0.24) 48%, rgba(2,6,23,0.48) 100%)";
+    const blogTintRadial = blogTint
+      ? `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.64)} 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.58) 0%, transparent 54%)`
+      : "radial-gradient(circle at 24% 18%, rgba(255,255,255,0.14) 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.6) 0%, transparent 54%)";
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
@@ -399,7 +412,7 @@ export default async (request: Request): Promise<Response> => {
                         position: "absolute",
                         inset: 0,
                         display: "flex",
-                        background: `linear-gradient(165deg, ${hexToRgba(blogTint, 0.6)} 0%, ${hexToRgba("#0f172a", 0.28)} 48%, ${hexToRgba(blogTint, 0.72)} 100%)`,
+                        background: blogTintOverlay,
                       }}
                     />
                     <div
@@ -407,7 +420,7 @@ export default async (request: Request): Promise<Response> => {
                         position: "absolute",
                         inset: 0,
                         display: "flex",
-                        background: `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.64)} 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.58) 0%, transparent 54%)`,
+                        background: blogTintRadial,
                       }}
                     />
                   </>
