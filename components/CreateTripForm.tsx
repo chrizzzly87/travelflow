@@ -21,7 +21,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
@@ -829,6 +829,43 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 <div className="text-center mb-6">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Plan your next adventure</h1>
                     <p className="text-gray-500">Choose a flow and generate your itinerary in seconds.</p>
+                </div>
+
+                <div className="w-full max-w-2xl mb-4">
+                    <div className="rounded-2xl border border-accent-200 bg-white/80 px-4 py-3 shadow-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <div className="text-xs font-bold uppercase tracking-[0.14em] text-accent-700">Design Labs</div>
+                                <p className="text-sm text-gray-600">Test 3 new create-trip layouts without changing this page.</p>
+                            </div>
+                            <span className="rounded-full border border-accent-200 bg-accent-50 px-2.5 py-1 text-[11px] font-semibold text-accent-700">
+                                Experimental
+                            </span>
+                        </div>
+                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                            <Link
+                                to="/create-trip/labs/classic-card"
+                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
+                            >
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 1</div>
+                                <div className="text-sm font-semibold text-gray-800">Classic Card Overhaul</div>
+                            </Link>
+                            <Link
+                                to="/create-trip/labs/split-workspace"
+                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
+                            >
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 2</div>
+                                <div className="text-sm font-semibold text-gray-800">Split Workspace 50/50</div>
+                            </Link>
+                            <Link
+                                to="/create-trip/labs/journey-architect"
+                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
+                            >
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 3</div>
+                                <div className="text-sm font-semibold text-gray-800">Journey Architect</div>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
 
                 <div className={`bg-white p-5 sm:p-6 rounded-3xl shadow-2xl ring-1 ring-slate-900/5 border border-gray-100 w-full ${formWidthClass} relative overflow-visible transition-all`}>
