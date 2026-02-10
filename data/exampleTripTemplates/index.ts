@@ -103,7 +103,6 @@ const buildDefaultView = (config: ExampleTripTemplateConfig) => ({
     mapStyle: config.mapStyle,
     routeMode: config.routeMode,
     showCityNames: true,
-    destinationInfoExpanded: true,
     zoomLevel: 1,
 });
 

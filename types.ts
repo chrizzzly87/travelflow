@@ -107,7 +107,6 @@ export interface IViewSettings {
     showCityNames?: boolean;
     sidebarWidth?: number;
     timelineHeight?: number;
-    destinationInfoExpanded?: boolean;
 }
 
 export interface ISharedState {
