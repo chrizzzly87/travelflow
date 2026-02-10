@@ -6,6 +6,7 @@ const DEFAULT_DESCRIPTION = "Plan and share travel routes with TravelFlow.";
 const DEFAULT_MAP_LANGUAGE = "en";
 const DEFAULT_OG_MAP_STYLE: OgMapStyle = "clean";
 const DEFAULT_OG_ROUTE_MODE: OgRouteMode = "simple";
+const DEFAULT_OG_MAP_COLOR_MODE: MapColorMode = "trip";
 const DEFAULT_OG_SHOW_STOPS = true;
 const DEFAULT_OG_SHOW_CITIES = true;
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
@@ -54,32 +55,35 @@ const MINIMAL_MAP_STYLE = [
 ].join("&");
 
 const DARK_MAP_STYLE = [
-  "style=element:geometry|color:0x242f3e",
-  "style=element:labels.text.stroke|color:0x242f3e",
-  "style=element:labels.text.fill|color:0x746855",
-  "style=feature:administrative.locality|element:labels.text.fill|color:0xd59563",
-  "style=feature:poi|element:labels.text.fill|color:0xd59563",
-  "style=feature:poi.park|element:geometry|color:0x263c3f",
-  "style=feature:poi.park|element:labels.text.fill|color:0x6b9a76",
-  "style=feature:road|element:geometry|color:0x38414e",
-  "style=feature:road|element:geometry.stroke|color:0x212a37",
-  "style=feature:road|element:labels.text.fill|color:0x9ca5b3",
-  "style=feature:road.highway|element:geometry|color:0x746855",
-  "style=feature:road.highway|element:geometry.stroke|color:0x1f2835",
-  "style=feature:road.highway|element:labels.text.fill|color:0xf3d19c",
-  "style=feature:transit|element:geometry|color:0x2f3948",
-  "style=feature:transit.station|element:labels.text.fill|color:0xd59563",
-  "style=feature:water|element:geometry|color:0x17263c",
-  "style=feature:water|element:labels.text.fill|color:0x515c6d",
-  "style=feature:water|element:labels.text.stroke|color:0x17263c",
+  "style=element:geometry|color:0x1b2230",
+  "style=element:labels.text.stroke|color:0x1b2230",
+  "style=element:labels.text.fill|color:0xd0d8e2",
+  "style=feature:administrative.locality|element:labels.text.fill|color:0xf3c98b",
+  "style=feature:administrative.country|element:geometry.stroke|color:0x9fb3c8|weight:1.2|visibility:on",
+  "style=feature:poi|element:labels.text.fill|color:0x8fb3c0",
+  "style=feature:poi.park|element:geometry|color:0x1a3b3a",
+  "style=feature:poi.park|element:labels.text.fill|color:0x8bc2b3",
+  "style=feature:road|element:geometry|color:0x3a4558",
+  "style=feature:road|element:geometry.stroke|color:0x243246",
+  "style=feature:road|element:labels.text.fill|color:0xd5dde8",
+  "style=feature:road.highway|element:geometry|color:0x566579",
+  "style=feature:road.highway|element:geometry.stroke|color:0x2f3c4f",
+  "style=feature:road.highway|element:labels.text.fill|color:0xf7ddb0",
+  "style=feature:transit|element:geometry|color:0x34506b",
+  "style=feature:transit.station|element:labels.text.fill|color:0x9fc6e5",
+  "style=feature:water|element:geometry|color:0x0b3f5f",
+  "style=feature:water|element:labels.text.fill|color:0xb7d5ea",
+  "style=feature:water|element:labels.text.stroke|color:0x0b3f5f",
 ].join("&");
 
 
 export type OgMapStyle = "minimal" | "standard" | "dark" | "satellite" | "clean";
 export type OgRouteMode = "simple" | "realistic";
+export type MapColorMode = "brand" | "trip";
 
 const MAP_STYLE_VALUES: OgMapStyle[] = ["minimal", "standard", "dark", "satellite", "clean"];
 const ROUTE_MODE_VALUES: OgRouteMode[] = ["simple", "realistic"];
+const MAP_COLOR_MODE_VALUES: MapColorMode[] = ["brand", "trip"];
 
 interface Coordinates {
   lat: number;
@@ -91,6 +95,7 @@ interface TimelineItem {
   type?: string;
   title?: string;
   location?: string;
+  color?: string;
   startDateOffset?: number;
   duration?: number;
   coordinates?: Coordinates | null;
@@ -104,11 +109,13 @@ interface TripPayload {
   startDate?: string;
   items?: TimelineItem[];
   updatedAt?: number;
+  mapColorMode?: string;
 }
 
 export interface SharedViewSettings {
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
+  mapColorMode?: MapColorMode;
   showStops?: boolean;
   showCities?: boolean;
   // Legacy key persisted by current app map settings.
@@ -166,11 +173,17 @@ export const isOgMapStyle = (value?: string | null): value is OgMapStyle =>
 export const isOgRouteMode = (value?: string | null): value is OgRouteMode =>
   Boolean(value && ROUTE_MODE_VALUES.includes(value as OgRouteMode));
 
+export const isMapColorMode = (value?: string | null): value is MapColorMode =>
+  Boolean(value && MAP_COLOR_MODE_VALUES.includes(value as MapColorMode));
+
 const normalizeOgMapStyle = (value?: string | null): OgMapStyle =>
   isOgMapStyle(value) ? value : DEFAULT_OG_MAP_STYLE;
 
 const normalizeOgRouteMode = (value?: string | null): OgRouteMode =>
   isOgRouteMode(value) ? value : DEFAULT_OG_ROUTE_MODE;
+
+const normalizeMapColorMode = (value?: string | null): MapColorMode =>
+  isMapColorMode(value) ? value : DEFAULT_OG_MAP_COLOR_MODE;
 
 const normalizeShowStops = (value: unknown): boolean =>
   typeof value === "boolean" ? value : DEFAULT_OG_SHOW_STOPS;
@@ -201,6 +214,8 @@ const hasOgPreferenceValues = (value: unknown): boolean => {
   if (isOgMapStyle(mapStyle)) return true;
   const routeMode = getFirstString(raw, ["routeMode", "route_mode"]);
   if (isOgRouteMode(routeMode)) return true;
+  const mapColorMode = getFirstString(raw, ["mapColorMode", "map_color_mode"]);
+  if (isMapColorMode(mapColorMode)) return true;
   if (getFirstBoolean(raw, ["showStops", "show_stops"]) !== null) {
     return true;
   }
@@ -217,6 +232,8 @@ const parseSharedViewSettings = (value: unknown): SharedViewSettings | null => {
   const routeMode = normalizeOgRouteMode(
     getFirstString(raw, ["routeMode", "route_mode"]),
   );
+  const rawMapColorMode = getFirstString(raw, ["mapColorMode", "map_color_mode"]);
+  const mapColorMode = isMapColorMode(rawMapColorMode) ? rawMapColorMode : undefined;
   const showCityNames = normalizeShowCities(
     getFirstBoolean(raw, ["showCityNames", "show_city_names"]),
   );
@@ -230,6 +247,7 @@ const parseSharedViewSettings = (value: unknown): SharedViewSettings | null => {
   return {
     mapStyle,
     routeMode,
+    mapColorMode,
     showStops,
     showCities,
     showCityNames,
@@ -411,6 +429,118 @@ const formatDistance = (distanceKm: number | null): string | null => {
 };
 
 const formatCoord = (coord: Coordinates): string => `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
+
+const BRAND_ROUTE_COLOR_HEX = "4f46e5";
+
+const TAILWIND_BG_HEX_LOOKUP: Record<string, string> = {
+  "bg-rose-100": "ffe4e6",
+  "bg-rose-200": "fecdd3",
+  "bg-rose-300": "fda4af",
+  "bg-rose-400": "fb7185",
+  "bg-rose-500": "f43f5e",
+  "bg-pink-100": "fce7f3",
+  "bg-pink-200": "fbcfe8",
+  "bg-pink-300": "f9a8d4",
+  "bg-pink-400": "f472b6",
+  "bg-red-100": "fee2e2",
+  "bg-red-200": "fecaca",
+  "bg-red-300": "fca5a5",
+  "bg-orange-100": "ffedd5",
+  "bg-orange-200": "fed7aa",
+  "bg-orange-300": "fdba74",
+  "bg-amber-100": "fef3c7",
+  "bg-amber-200": "fde68a",
+  "bg-amber-300": "fcd34d",
+  "bg-yellow-100": "fef9c3",
+  "bg-yellow-200": "fef08a",
+  "bg-yellow-300": "fde047",
+  "bg-lime-100": "ecfccb",
+  "bg-lime-200": "d9f99d",
+  "bg-emerald-100": "d1fae5",
+  "bg-emerald-200": "a7f3d0",
+  "bg-green-100": "dcfce7",
+  "bg-green-200": "bbf7d0",
+  "bg-teal-100": "ccfbf1",
+  "bg-teal-200": "99f6e4",
+  "bg-cyan-100": "cffafe",
+  "bg-cyan-200": "a5f3fc",
+  "bg-sky-100": "e0f2fe",
+  "bg-sky-200": "bae6fd",
+  "bg-blue-100": "dbeafe",
+  "bg-blue-200": "bfdbfe",
+  "bg-indigo-100": "e0e7ff",
+  "bg-indigo-200": "c7d2fe",
+  "bg-violet-100": "ede9fe",
+  "bg-violet-200": "ddd6fe",
+  "bg-fuchsia-200": "f5d0fe",
+  "bg-slate-100": "f1f5f9",
+  "bg-slate-200": "e2e8f0",
+  "bg-stone-200": "e7e5e4",
+  "bg-white": "ffffff",
+};
+
+const HEX_COLOR_REGEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const RGB_COLOR_REGEX = /^rgb\\(\\s*([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\s*,\\s*([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\s*,\\s*([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\s*\\)$/i;
+const RGB_CSV_REGEX = /^([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\s*,\\s*([01]?\\d?\\d|2[0-4]\\d|25[0-5])\\s*,\\s*([01]?\\d?\\d|2[0-4]\\d|25[0-5])$/;
+
+const normalizeHexColor = (value?: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const match = trimmed.match(HEX_COLOR_REGEX);
+  if (!match) return null;
+  const raw = match[1].toLowerCase();
+  if (raw.length === 3) return raw.split("").map((char) => `${char}${char}`).join("");
+  return raw;
+};
+
+const normalizeRgbColor = (value?: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+
+  const rgbMatch = trimmed.match(RGB_COLOR_REGEX);
+  if (rgbMatch) {
+    return rgbMatch
+      .slice(1, 4)
+      .map((part) => Number(part).toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  const csvMatch = trimmed.match(RGB_CSV_REGEX);
+  if (csvMatch) {
+    return csvMatch
+      .slice(1, 4)
+      .map((part) => Number(part).toString(16).padStart(2, "0"))
+      .join("");
+  }
+
+  return null;
+};
+
+const getTailwindBgHex = (value?: string | null): string | null => {
+  if (!value) return null;
+  const tokens = value.split(/\\s+/).filter(Boolean);
+  const bgToken = tokens.find((token) => token.startsWith("bg-"));
+  if (!bgToken) return null;
+  return TAILWIND_BG_HEX_LOOKUP[bgToken] || null;
+};
+
+const resolveColorHex = (value?: string | null): string | null => {
+  return normalizeHexColor(value) || normalizeRgbColor(value) || getTailwindBgHex(value);
+};
+
+const shiftColorHex = (hex: string, amount: number): string => {
+  const normalized = normalizeHexColor(hex) || BRAND_ROUTE_COLOR_HEX;
+  return [0, 2, 4]
+    .map((index) => Number.parseInt(normalized.slice(index, index + 2), 16))
+    .map((channel) => Math.max(0, Math.min(255, channel + amount)).toString(16).padStart(2, "0"))
+    .join("");
+};
+
+const getTripPrimaryCityColorHex = (trip: TripPayload): string => {
+  const firstCity = getCityItems(trip)[0];
+  const resolved = resolveColorHex(firstCity?.color || null);
+  return resolved || BRAND_ROUTE_COLOR_HEX;
+};
 
 const getRouteCities = (trip: TripPayload): TimelineItem[] =>
   getCityItems(trip)
@@ -668,6 +798,7 @@ const buildRealisticPathParams = async (
 export interface MapPreviewPreferences {
   mapStyle?: OgMapStyle;
   routeMode?: OgRouteMode;
+  mapColorMode?: MapColorMode;
   showStops?: boolean;
   // Controls custom city-name overlays near route stops.
   showCities?: boolean;
@@ -696,6 +827,10 @@ const buildMapPreviewUrl = async (
 
   const mapStyle = normalizeOgMapStyle(preferences?.mapStyle);
   const routeMode = normalizeOgRouteMode(preferences?.routeMode);
+  const mapColorMode = normalizeMapColorMode(preferences?.mapColorMode ?? trip.mapColorMode);
+  const routeColor = mapColorMode === "trip" ? getTripPrimaryCityColorHex(trip) : BRAND_ROUTE_COLOR_HEX;
+  const startMarkerColor = shiftColorHex(routeColor, -24);
+  const endMarkerColor = shiftColorHex(routeColor, 40);
   const showStops = typeof preferences?.showStops === "boolean"
     ? preferences.showStops
     : DEFAULT_OG_SHOW_STOPS;
@@ -714,7 +849,7 @@ const buildMapPreviewUrl = async (
     markerParams.push(
       buildMarkerParam(start, {
         size: "mid",
-        color: "4f46e5",
+        color: startMarkerColor,
         label: routeCoordinates.length > 1 ? "S" : undefined,
       }),
     );
@@ -723,7 +858,7 @@ const buildMapPreviewUrl = async (
       markerParams.push(
         buildMarkerParam(end, {
           size: "mid",
-          color: "a5b4fc",
+          color: endMarkerColor,
           label: "E",
         }),
       );
@@ -733,11 +868,11 @@ const buildMapPreviewUrl = async (
 
   let pathParams: string[] = [];
   if (routeMode === "realistic") {
-    pathParams = await buildRealisticPathParams(trip, mapsApiKey);
+    pathParams = await buildRealisticPathParams(trip, mapsApiKey, routeColor);
   }
 
   if (pathParams.length === 0) {
-    const simplePath = buildSimplePathParam(routeCoordinates);
+    const simplePath = buildSimplePathParam(routeCoordinates, routeColor);
     if (simplePath) pathParams = [simplePath];
   }
 
@@ -881,6 +1016,7 @@ export const buildTripOgSummary = async (
     mapLanguage?: string;
     mapStyle?: OgMapStyle;
     routeMode?: OgRouteMode;
+    mapColorMode?: MapColorMode;
     showStops?: boolean;
     showCities?: boolean;
     // Legacy shared-view key from TripView map settings.
@@ -907,6 +1043,7 @@ export const buildTripOgSummary = async (
       {
         mapStyle: options?.mapStyle,
         routeMode: options?.routeMode,
+        mapColorMode: options?.mapColorMode,
         showStops: options?.showStops,
         showCities: options?.showCities ?? options?.showCityNames,
         showCityNames: options?.showCityNames,
@@ -934,6 +1071,7 @@ export const buildOgImageUrl = (
     updatedAt?: number | null;
     mapStyle?: OgMapStyle | null;
     routeMode?: OgRouteMode | null;
+    mapColorMode?: MapColorMode | null;
     showStops?: boolean | null;
     showCities?: boolean | null;
     // Legacy alias for showCities.
@@ -952,6 +1090,9 @@ export const buildOgImageUrl = (
   }
   if (isOgRouteMode(payload.routeMode ?? null)) {
     url.searchParams.set("routeMode", payload.routeMode);
+  }
+  if (isMapColorMode(payload.mapColorMode ?? null)) {
+    url.searchParams.set("mapColorMode", payload.mapColorMode);
   }
   const showStops = typeof payload.showStops === "boolean" ? payload.showStops : null;
   const showCities = typeof payload.showCities === "boolean"

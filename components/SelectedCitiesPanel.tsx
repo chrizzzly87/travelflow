@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ITimelineItem } from '../types';
 import { ArrowDown, ArrowLeftRight, ArrowUp, ArrowUpDown, X } from 'lucide-react';
+import { getHexFromColorClass } from '../utils';
 
 interface SelectedCitiesPanelProps {
     selectedCities: ITimelineItem[];
@@ -95,14 +96,17 @@ export const SelectedCitiesPanel: React.FC<SelectedCitiesPanelProps> = ({
                 {orderedCityIds.map((cityId, index) => {
                     const city = cityById.get(cityId);
                     if (!city) return null;
-                    const colorClass = (city.color || '').split(' ')[0] || 'bg-gray-200';
+                    const colorHex = getHexFromColorClass(city.color || '');
                     return (
                         <div
                             key={cityId}
                             className="bg-white border border-gray-100 rounded-xl p-3 flex items-center gap-3"
                         >
                             <div className="text-xs font-bold text-gray-400 w-5 text-center">{index + 1}</div>
-                            <div className={`w-2.5 h-2.5 rounded-full ${colorClass}`} />
+                            <div
+                                className="w-2.5 h-2.5 rounded-full"
+                                style={{ backgroundColor: colorHex }}
+                            />
                             <div className="min-w-0">
                                 <div className="text-sm font-semibold text-gray-900 truncate">{city.title}</div>
                                 <div className="text-[11px] text-gray-500">{Number(city.duration.toFixed(1))} nights</div>

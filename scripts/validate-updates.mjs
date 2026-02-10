@@ -49,6 +49,7 @@ const parseFrontmatter = (raw) => {
 const isValidDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
 const isValidDateTime = (value) => Number.isFinite(Date.parse(value));
 const isValidVersion = (value) => /^v?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(value);
+const PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE = 23;
 const parseVersionCore = (version) => {
   const normalized = version.trim().replace(/^v/i, '');
   const core = normalized.split(/[-+]/)[0];
@@ -98,6 +99,19 @@ const validateFile = async (filePath) => {
 
   if (meta.published_at && !isValidDateTime(meta.published_at)) {
     errors.push(`invalid published_at datetime: ${meta.published_at}`);
+  }
+  if (meta.published_at && isValidDateTime(meta.published_at)) {
+    const publishedAtDate = new Date(meta.published_at);
+    const publishedAtMs = publishedAtDate.getTime();
+    const status = (meta.status || '').trim().toLowerCase();
+
+    if (publishedAtDate.getUTCHours() >= PUBLISHED_AT_MAX_UTC_HOUR_EXCLUSIVE) {
+      errors.push(`published_at must be before 23:00 UTC: ${meta.published_at}`);
+    }
+
+    if (status === 'published' && publishedAtMs > Date.now() + 60_000) {
+      errors.push(`published_at cannot be in the future for published releases: ${meta.published_at}`);
+    }
   }
 
   if (meta.status && !['published', 'draft'].includes(meta.status.trim().toLowerCase())) {

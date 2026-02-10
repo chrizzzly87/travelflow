@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { AppLanguage, ITrip, ITimelineItem, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
 import { DetailsPanel } from './DetailsPanel';
@@ -18,7 +18,7 @@ import {
     Pencil, Share2, Route, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, DEFAULT_DISTANCE_UNIT, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, normalizeActivityTypes, normalizeCityColors, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -230,6 +230,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
+    const cityColorPaletteId = trip.cityColorPaletteId || DEFAULT_CITY_COLOR_PALETTE_ID;
+    const mapColorMode = normalizeMapColorMode(trip.mapColorMode);
+    const allowMapColorModeControls = useMemo(
+        () => canEdit && isInternalMapColorModeControlEnabled(),
+        [canEdit, location.search]
+    );
     const [viewMode, setViewMode] = useState<'planner' | 'print'>(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -1266,6 +1272,64 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         );
     }, [trip.items, handleUpdateItems, setPendingLabel]);
 
+    const handleCityColorPaletteChange = useCallback((paletteId: string, options: { applyToCities: boolean }) => {
+        if (!requireEdit()) return;
+        if (!paletteId || paletteId === cityColorPaletteId) return;
+
+        markUserEdit();
+        const nextItems = options.applyToCities ? applyCityPaletteToItems(trip.items, paletteId) : trip.items;
+        const updatedTrip: ITrip = {
+            ...trip,
+            cityColorPaletteId: paletteId,
+            items: nextItems,
+            updatedAt: Date.now(),
+        };
+
+        setPendingLabel(
+            options.applyToCities
+                ? 'Data: Applied city color palette to all cities'
+                : 'Data: Changed active city color palette'
+        );
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+    }, [
+        requireEdit,
+        cityColorPaletteId,
+        markUserEdit,
+        trip,
+        setPendingLabel,
+        safeUpdateTrip,
+        scheduleCommit,
+        currentViewSettings,
+    ]);
+
+    const handleMapColorModeChange = useCallback((mode: MapColorMode) => {
+        if (!requireEdit()) return;
+        if (mode !== 'brand' && mode !== 'trip') return;
+        if (mapColorMode === mode) return;
+
+        markUserEdit();
+        const updatedTrip: ITrip = {
+            ...trip,
+            mapColorMode: mode,
+            updatedAt: Date.now(),
+        };
+        setPendingLabel(mode === 'trip'
+            ? 'Data: Set map colors to trip colors'
+            : 'Data: Set map colors to brand accent');
+        safeUpdateTrip(updatedTrip, { persist: true });
+        scheduleCommit(updatedTrip, currentViewSettings);
+    }, [
+        requireEdit,
+        mapColorMode,
+        markUserEdit,
+        trip,
+        setPendingLabel,
+        safeUpdateTrip,
+        scheduleCommit,
+        currentViewSettings,
+    ]);
+
     const [routeStatusById, setRouteStatusById] = useState<Record<string, 'calculating' | 'ready' | 'failed' | 'idle'>>({});
 
     const handleRouteMetrics = useCallback((travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => {
@@ -1903,6 +1967,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         onRouteModeChange={setRouteMode}
                                         showCityNames={showCityNames}
                                         onShowCityNamesChange={setShowCityNames}
+                                        mapColorMode={mapColorMode}
+                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                         isExpanded={isMobileMapExpanded}
                                         onToggleExpanded={() => setIsMobileMapExpanded(v => !v)}
                                         focusLocationQuery={initialMapFocusQuery}
@@ -2004,6 +2070,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         forceFillLabel={selectedCityForceFill?.label}
                                                         variant="sidebar"
                                                         readOnly={readOnly}
+                                                        cityColorPaletteId={cityColorPaletteId}
+                                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                     />
                                                 )}
                                                 <div
@@ -2028,6 +2096,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onRouteModeChange={setRouteMode}
                                                 showCityNames={showCityNames}
                                                 onShowCityNamesChange={setShowCityNames}
+                                                mapColorMode={mapColorMode}
+                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
@@ -2049,6 +2119,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 onRouteModeChange={setRouteMode}
                                                 showCityNames={showCityNames}
                                                 onShowCityNamesChange={setShowCityNames}
+                                                mapColorMode={mapColorMode}
+                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
@@ -2131,6 +2203,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             forceFillLabel={selectedCityForceFill?.label}
                                                             variant="sidebar"
                                                             readOnly={readOnly}
+                                                            cityColorPaletteId={cityColorPaletteId}
+                                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                         />
                                                     )}
                                                     <div
@@ -2185,6 +2259,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         forceFillLabel={selectedCityForceFill?.label}
                                         variant="sidebar"
                                         readOnly={readOnly}
+                                        cityColorPaletteId={cityColorPaletteId}
+                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                     />
                                 )}
                             </DrawerContent>

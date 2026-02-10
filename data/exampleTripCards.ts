@@ -11,22 +11,23 @@ export interface ExampleTripCard {
   tags: string[];
   mapImagePath?: string;
   templateId?: string;
+  isRoundTrip?: boolean;
 }
 
 export const exampleTripCards: ExampleTripCard[] = [
   {
-    id: 'japan-spring',
-    title: 'Cherry Blossom Trail',
-    countries: [{ name: 'Japan', flag: '🇯🇵' }],
-    durationDays: 14,
-    cityCount: 5,
-    mapColor: 'bg-rose-100',
-    mapAccent: 'bg-rose-400',
-    username: 'sakura_wanderer',
-    avatarColor: 'bg-rose-500',
-    tags: ['Culture', 'Food', 'Nature'],
-    mapImagePath: '/images/trip-maps/japan-spring.png',
-    templateId: 'japan-spring',
+    id: 'portugal-coast',
+    title: 'Atlantic Coast Road Trip',
+    countries: [{ name: 'Portugal', flag: '🇵🇹' }],
+    durationDays: 10,
+    cityCount: 4,
+    mapColor: 'bg-sky-100',
+    mapAccent: 'bg-sky-400',
+    username: 'surf_nomad',
+    avatarColor: 'bg-sky-600',
+    tags: ['Surf', 'Culture', 'Wine'],
+    mapImagePath: '/images/trip-maps/portugal-coast.png',
+    templateId: 'portugal-coast',
   },
   {
     id: 'italy-classic',
@@ -55,20 +56,21 @@ export const exampleTripCards: ExampleTripCard[] = [
     tags: ['Beach', 'Adventure', 'Food'],
     mapImagePath: '/images/trip-maps/thailand-islands.png',
     templateId: 'thailand-islands',
+    isRoundTrip: true,
   },
   {
-    id: 'portugal-coast',
-    title: 'Atlantic Coast Road Trip',
-    countries: [{ name: 'Portugal', flag: '🇵🇹' }],
-    durationDays: 10,
-    cityCount: 4,
-    mapColor: 'bg-sky-100',
-    mapAccent: 'bg-sky-400',
-    username: 'surf_nomad',
-    avatarColor: 'bg-sky-600',
-    tags: ['Surf', 'Culture', 'Wine'],
-    mapImagePath: '/images/trip-maps/portugal-coast.png',
-    templateId: 'portugal-coast',
+    id: 'japan-spring',
+    title: 'Cherry Blossom Trail',
+    countries: [{ name: 'Japan', flag: '🇯🇵' }],
+    durationDays: 14,
+    cityCount: 5,
+    mapColor: 'bg-rose-100',
+    mapAccent: 'bg-rose-400',
+    username: 'sakura_wanderer',
+    avatarColor: 'bg-rose-500',
+    tags: ['Culture', 'Food', 'Nature'],
+    mapImagePath: '/images/trip-maps/japan-spring.png',
+    templateId: 'japan-spring',
   },
   {
     id: 'peru-adventure',
@@ -83,6 +85,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     tags: ['Adventure', 'Nature', 'History'],
     mapImagePath: '/images/trip-maps/peru-adventure.png',
     templateId: 'peru-adventure',
+    isRoundTrip: true,
   },
   {
     id: 'new-zealand-wild',
@@ -117,7 +120,7 @@ export const exampleTripCards: ExampleTripCard[] = [
     title: 'Ring Road Circuit',
     countries: [{ name: 'Iceland', flag: '🇮🇸' }],
     durationDays: 7,
-    cityCount: 3,
+    cityCount: 4,
     mapColor: 'bg-indigo-100',
     mapAccent: 'bg-indigo-400',
     username: 'arctic_rover',
@@ -125,5 +128,6 @@ export const exampleTripCards: ExampleTripCard[] = [
     tags: ['Nature', 'Road Trip', 'Photography'],
     mapImagePath: '/images/trip-maps/iceland-ring.png',
     templateId: 'iceland-ring',
+    isRoundTrip: true,
   },
 ];

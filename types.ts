@@ -8,6 +8,7 @@ export type ActivityType =
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
 export type AppLanguage = 'en';
+export type MapColorMode = 'brand' | 'trip';
 
 export interface ICoordinates {
     lat: number;
@@ -80,6 +81,10 @@ export interface ITrip {
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;
+  roundTrip?: boolean;
+  cityColorPaletteId?: string;
+  mapColorMode?: MapColorMode;
+  defaultView?: IViewSettings;
 }
 
 export interface IDragState {

@@ -95,7 +95,7 @@ export const ICELAND_TEMPLATE: Partial<ITrip> = {
             type: 'city',
             title: 'Akureyri',
             startDateOffset: 4,
-            duration: 3,
+            duration: 2,
             color: 'bg-slate-200 border-slate-300 text-slate-900',
             location: 'Akureyri, Iceland',
             coordinates: { lat: 65.6835, lng: -18.0878 },
@@ -116,6 +116,27 @@ export const ICELAND_TEMPLATE: Partial<ITrip> = {
                 bestTime: "June - September for highest sighting rates (near 100%)",
                 tips: "Book with a traditional sailing company for a quieter experience. Bring binoculars, a warm hat, and seasickness tablets if needed. Tours run ~3 hours."
             }
+        },
+        {
+            id: 'travel-aku-rvk',
+            type: 'travel',
+            title: 'Drive back to Reykjavik',
+            transportMode: 'car',
+            startDateOffset: 6,
+            duration: 0.25,
+            color: 'bg-stone-800 border-stone-600 text-stone-100',
+            description: "~5h drive via Route 1 to complete the Ring Road loop"
+        },
+        {
+            id: 'city-rvk-end',
+            type: 'city',
+            title: 'Reykjavik',
+            startDateOffset: 6,
+            duration: 1,
+            color: 'bg-indigo-200 border-indigo-300 text-indigo-900',
+            location: 'Reykjavik, Iceland',
+            coordinates: { lat: 64.1466, lng: -21.9426 },
+            description: "### Final Day\n- [ ] Blue Lagoon soak before departure\n- [ ] Brunch and coffee in downtown Reykjavik\n- [ ] Last stroll along the old harbor"
         }
     ]
 };

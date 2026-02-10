@@ -159,8 +159,9 @@ const TripLoader = ({
                     ...loadedTrip,
                     isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
                 };
-                setViewSettings(view);
-                onTripLoaded(mergedTrip, view);
+                const resolvedView = view ?? mergedTrip.defaultView;
+                setViewSettings(resolvedView);
+                onTripLoaded(mergedTrip, resolvedView);
                 return;
             }
 
@@ -171,8 +172,9 @@ const TripLoader = ({
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         saveTrip(version.trip);
-                        setViewSettings(version.view ?? undefined);
-                        onTripLoaded(version.trip, version.view ?? undefined);
+                        const resolvedView = version.view ?? version.trip.defaultView;
+                        setViewSettings(resolvedView);
+                        onTripLoaded(version.trip, resolvedView);
                         return;
                     }
                 }
@@ -180,16 +182,18 @@ const TripLoader = ({
                     const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                     if (localEntry?.snapshot?.trip) {
                         saveTrip(localEntry.snapshot.trip);
-                        setViewSettings(localEntry.snapshot.view ?? undefined);
-                        onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                        const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                        setViewSettings(resolvedView);
+                        onTripLoaded(localEntry.snapshot.trip, resolvedView);
                         return;
                     }
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
                     saveTrip(dbTrip.trip);
-                    setViewSettings(dbTrip.view ?? undefined);
-                    onTripLoaded(dbTrip.trip, dbTrip.view ?? undefined);
+                    const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(dbTrip.trip, resolvedView);
                     return;
                 }
             }
@@ -199,14 +203,15 @@ const TripLoader = ({
                 const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                 if (localEntry?.snapshot?.trip) {
                     saveTrip(localEntry.snapshot.trip);
-                    setViewSettings(localEntry.snapshot.view ?? undefined);
-                    onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
                     return;
                 }
             }
             const localTrip = getTripById(tripId);
             if (localTrip) {
-                onTripLoaded(localTrip);
+                onTripLoaded(localTrip, localTrip.defaultView);
                 return;
             }
 
@@ -222,7 +227,7 @@ const TripLoader = ({
     return (
         <TripView
             trip={trip}
-            initialViewSettings={viewSettings}
+            initialViewSettings={viewSettings ?? trip.defaultView}
             onUpdateTrip={handleUpdateTrip}
             onCommitState={handleCommitState}
             onViewSettingsChange={(settings) => {
@@ -298,8 +303,9 @@ const SharedTripLoader = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    setViewSettings(sharedVersion.view ?? undefined);
-                    onTripLoaded(sharedVersion.trip, sharedVersion.view ?? undefined);
+                    const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(sharedVersion.trip, resolvedView);
                     setSourceShareVersionId(sharedVersion.versionId);
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     setSnapshotState({
@@ -315,8 +321,9 @@ const SharedTripLoader = ({
                     const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    setViewSettings(version.view ?? undefined);
-                    onTripLoaded(version.trip, version.view ?? undefined);
+                    const resolvedView = version.view ?? version.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(version.trip, resolvedView);
                     setSourceShareVersionId(versionId);
                     setSnapshotState({
                         hasNewer: latestVersionMismatch || newerByTimestamp,
@@ -329,8 +336,9 @@ const SharedTripLoader = ({
             if (versionId) {
                 const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
-                    setViewSettings(localEntry.snapshot.view ?? undefined);
-                    onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
                     setSourceShareVersionId(isUuid(versionId) ? versionId : null);
                     setSnapshotState({
                         hasNewer: true,
@@ -340,8 +348,9 @@ const SharedTripLoader = ({
                 }
             }
 
-            setViewSettings(shared.view ?? undefined);
-            onTripLoaded(shared.trip, shared.view ?? undefined);
+            const resolvedView = shared.view ?? shared.trip.defaultView;
+            setViewSettings(resolvedView);
+            onTripLoaded(shared.trip, resolvedView);
             setSourceShareVersionId(shared.latestVersionId ?? null);
         };
 
@@ -410,8 +419,8 @@ const SharedTripLoader = ({
     return (
         <TripView
             trip={trip}
-            initialViewSettings={viewSettings}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings)}
+            initialViewSettings={viewSettings ?? trip.defaultView}
+            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
             onCommitState={handleCommitShared}
             onViewSettingsChange={(settings) => {
                 setViewSettings(settings);

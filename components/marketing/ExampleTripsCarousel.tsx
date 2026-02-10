@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
-import { TRIP_FACTORIES } from '../../data/exampleTripTemplates';
+import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
 import { trackEvent } from '../../services/analyticsService';
 import { saveTrip } from '../../services/storageService';
 import { buildTripUrl } from '../../utils';
@@ -20,8 +20,6 @@ export const ExampleTripsCarousel: React.FC = () => {
         if (!factory) return;
         const trip = factory(new Date().toISOString());
         saveTrip(trip);
-        // Default example trips to realistic route rendering
-        localStorage.setItem('tf_route_mode', 'realistic');
         trackEvent('home__carousel_card', { template: templateId });
         navigate(buildTripUrl(trip.id));
     }, [navigate]);
@@ -52,6 +50,9 @@ export const ExampleTripsCarousel: React.FC = () => {
                     >
                         {doubledCards.map((card, index) => {
                             const rotation = ROTATIONS[index % ROTATIONS.length];
+                            const mapPreviewUrl = card.templateId
+                                ? buildExampleTemplateMapPreviewUrl(card.templateId)
+                                : null;
                             return (
                                 <button
                                     key={`${card.id}-${index}`}
@@ -60,7 +61,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
                                     style={{ transform: `rotate(${rotation}deg)` }}
                                 >
-                                    <ExampleTripCard card={card} />
+                                    <ExampleTripCard card={card} mapPreviewUrl={mapPreviewUrl} />
                                 </button>
                             );
                         })}

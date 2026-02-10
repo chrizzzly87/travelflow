@@ -1,23 +1,42 @@
 import React from 'react';
-import { Clock, MapPin } from '@phosphor-icons/react';
+import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import type { ExampleTripCard as ExampleTripCardType } from '../../data/exampleTripCards';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
+    mapPreviewUrl?: string | null;
 }
 
-export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card }) => {
+export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPreviewUrl }) => {
+    const staticFallbackSrc = card.mapImagePath
+        ? `${card.mapImagePath}?v=palette-20260210d`
+        : null;
+    const [mapImageSrc, setMapImageSrc] = React.useState<string | null>(mapPreviewUrl || staticFallbackSrc);
+
+    React.useEffect(() => {
+        setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
+    }, [mapPreviewUrl, staticFallbackSrc]);
+
+    const handleMapImageError = () => {
+        if (mapImageSrc === mapPreviewUrl && staticFallbackSrc && staticFallbackSrc !== mapImageSrc) {
+            setMapImageSrc(staticFallbackSrc);
+            return;
+        }
+        setMapImageSrc(null);
+    };
+
     return (
         <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
             {/* Map area */}
-            <div className={`relative h-36 rounded-t-2xl overflow-hidden ${card.mapImagePath ? 'bg-slate-100' : card.mapColor}`}>
-                {card.mapImagePath ? (
+            <div className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}>
+                {mapImageSrc ? (
                     <img
-                        src={card.mapImagePath}
+                        src={mapImageSrc}
                         alt={`Route map for ${card.title}`}
                         className="h-full w-full object-cover"
                         loading="lazy"
                         decoding="async"
+                        onError={handleMapImageError}
                     />
                 ) : (
                     <>
@@ -64,6 +83,12 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card }) => {
                         <MapPin size={14} weight="duotone" className="text-accent-500" />
                         {card.cityCount} cities
                     </span>
+                    {card.isRoundTrip ? (
+                        <span className="inline-flex items-center gap-1">
+                            <Repeat size={14} weight="duotone" className="text-accent-500" />
+                            Round-trip
+                        </span>
+                    ) : null}
                 </div>
 
                 {/* Tags */}
