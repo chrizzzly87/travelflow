@@ -232,7 +232,7 @@ export default async (request: Request): Promise<Response> => {
         >
           <div
             style={{
-              width: "61%",
+              width: "67%",
               height: "100%",
               display: "flex",
               flexDirection: "column",
@@ -359,7 +359,7 @@ export default async (request: Request): Promise<Response> => {
 
           <div
             style={{
-              width: "39%",
+              width: "33%",
               height: "100%",
               paddingLeft: 20,
               display: "flex",
@@ -391,6 +391,7 @@ export default async (request: Request): Promise<Response> => {
                         height: "100%",
                         display: "flex",
                         objectFit: "cover",
+                        opacity: 0.76,
                       }}
                     />
                     <div
@@ -398,7 +399,7 @@ export default async (request: Request): Promise<Response> => {
                         position: "absolute",
                         inset: 0,
                         display: "flex",
-                        background: `linear-gradient(165deg, ${hexToRgba(blogTint, 0.3)} 0%, ${hexToRgba("#0f172a", 0.12)} 46%, ${hexToRgba(blogTint, 0.48)} 100%)`,
+                        background: `linear-gradient(165deg, ${hexToRgba(blogTint, 0.6)} 0%, ${hexToRgba("#0f172a", 0.28)} 48%, ${hexToRgba(blogTint, 0.72)} 100%)`,
                       }}
                     />
                     <div
@@ -406,7 +407,7 @@ export default async (request: Request): Promise<Response> => {
                         position: "absolute",
                         inset: 0,
                         display: "flex",
-                        background: `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.42)} 0%, transparent 46%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.42) 0%, transparent 58%)`,
+                        background: `radial-gradient(circle at 24% 18%, ${hexToRgba(blogTint, 0.64)} 0%, transparent 42%), radial-gradient(circle at 76% 82%, rgba(15,23,42,0.58) 0%, transparent 54%)`,
                       }}
                     />
                   </>

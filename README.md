@@ -159,6 +159,7 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
    - `title`, `description`, `pill=BLOG`, `path=/blog/<slug>`
    - `blog_image=/images/blog/<slug>-og-vertical.jpg`
    - optional `blog_tint=#<hex>`
+   - optional `blog_rev=<revision>` (cache-bust token; default comes from `data/blogImageMedia.ts`)
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
@@ -167,7 +168,7 @@ Example non-trip image URL:
 `http://localhost:8888/api/og/site?title=Features&description=See%20everything%20TravelFlow%20can%20do&path=/features`
 
 Example blog image URL:
-`http://localhost:8888/api/og/site?title=How%20to%20Plan%20the%20Perfect%20Multi-City%20Trip&description=Plan%20a%20smooth%20multi-stop%20itinerary%20with%20smart%20routing%2C%20realistic%20timing%2C%20and%20less%20stress.&path=/blog/how-to-plan-multi-city-trip&pill=BLOG&blog_image=/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg&blog_tint=%236366f1`
+`http://localhost:8888/api/og/site?title=How%20to%20Plan%20the%20Perfect%20Multi-City%20Trip&description=Plan%20a%20smooth%20multi-stop%20itinerary%20with%20smart%20routing%2C%20realistic%20timing%2C%20and%20less%20stress.&path=/blog/how-to-plan-multi-city-trip&pill=BLOG&blog_image=/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg&blog_tint=%236366f1&blog_rev=2026-02-10-01`
 
 ## Create The GitHub Repo (CLI)
 

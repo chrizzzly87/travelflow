@@ -36,6 +36,7 @@ export default async (request: Request): Promise<Response> => {
     pill: trimParam(url.searchParams.get("pill"), 40),
     blogImage: trimParam(url.searchParams.get("blog_image"), 200),
     blogTint: trimParam(url.searchParams.get("blog_tint"), 12),
+    blogRev: trimParam(url.searchParams.get("blog_rev"), 40),
     weeks: trimParam(url.searchParams.get("weeks"), 40),
     months: trimParam(url.searchParams.get("months"), 60),
     distance: trimParam(url.searchParams.get("distance"), 40),
@@ -234,7 +235,11 @@ export default async (request: Request): Promise<Response> => {
           </div>
           <div class="full" data-mode="site">
             <label for="blog_image">Blog image path (site OG)</label>
-            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.webp" />
+            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.jpg" />
+          </div>
+          <div data-mode="site">
+            <label for="blog_rev">Blog image revision (cache bust)</label>
+            <input id="blog_rev" name="blog_rev" value="${escapeHtml(state.blogRev)}" placeholder="2026-02-10-01" />
           </div>
 
           <div data-mode="trip">
@@ -328,7 +333,7 @@ export default async (request: Request): Promise<Response> => {
       const modeInput = document.getElementById('mode');
 
       const TRIP_KEYS = ['s', 'trip', 'v', 'title', 'weeks', 'months', 'distance', 'path', 'u', 'map', 'mapStyle', 'routeMode', 'showStops', 'showCities'];
-      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint'];
+      const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_tint', 'blog_rev'];
 
       function getMode() {
         return modeInput && modeInput.value === 'site' ? 'site' : 'trip';

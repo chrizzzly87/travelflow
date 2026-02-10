@@ -1,5 +1,5 @@
 import { escapeHtml } from "../edge-lib/trip-og-data.ts";
-import { getBlogImageAccentTint, getBlogImageMedia } from "../../data/blogImageMedia.ts";
+import { BLOG_OG_IMAGE_REVISION, getBlogImageAccentTint, getBlogImageMedia } from "../../data/blogImageMedia.ts";
 
 const SITE_NAME = "TravelFlow";
 const DEFAULT_DESCRIPTION = "Plan and share travel routes with timeline and map previews in TravelFlow.";
@@ -300,6 +300,7 @@ const buildMetadata = (url: URL): Metadata => {
   }
   if (page.blogOgImagePath) {
     ogImage.searchParams.set("blog_image", page.blogOgImagePath);
+    ogImage.searchParams.set("blog_rev", BLOG_OG_IMAGE_REVISION);
   }
   if (page.blogAccentTint) {
     ogImage.searchParams.set("blog_tint", page.blogAccentTint);
