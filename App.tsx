@@ -568,7 +568,9 @@ const ExampleTripLoader = ({
                     import('./data/exampleTripCards'),
                 ]);
                 if (cancelled) return;
-                setTemplateFactory((TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null);
+                const nextFactory = (TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null;
+                // React treats function arguments to setState as updaters; wrap to store the function itself.
+                setTemplateFactory(() => nextFactory);
                 setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? null);
             } catch {
                 if (cancelled) return;
@@ -594,7 +596,7 @@ const ExampleTripLoader = ({
             return;
         }
 
-        if (!templateFactory) {
+        if (typeof templateFactory !== 'function') {
             navigate('/', { replace: true });
             return;
         }
