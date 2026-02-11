@@ -18,29 +18,51 @@ import {
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = "TravelFlow";
-const HEADLINE_FONT_FAMILY = "Space Grotesk";
-const HEADLINE_FONT_URL =
+const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const LOCAL_HEADLINE_FONT_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2";
+const LOCAL_SPACE_FONT_PATH =
+  "/fonts/space-grotesk/space-grotesk-latin.woff2";
+const LEGACY_HEADLINE_FONT_URL =
   "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
 
 const VERSION_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-let headingFontPromise: Promise<ArrayBuffer | null> | null = null;
+const headingFontPromiseByOrigin = new Map<string, Promise<ArrayBuffer | null>>();
 
-const loadHeadingFont = async (): Promise<ArrayBuffer | null> => {
-  if (!headingFontPromise) {
-    headingFontPromise = (async () => {
-      try {
-        const response = await fetch(HEADLINE_FONT_URL);
-        if (!response.ok) return null;
-        return await response.arrayBuffer();
-      } catch {
-        return null;
+const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null> => {
+  try {
+    const response = await fetch(fontUrl);
+    if (!response.ok) return null;
+    return await response.arrayBuffer();
+  } catch {
+    return null;
+  }
+};
+
+const buildHeadingFontUrls = (requestUrl: URL): string[] => [
+  new URL(LOCAL_HEADLINE_FONT_PATH, requestUrl.origin).toString(),
+  new URL(LOCAL_SPACE_FONT_PATH, requestUrl.origin).toString(),
+  LEGACY_HEADLINE_FONT_URL,
+];
+
+const loadHeadingFont = async (requestUrl: URL): Promise<ArrayBuffer | null> => {
+  const cacheKey = requestUrl.origin;
+  let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
+
+  if (!fontPromise) {
+    fontPromise = (async () => {
+      for (const fontUrl of buildHeadingFontUrls(requestUrl)) {
+        const fontData = await fetchFontArrayBuffer(fontUrl);
+        if (fontData) return fontData;
       }
+      return null;
     })();
+    headingFontPromiseByOrigin.set(cacheKey, fontPromise);
   }
 
-  return headingFontPromise;
+  return fontPromise;
 };
 
 const isValidVersionId = (value?: string | null): value is string =>
@@ -344,7 +366,7 @@ export default async (request: Request): Promise<Response> => {
     const versionId = isValidVersionId(requestedVersionId) ? requestedVersionId : null;
     const updateStamp = url.searchParams.get("u");
     const mapsApiKey = getMapsApiKeyFromEnv();
-    const headingFontData = await loadHeadingFont();
+    const headingFontData = await loadHeadingFont(url);
 
     const titleOverride = sanitizeText(url.searchParams.get("title"), 120);
     const weeksOverride = sanitizeText(url.searchParams.get("weeks"), 40);

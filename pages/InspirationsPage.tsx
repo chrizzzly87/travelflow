@@ -423,7 +423,7 @@ export const InspirationsPage: React.FC = () => {
                     <Backpack size={14} weight="duotone" />
                     Trip Inspirations
                 </span>
-                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                     Where will you go next?
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
@@ -613,7 +613,7 @@ export const InspirationsPage: React.FC = () => {
                             key={selectedMonthIndex}
                             className="mt-6 max-w-2xl animate-content-fade-in rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
                         >
-                            <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 {selectedMonth.month}
                             </h3>
                             <p className="mt-3 text-base leading-relaxed text-slate-600">{selectedMonth.description}</p>
@@ -770,7 +770,7 @@ export const InspirationsPage: React.FC = () => {
                             <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
                             <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent-400/20 blur-[50px]" />
 
-                            <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                                 Feeling inspired?
                             </h2>
                             <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">

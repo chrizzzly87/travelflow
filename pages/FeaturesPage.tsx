@@ -121,7 +121,7 @@ export const FeaturesPage: React.FC = () => {
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
                     Product Capabilities
                 </span>
-                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                <h1 className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                     Plan smarter, travel better
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
@@ -236,7 +236,7 @@ export const FeaturesPage: React.FC = () => {
                     <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
                     <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-accent-400/20 blur-[50px]" />
 
-                    <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h2 className="relative text-3xl font-black tracking-tight text-white md:text-5xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                         See it in action
                     </h2>
                     <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">

@@ -7,12 +7,12 @@ import sharp from 'sharp';
 const JOBS_FILE = 'tmp/imagegen/blog-images.jsonl';
 const OUTPUT_DIR = 'public/images/blog';
 const RESPONSIVE_WEBP_VARIANTS = [
-    { suffix: '-480', maxDim: 480, quality: 56 },
-    { suffix: '-768', maxDim: 768, quality: 62 },
-    { suffix: '-1024', maxDim: 1024, quality: 66 },
+    { suffix: '-480', maxDim: 480, quality: 52 },
+    { suffix: '-768', maxDim: 768, quality: 58 },
+    { suffix: '-1024', maxDim: 1024, quality: 62 },
 ] as const;
 const LARGE_WEBP_MAX_DIM = 1536;
-const LARGE_WEBP_QUALITY = 70;
+const LARGE_WEBP_QUALITY = 64;
 const LARGE_WEBP_SIZE_THRESHOLD_BYTES = 420_000;
 const OG_JPEG_MAX_DIM = 768;
 const OG_JPEG_QUALITY = 50;

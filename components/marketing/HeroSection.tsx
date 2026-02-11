@@ -57,7 +57,7 @@ export const HeroSection: React.FC = () => {
 
                 {/* Heading — stagger 80ms */}
                 <div className="animate-hero-stagger" style={{ '--stagger': '80ms' } as React.CSSProperties}>
-                    <h1 className="mt-6 text-5xl font-black tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h1 className="mt-6 text-5xl font-black tracking-tight text-slate-900 md:text-7xl" style={{ fontFamily: "var(--tf-font-heading)" }}>
                         Your next adventure, planned{' '}
                         <span className="relative inline-block">
                             in seconds

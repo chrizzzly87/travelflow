@@ -887,7 +887,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
                 <div className="text-center mb-6">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Plan your next adventure</h1>
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: "var(--tf-font-heading)" }}>Plan your next adventure</h1>
                     <p className="text-gray-500">Choose a flow and generate your itinerary in seconds.</p>
                 </div>
 
