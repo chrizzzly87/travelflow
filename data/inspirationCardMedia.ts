@@ -19,14 +19,18 @@ export interface InspirationImagePromptSeed {
 export interface InspirationCardMedia {
     alt: string;
     sources: {
+        xsmall: string;
         small: string;
+        medium: string;
         large: string;
     };
     promptSeed: InspirationImagePromptSeed;
 }
 
 const createSources = (slug: string) => ({
+    xsmall: `/images/inspirations/${slug}-480.webp`,
     small: `/images/inspirations/${slug}-768.webp`,
+    medium: `/images/inspirations/${slug}-1024.webp`,
     large: `/images/inspirations/${slug}.webp`,
 });
 

@@ -209,18 +209,28 @@ export const BlogPostPage: React.FC = () => {
                 </div>
 
                 {/* Cover banner */}
-                <div className={`relative mb-8 h-48 overflow-hidden rounded-2xl md:h-64 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
                     {!hasHeaderImageError && (
                         <>
                             <picture className="absolute inset-0 block h-full w-full">
                                 <source
                                     type="image/webp"
-                                    srcSet={`${post.images.header.sources.small} 768w, ${post.images.header.sources.large} 1536w`}
+                                    srcSet={[
+                                        `${post.images.header.sources.xsmall} 480w`,
+                                        `${post.images.header.sources.small} 768w`,
+                                        `${post.images.header.sources.medium} 1024w`,
+                                        `${post.images.header.sources.large} 1536w`,
+                                    ].join(', ')}
                                     sizes={BLOG_HEADER_IMAGE_SIZES}
                                 />
                                 <img
-                                    src={post.images.header.sources.large}
-                                    srcSet={`${post.images.header.sources.small} 768w, ${post.images.header.sources.large} 1536w`}
+                                    src={post.images.header.sources.medium}
+                                    srcSet={[
+                                        `${post.images.header.sources.xsmall} 480w`,
+                                        `${post.images.header.sources.small} 768w`,
+                                        `${post.images.header.sources.medium} 1024w`,
+                                        `${post.images.header.sources.large} 1536w`,
+                                    ].join(', ')}
                                     sizes={BLOG_HEADER_IMAGE_SIZES}
                                     alt={post.images.header.alt}
                                     loading="eager"

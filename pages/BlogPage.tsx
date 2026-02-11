@@ -25,18 +25,28 @@ const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
             to={`/blog/${post.slug}`}
             className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         >
-            <div className={`relative h-36 overflow-hidden rounded-t-2xl md:h-40 ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
+            <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
                 {showImage ? (
                     <>
                         <picture className="absolute inset-0 block h-full w-full">
                             <source
                                 type="image/webp"
-                                srcSet={`${post.images.card.sources.small} 768w, ${post.images.card.sources.large} 1536w`}
+                                srcSet={[
+                                    `${post.images.card.sources.xsmall} 480w`,
+                                    `${post.images.card.sources.small} 768w`,
+                                    `${post.images.card.sources.medium} 1024w`,
+                                    `${post.images.card.sources.large} 1536w`,
+                                ].join(', ')}
                                 sizes={BLOG_CARD_IMAGE_SIZES}
                             />
                             <img
                                 src={post.images.card.sources.small}
-                                srcSet={`${post.images.card.sources.small} 768w, ${post.images.card.sources.large} 1536w`}
+                                srcSet={[
+                                    `${post.images.card.sources.xsmall} 480w`,
+                                    `${post.images.card.sources.small} 768w`,
+                                    `${post.images.card.sources.medium} 1024w`,
+                                    `${post.images.card.sources.large} 1536w`,
+                                ].join(', ')}
                                 sizes={BLOG_CARD_IMAGE_SIZES}
                                 alt={post.images.card.alt}
                                 loading="lazy"

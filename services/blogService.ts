@@ -3,7 +3,9 @@ import { buildBlogImageSeed, getBlogImageMedia } from '../data/blogImageMedia';
 export type BlogStatus = 'published' | 'draft';
 
 export interface BlogImageSources {
+    xsmall: string;
     small: string;
+    medium: string;
     large: string;
 }
 

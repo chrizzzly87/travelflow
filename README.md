@@ -70,9 +70,28 @@ npm run build
 
 The production output is generated in `dist/`.
 
-`npm run build` includes release-note validation (`npm run updates:validate`) for `content/updates/*.md`.
+`npm run build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
+
+## NPM Scripts
+
+All available `npm run` commands in this repo:
+
+- `npm run dev` — Start Vite dev server.
+- `npm run build` — Run image optimization (inspirations + blog), validations, and production Vite build.
+- `npm run preview` — Preview the production build locally.
+- `npm run release:prepare` — Generate missing blog source images, then run the full production build pipeline.
+- `npm run updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
+- `npm run blog:validate` — Validate blog markdown metadata/content.
+- `npm run edge:validate` — Validate Netlify edge function setup and constraints.
+- `npm run maps:generate` — Generate static trip map PNGs from template coordinates.
+- `npm run build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
+- `npm run inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
+- `npm run inspirations:images:jobs` — Build inspiration image batch job file only.
+- `npm run build:blog-images` — Generate missing blog source images, then create responsive derivatives and optimize oversized assets.
+- `npm run blog:images:optimize` — Optimize blog images only (`--skip-generation`).
+- `npm run blog:images:jobs` — Build blog image batch job file only.
 
 ## Blog Image Workflow
 
@@ -82,7 +101,17 @@ When publishing a new blog post, run:
 npm run build:blog-images
 ```
 
-This only generates missing image variants for published posts (card, header, vertical OG) and leaves existing blog images untouched.
+This generates missing source images for published posts (card, header, vertical OG), then creates responsive `480/768/1024` WebP derivatives and compresses oversized blog assets.
+
+## Inspiration Image Workflow
+
+To generate missing inspiration source images, run:
+
+```bash
+npm run build:images
+```
+
+This generates only missing source images and then creates responsive `480/768/1024` WebP derivatives while compressing oversized inspiration assets.
 
 For a full pre-release workflow (generate missing blog images + run full validations/build):
 

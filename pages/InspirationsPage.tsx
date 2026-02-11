@@ -98,7 +98,7 @@ const sections = [
     { id: 'weekends', label: 'Weekend Getaways', icon: Lightning },
 ];
 
-const CARD_IMAGE_SIZES = '(min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
+const CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const CARD_HOVER_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-200 ease-out motion-reduce:transition-none';
 const CARD_IMAGE_ZOOM_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-300 ease-out motion-reduce:transition-none';
 const CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/8 to-transparent opacity-70';
@@ -129,18 +129,28 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
         className={`group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         {...getAnalyticsDebugAttributes('inspirations__destination_card', { title: destination.title, country: destination.country })}
     >
-        <div className={`relative h-40 overflow-hidden rounded-t-2xl md:h-44 ${showPhoto ? 'bg-slate-100' : destination.mapColor}`}>
+        <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-slate-100' : destination.mapColor}`}>
             {showPhoto && media ? (
                 <>
                     <picture className="absolute inset-0 block h-full w-full">
                         <source
                             type="image/webp"
-                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            srcSet={[
+                                `${media.sources.xsmall} 480w`,
+                                `${media.sources.small} 768w`,
+                                `${media.sources.medium} 1024w`,
+                                `${media.sources.large} 1536w`,
+                            ].join(', ')}
                             sizes={CARD_IMAGE_SIZES}
                         />
                         <img
                             src={media.sources.small}
-                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            srcSet={[
+                                `${media.sources.xsmall} 480w`,
+                                `${media.sources.small} 768w`,
+                                `${media.sources.medium} 1024w`,
+                                `${media.sources.large} 1536w`,
+                            ].join(', ')}
                             sizes={CARD_IMAGE_SIZES}
                             alt={media.alt}
                             loading="lazy"
@@ -218,18 +228,28 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
         className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         {...getAnalyticsDebugAttributes('inspirations__festival_card', { name: event.name, country: event.country })}
     >
-        <div className={`relative h-32 overflow-hidden rounded-t-2xl md:h-36 ${showPhoto ? 'bg-slate-100' : `${event.mapColor} flex items-center justify-center`}`}>
+        <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-slate-100' : `${event.mapColor} flex items-center justify-center`}`}>
             {showPhoto && media ? (
                 <>
                     <picture className="absolute inset-0 block h-full w-full">
                         <source
                             type="image/webp"
-                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            srcSet={[
+                                `${media.sources.xsmall} 480w`,
+                                `${media.sources.small} 768w`,
+                                `${media.sources.medium} 1024w`,
+                                `${media.sources.large} 1536w`,
+                            ].join(', ')}
                             sizes={CARD_IMAGE_SIZES}
                         />
                         <img
                             src={media.sources.small}
-                            srcSet={`${media.sources.small} 768w, ${media.sources.large} 1536w`}
+                            srcSet={[
+                                `${media.sources.xsmall} 480w`,
+                                `${media.sources.small} 768w`,
+                                `${media.sources.medium} 1024w`,
+                                `${media.sources.large} 1536w`,
+                            ].join(', ')}
                             sizes={CARD_IMAGE_SIZES}
                             alt={media.alt}
                             loading="lazy"

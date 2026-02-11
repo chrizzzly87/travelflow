@@ -1,14 +1,25 @@
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import sharp from 'sharp';
 
 const JOBS_FILE = 'tmp/imagegen/inspiration-cards.jsonl';
 const OUTPUT_DIR = 'public/images/inspirations';
+const RESPONSIVE_WEBP_VARIANTS = [
+    { suffix: '-480', maxDim: 480, quality: 56 },
+    { suffix: '-768', maxDim: 768, quality: 62 },
+    { suffix: '-1024', maxDim: 1024, quality: 66 },
+] as const;
+const LARGE_WEBP_MAX_DIM = 1536;
+const LARGE_WEBP_QUALITY = 70;
+const LARGE_WEBP_SIZE_THRESHOLD_BYTES = 500_000;
 
 const args = process.argv.slice(2);
 const keepJobs = args.includes('--keep-jobs');
 const dryRun = args.includes('--dry-run');
+const force = args.includes('--force');
+const skipGeneration = args.includes('--skip-generation');
 
 const getArgValue = (name: string): string | undefined => {
     const pair = args.find((arg) => arg.startsWith(`${name}=`));
@@ -23,7 +34,6 @@ const getArgValue = (name: string): string | undefined => {
 };
 
 const concurrency = getArgValue('--concurrency') || '2';
-const force = !args.includes('--no-force');
 
 const loadEnvFile = (path: string) => {
     if (!existsSync(path)) return;
@@ -70,51 +80,210 @@ const resolveImageGenPath = (): string => {
     return join(codexHome, 'skills', 'imagegen', 'scripts', 'image_gen.py');
 };
 
-const main = () => {
+const countJobs = (path: string): number => {
+    if (!existsSync(path)) return 0;
+    const raw = readFileSync(path, 'utf8');
+    return raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !line.startsWith('#')).length;
+};
+
+const getTargetDimensions = (width: number, height: number, maxDim: number): { width: number; height: number } => {
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    return {
+        width: Math.max(1, Math.round(width * scale)),
+        height: Math.max(1, Math.round(height * scale)),
+    };
+};
+
+const replaceFile = (tmpPath: string, targetPath: string) => {
+    rmSync(targetPath, { force: true });
+    renameSync(tmpPath, targetPath);
+};
+
+const writeWebpDerivative = async (
+    sourcePath: string,
+    targetPath: string,
+    maxDim: number,
+    quality: number,
+): Promise<void> => {
+    const metadata = await sharp(sourcePath).metadata();
+    if (!metadata.width || !metadata.height) {
+        throw new Error(`Unable to read image dimensions for ${sourcePath}`);
+    }
+
+    const target = getTargetDimensions(metadata.width, metadata.height, maxDim);
+    await sharp(sourcePath)
+        .rotate()
+        .resize({
+            width: target.width,
+            height: target.height,
+            fit: 'fill',
+        })
+        .webp({
+            quality,
+            effort: 6,
+            smartSubsample: true,
+        })
+        .toFile(targetPath);
+};
+
+const optimizeLargeWebpInPlace = async (
+    sourcePath: string,
+    maxDim = LARGE_WEBP_MAX_DIM,
+    quality = LARGE_WEBP_QUALITY,
+): Promise<void> => {
+    const tmpPath = `${sourcePath}.tmp`;
+    await writeWebpDerivative(sourcePath, tmpPath, maxDim, quality);
+    replaceFile(tmpPath, sourcePath);
+};
+
+const ensureResponsiveDownscales = async (isDryRun: boolean, forceOverwrite: boolean): Promise<number> => {
+    if (!existsSync(OUTPUT_DIR)) {
+        return 0;
+    }
+
+    const files = readdirSync(OUTPUT_DIR)
+        .filter((file) => /^[a-z0-9-]+\.webp$/i.test(file) && !/-\d+\.webp$/i.test(file))
+        .sort((a, b) => a.localeCompare(b));
+
+    let generated = 0;
+
+    for (const file of files) {
+        const largePath = join(OUTPUT_DIR, file);
+        for (const variant of RESPONSIVE_WEBP_VARIANTS) {
+            const derivativeFile = file.replace(/\.webp$/i, `${variant.suffix}.webp`);
+            const derivativePath = join(OUTPUT_DIR, derivativeFile);
+
+            if (existsSync(derivativePath) && !forceOverwrite) {
+                continue;
+            }
+
+            if (isDryRun) {
+                process.stdout.write(`[inspiration-images] Dry run: would ${existsSync(derivativePath) ? 'refresh' : 'generate'} responsive copy ${derivativePath}\n`);
+                generated += 1;
+                continue;
+            }
+
+            await writeWebpDerivative(largePath, derivativePath, variant.maxDim, variant.quality);
+            generated += 1;
+            process.stdout.write(`[inspiration-images] Wrote responsive copy ${derivativePath}\n`);
+        }
+    }
+
+    return generated;
+};
+
+const ensureOptimizedLargeWebps = async (isDryRun: boolean, forceOverwrite: boolean): Promise<number> => {
+    if (!existsSync(OUTPUT_DIR)) {
+        return 0;
+    }
+
+    const files = readdirSync(OUTPUT_DIR)
+        .filter((file) => /^[a-z0-9-]+\.webp$/i.test(file) && !/-\d+\.webp$/i.test(file))
+        .sort((a, b) => a.localeCompare(b));
+
+    let optimized = 0;
+
+    for (const file of files) {
+        const fullPath = join(OUTPUT_DIR, file);
+        const currentSize = statSync(fullPath).size;
+        const shouldOptimize = forceOverwrite || currentSize > LARGE_WEBP_SIZE_THRESHOLD_BYTES;
+
+        if (!shouldOptimize) {
+            continue;
+        }
+
+        if (isDryRun) {
+            process.stdout.write(`[inspiration-images] Dry run: would optimize large WebP ${fullPath}\n`);
+            optimized += 1;
+            continue;
+        }
+
+        await optimizeLargeWebpInPlace(fullPath, LARGE_WEBP_MAX_DIM, LARGE_WEBP_QUALITY);
+        optimized += 1;
+        process.stdout.write(`[inspiration-images] Optimized large WebP ${fullPath}\n`);
+    }
+
+    return optimized;
+};
+
+const main = async () => {
     loadEnvFile('.env.local');
     loadEnvFile('.env');
 
-    if (!dryRun && !process.env.OPENAI_API_KEY) {
-        throw new Error('OPENAI_API_KEY is missing. Set it in your shell or .env.local before running build:images.');
+    if (!skipGeneration) {
+        const python = detectPython();
+        const imageGenPath = resolveImageGenPath();
+
+        const jobBuilderArgs = ['run', 'inspirations:images:jobs', '--', `--out=${JOBS_FILE}`];
+        if (force) {
+            jobBuilderArgs.push('--force');
+        }
+        run('npm', jobBuilderArgs, 'Job generation');
+
+        const jobCount = countJobs(JOBS_FILE);
+
+        if (jobCount > 0) {
+            if (!dryRun && !process.env.OPENAI_API_KEY) {
+                throw new Error('OPENAI_API_KEY is missing. Set it in your shell or .env.local before running build:images.');
+            }
+
+            if (!existsSync(imageGenPath)) {
+                throw new Error(`Image generation CLI not found at ${imageGenPath}. Set IMAGE_GEN to your script path.`);
+            }
+
+            if (!dryRun) {
+                run(python, ['-c', 'import openai'], 'Python dependency check');
+            }
+
+            const genArgs = [
+                imageGenPath,
+                'generate-batch',
+                '--input', JOBS_FILE,
+                '--out-dir', OUTPUT_DIR,
+                '--no-augment',
+                '--concurrency', concurrency,
+            ];
+
+            if (force) {
+                genArgs.push('--force');
+            }
+            if (dryRun) {
+                genArgs.push('--dry-run');
+            }
+
+            run(python, genArgs, 'Image generation');
+        } else {
+            process.stdout.write('[inspiration-images] No missing source images detected.\n');
+        }
+    } else {
+        process.stdout.write('[inspiration-images] Skipping image generation; running derivative + optimization only.\n');
     }
 
-    const python = detectPython();
-    const imageGenPath = resolveImageGenPath();
-
-    if (!existsSync(imageGenPath)) {
-        throw new Error(`Image generation CLI not found at ${imageGenPath}. Set IMAGE_GEN to your script path.`);
+    if (!existsSync(OUTPUT_DIR) && !dryRun) {
+        mkdirSync(OUTPUT_DIR, { recursive: true });
     }
 
-    if (!dryRun) {
-        run(python, ['-c', 'import openai, PIL'], 'Python dependency check');
-    }
-    run('npm', ['run', 'inspirations:images:jobs'], 'Job generation');
-
-    const genArgs = [
-        imageGenPath,
-        'generate-batch',
-        '--input', JOBS_FILE,
-        '--out-dir', OUTPUT_DIR,
-        '--no-augment',
-        '--concurrency', concurrency,
-        '--downscale-max-dim', '768',
-        '--downscale-suffix', '-768',
-    ];
-
-    if (force) {
-        genArgs.push('--force');
-    }
-    if (dryRun) {
-        genArgs.push('--dry-run');
+    const generatedResponsive = await ensureResponsiveDownscales(dryRun, force);
+    if (generatedResponsive > 0) {
+        process.stdout.write(`[inspiration-images] ${dryRun ? 'Planned' : 'Generated'} ${generatedResponsive} responsive derivative(s).\n`);
     }
 
-    run(python, genArgs, 'Image generation');
+    const optimizedLarge = await ensureOptimizedLargeWebps(dryRun, force);
+    if (optimizedLarge > 0) {
+        process.stdout.write(`[inspiration-images] ${dryRun ? 'Planned' : 'Optimized'} ${optimizedLarge} large WebP asset(s).\n`);
+    }
 
-    if (!keepJobs) {
+    if (!keepJobs && !skipGeneration) {
         rmSync(JOBS_FILE, { force: true });
     }
 
-    process.stdout.write(`Generated inspiration images in ${OUTPUT_DIR}\n`);
+    process.stdout.write(`Prepared inspiration images in ${OUTPUT_DIR}\n`);
 };
 
-main();
+main().catch((error) => {
+    process.stderr.write(`[inspiration-images] ${error instanceof Error ? error.message : String(error)}\n`);
+    process.exit(1);
+});

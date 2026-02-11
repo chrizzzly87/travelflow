@@ -38,7 +38,9 @@ interface BlogImageSeedOverride {
 }
 
 export interface BlogResponsiveImageSourceSet {
+    xsmall: string;
     small: string;
+    medium: string;
     large: string;
 }
 
@@ -64,7 +66,9 @@ const DEFAULT_ACCENT_TINT = '#6366f1';
 export const BLOG_OG_IMAGE_REVISION = '2026-02-10-01';
 
 const createResponsiveSources = (slug: string, variant: 'card' | 'header'): BlogResponsiveImageSourceSet => ({
+    xsmall: `${BLOG_IMAGE_PREFIX}${slug}-${variant}-480.webp`,
     small: `${BLOG_IMAGE_PREFIX}${slug}-${variant}-768.webp`,
+    medium: `${BLOG_IMAGE_PREFIX}${slug}-${variant}-1024.webp`,
     large: `${BLOG_IMAGE_PREFIX}${slug}-${variant}.webp`,
 });
 
