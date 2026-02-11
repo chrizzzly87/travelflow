@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Plus,
@@ -44,6 +44,7 @@ interface BenchmarkSession {
     scenario: Record<string, unknown>;
     created_at: string;
     updated_at: string;
+    deleted_at?: string | null;
 }
 
 interface BenchmarkRun {
@@ -415,6 +416,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [session, setSession] = useState<BenchmarkSession | null>(null);
     const [runs, setRuns] = useState<BenchmarkRun[]>([]);
     const [summary, setSummary] = useState<BenchmarkSummary | null>(null);
+    const latestSessionBootstrapRef = useRef(false);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
 
@@ -682,6 +684,38 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         if (!benchmarkSessionParam || !accessToken) return;
         loadSession(benchmarkSessionParam);
     }, [benchmarkSessionParam, accessToken, loadSession]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+        if (benchmarkSessionParam) return;
+        if (latestSessionBootstrapRef.current) return;
+        latestSessionBootstrapRef.current = true;
+
+        let cancelled = false;
+
+        const bootstrapLatestSession = async () => {
+            try {
+                const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark', {
+                    method: 'GET',
+                });
+                const sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+                const latest = sessions.find((entry) => !entry.deleted_at) || sessions[0];
+                if (!latest || cancelled) return;
+
+                const lookup = (latest.share_token || latest.id || '').trim();
+                if (!lookup) return;
+                await loadSession(lookup);
+            } catch {
+                // Keep first-load bootstrap silent; explicit actions surface detailed errors.
+            }
+        };
+
+        bootstrapLatestSession();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [accessToken, benchmarkSessionParam, fetchBenchmarkApi, loadSession]);
 
     const buildScenario = useCallback(() => {
         const selectedDestinations = parseDestinations(destinations);
