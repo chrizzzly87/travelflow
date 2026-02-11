@@ -2276,15 +2276,6 @@ export const TripView: React.FC<TripViewProps> = ({
                                     <>
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                                {displayTrip.countryInfo ? (
-                                                    <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                                        <CountryInfo info={displayTrip.countryInfo} />
-                                                    </div>
-                                                ) : isTripLockedByExpiry ? (
-                                                    <div className="p-4 border-b border-gray-100 bg-white z-10 text-xs text-slate-500">
-                                                        Destination details are hidden until this trip is activated.
-                                                    </div>
-                                                ) : null}
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
                                                     {timelineView === 'vertical' ? (
                                                         <VerticalTimeline
@@ -2687,16 +2678,6 @@ export const TripView: React.FC<TripViewProps> = ({
                                             )}
                                         </section>
                                     )}
-
-                                    <section>
-                                        {trip.countryInfo ? (
-                                            <CountryInfo info={trip.countryInfo} />
-                                        ) : (
-                                            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-4 text-xs text-gray-500">
-                                                No destination info available for this trip yet.
-                                            </div>
-                                        )}
-                                    </section>
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         <button
