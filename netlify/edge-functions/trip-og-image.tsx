@@ -423,8 +423,7 @@ export default async (request: Request): Promise<Response> => {
             width: "100%",
             height: "100%",
             display: "flex",
-            background:
-              "radial-gradient(circle at 18% 18%, rgba(79, 70, 229, 0.18), transparent 42%), linear-gradient(160deg, #f8fafc 0%, #eef2ff 100%)",
+            background: "linear-gradient(165deg, #f8fafc 0%, #eef2ff 62%, #e0e7ff 100%)",
             color: "#0f172a",
             padding: 28,
           }}
