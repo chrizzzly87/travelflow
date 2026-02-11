@@ -428,6 +428,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [runs, setRuns] = useState<BenchmarkRun[]>([]);
     const [summary, setSummary] = useState<BenchmarkSummary | null>(null);
     const latestSessionBootstrapRef = useRef(false);
+    const resultsSectionRef = useRef<HTMLElement | null>(null);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
 
@@ -1022,6 +1023,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }
     }, [buildScenario]);
 
+    const scrollToResults = useCallback(() => {
+        resultsSectionRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+        });
+    }, []);
+
     const copyPromptToClipboard = useCallback(async () => {
         if (!promptModal?.prompt) return;
         try {
@@ -1193,7 +1201,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="w-full max-w-xl space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                        <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">
                             <div className="font-semibold text-slate-700">Internal API auth</div>
                             <label className="block">
                                 <span className="mb-1 block text-[11px] uppercase tracking-wide text-slate-500">x-tf-admin-key</span>
@@ -1226,7 +1234,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex items-center justify-between gap-2">
                             <h2 className="text-lg font-bold text-slate-900">Classic benchmark input</h2>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Left panel</span>
                         </div>
 
                         <div className="mt-4 grid grid-cols-1 gap-3">
@@ -1378,7 +1385,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => runBenchmark()}
+                                    onClick={() => {
+                                        scrollToResults();
+                                        void runBenchmark();
+                                    }}
                                     disabled={loading || hasPendingRuns || cancelling || selectedTargets.length === 0}
                                     className="inline-flex items-center gap-1 rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
@@ -1494,7 +1504,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
                 </section>
 
-                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                <section ref={resultsSectionRef} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 className="text-lg font-bold text-slate-900">Benchmark runs</h3>
