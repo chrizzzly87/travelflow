@@ -17,6 +17,7 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
+import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/dbService';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -402,9 +403,7 @@ export const OnPageDebugger: React.FC = () => {
     const [h1HighlightBox, setH1HighlightBox] = useState<H1HighlightBox | null>(null);
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
-    const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() =>
-        readStoredDebuggerBoolean(SIMULATED_LOGIN_STORAGE_KEY, false)
-    );
+    const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
 
     useEffect(() => {
@@ -653,12 +652,13 @@ export const OnPageDebugger: React.FC = () => {
     }, [autoOpenEnabled]);
 
     const setSimulatedLogin = useCallback((next: boolean): boolean => {
-        setSimulatedLoggedIn(next);
-        simulatedLoggedInRef.current = next;
+        const resolved = setDbSimulatedLoggedIn(next);
+        setSimulatedLoggedIn(resolved);
+        simulatedLoggedInRef.current = resolved;
         window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
-            detail: { available: true, loggedIn: next },
+            detail: { available: true, loggedIn: resolved },
         }));
-        return next;
+        return resolved;
     }, []);
 
     const toggleSimulatedLogin = useCallback((next?: boolean): boolean => {
@@ -766,6 +766,11 @@ export const OnPageDebugger: React.FC = () => {
             delete window.onPageDebugger;
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
+        };
+    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+
+    useEffect(() => {
+        return () => {
             window.dispatchEvent(new CustomEvent<DebuggerStateDebugDetail>(DEBUGGER_STATE_DEBUG_EVENT, {
                 detail: { available: false, open: false },
             }));
@@ -773,7 +778,7 @@ export const OnPageDebugger: React.FC = () => {
                 detail: { available: false, loggedIn: false },
             }));
         };
-    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+    }, []);
 
     if (!isOpen) {
         return null;
