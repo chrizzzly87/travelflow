@@ -111,6 +111,35 @@ export default async (request: Request): Promise<Response> => {
         grid-template-columns: 1fr 1fr;
         gap: 10px;
       }
+      [hidden] {
+        display: none !important;
+      }
+      .group {
+        grid-column: 1 / -1;
+        border: 1px solid #dbe4ef;
+        border-radius: 12px;
+        background: #f8fafc;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .group-head {
+        grid-column: 1 / -1;
+      }
+      .group-title {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: #1e293b;
+      }
+      .group-sub {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.35;
+      }
       .full {
         grid-column: 1 / -1;
       }
@@ -176,9 +205,6 @@ export default async (request: Request): Promise<Response> => {
         padding: 9px 10px;
         font-size: 12px;
         overflow: auto;
-      }
-      .sample {
-        margin-top: 10px;
       }
       .tint-controls {
         display: grid;
@@ -246,130 +272,147 @@ export default async (request: Request): Promise<Response> => {
       <section class="panel">
         <h1>OG Playground</h1>
         <p class="sub">Preview <code>/api/og/trip</code> and <code>/api/og/site</code>. For blog OG previews, switch to <strong>Site OG</strong> and set <code>blog_image</code> (jpg path). Use tint controls to optionally pass <code>blog_tint</code> + <code>blog_tint_intensity</code>.</p>
-        <div class="sample">
-          <label>Default blog test URL (copy/paste)</label>
-          <code id="sample-site-url"></code>
-        </div>
         <form id="og-form">
-          <div class="full">
-            <label for="mode">Endpoint</label>
-            <select id="mode" name="mode">
-              <option value="trip"${state.mode === "trip" ? " selected" : ""}>Trip OG (/api/og/trip)</option>
-              <option value="site"${state.mode === "site" ? " selected" : ""}>Site OG (/api/og/site)</option>
-            </select>
-          </div>
-
-          <div class="full" data-mode="trip">
-            <label for="s">Share token (real data)</label>
-            <input id="s" name="s" placeholder="e.g. 5f7a9b..." value="${escapeHtml(state.shareToken)}" />
-          </div>
-          <div data-mode="trip">
-            <label for="trip">Trip ID (fallback)</label>
-            <input id="trip" name="trip" value="${escapeHtml(state.tripId)}" />
-          </div>
-          <div data-mode="trip">
-            <label for="v">Version UUID (optional)</label>
-            <input id="v" name="v" value="${escapeHtml(canUseVersion ? state.versionId : "")}" />
-          </div>
-
-          <div class="full">
-            <label for="title">Title override</label>
-            <input id="title" name="title" value="${escapeHtml(state.title)}" placeholder="Title shown in OG image" />
-          </div>
-
-          <div class="full" data-mode="site">
-            <label for="description">Description/subline (site OG)</label>
-            <input id="description" name="description" value="${escapeHtml(state.description)}" placeholder="Subline for /api/og/site" />
-          </div>
-          <div data-mode="site">
-            <label for="pill">Pill label (site OG)</label>
-            <input id="pill" name="pill" value="${escapeHtml(state.pill)}" placeholder="BLOG" />
-          </div>
-          <div class="full" data-mode="site">
-            <label for="blog_tint_enabled">Blog tint controls (site OG)</label>
-            <div class="tint-controls">
-              <label class="checkline" for="blog_tint_enabled">
-                <input id="blog_tint_enabled" type="checkbox"${blogTintEnabled ? " checked" : ""} />
-                Enable tint overlay
-              </label>
-              <input id="blog_tint_color" type="color" value="${escapeHtml(blogTintColor)}" />
+          <section class="group">
+            <div class="group-head">
+              <p class="group-title">Endpoint</p>
+              <p class="group-sub">Only controls relevant to the selected endpoint are shown below.</p>
             </div>
-            <div class="range-row">
-              <label for="blog_tint_intensity">Tint intensity</label>
-              <span id="blog_tint_intensity_label" class="intensity-value"></span>
+            <div class="full">
+              <label for="mode">Endpoint</label>
+              <select id="mode" name="mode">
+                <option value="trip"${state.mode === "trip" ? " selected" : ""}>Trip OG (/api/og/trip)</option>
+                <option value="site"${state.mode === "site" ? " selected" : ""}>Site OG (/api/og/site)</option>
+              </select>
             </div>
-            <input id="blog_tint_intensity" type="range" min="0" max="100" step="1" value="${blogTintIntensityPercent}" />
-          </div>
-          <div class="full" data-mode="site">
-            <label for="blog_image">Blog image path (site OG)</label>
-            <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.jpg" />
-          </div>
-          <div data-mode="site">
-            <label for="blog_rev">Blog image revision (cache bust)</label>
-            <input id="blog_rev" name="blog_rev" value="${escapeHtml(state.blogRev)}" placeholder="2026-02-10-01" />
-          </div>
+          </section>
 
-          <div data-mode="trip">
-            <label for="weeks">Weeks override</label>
-            <input id="weeks" name="weeks" value="${escapeHtml(state.weeks)}" placeholder="e.g. 2.5 weeks" />
-          </div>
-          <div data-mode="trip">
-            <label for="months">Months override</label>
-            <input id="months" name="months" value="${escapeHtml(state.months)}" placeholder="e.g. May-Jun" />
-          </div>
-          <div data-mode="trip">
-            <label for="distance">Distance override</label>
-            <input id="distance" name="distance" value="${escapeHtml(state.distance)}" placeholder="e.g. 2,430 km" />
-          </div>
-          <div data-mode="trip">
-            <label for="u">Update stamp (u)</label>
-            <input id="u" name="u" value="${escapeHtml(state.updatedAt)}" placeholder="cache bust id" />
-          </div>
+          <section class="group">
+            <div class="group-head">
+              <p class="group-title">Shared Overrides</p>
+              <p class="group-sub">Cross-endpoint fields plus site-only metadata (hidden in Trip mode).</p>
+            </div>
+            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
+              <label for="pill">Pill label (site OG)</label>
+              <input id="pill" name="pill" value="${escapeHtml(state.pill)}" placeholder="BLOG" />
+            </div>
+            <div class="full">
+              <label for="title">Title override</label>
+              <input id="title" name="title" value="${escapeHtml(state.title)}" placeholder="Title shown in OG image" />
+            </div>
+            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
+              <label for="description">Description/subline (site OG)</label>
+              <input id="description" name="description" value="${escapeHtml(state.description)}" placeholder="Subline for /api/og/site" />
+            </div>
+            <div class="full">
+              <label for="path">Footer URL path override</label>
+              <input id="path" name="path" value="${escapeHtml(state.routePath)}" placeholder="/blog/your-slug or /s/your-token" />
+            </div>
+          </section>
 
-          <div class="full">
-            <label for="path">Footer URL path override</label>
-            <input id="path" name="path" value="${escapeHtml(state.routePath)}" placeholder="/blog/your-slug or /s/your-token" />
-          </div>
+          <section class="group" data-mode="trip"${state.mode === "trip" ? "" : " hidden"}>
+            <div class="group-head">
+              <p class="group-title">Trip Source & Stats</p>
+              <p class="group-sub">Use a share token for real data, then optionally override details and map rendering.</p>
+            </div>
+            <div class="full">
+              <label for="s">Share token (real data)</label>
+              <input id="s" name="s" placeholder="e.g. 5f7a9b..." value="${escapeHtml(state.shareToken)}" />
+            </div>
+            <div>
+              <label for="trip">Trip ID (fallback)</label>
+              <input id="trip" name="trip" value="${escapeHtml(state.tripId)}" />
+            </div>
+            <div>
+              <label for="v">Version UUID (optional)</label>
+              <input id="v" name="v" value="${escapeHtml(canUseVersion ? state.versionId : "")}" />
+            </div>
+            <div>
+              <label for="weeks">Weeks override</label>
+              <input id="weeks" name="weeks" value="${escapeHtml(state.weeks)}" placeholder="e.g. 2.5 weeks" />
+            </div>
+            <div>
+              <label for="months">Months override</label>
+              <input id="months" name="months" value="${escapeHtml(state.months)}" placeholder="e.g. May-Jun" />
+            </div>
+            <div>
+              <label for="distance">Distance override</label>
+              <input id="distance" name="distance" value="${escapeHtml(state.distance)}" placeholder="e.g. 2,430 km" />
+            </div>
+            <div>
+              <label for="u">Update stamp (u)</label>
+              <input id="u" name="u" value="${escapeHtml(state.updatedAt)}" placeholder="cache bust id" />
+            </div>
+            <div class="full">
+              <label for="map">Map image URL override (https only)</label>
+              <input id="map" name="map" value="${escapeHtml(state.mapUrl)}" placeholder="https://.../staticmap" />
+            </div>
+            <div>
+              <label for="mapStyle">Map style override</label>
+              <select id="mapStyle" name="mapStyle">
+                <option value="">Share/default</option>
+                <option value="clean"${canUseMapStyle && state.mapStyle === "clean" ? " selected" : ""}>Clean</option>
+                <option value="minimal"${canUseMapStyle && state.mapStyle === "minimal" ? " selected" : ""}>Minimal</option>
+                <option value="standard"${canUseMapStyle && state.mapStyle === "standard" ? " selected" : ""}>Standard</option>
+                <option value="dark"${canUseMapStyle && state.mapStyle === "dark" ? " selected" : ""}>Dark</option>
+                <option value="satellite"${canUseMapStyle && state.mapStyle === "satellite" ? " selected" : ""}>Satellite</option>
+              </select>
+            </div>
+            <div>
+              <label for="routeMode">Route style override</label>
+              <select id="routeMode" name="routeMode">
+                <option value="">Share/default</option>
+                <option value="simple"${canUseRouteMode && state.routeMode === "simple" ? " selected" : ""}>Simple</option>
+                <option value="realistic"${canUseRouteMode && state.routeMode === "realistic" ? " selected" : ""}>Realistic</option>
+              </select>
+            </div>
+            <div class="full">
+              <label for="showStops">Show stops override</label>
+              <select id="showStops" name="showStops">
+                <option value="">Share/default</option>
+                <option value="1"${canUseShowStops && state.showStops === "1" ? " selected" : ""}>On</option>
+                <option value="0"${canUseShowStops && state.showStops === "0" ? " selected" : ""}>Off</option>
+              </select>
+            </div>
+            <div class="full">
+              <label for="showCities">Show city labels override</label>
+              <select id="showCities" name="showCities">
+                <option value="">Share/default</option>
+                <option value="1"${canUseShowCities && state.showCities === "1" ? " selected" : ""}>On</option>
+                <option value="0"${canUseShowCities && state.showCities === "0" ? " selected" : ""}>Off</option>
+              </select>
+            </div>
+          </section>
 
-          <div class="full" data-mode="trip">
-            <label for="map">Map image URL override (https only)</label>
-            <input id="map" name="map" value="${escapeHtml(state.mapUrl)}" placeholder="https://.../staticmap" />
-          </div>
-          <div data-mode="trip">
-            <label for="mapStyle">Map style override</label>
-            <select id="mapStyle" name="mapStyle">
-              <option value="">Share/default</option>
-              <option value="clean"${canUseMapStyle && state.mapStyle === "clean" ? " selected" : ""}>Clean</option>
-              <option value="minimal"${canUseMapStyle && state.mapStyle === "minimal" ? " selected" : ""}>Minimal</option>
-              <option value="standard"${canUseMapStyle && state.mapStyle === "standard" ? " selected" : ""}>Standard</option>
-              <option value="dark"${canUseMapStyle && state.mapStyle === "dark" ? " selected" : ""}>Dark</option>
-              <option value="satellite"${canUseMapStyle && state.mapStyle === "satellite" ? " selected" : ""}>Satellite</option>
-            </select>
-          </div>
-          <div data-mode="trip">
-            <label for="routeMode">Route style override</label>
-            <select id="routeMode" name="routeMode">
-              <option value="">Share/default</option>
-              <option value="simple"${canUseRouteMode && state.routeMode === "simple" ? " selected" : ""}>Simple</option>
-              <option value="realistic"${canUseRouteMode && state.routeMode === "realistic" ? " selected" : ""}>Realistic</option>
-            </select>
-          </div>
-          <div class="full" data-mode="trip">
-            <label for="showStops">Show stops override</label>
-            <select id="showStops" name="showStops">
-              <option value="">Share/default</option>
-              <option value="1"${canUseShowStops && state.showStops === "1" ? " selected" : ""}>On</option>
-              <option value="0"${canUseShowStops && state.showStops === "0" ? " selected" : ""}>Off</option>
-            </select>
-          </div>
-          <div class="full" data-mode="trip">
-            <label for="showCities">Show city labels override</label>
-            <select id="showCities" name="showCities">
-              <option value="">Share/default</option>
-              <option value="1"${canUseShowCities && state.showCities === "1" ? " selected" : ""}>On</option>
-              <option value="0"${canUseShowCities && state.showCities === "0" ? " selected" : ""}>Off</option>
-            </select>
-          </div>
+          <section class="group" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
+            <div class="group-head">
+              <p class="group-title">Blog Image Controls</p>
+              <p class="group-sub">Preview blog image variants, cache revisions, and tint overlays for <code>/api/og/site</code>.</p>
+            </div>
+            <div class="full">
+              <label for="blog_image">Blog image path (site OG)</label>
+              <input id="blog_image" name="blog_image" value="${escapeHtml(state.blogImage)}" placeholder="/images/blog/slug-og-vertical.jpg" />
+            </div>
+            <div class="full">
+              <label for="blog_rev">Blog image revision (cache bust)</label>
+              <input id="blog_rev" name="blog_rev" value="${escapeHtml(state.blogRev)}" placeholder="2026-02-10-01" />
+            </div>
+            <div class="full">
+              <label for="blog_tint_enabled">Blog tint controls</label>
+              <div class="tint-controls">
+                <label class="checkline" for="blog_tint_enabled">
+                  <input id="blog_tint_enabled" type="checkbox"${blogTintEnabled ? " checked" : ""} />
+                  Enable tint overlay
+                </label>
+                <input id="blog_tint_color" type="color" value="${escapeHtml(blogTintColor)}" />
+              </div>
+              <div class="range-row">
+                <label for="blog_tint_intensity">Tint intensity</label>
+                <span id="blog_tint_intensity_label" class="intensity-value"></span>
+              </div>
+              <input id="blog_tint_intensity" type="range" min="0" max="100" step="1" value="${blogTintIntensityPercent}" />
+            </div>
+          </section>
 
           <div class="actions">
             <button type="submit">Render</button>
@@ -399,13 +442,15 @@ export default async (request: Request): Promise<Response> => {
       const reloadBtn = document.getElementById('reload-btn');
       const resetBtn = document.getElementById('reset-btn');
       const loadBlogExampleBtn = document.getElementById('load-blog-example-btn');
-      const sampleSiteUrl = document.getElementById('sample-site-url');
       const modeInput = document.getElementById('mode');
       const blogTintEnabledInput = document.getElementById('blog_tint_enabled');
       const blogTintColorInput = document.getElementById('blog_tint_color');
       const blogTintIntensityInput = document.getElementById('blog_tint_intensity');
       const blogTintIntensityLabel = document.getElementById('blog_tint_intensity_label');
 
+      const DEFAULT_BLOG_TINT_COLOR = '${DEFAULT_BLOG_TINT_COLOR}';
+      const DEFAULT_BLOG_TINT_INTENSITY = ${DEFAULT_BLOG_TINT_INTENSITY};
+      const HAS_INITIAL_TINT_PARAMS = ${Boolean(state.blogTint || state.blogTintIntensity) ? "true" : "false"};
       const TRIP_KEYS = ['s', 'trip', 'v', 'title', 'weeks', 'months', 'distance', 'path', 'u', 'map', 'mapStyle', 'routeMode', 'showStops', 'showCities'];
       const SITE_KEYS = ['title', 'description', 'pill', 'path', 'blog_image', 'blog_rev'];
       const BLOG_SAMPLE = {
@@ -415,15 +460,15 @@ export default async (request: Request): Promise<Response> => {
         path: '/blog/how-to-plan-multi-city-trip',
         blog_image: '/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg',
         blog_tint: DEFAULT_BLOG_TINT_COLOR,
-        blog_tint_intensity: '60',
+        blog_tint_intensity: String(DEFAULT_BLOG_TINT_INTENSITY),
         blog_rev: '2026-02-10-01',
       };
-      const DEFAULT_BLOG_TINT_COLOR = '${DEFAULT_BLOG_TINT_COLOR}';
-      const DEFAULT_BLOG_TINT_INTENSITY = ${DEFAULT_BLOG_TINT_INTENSITY};
 
       function getMode() {
         return modeInput && modeInput.value === 'site' ? 'site' : 'trip';
       }
+
+      let didApplySiteTintDefault = HAS_INITIAL_TINT_PARAMS;
 
       function clampTintIntensity(value) {
         const parsed = Number(value);
@@ -451,13 +496,29 @@ export default async (request: Request): Promise<Response> => {
         }
       }
 
+      function applySiteTintDefaultIfNeeded() {
+        if (getMode() !== 'site' || didApplySiteTintDefault) return;
+        if (blogTintEnabledInput instanceof HTMLInputElement) {
+          blogTintEnabledInput.checked = true;
+        }
+        if (blogTintColorInput instanceof HTMLInputElement && !/^#[0-9a-fA-F]{6}$/.test(blogTintColorInput.value)) {
+          blogTintColorInput.value = DEFAULT_BLOG_TINT_COLOR;
+        }
+        if (blogTintIntensityInput instanceof HTMLInputElement) {
+          blogTintIntensityInput.value = String(DEFAULT_BLOG_TINT_INTENSITY);
+        }
+        didApplySiteTintDefault = true;
+      }
+
       function applyModeVisibility() {
         const mode = getMode();
         const sections = form.querySelectorAll('[data-mode]');
         sections.forEach((el) => {
           if (!(el instanceof HTMLElement)) return;
           const targetMode = el.dataset.mode;
-          el.style.display = targetMode === mode ? '' : 'none';
+          const visible = targetMode === mode;
+          el.hidden = !visible;
+          el.style.display = visible ? '' : 'none';
         });
       }
 
@@ -496,11 +557,6 @@ export default async (request: Request): Promise<Response> => {
         return { imageUrl, mode, params };
       }
 
-      function buildSampleSiteUrl() {
-        const params = new URLSearchParams(BLOG_SAMPLE);
-        return window.location.origin + '/api/og/site?' + params.toString();
-      }
-
       function setInputValue(name, value) {
         const input = form.elements.namedItem(name);
         if (!input) return;
@@ -527,6 +583,7 @@ export default async (request: Request): Promise<Response> => {
       }
 
       function sync() {
+        applySiteTintDefaultIfNeeded();
         applyModeVisibility();
         updateTintControls();
         const { imageUrl, mode, params } = buildImageUrl();
@@ -534,9 +591,6 @@ export default async (request: Request): Promise<Response> => {
         ogImage.src = busted;
         openLink.href = imageUrl;
         queryUrl.textContent = imageUrl;
-        if (sampleSiteUrl) {
-          sampleSiteUrl.textContent = buildSampleSiteUrl();
-        }
 
         const full = new URL(window.location.href);
         const playgroundSearch = new URLSearchParams(params);
@@ -583,7 +637,10 @@ export default async (request: Request): Promise<Response> => {
         blogTintIntensityInput.addEventListener('input', sync);
       }
 
-      modeInput.addEventListener('change', sync);
+      modeInput.addEventListener('change', function() {
+        applySiteTintDefaultIfNeeded();
+        sync();
+      });
       sync();
     </script>
   </body>

@@ -232,7 +232,7 @@ export default async (request: Request): Promise<Response> => {
     const blogTintStrength = blogTintIntensity / 100;
     const hasTint = Boolean(blogTint) && blogTintStrength > 0.001;
     const blogTintGradient = hasTint && blogTint
-      ? `linear-gradient(180deg, ${hexToRgba(blogTint, 0)} 0%, ${hexToRgba(blogTint, 0.72 * blogTintStrength)} 100%)`
+      ? `linear-gradient(180deg, ${hexToRgba(blogTint, 0)} 0%, ${hexToRgba(blogTint, 0.24 * blogTintStrength)} 48%, ${hexToRgba(blogTint, 0.72 * blogTintStrength)} 100%)`
       : null;
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
