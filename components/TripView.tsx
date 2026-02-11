@@ -1918,15 +1918,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <>
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                                {trip.countryInfo && (
-                                                    <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                                        <CountryInfo
-                                                            info={trip.countryInfo}
-                                                            isExpanded={destinationInfoExpanded}
-                                                            onExpandedChange={setDestinationInfoExpanded}
-                                                        />
-                                                    </div>
-                                                )}
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
                                                     {timelineView === 'vertical' ? (
                                                         <VerticalTimeline
