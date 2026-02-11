@@ -56,3 +56,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] ⏳ Switched benchmark execution off nested `/api/ai/generate` calls to direct provider runtime execution with a dedicated benchmark timeout budget (`AI_BENCHMARK_PROVIDER_TIMEOUT_MS`, default 90s) to reduce edge timeout failures.
 - [ ] [Internal] 🧰 Added provider timeout environment controls for runtime and benchmark paths (`AI_GENERATE_PROVIDER_TIMEOUT_MS`, `AI_BENCHMARK_PROVIDER_TIMEOUT_MS`) and documented expected defaults.
 - [ ] [Internal] 🛡️ Enforced a hard 90s minimum benchmark provider timeout so low env overrides (for example `10000`) can no longer force premature benchmark request aborts.
+- [ ] [Internal] 🧭 Improved `/admin/ai-benchmark` execution UX by auto-scrolling to results on `Test all`, removing redundant “Left panel” labeling, and tightening the internal auth card layout on small screens.
