@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
     Warning as AlertTriangle,
     Check,
@@ -21,7 +22,7 @@ import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
 import { generateItinerary, generateWizardItinerary } from '../services/geminiService';
-import { ITimelineItem, ITrip } from '../types';
+import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
     getDestinationMetaLabel,
@@ -34,6 +35,8 @@ import {
     isIslandDestination,
     resolveDestinationName,
     COUNTRIES,
+    decodeTripPrefill,
+    encodeTripPrefill,
 } from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
@@ -157,6 +160,7 @@ const SectionHeader: React.FC<{ number: number; icon: React.ReactNode; label: st
 // ---------------------------------------------------------------------------
 
 export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenerated, onOpenManager }) => {
+    const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
     // ---- Form state ----
@@ -221,10 +225,45 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
         setEnforceIslandOnly(true);
     }, [hasIslandSelection]);
 
+    // ---- Prefill from URL ----
+    useEffect(() => {
+        const raw = searchParams.get('prefill');
+        if (!raw) return;
+        const data = decodeTripPrefill(raw);
+        if (!data) return;
+        if (data.countries?.length) setSelectedCountries(data.countries);
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.budget) setBudget(data.budget);
+        if (data.pace) setPace(data.pace);
+        if (data.cities) setSpecificCities(data.cities);
+        if (data.notes) setNotes(data.notes);
+        if (typeof data.roundTrip === 'boolean') setIsRoundTrip(data.roundTrip);
+        if (data.styles) setSelectedStyles(data.styles);
+        if (data.vibes) setSelectedVibes(data.vibes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ---- Build variant URL with current state ----
+    const buildVariantUrl = useCallback((path: string) => {
+        const data: TripPrefillData = {};
+        if (selectedCountries.length) data.countries = selectedCountries;
+        if (startDate !== defaultDates.startDate) data.startDate = startDate;
+        if (endDate !== defaultDates.endDate) data.endDate = endDate;
+        if (budget !== 'Medium') data.budget = budget;
+        if (pace !== 'Balanced') data.pace = pace;
+        if (specificCities) data.cities = specificCities;
+        if (notes) data.notes = notes;
+        if (!isRoundTrip) data.roundTrip = false;
+        if (selectedStyles.length) data.styles = selectedStyles;
+        if (selectedVibes.length) data.vibes = selectedVibes;
+        if (Object.keys(data).length === 0) return path;
+        return `${path}?prefill=${encodeTripPrefill(data)}`;
+    }, [selectedCountries, startDate, endDate, budget, pace, specificCities, notes, isRoundTrip, selectedStyles, selectedVibes, defaultDates]);
+
     // ---- Helpers ----
-    const addCountry = useCallback((name: string) => {
-        const resolved = resolveDestinationName(name);
-        setSelectedCountries((prev) => (prev.includes(resolved) ? prev : [...prev, resolved]));
+    const setCountriesFromString = useCallback((value: string) => {
+        setSelectedCountries(value ? value.split(',').map((s) => resolveDestinationName(s.trim())).filter(Boolean) : []);
     }, []);
 
     const removeCountry = useCallback((name: string) => {
@@ -420,6 +459,14 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                         Design your perfect trip
                     </h1>
                     <p className="text-gray-500 text-sm sm:text-base">All-in-one form with smart season insights and style preferences.</p>
+                    <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
+                        <span>Variants:</span>
+                        <span className="font-medium text-accent-600">V1</span>
+                        <Link to={buildVariantUrl('/create-trip/v2')} className="underline hover:text-accent-600 transition-colors">V2 Split-Screen</Link>
+                        <Link to={buildVariantUrl('/create-trip/v3')} className="underline hover:text-accent-600 transition-colors">V3 Journey</Link>
+                        <span className="text-gray-300">|</span>
+                        <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Main</Link>
+                    </div>
                 </div>
 
                 {/* Main card */}
@@ -438,9 +485,8 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                         >
                             <SectionHeader number={1} icon={<MapPin size={15} weight="duotone" />} label="Destinations" />
                             <CountrySelect
-                                selectedCountries={selectedCountries}
-                                onAdd={addCountry}
-                                onRemove={removeCountry}
+                                value={destination}
+                                onChange={setCountriesFromString}
                             />
 
                             {selectedCountries.length > 0 && (
@@ -487,8 +533,7 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                             <DateRangePicker
                                 startDate={startDate}
                                 endDate={endDate}
-                                onStartDateChange={setStartDate}
-                                onEndDateChange={setEndDate}
+                                onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
                             />
 
                             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -669,7 +714,7 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                         {/* ---- Error ---- */}
                         {generationError && (
                             <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <AlertTriangle size={16} weight="duotone" className="shrink-0 mt-0.5" />
                                 <span>{generationError}</span>
                             </div>
                         )}
@@ -681,7 +726,7 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0 || isGenerating}
                                 className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/50 hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Sparkles size={16} weight="fill" />
+                                <Sparkles size={16} weight="duotone" />
                                 Generate Trip
                             </button>
                             <button
@@ -690,7 +735,7 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0}
                                 className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:border-accent-300 hover:text-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <FilePlus size={16} />
+                                <FilePlus size={16} weight="duotone" />
                                 Create Blank
                             </button>
                         </div>

@@ -34,6 +34,7 @@ import {
     addDays,
     COUNTRIES,
     decodeTripPrefill,
+    encodeTripPrefill,
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
@@ -624,6 +625,22 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         setSelectedCountries(parseCountries(value));
     };
 
+    const buildVariantUrl = useCallback((path: string) => {
+        const data: TripPrefillData = {};
+        if (selectedCountries.length) data.countries = selectedCountries;
+        if (startDate !== defaultDates.startDate) data.startDate = startDate;
+        if (endDate !== defaultDates.endDate) data.endDate = endDate;
+        if (budget !== 'Medium') data.budget = budget;
+        if (pace !== 'Balanced') data.pace = pace;
+        if (specificCities) data.cities = specificCities;
+        if (notes) data.notes = notes;
+        if (!isRoundTrip) data.roundTrip = false;
+        if (wizardStyles.length) data.styles = wizardStyles;
+        if (wizardVibes.length) data.vibes = wizardVibes;
+        if (Object.keys(data).length === 0) return path;
+        return `${path}?prefill=${encodeTripPrefill(data)}`;
+    }, [selectedCountries, startDate, endDate, budget, pace, specificCities, notes, isRoundTrip, wizardStyles, wizardVibes, defaultDates]);
+
     const addSharedCountry = (countryName: string) => {
         const resolvedName = resolveDestinationName(countryName);
         setSelectedCountries((current) => {
@@ -1108,9 +1125,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                             <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-400">
                                 <span>Try a new layout:</span>
-                                <Link to="/create-trip/v1" className="underline hover:text-accent-600 transition-colors">Polished Card</Link>
-                                <Link to="/create-trip/v2" className="underline hover:text-accent-600 transition-colors">Split-Screen</Link>
-                                <Link to="/create-trip/v3" className="underline hover:text-accent-600 transition-colors">Journey Builder</Link>
+                                <Link to={buildVariantUrl('/create-trip/v1')} className="underline hover:text-accent-600 transition-colors">Polished Card</Link>
+                                <Link to={buildVariantUrl('/create-trip/v2')} className="underline hover:text-accent-600 transition-colors">Split-Screen</Link>
+                                <Link to={buildVariantUrl('/create-trip/v3')} className="underline hover:text-accent-600 transition-colors">Journey Builder</Link>
                             </div>
                         </div>
                     )}

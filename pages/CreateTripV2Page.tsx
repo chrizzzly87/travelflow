@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
     Warning as AlertTriangle,
     CaretDown as ChevronDown,
@@ -23,7 +24,7 @@ import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
 import { generateItinerary } from '../services/geminiService';
-import { ITimelineItem, ITrip } from '../types';
+import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
     getDestinationMetaLabel,
@@ -36,6 +37,8 @@ import {
     isIslandDestination,
     resolveDestinationName,
     COUNTRIES,
+    decodeTripPrefill,
+    encodeTripPrefill,
 } from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
@@ -154,6 +157,7 @@ const CountryContextCard: React.FC<{ countryName: string }> = ({ countryName }) 
 // ---------------------------------------------------------------------------
 
 export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenerated, onOpenManager }) => {
+    const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
     // ---- Form state ----
@@ -223,10 +227,41 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
         setEnforceIslandOnly(true);
     }, [hasIslandSelection]);
 
+    // ---- Prefill from URL ----
+    useEffect(() => {
+        const raw = searchParams.get('prefill');
+        if (!raw) return;
+        const data = decodeTripPrefill(raw);
+        if (!data) return;
+        if (data.countries?.length) setSelectedCountries(data.countries);
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.budget) setBudget(data.budget);
+        if (data.pace) setPace(data.pace);
+        if (data.cities) setSpecificCities(data.cities);
+        if (data.notes) setNotes(data.notes);
+        if (typeof data.roundTrip === 'boolean') setIsRoundTrip(data.roundTrip);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ---- Build variant URL with current state ----
+    const buildVariantUrl = useCallback((path: string) => {
+        const data: TripPrefillData = {};
+        if (selectedCountries.length) data.countries = selectedCountries;
+        if (startDate !== defaultDates.startDate) data.startDate = startDate;
+        if (endDate !== defaultDates.endDate) data.endDate = endDate;
+        if (budget !== 'Medium') data.budget = budget;
+        if (pace !== 'Balanced') data.pace = pace;
+        if (specificCities) data.cities = specificCities;
+        if (notes) data.notes = notes;
+        if (!isRoundTrip) data.roundTrip = false;
+        if (Object.keys(data).length === 0) return path;
+        return `${path}?prefill=${encodeTripPrefill(data)}`;
+    }, [selectedCountries, startDate, endDate, budget, pace, specificCities, notes, isRoundTrip, defaultDates]);
+
     // ---- Helpers ----
-    const addCountry = useCallback((name: string) => {
-        const resolved = resolveDestinationName(name);
-        setSelectedCountries((prev) => (prev.includes(resolved) ? prev : [...prev, resolved]));
+    const setCountriesFromString = useCallback((value: string) => {
+        setSelectedCountries(value ? value.split(',').map((s) => resolveDestinationName(s.trim())).filter(Boolean) : []);
     }, []);
 
     const removeCountry = useCallback((name: string) => {
@@ -421,15 +456,15 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                     <div className="text-xs font-semibold text-accent-700 uppercase tracking-wider mb-2">Trip Summary</div>
                     <div className="space-y-1.5 text-sm text-gray-700">
                         <div className="flex items-center gap-2">
-                            <Globe size={14} className="text-accent-500" />
+                            <Globe size={14} weight="duotone" className="text-accent-500" />
                             <span>{selectedCountries.length} destination{selectedCountries.length !== 1 ? 's' : ''}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <CalendarBlank size={14} className="text-accent-500" />
+                            <CalendarBlank size={14} weight="duotone" className="text-accent-500" />
                             <span>{duration} days</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Clock size={14} className="text-accent-500" />
+                            <Clock size={14} weight="duotone" className="text-accent-500" />
                             <span>Recommended: {durationRec.recommended} days ({durationRec.min}-{durationRec.max})</span>
                         </div>
                         {duration < durationRec.min && (
@@ -479,7 +514,15 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                         <h1 className="text-2xl font-bold text-gray-900 mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                             Trip Details
                         </h1>
-                        <p className="text-sm text-gray-500 mb-6">Build your trip step by step.</p>
+                        <p className="text-sm text-gray-500 mb-2">Build your trip step by step.</p>
+                        <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                            <span>Variants:</span>
+                            <Link to={buildVariantUrl('/create-trip/v1')} className="underline hover:text-accent-600 transition-colors">V1 Polished Card</Link>
+                            <span className="font-medium text-accent-600">V2</span>
+                            <Link to={buildVariantUrl('/create-trip/v3')} className="underline hover:text-accent-600 transition-colors">V3 Journey</Link>
+                            <span className="text-gray-300">|</span>
+                            <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Main</Link>
+                        </div>
 
                         {/* Destination */}
                         <div className="pb-5 mb-5 border-b border-gray-100">
@@ -487,9 +530,8 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                                 <span className="flex items-center gap-1.5"><MapPin size={13} weight="duotone" className="text-accent-500" /> Destinations</span>
                             </label>
                             <CountrySelect
-                                selectedCountries={selectedCountries}
-                                onAdd={addCountry}
-                                onRemove={removeCountry}
+                                value={destination}
+                                onChange={setCountriesFromString}
                             />
                             {selectedCountries.length > 0 && (
                                 <div className="mt-3 flex flex-wrap gap-2">
@@ -531,8 +573,7 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                             <DateRangePicker
                                 startDate={startDate}
                                 endDate={endDate}
-                                onStartDateChange={setStartDate}
-                                onEndDateChange={setEndDate}
+                                onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
                             />
                             <div className="mt-2 flex items-center gap-2">
                                 <span className="inline-flex items-center rounded-full bg-accent-50 border border-accent-100 px-2.5 py-0.5 text-xs font-medium text-accent-700">
@@ -615,7 +656,7 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                         {/* Error */}
                         {generationError && (
                             <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 mb-4">
-                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <AlertTriangle size={16} weight="duotone" className="shrink-0 mt-0.5" />
                                 <span>{generationError}</span>
                             </div>
                         )}
@@ -627,7 +668,7 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0 || isGenerating}
                                 className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/50 hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Sparkles size={16} weight="fill" />
+                                <Sparkles size={16} weight="duotone" />
                                 Generate Trip
                             </button>
                             <button
@@ -636,7 +677,7 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0}
                                 className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:border-accent-300 hover:text-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <FilePlus size={16} />
+                                <FilePlus size={16} weight="duotone" />
                                 Create Blank
                             </button>
                         </div>

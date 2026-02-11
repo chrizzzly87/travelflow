@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
     Warning as AlertTriangle,
     Check,
@@ -19,7 +20,7 @@ import { DateRangePicker } from '../components/DateRangePicker';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
 import { generateWizardItinerary } from '../services/geminiService';
-import { ITimelineItem, ITrip } from '../types';
+import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
     getDestinationOptionByName,
@@ -31,6 +32,8 @@ import {
     isIslandDestination,
     resolveDestinationName,
     COUNTRIES,
+    decodeTripPrefill,
+    encodeTripPrefill,
 } from '../utils';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
@@ -195,6 +198,7 @@ const StepDots: React.FC<{ currentStep: number; totalSteps: number; completedSte
 // ---------------------------------------------------------------------------
 
 export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenerated, onOpenManager }) => {
+    const [searchParams] = useSearchParams();
     const defaultDates = getDefaultTripDates();
 
     // ---- Step state ----
@@ -271,6 +275,42 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
         setEnforceIslandOnly(true);
     }, [hasIslandSelection]);
 
+    // ---- Prefill from URL ----
+    useEffect(() => {
+        const raw = searchParams.get('prefill');
+        if (!raw) return;
+        const data = decodeTripPrefill(raw);
+        if (!data) return;
+        if (data.countries?.length) setSelectedCountries(data.countries);
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.budget) setBudget(data.budget);
+        if (data.pace) setPace(data.pace);
+        if (data.cities) setSpecificCities(data.cities);
+        if (data.notes) setNotes(data.notes);
+        if (typeof data.roundTrip === 'boolean') setIsRoundTrip(data.roundTrip);
+        if (data.styles) setSelectedStyles(data.styles);
+        if (data.vibes) setSelectedVibes(data.vibes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ---- Build variant URL with current state ----
+    const buildVariantUrl = useCallback((path: string) => {
+        const data: TripPrefillData = {};
+        if (selectedCountries.length) data.countries = selectedCountries;
+        if (startDate !== defaultDates.startDate) data.startDate = startDate;
+        if (endDate !== defaultDates.endDate) data.endDate = endDate;
+        if (budget !== 'Medium') data.budget = budget;
+        if (pace !== 'Balanced') data.pace = pace;
+        if (specificCities) data.cities = specificCities;
+        if (notes) data.notes = notes;
+        if (!isRoundTrip) data.roundTrip = false;
+        if (selectedStyles.length) data.styles = selectedStyles;
+        if (selectedVibes.length) data.vibes = selectedVibes;
+        if (Object.keys(data).length === 0) return path;
+        return `${path}?prefill=${encodeTripPrefill(data)}`;
+    }, [selectedCountries, startDate, endDate, budget, pace, specificCities, notes, isRoundTrip, selectedStyles, selectedVibes, defaultDates]);
+
     // ---- Step navigation ----
     const goToStep = (step: number, direction?: 'forward' | 'back') => {
         if (step < 1 || step > TOTAL_STEPS || step === currentStep) return;
@@ -287,6 +327,10 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
     const goBack = () => goToStep(currentStep - 1, 'back');
 
     // ---- Country helpers ----
+    const setCountriesFromString = useCallback((value: string) => {
+        setSelectedCountries(value ? value.split(',').map((s) => resolveDestinationName(s.trim())).filter(Boolean) : []);
+    }, []);
+
     const addCountry = useCallback((name: string) => {
         const resolved = resolveDestinationName(name);
         setSelectedCountries((prev) => (prev.includes(resolved) ? prev : [...prev, resolved]));
@@ -359,6 +403,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                 roundTrip: isRoundTrip,
                 totalDays: duration,
                 notes: [notes, specificCities ? `Must visit: ${specificCities}` : ''].filter(Boolean).join('. '),
+                budget,
+                pace,
                 travelStyles: selectedStyles,
                 travelVibes: selectedVibes,
                 travelLogistics: [],
@@ -449,9 +495,8 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         <p className="text-gray-500 text-sm text-center mb-6">Pick one or more destinations for your trip.</p>
 
                         <CountrySelect
-                            selectedCountries={selectedCountries}
-                            onAdd={addCountry}
-                            onRemove={removeCountry}
+                            value={destination}
+                            onChange={setCountriesFromString}
                         />
 
                         {selectedCountries.length > 0 && (
@@ -532,8 +577,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         <DateRangePicker
                             startDate={startDate}
                             endDate={endDate}
-                            onStartDateChange={setStartDate}
-                            onEndDateChange={setEndDate}
+                            onChange={(s, e) => { setStartDate(s); setEndDate(e); }}
                         />
 
                         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
@@ -691,7 +735,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                             type="button"
                                             onClick={() => setBudget(opt)}
                                             className={[
-                                                'px-4 py-2.5 text-sm font-medium transition-colors border-r border-b sm:border-b-0 last:border-r-0',
+                                                'px-4 py-2.5 text-sm font-medium transition-colors border-r border-b sm:border-b-0 last:border-r-0 sm:flex-1 text-center',
                                                 budget === opt
                                                     ? 'bg-accent-600 text-white'
                                                     : 'bg-white text-gray-600 hover:bg-accent-50',
@@ -712,7 +756,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                             type="button"
                                             onClick={() => setPace(opt)}
                                             className={[
-                                                'px-4 py-2.5 text-sm font-medium transition-colors border-r border-b sm:border-b-0 last:border-r-0',
+                                                'px-4 py-2.5 text-sm font-medium transition-colors border-r border-b sm:border-b-0 last:border-r-0 sm:flex-1 text-center last:col-span-2 sm:last:col-span-1',
                                                 pace === opt
                                                     ? 'bg-accent-600 text-white'
                                                     : 'bg-white text-gray-600 hover:bg-accent-50',
@@ -765,12 +809,12 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         {/* Summary card */}
                         <div className="rounded-2xl border border-gray-100 bg-gray-50/80 p-5 space-y-3 mb-6">
                             <div className="flex items-center gap-2 text-sm">
-                                <Globe size={16} className="text-accent-500" />
+                                <Globe size={16} weight="duotone" className="text-accent-500" />
                                 <span className="font-semibold text-gray-900">Destinations:</span>
                                 <span className="text-gray-700">{selectedCountries.join(', ') || 'None'}</span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <CalendarBlank size={16} className="text-accent-500" />
+                                <CalendarBlank size={16} weight="duotone" className="text-accent-500" />
                                 <span className="font-semibold text-gray-900">Dates:</span>
                                 <span className="text-gray-700">{formatDateRange(startDate, endDate)} ({duration} days)</span>
                             </div>
@@ -781,7 +825,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 </div>
                             )}
                             <div className="flex items-center gap-2 text-sm">
-                                <Compass size={16} className="text-accent-500" />
+                                <Compass size={16} weight="duotone" className="text-accent-500" />
                                 <span className="font-semibold text-gray-900">Route:</span>
                                 <span className="text-gray-700">{isRoundTrip ? 'Round trip' : 'One way'}</span>
                             </div>
@@ -829,7 +873,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                             )}
                             {notes && (
                                 <div className="flex items-start gap-2 text-sm">
-                                    <AlignLeft size={16} className="text-accent-500 shrink-0 mt-0.5" />
+                                    <AlignLeft size={16} weight="duotone" className="text-accent-500 shrink-0 mt-0.5" />
                                     <span className="text-gray-700">{notes}</span>
                                 </div>
                             )}
@@ -838,7 +882,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                         {/* Error */}
                         {generationError && (
                             <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 mb-4">
-                                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                                <AlertTriangle size={16} weight="duotone" className="shrink-0 mt-0.5" />
                                 <span>{generationError}</span>
                             </div>
                         )}
@@ -853,7 +897,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0 || isGenerating}
                                 className="flex items-center gap-2 rounded-2xl bg-accent-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-accent-200/50 hover:bg-accent-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Sparkles size={16} weight="fill" />
+                                <Sparkles size={16} weight="duotone" />
                                 Generate Trip
                             </button>
                             <button
@@ -862,7 +906,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                 disabled={selectedCountries.length === 0}
                                 className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-600 hover:border-accent-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <FilePlus size={16} />
+                                <FilePlus size={16} weight="duotone" />
                                 Create Blank
                             </button>
                         </div>
@@ -896,6 +940,15 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
             </div>
 
             <div className="relative z-10 flex-1 flex flex-col items-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
+                <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
+                    <span>Variants:</span>
+                    <Link to={buildVariantUrl('/create-trip/v1')} className="underline hover:text-accent-600 transition-colors">V1 Polished Card</Link>
+                    <Link to={buildVariantUrl('/create-trip/v2')} className="underline hover:text-accent-600 transition-colors">V2 Split-Screen</Link>
+                    <span className="font-medium text-accent-600">V3</span>
+                    <span className="text-gray-300">|</span>
+                    <Link to={buildVariantUrl('/create-trip')} className="underline hover:text-accent-600 transition-colors">Main</Link>
+                </div>
+
                 {/* Step dots */}
                 <StepDots
                     currentStep={currentStep}

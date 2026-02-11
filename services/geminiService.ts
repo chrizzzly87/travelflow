@@ -165,6 +165,8 @@ export interface WizardGenerateOptions {
     roundTrip?: boolean;
     totalDays?: number;
     notes?: string;
+    budget?: string;
+    pace?: string;
     travelStyles?: string[];
     travelVibes?: string[];
     travelLogistics?: string[];
@@ -451,6 +453,12 @@ export const generateWizardItinerary = async (options: WizardGenerateOptions): P
     }
     if (options.shoulderMonths && options.shoulderMonths.length > 0) {
         detailedPrompt += `Shoulder backup months: ${options.shoulderMonths.join(', ')}. `;
+    }
+    if (options.budget) {
+        detailedPrompt += `Budget level: ${options.budget}. Tailor accommodation, dining, and activity suggestions to this budget tier. `;
+    }
+    if (options.pace) {
+        detailedPrompt += `Travel pace: ${options.pace}. Adjust the number of activities per day and free time accordingly. `;
     }
     if (options.notes && options.notes.trim()) {
         detailedPrompt += `Additional user notes: ${options.notes.trim()}. `;
