@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/productLimits';
 
 interface PricingTier {
     name: string;
@@ -36,6 +37,7 @@ const tiers: PricingTier[] = [
             'Drag, edit, and share in seconds',
             'Up to 5 saved trips',
             'Clean print-ready itineraries',
+            'Share via link',
         ],
         cta: 'Get Started',
         ctaLink: '/create-trip',
@@ -159,6 +161,13 @@ export const PricingPage: React.FC = () => {
                 </div>
 
                 <div className="mx-auto mt-16 max-w-2xl text-center">
+                    <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
+                        <p className="font-semibold text-slate-800">Anonymous access limits</p>
+                        <p className="mt-1">
+                            Anonymous users can keep up to <strong>{ANONYMOUS_TRIP_LIMIT}</strong> active trips at a time.
+                            Each anonymous trip stays editable for <strong>{ANONYMOUS_TRIP_EXPIRATION_DAYS} days</strong>, then becomes locked until account activation.
+                        </p>
+                    </div>
                     <p className="text-sm text-slate-400">
                         Start free today. Paid plans will roll out with advanced account and collaboration features.
                     </p>

@@ -25,6 +25,8 @@ import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { PricingPage } from './pages/PricingPage';
+import { FaqPage } from './pages/FaqPage';
+import { ShareUnavailablePage } from './pages/ShareUnavailablePage';
 import { CreateTripClassicLabPage } from './pages/CreateTripClassicLabPage';
 import { CreateTripSplitWorkspaceLabPage } from './pages/CreateTripSplitWorkspaceLabPage';
 import { CreateTripJourneyArchitectLabPage } from './pages/CreateTripJourneyArchitectLabPage';
@@ -32,13 +34,36 @@ import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
-import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import { DB_ENABLED, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbUpsertUserSettings, ensureDbSession } from './services/dbService';
+import { buildCreateTripUrl, buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
+import {
+    DB_ENABLED,
+    dbCanCreateTrip,
+    dbCreateTripVersion,
+    dbGetSharedTrip,
+    dbGetSharedTripVersion,
+    dbGetTrip,
+    dbGetTripVersion,
+    dbUpdateSharedTrip,
+    dbUpsertTrip,
+    dbUpsertUserSettings,
+    ensureDbSession,
+    isSimulatedLoggedIn,
+    toggleSimulatedLogin,
+} from './services/dbService';
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { OnPageDebugger } from './components/OnPageDebugger';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
+import { buildTripExpiryIso } from './config/productLimits';
+import { getTripLifecycleState } from './config/paywall';
+import { TRIP_FACTORIES } from './data/exampleTripTemplates';
+import { getExampleTripCardByTemplateId } from './data/exampleTripCards';
+
+type AppDebugWindow = Window & typeof globalThis & {
+    toggleSimulatedLogin?: (force?: boolean) => boolean;
+    getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
+};
 
 /** Scroll to top on route change */
 const ScrollToTop: React.FC = () => {
@@ -284,7 +309,7 @@ const SharedTripLoader = ({
 
         const load = async () => {
             if (!DB_ENABLED) {
-                navigate('/create-trip', { replace: true });
+                navigate('/share-unavailable', { replace: true });
                 return;
             }
 
@@ -294,7 +319,11 @@ const SharedTripLoader = ({
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
-                navigate('/create-trip', { replace: true });
+                navigate('/share-unavailable', { replace: true });
+                return;
+            }
+            if (getTripLifecycleState(shared.trip) !== 'active') {
+                navigate('/share-unavailable', { replace: true });
                 return;
             }
 
@@ -375,17 +404,29 @@ const SharedTripLoader = ({
 
     const handleCopyTrip = async () => {
         if (!trip) return;
+        if (DB_ENABLED) {
+            const limit = await dbCanCreateTrip();
+            if (!limit.allowCreate) {
+                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                navigate('/pricing');
+                return;
+            }
+        }
         let resolvedSourceShareVersionId = sourceShareVersionId;
         if (!resolvedSourceShareVersionId && token && DB_ENABLED) {
             const sharedNow = await dbGetSharedTrip(token);
             resolvedSourceShareVersionId = sharedNow?.latestVersionId ?? null;
         }
+        const now = Date.now();
         const cloned: ITrip = {
             ...trip,
             id: generateTripId(),
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
             isFavorite: false,
+            status: 'active',
+            tripExpiresAt: buildTripExpiryIso(now),
+            sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
             forkedFromShareVersionId: resolvedSourceShareVersionId || undefined,
@@ -439,6 +480,185 @@ const SharedTripLoader = ({
     );
 };
 
+const ExampleTripLoader = ({
+    trip,
+    onTripLoaded,
+    setIsManagerOpen,
+    setIsSettingsOpen,
+    appLanguage,
+    onViewSettingsChange,
+}: {
+    trip: ITrip | null,
+    onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
+    setIsManagerOpen: (o: boolean) => void,
+    setIsSettingsOpen: (o: boolean) => void,
+    appLanguage: AppLanguage,
+    onViewSettingsChange: (settings: IViewSettings) => void,
+}) => {
+    const { templateId } = useParams();
+    const navigate = useNavigate();
+    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
+    const trackedTemplateRef = useRef<string | null>(null);
+    const templateCard = useMemo(() => {
+        if (!templateId) return null;
+        return getExampleTripCardByTemplateId(templateId) || null;
+    }, [templateId]);
+    const templateCountries = useMemo(
+        () => templateCard?.countries?.map((country) => country.name).filter(Boolean) || [],
+        [templateCard]
+    );
+
+    useEffect(() => {
+        if (!templateId) {
+            navigate('/', { replace: true });
+            return;
+        }
+
+        const factory = TRIP_FACTORIES[templateId];
+        if (!factory) {
+            navigate('/', { replace: true });
+            return;
+        }
+
+        const nowMs = Date.now();
+        const generated = factory(new Date(nowMs).toISOString());
+        const resolvedView: IViewSettings = {
+            layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
+            timelineView: generated.defaultView?.timelineView ?? 'horizontal',
+            mapStyle: generated.defaultView?.mapStyle ?? 'standard',
+            zoomLevel: generated.defaultView?.zoomLevel ?? 1,
+            routeMode: generated.defaultView?.routeMode,
+            showCityNames: generated.defaultView?.showCityNames,
+            sidebarWidth: generated.defaultView?.sidebarWidth,
+            timelineHeight: generated.defaultView?.timelineHeight,
+            destinationInfoExpanded: false,
+        };
+        const prepared: ITrip = {
+            ...generated,
+            createdAt: nowMs,
+            updatedAt: nowMs,
+            isFavorite: false,
+            isExample: true,
+            exampleTemplateId: templateId,
+            exampleTemplateCountries: templateCountries,
+            sourceKind: 'example',
+            defaultView: resolvedView,
+        };
+
+        setViewSettings(resolvedView);
+        onTripLoaded(prepared, resolvedView);
+
+        if (trackedTemplateRef.current !== templateId) {
+            trackedTemplateRef.current = templateId;
+            trackEvent('example_trip__open', {
+                template: templateId,
+                country_count: templateCountries.length,
+            });
+        }
+    }, [templateCountries, templateId, navigate, onTripLoaded]);
+
+    const handleCopyExampleTrip = async () => {
+        if (!trip || !templateId) return;
+        if (DB_ENABLED) {
+            const limit = await dbCanCreateTrip();
+            if (!limit.allowCreate) {
+                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                navigate('/pricing');
+                return;
+            }
+        }
+        const now = Date.now();
+        const cloned: ITrip = {
+            ...trip,
+            id: generateTripId(),
+            createdAt: now,
+            updatedAt: now,
+            isFavorite: false,
+            isExample: false,
+            status: 'active',
+            tripExpiresAt: buildTripExpiryIso(now),
+            sourceKind: 'duplicate_trip',
+            sourceTemplateId: templateId,
+            exampleTemplateId: undefined,
+            exampleTemplateCountries: undefined,
+            forkedFromExampleTemplateId: templateId,
+        };
+
+        if (typeof window !== 'undefined') {
+            try {
+                window.sessionStorage.setItem('tf_trip_copy_notice', JSON.stringify({
+                    tripId: cloned.id,
+                    sourceTripId: trip.id,
+                    sourceTitle: trip.title,
+                    sourceShareToken: null,
+                    sourceShareVersionId: null,
+                    createdAt: Date.now(),
+                }));
+            } catch {
+                // ignore storage issues
+            }
+        }
+
+        saveTrip(cloned);
+        trackEvent('example_trip__banner--copy_trip', {
+            template: templateId,
+            country_count: templateCountries.length,
+        });
+
+        if (DB_ENABLED) {
+            await ensureDbSession();
+            await dbUpsertTrip(cloned, viewSettings);
+            await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
+        }
+
+        navigate(buildTripUrl(cloned.id));
+    };
+
+    const handleCreateSimilarTrip = () => {
+        if (!templateId) return;
+        const url = buildCreateTripUrl({
+            countries: templateCountries,
+            meta: {
+                source: 'example_trip',
+                label: templateCard?.title || 'Example trip',
+                templateId,
+            },
+        });
+        trackEvent('example_trip__banner--create_similar', {
+            template: templateId,
+            country_count: templateCountries.length,
+        });
+        navigate(url);
+    };
+
+    if (!trip || !trip.isExample) return null;
+
+    return (
+        <TripView
+            trip={trip}
+            initialViewSettings={viewSettings ?? trip.defaultView}
+            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+            onViewSettingsChange={(settings) => {
+                setViewSettings(settings);
+                onViewSettingsChange(settings);
+            }}
+            onOpenManager={() => setIsManagerOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            appLanguage={appLanguage}
+            canShare={false}
+            onCopyTrip={handleCopyExampleTrip}
+            isExamplePreview
+            suppressToasts
+            suppressReleaseNotice
+            exampleTripBanner={{
+                title: templateCard?.title || trip.title,
+                countries: templateCountries,
+                onCreateSimilarTrip: handleCreateSimilarTrip,
+            }}
+        />
+    );
+};
+
 /** Thin wrapper that triggers DB sync when the create-trip page mounts. */
 const CreateTripRoute: React.FC<{
     onTripGenerated: (t: ITrip) => void;
@@ -484,6 +704,24 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         trackPageView(`${location.pathname}${location.search}`);
     }, [location.pathname, location.search]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const host = window as AppDebugWindow;
+        host.toggleSimulatedLogin = (force?: boolean) => {
+            const next = toggleSimulatedLogin(force);
+            console.info(
+                `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
+            );
+            return next;
+        };
+        host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');
+
+        return () => {
+            delete host.toggleSimulatedLogin;
+            delete host.getSimulatedLoginState;
+        };
+    }, []);
 
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;
@@ -534,33 +772,51 @@ const AppContent: React.FC = () => {
     };
 
     const handleTripGenerated = (newTrip: ITrip) => {
-        const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
-        const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
-        const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
-        trackEvent('app__trip--create', {
-            city_count: cityCount,
-            activity_count: activityCount,
-            travel_segment_count: travelSegmentCount,
-            total_item_count: newTrip.items.length,
-        });
-
-        setTrip(newTrip);
-        saveTrip(newTrip);
-        const createdTs = Date.now();
-        if (!DB_ENABLED) {
-            createLocalHistoryEntry(navigate, newTrip, undefined, 'Data: Created trip', undefined, createdTs);
-            return;
-        }
-
-        createLocalHistoryEntry(navigate, newTrip, undefined, 'Data: Created trip', undefined, createdTs);
-
         const create = async () => {
+            if (DB_ENABLED) {
+                const limit = await dbCanCreateTrip();
+                if (!limit.allowCreate) {
+                    window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                    navigate('/pricing');
+                    return;
+                }
+            }
+
+            const now = Date.now();
+            const preparedTrip: ITrip = {
+                ...newTrip,
+                createdAt: typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now,
+                updatedAt: now,
+                status: 'active',
+                tripExpiresAt: newTrip.tripExpiresAt || buildTripExpiryIso(now),
+                sourceKind: newTrip.sourceKind || 'created',
+            };
+            const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
+            const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
+            const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
+            trackEvent('app__trip--create', {
+                city_count: cityCount,
+                activity_count: activityCount,
+                travel_segment_count: travelSegmentCount,
+                total_item_count: newTrip.items.length,
+            });
+
+            setTrip(preparedTrip);
+            saveTrip(preparedTrip);
+            const createdTs = Date.now();
+            if (!DB_ENABLED) {
+                createLocalHistoryEntry(navigate, preparedTrip, undefined, 'Data: Created trip', undefined, createdTs);
+                return;
+            }
+
+            createLocalHistoryEntry(navigate, preparedTrip, undefined, 'Data: Created trip', undefined, createdTs);
             const sessionId = await ensureDbSession();
             if (!sessionId) return;
-            const upserted = await dbUpsertTrip(newTrip, undefined);
-            const versionId = await dbCreateTripVersion(newTrip, undefined, 'Data: Created trip');
+            const upserted = await dbUpsertTrip(preparedTrip, undefined);
+            const versionId = await dbCreateTripVersion(preparedTrip, undefined, 'Data: Created trip');
             if (!upserted || !versionId) return;
         };
+
         void create();
     };
 
@@ -628,6 +884,8 @@ const AppContent: React.FC = () => {
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/share-unavailable" element={<ShareUnavailablePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/imprint" element={<ImprintPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
@@ -649,6 +907,19 @@ const AppContent: React.FC = () => {
                             onLanguageLoaded={setAppLanguage}
                         />
                     } 
+                />
+                <Route
+                    path="/example/:templateId"
+                    element={
+                        <ExampleTripLoader
+                            trip={trip}
+                            onTripLoaded={setTrip}
+                            setIsManagerOpen={setIsManagerOpen}
+                            setIsSettingsOpen={setIsSettingsOpen}
+                            appLanguage={appLanguage}
+                            onViewSettingsChange={handleViewSettingsChange}
+                        />
+                    }
                 />
                 <Route
                     path="/s/:token"

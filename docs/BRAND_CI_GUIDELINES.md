@@ -1,0 +1,36 @@
+# TravelFlow Brand And UI Guidelines
+
+Use this file as the source of truth for new UI components, banners, and marketing-facing in-app surfaces.
+
+## Brand Naming
+- Product name is `TravelFlow` (single word, capital `T` + `F`).
+- Do not introduce alternative product spellings in UI copy.
+
+## Color System
+- Accent color must use existing tokens from `index.css` (`--tf-accent-*` / `accent-*` classes).
+- Primary actions use `accent-600` background with `accent-700` hover.
+- Secondary actions use white/neutral backgrounds with `accent-200` borders and `accent-700` text.
+- Avoid adding one-off hex values when an existing accent token is available.
+
+## Icon Rules
+- Preferred icon family: `@phosphor-icons/react`.
+- Use `weight="duotone"` for feature communication surfaces (banners, notices, CTA buttons).
+- Keep icon proportions natural; do not squash/stretch icons with mismatched width/height containers.
+- Icon-only buttons must include `aria-label` and should expose a tooltip on desktop.
+
+## Component Rules
+- Preferred component patterns: `shadcn` style primitives in `components/ui` and matching utility classes.
+- Button radius: `rounded-md` for CTA controls unless an existing component already defines another radius.
+- Banner cards: subtle border, soft blur background, clear visual hierarchy (eyebrow, headline, support text, CTA row).
+- In floating banners and cards with multiple CTAs, right-align actions (`justify-end`) unless a page pattern explicitly differs.
+
+## Accessibility
+- Maintain visible keyboard focus (`focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2`).
+- Keep text contrast high enough against backgrounds (avoid low-contrast gray-on-gray pairs).
+- Add `aria-label` to icon-only controls and ensure semantic button/link usage.
+- Ensure touch targets are practical on mobile (target ~40px+ in height for primary controls).
+
+## Mobile Optimization
+- Respect safe areas for fixed UI (`env(safe-area-inset-bottom)` for bottom banners).
+- Prevent floating surfaces from blocking key interactions; keep copy concise and CTA row compact.
+- Validate layout on both narrow mobile and desktop widths before shipping.

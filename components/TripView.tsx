@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
@@ -20,9 +21,18 @@ import {
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
-import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbUpsertTrip, ensureDbSession } from '../services/dbService';
+import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbRevokeTripShares, dbSetTripSharingEnabled, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
+import {
+    buildPaywalledTripDisplay,
+    getDebugTripExpiredOverride,
+    getTripLifecycleState,
+    setDebugTripExpiredOverride,
+    shouldShowTripPaywall,
+    TRIP_EXPIRY_DEBUG_EVENT,
+} from '../config/paywall';
+import { trackEvent } from '../services/analyticsService';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -31,6 +41,10 @@ interface ToastState {
     title: string;
     message: string;
 }
+
+type TripDebugWindow = Window & typeof globalThis & {
+    toggleExpired?: (force?: boolean) => boolean;
+};
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
 
@@ -204,24 +218,41 @@ interface TripViewProps {
         latestUrl: string;
     };
     onCopyTrip?: () => void;
+    isExamplePreview?: boolean;
+    suppressToasts?: boolean;
+    suppressReleaseNotice?: boolean;
+    exampleTripBanner?: {
+        title: string;
+        countries: string[];
+        onCreateSimilarTrip?: () => void;
+    };
 }
 
-declare global {
-    interface Window {
-        toggleExpired?: (next?: boolean) => boolean;
-    }
-}
-
-export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommitState, onOpenManager, onOpenSettings, initialViewSettings, onViewSettingsChange, initialMapFocusQuery, appLanguage = 'en', readOnly = false, canShare = true, shareStatus, shareSnapshotMeta, onCopyTrip }) => {
+export const TripView: React.FC<TripViewProps> = ({
+    trip,
+    onUpdateTrip,
+    onCommitState,
+    onOpenManager,
+    onOpenSettings,
+    initialViewSettings,
+    onViewSettingsChange,
+    initialMapFocusQuery,
+    appLanguage = 'en',
+    readOnly = false,
+    canShare = true,
+    shareStatus,
+    shareSnapshotMeta,
+    onCopyTrip,
+    isExamplePreview = false,
+    suppressToasts = false,
+    suppressReleaseNotice = false,
+    exampleTripBanner,
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const tripRef = useRef(trip);
     tripRef.current = trip;
-    const [debugTripExpired, setDebugTripExpired] = useState(false);
-    const debugTripExpiredRef = useRef(debugTripExpired);
-    const canEdit = !readOnly && !debugTripExpired;
-    const effectiveReadOnly = !canEdit;
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
     const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
@@ -236,7 +267,46 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
     }, [latestInAppRelease]);
     const latestReleaseGroups = useMemo(() => groupReleaseItemsByType(latestReleaseItems), [latestReleaseItems]);
-    const showReleaseNotice = !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
+    const showReleaseNotice = !suppressReleaseNotice && !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
+    const [nowMs, setNowMs] = useState(() => Date.now());
+    const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
+    const tripExpiresAtMs = useMemo(() => {
+        if (!trip.tripExpiresAt) return null;
+        const parsed = Date.parse(trip.tripExpiresAt);
+        return Number.isFinite(parsed) ? parsed : null;
+    }, [trip.tripExpiresAt]);
+    const lifecycleState = useMemo(
+        () => getTripLifecycleState(trip, { nowMs, expiredOverride: expiredPreviewOverride }),
+        [trip, nowMs, expiredPreviewOverride]
+    );
+    const isTripExpired = lifecycleState === 'expired';
+    const isTripLockedByExpiry = useMemo(
+        () => shouldShowTripPaywall(trip, { lifecycleState }),
+        [trip, lifecycleState]
+    );
+    const canEdit = !readOnly && !isTripLockedByExpiry;
+    const displayTrip = useMemo(
+        () => (isTripLockedByExpiry ? buildPaywalledTripDisplay(trip) : trip),
+        [isTripLockedByExpiry, trip]
+    );
+    const expirationLabel = useMemo(() => {
+        if (!tripExpiresAtMs) return null;
+        const date = new Date(tripExpiresAtMs);
+        return date.toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        });
+    }, [tripExpiresAtMs]);
+    const expirationRelativeLabel = useMemo(() => {
+        if (!tripExpiresAtMs) return null;
+        const diffMs = tripExpiresAtMs - nowMs;
+        const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+        if (diffDays > 1) return `Expires in ${diffDays} days`;
+        if (diffDays === 1) return 'Expires tomorrow';
+        if (diffDays === 0) return 'Expires today';
+        return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
+    }, [tripExpiresAtMs, nowMs]);
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -296,15 +366,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
        }
        return true;
     });
-    const [destinationInfoExpanded, setDestinationInfoExpanded] = useState<boolean>(() => {
-       if (typeof initialViewSettings?.destinationInfoExpanded === 'boolean') return initialViewSettings.destinationInfoExpanded;
-       if (typeof window !== 'undefined') {
-           const stored = localStorage.getItem('tf_country_info_expanded');
-           if (stored !== null) return stored === 'true';
-       }
-       return true;
-    });
-
     // Layout State
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
         if (initialViewSettings) return initialViewSettings.layoutMode;
@@ -365,6 +426,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const pinchStartZoomRef = useRef<number | null>(null);
 
     const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
+        if (suppressToasts) return;
         setToastState({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
@@ -372,7 +434,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         });
         if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
         toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
-    }, []);
+    }, [suppressToasts]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -402,10 +464,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [trip.id, showToast]);
 
     const requireEdit = useCallback(() => {
+        if (isTripLockedByExpiry) {
+            showToast('Trip expired. Activate with an account to edit again.', { tone: 'neutral', title: 'Expired trip' });
+            return false;
+        }
         if (canEdit) return true;
         showToast('View-only link. Copy the trip to edit.', { tone: 'neutral', title: 'View only' });
         return false;
-    }, [canEdit, showToast]);
+    }, [canEdit, isTripLockedByExpiry, showToast]);
 
     const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
         if (!requireEdit()) return;
@@ -419,8 +485,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [showToast]);
 
     const refreshHistory = useCallback(() => {
+        if (isExamplePreview) {
+            setHistoryEntries([]);
+            return;
+        }
         setHistoryEntries(getHistoryEntries(trip.id));
-    }, [trip.id]);
+    }, [isExamplePreview, trip.id]);
 
     const baseUrl = useMemo(() => {
         if (location.pathname.startsWith('/trip/')) {
@@ -524,6 +594,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const [shareMode, setShareMode] = useState<ShareMode>('view');
     const [shareUrlsByMode, setShareUrlsByMode] = useState<Partial<Record<ShareMode, string>>>(() => readStoredShareLinks(trip.id));
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+    const lastSyncedSharingLockRef = useRef<boolean | null>(null);
 
     // Persistence
     useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
@@ -531,7 +602,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
     useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
     useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
-    useEffect(() => { localStorage.setItem('tf_country_info_expanded', String(destinationInfoExpanded)); }, [destinationInfoExpanded]);
     useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
 
     // Update URL with View State
@@ -543,7 +613,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 mapStyle,
                 routeMode,
                 showCityNames,
-                destinationInfoExpanded,
                 zoomLevel,
                 sidebarWidth,
                 timelineHeight
@@ -567,7 +636,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             }
         }, 500);
         return () => clearTimeout(timeoutId);
-    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, destinationInfoExpanded, onViewSettingsChange]);
+    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -575,11 +644,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         mapStyle,
         routeMode,
         showCityNames,
-        destinationInfoExpanded,
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, destinationInfoExpanded, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useEffect(() => {
         if (!initialViewSettings) return;
@@ -604,9 +672,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
         setShowCityNames(desiredShowCityNames);
-        if (typeof initialViewSettings.destinationInfoExpanded === 'boolean') {
-            setDestinationInfoExpanded(initialViewSettings.destinationInfoExpanded);
-        }
 
         prevViewRef.current = initialViewSettings;
     }, [initialViewSettings, currentViewSettings]);
@@ -630,6 +695,57 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
     }, [trip.id, shareUrlsByMode]);
 
+    useEffect(() => {
+        lastSyncedSharingLockRef.current = null;
+    }, [trip.id]);
+
+    useEffect(() => {
+        if (!canShare) return;
+        if (!DB_ENABLED) {
+            if (isTripLockedByExpiry) {
+                setIsShareOpen(false);
+                setShareUrlsByMode({});
+                if (typeof window !== 'undefined') {
+                    try {
+                        window.localStorage.removeItem(getShareLinksStorageKey(trip.id));
+                    } catch {
+                        // ignore storage issues
+                    }
+                }
+            }
+            return;
+        }
+
+        if (lastSyncedSharingLockRef.current === isTripLockedByExpiry) return;
+        lastSyncedSharingLockRef.current = isTripLockedByExpiry;
+
+        let canceled = false;
+        void (async () => {
+            await ensureDbSession();
+            if (canceled) return;
+
+            await dbSetTripSharingEnabled(trip.id, !isTripLockedByExpiry);
+            if (canceled) return;
+
+            if (isTripLockedByExpiry) {
+                setIsShareOpen(false);
+                setShareUrlsByMode({});
+                if (typeof window !== 'undefined') {
+                    try {
+                        window.localStorage.removeItem(getShareLinksStorageKey(trip.id));
+                    } catch {
+                        // ignore storage issues
+                    }
+                }
+                await dbRevokeTripShares(trip.id);
+            }
+        })();
+
+        return () => {
+            canceled = true;
+        };
+    }, [canShare, isTripLockedByExpiry, trip.id]);
+
     const currentUrl = location.pathname + location.search;
 
     useEffect(() => {
@@ -637,30 +753,27 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [currentUrl]);
 
     useEffect(() => {
-        debugTripExpiredRef.current = debugTripExpired;
-    }, [debugTripExpired]);
-
-    useEffect(() => {
-        if (!isTripDetailRoute) {
-            setDebugTripExpired(false);
-            debugTripExpiredRef.current = false;
-            return;
-        }
-        setDebugTripExpired(false);
-        debugTripExpiredRef.current = false;
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-                detail: { available: true, expired: false },
-            }));
-        }
-    }, [trip.id, isTripDetailRoute]);
+        setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
+    }, [trip.id]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+        const syncOverride = (event: Event) => {
+            const detail = (event as CustomEvent<{ tripId?: string }>).detail;
+            if (detail?.tripId && detail.tripId !== trip.id) return;
+            setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
+        };
+        window.addEventListener(TRIP_EXPIRY_DEBUG_EVENT, syncOverride as EventListener);
+        return () => window.removeEventListener(TRIP_EXPIRY_DEBUG_EVENT, syncOverride as EventListener);
+    }, [trip.id]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const host = window as TripDebugWindow;
 
         if (!isTripDetailRoute) {
-            if (window.toggleExpired) {
-                delete window.toggleExpired;
+            if (host.toggleExpired) {
+                delete host.toggleExpired;
             }
             window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
                 detail: { available: false, expired: false },
@@ -668,30 +781,40 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             return;
         }
 
-        const toggleExpired = (next?: boolean): boolean => {
-            const resolved = typeof next === 'boolean' ? next : !debugTripExpiredRef.current;
-            debugTripExpiredRef.current = resolved;
-            setDebugTripExpired(resolved);
+        const toggleExpired = (force?: boolean) => {
+            let nextExpired = false;
+            setExpiredPreviewOverride((prev) => {
+                const baseExpired = typeof prev === 'boolean' ? prev : isTripExpired;
+                nextExpired = typeof force === 'boolean' ? force : !baseExpired;
+                setDebugTripExpiredOverride(trip.id, nextExpired);
+                return nextExpired;
+            });
             window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-                detail: { available: true, expired: resolved },
+                detail: { available: true, expired: nextExpired },
             }));
-            return resolved;
+            console.info(
+                `[TravelFlow] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
+            );
+            return nextExpired;
         };
 
-        window.toggleExpired = toggleExpired;
+        host.toggleExpired = toggleExpired;
         window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-            detail: { available: true, expired: debugTripExpiredRef.current },
+            detail: {
+                available: true,
+                expired: typeof expiredPreviewOverride === 'boolean' ? expiredPreviewOverride : isTripExpired,
+            },
         }));
 
         return () => {
-            if (window.toggleExpired === toggleExpired) {
-                delete window.toggleExpired;
+            if (host.toggleExpired === toggleExpired) {
+                delete host.toggleExpired;
             }
             window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
                 detail: { available: false, expired: false },
             }));
         };
-    }, [isTripDetailRoute]);
+    }, [trip.id, isTripExpired, isTripDetailRoute, expiredPreviewOverride]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -702,6 +825,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        if (!tripExpiresAtMs) return;
+        const interval = window.setInterval(() => setNowMs(Date.now()), 60_000);
+        return () => window.clearInterval(interval);
+    }, [tripExpiresAtMs]);
 
     useEffect(() => {
         if (isMobileViewport) return;
@@ -803,6 +932,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const handleShare = useCallback(async () => {
         if (!canShare) return;
+        if (isTripLockedByExpiry) {
+            showToast('Sharing is unavailable while this trip is expired.', { tone: 'neutral', title: 'Share disabled' });
+            return;
+        }
         if (!DB_ENABLED) {
             const url = window.location.href;
             try {
@@ -828,7 +961,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 setShareUrlsByMode(prev => ({ ...prev, ...mapped }));
             }
         })();
-    }, [canShare, copyToClipboard, showToast, trip.id]);
+    }, [canShare, copyToClipboard, isTripLockedByExpiry, showToast, trip.id]);
 
     const handleCopyShareLink = useCallback(async () => {
         if (!activeShareUrl) return;
@@ -843,6 +976,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const handleGenerateShare = useCallback(async () => {
         if (!DB_ENABLED) return;
+        if (isTripLockedByExpiry) {
+            showToast('Sharing is unavailable while this trip is expired.', { tone: 'neutral', title: 'Share disabled' });
+            return;
+        }
         setIsGeneratingShare(true);
         try {
             const sessionId = await ensureDbSession();
@@ -873,7 +1010,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         } finally {
             setIsGeneratingShare(false);
         }
-    }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings]);
+    }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings, isTripLockedByExpiry]);
 
     const formatHistoryTime = useCallback((ts: number) => {
         const diffMs = Date.now() - ts;
@@ -891,6 +1028,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, []);
 
     const displayHistoryEntries = useMemo(() => {
+        if (isExamplePreview) return [];
         if (showAllHistory) return resolvedHistoryEntries;
         const seen = new Set<string>();
         return resolvedHistoryEntries.filter(entry => {
@@ -898,13 +1036,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
             seen.add(entry.label);
             return true;
         });
-    }, [resolvedHistoryEntries, showAllHistory]);
+    }, [isExamplePreview, resolvedHistoryEntries, showAllHistory]);
 
     useEffect(() => {
         if (isHistoryOpen) refreshHistory();
     }, [isHistoryOpen, refreshHistory]);
 
     useEffect(() => {
+        if (isExamplePreview) return;
         const handleHistoryUpdate = (event: Event) => {
             const detail = (event as CustomEvent).detail as { tripId?: string };
             if (!detail || detail.tripId !== trip.id) return;
@@ -913,7 +1052,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (typeof window === 'undefined') return;
         window.addEventListener('tf:history', handleHistoryUpdate);
         return () => window.removeEventListener('tf:history', handleHistoryUpdate);
-    }, [trip.id, refreshHistory]);
+    }, [isExamplePreview, trip.id, refreshHistory]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -935,6 +1074,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     }, [isHistoryOpen, isTripInfoOpen, isMobileMapExpanded]);
 
     useEffect(() => {
+        if (isExamplePreview) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement | null;
             const isEditable = !!target && (
@@ -957,9 +1097,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [trip.id, navigateHistory]);
+    }, [trip.id, navigateHistory, isExamplePreview]);
 
     useEffect(() => {
+        if (isExamplePreview) return;
         const handlePopState = () => {
             const nextPath = window.location.pathname;
             const nextUrl = nextPath + window.location.search;
@@ -989,11 +1130,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         };
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [trip.id, showToast, navigate, getHistoryIndex]);
+    }, [trip.id, showToast, navigate, getHistoryIndex, isExamplePreview]);
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
         if (!onCommitState) return;
         if (!canEdit) return;
+        if (isExamplePreview) return;
         if (suppressCommitRef.current) {
             suppressCommitRef.current = false;
             debugHistory('Suppressed commit due to popstate');
@@ -1021,7 +1163,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                 if (typeof hook === 'function') hook({ label, ts: Date.now() });
             }
         }, commitDelay);
-    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory, canEdit]);
+    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory, canEdit, isExamplePreview]);
 
     useEffect(() => {
         const prev = prevViewRef.current;
@@ -1039,11 +1181,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
-        if (prev.destinationInfoExpanded !== destinationInfoExpanded) {
-            const prevState = (prev.destinationInfoExpanded ?? true) ? 'open' : 'closed';
-            const nextState = destinationInfoExpanded ? 'open' : 'closed';
-            changes.push(`Destination info: ${prevState} → ${nextState}`);
-        }
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
@@ -1057,7 +1194,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, destinationInfoExpanded, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const handleToggleFavorite = useCallback(() => {
         if (!requireEdit()) return;
@@ -1081,10 +1218,10 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     const selectedCitiesInTimeline = useMemo(() => {
         if (selectedCityIds.length === 0) return [];
         const selectedSet = new Set(selectedCityIds);
-        return trip.items
+        return displayTrip.items
             .filter(item => item.type === 'city' && selectedSet.has(item.id))
             .sort((a, b) => a.startDateOffset - b.startDateOffset);
-    }, [trip.items, selectedCityIds]);
+    }, [displayTrip.items, selectedCityIds]);
 
     const showSelectedCitiesPanel = selectedCitiesInTimeline.length > 1;
     const detailsPanelVisible = showSelectedCitiesPanel || !!selectedItemId;
@@ -1098,13 +1235,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key !== 'Escape') return;
             if (isHistoryOpen) return;
+            if (isTripInfoOpen) return;
             if (!selectedItemId && selectedCityIds.length === 0) return;
             clearSelection();
         };
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [clearSelection, selectedItemId, selectedCityIds, isHistoryOpen]);
+    }, [clearSelection, selectedItemId, selectedCityIds, isHistoryOpen, isTripInfoOpen]);
 
     const handleTimelineSelect = useCallback((id: string | null, options?: { multi?: boolean; isCity?: boolean }) => {
         if (!id) {
@@ -1738,18 +1876,23 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
     const isMobile = isMobileViewport;
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
-    const canManageTripMetadata = canEdit && !shareStatus;
+    const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
     const infoHistoryEntries = useMemo(() => {
         return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
     }, [displayHistoryEntries, showAllHistory]);
 
     const handleStartTitleEdit = useCallback(() => {
+        if (!canManageTripMetadata) return;
         if (!requireEdit()) return;
         setEditTitleValue(trip.title);
         setIsEditingTitle(true);
-    }, [requireEdit, trip.title]);
+    }, [canManageTripMetadata, requireEdit, trip.title]);
 
     const handleCommitTitleEdit = useCallback(() => {
+        if (!canManageTripMetadata) {
+            setIsEditingTitle(false);
+            return;
+        }
         const nextTitle = editTitleValue.trim();
         setIsEditingTitle(false);
 
@@ -1761,7 +1904,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
         setPendingLabel('Data: Renamed trip');
         safeUpdateTrip(updatedTrip);
         scheduleCommit(updatedTrip, currentViewSettings);
-    }, [editTitleValue, trip, requireEdit, markUserEdit, setPendingLabel, safeUpdateTrip, scheduleCommit, currentViewSettings]);
+    }, [canManageTripMetadata, editTitleValue, trip, requireEdit, markUserEdit, setPendingLabel, safeUpdateTrip, scheduleCommit, currentViewSettings]);
 
     const getPinchDistance = (touches: React.TouchList) => {
         if (touches.length < 2) return null;
@@ -1804,7 +1947,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <PrintLayout trip={trip} onClose={() => setViewMode('planner')} onUpdateTrip={handleUpdateItems} />
+                <PrintLayout
+                    trip={displayTrip}
+                    isPaywalled={isTripLockedByExpiry}
+                    onClose={() => setViewMode('planner')}
+                    onUpdateTrip={handleUpdateItems}
+                />
             </GoogleMapsLoader>
         );
     }
@@ -1844,29 +1992,18 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     />
                                 ) : (
                                     <div
-                                        className={`flex items-center gap-2 ${!isMobile ? 'group cursor-pointer' : ''}`}
-                                        onClick={!isMobile ? handleStartTitleEdit : undefined}
+                                        className={`flex items-center gap-2 ${!isMobile && canManageTripMetadata ? 'group cursor-pointer' : ''}`}
+                                        onClick={!isMobile && canManageTripMetadata ? handleStartTitleEdit : undefined}
                                     >
                                         <h1 className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md">{trip.title}</h1>
-                                        {!isMobile && <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />}
-                                    </div>
-                                )}
-                                {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
-                                {!isMobile && forkMeta && (
-                                    <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-2">
-                                        <span>{forkMeta.label}</span>
-                                        {forkMeta.url && (
-                                            <a
-                                                href={forkMeta.url}
-                                                className="text-[11px] text-accent-500 hover:underline"
-                                            >
-                                                View source
-                                            </a>
+                                        {!isMobile && canManageTripMetadata && (
+                                            <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         )}
                                     </div>
                                 )}
+                                {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
                             </div>
-                            {!isMobile && (
+                            {!isMobile && canManageTripMetadata && (
                                 <button
                                     type="button"
                                     onClick={handleToggleFavorite}
@@ -1885,6 +2022,14 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setIsTripInfoOpen(true)}
+                            className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
+                            aria-label="Trip information"
+                        >
+                            <Info size={18} />
+                        </button>
                         {!isMobile && (
                             <>
                                 <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-1">
@@ -1897,15 +2042,6 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 </button>
                             </>
                         )}
-                        {isMobile && (
-                            <button
-                                type="button"
-                                onClick={() => setIsTripInfoOpen(true)}
-                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" aria-label="Trip information"
-                            >
-                                <Info size={18} />
-                            </button>
-                        )}
                         <button
                             onClick={onOpenManager}
                             className={`flex items-center gap-2 rounded-lg font-medium ${isMobile ? 'p-2 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'p-2 text-gray-500 hover:bg-gray-100 text-sm'}`}
@@ -1917,10 +2053,26 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                         {canShare && (
                             <button
                                 onClick={handleShare}
-                                className={`bg-accent-600 text-white rounded-lg shadow-sm hover:bg-accent-700 flex items-center gap-2 text-sm font-medium ${isMobile ? 'p-2' : 'px-4 py-2'}`}
+                                disabled={isTripLockedByExpiry}
+                                title={isTripLockedByExpiry ? 'Sharing is disabled for expired trips' : undefined}
+                                className={`rounded-lg shadow-sm flex items-center gap-2 text-sm font-medium ${isMobile ? 'p-2' : 'px-4 py-2'} ${
+                                    isTripLockedByExpiry
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : 'bg-accent-600 text-white hover:bg-accent-700'
+                                }`}
                             >
                                 <Share2 size={16} />
                                 <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>Share</span>
+                            </button>
+                        )}
+                        {isMobile && (
+                            <button
+                                type="button"
+                                onClick={() => setIsTripInfoOpen(true)}
+                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
+                                aria-label="Trip information"
+                            >
+                                <Info size={18} />
                             </button>
                         )}
                     </div>
@@ -1962,16 +2114,65 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                     </div>
                 )}
 
-                {isTripDetailRoute && debugTripExpired && (
-                    <div className="px-4 sm:px-6 py-2 border-b border-rose-200 bg-rose-50 text-rose-900 text-xs flex items-center justify-between gap-3">
-                        <span>This trip is marked as expired (debug mode). Editing is disabled.</span>
-                        <button
-                            type="button"
-                            onClick={() => window.toggleExpired?.(false)}
-                            className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200"
-                        >
-                            Set active
-                        </button>
+                {(tripExpiresAtMs || isTripLockedByExpiry) && !trip.isExample && (
+                    <div
+                        className={`px-4 sm:px-6 py-2 border-b text-xs flex items-center justify-between gap-3 ${
+                            isTripLockedByExpiry
+                                ? 'border-rose-200 bg-rose-50 text-rose-900'
+                                : 'border-sky-200 bg-sky-50 text-sky-900'
+                        }`}
+                    >
+                        <span>
+                            {isTripLockedByExpiry
+                                ? `Trip preview paused${expirationLabel ? ` since ${expirationLabel}` : ''}. Reactivate to unlock full planning mode.`
+                                : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
+                        </span>
+                        {isTripLockedByExpiry && (
+                            <Link
+                                to="/login"
+                                onClick={() => trackEvent('trip_paywall__strip--activate', { trip_id: trip.id })}
+                                className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                            >
+                                Reactivate trip
+                            </Link>
+                        )}
+                    </div>
+                )}
+
+                {exampleTripBanner && (
+                    <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px]">
+                        <div className="rounded-2xl border border-accent-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-900">Explore freely. Copy when you want to keep and edit.</p>
+                            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+                                This itinerary is for illustration only and never saves changes.
+                                {exampleTripBanner.countries.length > 0 && (
+                                    <span> Country focus: {exampleTripBanner.countries.join(', ')}.</span>
+                                )}
+                            </p>
+                            <div className="mt-3 flex flex-wrap justify-end gap-2">
+                                {exampleTripBanner.onCreateSimilarTrip && (
+                                    <button
+                                        type="button"
+                                        onClick={exampleTripBanner.onCreateSimilarTrip}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        <Sparkle size={14} weight="duotone" />
+                                        Create similar trip
+                                    </button>
+                                )}
+                                {onCopyTrip && (
+                                    <button
+                                        type="button"
+                                        onClick={onCopyTrip}
+                                        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                    >
+                                        <CopySimple size={14} weight="duotone" />
+                                        Copy trip
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -1985,7 +2186,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             onClick={() => setIsMobileMapExpanded(false)}
                         />
                     )}
-                    <div className="w-full h-full">
+                    <div className={`w-full h-full ${isTripLockedByExpiry ? 'pointer-events-none select-none' : ''}`}>
                         {isMobile ? (
                             <div className="w-full h-full flex flex-col">
                                 <div
@@ -1997,12 +2198,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 >
                                     {timelineView === 'vertical' ? (
                                         <VerticalTimeline
-                                            trip={trip}
+                                            trip={displayTrip}
                                             onUpdateItems={handleUpdateItems}
                                             onSelect={handleTimelineSelect}
                                             selectedItemId={selectedItemId}
                                             selectedCityIds={selectedCityIds}
-                                            readOnly={effectiveReadOnly}
+                                            readOnly={!canEdit}
                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                             onAddActivity={handleOpenAddActivity}
                                             onForceFill={handleForceFill}
@@ -2011,12 +2212,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         />
                                     ) : (
                                         <Timeline
-                                            trip={trip}
+                                            trip={displayTrip}
                                             onUpdateItems={handleUpdateItems}
                                             onSelect={handleTimelineSelect}
                                             selectedItemId={selectedItemId}
                                             selectedCityIds={selectedCityIds}
-                                            readOnly={effectiveReadOnly}
+                                            readOnly={!canEdit}
                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                             onAddActivity={handleOpenAddActivity}
                                             onForceFill={handleForceFill}
@@ -2038,16 +2239,16 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 </div>
                                 <div className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}>
                                     <ItineraryMap
-                                        items={trip.items}
+                                        items={displayTrip.items}
                                         selectedItemId={selectedItemId}
                                         layoutMode="vertical"
                                         showLayoutControls={false}
                                         activeStyle={mapStyle}
                                         onStyleChange={setMapStyle}
                                         routeMode={routeMode}
-                                        onRouteModeChange={setRouteMode}
-                                        showCityNames={showCityNames}
-                                        onShowCityNamesChange={setShowCityNames}
+                                        onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
+                                        showCityNames={isTripLockedByExpiry ? false : showCityNames}
+                                        onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
                                         mapColorMode={mapColorMode}
                                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                         isExpanded={isMobileMapExpanded}
@@ -2056,6 +2257,7 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         onRouteMetrics={handleRouteMetrics}
                                         onRouteStatus={handleRouteStatus}
                                         fitToRouteKey={trip.id}
+                                        isPaywalled={isTripLockedByExpiry}
                                     />
                                 </div>
                             </div>
@@ -2065,24 +2267,28 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <>
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                                {trip.countryInfo && (
+                                                {displayTrip.countryInfo ? (
                                                     <div className="p-4 border-b border-gray-100 bg-white z-10">
                                                         <CountryInfo
-                                                            info={trip.countryInfo}
+                                                            info={displayTrip.countryInfo}
                                                             isExpanded={destinationInfoExpanded}
                                                             onExpandedChange={setDestinationInfoExpanded}
                                                         />
                                                     </div>
-                                                )}
+                                                ) : isTripLockedByExpiry ? (
+                                                    <div className="p-4 border-b border-gray-100 bg-white z-10 text-xs text-slate-500">
+                                                        Destination details are hidden until this trip is activated.
+                                                    </div>
+                                                ) : null}
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
                                                     {timelineView === 'vertical' ? (
                                                         <VerticalTimeline
-                                                            trip={trip}
+                                                            trip={displayTrip}
                                                             onUpdateItems={handleUpdateItems}
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2091,12 +2297,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         />
                                                     ) : (
                                                         <Timeline
-                                                            trip={trip}
+                                                            trip={displayTrip}
                                                             onUpdateItems={handleUpdateItems}
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2132,25 +2338,25 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         onApplyOrder={applySelectedCityOrder}
                                                         onReverse={handleReverseSelectedCities}
                                                         timelineView={timelineView}
-                                                        readOnly={effectiveReadOnly}
+                                                        readOnly={!canEdit}
                                                     />
                                                 ) : (
                                                     <DetailsPanel
-                                                        item={trip.items.find(i => i.id === selectedItemId) || null}
+                                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
                                                         isOpen={!!selectedItemId}
                                                         onClose={clearSelection}
                                                         onUpdate={handleUpdateItem}
                                                         onBatchUpdate={handleBatchItemUpdate}
                                                         onDelete={handleDeleteItem}
                                                         tripStartDate={trip.startDate}
-                                                        tripItems={trip.items}
+                                                        tripItems={displayTrip.items}
                                                         routeMode={routeMode}
                                                         routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
                                                         onForceFill={handleForceFill}
                                                         forceFillMode={selectedCityForceFill?.mode}
                                                         forceFillLabel={selectedCityForceFill?.label}
                                                         variant="sidebar"
-                                                        readOnly={effectiveReadOnly}
+                                                        readOnly={!canEdit}
                                                         cityColorPaletteId={cityColorPaletteId}
                                                         onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                     />
@@ -2167,22 +2373,23 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
 
                                         <div className="flex-1 h-full relative bg-gray-100 min-w-0">
                                             <ItineraryMap
-                                                items={trip.items}
+                                                items={displayTrip.items}
                                                 selectedItemId={selectedItemId}
                                                 layoutMode={layoutMode}
                                                 onLayoutChange={setLayoutMode}
                                                 activeStyle={mapStyle}
                                                 onStyleChange={setMapStyle}
                                                 routeMode={routeMode}
-                                                onRouteModeChange={setRouteMode}
-                                                showCityNames={showCityNames}
-                                                onShowCityNamesChange={setShowCityNames}
+                                                onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
+                                                showCityNames={isTripLockedByExpiry ? false : showCityNames}
+                                                onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
                                                 mapColorMode={mapColorMode}
                                                 onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
+                                                isPaywalled={isTripLockedByExpiry}
                                             />
                                         </div>
                                     </>
@@ -2190,22 +2397,23 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     <>
                                         <div className="flex-1 relative bg-gray-100 min-h-0 w-full">
                                             <ItineraryMap
-                                                items={trip.items}
+                                                items={displayTrip.items}
                                                 selectedItemId={selectedItemId}
                                                 layoutMode={layoutMode}
                                                 onLayoutChange={setLayoutMode}
                                                 activeStyle={mapStyle}
                                                 onStyleChange={setMapStyle}
                                                 routeMode={routeMode}
-                                                onRouteModeChange={setRouteMode}
-                                                showCityNames={showCityNames}
-                                                onShowCityNamesChange={setShowCityNames}
+                                                onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
+                                                showCityNames={isTripLockedByExpiry ? false : showCityNames}
+                                                onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
                                                 mapColorMode={mapColorMode}
                                                 onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
+                                                isPaywalled={isTripLockedByExpiry}
                                             />
                                         </div>
                                         <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
@@ -2216,12 +2424,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                 <div className="w-full h-full relative min-w-0">
                                                     {timelineView === 'vertical' ? (
                                                         <VerticalTimeline
-                                                            trip={trip}
+                                                            trip={displayTrip}
                                                             onUpdateItems={handleUpdateItems}
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2230,12 +2438,12 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                         />
                                                     ) : (
                                                         <Timeline
-                                                            trip={trip}
+                                                            trip={displayTrip}
                                                             onUpdateItems={handleUpdateItems}
                                                             onSelect={handleTimelineSelect}
                                                             selectedItemId={selectedItemId}
                                                             selectedCityIds={selectedCityIds}
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                             onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
@@ -2265,25 +2473,25 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                                             onApplyOrder={applySelectedCityOrder}
                                                             onReverse={handleReverseSelectedCities}
                                                             timelineView={timelineView}
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                         />
                                                     ) : (
                                                         <DetailsPanel
-                                                            item={trip.items.find(i => i.id === selectedItemId) || null}
+                                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
                                                             isOpen={!!selectedItemId}
                                                             onClose={clearSelection}
                                                             onUpdate={handleUpdateItem}
                                                             onBatchUpdate={handleBatchItemUpdate}
                                                             onDelete={handleDeleteItem}
                                                             tripStartDate={trip.startDate}
-                                                            tripItems={trip.items}
+                                                            tripItems={displayTrip.items}
                                                             routeMode={routeMode}
                                                             routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
                                                             onForceFill={handleForceFill}
                                                             forceFillMode={selectedCityForceFill?.mode}
                                                             forceFillLabel={selectedCityForceFill?.label}
                                                             variant="sidebar"
-                                                            readOnly={effectiveReadOnly}
+                                                            readOnly={!canEdit}
                                                             cityColorPaletteId={cityColorPaletteId}
                                                             onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                         />
@@ -2321,25 +2529,25 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         onApplyOrder={applySelectedCityOrder}
                                         onReverse={handleReverseSelectedCities}
                                         timelineView={timelineView}
-                                        readOnly={effectiveReadOnly}
+                                        readOnly={!canEdit}
                                     />
                                 ) : (
                                     <DetailsPanel
-                                        item={trip.items.find(i => i.id === selectedItemId) || null}
+                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
                                         isOpen={!!selectedItemId}
                                         onClose={clearSelection}
                                         onUpdate={handleUpdateItem}
                                         onBatchUpdate={handleBatchItemUpdate}
                                         onDelete={handleDeleteItem}
                                         tripStartDate={trip.startDate}
-                                        tripItems={trip.items}
+                                        tripItems={displayTrip.items}
                                         routeMode={routeMode}
                                         routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
                                         onForceFill={handleForceFill}
                                         forceFillMode={selectedCityForceFill?.mode}
                                         forceFillLabel={selectedCityForceFill?.label}
                                         variant="sidebar"
-                                        readOnly={effectiveReadOnly}
+                                        readOnly={!canEdit}
                                         cityColorPaletteId={cityColorPaletteId}
                                         onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                     />
@@ -2366,12 +2574,18 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                      />
 
                      {isTripInfoOpen && (
-                        <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[88vh]" onClick={(e) => e.stopPropagation()}>
+                        <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>
+                            <div
+                                role="dialog"
+                                aria-modal="true"
+                                aria-labelledby="trip-info-title"
+                                className="bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Trip information</h3>
-                                        <p className="text-xs text-gray-500">Additional trip details and quick actions.</p>
+                                        <h3 id="trip-info-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
                                     </div>
                                     <button onClick={() => setIsTripInfoOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                                         Close
@@ -2422,7 +2636,11 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                             )}
                                         </div>
                                         {!canManageTripMetadata && (
-                                            <p className="text-xs text-gray-500">Edit and favorite actions are unavailable for shared trips.</p>
+                                            <p className="text-xs text-gray-500">
+                                                {isExamplePreview
+                                                    ? 'Example trips cannot be renamed or favorited. Copy this trip first to make it your own.'
+                                                    : 'Edit and favorite actions are unavailable for shared trips.'}
+                                            </p>
                                         )}
                                     </section>
 
@@ -2449,16 +2667,31 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                     </section>
 
                                     {forkMeta && (
-                                        <section className="border border-gray-200 rounded-xl p-3">
-                                            <h4 className="text-sm font-semibold text-gray-800 mb-1">Copied from</h4>
-                                            <p className="text-xs text-gray-500">{forkMeta.label}</p>
+                                        <section className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">Trip source</p>
+                                            <p className="mt-1 text-sm font-semibold text-gray-900">{forkMeta.label}</p>
+                                            <p className="mt-1 text-xs text-gray-600">
+                                                {forkMeta.url
+                                                    ? 'This itinerary was copied from a shared trip snapshot.'
+                                                    : 'This itinerary was copied from another trip in your workspace.'}
+                                            </p>
                                             {forkMeta.url && (
-                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-600 hover:underline">
+                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-700 hover:underline">
                                                     View source
                                                 </a>
                                             )}
                                         </section>
                                     )}
+
+                                    <section>
+                                        {trip.countryInfo ? (
+                                            <CountryInfo info={trip.countryInfo} />
+                                        ) : (
+                                            <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-4 text-xs text-gray-500">
+                                                No destination info available for this trip yet.
+                                            </div>
+                                        )}
+                                    </section>
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         <button
@@ -2471,77 +2704,87 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                         </button>
                                         {isTripInfoHistoryExpanded && (
                                             <div className="mt-3 space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => navigateHistory('undo')}
-                                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                    >
-                                                        Undo
-                                                    </button>
-                                                    <button
-                                                        onClick={() => navigateHistory('redo')}
-                                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                    >
-                                                        Redo
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setShowAllHistory(v => !v)}
-                                                        className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                    >
-                                                        {showAllHistory ? 'Show Recent' : 'Show All'}
-                                                    </button>
-                                                </div>
-                                                <div className="rounded-lg border border-gray-100 overflow-hidden">
-                                                    {infoHistoryEntries.length === 0 ? (
-                                                        <div className="p-4 text-xs text-gray-500">No history entries yet.</div>
-                                                    ) : (
-                                                        <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto">
-                                                            {infoHistoryEntries.map(entry => {
-                                                                const isCurrent = entry.url === currentUrl;
-                                                                const details = stripHistoryPrefix(entry.label);
-                                                                return (
-                                                                    <li key={entry.id} className={`p-3 flex items-start gap-2 ${isCurrent ? 'bg-accent-50/70' : 'bg-white'}`}>
-                                                                        <div className="min-w-0 flex-1">
-                                                                            <div className="text-[11px] text-gray-500">{formatHistoryTime(entry.ts)}</div>
-                                                                            <div className="text-xs font-semibold text-gray-900 leading-snug">{details}</div>
-                                                                        </div>
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setIsTripInfoOpen(false);
-                                                                                suppressCommitRef.current = true;
-                                                                                navigate(entry.url);
-                                                                            }}
-                                                                            className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                                        >
-                                                                            Go
-                                                                        </button>
-                                                                    </li>
-                                                                );
-                                                            })}
-                                                        </ul>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setIsTripInfoOpen(false);
-                                                        setIsHistoryOpen(true);
-                                                    }}
-                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                                                >
-                                                    Open full history
-                                                </button>
+                                                {isExamplePreview ? (
+                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                                                        Example trips do not save history snapshots. Copy this trip first to keep edits and track changes.
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => navigateHistory('undo')}
+                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                                            >
+                                                                Undo
+                                                            </button>
+                                                            <button
+                                                                onClick={() => navigateHistory('redo')}
+                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                                            >
+                                                                Redo
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setShowAllHistory(v => !v)}
+                                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                                            >
+                                                                {showAllHistory ? 'Show Recent' : 'Show All'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="rounded-lg border border-gray-100 overflow-hidden">
+                                                            {infoHistoryEntries.length === 0 ? (
+                                                                <div className="p-4 text-xs text-gray-500">No history entries yet.</div>
+                                                            ) : (
+                                                                <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto">
+                                                                    {infoHistoryEntries.map(entry => {
+                                                                        const isCurrent = entry.url === currentUrl;
+                                                                        const details = stripHistoryPrefix(entry.label);
+                                                                        return (
+                                                                            <li key={entry.id} className={`p-3 flex items-start gap-2 ${isCurrent ? 'bg-accent-50/70' : 'bg-white'}`}>
+                                                                                <div className="min-w-0 flex-1">
+                                                                                    <div className="text-[11px] text-gray-500">{formatHistoryTime(entry.ts)}</div>
+                                                                                    <div className="text-xs font-semibold text-gray-900 leading-snug">{details}</div>
+                                                                                </div>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setIsTripInfoOpen(false);
+                                                                                        suppressCommitRef.current = true;
+                                                                                        navigate(entry.url);
+                                                                                    }}
+                                                                                    className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                                                                >
+                                                                                    Go
+                                                                                </button>
+                                                                            </li>
+                                                                        );
+                                                                    })}
+                                                                </ul>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setIsTripInfoOpen(false);
+                                                                setIsHistoryOpen(true);
+                                                            }}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                                                        >
+                                                            Open full history
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </section>
 
                                     <section className="border border-gray-200 rounded-xl p-3">
-                                        {trip.countryInfo ? (
+                                        {displayTrip.countryInfo ? (
                                             <CountryInfo
-                                                info={trip.countryInfo}
+                                                info={displayTrip.countryInfo}
                                                 isExpanded={destinationInfoExpanded}
                                                 onExpandedChange={setDestinationInfoExpanded}
                                             />
+                                        ) : isTripLockedByExpiry ? (
+                                            <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
                                         ) : (
                                             <div className="text-xs text-gray-500">No destination info available for this trip yet.</div>
                                         )}
@@ -2640,8 +2883,8 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                      )}
 
                      {isShareOpen && (
-                        <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsShareOpen(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsShareOpen(false)}>
+                            <div className="bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900">Share trip</h3>
@@ -2724,77 +2967,94 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-bold text-gray-900">Change History</h3>
-                                        <p className="text-xs text-gray-500">Undo/redo works with browser history and Cmd+Z / Cmd+Y.</p>
+                                        <p className="text-xs text-gray-500">
+                                            {isExamplePreview
+                                                ? 'Example trips are editable for exploration, but changes are not saved.'
+                                                : 'Undo/redo works with browser history and Cmd+Z / Cmd+Y.'}
+                                        </p>
                                     </div>
                                     <button onClick={() => setIsHistoryOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                                         Close
                                     </button>
                                 </div>
-                                <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                                    <button
-                                        onClick={() => { 
-                                            navigateHistory('undo');
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                    >
-                                        Undo
-                                    </button>
-                                    <button
-                                        onClick={() => { 
-                                            navigateHistory('redo');
-                                        }}
-                                        className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                    >
-                                        Redo
-                                    </button>
-                                    <button
-                                        onClick={() => setShowAllHistory(v => !v)}
-                                        className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                    >
-                                        {showAllHistory ? 'Show Recent' : 'Show All'}
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto">
-                                    {displayHistoryEntries.length === 0 ? (
-                                        <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
-                                    ) : (
-                                        <ul className="divide-y divide-gray-100">
-                                            {displayHistoryEntries.map(entry => {
-                                                const isCurrent = entry.url === currentUrl;
-                                                const tone = resolveChangeTone(entry.label);
-                                                const details = stripHistoryPrefix(entry.label);
-                                                const meta = getToneMeta(tone);
-                                                const Icon = meta.Icon;
-                                                return (
-                                                <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
-                                                    <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
-                                                        <Icon size={15} />
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
-                                                            <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
-                                                            {isCurrent && <span className="text-[10px] font-semibold text-accent-600 bg-accent-100 px-2 py-0.5 rounded-full">Current</span>}
-                                                        </div>
-                                                        <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
-                                                    </div>
-                                                    <div className="shrink-0">
-                                                        <button
-                                                        onClick={() => {
-                                                            setIsHistoryOpen(false);
-                                                            lastNavActionRef.current = null;
-                                                            suppressCommitRef.current = true;
-                                                            navigate(entry.url);
-                                                            showToast(details, { tone, title: 'Opened from history' });
-                                                        }}
-                                                        className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                        >
-                                                            Go
-                                                        </button>
-                                                    </div>
-                                                </li>
-                                            )})}
-                                        </ul>
+                                {isExamplePreview ? (
+                                    <div className="p-5 text-sm text-slate-600">
+                                        This example trip is a playground. History snapshots are intentionally disabled so no local or database state is created while exploring.
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    navigateHistory('undo');
+                                                }}
+                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                            >
+                                                Undo
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    navigateHistory('redo');
+                                                }}
+                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                            >
+                                                Redo
+                                            </button>
+                                            <button
+                                                onClick={() => setShowAllHistory(v => !v)}
+                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                            >
+                                                {showAllHistory ? 'Show Recent' : 'Show All'}
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto">
+                                            {displayHistoryEntries.length === 0 ? (
+                                                <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
+                                            ) : (
+                                                <ul className="divide-y divide-gray-100">
+                                                    {displayHistoryEntries.map(entry => {
+                                                        const isCurrent = entry.url === currentUrl;
+                                                        const tone = resolveChangeTone(entry.label);
+                                                        const details = stripHistoryPrefix(entry.label);
+                                                        const meta = getToneMeta(tone);
+                                                        const Icon = meta.Icon;
+                                                        return (
+                                                            <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
+                                                                <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
+                                                                    <Icon size={15} />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
+                                                                        <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
+                                                                        {isCurrent && <span className="text-[10px] font-semibold text-accent-600 bg-accent-100 px-2 py-0.5 rounded-full">Current</span>}
+                                                                    </div>
+                                                                    <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
+                                                                </div>
+                                                                <div className="shrink-0">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setIsHistoryOpen(false);
+                                                                            lastNavActionRef.current = null;
+                                                                            suppressCommitRef.current = true;
+                                                                            navigate(entry.url);
+                                                                            showToast(details, { tone, title: 'Opened from history' });
+                                                                        }}
+                                                                        className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                                                                    >
+                                                                        Go
+                                                                    </button>
+                                                                </div>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     )}
 
                     {shareStatus === 'view' && onCopyTrip && (
@@ -2817,13 +3077,61 @@ export const TripView: React.FC<TripViewProps> = ({ trip, onUpdateTrip, onCommit
                             </div>
                         </div>
                     )}
+
+                    {isTripLockedByExpiry && (
+                        <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
+                            <div className="pointer-events-auto w-full max-w-xl rounded-2xl bg-gradient-to-br from-accent-200/60 via-rose-100/70 to-amber-100/80 p-[1px] shadow-2xl">
+                                <div className="relative overflow-hidden rounded-[15px] border border-white/70 bg-white/95 px-5 py-5 backdrop-blur">
+                                    <div className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-accent-200/40 blur-2xl" />
+                                    <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-rose-100/70 blur-2xl" />
+
+                                    <div className="relative flex items-start gap-3.5">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Trip preview paused</p>
+                                            <div className="mt-1 text-lg font-semibold leading-tight text-slate-900">
+                                                Keep this plan alive and unlock every detail
+                                            </div>
+                                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                                Continue where you left off with a free TravelFlow account.
+                                                You will regain full editing, destination names, and map routing instantly.
+                                            </p>
+                                        </div>
+                                        <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
+                                            <WarningCircle size={20} weight="duotone" />
+                                        </span>
+                                    </div>
+                                    <div className="relative mt-4 flex flex-wrap justify-end gap-2">
+                                        <Link
+                                            to="/faq"
+                                            onClick={() => trackEvent('trip_paywall__overlay--faq', { trip_id: trip.id })}
+                                            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                        >
+                                            <Article size={14} weight="duotone" />
+                                            Visit FAQ
+                                        </Link>
+                                        <Link
+                                            to="/login"
+                                            onClick={() => trackEvent('trip_paywall__overlay--activate', { trip_id: trip.id })}
+                                            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+                                        >
+                                            <RocketLaunch size={14} weight="duotone" />
+                                            Reactivate trip
+                                        </Link>
+                                    </div>
+
+                                    <div className="relative mt-4 border-t border-slate-200 pt-3">
+                                        <p className="text-[11px] leading-relaxed text-slate-500">
+                                            {expirationLabel ? `Expired on ${expirationLabel}. ` : ''}
+                                            Preview mode stays visible, while advanced planning controls unlock after activation.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                     )}
+                    )}
 
                      {/* Toast */}
-                     {toastState && activeToastMeta && (
+                     {!suppressToasts && toastState && activeToastMeta && (
                         <div className={`fixed bottom-6 right-6 z-[1600] w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border bg-white/95 shadow-2xl backdrop-blur px-4 py-3 ${activeToastMeta.toastBorderClass}`}>
                             <div className="flex items-start gap-3">
                                 <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${activeToastMeta.iconClass}`}>

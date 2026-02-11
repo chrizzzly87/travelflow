@@ -24,6 +24,7 @@ interface ItineraryMapProps {
     onRouteStatus?: (travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => void;
     mapColorMode?: MapColorMode;
     onMapColorModeChange?: (mode: MapColorMode) => void;
+    isPaywalled?: boolean;
 }
 
 const MAP_STYLES = {
@@ -231,7 +232,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     onRouteMetrics,
     onRouteStatus,
     mapColorMode = DEFAULT_MAP_COLOR_MODE,
-    onMapColorModeChange
+    onMapColorModeChange,
+    isPaywalled = false
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
@@ -485,31 +487,33 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const resolveMapColor = (colorToken: string): string =>
             mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
 
-        // 2. Add Markers
-        cities.forEach((city, index) => {
-            if (!city.coordinates) return;
-            
-            const isSelected = city.id === selectedCityId;
-            const cityMarkerColor = resolveMapColor(city.color);
-            const cityMarkerLabelColor = getContrastTextColor(cityMarkerColor);
-            const marker = new window.google.maps.Marker({
-                map: googleMapRef.current,
-                position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                title: city.title,
-                label: { 
-                    text: `${index + 1}`, 
-                    color: cityMarkerLabelColor,
-                    fontWeight: '700', 
-                    fontSize: isSelected ? '14px' : '12px' 
-                },
-                icon: buildPinIcon(cityMarkerColor, isSelected),
-                zIndex: isSelected ? 100 : 10,
+        if (!isPaywalled) {
+            // 2. Add Markers
+            cities.forEach((city, index) => {
+                if (!city.coordinates) return;
+                
+                const isSelected = city.id === selectedCityId;
+                const cityMarkerColor = resolveMapColor(city.color);
+                const cityMarkerLabelColor = getContrastTextColor(cityMarkerColor);
+                const marker = new window.google.maps.Marker({
+                    map: googleMapRef.current,
+                    position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                    title: city.title,
+                    label: { 
+                        text: `${index + 1}`, 
+                        color: cityMarkerLabelColor,
+                        fontWeight: '700', 
+                        fontSize: isSelected ? '14px' : '12px' 
+                    },
+                    icon: buildPinIcon(cityMarkerColor, isSelected),
+                    zIndex: isSelected ? 100 : 10,
+                });
+                
+                markersRef.current.push(marker);
             });
-            
-            markersRef.current.push(marker);
-        });
+        }
 
-        if (showCityNames && googleMapRef.current) {
+        if (!isPaywalled && showCityNames && googleMapRef.current) {
             const startCity = cities[0];
             const endCity = cities[cities.length - 1];
             const startCityKey = getNormalizedCityName(startCity?.title);
@@ -903,9 +907,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
         };
 
-        drawRoutes();
+        if (!isPaywalled) {
+            drawRoutes();
+        }
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames]); 
+    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled]); 
 
     // Pan to selected
     useEffect(() => {
@@ -1027,14 +1033,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                   <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
                                   <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
                                   <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean</button>
-                                  {onRouteModeChange && (
+                                  {!isPaywalled && onRouteModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
                                           <button onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
                                           <button onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
                                       </>
                                   )}
-                                  {onShowCityNamesChange && (
+                                  {!isPaywalled && onShowCityNamesChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
                                           <button

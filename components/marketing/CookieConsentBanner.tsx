@@ -20,7 +20,7 @@ export const CookieConsentBanner: React.FC = () => {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-x-0 bottom-4 z-[1200] px-4">
+        <div className="fixed inset-x-0 bottom-4 z-cookie-consent px-4">
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                 <p className="text-sm leading-6 text-slate-700">
                     We use essential cookies to keep TravelFlow stable and optional cookies to improve experience. See our{' '}
