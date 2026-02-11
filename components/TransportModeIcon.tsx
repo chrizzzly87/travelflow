@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plane, Train, Bus, Ship, Car, Map } from 'lucide-react';
 import type { TransportMode } from '../types';
+import { normalizeTransportMode } from '../shared/transportModes';
 
 type TransportModeIconProps = {
     mode?: TransportMode | string;
@@ -58,7 +59,8 @@ const MotorcycleIcon = ({ size, className }: { size?: number; className?: string
 );
 
 export const TransportModeIcon = ({ mode, size = 16, className }: TransportModeIconProps) => {
-    switch (mode) {
+    const normalizedMode = normalizeTransportMode(mode);
+    switch (normalizedMode) {
         case 'walk':
             return <WalkIcon size={size} className={className} />;
         case 'bicycle':

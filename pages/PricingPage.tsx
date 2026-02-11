@@ -88,7 +88,7 @@ export const PricingPage: React.FC = () => {
                 <div className="mx-auto max-w-3xl text-center mb-12 md:mb-16">
                     <h1
                         className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl"
-                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                        style={{ fontFamily: "var(--tf-font-heading)" }}
                     >
                         Simple, transparent pricing
                     </h1>
@@ -117,7 +117,7 @@ export const PricingPage: React.FC = () => {
                             <div className="mt-5 flex items-baseline gap-1">
                                 <span
                                     className="text-4xl font-extrabold tracking-tight text-slate-900"
-                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                    style={{ fontFamily: "var(--tf-font-heading)" }}
                                 >
                                     {tier.price}
                                 </span>

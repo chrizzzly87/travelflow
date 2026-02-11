@@ -138,7 +138,7 @@ export const BlogPage: React.FC = () => {
                 </span>
                 <h1
                     className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    style={{ fontFamily: "var(--tf-font-heading)" }}
                 >
                     Travel Planning Insights
                 </h1>
@@ -221,7 +221,7 @@ export const BlogPage: React.FC = () => {
                     <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
                     <h2
                         className="relative text-3xl font-black tracking-tight text-white md:text-5xl"
-                        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                        style={{ fontFamily: "var(--tf-font-heading)" }}
                     >
                         Ready to plan your trip?
                     </h2>

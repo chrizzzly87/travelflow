@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { X, Sparkles, Check } from 'lucide-react';
-import { generateActivityProposals } from '../services/geminiService';
+import { generateActivityProposals } from '../services/aiService';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
 

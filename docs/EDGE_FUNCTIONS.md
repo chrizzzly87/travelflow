@@ -7,6 +7,8 @@ Shared helpers live in `netlify/edge-lib/`.
 
 | Function file | Route(s) | Purpose | Type |
 |---|---|---|---|
+| `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic allowlisted models) | API |
+| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings) with temporary admin-header guard. Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/login`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, `/pricing`, `/admin/*` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
@@ -52,8 +54,16 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `VITE_GOOGLE_MAPS_API_KEY` | `trip-map-preview.ts`, `trip-og-image.tsx`, `trip-og-meta.ts` (via `trip-og-data.ts`) | Google Static Maps API access |
 | `VITE_SUPABASE_URL` | `trip-og-meta.ts` (via `trip-og-data.ts`) | Supabase REST API base URL |
 | `VITE_SUPABASE_ANON_KEY` | `trip-og-meta.ts` (via `trip-og-data.ts`) | Supabase anonymous auth key |
+| `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
+| `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
+| `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Temporary admin-header guard value for internal AI benchmark endpoints |
+| `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
+| `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
+| `OPENAI_API_KEY` | `ai-generate.ts` | Server-side key for OpenAI model execution in `/api/ai/generate` |
+| `ANTHROPIC_API_KEY` | `ai-generate.ts` | Server-side key for Anthropic model execution in `/api/ai/generate` |
+| `OPENROUTER_API_KEY` | future benchmark/provider adapter | Reserved for planned OpenRouter backend adapter |
 
-All three must be set in **Netlify > Site settings > Environment variables**. They are also listed in `SECRETS_SCAN_OMIT_KEYS` in `netlify.toml` to suppress Netlify's secret scanner.
+Set required keys in **Netlify > Site settings > Environment variables**. Key names used in source are also listed in `SECRETS_SCAN_OMIT_KEYS` in `netlify.toml` to suppress Netlify's secret scanner false positives.
 
 ## External dependencies (Deno CDN imports)
 

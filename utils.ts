@@ -1,6 +1,7 @@
 import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import popularIslandDestinationsJson from './data/popularIslandDestinations.json';
+import { normalizeTransportMode } from './shared/transportModes';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -168,11 +169,12 @@ const TRAVEL_OVERHEAD_HOURS: Partial<Record<TransportMode, number>> = {
 
 export const estimateTravelHours = (distanceKm: number, mode?: TransportMode | string): number | null => {
     if (!Number.isFinite(distanceKm) || distanceKm <= 0) return null;
-    if (!mode || mode === 'na') return null;
-    const speed = TRAVEL_SPEEDS_KMPH[mode as TransportMode];
+    const normalizedMode = normalizeTransportMode(mode);
+    if (normalizedMode === 'na') return null;
+    const speed = TRAVEL_SPEEDS_KMPH[normalizedMode];
     if (!speed) return null;
     const base = distanceKm / speed;
-    const overhead = TRAVEL_OVERHEAD_HOURS[mode as TransportMode] ?? 0;
+    const overhead = TRAVEL_OVERHEAD_HOURS[normalizedMode] ?? 0;
     return Math.max(0.1, base + overhead);
 };
 
@@ -315,7 +317,7 @@ export const getTripDistanceKm = (items: ITimelineItem[]): number => {
             const airDistance = leg.distanceKm;
             if (!Number.isFinite(airDistance)) return null;
 
-            const mode = leg.travelItem.transportMode;
+            const mode = normalizeTransportMode(leg.travelItem.transportMode);
             const routeDistance = leg.travelItem.routeDistanceKm;
 
             if (mode === 'plane') return airDistance;

@@ -96,6 +96,45 @@ create table if not exists public.subscriptions (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.ai_benchmark_sessions (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users on delete cascade default auth.uid(),
+  share_token text not null unique,
+  name text,
+  flow text not null default 'classic' check (flow in ('classic', 'wizard', 'surprise')),
+  scenario jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+create table if not exists public.ai_benchmark_runs (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.ai_benchmark_sessions(id) on delete cascade,
+  provider text not null,
+  model text not null,
+  label text,
+  run_index integer not null default 1,
+  status text not null default 'queued' check (status in ('queued', 'running', 'completed', 'failed')),
+  latency_ms integer,
+  schema_valid boolean,
+  validation_checks jsonb,
+  validation_errors jsonb,
+  usage jsonb,
+  cost_usd numeric(12,6),
+  request_payload jsonb,
+  raw_output jsonb,
+  normalized_trip jsonb,
+  trip_id text references public.trips(id) on delete set null,
+  trip_ai_meta jsonb,
+  error_message text,
+  satisfaction_rating text check (satisfaction_rating in ('good', 'medium', 'bad')),
+  satisfaction_updated_at timestamptz,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
 -- Forward-compatible schema upgrades
 alter table public.trips add column if not exists sharing_enabled boolean not null default true;
 alter table public.trips add column if not exists status text not null default 'active';
@@ -103,6 +142,8 @@ alter table public.trips add column if not exists trip_expires_at timestamptz;
 alter table public.trips add column if not exists archived_at timestamptz;
 alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
+alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
+alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 
 do $$
 begin
@@ -119,6 +160,21 @@ begin
 end;
 $$;
 
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'ai_benchmark_runs_satisfaction_rating_check'
+      and conrelid = 'public.ai_benchmark_runs'::regclass
+  ) then
+    alter table public.ai_benchmark_runs
+      add constraint ai_benchmark_runs_satisfaction_rating_check
+      check (satisfaction_rating in ('good', 'medium', 'bad'));
+  end if;
+end;
+$$;
+
 -- Indexes
 create index if not exists trips_owner_id_idx on public.trips(owner_id);
 create index if not exists trips_updated_at_idx on public.trips(updated_at desc);
@@ -130,6 +186,10 @@ create index if not exists trip_versions_trip_id_idx on public.trip_versions(tri
 create index if not exists trip_versions_created_at_idx on public.trip_versions(created_at desc);
 create index if not exists trip_shares_trip_id_idx on public.trip_shares(trip_id);
 create index if not exists trip_collaborators_user_id_idx on public.trip_collaborators(user_id);
+create index if not exists ai_benchmark_sessions_owner_created_idx on public.ai_benchmark_sessions(owner_id, created_at desc);
+create index if not exists ai_benchmark_runs_session_created_idx on public.ai_benchmark_runs(session_id, created_at asc);
+create index if not exists ai_benchmark_runs_session_status_idx on public.ai_benchmark_runs(session_id, status);
+create index if not exists ai_benchmark_runs_trip_id_idx on public.ai_benchmark_runs(trip_id);
 
 -- updated_at helpers
 create or replace function public.set_updated_at()
@@ -394,6 +454,11 @@ create trigger set_subscriptions_updated_at
 before update on public.subscriptions
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_ai_benchmark_sessions_updated_at on public.ai_benchmark_sessions;
+create trigger set_ai_benchmark_sessions_updated_at
+before update on public.ai_benchmark_sessions
+for each row execute function public.set_updated_at();
+
 -- Trip version numbers
 create or replace function public.set_trip_version_number()
 returns trigger
@@ -424,6 +489,8 @@ alter table public.profiles enable row level security;
 alter table public.user_settings enable row level security;
 alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.ai_benchmark_sessions enable row level security;
+alter table public.ai_benchmark_runs enable row level security;
 
 -- Trips policies
 drop policy if exists "Trips are readable by owner or collaborators" on public.trips;
@@ -554,6 +621,78 @@ create policy "Subscriptions are user-owned"
 on public.subscriptions for all
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- AI benchmark session policies
+drop policy if exists "AI benchmark sessions owner read" on public.ai_benchmark_sessions;
+drop policy if exists "AI benchmark sessions owner insert" on public.ai_benchmark_sessions;
+drop policy if exists "AI benchmark sessions owner update" on public.ai_benchmark_sessions;
+drop policy if exists "AI benchmark sessions owner delete" on public.ai_benchmark_sessions;
+
+create policy "AI benchmark sessions owner read"
+on public.ai_benchmark_sessions for select
+using (owner_id = auth.uid());
+
+create policy "AI benchmark sessions owner insert"
+on public.ai_benchmark_sessions for insert
+with check (owner_id = auth.uid());
+
+create policy "AI benchmark sessions owner update"
+on public.ai_benchmark_sessions for update
+using (owner_id = auth.uid());
+
+create policy "AI benchmark sessions owner delete"
+on public.ai_benchmark_sessions for delete
+using (owner_id = auth.uid());
+
+-- AI benchmark run policies
+drop policy if exists "AI benchmark runs owner read" on public.ai_benchmark_runs;
+drop policy if exists "AI benchmark runs owner insert" on public.ai_benchmark_runs;
+drop policy if exists "AI benchmark runs owner update" on public.ai_benchmark_runs;
+drop policy if exists "AI benchmark runs owner delete" on public.ai_benchmark_runs;
+
+create policy "AI benchmark runs owner read"
+on public.ai_benchmark_runs for select
+using (
+  exists (
+    select 1
+    from public.ai_benchmark_sessions s
+    where s.id = ai_benchmark_runs.session_id
+      and s.owner_id = auth.uid()
+  )
+);
+
+create policy "AI benchmark runs owner insert"
+on public.ai_benchmark_runs for insert
+with check (
+  exists (
+    select 1
+    from public.ai_benchmark_sessions s
+    where s.id = ai_benchmark_runs.session_id
+      and s.owner_id = auth.uid()
+  )
+);
+
+create policy "AI benchmark runs owner update"
+on public.ai_benchmark_runs for update
+using (
+  exists (
+    select 1
+    from public.ai_benchmark_sessions s
+    where s.id = ai_benchmark_runs.session_id
+      and s.owner_id = auth.uid()
+  )
+);
+
+create policy "AI benchmark runs owner delete"
+on public.ai_benchmark_runs for delete
+using (
+  exists (
+    select 1
+    from public.ai_benchmark_sessions s
+    where s.id = ai_benchmark_runs.session_id
+      and s.owner_id = auth.uid()
+  )
+);
 
 -- Share RPC helpers
 create or replace function public.create_share_token(

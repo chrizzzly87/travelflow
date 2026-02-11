@@ -26,6 +26,7 @@ const DEBUG_PANEL_EXPANDED_STORAGE_KEY = 'tf_debug_panel_expanded';
 const DEBUG_H1_HIGHLIGHT_STORAGE_KEY = 'tf_debug_h1_highlight';
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
+const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
 
 interface TrackingBox {
@@ -76,6 +77,11 @@ interface TripExpiredDebugDetail {
 interface SimulatedLoginDebugDetail {
     available: boolean;
     loggedIn: boolean;
+}
+
+interface DebuggerStateDebugDetail {
+    available: boolean;
+    open: boolean;
 }
 
 interface OnPageDebuggerApi {
@@ -413,6 +419,12 @@ export const OnPageDebugger: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        window.dispatchEvent(new CustomEvent<DebuggerStateDebugDetail>(DEBUGGER_STATE_DEBUG_EVENT, {
+            detail: { available: true, open: isOpen },
+        }));
+    }, [isOpen]);
+
+    useEffect(() => {
         simulatedLoggedInRef.current = simulatedLoggedIn;
     }, [simulatedLoggedIn]);
 
@@ -617,6 +629,10 @@ export const OnPageDebugger: React.FC = () => {
         window.open(`https://pagespeed.web.dev/report?url=${currentPage}`, '_blank', 'noopener,noreferrer');
     }, []);
 
+    const openAiBenchmark = useCallback(() => {
+        window.open('/admin/ai-benchmark', '_blank', 'noopener,noreferrer');
+    }, []);
+
     const runSeoAuditAndStore = useCallback(() => {
         setMetaSnapshot(readMetaSnapshot());
         const result = runSeoAudit();
@@ -753,6 +769,17 @@ export const OnPageDebugger: React.FC = () => {
         };
     }, [api, runA11yAuditAndStore, runSeoAuditAndStore, showSeoTools, toggleSimulatedLogin]);
 
+    useEffect(() => {
+        return () => {
+            window.dispatchEvent(new CustomEvent<DebuggerStateDebugDetail>(DEBUGGER_STATE_DEBUG_EVENT, {
+                detail: { available: false, open: false },
+            }));
+            window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
+                detail: { available: false, loggedIn: false },
+            }));
+        };
+    }, []);
+
     if (!isOpen) {
         return null;
     }
@@ -870,6 +897,15 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     <Globe size={16} weight="duotone" />
                                     Open Umami
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={openAiBenchmark}
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <Flask size={16} weight="duotone" />
+                                    Open AI Benchmark
                                 </button>
 
                                 <button

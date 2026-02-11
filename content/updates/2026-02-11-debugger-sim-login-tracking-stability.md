@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-11-debugger-sim-login-tracking-stability
-version: v0.47.0
+version: v0.52.0
 title: "Debugger simulated-login tracking stability"
 date: 2026-02-11
 published_at: 2026-02-11T16:18:51Z

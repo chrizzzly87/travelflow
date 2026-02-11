@@ -4,8 +4,12 @@ import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = "TravelFlow";
-const HEADLINE_FONT_FAMILY = "Space Grotesk";
-const HEADLINE_FONT_URL =
+const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const LOCAL_HEADLINE_FONT_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2";
+const LOCAL_SPACE_FONT_PATH =
+  "/fonts/space-grotesk/space-grotesk-latin.woff2";
+const LEGACY_HEADLINE_FONT_URL =
   "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
 
 const DEFAULT_TITLE = "TravelFlow";
@@ -17,21 +21,40 @@ const ACCENT_500 = "#6366f1";
 const ACCENT_600 = "#4f46e5";
 const ACCENT_700 = "#4338ca";
 
-let headingFontPromise: Promise<ArrayBuffer | null> | null = null;
+const headingFontPromiseByOrigin = new Map<string, Promise<ArrayBuffer | null>>();
 
-const loadHeadingFont = async (): Promise<ArrayBuffer | null> => {
-  if (!headingFontPromise) {
-    headingFontPromise = (async () => {
-      try {
-        const response = await fetch(HEADLINE_FONT_URL);
-        if (!response.ok) return null;
-        return await response.arrayBuffer();
-      } catch {
-        return null;
-      }
-    })();
+const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null> => {
+  try {
+    const response = await fetch(fontUrl);
+    if (!response.ok) return null;
+    return await response.arrayBuffer();
+  } catch {
+    return null;
   }
-  return headingFontPromise;
+};
+
+const buildHeadingFontUrls = (requestUrl: URL): string[] => [
+  new URL(LOCAL_HEADLINE_FONT_PATH, requestUrl.origin).toString(),
+  new URL(LOCAL_SPACE_FONT_PATH, requestUrl.origin).toString(),
+  LEGACY_HEADLINE_FONT_URL,
+];
+
+const loadHeadingFont = async (requestUrl: URL): Promise<ArrayBuffer | null> => {
+  const cacheKey = requestUrl.origin;
+  let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
+
+  if (!fontPromise) {
+    fontPromise = (async () => {
+      for (const fontUrl of buildHeadingFontUrls(requestUrl)) {
+        const fontData = await fetchFontArrayBuffer(fontUrl);
+        if (fontData) return fontData;
+      }
+      return null;
+    })();
+    headingFontPromiseByOrigin.set(cacheKey, fontPromise);
+  }
+
+  return fontPromise;
 };
 
 const sanitizeText = (value: string | null, max: number): string | null => {
@@ -218,7 +241,7 @@ const TOPO_CONTOUR_OVERLAY_URI = svgToDataUri(
 export default async (request: Request): Promise<Response> => {
   try {
     const url = new URL(request.url);
-    const headingFontData = await loadHeadingFont();
+    const headingFontData = await loadHeadingFont(url);
 
     const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
