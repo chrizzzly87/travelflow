@@ -596,6 +596,15 @@ export const TripView: React.FC<TripViewProps> = ({
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
     const lastSyncedSharingLockRef = useRef<boolean | null>(null);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.removeItem('tf_country_info_expanded');
+        } catch {
+            // ignore storage issues
+        }
+    }, []);
+
     // Persistence
     useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
     useEffect(() => { localStorage.setItem('tf_route_mode', routeMode); }, [routeMode]);

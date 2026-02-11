@@ -18,3 +18,4 @@ summary: "Internal QA and debugging tooling update for development workflows."
 - [ ] [Internal] 👤 Added a simulated-login debug toggle (`window.toggleSimulatedLogin`) for paywall and auth-gated flow testing.
 - [ ] [Internal] 🛡️ Hardened debug hook calls with optional-chaining guards so stripped production builds do not throw.
 - [ ] [Internal] 🩹 Removed destination-info collapse state and kept modal content always expanded.
+- [ ] [Internal] 🧼 Added compatibility cleanup for legacy destination-info localStorage/view payload data.
