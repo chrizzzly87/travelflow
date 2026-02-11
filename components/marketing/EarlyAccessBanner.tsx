@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 const STORAGE_KEY = 'tf_early_access_dismissed';
 
@@ -39,6 +39,7 @@ export const EarlyAccessBanner: React.FC = () => {
                     onClick={handleDismiss}
                     className="shrink-0 rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-100 hover:text-amber-700"
                     aria-label="Dismiss banner"
+                    {...getAnalyticsDebugAttributes('banner__early_access--dismiss')}
                 >
                     <X size={14} weight="bold" />
                 </button>

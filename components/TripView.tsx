@@ -129,6 +129,7 @@ const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
+const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
 
@@ -249,6 +250,7 @@ export const TripView: React.FC<TripViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const tripRef = useRef(trip);
     tripRef.current = trip;
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
@@ -594,6 +596,15 @@ export const TripView: React.FC<TripViewProps> = ({
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
     const lastSyncedSharingLockRef = useRef<boolean | null>(null);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            window.localStorage.removeItem('tf_country_info_expanded');
+        } catch {
+            // ignore storage issues
+        }
+    }, []);
+
     // Persistence
     useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
     useEffect(() => { localStorage.setItem('tf_route_mode', routeMode); }, [routeMode]);
@@ -768,7 +779,18 @@ export const TripView: React.FC<TripViewProps> = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const host = window as TripDebugWindow;
-        host.toggleExpired = (force?: boolean) => {
+
+        if (!isTripDetailRoute) {
+            if (host.toggleExpired) {
+                delete host.toggleExpired;
+            }
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: false, expired: false },
+            }));
+            return;
+        }
+
+        const toggleExpired = (force?: boolean) => {
             let nextExpired = false;
             setExpiredPreviewOverride((prev) => {
                 const baseExpired = typeof prev === 'boolean' ? prev : isTripExpired;
@@ -776,16 +798,32 @@ export const TripView: React.FC<TripViewProps> = ({
                 setDebugTripExpiredOverride(trip.id, nextExpired);
                 return nextExpired;
             });
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: true, expired: nextExpired },
+            }));
             console.info(
                 `[TravelFlow] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
             );
             return nextExpired;
         };
 
+        host.toggleExpired = toggleExpired;
+        window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+            detail: {
+                available: true,
+                expired: typeof expiredPreviewOverride === 'boolean' ? expiredPreviewOverride : isTripExpired,
+            },
+        }));
+
         return () => {
-            delete host.toggleExpired;
+            if (host.toggleExpired === toggleExpired) {
+                delete host.toggleExpired;
+            }
+            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
+                detail: { available: false, expired: false },
+            }));
         };
-    }, [trip.id, isTripExpired]);
+    }, [trip.id, isTripExpired, isTripDetailRoute, expiredPreviewOverride]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -2240,11 +2278,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 {displayTrip.countryInfo ? (
                                                     <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                                        <CountryInfo
-                                                            info={displayTrip.countryInfo}
-                                                            isExpanded={destinationInfoExpanded}
-                                                            onExpandedChange={setDestinationInfoExpanded}
-                                                        />
+                                                        <CountryInfo info={displayTrip.countryInfo} />
                                                     </div>
                                                 ) : isTripLockedByExpiry ? (
                                                     <div className="p-4 border-b border-gray-100 bg-white z-10 text-xs text-slate-500">
@@ -2749,11 +2783,7 @@ export const TripView: React.FC<TripViewProps> = ({
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         {displayTrip.countryInfo ? (
-                                            <CountryInfo
-                                                info={displayTrip.countryInfo}
-                                                isExpanded={destinationInfoExpanded}
-                                                onExpandedChange={setDestinationInfoExpanded}
-                                            />
+                                            <CountryInfo info={displayTrip.countryInfo} />
                                         ) : isTripLockedByExpiry ? (
                                             <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
                                         ) : (

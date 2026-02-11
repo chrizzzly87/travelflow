@@ -15,7 +15,7 @@ import {
     Article,
 } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     categories,
     monthEntries,
@@ -127,6 +127,7 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__destination_card', { title: destination.title, country: destination.country })}
         className={`group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        {...getAnalyticsDebugAttributes('inspirations__destination_card', { title: destination.title, country: destination.country })}
     >
         <div className={`relative h-40 overflow-hidden rounded-t-2xl md:h-44 ${showPhoto ? 'bg-slate-100' : destination.mapColor}`}>
             {showPhoto && media ? (
@@ -215,6 +216,7 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__festival_card', { name: event.name, country: event.country })}
         className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        {...getAnalyticsDebugAttributes('inspirations__festival_card', { name: event.name, country: event.country })}
     >
         <div className={`relative h-32 overflow-hidden rounded-t-2xl md:h-36 ${showPhoto ? 'bg-slate-100' : `${event.mapColor} flex items-center justify-center`}`}>
             {showPhoto && media ? (
@@ -287,6 +289,7 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
         to={prefillUrl}
         onClick={() => trackEvent('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
         className={`group flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        {...getAnalyticsDebugAttributes('inspirations__getaway_card', { title: getaway.title, destination: getaway.to })}
     >
         <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl ${getaway.mapColor}`}>
             <AirplaneTakeoff size={24} weight="duotone" className={getaway.mapAccent.replace('bg-', 'text-')} />
@@ -313,6 +316,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
         to={`/inspirations/country/${encodeURIComponent(group.country)}`}
         onClick={() => trackEvent('inspirations__country_pill', { country: group.country })}
         className={`group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+        {...getAnalyticsDebugAttributes('inspirations__country_pill', { country: group.country })}
     >
         <span className="text-3xl">{group.flag}</span>
         <div className="min-w-0 flex-1">
@@ -496,6 +500,7 @@ export const InspirationsPage: React.FC = () => {
                                         to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: idea.label } })}
                                         onClick={() => trackEvent('inspirations__quick_pill', { label: idea.label })}
                                         className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
+                                        {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: idea.label })}
                                     >
                                         {idea.label}
                                     </Link>
@@ -518,7 +523,7 @@ export const InspirationsPage: React.FC = () => {
                                             <div className="flex items-start justify-between gap-4">
                                                 <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{category.title}</h2>
                                                 {idx === 0 && (
-                                                    <Link to="/inspirations/themes" onClick={() => trackEvent('inspirations__section--themes')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors">
+                                                    <Link to="/inspirations/themes" onClick={() => trackEvent('inspirations__section--themes')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--themes')}>
                                                         All themes
                                                         <ArrowRight size={14} weight="bold" />
                                                     </Link>
@@ -554,7 +559,7 @@ export const InspirationsPage: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Best Time to Travel</h2>
-                                        <Link to="/inspirations/best-time-to-travel" onClick={() => trackEvent('inspirations__section--months')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors">
+                                        <Link to="/inspirations/best-time-to-travel" onClick={() => trackEvent('inspirations__section--months')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--months')}>
                                             Month guide
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -630,7 +635,7 @@ export const InspirationsPage: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Browse by Country</h2>
-                                        <Link to="/inspirations/countries" onClick={() => trackEvent('inspirations__section--countries')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors">
+                                        <Link to="/inspirations/countries" onClick={() => trackEvent('inspirations__section--countries')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--countries')}>
                                             All countries
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -658,7 +663,7 @@ export const InspirationsPage: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Upcoming Events & Festivals</h2>
-                                        <Link to="/inspirations/events-and-festivals" onClick={() => trackEvent('inspirations__section--festivals')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors">
+                                        <Link to="/inspirations/events-and-festivals" onClick={() => trackEvent('inspirations__section--festivals')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--festivals')}>
                                             All events
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -699,7 +704,7 @@ export const InspirationsPage: React.FC = () => {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-start justify-between gap-4">
                                         <h2 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Spontaneous Weekend Getaways</h2>
-                                        <Link to="/inspirations/weekend-getaways" onClick={() => trackEvent('inspirations__section--weekends')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors">
+                                        <Link to="/inspirations/weekend-getaways" onClick={() => trackEvent('inspirations__section--weekends')} className="shrink-0 mt-1 inline-flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-800 transition-colors" {...getAnalyticsDebugAttributes('inspirations__section--weekends')}>
                                             All getaways
                                             <ArrowRight size={14} weight="bold" />
                                         </Link>
@@ -755,6 +760,7 @@ export const InspirationsPage: React.FC = () => {
                                 to="/create-trip"
                                 onClick={() => trackEvent('inspirations__bottom_cta')}
                                 className="relative mt-8 inline-block rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
+                                {...getAnalyticsDebugAttributes('inspirations__bottom_cta')}
                             >
                                 Start Planning Now
                             </Link>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/productLimits';
 
 interface PricingTier {
@@ -29,16 +29,14 @@ const tiers: PricingTier[] = [
         period: '/mo',
         badge: 'Current plan',
         badgeClass: 'border-slate-300 bg-slate-100 text-slate-700',
-        description: 'Everything you need to plan your next trip.',
+        description: 'Start fast with everything needed for confident trip planning.',
         accentClass: 'from-slate-600 to-slate-800',
         ringClass: 'ring-slate-900/5',
         features: [
-            'AI trip generation (3 modes)',
-            'Interactive map & timeline',
-            'Drag-and-drop itinerary builder',
-            'Print-ready layouts',
-            `Up to ${ANONYMOUS_TRIP_LIMIT} active anonymous trips`,
-            `Anonymous trips expire after ${ANONYMOUS_TRIP_EXPIRATION_DAYS} days`,
+            'AI trip builder with map + timeline',
+            'Drag, edit, and share in seconds',
+            'Up to 5 saved trips',
+            'Clean print-ready itineraries',
             'Share via link',
         ],
         cta: 'Get Started',
@@ -48,20 +46,18 @@ const tiers: PricingTier[] = [
         name: 'Casual',
         price: '$9',
         period: '/mo',
-        badge: 'Coming Soon',
+        badge: 'Roadmap',
         badgeClass: 'border-accent-300 bg-accent-100 text-accent-700',
-        description: 'For frequent travelers who want more power.',
+        description: 'For travelers who want faster workflows and deeper control.',
         accentClass: 'from-accent-500 to-accent-700',
         ringClass: 'ring-accent-500/10',
         features: [
-            'Everything in Free, plus:',
+            'Everything in Free',
             'Unlimited saved trips',
-            'Priority AI generation',
-            'PDF & calendar export',
-            'Advanced sharing controls',
-            'Custom map styles',
+            'Priority generation queue',
+            'Advanced sharing + export controls',
         ],
-        cta: 'Coming Soon',
+        cta: 'Launching Soon',
         ctaDisabled: true,
         highlighted: true,
     },
@@ -69,20 +65,18 @@ const tiers: PricingTier[] = [
         name: 'Globetrotter',
         price: '$19',
         period: '/mo',
-        badge: 'Coming Soon',
+        badge: 'Roadmap',
         badgeClass: 'border-amber-300 bg-amber-100 text-amber-700',
-        description: 'The ultimate travel planning experience.',
+        description: 'Built for power users and collaborative travel teams.',
         accentClass: 'from-amber-500 to-amber-700',
         ringClass: 'ring-amber-500/10',
         features: [
-            'Everything in Casual, plus:',
-            'Collaborative editing',
-            'Premium travel insights',
-            'Offline access',
-            'Premium support',
-            'Early access to new features',
+            'Everything in Casual',
+            'Team-ready planning collaboration',
+            'Premium insights + priority support',
+            'Early access to new capabilities',
         ],
-        cta: 'Coming Soon',
+        cta: 'Launching Soon',
         ctaDisabled: true,
     },
 ];
@@ -156,6 +150,7 @@ export const PricingPage: React.FC = () => {
                                         to={tier.ctaLink || '/create-trip'}
                                         onClick={() => trackEvent(`pricing__tier--${tier.name.toLowerCase()}`)}
                                         className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                        {...getAnalyticsDebugAttributes(`pricing__tier--${tier.name.toLowerCase()}`)}
                                     >
                                         {tier.cta}
                                     </Link>
@@ -174,7 +169,7 @@ export const PricingPage: React.FC = () => {
                         </p>
                     </div>
                     <p className="text-sm text-slate-400">
-                        Prices shown are for illustration only. TravelFlow is currently free during early access.
+                        Start free today. Paid plans will roll out with advanced account and collaboration features.
                     </p>
                 </div>
             </div>

@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
 import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
 
 // Deterministic rotation per card index — alternating slight tilts
@@ -56,6 +56,9 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     onClick={() => card.templateId && handleCardClick(card.templateId)}
                                     className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
                                     style={{ transform: `rotate(${rotation}deg)` }}
+                                    {...(card.templateId
+                                        ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
+                                        : {})}
                                 >
                                     <ExampleTripCard card={card} mapPreviewUrl={mapPreviewUrl} />
                                 </button>

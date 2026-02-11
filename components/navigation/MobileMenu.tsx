@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { X, AirplaneTilt } from '@phosphor-icons/react';
 import { NAV_ITEMS } from '../../config/navigation';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -46,6 +46,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         trackEvent(`mobile_nav__${target}`);
         onClose();
     };
+
+    const mobileNavDebugAttributes = (target: string) =>
+        getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
     const visibleItems = NAV_ITEMS.filter((item) => !item.requiresTrips);
 
@@ -96,6 +99,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     to={item.to}
                                     className={navLinkClass}
                                     onClick={() => handleNavClick(item.label.toLowerCase())}
+                                    {...mobileNavDebugAttributes(item.label.toLowerCase())}
                                 >
                                     {item.label}
                                 </NavLink>
@@ -112,6 +116,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     onMyTripsClick();
                                 }}
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                {...mobileNavDebugAttributes('my_trips')}
                             >
                                 My Trips
                             </button>
@@ -120,6 +125,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 to="/create-trip"
                                 onClick={() => handleNavClick('create_trip')}
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                {...mobileNavDebugAttributes('create_trip')}
                             >
                                 Create Trip
                             </NavLink>
@@ -128,6 +134,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             to="/login"
                             onClick={() => handleNavClick('login')}
                             className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                            {...mobileNavDebugAttributes('login')}
                         >
                             Login
                         </NavLink>

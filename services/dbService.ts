@@ -203,24 +203,61 @@ const forceAnonymousSession = async (): Promise<string | null> => {
     return userId;
 };
 
+const isLayoutModeValue = (value: unknown): value is IViewSettings['layoutMode'] =>
+    value === 'vertical' || value === 'horizontal';
+
+const isTimelineViewValue = (value: unknown): value is IViewSettings['timelineView'] =>
+    value === 'vertical' || value === 'horizontal';
+
+const isMapStyleValue = (value: unknown): value is IViewSettings['mapStyle'] =>
+    value === 'minimal' || value === 'standard' || value === 'dark' || value === 'satellite' || value === 'clean';
+
+const isRouteModeValue = (value: unknown): value is NonNullable<IViewSettings['routeMode']> =>
+    value === 'simple' || value === 'realistic';
+
+const normalizeFiniteNumber = (value: unknown): number | undefined =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
+    if (!value || typeof value !== 'object') return null;
+    const view = value as Partial<IViewSettings>;
+    return {
+        layoutMode: isLayoutModeValue(view.layoutMode) ? view.layoutMode : 'horizontal',
+        timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
+        mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
+        zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
+        routeMode: isRouteModeValue(view.routeMode) ? view.routeMode : undefined,
+        showCityNames: typeof view.showCityNames === 'boolean' ? view.showCityNames : undefined,
+        sidebarWidth: normalizeFiniteNumber(view.sidebarWidth),
+        timelineHeight: normalizeFiniteNumber(view.timelineHeight),
+    };
+};
+
+const normalizeTripForStorage = (trip: ITrip): ITrip => ({
+    ...trip,
+    defaultView: normalizeViewSettingsPayload(trip.defaultView ?? null) ?? undefined,
+});
+
 const normalizeTripPayload = (trip: ITrip, view?: IViewSettings | null) => {
-    const startDate = trip.startDate ? trip.startDate.split('T')[0] : null;
-    const status = trip.status && ['active', 'archived', 'expired'].includes(trip.status)
-        ? trip.status
+    const normalizedTrip = normalizeTripForStorage(trip);
+    const normalizedView = normalizeViewSettingsPayload(view ?? null);
+    const startDate = normalizedTrip.startDate ? normalizedTrip.startDate.split('T')[0] : null;
+    const status = normalizedTrip.status && ['active', 'archived', 'expired'].includes(normalizedTrip.status)
+        ? normalizedTrip.status
         : 'active';
     return {
-        id: trip.id,
-        title: trip.title || 'Untitled trip',
+        id: normalizedTrip.id,
+        title: normalizedTrip.title || 'Untitled trip',
         start_date: startDate,
-        data: trip,
-        view_settings: view ?? null,
-        is_favorite: Boolean(trip.isFavorite),
-        forked_from_trip_id: trip.forkedFromTripId ?? null,
-        forked_from_share_token: trip.forkedFromShareToken ?? null,
+        data: normalizedTrip,
+        view_settings: normalizedView,
+        is_favorite: Boolean(normalizedTrip.isFavorite),
+        forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
+        forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
         status,
-        trip_expires_at: trip.tripExpiresAt ?? null,
-        source_kind: trip.sourceKind ?? null,
-        source_template_id: trip.sourceTemplateId ?? null,
+        trip_expires_at: normalizedTrip.tripExpiresAt ?? null,
+        source_kind: normalizedTrip.sourceKind ?? null,
+        source_template_id: normalizedTrip.sourceTemplateId ?? null,
     };
 };
 
@@ -263,37 +300,39 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
 
     debugLog('dbUpsertTrip:start', { tripId: trip.id, ownerId });
 
-    const startDate = trip.startDate ? trip.startDate.split('T')[0] : null;
-    const status = trip.status && ['active', 'archived', 'expired'].includes(trip.status)
-        ? trip.status
+    const normalizedTrip = normalizeTripForStorage(trip);
+    const normalizedView = normalizeViewSettingsPayload(view ?? null);
+    const startDate = normalizedTrip.startDate ? normalizedTrip.startDate.split('T')[0] : null;
+    const status = normalizedTrip.status && ['active', 'archived', 'expired'].includes(normalizedTrip.status)
+        ? normalizedTrip.status
         : 'active';
     const extendedPayload = {
-        p_id: trip.id,
-        p_data: trip,
-        p_view: view ?? null,
-        p_title: trip.title || 'Untitled trip',
+        p_id: normalizedTrip.id,
+        p_data: normalizedTrip,
+        p_view: normalizedView,
+        p_title: normalizedTrip.title || 'Untitled trip',
         p_start_date: startDate,
-        p_is_favorite: Boolean(trip.isFavorite),
-        p_forked_from_trip_id: trip.forkedFromTripId ?? null,
-        p_forked_from_share_token: trip.forkedFromShareToken ?? null,
+        p_is_favorite: Boolean(normalizedTrip.isFavorite),
+        p_forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
+        p_forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
         p_status: status,
-        p_trip_expires_at: trip.tripExpiresAt ?? null,
-        p_source_kind: trip.sourceKind ?? null,
-        p_source_template_id: trip.sourceTemplateId ?? null,
+        p_trip_expires_at: normalizedTrip.tripExpiresAt ?? null,
+        p_source_kind: normalizedTrip.sourceKind ?? null,
+        p_source_template_id: normalizedTrip.sourceTemplateId ?? null,
     };
 
     let { data, error } = await client.rpc('upsert_trip', extendedPayload);
     if (error && /upsert_trip/i.test(error.message || '') && /function/i.test(error.message || '')) {
         debugLog('dbUpsertTrip:fallbackToLegacySignature', { message: error.message });
         const legacyPayload = {
-            p_id: trip.id,
-            p_data: trip,
-            p_view: view ?? null,
-            p_title: trip.title || 'Untitled trip',
+            p_id: normalizedTrip.id,
+            p_data: normalizedTrip,
+            p_view: normalizedView,
+            p_title: normalizedTrip.title || 'Untitled trip',
             p_start_date: startDate,
-            p_is_favorite: Boolean(trip.isFavorite),
-            p_forked_from_trip_id: trip.forkedFromTripId ?? null,
-            p_forked_from_share_token: trip.forkedFromShareToken ?? null,
+            p_is_favorite: Boolean(normalizedTrip.isFavorite),
+            p_forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
+            p_forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
         };
         const fallback = await client.rpc('upsert_trip', legacyPayload);
         data = fallback.data;
@@ -352,7 +391,7 @@ export const dbGetTrip = async (tripId: string) => {
     if (!normalizedBase) return null;
     const normalized = applyTripAccessFields(normalizedBase, data as Record<string, unknown>);
     if (normalized.status === 'archived') return null;
-    return { trip: normalized, view: data.view_settings as IViewSettings | null };
+    return { trip: normalized, view: normalizeViewSettingsPayload(data.view_settings) };
 };
 
 export const dbGetTripVersion = async (tripId: string, versionId: string) => {
@@ -378,7 +417,7 @@ export const dbGetTripVersion = async (tripId: string, versionId: string) => {
     const normalized = trip && trip.id !== tripId ? { ...trip, id: tripId } : trip;
     return {
         trip: normalized,
-        view: data.view_settings as IViewSettings | null,
+        view: normalizeViewSettingsPayload(data.view_settings),
         label: data.label as string | null,
         versionId: data.id as string
     };
@@ -393,10 +432,12 @@ export const dbCreateTripVersion = async (
     const client = requireSupabase();
     await ensureDbSession();
 
+    const normalizedTrip = normalizeTripForStorage(trip);
+    const normalizedView = normalizeViewSettingsPayload(view ?? null);
     const payload = {
-        p_trip_id: trip.id,
-        p_data: trip,
-        p_view: view ?? null,
+        p_trip_id: normalizedTrip.id,
+        p_data: normalizedTrip,
+        p_view: normalizedView,
         p_label: label ?? null,
     };
 
@@ -603,7 +644,7 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     const normalized = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
     return {
         trip: normalized,
-        view: row.view_settings as IViewSettings | null,
+        view: normalizeViewSettingsPayload(row.view_settings),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
@@ -637,7 +678,7 @@ export const dbGetSharedTripVersion = async (
 
     return {
         trip: normalized,
-        view: row.view_settings as IViewSettings | null,
+        view: normalizeViewSettingsPayload(row.view_settings),
         mode: row.mode as ShareMode,
         allowCopy: Boolean(row.allow_copy),
         latestVersionId: (row.latest_version_id as string | null | undefined) ?? null,
@@ -655,10 +696,12 @@ export const dbUpdateSharedTrip = async (
     const client = requireSupabase();
     await ensureDbSession();
 
+    const normalizedTrip = normalizeTripForStorage(trip);
+    const normalizedView = normalizeViewSettingsPayload(view ?? null);
     const { data, error } = await client.rpc('update_shared_trip', {
         p_token: token,
-        p_data: trip,
-        p_view: view ?? null,
+        p_data: normalizedTrip,
+        p_view: normalizedView,
         p_label: label ?? null
     });
 

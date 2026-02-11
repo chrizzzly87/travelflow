@@ -53,6 +53,7 @@ import {
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
+import { OnPageDebugger } from './components/OnPageDebugger';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
@@ -530,7 +531,6 @@ const ExampleTripLoader = ({
             showCityNames: generated.defaultView?.showCityNames,
             sidebarWidth: generated.defaultView?.sidebarWidth,
             timelineHeight: generated.defaultView?.timelineHeight,
-            destinationInfoExpanded: false,
         };
         const prepared: ITrip = {
             ...generated,
@@ -961,6 +961,7 @@ const AppContent: React.FC = () => {
 
             <CookieConsentBanner />
             <GlobalTooltipLayer />
+            <OnPageDebugger />
         </TripManagerProvider>
     );
 };

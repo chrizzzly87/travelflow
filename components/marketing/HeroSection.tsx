@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { PlaneWindowAnimation } from './PlaneWindowAnimation';
 
 /** Animated hand-drawn zigzag underline SVG */
@@ -35,6 +35,9 @@ export const HeroSection: React.FC = () => {
     const handleCtaClick = (ctaName: string) => {
         trackEvent(`home__hero_cta--${ctaName}`);
     };
+
+    const heroCtaDebugAttributes = (ctaName: string) =>
+        getAnalyticsDebugAttributes(`home__hero_cta--${ctaName}`);
 
     return (
         <section className="relative pt-8 pb-16 md:pt-16 md:pb-24">
@@ -76,6 +79,7 @@ export const HeroSection: React.FC = () => {
                         to="/create-trip"
                         onClick={() => handleCtaClick('start_planning')}
                         className="group relative rounded-2xl bg-accent-600 px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98]"
+                        {...heroCtaDebugAttributes('start_planning')}
                     >
                         Start Planning
                     </Link>
@@ -83,6 +87,7 @@ export const HeroSection: React.FC = () => {
                         href="#examples"
                         onClick={() => handleCtaClick('see_examples')}
                         className="rounded-2xl border border-slate-300 bg-white px-7 py-3.5 text-base font-bold text-slate-700 transition-all hover:border-slate-400 hover:text-slate-900 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                        {...heroCtaDebugAttributes('see_examples')}
                     >
                         See Example Trips
                     </a>

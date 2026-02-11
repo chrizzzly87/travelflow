@@ -10,6 +10,10 @@ interface UmamiApi {
     };
 }
 
+export const ANALYTICS_DEBUG_EVENT_ATTR = 'data-tf-track-event';
+export const ANALYTICS_DEBUG_PAYLOAD_ATTR = 'data-tf-track-payload';
+export const ANALYTICS_DEBUG_SELECTOR = `[${ANALYTICS_DEBUG_EVENT_ATTR}]`;
+
 declare global {
     interface Window {
         umami?: UmamiApi;
@@ -37,6 +41,29 @@ const sanitizePayload = (payload?: Record<string, unknown>): AnalyticsPayload | 
         }
     }
     return Object.keys(sanitized).length ? sanitized : undefined;
+};
+
+export const getAnalyticsDebugAttributes = (
+    eventName: string,
+    payload?: Record<string, unknown>
+): Record<string, string> => {
+    const sanitizedEventName = eventName.trim();
+    if (!sanitizedEventName) return {};
+
+    const attributes: Record<string, string> = {
+        [ANALYTICS_DEBUG_EVENT_ATTR]: sanitizedEventName,
+    };
+
+    const sanitizedPayload = sanitizePayload(payload);
+    if (!sanitizedPayload) return attributes;
+
+    try {
+        attributes[ANALYTICS_DEBUG_PAYLOAD_ATTR] = JSON.stringify(sanitizedPayload);
+    } catch {
+        // Non-serializable payloads are ignored in debug overlays.
+    }
+
+    return attributes;
 };
 
 const createScriptLoadPromise = (script: HTMLScriptElement) =>
