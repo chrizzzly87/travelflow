@@ -17,4 +17,4 @@ summary: "Internal QA and debugging tooling update for development workflows."
 - [ ] [Internal] 🔒 Added route-scoped debug controls for trip-state QA scenarios.
 - [ ] [Internal] 👤 Added a simulated-login debug toggle (`window.toggleSimulatedLogin`) for paywall and auth-gated flow testing.
 - [ ] [Internal] 🛡️ Hardened debug hook calls with optional-chaining guards so stripped production builds do not throw.
-- [ ] [Internal] 🩹 Restored destination info view-state wiring to prevent runtime errors in trip pages.
+- [ ] [Internal] 🩹 Removed destination-info collapse state and kept modal content always expanded.

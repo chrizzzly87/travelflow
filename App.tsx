@@ -531,7 +531,6 @@ const ExampleTripLoader = ({
             showCityNames: generated.defaultView?.showCityNames,
             sidebarWidth: generated.defaultView?.sidebarWidth,
             timelineHeight: generated.defaultView?.timelineHeight,
-            destinationInfoExpanded: false,
         };
         const prepared: ITrip = {
             ...generated,

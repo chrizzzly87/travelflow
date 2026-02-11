@@ -366,14 +366,6 @@ export const TripView: React.FC<TripViewProps> = ({
        }
        return true;
     });
-    const [destinationInfoExpanded, setDestinationInfoExpanded] = useState<boolean>(() => {
-       if (typeof initialViewSettings?.destinationInfoExpanded === 'boolean') return initialViewSettings.destinationInfoExpanded;
-       if (typeof window !== 'undefined') {
-           const stored = localStorage.getItem('tf_country_info_expanded');
-           if (stored !== null) return stored === 'true';
-       }
-       return true;
-    });
     // Layout State
     const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
         if (initialViewSettings) return initialViewSettings.layoutMode;
@@ -610,7 +602,6 @@ export const TripView: React.FC<TripViewProps> = ({
     useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
     useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
     useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
-    useEffect(() => { localStorage.setItem('tf_country_info_expanded', String(destinationInfoExpanded)); }, [destinationInfoExpanded]);
     useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
 
     // Update URL with View State
@@ -622,7 +613,6 @@ export const TripView: React.FC<TripViewProps> = ({
                 mapStyle,
                 routeMode,
                 showCityNames,
-                destinationInfoExpanded,
                 zoomLevel,
                 sidebarWidth,
                 timelineHeight
@@ -646,7 +636,7 @@ export const TripView: React.FC<TripViewProps> = ({
             }
         }, 500);
         return () => clearTimeout(timeoutId);
-    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, destinationInfoExpanded, onViewSettingsChange]);
+    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -654,11 +644,10 @@ export const TripView: React.FC<TripViewProps> = ({
         mapStyle,
         routeMode,
         showCityNames,
-        destinationInfoExpanded,
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, destinationInfoExpanded, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useEffect(() => {
         if (!initialViewSettings) return;
@@ -683,8 +672,6 @@ export const TripView: React.FC<TripViewProps> = ({
         if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
         const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
         setShowCityNames(desiredShowCityNames);
-        const desiredDestinationInfoExpanded = initialViewSettings.destinationInfoExpanded ?? true;
-        setDestinationInfoExpanded(desiredDestinationInfoExpanded);
 
         prevViewRef.current = initialViewSettings;
     }, [initialViewSettings, currentViewSettings]);
@@ -2282,11 +2269,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 {displayTrip.countryInfo ? (
                                                     <div className="p-4 border-b border-gray-100 bg-white z-10">
-                                                        <CountryInfo
-                                                            info={displayTrip.countryInfo}
-                                                            isExpanded={destinationInfoExpanded}
-                                                            onExpandedChange={setDestinationInfoExpanded}
-                                                        />
+                                                        <CountryInfo info={displayTrip.countryInfo} />
                                                     </div>
                                                 ) : isTripLockedByExpiry ? (
                                                     <div className="p-4 border-b border-gray-100 bg-white z-10 text-xs text-slate-500">
@@ -2791,11 +2774,7 @@ export const TripView: React.FC<TripViewProps> = ({
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         {displayTrip.countryInfo ? (
-                                            <CountryInfo
-                                                info={displayTrip.countryInfo}
-                                                isExpanded={destinationInfoExpanded}
-                                                onExpandedChange={setDestinationInfoExpanded}
-                                            />
+                                            <CountryInfo info={displayTrip.countryInfo} />
                                         ) : isTripLockedByExpiry ? (
                                             <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
                                         ) : (

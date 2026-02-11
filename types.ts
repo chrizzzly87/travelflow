@@ -113,7 +113,6 @@ export interface IViewSettings {
     zoomLevel: number;
     routeMode?: RouteMode;
     showCityNames?: boolean;
-    destinationInfoExpanded?: boolean;
     sidebarWidth?: number;
     timelineHeight?: number;
 }
@@ -144,7 +143,6 @@ export interface IUserSettings {
     layoutMode?: 'vertical' | 'horizontal';
     timelineView?: 'horizontal' | 'vertical';
     showCityNames?: boolean;
-    destinationInfoExpanded?: boolean;
     zoomLevel?: number;
     sidebarWidth?: number;
     timelineHeight?: number;
