@@ -94,7 +94,7 @@ const ZIP_HEADERS = {
 const ADMIN_HEADER = "x-tf-admin-key";
 const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
-const MAX_CONCURRENCY = 4;
+const MAX_CONCURRENCY = 5;
 const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
 const BENCHMARK_PROVIDER_TIMEOUT_MS = Math.max(
   90_000,
@@ -2004,7 +2004,7 @@ const handleRun = async (
   const concurrencyRaw = Number(body.concurrency);
   const concurrency = Number.isFinite(concurrencyRaw)
     ? clampNumber(Math.round(concurrencyRaw), 1, MAX_CONCURRENCY)
-    : Math.min(3, MAX_CONCURRENCY);
+    : Math.min(5, MAX_CONCURRENCY);
 
   let session: BenchmarkSessionRow | null = null;
   const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
