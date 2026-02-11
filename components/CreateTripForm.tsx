@@ -28,7 +28,16 @@ import { CountryTag } from './CountryTag';
 import { IdealTravelTimeline } from './IdealTravelTimeline';
 import { MonthSeasonStrip } from './MonthSeasonStrip';
 import { Checkbox } from './ui/checkbox';
-import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/geminiService';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from './ui/select';
+import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/aiService';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -60,6 +69,13 @@ import {
     MONTH_LABELS,
     rankCountriesForMonths,
 } from '../data/countryTravelData';
+import {
+    AI_MODEL_CATALOG,
+    getCurrentRuntimeModel,
+    getDefaultCreateTripModel,
+    groupAiModelsByProvider,
+} from '../config/aiModelCatalog';
+import { isSimulatedLoggedIn } from '../services/dbService';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
@@ -202,6 +218,12 @@ const WIZARD_LOGISTIC_CARDS: SelectionCardConfig[] = [
 ];
 
 const NOOP = () => {};
+const SIM_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
+
+interface SimulatedLoginDebugDetail {
+    available: boolean;
+    loggedIn: boolean;
+}
 
 
 const toIsoDate = (date: Date): string => {
@@ -346,6 +368,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const [numCities, setNumCities] = useState<number | ''>('');
     const [notes, setNotes] = useState('');
     const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
+    const [isInternalAiSelectorVisible, setIsInternalAiSelectorVisible] = useState(() => isSimulatedLoggedIn());
+    const [selectedAiModelId, setSelectedAiModelId] = useState(() => getDefaultCreateTripModel().id);
 
     // Wizard state.
     const [wizardStep, setWizardStep] = useState<WizardStep>(1);
@@ -466,6 +490,15 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         [surpriseChoiceCode, surpriseRecommendations]
     );
 
+    const groupedAiModels = useMemo(() => groupAiModelsByProvider(AI_MODEL_CATALOG), []);
+
+    const selectedAiModel = useMemo(
+        () => AI_MODEL_CATALOG.find((item) => item.id === selectedAiModelId) || getDefaultCreateTripModel(),
+        [selectedAiModelId]
+    );
+
+    const currentRuntimeModel = useMemo(() => getCurrentRuntimeModel(), []);
+
     useEffect(() => {
         if (!surpriseRecommendations.length) {
             setSurpriseChoiceCode('');
@@ -494,6 +527,27 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         if (hasIslandSelection) return;
         setEnforceIslandOnly(true);
     }, [hasIslandSelection]);
+
+    useEffect(() => {
+        const handleSimulatedLoginEvent = (event: Event) => {
+            const detail = (event as CustomEvent<SimulatedLoginDebugDetail>).detail;
+            if (!detail || typeof detail.loggedIn !== 'boolean') return;
+            setIsInternalAiSelectorVisible(detail.loggedIn);
+        };
+
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key !== 'tf_debug_simulated_login') return;
+            setIsInternalAiSelectorVisible(event.newValue === '1');
+        };
+
+        window.addEventListener(SIM_LOGIN_DEBUG_EVENT, handleSimulatedLoginEvent as EventListener);
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener(SIM_LOGIN_DEBUG_EVENT, handleSimulatedLoginEvent as EventListener);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
 
     // Apply URL prefill data on mount
     useEffect(() => {
@@ -668,6 +722,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 numCities: typeof numCities === 'number' ? numCities : undefined,
                 selectedIslandNames,
                 enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+                aiTarget: selectedAiModel.availability === 'active'
+                    ? {
+                        provider: selectedAiModel.provider,
+                        model: selectedAiModel.model,
+                    }
+                    : undefined,
             });
             setPreviewTrip(null);
             onTripGenerated(trip);
@@ -1060,6 +1120,73 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         disabled={isGenerating}
                                     />
                                 </div>
+
+                                {isInternalAiSelectorVisible && (
+                                    <div className="space-y-2 rounded-xl border border-accent-200 bg-accent-50/60 px-3 py-3 text-left">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-accent-800">Internal model override</p>
+                                                <p className="mt-0.5 text-[11px] text-accent-700">Visible only in simulated login mode. Defaults to Gemini runtime model.</p>
+                                            </div>
+                                        </div>
+                                        <Select value={selectedAiModelId} onValueChange={setSelectedAiModelId}>
+                                            <SelectTrigger className="w-full border-accent-200">
+                                                <span className="truncate text-left text-sm font-semibold text-slate-800">{selectedAiModel.label}</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {Object.entries(groupedAiModels).map(([providerLabel, models]) => (
+                                                    <SelectGroup key={providerLabel}>
+                                                        <SelectLabel>{providerLabel}</SelectLabel>
+                                                        {models.map((model) => (
+                                                            <SelectItem key={model.id} value={model.id} disabled={model.availability !== 'active'}>
+                                                                <div className="flex w-full min-w-0 flex-col gap-0.5">
+                                                                    <div className="flex items-start gap-2">
+                                                                        <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{model.label}</span>
+                                                                        <div className="ml-auto flex shrink-0 items-center gap-1">
+                                                                            {model.isPreferred && (
+                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                                                                                    Preferred
+                                                                                </span>
+                                                                            )}
+                                                                            {model.isCurrentRuntime && (
+                                                                                <span className="rounded-full border border-accent-200 bg-accent-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
+                                                                                    Runtime
+                                                                                </span>
+                                                                            )}
+                                                                            {model.availability !== 'active' && (
+                                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                                                                                    Soon
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-[11px] text-slate-500">{model.model} • {model.estimatedCostPerQueryLabel}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <div className="grid grid-cols-1 gap-1 text-[11px] text-gray-600 sm:grid-cols-2">
+                                            <div>
+                                                <span className="font-semibold text-gray-700">Current runtime:</span>{' '}
+                                                {currentRuntimeModel ? `${currentRuntimeModel.label} (${currentRuntimeModel.model})` : 'Unknown'}
+                                            </div>
+                                            <div>
+                                                <span className="font-semibold text-gray-700">Estimated cost/query:</span>{' '}
+                                                {selectedAiModel.estimatedCostPerQueryLabel}
+                                            </div>
+                                            <div className="sm:col-span-2">
+                                                <span className="font-semibold text-gray-700">Preferred:</span>{' '}
+                                                {selectedAiModel.isPreferred ? 'Yes' : 'No'}
+                                            </div>
+                                            {selectedAiModel.costNote && (
+                                                <div className="sm:col-span-2 text-gray-500">{selectedAiModel.costNote}</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="flex gap-3 pt-1">
                                     <button

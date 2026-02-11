@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
-import { suggestActivityDetails, generateCityNotesAddition } from '../services/geminiService';
-import type { CityNotesEnhancementMode } from '../services/geminiService';
+import { suggestActivityDetails, generateCityNotesAddition } from '../services/aiService';
+import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
@@ -12,6 +12,7 @@ import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
+import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -909,13 +910,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       isTransport && displayItem.id && tripItems.length > 0
           ? getTravelLegMetricsForItem(tripItems, displayItem.id)
           : null;
+  const normalizedTransportMode = normalizeTransportMode(displayItem.transportMode);
   const airDistanceLabel = travelLegMetrics?.distanceKm
       ? formatDistance(travelLegMetrics.distanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 1 })
       : null;
   const routeDistanceKm = Number.isFinite(displayItem.routeDistanceKm)
       ? (displayItem.routeDistanceKm as number)
       : null;
-  const routeDistanceDisplayKm = displayItem.transportMode === 'plane'
+  const routeDistanceDisplayKm = normalizedTransportMode === 'plane'
       ? (travelLegMetrics?.distanceKm ?? null)
       : routeDistanceKm;
   const routeDistanceLabel = routeDistanceDisplayKm
@@ -926,12 +928,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const canRoute =
           routeMode === 'realistic' &&
           !!travelLegMetrics?.distanceKm &&
-          !['plane', 'boat', 'na'].includes(displayItem.transportMode || 'na');
+          !['plane', 'boat', 'na'].includes(normalizedTransportMode);
       if (routeStatus === 'calculating' || (canRoute && routeStatus !== 'failed')) return 'Calculating…';
       return 'N/A';
   })();
   const effectiveDistanceKm = routeDistanceDisplayKm ?? travelLegMetrics?.distanceKm ?? null;
-  const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, displayItem.transportMode) : null;
+  const estimatedHours = effectiveDistanceKm ? estimateTravelHours(effectiveDistanceKm, normalizedTransportMode) : null;
   const estimatedLabel = formatDurationHours(estimatedHours);
   const displayedDurationDays = isCity ? previewDuration : displayItem.duration;
   const durationBaseline = durationBaselineRef.current;
@@ -976,8 +978,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const effectiveBorderColor = shiftHexColor(effectiveColorHex, -20);
   const selectedCityColorHex = isCity ? getHexFromColorClass(displayItem.color || '') : null;
   const activeCityPalette = getCityColorPalette(cityColorPaletteId);
-  const routeModeLabel = displayItem.transportMode && displayItem.transportMode !== 'na'
-      ? displayItem.transportMode
+  const routeModeLabel = normalizedTransportMode !== 'na'
+      ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
 
@@ -1476,15 +1478,19 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isTransport && (
-                 <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                 <div className={`bg-white p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-amber-300 border-dashed bg-amber-50/30' : 'border-gray-100'}`}>
                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
-                         {(['na', 'plane', 'train', 'bus', 'car', 'motorcycle', 'bicycle', 'walk', 'boat'] as TransportMode[]).map(mode => (
+                         {(TRANSPORT_MODE_UI_ORDER as TransportMode[]).map(mode => (
                              <button 
                                  key={mode} 
                                  onClick={() => handleTransportConvert(mode)} 
                                  disabled={!canEdit}
-                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${displayItem.transportMode === mode ? 'bg-accent-50 border-accent-500 text-accent-700' : 'bg-gray-50 border-gray-100 text-gray-400'} ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
+                                 className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
+                                    normalizedTransportMode === mode
+                                        ? 'bg-accent-50 border-accent-500 text-accent-700'
+                                        : (mode === 'na' ? 'bg-amber-50 border-amber-300 border-dashed text-amber-700' : 'bg-gray-50 border-gray-100 text-gray-400')
+                                 } ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
                                  <span className="text-[10px] font-bold mt-2 uppercase">{mode === 'na' ? 'N/A' : mode}</span>

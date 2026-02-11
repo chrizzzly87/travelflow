@@ -178,6 +178,18 @@ export const ensureDbSession = async (): Promise<string | null> => {
     return sessionPromise;
 };
 
+export const dbGetAccessToken = async (): Promise<string | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+        console.error('Failed to read Supabase access token', error);
+        return null;
+    }
+    return data?.session?.access_token ?? null;
+};
+
 const isRlsViolation = (error: { code?: string; message?: string } | null) => {
     if (!error) return false;
     if (error.code === '42501') return true;

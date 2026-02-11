@@ -1,6 +1,8 @@
 
+import type { TransportMode as CanonicalTransportMode } from './shared/transportModes';
+
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
-export type TransportMode = 'plane' | 'train' | 'bus' | 'boat' | 'car' | 'walk' | 'bicycle' | 'motorcycle' | 'na';
+export type TransportMode = CanonicalTransportMode;
 export type ActivityType = 
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
@@ -19,6 +21,14 @@ export interface IAiInsights {
     cost: string;
     bestTime: string;
     tips: string;
+}
+
+export interface ITripAiMeta {
+    provider: string;
+    model: string;
+    generatedAt: string;
+    benchmarkSessionId?: string | null;
+    benchmarkRunId?: string | null;
 }
 
 export interface IHotel {
@@ -84,10 +94,11 @@ export interface ITrip {
   roundTrip?: boolean;
   cityColorPaletteId?: string;
   mapColorMode?: MapColorMode;
+  aiMeta?: ITripAiMeta;
   defaultView?: IViewSettings;
   status?: 'active' | 'archived' | 'expired';
   tripExpiresAt?: string | null;
-  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example';
+  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
   sourceTemplateId?: string | null;
   isExample?: boolean;
   exampleTemplateId?: string;

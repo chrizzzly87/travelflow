@@ -630,6 +630,10 @@ export const OnPageDebugger: React.FC = () => {
         window.open(`https://pagespeed.web.dev/report?url=${currentPage}`, '_blank', 'noopener,noreferrer');
     }, []);
 
+    const openAiBenchmark = useCallback(() => {
+        window.open('/admin/ai-benchmark', '_blank', 'noopener,noreferrer');
+    }, []);
+
     const runSeoAuditAndStore = useCallback(() => {
         setMetaSnapshot(readMetaSnapshot());
         const result = runSeoAudit();
@@ -888,6 +892,15 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     <Globe size={16} weight="duotone" />
                                     Open Umami
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={openAiBenchmark}
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <Flask size={16} weight="duotone" />
+                                    Open AI Benchmark
                                 </button>
 
                                 <button

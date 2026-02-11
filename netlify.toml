@@ -18,6 +18,26 @@
   function = "health"
 
 [[edge_functions]]
+  path = "/api/ai/generate"
+  function = "ai-generate"
+
+[[edge_functions]]
+  path = "/api/internal/ai/benchmark"
+  function = "ai-benchmark"
+
+[[edge_functions]]
+  path = "/api/internal/ai/benchmark/export"
+  function = "ai-benchmark"
+
+[[edge_functions]]
+  path = "/api/internal/ai/benchmark/cleanup"
+  function = "ai-benchmark"
+
+[[edge_functions]]
+  path = "/api/internal/ai/benchmark/rating"
+  function = "ai-benchmark"
+
+[[edge_functions]]
   path = "/api/trip-map-preview"
   function = "trip-map-preview"
 

@@ -24,6 +24,7 @@ import { PrivacyPage } from './pages/PrivacyPage';
 import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { AdminAiBenchmarkPage } from './pages/AdminAiBenchmarkPage';
 import { PricingPage } from './pages/PricingPage';
 import { FaqPage } from './pages/FaqPage';
 import { ShareUnavailablePage } from './pages/ShareUnavailablePage';
@@ -891,6 +892,7 @@ const AppContent: React.FC = () => {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/cookies" element={<CookiesPage />} />
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/ai-benchmark" element={<AdminAiBenchmarkPage />} />
                 <Route 
                     path="/trip/:tripId" 
                     element={
