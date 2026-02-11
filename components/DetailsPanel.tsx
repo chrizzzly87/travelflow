@@ -1478,7 +1478,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              )}
 
              {isTransport && (
-                 <div className={`bg-white p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-amber-300 border-dashed bg-amber-50/30' : 'border-gray-100'}`}>
+                 <div className={`bg-white p-5 rounded-2xl shadow-sm border ${normalizedTransportMode === 'na' ? 'border-gray-200 bg-gray-50/40' : 'border-gray-100'}`}>
                      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Transportation Mode</h3>
                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))' }}>
                          {(TRANSPORT_MODE_UI_ORDER as TransportMode[]).map(mode => (
@@ -1488,8 +1488,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                  disabled={!canEdit}
                                  className={`flex flex-col items-center justify-center w-full h-20 rounded-xl border-2 transition-all ${
                                     normalizedTransportMode === mode
-                                        ? 'bg-accent-50 border-accent-500 text-accent-700'
-                                        : (mode === 'na' ? 'bg-amber-50 border-amber-300 border-dashed text-amber-700' : 'bg-gray-50 border-gray-100 text-gray-400')
+                                        ? (mode === 'na' ? 'bg-gray-50 border-gray-300 text-gray-500' : 'bg-accent-50 border-accent-500 text-accent-700')
+                                        : (mode === 'na' ? 'bg-gray-50 border-gray-200 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-400')
                                  } ${canEdit ? 'hover:border-gray-200' : 'opacity-60 cursor-not-allowed'}`}
                              >
                                  <TransportModeIcon mode={mode} size={24} />
