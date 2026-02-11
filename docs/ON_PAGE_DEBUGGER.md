@@ -65,6 +65,15 @@ Behavior:
 - Disables editing in `TripView` while expired is `true`
 - Emits event `tf:trip-expired-debug`
 
+## Debugger toggle persistence
+
+The toolbar now saves toggle state in `localStorage` and restores it after reload:
+- `tf_debug_auto_open` (`Enable auto-open`)
+- `tf_debug_tracking_enabled` (`Show/Hide Tracking Boxes`)
+- `tf_debug_panel_expanded` (`Expand/Collapse`)
+- `tf_debug_h1_highlight` (`Mark/Unmark H1`)
+- `tf_debug_simulated_login` (`Enable/Disable Sim Login`)
+
 ## Route-aware behavior
 
 ### On `/trip/:tripId`

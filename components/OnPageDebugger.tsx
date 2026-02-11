@@ -20,6 +20,9 @@ import {
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
+const DEBUG_TRACKING_ENABLED_STORAGE_KEY = 'tf_debug_tracking_enabled';
+const DEBUG_PANEL_EXPANDED_STORAGE_KEY = 'tf_debug_panel_expanded';
+const DEBUG_H1_HIGHLIGHT_STORAGE_KEY = 'tf_debug_h1_highlight';
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
@@ -137,6 +140,31 @@ const readMetaSnapshot = (): MetaSnapshot => {
         title: document.title.trim(),
         description: document.querySelector<HTMLMetaElement>('meta[name="description"]')?.content.trim() || '',
     };
+};
+
+const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
+    if (typeof window === 'undefined') return fallbackValue;
+    try {
+        const raw = window.localStorage.getItem(storageKey);
+        if (raw === '1') return true;
+        if (raw === '0') return false;
+        return fallbackValue;
+    } catch {
+        return fallbackValue;
+    }
+};
+
+const persistStoredDebuggerBoolean = (storageKey: string, value: boolean, fallbackValue: boolean): void => {
+    if (typeof window === 'undefined') return;
+    try {
+        if (value === fallbackValue) {
+            window.localStorage.removeItem(storageKey);
+            return;
+        }
+        window.localStorage.setItem(storageKey, value ? '1' : '0');
+    } catch {
+        // Ignore storage access issues.
+    }
 };
 
 const getAccessibleName = (element: HTMLElement): string => {
@@ -349,38 +377,37 @@ export const OnPageDebugger: React.FC = () => {
     const showSeoTools = !isTripDetailRoute;
 
     const [isOpen, setIsOpen] = useState(false);
-    const [isExpanded, setIsExpanded] = useState(true);
-    const [trackingEnabled, setTrackingEnabled] = useState(true);
-    const [autoOpenEnabled, setAutoOpenEnabled] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, true)
+    );
+    const [trackingEnabled, setTrackingEnabled] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, true)
+    );
+    const [autoOpenEnabled, setAutoOpenEnabled] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_AUTO_OPEN_STORAGE_KEY, false)
+    );
     const [trackingBoxes, setTrackingBoxes] = useState<TrackingBox[]>([]);
     const [seoAudit, setSeoAudit] = useState<AuditResult | null>(null);
     const [a11yAudit, setA11yAudit] = useState<AuditResult | null>(null);
     const [metaSnapshot, setMetaSnapshot] = useState<MetaSnapshot>(() => readMetaSnapshot());
-    const [h1HighlightEnabled, setH1HighlightEnabled] = useState(false);
+    const [h1HighlightEnabled, setH1HighlightEnabled] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_H1_HIGHLIGHT_STORAGE_KEY, false)
+    );
     const [h1HighlightBox, setH1HighlightBox] = useState<H1HighlightBox | null>(null);
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
-    const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(false);
-    const simulatedLoggedInRef = useRef(false);
+    const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() =>
+        readStoredDebuggerBoolean(SIMULATED_LOGIN_STORAGE_KEY, false)
+    );
+    const simulatedLoggedInRef = useRef(simulatedLoggedIn);
 
     useEffect(() => {
-        try {
-            const enabled = window.localStorage.getItem(DEBUG_AUTO_OPEN_STORAGE_KEY) === '1';
-            setAutoOpenEnabled(enabled);
-            if (enabled) {
-                setIsOpen(true);
-            }
-        } catch {
-            // Ignore storage access issues.
+        if (autoOpenEnabled) {
+            setIsOpen(true);
         }
+    }, [autoOpenEnabled]);
 
-        try {
-            const simulatedLoginEnabled = window.localStorage.getItem(SIMULATED_LOGIN_STORAGE_KEY) === '1';
-            simulatedLoggedInRef.current = simulatedLoginEnabled;
-            setSimulatedLoggedIn(simulatedLoginEnabled);
-        } catch {
-            // Ignore storage access issues.
-        }
+    useEffect(() => {
         window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
             detail: { available: true, loggedIn: simulatedLoggedInRef.current },
         }));
@@ -391,9 +418,28 @@ export const OnPageDebugger: React.FC = () => {
     }, [simulatedLoggedIn]);
 
     useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, isExpanded, true);
+    }, [isExpanded]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, true);
+    }, [trackingEnabled]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_AUTO_OPEN_STORAGE_KEY, autoOpenEnabled, false);
+    }, [autoOpenEnabled]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_H1_HIGHLIGHT_STORAGE_KEY, h1HighlightEnabled, false);
+    }, [h1HighlightEnabled]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(SIMULATED_LOGIN_STORAGE_KEY, simulatedLoggedIn, false);
+    }, [simulatedLoggedIn]);
+
+    useEffect(() => {
         setMetaSnapshot(readMetaSnapshot());
         if (!showSeoTools) {
-            setH1HighlightEnabled(false);
             setH1HighlightBox(null);
             setSeoAudit(null);
         }
@@ -588,29 +634,11 @@ export const OnPageDebugger: React.FC = () => {
     const toggleAutoOpen = useCallback(() => {
         const next = !autoOpenEnabled;
         setAutoOpenEnabled(next);
-        try {
-            if (next) {
-                window.localStorage.setItem(DEBUG_AUTO_OPEN_STORAGE_KEY, '1');
-            } else {
-                window.localStorage.removeItem(DEBUG_AUTO_OPEN_STORAGE_KEY);
-            }
-        } catch {
-            // Ignore storage access issues.
-        }
     }, [autoOpenEnabled]);
 
     const setSimulatedLogin = useCallback((next: boolean): boolean => {
         setSimulatedLoggedIn(next);
         simulatedLoggedInRef.current = next;
-        try {
-            if (next) {
-                window.localStorage.setItem(SIMULATED_LOGIN_STORAGE_KEY, '1');
-            } else {
-                window.localStorage.removeItem(SIMULATED_LOGIN_STORAGE_KEY);
-            }
-        } catch {
-            // Ignore storage access issues.
-        }
         window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
             detail: { available: true, loggedIn: next },
         }));
