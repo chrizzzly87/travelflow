@@ -156,17 +156,25 @@ const main = () => {
         const variants: Array<{
             variant: BlogImageVariant;
             large: string;
-            small?: string;
+            responsive?: string[];
         }> = [
             {
                 variant: 'card',
                 large: media.card.sources.large,
-                small: media.card.sources.small,
+                responsive: [
+                    media.card.sources.xsmall,
+                    media.card.sources.small,
+                    media.card.sources.medium,
+                ],
             },
             {
                 variant: 'header',
                 large: media.header.sources.large,
-                small: media.header.sources.small,
+                responsive: [
+                    media.header.sources.xsmall,
+                    media.header.sources.small,
+                    media.header.sources.medium,
+                ],
             },
             {
                 variant: 'ogVertical',
@@ -178,8 +186,12 @@ const main = () => {
             const largePublicPath = webPathToPublicPath(entry.large);
             const largeExists = existsSync(largePublicPath);
 
-            if (entry.small && largeExists && !existsSync(webPathToPublicPath(entry.small))) {
-                downscaleRepairs.push(entry.small);
+            if (entry.responsive && largeExists) {
+                for (const responsivePath of entry.responsive) {
+                    if (!existsSync(webPathToPublicPath(responsivePath))) {
+                        downscaleRepairs.push(responsivePath);
+                    }
+                }
             }
 
             if (!force && largeExists) {

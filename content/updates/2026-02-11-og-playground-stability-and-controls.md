@@ -1,16 +1,20 @@
 ---
 id: rel-2026-02-11-og-playground-stability-and-controls
 version: v0.46.0
-title: "OG playground stability and control clarity"
+title: "Image delivery optimization and OG playground stability"
 date: 2026-02-11
 published_at: 2026-02-11T06:33:16Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "Internal OG playground reliability and usability update for faster preview debugging."
+summary: "Faster blog and inspiration image delivery plus internal OG playground reliability and usability improvements."
 ---
 
 ## Changes
+- [x] [Improved] ⚡ Blog cards and post headers now use build-time optimized responsive images (`480/768/1024/1536`) to reduce payload size and improve load speed.
+- [x] [Improved] 🖼️ Inspiration cards now use the same build-time responsive image pipeline (`480/768/1024/1536`) for faster loading on mobile and desktop.
+- [ ] [Internal] 🧠 Image build scripts are now incremental by default and skip generation when source files already exist, keeping repeated deploy builds fast.
+- [ ] [Internal] 📝 Added a full npm script reference to the README so all `npm run` commands are documented in one place.
 - [ ] [Internal] 🧯 Fixed a client-side initialization crash in `/api/og/playground` that blocked preview image rendering and sample URL output.
 - [ ] [Internal] 🧭 Reorganized the playground form into clear sections (Endpoint, Shared Overrides, Trip Source & Stats, Blog Image Controls).
 - [ ] [Internal] 🎚️ Updated endpoint switching to hide non-applicable control groups so only relevant fields are shown.
