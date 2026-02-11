@@ -83,6 +83,7 @@ interface BenchmarkSummary {
 
 interface BenchmarkApiResponse {
     ok: boolean;
+    async?: boolean;
     session?: BenchmarkSession;
     runs?: BenchmarkRun[];
     run?: BenchmarkRun;
@@ -794,6 +795,30 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const nextRuns = payload.runs || [];
             setRuns(nextRuns);
             setSummary(payload.summary || summarizeRunsLocal(nextRuns));
+
+            const hasPendingRuns = nextRuns.some((run) => run.status === 'queued' || run.status === 'running');
+            const sessionLookup = payload.session?.share_token || payload.session?.id || '';
+            if (hasPendingRuns && sessionLookup) {
+                setMessage(`Queued ${selected.length} target(s). Running in background...`);
+                const maxAttempts = 120;
+                const intervalMs = 2000;
+
+                for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+                    await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+                    const latest = await fetchBenchmarkApi(`/api/internal/ai/benchmark?session=${encodeURIComponent(sessionLookup)}`, {
+                        method: 'GET',
+                    });
+                    const latestRuns = latest.runs || [];
+                    setRuns(latestRuns);
+                    setSummary(latest.summary || summarizeRunsLocal(latestRuns));
+
+                    const stillPending = latestRuns.some((run) => run.status === 'queued' || run.status === 'running');
+                    if (!stillPending) {
+                        break;
+                    }
+                }
+            }
+
             setMessage(`Executed ${selected.length} target(s).`);
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
