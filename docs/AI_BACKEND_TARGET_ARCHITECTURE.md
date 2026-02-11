@@ -16,6 +16,7 @@ Current implementation status:
 9. Benchmark table uses optimistic prefilled running rows with live latency feedback during test execution.
 10. Transport mode enum + normalization + prompt guidance now use a shared contract (`shared/transportModes.ts`) with update workflow documented in `docs/TRANSPORT_MODE_CONTRACT.md`.
 11. Benchmark validation now includes stricter field/format checks with blocking errors vs non-blocking warning separation and per-run validation detail modal support in `/admin/ai-benchmark`.
+12. Benchmark execution now starts asynchronously in edge background (`waitUntil`) and `/admin/ai-benchmark` polls session status until runs settle, reducing deployed timeout failures.
 
 ## 1) Confirmed decisions (2026-02-11)
 

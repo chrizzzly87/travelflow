@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
     Plus,
@@ -44,6 +44,7 @@ interface BenchmarkSession {
     scenario: Record<string, unknown>;
     created_at: string;
     updated_at: string;
+    deleted_at?: string | null;
 }
 
 interface BenchmarkRun {
@@ -83,6 +84,7 @@ interface BenchmarkSummary {
 
 interface BenchmarkApiResponse {
     ok: boolean;
+    async?: boolean;
     session?: BenchmarkSession;
     runs?: BenchmarkRun[];
     run?: BenchmarkRun;
@@ -414,6 +416,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [session, setSession] = useState<BenchmarkSession | null>(null);
     const [runs, setRuns] = useState<BenchmarkRun[]>([]);
     const [summary, setSummary] = useState<BenchmarkSummary | null>(null);
+    const latestSessionBootstrapRef = useRef(false);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
 
@@ -682,6 +685,38 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         loadSession(benchmarkSessionParam);
     }, [benchmarkSessionParam, accessToken, loadSession]);
 
+    useEffect(() => {
+        if (!accessToken) return;
+        if (benchmarkSessionParam) return;
+        if (latestSessionBootstrapRef.current) return;
+        latestSessionBootstrapRef.current = true;
+
+        let cancelled = false;
+
+        const bootstrapLatestSession = async () => {
+            try {
+                const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark', {
+                    method: 'GET',
+                });
+                const sessions = Array.isArray(payload.sessions) ? payload.sessions : [];
+                const latest = sessions.find((entry) => !entry.deleted_at) || sessions[0];
+                if (!latest || cancelled) return;
+
+                const lookup = (latest.share_token || latest.id || '').trim();
+                if (!lookup) return;
+                await loadSession(lookup);
+            } catch {
+                // Keep first-load bootstrap silent; explicit actions surface detailed errors.
+            }
+        };
+
+        bootstrapLatestSession();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [accessToken, benchmarkSessionParam, fetchBenchmarkApi, loadSession]);
+
     const buildScenario = useCallback(() => {
         const selectedDestinations = parseDestinations(destinations);
         if (selectedDestinations.length === 0) {
@@ -794,6 +829,30 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             const nextRuns = payload.runs || [];
             setRuns(nextRuns);
             setSummary(payload.summary || summarizeRunsLocal(nextRuns));
+
+            const hasPendingRuns = nextRuns.some((run) => run.status === 'queued' || run.status === 'running');
+            const sessionLookup = payload.session?.share_token || payload.session?.id || '';
+            if (hasPendingRuns && sessionLookup) {
+                setMessage(`Queued ${selected.length} target(s). Running in background...`);
+                const maxAttempts = 120;
+                const intervalMs = 2000;
+
+                for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+                    await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
+                    const latest = await fetchBenchmarkApi(`/api/internal/ai/benchmark?session=${encodeURIComponent(sessionLookup)}`, {
+                        method: 'GET',
+                    });
+                    const latestRuns = latest.runs || [];
+                    setRuns(latestRuns);
+                    setSummary(latest.summary || summarizeRunsLocal(latestRuns));
+
+                    const stillPending = latestRuns.some((run) => run.status === 'queued' || run.status === 'running');
+                    if (!stillPending) {
+                        break;
+                    }
+                }
+            }
+
             setMessage(`Executed ${selected.length} target(s).`);
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Benchmark run failed');

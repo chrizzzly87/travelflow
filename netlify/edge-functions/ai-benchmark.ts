@@ -24,6 +24,10 @@ interface BenchmarkRequestBody {
   concurrency?: number;
 }
 
+interface EdgeContextLike {
+  waitUntil?: (promise: Promise<unknown>) => void;
+}
+
 interface ProviderUsage {
   promptTokens?: number;
   completionTokens?: number;
@@ -1824,6 +1828,7 @@ const handleRun = async (
   request: Request,
   config: { url: string; anonKey: string },
   authToken: string,
+  context?: EdgeContextLike,
 ): Promise<Response> => {
   const body = (await safeJsonParse(request)) as BenchmarkRequestBody | null;
   if (!body || typeof body !== "object") {
@@ -1928,7 +1933,7 @@ const handleRun = async (
     });
   }
 
-  await runWithConcurrency(
+  const executePromise = runWithConcurrency(
     request,
     createdRuns.rows,
     scenario,
@@ -1936,19 +1941,41 @@ const handleRun = async (
     authToken,
     session.id,
     concurrency,
-  );
+  ).catch(async (error) => {
+    const fallbackMessage = error instanceof Error ? error.message : "Background benchmark execution failed";
+    await Promise.all(
+      createdRuns.rows.map((row) => updateRunRow(config, authToken, row.id, {
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        error_message: fallbackMessage,
+      })),
+    );
+  });
 
+  if (typeof context?.waitUntil === "function") {
+    context.waitUntil(executePromise);
+    const queuedRuns = await fetchRunsForSession(config, authToken, session.id);
+    return json(202, {
+      ok: true,
+      async: true,
+      session,
+      runs: queuedRuns,
+      summary: summarizeRuns(queuedRuns),
+    });
+  }
+
+  await executePromise;
   const runs = await fetchRunsForSession(config, authToken, session.id);
-
   return json(200, {
     ok: true,
+    async: false,
     session,
     runs,
     summary: summarizeRuns(runs),
   });
 };
 
-export default async (request: Request) => {
+export default async (request: Request, context?: EdgeContextLike) => {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: JSON_HEADERS });
   }
@@ -1995,7 +2022,7 @@ export default async (request: Request) => {
     }
 
     if (request.method === "POST") {
-      return await handleRun(request, config, authToken);
+      return await handleRun(request, config, authToken, context);
     }
 
     return json(405, { error: "Method not allowed." });

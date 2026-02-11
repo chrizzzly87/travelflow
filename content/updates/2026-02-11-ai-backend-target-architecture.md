@@ -49,3 +49,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🎯 Normalized unknown transport modes to `na`, suppressed transport map icons for unset modes, and added dashed unset styling for transportation panels/chips to highlight missing mode selection.
 - [ ] [Internal] 🧱 Renamed the canonical runtime generation module to `services/aiService.ts` and kept `services/geminiService.ts` as a backward-compatible re-export shim for staged migration.
 - [ ] [Internal] 🚨 Split benchmark validation outcomes into blocking errors vs non-blocking warnings, persisted warning details in run validation payloads, and added warning visibility/filtering in `/admin/ai-benchmark`.
+- [ ] [Internal] ⏱️ Switched benchmark execution to async edge background processing (`waitUntil`) with admin-page polling so deployed benchmark runs no longer time out when model generations are slow.
+- [ ] [Internal] 🔄 Added benchmark-page startup bootstrap to auto-load the latest persisted benchmark session when no `session` URL param is present, so refresh does not appear to lose prior runs.
