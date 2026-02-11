@@ -51,3 +51,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🚨 Split benchmark validation outcomes into blocking errors vs non-blocking warnings, persisted warning details in run validation payloads, and added warning visibility/filtering in `/admin/ai-benchmark`.
 - [ ] [Internal] ⏱️ Switched benchmark execution to async edge background processing (`waitUntil`) with admin-page polling so deployed benchmark runs no longer time out when model generations are slow.
 - [ ] [Internal] 🔄 Added benchmark-page startup bootstrap to auto-load the latest persisted benchmark session when no `session` URL param is present, so refresh does not appear to lose prior runs.
+- [ ] [Internal] 🛑 Added benchmark cancellation support (`POST /api/internal/ai/benchmark/cancel`) with per-run and per-session abort actions in `/admin/ai-benchmark`.
+- [ ] [Internal] 📡 Kept benchmark polling/live-latency updates active after reloading an in-progress session so running rows continue updating until completion or manual abort.

@@ -17,6 +17,8 @@ Current implementation status:
 10. Transport mode enum + normalization + prompt guidance now use a shared contract (`shared/transportModes.ts`) with update workflow documented in `docs/TRANSPORT_MODE_CONTRACT.md`.
 11. Benchmark validation now includes stricter field/format checks with blocking errors vs non-blocking warning separation and per-run validation detail modal support in `/admin/ai-benchmark`.
 12. Benchmark execution now starts asynchronously in edge background (`waitUntil`) and `/admin/ai-benchmark` polls session status until runs settle, reducing deployed timeout failures.
+13. `/api/internal/ai/benchmark/cancel` is implemented for manual cancellation of active benchmark runs (single run or entire session).
+14. `/admin/ai-benchmark` keeps polling and live latency updates when a persisted session reloads with active runs, and exposes abort actions in the run table/session toolbar.
 
 ## 1) Confirmed decisions (2026-02-11)
 
@@ -285,6 +287,24 @@ Purpose:
 Request fields:
 1. `runId` (required)
 2. `rating` (`good` | `medium` | `bad` | `null`)
+
+## 8.7 Run cancellation endpoint
+
+`POST /api/internal/ai/benchmark/cancel`
+
+Purpose:
+1. Manually stop active benchmark runs from admin UI.
+2. Support cancel by single run (`runId`) or bulk cancel by session (`sessionId`).
+3. Keep cancelled rows visible in benchmark history as `failed` with explicit cancellation message.
+
+Request fields:
+1. `runId` optional (UUID)
+2. `sessionId` optional (UUID)
+
+Response includes:
+1. `cancelled` count
+2. refreshed session row (if available)
+3. full refreshed run list and summary for immediate table sync
 
 ## 9) Persistence model (Supabase)
 

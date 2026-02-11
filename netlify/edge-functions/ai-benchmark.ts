@@ -94,6 +94,7 @@ const ADMIN_HEADER = "x-tf-admin-key";
 const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
 const MAX_CONCURRENCY = 4;
+const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
@@ -1003,6 +1004,27 @@ const fetchRunById = async (
   return raw[0] as BenchmarkRunRow;
 };
 
+const isRunCancelled = (run: BenchmarkRunRow | null): boolean => {
+  if (!run) return false;
+  if (run.status !== "failed") return false;
+  const message = typeof run.error_message === "string" ? run.error_message : "";
+  return message.startsWith(CANCELLED_BY_USER_MESSAGE);
+};
+
+const isRunActive = (run: BenchmarkRunRow | null): boolean => {
+  if (!run) return false;
+  return run.status === "queued" || run.status === "running";
+};
+
+const hasRunBeenCancelled = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+  runId: string,
+): Promise<boolean> => {
+  const latest = await fetchRunById(config, authToken, runId);
+  return isRunCancelled(latest);
+};
+
 const createRunRows = async (
   config: { url: string; anonKey: string },
   authToken: string,
@@ -1097,12 +1119,20 @@ const runGeneration = async (
   authToken: string,
   sessionId: string,
 ): Promise<void> => {
+  if (await hasRunBeenCancelled(config, authToken, run.id)) {
+    return;
+  }
+
   const startedAt = new Date().toISOString();
   await updateRunRow(config, authToken, run.id, {
     status: "running",
     started_at: startedAt,
     error_message: null,
   });
+
+  if (await hasRunBeenCancelled(config, authToken, run.id)) {
+    return;
+  }
 
   const endpoint = new URL("/api/ai/generate", request.url).toString();
   const startedMs = Date.now();
@@ -1125,6 +1155,9 @@ const runGeneration = async (
     if (!response.ok) {
       const details = await response.text();
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      if (await hasRunBeenCancelled(config, authToken, run.id)) {
+        return;
+      }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
@@ -1139,6 +1172,9 @@ const runGeneration = async (
     const usage: ProviderUsage = payload?.meta?.usage || {};
 
     if (!modelData || typeof modelData !== "object") {
+      if (await hasRunBeenCancelled(config, authToken, run.id)) {
+        return;
+      }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
@@ -1150,6 +1186,9 @@ const runGeneration = async (
 
     const validation = validateModelData(modelData as Record<string, unknown>);
     if (!validation.schemaValid) {
+      if (await hasRunBeenCancelled(config, authToken, run.id)) {
+        return;
+      }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
@@ -1177,6 +1216,9 @@ const runGeneration = async (
 
     const persistedTrip = await persistTrip(config, authToken, trip, sessionId);
     if (!persistedTrip.tripId) {
+      if (await hasRunBeenCancelled(config, authToken, run.id)) {
+        return;
+      }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
@@ -1189,6 +1231,10 @@ const runGeneration = async (
     const finishedAt = new Date().toISOString();
     const latencyMs = Date.now() - startedMs;
     const estimatedCostUsd = typeof usage.estimatedCostUsd === "number" ? usage.estimatedCostUsd : null;
+
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
 
     await updateRunRow(config, authToken, run.id, {
       status: "completed",
@@ -1206,6 +1252,9 @@ const runGeneration = async (
       error_message: null,
     });
   } catch (error) {
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
     await updateRunRow(config, authToken, run.id, {
       status: "failed",
       finished_at: new Date().toISOString(),
@@ -1824,6 +1873,102 @@ const handleRate = async (
   });
 };
 
+const buildCancelledRunPatch = (run: BenchmarkRunRow): Record<string, unknown> => {
+  const nowIso = new Date().toISOString();
+  const startedMs = run.started_at ? Date.parse(run.started_at) : NaN;
+  const computedLatency = Number.isFinite(startedMs) ? Math.max(0, Date.now() - startedMs) : null;
+  const existingLatency = typeof run.latency_ms === "number" ? run.latency_ms : null;
+
+  return {
+    status: "failed",
+    finished_at: nowIso,
+    latency_ms: existingLatency ?? computedLatency,
+    error_message: CANCELLED_BY_USER_MESSAGE,
+  };
+};
+
+const handleCancel = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response> => {
+  if (request.method !== "POST") {
+    return json(405, { error: "Method not allowed. Use POST." });
+  }
+
+  const body = (await safeJsonParse(request)) || {};
+  const runId = typeof body.runId === "string" ? body.runId.trim() : "";
+  const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
+
+  if (!runId && !sessionId) {
+    return json(400, {
+      error: "Missing runId or sessionId for cancellation",
+      code: "BENCHMARK_CANCEL_INVALID_TARGET",
+    });
+  }
+
+  let targetSessionId = sessionId;
+  const runsToCancel: BenchmarkRunRow[] = [];
+
+  if (runId) {
+    if (!isUuid(runId)) {
+      return json(400, {
+        error: "Invalid runId",
+        code: "BENCHMARK_CANCEL_INVALID_RUN_ID",
+      });
+    }
+    const run = await fetchRunById(config, authToken, runId);
+    if (!run) {
+      return json(404, {
+        error: "Benchmark run not found",
+        code: "BENCHMARK_RUN_NOT_FOUND",
+      });
+    }
+    targetSessionId = run.session_id;
+    if (isRunActive(run) && !isRunCancelled(run)) {
+      runsToCancel.push(run);
+    }
+  } else {
+    if (!isUuid(sessionId)) {
+      return json(400, {
+        error: "Invalid sessionId",
+        code: "BENCHMARK_CANCEL_INVALID_SESSION_ID",
+      });
+    }
+    const runs = await fetchRunsForSession(config, authToken, sessionId);
+    runs.forEach((run) => {
+      if (isRunActive(run) && !isRunCancelled(run)) {
+        runsToCancel.push(run);
+      }
+    });
+  }
+
+  const cancelResults = await Promise.all(
+    runsToCancel.map((run) => updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run))),
+  );
+
+  const cancelledCount = cancelResults.filter(Boolean).length;
+
+  if (!targetSessionId || !isUuid(targetSessionId)) {
+    return json(200, {
+      ok: true,
+      cancelled: cancelledCount,
+      runs: [],
+      summary: summarizeRuns([]),
+    });
+  }
+
+  const session = await fetchSessionById(config, authToken, targetSessionId);
+  const runs = await fetchRunsForSession(config, authToken, targetSessionId);
+  return json(200, {
+    ok: true,
+    cancelled: cancelledCount,
+    session,
+    runs,
+    summary: summarizeRuns(runs),
+  });
+};
+
 const handleRun = async (
   request: Request,
   config: { url: string; anonKey: string },
@@ -2015,6 +2160,10 @@ export default async (request: Request, context?: EdgeContextLike) => {
 
     if (pathname.endsWith("/rating")) {
       return await handleRate(request, config, authToken);
+    }
+
+    if (pathname.endsWith("/cancel")) {
+      return await handleCancel(request, config, authToken);
     }
 
     if (request.method === "GET") {
