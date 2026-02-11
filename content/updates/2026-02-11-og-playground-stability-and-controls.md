@@ -20,3 +20,4 @@ summary: "Internal OG playground reliability and usability update for faster pre
 - [ ] [Internal] 🌈 Set site-mode tint defaults to the blog baseline (enabled with 60 intensity) and strengthened tint gradient stops in `/api/og/site`.
 - [ ] [Internal] 🧱 Enforced mode hiding with `hidden` + explicit mode-sync display toggles so Site OG never shows trip-only controls, including first render.
 - [ ] [Internal] 🎨 Aligned `/api/og/trip` canvas background to the same gradient used by `/api/og/site`.
+- [ ] [Internal] 🔐 Expanded Netlify `SECRETS_SCAN_OMIT_KEYS` to include newly introduced provider/admin environment keys for deploy-time secret scanning.
