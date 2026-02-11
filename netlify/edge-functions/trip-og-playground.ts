@@ -292,7 +292,7 @@ export default async (request: Request): Promise<Response> => {
               <p class="group-title">Shared Overrides</p>
               <p class="group-sub">Cross-endpoint fields plus site-only metadata (hidden in Trip mode).</p>
             </div>
-            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden style=\"display:none\""}>
+            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
               <label for="pill">Pill label (site OG)</label>
               <input id="pill" name="pill" value="${escapeHtml(state.pill)}" placeholder="BLOG" />
             </div>
@@ -300,7 +300,7 @@ export default async (request: Request): Promise<Response> => {
               <label for="title">Title override</label>
               <input id="title" name="title" value="${escapeHtml(state.title)}" placeholder="Title shown in OG image" />
             </div>
-            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden style=\"display:none\""}>
+            <div class="full" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
               <label for="description">Description/subline (site OG)</label>
               <input id="description" name="description" value="${escapeHtml(state.description)}" placeholder="Subline for /api/og/site" />
             </div>
@@ -310,7 +310,7 @@ export default async (request: Request): Promise<Response> => {
             </div>
           </section>
 
-          <section class="group" data-mode="trip"${state.mode === "trip" ? "" : " hidden style=\"display:none\""}>
+          <section class="group" data-mode="trip"${state.mode === "trip" ? "" : " hidden"}>
             <div class="group-head">
               <p class="group-title">Trip Source & Stats</p>
               <p class="group-sub">Use a share token for real data, then optionally override details and map rendering.</p>
@@ -384,7 +384,7 @@ export default async (request: Request): Promise<Response> => {
             </div>
           </section>
 
-          <section class="group" data-mode="site"${state.mode === "site" ? "" : " hidden style=\"display:none\""}>
+          <section class="group" data-mode="site"${state.mode === "site" ? "" : " hidden"}>
             <div class="group-head">
               <p class="group-title">Blog Image Controls</p>
               <p class="group-sub">Preview blog image variants, cache revisions, and tint overlays for <code>/api/og/site</code>.</p>

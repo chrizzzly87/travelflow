@@ -18,5 +18,5 @@ summary: "Internal OG playground reliability and usability update for faster pre
 - [ ] [Internal] 🧼 Removed the long default blog test URL block and softened section-heading weight for cleaner visual hierarchy.
 - [ ] [Internal] 🧾 Moved site metadata into Shared Overrides and aligned field order to match design (`pill`, `title`, `description`, `footer path`).
 - [ ] [Internal] 🌈 Set site-mode tint defaults to the blog baseline (enabled with 60 intensity) and strengthened tint gradient stops in `/api/og/site`.
-- [ ] [Internal] 🧱 Enforced mode hiding with both `hidden` and `display:none` so Site OG never shows trip-only controls, including first render and mode-switch sync.
+- [ ] [Internal] 🧱 Enforced mode hiding with `hidden` + explicit mode-sync display toggles so Site OG never shows trip-only controls, including first render.
 - [ ] [Internal] 🎨 Aligned `/api/og/trip` canvas background to the same gradient used by `/api/og/site`.
