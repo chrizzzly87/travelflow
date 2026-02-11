@@ -53,3 +53,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🔄 Added benchmark-page startup bootstrap to auto-load the latest persisted benchmark session when no `session` URL param is present, so refresh does not appear to lose prior runs.
 - [ ] [Internal] 🛑 Added benchmark cancellation support (`POST /api/internal/ai/benchmark/cancel`) with per-run and per-session abort actions in `/admin/ai-benchmark`.
 - [ ] [Internal] 📡 Kept benchmark polling/live-latency updates active after reloading an in-progress session so running rows continue updating until completion or manual abort.
+- [ ] [Internal] ⏳ Switched benchmark execution off nested `/api/ai/generate` calls to direct provider runtime execution with a dedicated benchmark timeout budget (`AI_BENCHMARK_PROVIDER_TIMEOUT_MS`, default 90s) to reduce edge timeout failures.
+- [ ] [Internal] 🧰 Added provider timeout environment controls for runtime and benchmark paths (`AI_GENERATE_PROVIDER_TIMEOUT_MS`, `AI_BENCHMARK_PROVIDER_TIMEOUT_MS`) and documented expected defaults.
