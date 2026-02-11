@@ -21,7 +21,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
@@ -1067,6 +1067,13 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 >
                                     🇹🇭 Thailand (Test Plan)
                                 </button>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-400">
+                                <span>Try a new layout:</span>
+                                <Link to="/create-trip/v1" className="underline hover:text-accent-600 transition-colors">Polished Card</Link>
+                                <Link to="/create-trip/v2" className="underline hover:text-accent-600 transition-colors">Split-Screen</Link>
+                                <Link to="/create-trip/v3" className="underline hover:text-accent-600 transition-colors">Journey Builder</Link>
                             </div>
                         </div>
                     )}

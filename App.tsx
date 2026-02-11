@@ -25,6 +25,9 @@ import { TermsPage } from './pages/TermsPage';
 import { CookiesPage } from './pages/CookiesPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { PricingPage } from './pages/PricingPage';
+import { CreateTripV1Page } from './pages/CreateTripV1Page';
+import { CreateTripV2Page } from './pages/CreateTripV2Page';
+import { CreateTripV3Page } from './pages/CreateTripV3Page';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
@@ -436,6 +439,30 @@ const CreateTripRoute: React.FC<{
     return <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
 };
 
+const CreateTripV1Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+}> = ({ onTripGenerated, onOpenManager }) => {
+    useDbSync();
+    return <CreateTripV1Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+};
+
+const CreateTripV2Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+}> = ({ onTripGenerated, onOpenManager }) => {
+    useDbSync();
+    return <CreateTripV2Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+};
+
+const CreateTripV3Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+}> = ({ onTripGenerated, onOpenManager }) => {
+    useDbSync();
+    return <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+};
+
 const AppContent: React.FC = () => {
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
@@ -574,7 +601,34 @@ const AppContent: React.FC = () => {
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
                         />
-                    } 
+                    }
+                />
+                <Route
+                    path="/create-trip/v1"
+                    element={
+                        <CreateTripV1Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/v2"
+                    element={
+                        <CreateTripV2Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/v3"
+                    element={
+                        <CreateTripV3Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                        />
+                    }
                 />
                 <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/inspirations" element={<InspirationsPage />} />
