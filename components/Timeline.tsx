@@ -4,6 +4,7 @@ import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAV
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
+import { normalizeTransportMode } from '../shared/transportModes';
 
 interface TimelineProps {
   trip: ITrip;
@@ -736,7 +737,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const chipLeft = Math.max(0, mid - chipWidth / 2);
                             const chipRight = chipLeft + chipWidth;
                             const travel = link.travelItem;
-                            const mode = travel?.transportMode || 'na';
+                            const mode = normalizeTransportMode(travel?.transportMode);
+                            const isUnsetTransport = mode === 'na';
                             const isSelected = travel && selectedItemId === travel.id;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                             const connectorHeight = 10;
@@ -768,14 +770,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : 'bg-white border-gray-200 text-gray-600'}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-amber-50 border-amber-300 border-dashed text-amber-700' : 'bg-white border-gray-200 text-gray-600')}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                         disabled={!travel && !canEdit}
                                     >
-                                        <span className="text-gray-500">{getTransportIcon(mode)}</span>
+                                        {!isUnsetTransport && (
+                                            <span className="text-gray-500">{getTransportIcon(mode)}</span>
+                                        )}
                                         <span className="uppercase tracking-wider">{mode === 'na' ? 'N/A' : mode}</span>
                                         {durationHours !== null && (
                                             <span className="text-[10px] font-normal text-gray-400 ml-auto">{durationHours}h</span>

@@ -4,6 +4,7 @@ import { getActivityColorByTypes, getContrastTextColor, getHexFromColorClass, is
 import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
+import { normalizeTransportMode } from '../shared/transportModes';
 
 interface TimelineBlockProps {
   item: ITimelineItem;
@@ -46,6 +47,8 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
+  const normalizedTransportMode = isTravel ? normalizeTransportMode(item.transportMode) : 'na';
+  const isUnsetTravelMode = isTravel && normalizedTransportMode === 'na';
   const isLoadingItem = !!item.loading;
   
   // Drag detection refs
@@ -125,6 +128,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
         ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
+        ${isUnsetTravelMode ? 'border-dashed border-amber-300 bg-amber-50 text-amber-700' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
       style={mergedStyle}
@@ -172,7 +176,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         
         {isTravel && (
             <div className={`flex items-center gap-1 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`}>
-                <TransportModeIcon mode={item.transportMode} size={16} className="flex-shrink-0" />
+                {!isUnsetTravelMode && (
+                    <TransportModeIcon mode={normalizedTransportMode} size={16} className="flex-shrink-0" />
+                )}
             </div>
         )}
 
@@ -199,6 +205,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 style={isCompactVerticalActivity ? { fontSize: `${compactVerticalTitleSize}px` } : undefined}
             >
                 {isLoadingItem ? 'Loading city...' : item.title}
+                {isUnsetTravelMode && (
+                    <span className="block text-[9px] opacity-85 font-semibold mt-0.5">
+                        N/A
+                    </span>
+                )}
                 {isTravel && item.departureTime && (
                     <span className="block text-[9px] opacity-75 font-normal mt-0.5">
                         {item.departureTime}

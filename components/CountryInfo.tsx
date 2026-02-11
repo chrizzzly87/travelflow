@@ -3,10 +3,19 @@ import { ICountryInfo } from '../types';
 import { Banknote, Globe, Zap, FileText, ExternalLink, ArrowRightLeft } from 'lucide-react';
 
 interface CountryInfoProps {
-    info: ICountryInfo;
+    info: Partial<ICountryInfo> | ICountryInfo;
 }
 
 export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
+    const currencyCode = typeof info.currencyCode === 'string' && info.currencyCode.trim() ? info.currencyCode.trim() : 'LOCAL';
+    const exchangeRate = typeof info.exchangeRate === 'number' && Number.isFinite(info.exchangeRate) && info.exchangeRate > 0
+        ? info.exchangeRate
+        : null;
+    const languages = Array.isArray(info.languages) ? info.languages.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0) : [];
+    const electricSockets = typeof info.electricSockets === 'string' && info.electricSockets.trim().length > 0
+        ? info.electricSockets
+        : 'Not available';
+
     // Converter State with Persistence
     const [amount, setAmount] = useState<number>(() => {
         if (typeof window === 'undefined') return 1;
@@ -30,9 +39,11 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
         localStorage.setItem('tf_country_dir', direction);
     }, [direction]);
 
-    const convertedValue = direction === 'eurToLocal' 
-        ? amount * info.exchangeRate 
-        : amount / info.exchangeRate;
+    const convertedValue = exchangeRate === null
+        ? null
+        : direction === 'eurToLocal'
+            ? amount * exchangeRate
+            : amount / exchangeRate;
 
     return (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -50,7 +61,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                                <span>{direction === 'eurToLocal' ? 'EUR' : info.currencyCode}</span>
+                                <span>{direction === 'eurToLocal' ? 'EUR' : currencyCode}</span>
                             </div>
                             <input 
                                 type="number" 
@@ -67,15 +78,19 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         </button>
                         <div className="flex-1 text-right min-w-0">
                             <div className="text-xs text-gray-500 mb-1">
-                                <span>{direction === 'eurToLocal' ? info.currencyCode : 'EUR'}</span>
+                                <span>{direction === 'eurToLocal' ? currencyCode : 'EUR'}</span>
                             </div>
                             <div className="font-bold text-gray-800 truncate">
-                                {convertedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                {convertedValue === null
+                                    ? '—'
+                                    : convertedValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     </div>
                     <div className="text-[10px] text-gray-400 text-center truncate">
-                        Rate: 1 EUR ≈ {info.exchangeRate.toFixed(2)} {info.currencyCode}
+                        {exchangeRate === null
+                            ? `Rate unavailable for ${currencyCode}`
+                            : `Rate: 1 EUR ≈ ${exchangeRate.toFixed(2)} ${currencyCode}`}
                     </div>
                 </div>
 
@@ -85,11 +100,14 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         <Globe size={12} /> Languages
                     </label>
                     <div className="flex flex-wrap gap-1">
-                        {info.languages.map((lang, i) => (
+                        {languages.map((lang, i) => (
                             <span key={i} className="px-2 py-1 bg-accent-50 text-accent-700 text-xs font-medium rounded-md border border-accent-100 whitespace-nowrap">
                                 {lang}
                             </span>
                         ))}
+                        {languages.length === 0 && (
+                            <span className="text-xs text-gray-400 italic">No language data available</span>
+                        )}
                     </div>
                 </div>
 
@@ -99,7 +117,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         <Zap size={12} /> Electric Sockets
                     </label>
                     <div className="p-2 bg-gray-50 rounded-lg border border-gray-200 text-sm text-gray-800 break-words">
-                        {info.electricSockets}
+                        {electricSockets}
                     </div>
                 </div>
 

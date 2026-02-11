@@ -20,6 +20,7 @@ import {
     ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
+import { normalizeTransportMode } from '../shared/transportModes';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbRevokeTripShares, dbSetTripSharingEnabled, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -347,7 +348,6 @@ export const TripView: React.FC<TripViewProps> = ({
     const lastNavFromLabelRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
     const currentUrlRef = useRef<string>('');
-
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
        if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'standard';
@@ -1551,7 +1551,8 @@ export const TripView: React.FC<TripViewProps> = ({
         const currentTrip = tripRef.current;
         const item = currentTrip.items.find(i => i.id === travelItemId);
         if (!item) return;
-        if (metrics.mode && item.transportMode !== metrics.mode) return;
+        const normalizedItemMode = normalizeTransportMode(item.transportMode);
+        if (metrics.mode && normalizedItemMode !== normalizeTransportMode(metrics.mode)) return;
 
         if (metrics.routeKey) {
             const leg = getTravelLegMetricsForItem(currentTrip.items, travelItemId);
@@ -1559,7 +1560,7 @@ export const TripView: React.FC<TripViewProps> = ({
             const expectedKey = buildRouteCacheKey(
                 leg.fromCity.coordinates,
                 leg.toCity.coordinates,
-                item.transportMode || 'na'
+                normalizedItemMode
             );
             if (expectedKey !== metrics.routeKey) return;
         }
@@ -1593,7 +1594,8 @@ export const TripView: React.FC<TripViewProps> = ({
         const currentTrip = tripRef.current;
         const item = currentTrip.items.find(i => i.id === travelItemId);
         if (!item) return;
-        if (meta?.mode && item.transportMode !== meta.mode) return;
+        const normalizedItemMode = normalizeTransportMode(item.transportMode);
+        if (meta?.mode && normalizedItemMode !== normalizeTransportMode(meta.mode)) return;
 
         if (meta?.routeKey) {
             const leg = getTravelLegMetricsForItem(currentTrip.items, travelItemId);
@@ -1601,7 +1603,7 @@ export const TripView: React.FC<TripViewProps> = ({
             const expectedKey = buildRouteCacheKey(
                 leg.fromCity.coordinates,
                 leg.toCity.coordinates,
-                item.transportMode || 'na'
+                normalizedItemMode
             );
             if (expectedKey !== meta.routeKey) return;
         }
@@ -2661,6 +2663,30 @@ export const TripView: React.FC<TripViewProps> = ({
                                             </div>
                                         </dl>
                                     </section>
+
+                                    {displayTrip.aiMeta && (
+                                        <section className="border border-gray-200 rounded-xl p-3">
+                                            <h4 className="text-sm font-semibold text-gray-800 mb-2">AI generation</h4>
+                                            <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
+                                                    <dt className="text-gray-500">Provider</dt>
+                                                    <dd className="mt-1 font-semibold text-gray-900">{displayTrip.aiMeta.provider}</dd>
+                                                </div>
+                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
+                                                    <dt className="text-gray-500">Model</dt>
+                                                    <dd className="mt-1 font-semibold text-gray-900 break-all">{displayTrip.aiMeta.model}</dd>
+                                                </div>
+                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2 sm:col-span-2">
+                                                    <dt className="text-gray-500">Generated at</dt>
+                                                    <dd className="mt-1 font-semibold text-gray-900">
+                                                        {displayTrip.aiMeta.generatedAt
+                                                            ? new Date(displayTrip.aiMeta.generatedAt).toLocaleString()
+                                                            : '—'}
+                                                    </dd>
+                                                </div>
+                                            </dl>
+                                        </section>
+                                    )}
 
                                     {forkMeta && (
                                         <section className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-3">

@@ -24,8 +24,16 @@ cp .env.example .env.local
 3. Add your API keys to `.env.local`:
 
 ```env
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+# Optional local fallback (browser-side Gemini path for non-Netlify dev)
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+# Future provider adapters / benchmark tooling
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+# Temporary internal API guard (admin benchmark endpoints)
+TF_ADMIN_API_KEY=replace_with_a_long_random_secret
 ```
 
 4. Start the app:
@@ -33,6 +41,14 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```bash
 npm run dev
 ```
+
+For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
+
+```bash
+npx netlify dev
+```
+
+Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
 
 ## Routes
 
@@ -43,6 +59,7 @@ npm run dev
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
 - `/admin/dashboard` admin metrics placeholder (future role-gated)
+- `/admin/ai-benchmark` internal AI benchmark workspace (classic input + multi-model runs + persisted session table + persisted run ranking)
 
 ## UI and Brand Guidelines
 
@@ -144,8 +161,9 @@ This repo includes `vercel.json` for Vite + SPA routing.
 1. Push this repo to GitHub.
 2. In Vercel, import the GitHub repository.
 3. In Vercel project settings, add:
-   - `VITE_GEMINI_API_KEY`
+   - `GEMINI_API_KEY` (server-side generation)
    - `VITE_GOOGLE_MAPS_API_KEY`
+   - `TF_ADMIN_API_KEY` (for internal benchmark API routes)
 4. Deploy.
 
 ## Deploy To Netlify
@@ -158,11 +176,23 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
    - Build command: `npm run build`
    - Publish directory: `dist`
 4. In Netlify environment variables, add:
-   - `VITE_GEMINI_API_KEY`
+   - `GEMINI_API_KEY` (preferred server-side key for `/api/ai/generate`)
+   - `VITE_GEMINI_API_KEY` (optional browser fallback for local/dev compatibility)
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
+   - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
+   - `OPENROUTER_API_KEY` (reserved for upcoming OpenRouter adapter)
+   - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
+
+`/admin/ai-benchmark` uses:
+- temporary simulated-login UI gate (debug mode)
+- `x-tf-admin-key` request header (from your entered `TF_ADMIN_API_KEY`)
+- Supabase bearer token from current session for owner-scoped RLS writes
+- prompt preview generation from current benchmark form settings
+- session export with optional log bundle (`/api/internal/ai/benchmark/export?session=<id>&includeLogs=1`)
 
 ## Dynamic Open Graph (Netlify Edge)
 
