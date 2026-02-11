@@ -74,7 +74,7 @@ export default async (request: Request): Promise<Response> => {
     <style>
       :root {
         color-scheme: light;
-        font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+        font-family: "Bricolage Grotesque", "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
       }
       body {
         margin: 0;

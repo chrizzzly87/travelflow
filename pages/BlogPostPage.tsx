@@ -10,6 +10,10 @@ import type { Components } from 'react-markdown';
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
 const BLOG_HEADER_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/10 to-transparent';
 const BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.68)_40%,transparent_100%)]';
+const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
+    contentVisibility: 'auto',
+    containIntrinsicSize: '1px 720px',
+};
 
 /** Convert heading text to a URL-safe slug */
 const toSlug = (text: string): string =>
@@ -26,14 +30,14 @@ const markdownComponents: Components = {
             <h2
                 id={id}
                 className="mt-10 mb-4 text-2xl font-black tracking-tight text-slate-900 scroll-mt-24"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                style={{ fontFamily: "var(--tf-font-heading)" }}
             >
                 {children}
             </h2>
         );
     },
     h3: ({ children }) => (
-        <h3 className="mt-8 mb-3 text-xl font-bold text-slate-800" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <h3 className="mt-8 mb-3 text-xl font-bold text-slate-800" style={{ fontFamily: "var(--tf-font-heading)" }}>
             {children}
         </h3>
     ),
@@ -169,7 +173,7 @@ export const BlogPostPage: React.FC = () => {
         return (
             <MarketingLayout>
                 <section className="py-20 text-center">
-                    <h1 className="text-3xl font-black text-slate-900" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h1 className="text-3xl font-black text-slate-900" style={{ fontFamily: "var(--tf-font-heading)" }}>
                         Post not found
                     </h1>
                     <p className="mt-4 text-slate-500">The blog post you're looking for doesn't exist.</p>
@@ -255,7 +259,7 @@ export const BlogPostPage: React.FC = () => {
                         {/* Title */}
                         <h1
                             className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                            style={{ fontFamily: "var(--tf-font-heading)" }}
                         >
                             {post.title}
                         </h1>
@@ -301,7 +305,7 @@ export const BlogPostPage: React.FC = () => {
                     </div>
 
                     {/* Sidebar (hidden on mobile) */}
-                    <aside className="hidden lg:block w-64 shrink-0">
+                    <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <div className="sticky top-24 space-y-8">
                             {/* In this article — styled TOC */}
                             {headings.length > 0 && (
@@ -400,10 +404,10 @@ export const BlogPostPage: React.FC = () => {
 
                 {/* Related posts — mobile (below content, visible on small screens) */}
                 {relatedPosts.length > 0 && (
-                    <div className="mt-16 border-t border-slate-200 pt-10 lg:hidden">
+                    <div className="mt-16 border-t border-slate-200 pt-10 lg:hidden" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <h2
                             className="text-xl font-black tracking-tight text-slate-900"
-                            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                            style={{ fontFamily: "var(--tf-font-heading)" }}
                         >
                             Related Articles
                         </h2>

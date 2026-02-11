@@ -1,36 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, Suspense, lazy } from 'react';
 import { flushSync } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
-import { CreateTripForm } from './components/CreateTripForm';
-import { TripView } from './components/TripView';
 import { AppLanguage, ITrip, IViewSettings } from './types';
-import { TripManager } from './components/TripManager';
-import { SettingsModal } from './components/SettingsModal';
-import { MarketingHomePage } from './pages/MarketingHomePage';
-import { FeaturesPage } from './pages/FeaturesPage';
-import { UpdatesPage } from './pages/UpdatesPage';
-import { BlogPage } from './pages/BlogPage';
-import { BlogPostPage } from './pages/BlogPostPage';
-import { InspirationsPage } from './pages/InspirationsPage';
-import { ThemesPage } from './pages/inspirations/ThemesPage';
-import { BestTimeToTravelPage } from './pages/inspirations/BestTimeToTravelPage';
-import { CountriesPage } from './pages/inspirations/CountriesPage';
-import { FestivalsPage } from './pages/inspirations/FestivalsPage';
-import { WeekendGetawaysPage } from './pages/inspirations/WeekendGetawaysPage';
-import { CountryDetailPage } from './pages/inspirations/CountryDetailPage';
-import { LoginPage } from './pages/LoginPage';
-import { ImprintPage } from './pages/ImprintPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { TermsPage } from './pages/TermsPage';
-import { CookiesPage } from './pages/CookiesPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { AdminAiBenchmarkPage } from './pages/AdminAiBenchmarkPage';
-import { PricingPage } from './pages/PricingPage';
-import { FaqPage } from './pages/FaqPage';
-import { ShareUnavailablePage } from './pages/ShareUnavailablePage';
-import { CreateTripClassicLabPage } from './pages/CreateTripClassicLabPage';
-import { CreateTripSplitWorkspaceLabPage } from './pages/CreateTripSplitWorkspaceLabPage';
-import { CreateTripJourneyArchitectLabPage } from './pages/CreateTripJourneyArchitectLabPage';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
@@ -54,16 +25,85 @@ import {
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
-import { OnPageDebugger } from './components/OnPageDebugger';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
-import { TRIP_FACTORIES } from './data/exampleTripTemplates';
-import { getExampleTripCardByTemplateId } from './data/exampleTripCards';
 
 type AppDebugWindow = Window & typeof globalThis & {
+    debug?: (command?: AppDebugCommand) => unknown;
     toggleSimulatedLogin?: (force?: boolean) => boolean;
     getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
+};
+
+type AppDebugCommand =
+    | boolean
+    | {
+        open?: boolean;
+        tracking?: boolean;
+        seo?: boolean;
+        a11y?: boolean;
+        simulatedLogin?: boolean;
+    };
+
+type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
+type ExampleTripCardSummary = {
+    title: string;
+    countries: { name: string }[];
+};
+
+const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
+
+const CreateTripForm = lazy(() => import('./components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
+const TripView = lazy(() => import('./components/TripView').then((module) => ({ default: module.TripView })));
+const TripManager = lazy(() => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
+const SettingsModal = lazy(() => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
+const OnPageDebugger = lazy(() => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
+const MarketingHomePage = lazy(() => import('./pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
+const UpdatesPage = lazy(() => import('./pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
+const BlogPage = lazy(() => import('./pages/BlogPage').then((module) => ({ default: module.BlogPage })));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage').then((module) => ({ default: module.BlogPostPage })));
+const InspirationsPage = lazy(() => import('./pages/InspirationsPage').then((module) => ({ default: module.InspirationsPage })));
+const ThemesPage = lazy(() => import('./pages/inspirations/ThemesPage').then((module) => ({ default: module.ThemesPage })));
+const BestTimeToTravelPage = lazy(() => import('./pages/inspirations/BestTimeToTravelPage').then((module) => ({ default: module.BestTimeToTravelPage })));
+const CountriesPage = lazy(() => import('./pages/inspirations/CountriesPage').then((module) => ({ default: module.CountriesPage })));
+const FestivalsPage = lazy(() => import('./pages/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
+const WeekendGetawaysPage = lazy(() => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
+const CountryDetailPage = lazy(() => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ImprintPage = lazy(() => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
+const CookiesPage = lazy(() => import('./pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
+const AdminAiBenchmarkPage = lazy(() => import('./pages/AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
+const PricingPage = lazy(() => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
+const FaqPage = lazy(() => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
+const ShareUnavailablePage = lazy(() => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
+const CreateTripClassicLabPage = lazy(() => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
+const CreateTripSplitWorkspaceLabPage = lazy(() => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
+const CreateTripJourneyArchitectLabPage = lazy(() => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
+
+const RouteLoadingFallback: React.FC = () => (
+    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
+);
+
+const renderWithSuspense = (node: React.ReactElement) => (
+    <Suspense fallback={<RouteLoadingFallback />}>
+        {node}
+    </Suspense>
+);
+
+const shouldEnableDebuggerOnBoot = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const debugParam = params.get('debug');
+        if (debugParam === '1' || debugParam === 'true') return true;
+        return window.localStorage.getItem(DEBUG_AUTO_OPEN_STORAGE_KEY) === '1';
+    } catch {
+        return false;
+    }
 };
 
 /** Scroll to top on route change */
@@ -252,19 +292,21 @@ const TripLoader = ({
     if (!trip) return null;
 
     return (
-        <TripView
-            trip={trip}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={handleUpdateTrip}
-            onCommitState={handleCommitState}
-            onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={() => setIsManagerOpen(true)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            appLanguage={appLanguage}
-        />
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <TripView
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={handleUpdateTrip}
+                onCommitState={handleCommitState}
+                onViewSettingsChange={(settings) => {
+                    setViewSettings(settings);
+                    onViewSettingsChange(settings);
+                }}
+                onOpenManager={() => setIsManagerOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                appLanguage={appLanguage}
+            />
+        </Suspense>
     );
 };
 
@@ -460,24 +502,26 @@ const SharedTripLoader = ({
     if (!trip) return null;
 
     return (
-        <TripView
-            trip={trip}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onCommitState={handleCommitShared}
-            onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={() => setIsManagerOpen(true)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            appLanguage={appLanguage}
-            readOnly={shareMode === 'view'}
-            canShare={false}
-            shareStatus={shareMode}
-            shareSnapshotMeta={snapshotState ?? undefined}
-            onCopyTrip={allowCopy ? handleCopyTrip : undefined}
-        />
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <TripView
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onCommitState={handleCommitShared}
+                onViewSettingsChange={(settings) => {
+                    setViewSettings(settings);
+                    onViewSettingsChange(settings);
+                }}
+                onOpenManager={() => setIsManagerOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                appLanguage={appLanguage}
+                readOnly={shareMode === 'view'}
+                canShare={false}
+                shareStatus={shareMode}
+                shareSnapshotMeta={snapshotState ?? undefined}
+                onCopyTrip={allowCopy ? handleCopyTrip : undefined}
+            />
+        </Suspense>
     );
 };
 
@@ -500,10 +544,8 @@ const ExampleTripLoader = ({
     const navigate = useNavigate();
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const trackedTemplateRef = useRef<string | null>(null);
-    const templateCard = useMemo(() => {
-        if (!templateId) return null;
-        return getExampleTripCardByTemplateId(templateId) || null;
-    }, [templateId]);
+    const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
+    const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(null);
     const templateCountries = useMemo(
         () => templateCard?.countries?.map((country) => country.name).filter(Boolean) || [],
         [templateCard]
@@ -511,18 +553,54 @@ const ExampleTripLoader = ({
 
     useEffect(() => {
         if (!templateId) {
+            setTemplateFactory(null);
+            setTemplateCard(null);
+            return;
+        }
+
+        let cancelled = false;
+        setTemplateFactory(undefined);
+
+        const loadTemplateResources = async () => {
+            try {
+                const [{ TRIP_FACTORIES }, { getExampleTripCardByTemplateId }] = await Promise.all([
+                    import('./data/exampleTripTemplates'),
+                    import('./data/exampleTripCards'),
+                ]);
+                if (cancelled) return;
+                setTemplateFactory((TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null);
+                setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? null);
+            } catch {
+                if (cancelled) return;
+                setTemplateFactory(null);
+                setTemplateCard(null);
+            }
+        };
+
+        void loadTemplateResources();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [templateId]);
+
+    useEffect(() => {
+        if (!templateId) {
             navigate('/', { replace: true });
             return;
         }
 
-        const factory = TRIP_FACTORIES[templateId];
-        if (!factory) {
+        if (templateFactory === undefined) {
+            return;
+        }
+
+        if (!templateFactory) {
             navigate('/', { replace: true });
             return;
         }
 
         const nowMs = Date.now();
-        const generated = factory(new Date(nowMs).toISOString());
+        const generated = templateFactory(new Date(nowMs).toISOString());
         const resolvedView: IViewSettings = {
             layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
             timelineView: generated.defaultView?.timelineView ?? 'horizontal',
@@ -555,7 +633,7 @@ const ExampleTripLoader = ({
                 country_count: templateCountries.length,
             });
         }
-    }, [templateCountries, templateId, navigate, onTripLoaded]);
+    }, [templateCountries, templateFactory, templateId, navigate, onTripLoaded]);
 
     const handleCopyExampleTrip = async () => {
         if (!trip || !templateId) return;
@@ -634,28 +712,30 @@ const ExampleTripLoader = ({
     if (!trip || !trip.isExample) return null;
 
     return (
-        <TripView
-            trip={trip}
-            initialViewSettings={viewSettings ?? trip.defaultView}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-            onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
-                onViewSettingsChange(settings);
-            }}
-            onOpenManager={() => setIsManagerOpen(true)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            appLanguage={appLanguage}
-            canShare={false}
-            onCopyTrip={handleCopyExampleTrip}
-            isExamplePreview
-            suppressToasts
-            suppressReleaseNotice
-            exampleTripBanner={{
-                title: templateCard?.title || trip.title,
-                countries: templateCountries,
-                onCreateSimilarTrip: handleCreateSimilarTrip,
-            }}
-        />
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <TripView
+                trip={trip}
+                initialViewSettings={viewSettings ?? trip.defaultView}
+                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+                onViewSettingsChange={(settings) => {
+                    setViewSettings(settings);
+                    onViewSettingsChange(settings);
+                }}
+                onOpenManager={() => setIsManagerOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                appLanguage={appLanguage}
+                canShare={false}
+                onCopyTrip={handleCopyExampleTrip}
+                isExamplePreview
+                suppressToasts
+                suppressReleaseNotice
+                exampleTripBanner={{
+                    title: templateCard?.title || trip.title,
+                    countries: templateCountries,
+                    onCreateSimilarTrip: handleCreateSimilarTrip,
+                }}
+            />
+        </Suspense>
     );
 };
 
@@ -666,7 +746,11 @@ const CreateTripRoute: React.FC<{
     onLanguageLoaded?: (lang: AppLanguage) => void;
 }> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
     useDbSync(onLanguageLoaded);
-    return <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />;
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
+        </Suspense>
+    );
 };
 
 const AppContent: React.FC = () => {
@@ -674,9 +758,12 @@ const AppContent: React.FC = () => {
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
+    const [shouldLoadDebugger, setShouldLoadDebugger] = useState<boolean>(() => shouldEnableDebuggerOnBoot());
     const navigate = useNavigate();
     const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const debugQueueRef = useRef<AppDebugCommand[]>([]);
+    const debugStubRef = useRef<((command?: AppDebugCommand) => unknown) | null>(null);
 
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
@@ -704,6 +791,63 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         trackPageView(`${location.pathname}${location.search}`);
     }, [location.pathname, location.search]);
+
+    useEffect(() => {
+        if (shouldLoadDebugger) return;
+        const params = new URLSearchParams(location.search);
+        const debugParam = params.get('debug');
+        if (debugParam === '1' || debugParam === 'true') {
+            setShouldLoadDebugger(true);
+        }
+    }, [location.search, shouldLoadDebugger]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const host = window as AppDebugWindow;
+        if (shouldLoadDebugger) return;
+
+        const debugStub = (command?: AppDebugCommand) => {
+            debugQueueRef.current.push(command ?? true);
+            setShouldLoadDebugger(true);
+            return undefined;
+        };
+
+        debugStubRef.current = debugStub;
+        host.debug = debugStub;
+
+        return () => {
+            if (host.debug === debugStub) {
+                delete host.debug;
+            }
+        };
+    }, [shouldLoadDebugger]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!shouldLoadDebugger) return;
+
+        let rafId: number | null = null;
+        const flushQueuedDebugCommands = () => {
+            const host = window as AppDebugWindow;
+            if (typeof host.debug !== 'function' || host.debug === debugStubRef.current) {
+                rafId = window.requestAnimationFrame(flushQueuedDebugCommands);
+                return;
+            }
+
+            const queued = [...debugQueueRef.current];
+            debugQueueRef.current = [];
+            queued.forEach((command) => {
+                host.debug?.(command);
+            });
+        };
+
+        flushQueuedDebugCommands();
+        return () => {
+            if (rafId !== null) {
+                window.cancelAnimationFrame(rafId);
+            }
+        };
+    }, [shouldLoadDebugger]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -833,66 +977,66 @@ const AppContent: React.FC = () => {
             <Routes>
                 <Route 
                     path="/" 
-                    element={<MarketingHomePage />}
+                    element={renderWithSuspense(<MarketingHomePage />)}
                 />
                 <Route
                     path="/create-trip"
                     element={
-                        <CreateTripRoute
+                        renderWithSuspense(<CreateTripRoute
                             onTripGenerated={handleTripGenerated}
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
-                        />
+                        />)
                     } 
                 />
                 <Route
                     path="/create-trip/labs/classic-card"
                     element={
-                        <CreateTripClassicLabPage
+                        renderWithSuspense(<CreateTripClassicLabPage
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
-                        />
+                        />)
                     }
                 />
                 <Route
                     path="/create-trip/labs/split-workspace"
                     element={
-                        <CreateTripSplitWorkspaceLabPage
+                        renderWithSuspense(<CreateTripSplitWorkspaceLabPage
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
-                        />
+                        />)
                     }
                 />
                 <Route
                     path="/create-trip/labs/journey-architect"
                     element={
-                        <CreateTripJourneyArchitectLabPage
+                        renderWithSuspense(<CreateTripJourneyArchitectLabPage
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
-                        />
+                        />)
                     }
                 />
-                <Route path="/features" element={<FeaturesPage />} />
-                <Route path="/inspirations" element={<InspirationsPage />} />
-                <Route path="/inspirations/themes" element={<ThemesPage />} />
-                <Route path="/inspirations/best-time-to-travel" element={<BestTimeToTravelPage />} />
-                <Route path="/inspirations/countries" element={<CountriesPage />} />
-                <Route path="/inspirations/events-and-festivals" element={<FestivalsPage />} />
-                <Route path="/inspirations/weekend-getaways" element={<WeekendGetawaysPage />} />
-                <Route path="/inspirations/country/:countryName" element={<CountryDetailPage />} />
-                <Route path="/updates" element={<UpdatesPage />} />
-                <Route path="/blog" element={<BlogPage />} />
-                <Route path="/blog/:slug" element={<BlogPostPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/faq" element={<FaqPage />} />
-                <Route path="/share-unavailable" element={<ShareUnavailablePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/imprint" element={<ImprintPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/cookies" element={<CookiesPage />} />
-                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-                <Route path="/admin/ai-benchmark" element={<AdminAiBenchmarkPage />} />
+                <Route path="/features" element={renderWithSuspense(<FeaturesPage />)} />
+                <Route path="/inspirations" element={renderWithSuspense(<InspirationsPage />)} />
+                <Route path="/inspirations/themes" element={renderWithSuspense(<ThemesPage />)} />
+                <Route path="/inspirations/best-time-to-travel" element={renderWithSuspense(<BestTimeToTravelPage />)} />
+                <Route path="/inspirations/countries" element={renderWithSuspense(<CountriesPage />)} />
+                <Route path="/inspirations/events-and-festivals" element={renderWithSuspense(<FestivalsPage />)} />
+                <Route path="/inspirations/weekend-getaways" element={renderWithSuspense(<WeekendGetawaysPage />)} />
+                <Route path="/inspirations/country/:countryName" element={renderWithSuspense(<CountryDetailPage />)} />
+                <Route path="/updates" element={renderWithSuspense(<UpdatesPage />)} />
+                <Route path="/blog" element={renderWithSuspense(<BlogPage />)} />
+                <Route path="/blog/:slug" element={renderWithSuspense(<BlogPostPage />)} />
+                <Route path="/pricing" element={renderWithSuspense(<PricingPage />)} />
+                <Route path="/faq" element={renderWithSuspense(<FaqPage />)} />
+                <Route path="/share-unavailable" element={renderWithSuspense(<ShareUnavailablePage />)} />
+                <Route path="/login" element={renderWithSuspense(<LoginPage />)} />
+                <Route path="/imprint" element={renderWithSuspense(<ImprintPage />)} />
+                <Route path="/privacy" element={renderWithSuspense(<PrivacyPage />)} />
+                <Route path="/terms" element={renderWithSuspense(<TermsPage />)} />
+                <Route path="/cookies" element={renderWithSuspense(<CookiesPage />)} />
+                <Route path="/admin/dashboard" element={renderWithSuspense(<AdminDashboardPage />)} />
+                <Route path="/admin/ai-benchmark" element={renderWithSuspense(<AdminAiBenchmarkPage />)} />
                 <Route 
                     path="/trip/:tripId" 
                     element={
@@ -942,28 +1086,40 @@ const AppContent: React.FC = () => {
             </Routes>
 
             {/* Global Modals */}
-            <TripManager 
-                isOpen={isManagerOpen} 
-                onClose={() => setIsManagerOpen(false)} 
-                onSelectTrip={handleLoadTrip}
-                currentTripId={trip?.id}
-                onUpdateTrip={(updatedTrip) => {
-                    if (!trip || trip.id !== updatedTrip.id) return;
-                    handleUpdateTrip(updatedTrip, { persist: false });
-                }}
-                appLanguage={appLanguage}
-            />
+            {isManagerOpen && (
+                <Suspense fallback={null}>
+                    <TripManager 
+                        isOpen={isManagerOpen} 
+                        onClose={() => setIsManagerOpen(false)} 
+                        onSelectTrip={handleLoadTrip}
+                        currentTripId={trip?.id}
+                        onUpdateTrip={(updatedTrip) => {
+                            if (!trip || trip.id !== updatedTrip.id) return;
+                            handleUpdateTrip(updatedTrip, { persist: false });
+                        }}
+                        appLanguage={appLanguage}
+                    />
+                </Suspense>
+            )}
             
-            <SettingsModal 
-                isOpen={isSettingsOpen} 
-                onClose={() => setIsSettingsOpen(false)} 
-                appLanguage={appLanguage}
-                onAppLanguageChange={setAppLanguage}
-            />
+            {isSettingsOpen && (
+                <Suspense fallback={null}>
+                    <SettingsModal 
+                        isOpen={isSettingsOpen} 
+                        onClose={() => setIsSettingsOpen(false)} 
+                        appLanguage={appLanguage}
+                        onAppLanguageChange={setAppLanguage}
+                    />
+                </Suspense>
+            )}
 
             <CookieConsentBanner />
             <GlobalTooltipLayer />
-            <OnPageDebugger />
+            {shouldLoadDebugger && (
+                <Suspense fallback={null}>
+                    <OnPageDebugger />
+                </Suspense>
+            )}
         </TripManagerProvider>
     );
 };

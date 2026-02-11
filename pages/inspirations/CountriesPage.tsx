@@ -20,7 +20,7 @@ export const CountriesPage: React.FC = () => {
                 </span>
                 <h1
                     className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    style={{ fontFamily: "var(--tf-font-heading)" }}
                 >
                     Explore Destinations by Country
                 </h1>
