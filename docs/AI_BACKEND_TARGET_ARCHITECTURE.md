@@ -252,7 +252,7 @@ Response includes:
 
 Execution notes:
 1. Benchmark run workers call providers directly via shared edge runtime helpers (instead of nested `/api/ai/generate` calls).
-2. Provider timeout budget is configurable with `AI_BENCHMARK_PROVIDER_TIMEOUT_MS` (default `90000`).
+2. Provider timeout budget is configurable with `AI_BENCHMARK_PROVIDER_TIMEOUT_MS` (default `90000`, hard minimum `90000` for benchmark workers).
 3. `/api/ai/generate` uses a separate timeout (`AI_GENERATE_PROVIDER_TIMEOUT_MS`, default `35000`) to stay inside synchronous edge response limits.
 
 ## 8.3 Benchmark read endpoint

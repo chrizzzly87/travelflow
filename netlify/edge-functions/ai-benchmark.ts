@@ -96,7 +96,10 @@ const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
 const MAX_CONCURRENCY = 4;
 const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
-const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_BENCHMARK_PROVIDER_TIMEOUT_MS", 90_000, 10_000, 180_000);
+const BENCHMARK_PROVIDER_TIMEOUT_MS = Math.max(
+  90_000,
+  resolveTimeoutMs("AI_BENCHMARK_PROVIDER_TIMEOUT_MS", 90_000, 10_000, 180_000),
+);
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
