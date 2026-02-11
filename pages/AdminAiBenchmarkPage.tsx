@@ -13,6 +13,7 @@ import {
     SmileyMeh,
     SmileySad,
     ArrowsDownUp,
+    StopCircle,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -85,6 +86,7 @@ interface BenchmarkSummary {
 interface BenchmarkApiResponse {
     ok: boolean;
     async?: boolean;
+    cancelled?: number;
     session?: BenchmarkSession;
     runs?: BenchmarkRun[];
     run?: BenchmarkRun;
@@ -217,6 +219,14 @@ const formatTimestamp = (value?: string | null): string => {
 
 const getRunTimestampIso = (run: BenchmarkRun): string | null => {
     return run.started_at || run.created_at || null;
+};
+
+const isRunActive = (run: BenchmarkRun): boolean => run.status === 'queued' || run.status === 'running';
+
+const isRunCancelledByUser = (run: BenchmarkRun): boolean => {
+    if (run.status !== 'failed') return false;
+    if (!run.error_message) return false;
+    return run.error_message.startsWith('Cancelled by user.');
 };
 
 const truncate = (value: string, max: number): string => {
@@ -409,6 +419,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [promptModal, setPromptModal] = useState<{ prompt: string; generatedAt: string } | null>(null);
 
     const [loading, setLoading] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [liveNow, setLiveNow] = useState(() => Date.now());
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
@@ -451,6 +462,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         values.sort((left, right) => left.localeCompare(right));
         return values;
     }, [runs]);
+
+    const hasPendingRuns = useMemo(() => runs.some((run) => isRunActive(run)), [runs]);
 
     const displayRuns = useMemo(() => {
         const filtered = runs.filter((run) => {
@@ -592,10 +605,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [selectionRows]);
 
     useEffect(() => {
-        if (!loading) return;
+        if (!hasPendingRuns) return;
         const timer = window.setInterval(() => setLiveNow(Date.now()), 250);
         return () => window.clearInterval(timer);
-    }, [loading]);
+    }, [hasPendingRuns]);
 
     useEffect(() => {
         let cancelled = false;
@@ -717,6 +730,57 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         };
     }, [accessToken, benchmarkSessionParam, fetchBenchmarkApi, loadSession]);
 
+    const sessionLookup = session?.share_token || session?.id || '';
+
+    useEffect(() => {
+        if (!accessToken) return;
+        if (!sessionLookup) return;
+        if (!hasPendingRuns) return;
+
+        let cancelled = false;
+        let timeoutId: number | null = null;
+
+        const pollSession = async () => {
+            try {
+                const latest = await fetchBenchmarkApi(`/api/internal/ai/benchmark?session=${encodeURIComponent(sessionLookup)}`, {
+                    method: 'GET',
+                });
+                if (cancelled) return;
+
+                const latestRuns = latest.runs || [];
+                setRuns(latestRuns);
+                setSummary(latest.summary || summarizeRunsLocal(latestRuns));
+
+                const stillPending = latestRuns.some((run) => isRunActive(run));
+                if (!stillPending) {
+                    setMessage((current) => {
+                        if (!current || !current.startsWith('Queued')) return current;
+                        return 'All queued runs finished.';
+                    });
+                    return;
+                }
+
+                timeoutId = window.setTimeout(() => {
+                    void pollSession();
+                }, 2000);
+            } catch (pollError) {
+                if (cancelled) return;
+                setError(pollError instanceof Error ? pollError.message : 'Failed to refresh running benchmark session');
+            }
+        };
+
+        timeoutId = window.setTimeout(() => {
+            void pollSession();
+        }, 2000);
+
+        return () => {
+            cancelled = true;
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+            }
+        };
+    }, [accessToken, sessionLookup, hasPendingRuns, fetchBenchmarkApi]);
+
     const buildScenario = useCallback(() => {
         const selectedDestinations = parseDestinations(destinations);
         if (selectedDestinations.length === 0) {
@@ -830,30 +894,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             setRuns(nextRuns);
             setSummary(payload.summary || summarizeRunsLocal(nextRuns));
 
-            const hasPendingRuns = nextRuns.some((run) => run.status === 'queued' || run.status === 'running');
-            const sessionLookup = payload.session?.share_token || payload.session?.id || '';
-            if (hasPendingRuns && sessionLookup) {
+            const hasPending = nextRuns.some((run) => isRunActive(run));
+            if (hasPending) {
                 setMessage(`Queued ${selected.length} target(s). Running in background...`);
-                const maxAttempts = 120;
-                const intervalMs = 2000;
-
-                for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-                    await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
-                    const latest = await fetchBenchmarkApi(`/api/internal/ai/benchmark?session=${encodeURIComponent(sessionLookup)}`, {
-                        method: 'GET',
-                    });
-                    const latestRuns = latest.runs || [];
-                    setRuns(latestRuns);
-                    setSummary(latest.summary || summarizeRunsLocal(latestRuns));
-
-                    const stillPending = latestRuns.some((run) => run.status === 'queued' || run.status === 'running');
-                    if (!stillPending) {
-                        break;
-                    }
-                }
+            } else {
+                setMessage(`Executed ${selected.length} target(s).`);
             }
-
-            setMessage(`Executed ${selected.length} target(s).`);
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
             setRuns((current) => {
@@ -884,8 +930,46 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         ]);
     }, [runBenchmark]);
 
+    const cancelRuns = useCallback(async (target: { runId?: string; sessionId?: string }) => {
+        if (!target.runId && !target.sessionId) return;
+        setError(null);
+        setCancelling(true);
+
+        try {
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/cancel', {
+                method: 'POST',
+                body: JSON.stringify(target),
+            });
+
+            if (payload.session) {
+                setSession(payload.session);
+            }
+
+            const nextRuns = payload.runs || runs;
+            setRuns(nextRuns);
+            setSummary(payload.summary || summarizeRunsLocal(nextRuns));
+
+            const cancelledCount = typeof payload.cancelled === 'number' ? payload.cancelled : 0;
+            setMessage(`Cancelled ${cancelledCount} active run${cancelledCount === 1 ? '' : 's'}.`);
+        } catch (cancelError) {
+            setError(cancelError instanceof Error ? cancelError.message : 'Failed to cancel benchmark run(s)');
+        } finally {
+            setCancelling(false);
+        }
+    }, [fetchBenchmarkApi, runs]);
+
+    const cancelRun = useCallback((run: BenchmarkRun) => {
+        if (!run.id || run.id.startsWith('optimistic-')) return;
+        void cancelRuns({ runId: run.id });
+    }, [cancelRuns]);
+
+    const cancelActiveRunsInSession = useCallback(() => {
+        if (!session?.id) return;
+        void cancelRuns({ sessionId: session.id });
+    }, [cancelRuns, session?.id]);
+
     const updateRunRating = useCallback(async (run: BenchmarkRun, nextRating: SatisfactionRating | null) => {
-        if (!run.id || run.id.startsWith('optimistic-') || run.status === 'running') return;
+        if (!run.id || run.id.startsWith('optimistic-') || isRunActive(run)) return;
         setError(null);
         setRatingSavingRunId(run.id);
 
@@ -1286,7 +1370,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={addSelectionRow}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    disabled={loading || hasPendingRuns || cancelling}
+                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <Plus size={14} />
                                     Add model
@@ -1294,7 +1379,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => runBenchmark()}
-                                    disabled={loading || selectedTargets.length === 0}
+                                    disabled={loading || hasPendingRuns || cancelling || selectedTargets.length === 0}
                                     className="inline-flex items-center gap-1 rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <ArrowClockwise size={14} />
@@ -1302,8 +1387,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </button>
                                 <button
                                     type="button"
+                                    onClick={cancelActiveRunsInSession}
+                                    disabled={loading || cancelling || !session || !hasPendingRuns}
+                                    className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <StopCircle size={14} />
+                                    Abort active
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={cleanupSession}
-                                    disabled={loading || !session}
+                                    disabled={loading || cancelling || !session || hasPendingRuns}
                                     className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <Trash size={14} />
@@ -1329,7 +1423,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => runBenchmark([{ provider: selectedModel.provider, model: selectedModel.model, label: selectedModel.label }])}
-                                                    disabled={loading}
+                                                    disabled={loading || hasPendingRuns || cancelling}
                                                     className="inline-flex items-center gap-1 rounded bg-accent-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                                 >
                                                     <Play size={12} weight="fill" />
@@ -1338,7 +1432,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => removeSelectionRow(row.id)}
-                                                    disabled={selectionRows.length <= 1 || loading}
+                                                    disabled={selectionRows.length <= 1 || loading || hasPendingRuns || cancelling}
                                                     className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     Remove
@@ -1521,12 +1615,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 {displayRuns.map((run) => {
                                     const isFailed = run.status === 'failed';
                                     const isCompleted = run.status === 'completed';
-                                    const statusIcon = isFailed
-                                        ? <WarningCircle size={15} className="text-rose-600" />
+                                    const isPending = isRunActive(run);
+                                    const isCancelled = isRunCancelledByUser(run);
+                                    const statusIcon = isCancelled
+                                        ? <StopCircle size={15} className="text-amber-700" />
+                                        : isFailed
+                                            ? <WarningCircle size={15} className="text-rose-600" />
                                         : isCompleted
                                             ? <CheckCircle size={15} className="text-emerald-600" />
                                             : <HourglassHigh size={15} className="text-amber-600" />;
-                                    const isRunning = run.status === 'running';
+                                    const statusLabel = isCancelled ? 'cancelled' : run.status;
                                     const parsedError = parseRunError(run.error_message);
                                     const hasErrorDetails = Boolean(run.error_message);
                                     const validationStats = getValidationCheckStats(run.validation_checks);
@@ -1543,7 +1641,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                             <td className="px-3 py-2">
                                                 <div className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
                                                     {statusIcon}
-                                                    {run.status}
+                                                    {statusLabel}
                                                 </div>
                                                 {run.error_message && (
                                                     <div className="mt-1 max-w-[320px] space-y-1 text-xs text-rose-700">
@@ -1603,7 +1701,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <div className="flex items-center gap-1">
                                                     {(Object.keys(SATISFACTION_META) as SatisfactionRating[]).map((rating) => {
                                                         const isActive = run.satisfaction_rating === rating;
-                                                        const isDisabled = loading || isRunning || ratingSavingRunId === run.id;
+                                                        const isDisabled = loading || isPending || ratingSavingRunId === run.id;
                                                         const meta = SATISFACTION_META[rating];
                                                         return (
                                                             <button
@@ -1629,15 +1727,25 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => rerunTarget(run)}
-                                                        disabled={loading || isRunning}
+                                                        disabled={loading || cancelling || isPending}
                                                         className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         Rerun
                                                     </button>
+                                                    {isPending && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => cancelRun(run)}
+                                                            disabled={cancelling}
+                                                            className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            Abort
+                                                        </button>
+                                                    )}
                                                     <button
                                                         type="button"
                                                         onClick={() => downloadRow(run)}
-                                                        disabled={isRunning}
+                                                        disabled={isPending}
                                                         className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                                                     >
                                                         JSON

@@ -38,6 +38,10 @@
   function = "ai-benchmark"
 
 [[edge_functions]]
+  path = "/api/internal/ai/benchmark/cancel"
+  function = "ai-benchmark"
+
+[[edge_functions]]
   path = "/api/trip-map-preview"
   function = "trip-map-preview"
 
