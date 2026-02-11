@@ -13,7 +13,7 @@ export const WipPlaceholder: React.FC<WipPlaceholderProps> = ({ title, descripti
             </span>
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">{title}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
-            <p className="mt-6 text-xs text-slate-400">This page is intentionally a placeholder and will be expanded in a later iteration.</p>
+            <p className="mt-6 text-xs text-slate-400">More details and account actions are arriving in upcoming releases.</p>
         </section>
     );
 };

@@ -7,7 +7,7 @@ export const LoginPage: React.FC = () => {
         <MarketingLayout>
             <WipPlaceholder
                 title="Login"
-                description="Authentication and account/paywall access controls are planned. This placeholder route is in place so navigation and future auth wiring are stable."
+                description="Account access is rolling out soon. Login will unlock premium features, longer trip history, and smoother paywall upgrade flows."
             />
         </MarketingLayout>
     );

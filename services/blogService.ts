@@ -1,4 +1,27 @@
+import { buildBlogImageSeed, getBlogImageMedia } from '../data/blogImageMedia';
+
 export type BlogStatus = 'published' | 'draft';
+
+export interface BlogImageSources {
+    small: string;
+    large: string;
+}
+
+export interface BlogPostImages {
+    card: {
+        alt: string;
+        sources: BlogImageSources;
+    };
+    header: {
+        alt: string;
+        sources: BlogImageSources;
+    };
+    ogVertical: {
+        alt: string;
+        source: string;
+        accentTint: string;
+    };
+}
 
 export interface BlogPost {
     slug: string;
@@ -11,6 +34,7 @@ export interface BlogPost {
     coverColor: string;
     readingTimeMin: number;
     status: BlogStatus;
+    images: BlogPostImages;
     content: string;
     sourcePath: string;
 }
@@ -90,6 +114,14 @@ const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
         return null;
     }
 
+    const imageSeed = buildBlogImageSeed({
+        slug,
+        title,
+        summary,
+        tags,
+    });
+    const media = getBlogImageMedia(slug, title, imageSeed.accentTint);
+
     return {
         slug,
         title,
@@ -101,6 +133,15 @@ const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
         coverColor,
         readingTimeMin,
         status,
+        images: {
+            card: media.card,
+            header: media.header,
+            ogVertical: {
+                alt: media.ogVertical.alt,
+                source: media.ogVertical.source,
+                accentTint: media.accentTint,
+            },
+        },
         content: body.trim(),
         sourcePath,
     };

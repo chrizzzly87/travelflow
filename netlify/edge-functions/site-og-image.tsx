@@ -41,6 +41,10 @@ const sanitizeText = (value: string | null, max: number): string | null => {
   return trimmed.length > max ? `${trimmed.slice(0, max - 1)}...` : trimmed;
 };
 
+const getSearchParam = (url: URL, key: string): string | null => {
+  return url.searchParams.get(key) ?? url.searchParams.get(`amp;${key}`);
+};
+
 const normalizePath = (value: string | null): string => {
   if (!value) return "/";
   const trimmed = value.trim();
@@ -55,6 +59,45 @@ const normalizePath = (value: string | null): string => {
   }
   if (trimmed.startsWith("/")) return trimmed;
   return `/${trimmed}`;
+};
+
+const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.(png|jpe?g)$/;
+
+const normalizeBlogImagePath = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!BLOG_IMAGE_PATH_REGEX.test(trimmed)) return null;
+  return trimmed;
+};
+
+const normalizeHexColor = (value: string | null, fallback: string): string => {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  const match = trimmed.match(/^#([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : fallback;
+};
+
+const normalizeOptionalHexColor = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const match = trimmed.match(/^#([0-9a-fA-F]{6})$/);
+  return match ? `#${match[1].toLowerCase()}` : null;
+};
+
+const normalizeTintIntensity = (value: string | null, fallback = 60): number => {
+  if (!value) return fallback;
+  const parsed = Number(value.trim());
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(0, Math.min(100, parsed));
+};
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const safeHex = normalizeHexColor(hex, ACCENT_600);
+  const clean = safeHex.slice(1);
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 };
 
 const truncateText = (value: string, max: number): string =>
@@ -177,11 +220,20 @@ export default async (request: Request): Promise<Response> => {
     const url = new URL(request.url);
     const headingFontData = await loadHeadingFont();
 
-    const title = sanitizeText(url.searchParams.get("title"), 110) || DEFAULT_TITLE;
-    const subline = sanitizeText(url.searchParams.get("description"), 160) || DEFAULT_SUBLINE;
-    const pillText = sanitizeText(url.searchParams.get("pill"), 30) || "TravelFlow";
-    const pagePath = normalizePath(url.searchParams.get("path"));
+    const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
+    const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
+    const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || "TravelFlow";
+    const pagePath = normalizePath(getSearchParam(url, "path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+    const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
+    const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
+    const blogTintIntensity = normalizeTintIntensity(getSearchParam(url, "blog_tint_intensity"), 60);
+    const blogImageUrl = blogImagePath ? new URL(blogImagePath, url.origin).toString() : null;
+    const blogTintStrength = blogTintIntensity / 100;
+    const hasTint = Boolean(blogTint) && blogTintStrength > 0.001;
+    const blogTintGradient = hasTint && blogTint
+      ? `linear-gradient(180deg, ${hexToRgba(blogTint, 0)} 0%, ${hexToRgba(blogTint, 0.72 * blogTintStrength)} 100%)`
+      : null;
 
     const { lines: titleLines, fontSize: titleFontSize } = getSiteTitleSpec(title);
 
@@ -200,7 +252,7 @@ export default async (request: Request): Promise<Response> => {
         >
           <div
             style={{
-              width: "61%",
+              width: "67%",
               height: "100%",
               display: "flex",
               flexDirection: "column",
@@ -327,7 +379,7 @@ export default async (request: Request): Promise<Response> => {
 
           <div
             style={{
-              width: "39%",
+              width: "33%",
               height: "100%",
               paddingLeft: 20,
               display: "flex",
@@ -342,22 +394,56 @@ export default async (request: Request): Promise<Response> => {
                 borderRadius: 28,
                 overflow: "hidden",
                 border: "1px solid rgba(148, 163, 184, 0.35)",
-                background:
-                  `radial-gradient(circle at 36% 26%, ${ACCENT_200} 0%, rgba(199,210,254,0.2) 22%, transparent 54%), radial-gradient(circle at 72% 76%, rgba(99,102,241,0.36), transparent 56%), linear-gradient(145deg, ${ACCENT_500} 0%, ${ACCENT_600} 48%, ${ACCENT_700} 100%)`,
+                background: blogImageUrl
+                  ? "#0f172a"
+                  : `radial-gradient(circle at 36% 26%, ${ACCENT_200} 0%, rgba(199,210,254,0.2) 22%, transparent 54%), radial-gradient(circle at 72% 76%, rgba(99,102,241,0.36), transparent 56%), linear-gradient(145deg, ${ACCENT_500} 0%, ${ACCENT_600} 48%, ${ACCENT_700} 100%)`,
                 boxShadow: "inset 0 0 120px rgba(15,23,42,0.18)",
               }}
             >
-              <img
-                src={TOPO_CONTOUR_OVERLAY_URI}
-                alt="Topographic contours"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  display: "flex",
-                  objectFit: "cover",
-                  opacity: 0.72,
-                }}
-              />
+              {blogImageUrl
+                ? (
+                  <>
+                    <img
+                      src={blogImageUrl}
+                      alt="Blog social preview"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        objectFit: "cover",
+                        opacity: 1,
+                      }}
+                    />
+                    {blogTintGradient
+                      ? (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                            display: "flex",
+                            background: blogTintGradient,
+                          }}
+                        />
+                      )
+                      : null}
+                  </>
+                )
+                : (
+                  <img
+                    src={TOPO_CONTOUR_OVERLAY_URI}
+                    alt="Topographic contours"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      objectFit: "cover",
+                      opacity: 0.72,
+                    }}
+                  />
+                )}
             </div>
           </div>
         </div>

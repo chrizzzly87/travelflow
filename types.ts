@@ -8,6 +8,7 @@ export type ActivityType =
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
 export type AppLanguage = 'en';
+export type MapColorMode = 'brand' | 'trip';
 
 export interface ICoordinates {
     lat: number;
@@ -80,6 +81,18 @@ export interface ITrip {
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;
+  roundTrip?: boolean;
+  cityColorPaletteId?: string;
+  mapColorMode?: MapColorMode;
+  defaultView?: IViewSettings;
+  status?: 'active' | 'archived' | 'expired';
+  tripExpiresAt?: string | null;
+  sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example';
+  sourceTemplateId?: string | null;
+  isExample?: boolean;
+  exampleTemplateId?: string;
+  exampleTemplateCountries?: string[];
+  forkedFromExampleTemplateId?: string;
 }
 
 export interface IDragState {
@@ -102,7 +115,6 @@ export interface IViewSettings {
     showCityNames?: boolean;
     sidebarWidth?: number;
     timelineHeight?: number;
-    destinationInfoExpanded?: boolean;
 }
 
 export interface ISharedState {

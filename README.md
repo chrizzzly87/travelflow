@@ -39,9 +39,22 @@ npm run dev
 - `/` marketing landing page
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner
+- `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
 - `/admin/dashboard` admin metrics placeholder (future role-gated)
+
+## UI and Brand Guidelines
+
+For UI styling, component behavior, and accessibility standards, use:
+
+- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/BRAND_CI_GUIDELINES.md`
+
+## Paywall Guidelines
+
+For trip lifecycle state handling, lock behavior, and paywall rules, use:
+
+- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/PAYWALL_GUIDELINES.md`
 
 ## Supabase Setup And Troubleshooting
 
@@ -60,6 +73,22 @@ The production output is generated in `dist/`.
 `npm run build` includes release-note validation (`npm run updates:validate`) for `content/updates/*.md`.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
+
+## Blog Image Workflow
+
+When publishing a new blog post, run:
+
+```bash
+npm run build:blog-images
+```
+
+This only generates missing image variants for published posts (card, header, vertical OG) and leaves existing blog images untouched.
+
+For a full pre-release workflow (generate missing blog images + run full validations/build):
+
+```bash
+npm run release:prepare
+```
 
 ## Generate Trip Map Images
 
@@ -139,12 +168,20 @@ This repo includes `netlify.toml` for build settings + SPA redirects.
 3. Use either:
    - real shared data via `s=<share_token>` (and optional `v=<version_uuid>`)
    - or layout/map overrides (`title`, `weeks`, `months`, `distance`, `path`, `map`, `mapStyle`, `routeMode`, `showStops`, `showCities`) for rapid visual tuning.
+4. For blog social previews, switch playground endpoint to **Site OG** and set:
+   - `title`, `description`, `pill=BLOG`, `path=/blog/<slug>`
+   - `blog_image=/images/blog/<slug>-og-vertical.jpg`
+   - optional `blog_tint=#<hex>` + `blog_tint_intensity=<0-100>` (strict percent scale; blog pages default to accent tint at 60)
+   - optional `blog_rev=<revision>` (cache-bust token; default comes from `data/blogImageMedia.ts`)
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
 
 Example non-trip image URL:
 `http://localhost:8888/api/og/site?title=Features&description=See%20everything%20TravelFlow%20can%20do&path=/features`
+
+Example blog image URL:
+`http://localhost:8888/api/og/site?title=How%20to%20Plan%20the%20Perfect%20Multi-City%20Trip&description=Plan%20a%20smooth%20multi-stop%20itinerary%20with%20smart%20routing%2C%20realistic%20timing%2C%20and%20less%20stress.&path=/blog/how-to-plan-multi-city-trip&pill=BLOG&blog_image=/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg&blog_rev=2026-02-10-01`
 
 ## Create The GitHub Repo (CLI)
 

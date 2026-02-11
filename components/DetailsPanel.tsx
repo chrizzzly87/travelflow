@@ -4,7 +4,8 @@ import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordin
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
 import { suggestActivityDetails, generateCityNotesAddition } from '../services/geminiService';
 import type { CityNotesEnhancementMode } from '../services/geminiService';
-import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, formatDate, getStoredAppLanguage, PRESET_COLORS, getActivityColorByTypes, normalizeActivityTypes, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES } from '../utils';
+import { HexColorPicker } from 'react-colorful';
+import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { MarkdownEditor } from './MarkdownEditor';
 import type { MarkdownAiAction } from './MarkdownEditor';
@@ -31,6 +32,8 @@ interface DetailsPanelProps {
   forceFillLabel?: string;
   variant?: 'overlay' | 'sidebar'; // New Prop
   readOnly?: boolean;
+  cityColorPaletteId?: string;
+  onCityColorPaletteChange?: (paletteId: string, options: { applyToCities: boolean }) => void;
 }
 
 interface PendingCityNotesProposal {
@@ -121,7 +124,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     forceFillMode,
     forceFillLabel,
     variant = 'overlay',
-    readOnly = false
+    readOnly = false,
+    cityColorPaletteId = DEFAULT_CITY_COLOR_PALETTE_ID,
+    onCityColorPaletteChange
 }) => {
   const canEdit = !readOnly;
   const [loading, setLoading] = useState(false);
@@ -160,6 +165,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef<number | null>(null);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [customColorHex, setCustomColorHex] = useState('#4f46e5');
+  const [customColorInput, setCustomColorInput] = useState('#4F46E5');
+  const [customColorError, setCustomColorError] = useState<string | null>(null);
 
   const { isLoaded } = useGoogleMaps();
   const { confirm: confirmDialog } = useAppDialog();
@@ -390,6 +398,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   }, [aiStatus, isEnhancing]);
 
   const displayItem = item || cachedItem;
+
+  useEffect(() => {
+      if (!displayItem || displayItem.type !== 'city') return;
+      const nextHex = getHexFromColorClass(displayItem.color || '');
+      setCustomColorHex(nextHex);
+      setCustomColorInput(nextHex.toUpperCase());
+      setCustomColorError(null);
+  }, [displayItem?.id, displayItem?.type, displayItem?.color]);
 
   const handleUpdate = (id: string, updates: Partial<ITimelineItem>) => {
       if (!canEdit) return;
@@ -844,6 +860,42 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (!canEdit) return;
       handleUpdate(displayItem.id, { type: 'travel', transportMode: mode, title: `${mode.charAt(0).toUpperCase() + mode.slice(1)} Travel`, color: TRAVEL_COLOR, duration: Math.max(0.1, displayItem.duration) });
   };
+  const handlePaletteSelection = async (paletteId: string) => {
+      if (!canEdit || !isCity || !onCityColorPaletteChange) return;
+      if (paletteId === cityColorPaletteId) return;
+
+      const applyToCities = await confirmDialog({
+          title: 'Apply palette to current cities?',
+          message: 'Choose “Apply automatically” to recolor all cities now. Choose “Manual selection” to keep existing city colors and only switch the active palette.',
+          confirmLabel: 'Apply automatically',
+          cancelLabel: 'Manual selection',
+      });
+
+      onCityColorPaletteChange(paletteId, { applyToCities });
+
+      if (applyToCities) {
+          const previewItems = applyCityPaletteToItems(tripItems, paletteId);
+          const currentCity = previewItems.find(entry => entry.id === displayItem.id);
+          if (currentCity?.color) {
+              const nextHex = getHexFromColorClass(currentCity.color);
+              setCustomColorHex(nextHex);
+              setCustomColorInput(nextHex.toUpperCase());
+          }
+      }
+  };
+  const applyCustomCityColor = () => {
+      if (!canEdit || !isCity) return;
+      const normalized = normalizeCityColorInput(customColorInput) || normalizeCityColorInput(customColorHex);
+      if (!normalized) {
+          setCustomColorError('Use a HEX color (e.g. #f43f5e) or RGB value (e.g. rgb(244,63,94) / 244,63,94).');
+          return;
+      }
+
+      setCustomColorError(null);
+      setCustomColorHex(normalized);
+      setCustomColorInput(normalized.toUpperCase());
+      handleUpdate(displayItem.id, { color: normalized });
+  };
   const tripStart = new Date(tripStartDate);
   const isValidDate = !isNaN(tripStart.getTime());
   const cityDurationPreview = isCity && isDurationEditorOpen && durationDraft
@@ -914,9 +966,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const countryFlagForDisplay = toFlagEmoji(countryCodeForDisplay);
   
   const effectiveColor = isActivity ? getActivityColorByTypes(displayItem.activityType) : displayItem.color;
-  const colorParts = effectiveColor ? effectiveColor.split(' ') : ['bg-gray-100'];
-  const bgClass = colorParts[0] || 'bg-gray-100';
-  const textClass = colorParts[2] || 'text-gray-800';
+  const usesClassColor = (isActivity || isTransport) ? true : isTailwindCityColorValue(effectiveColor);
+  const colorParts = usesClassColor && effectiveColor ? effectiveColor.split(' ') : [];
+  const bgClass = colorParts.find(part => part.startsWith('bg-')) || 'bg-gray-100';
+  const textClass = colorParts.find(part => part.startsWith('text-')) || 'text-gray-800';
+  const effectiveColorHex = getHexFromColorClass(effectiveColor || '');
+  const customBadgeBackgroundColor = shiftHexColor(effectiveColorHex, 52);
+  const effectiveTextColor = getContrastTextColor(customBadgeBackgroundColor);
+  const effectiveBorderColor = shiftHexColor(effectiveColorHex, -20);
+  const selectedCityColorHex = isCity ? getHexFromColorClass(displayItem.color || '') : null;
+  const activeCityPalette = getCityColorPalette(cityColorPaletteId);
   const routeModeLabel = displayItem.transportMode && displayItem.transportMode !== 'na'
       ? displayItem.transportMode
       : 'route';
@@ -938,7 +997,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
              
              <div className="flex justify-between items-start mb-4 pr-8 sm:pr-28">
                   <div className="flex items-center gap-2">
-                      <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${bgClass} ${textClass} bg-opacity-50 transition-colors`}>{displayItem.type}</div>
+                      <div
+                          className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${usesClassColor ? `${bgClass} ${textClass} bg-opacity-50` : ''}`}
+                          style={!usesClassColor ? {
+                              backgroundColor: customBadgeBackgroundColor,
+                              color: effectiveTextColor,
+                              border: `1px solid ${effectiveBorderColor}`,
+                          } : undefined}
+                      >
+                          {displayItem.type}
+                      </div>
                       {isCity && (
                         <div className="relative">
                             <button
@@ -950,17 +1018,88 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 <Palette size={14} />
                             </button>
                             {isColorPickerOpen && (
-                                <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-xl border border-gray-100 z-50 grid grid-cols-4 gap-2 w-48">
-                                    {PRESET_COLORS.map((color) => (
-                                        <button
-                                            key={color.name}
-                                            onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: color.class }); setIsColorPickerOpen(false); }}
-                                            disabled={!canEdit}
-                                            className={`w-8 h-8 rounded-full border-2 transition-transform ${displayItem.color === color.class ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
-                                            style={{ backgroundColor: color.hex }}
-                                            title={color.name}
+                                <div className="absolute top-full left-0 mt-2 p-3 bg-white rounded-xl shadow-xl border border-gray-100 z-50 w-[280px] space-y-3">
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palettes</div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {CITY_COLOR_PALETTES.map((palette) => (
+                                                <button
+                                                    key={palette.id}
+                                                    type="button"
+                                                    onClick={() => { void handlePaletteSelection(palette.id); }}
+                                                    disabled={!canEdit}
+                                                    className={`rounded-lg border p-1 transition-colors ${cityColorPaletteId === palette.id ? 'border-accent-400 bg-accent-50' : 'border-gray-200 hover:border-gray-300'} ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                                    title={palette.name}
+                                                >
+                                                    <div className="flex h-5 w-full gap-[2px]">
+                                                        {palette.colors.map((paletteColor, colorIndex) => (
+                                                            <span
+                                                                key={`${palette.id}-${colorIndex}`}
+                                                                className="h-full flex-1 rounded-[2px]"
+                                                                style={{ backgroundColor: paletteColor }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palette colors</div>
+                                        <div className="grid grid-cols-8 gap-1.5">
+                                            {activeCityPalette.colors.map((paletteColor, index) => {
+                                                const normalizedSwatchHex = getHexFromColorClass(paletteColor).toLowerCase();
+                                                const isSelected = selectedCityColorHex?.toLowerCase() === normalizedSwatchHex;
+                                                return (
+                                                    <button
+                                                        key={`${activeCityPalette.id}-color-${index}`}
+                                                        onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
+                                                        disabled={!canEdit}
+                                                        className={`h-6 w-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
+                                                        style={{ backgroundColor: paletteColor }}
+                                                        title={`Palette color ${index + 1}`}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 border-t border-gray-100 pt-3">
+                                        <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Custom color</div>
+                                        <HexColorPicker
+                                            color={customColorHex}
+                                            onChange={(nextColor) => {
+                                                setCustomColorHex(nextColor);
+                                                setCustomColorInput(nextColor.toUpperCase());
+                                                if (customColorError) setCustomColorError(null);
+                                            }}
+                                            className="!w-full"
                                         />
-                                    ))}
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={customColorInput}
+                                                onChange={(event) => {
+                                                    setCustomColorInput(event.target.value);
+                                                    if (customColorError) setCustomColorError(null);
+                                                }}
+                                                placeholder="#F43F5E or rgb(244,63,94)"
+                                                className="flex-1 rounded-md border border-gray-200 px-2 py-1.5 text-xs text-gray-800 focus:outline-none focus:ring-1 focus:ring-accent-400"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={applyCustomCityColor}
+                                                disabled={!canEdit}
+                                                className={`px-2.5 py-1.5 text-xs font-semibold rounded-md text-white ${canEdit ? 'bg-accent-600 hover:bg-accent-700' : 'bg-accent-300 cursor-not-allowed'}`}
+                                            >
+                                                Apply
+                                            </button>
+                                        </div>
+                                        {customColorError && (
+                                            <p className="text-[11px] text-red-600">{customColorError}</p>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>

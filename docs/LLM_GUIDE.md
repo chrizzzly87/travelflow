@@ -2,6 +2,10 @@
 
 This doc is a compact, structured overview of the app to help future agents make safe, consistent changes.
 
+**Design Reference**
+- UI and component styling rules: `docs/BRAND_CI_GUIDELINES.md`.
+- Paywall/lifecycle behavior rules: `docs/PAYWALL_GUIDELINES.md`.
+
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
 - Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`.
@@ -22,6 +26,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - `components/PrintLayout.tsx`
 - `utils.ts`
 - `types.ts`
+- `config/paywall.ts`
 - `data/exampleTrips.ts`
 
 **Data Model**

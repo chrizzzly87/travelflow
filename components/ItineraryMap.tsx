@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { ITimelineItem, MapStyle, RouteMode } from '../types';
+import { ITimelineItem, MapColorMode, MapStyle, RouteMode } from '../types';
 import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
-import { buildRouteCacheKey, findTravelBetweenCities, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 
 interface ItineraryMapProps {
@@ -22,6 +22,9 @@ interface ItineraryMapProps {
     fitToRouteKey?: string;
     onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
     onRouteStatus?: (travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => void;
+    mapColorMode?: MapColorMode;
+    onMapColorModeChange?: (mode: MapColorMode) => void;
+    isPaywalled?: boolean;
 }
 
 const MAP_STYLES = {
@@ -50,83 +53,88 @@ const MAP_STYLES = {
     ],
     standard: [], 
     dark: [
-        { "elementType": "geometry", "stylers": [{ "color": "#242f3e" }] },
-        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#242f3e" }] },
-        { "elementType": "labels.text.fill", "stylers": [{ "color": "#746855" }] },
+        { "elementType": "geometry", "stylers": [{ "color": "#1b2230" }] },
+        { "elementType": "labels.text.stroke", "stylers": [{ "color": "#1b2230" }] },
+        { "elementType": "labels.text.fill", "stylers": [{ "color": "#d0d8e2" }] },
         {
             "featureType": "administrative.locality",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#d59563" }]
+            "stylers": [{ "color": "#f3c98b" }]
+        },
+        {
+            "featureType": "administrative.country",
+            "elementType": "geometry.stroke",
+            "stylers": [{ "color": "#9fb3c8" }, { "weight": 1.2 }, { "visibility": "on" }]
         },
         {
             "featureType": "poi",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#d59563" }]
+            "stylers": [{ "color": "#8fb3c0" }]
         },
         {
             "featureType": "poi.park",
             "elementType": "geometry",
-            "stylers": [{ "color": "#263c3f" }]
+            "stylers": [{ "color": "#1a3b3a" }]
         },
         {
             "featureType": "poi.park",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#6b9a76" }]
+            "stylers": [{ "color": "#8bc2b3" }]
         },
         {
             "featureType": "road",
             "elementType": "geometry",
-            "stylers": [{ "color": "#38414e" }]
+            "stylers": [{ "color": "#3a4558" }]
         },
         {
             "featureType": "road",
             "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#212a37" }]
+            "stylers": [{ "color": "#243246" }]
         },
         {
             "featureType": "road",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#9ca5b3" }]
+            "stylers": [{ "color": "#d5dde8" }]
         },
         {
             "featureType": "road.highway",
             "elementType": "geometry",
-            "stylers": [{ "color": "#746855" }]
+            "stylers": [{ "color": "#566579" }]
         },
         {
             "featureType": "road.highway",
             "elementType": "geometry.stroke",
-            "stylers": [{ "color": "#1f2835" }]
+            "stylers": [{ "color": "#2f3c4f" }]
         },
         {
             "featureType": "road.highway",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#f3d19c" }]
+            "stylers": [{ "color": "#f7ddb0" }]
         },
         {
             "featureType": "transit",
             "elementType": "geometry",
-            "stylers": [{ "color": "#2f3948" }]
+            "stylers": [{ "color": "#34506b" }]
         },
         {
             "featureType": "transit.station",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#d59563" }]
+            "stylers": [{ "color": "#9fc6e5" }]
         },
         {
             "featureType": "water",
             "elementType": "geometry",
-            "stylers": [{ "color": "#17263c" }]
+            "stylers": [{ "color": "#0b3f5f" }]
         },
         {
             "featureType": "water",
             "elementType": "labels.text.fill",
-            "stylers": [{ "color": "#515c6d" }]
+            "stylers": [{ "color": "#b7d5ea" }]
         },
         {
             "featureType": "water",
             "elementType": "labels.text.stroke",
-            "stylers": [{ "color": "#17263c" }]
+            "stylers": [{ "color": "#0b3f5f" }]
         }
     ],
     clean: [
@@ -222,7 +230,10 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     focusLocationQuery,
     fitToRouteKey,
     onRouteMetrics,
-    onRouteStatus
+    onRouteStatus,
+    mapColorMode = DEFAULT_MAP_COLOR_MODE,
+    onMapColorModeChange,
+    isPaywalled = false
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
@@ -310,8 +321,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 return `${city.id}->${nextCity.id}:${mode}`;
             })
             .join('||');
-        return `${citySignature}__${routeSignature}`;
-    }, [cities, items]);
+        return `${citySignature}__${routeSignature}__${mapColorMode}`;
+    }, [cities, items, mapColorMode]);
 
     // Update Markers & Routes
     useEffect(() => {
@@ -472,29 +483,37 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return line;
         };
 
-        // 2. Add Markers
-        cities.forEach((city, index) => {
-            if (!city.coordinates) return;
-            
-            const isSelected = city.id === selectedCityId;
-            const marker = new window.google.maps.Marker({
-                map: googleMapRef.current,
-                position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
-                title: city.title,
-                label: { 
-                    text: `${index + 1}`, 
-                    color: '#ffffff', 
-                    fontWeight: '700', 
-                    fontSize: isSelected ? '14px' : '12px' 
-                },
-                icon: buildPinIcon(getHexFromColorClass(city.color), isSelected),
-                zIndex: isSelected ? 100 : 10,
-            });
-            
-            markersRef.current.push(marker);
-        });
+        const brandRouteColor = '#4f46e5';
+        const resolveMapColor = (colorToken: string): string =>
+            mapColorMode === 'brand' ? brandRouteColor : getHexFromColorClass(colorToken);
 
-        if (showCityNames && googleMapRef.current) {
+        if (!isPaywalled) {
+            // 2. Add Markers
+            cities.forEach((city, index) => {
+                if (!city.coordinates) return;
+                
+                const isSelected = city.id === selectedCityId;
+                const cityMarkerColor = resolveMapColor(city.color);
+                const cityMarkerLabelColor = getContrastTextColor(cityMarkerColor);
+                const marker = new window.google.maps.Marker({
+                    map: googleMapRef.current,
+                    position: { lat: city.coordinates.lat, lng: city.coordinates.lng },
+                    title: city.title,
+                    label: { 
+                        text: `${index + 1}`, 
+                        color: cityMarkerLabelColor,
+                        fontWeight: '700', 
+                        fontSize: isSelected ? '14px' : '12px' 
+                    },
+                    icon: buildPinIcon(cityMarkerColor, isSelected),
+                    zIndex: isSelected ? 100 : 10,
+                });
+                
+                markersRef.current.push(marker);
+            });
+        }
+
+        if (!isPaywalled && showCityNames && googleMapRef.current) {
             const startCity = cities[0];
             const endCity = cities[cities.length - 1];
             const startCityKey = getNormalizedCityName(startCity?.title);
@@ -612,7 +631,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
                  const travelItem = findTravelBetweenCities(items, start, end);
                  const mode = travelItem?.transportMode || 'na';
-                 const startColor = getHexFromColorClass(start.color); // Color based on start city
+                 const startColor = resolveMapColor(start.color); // Color based on start city
                  const cacheKey = start.coordinates && end.coordinates
                      ? buildRouteCacheKey(start.coordinates, end.coordinates, mode)
                      : null;
@@ -888,9 +907,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
              }
         };
 
-        drawRoutes();
+        if (!isPaywalled) {
+            drawRoutes();
+        }
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames]); 
+    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled]); 
 
     // Pan to selected
     useEffect(() => {
@@ -1012,14 +1033,14 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                   <button onClick={() => { onStyleChange('dark'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'dark' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Dark</button>
                                   <button onClick={() => { onStyleChange('satellite'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'satellite' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Satellite</button>
                                   <button onClick={() => { onStyleChange('clean'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'clean' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Clean</button>
-                                  {onRouteModeChange && (
+                                  {!isPaywalled && onRouteModeChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Routes</div>
                                           <button onClick={() => { onRouteModeChange('simple'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'simple' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Simple</button>
                                           <button onClick={() => { onRouteModeChange('realistic'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${routeMode === 'realistic' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Realistic</button>
                                       </>
                                   )}
-                                  {onShowCityNamesChange && (
+                                  {!isPaywalled && onShowCityNamesChange && (
                                       <>
                                           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Labels</div>
                                           <button
@@ -1027,6 +1048,23 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                                               className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${showCityNames ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
                                           >
                                               City names {showCityNames ? 'On' : 'Off'}
+                                          </button>
+                                      </>
+                                  )}
+                                  {onMapColorModeChange && (
+                                      <>
+                                          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-t border-gray-100">Colors</div>
+                                          <button
+                                              onClick={() => { onMapColorModeChange('trip'); setIsStyleMenuOpen(false); }}
+                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'trip' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
+                                          >
+                                              Trip colors
+                                          </button>
+                                          <button
+                                              onClick={() => { onMapColorModeChange('brand'); setIsStyleMenuOpen(false); }}
+                                              className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${mapColorMode === 'brand' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}
+                                          >
+                                              Brand accent
                                           </button>
                                       </>
                                   )}

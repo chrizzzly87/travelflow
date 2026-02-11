@@ -360,7 +360,8 @@ const buildTripFromModelData = (
         countryInfo: data.countryInfo,
         createdAt: now,
         updatedAt: now,
-        isFavorite: false
+        isFavorite: false,
+        roundTrip: options?.roundTrip ? true : undefined,
     };
 };
 

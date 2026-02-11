@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
 import { MobileMenu } from './MobileMenu';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -33,6 +33,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         trackEvent(`navigation__${target}`);
     };
 
+    const navDebugAttributes = (target: string) =>
+        getAnalyticsDebugAttributes(`navigation__${target}`);
+
     const isGlass = variant === 'glass';
 
     const headerClass = isGlass
@@ -51,7 +54,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         <>
             <header className={headerClass} style={{ viewTransitionName: 'site-header' }}>
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
-                    <NavLink to="/" onClick={() => handleNavClick('brand')} className="flex items-center gap-2">
+                    <NavLink
+                        to="/"
+                        onClick={() => handleNavClick('brand')}
+                        className="flex items-center gap-2"
+                        {...navDebugAttributes('brand')}
+                    >
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
                             <AirplaneTilt size={16} weight="duotone" />
                         </span>
@@ -59,11 +67,11 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     </NavLink>
 
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
-                        <NavLink to="/features" onClick={() => handleNavClick('features')} className={navLinkClass}>Features</NavLink>
-                        <NavLink to="/inspirations" onClick={() => handleNavClick('inspirations')} className={navLinkClass}>Inspirations</NavLink>
-                        <NavLink to="/updates" onClick={() => handleNavClick('updates')} className={navLinkClass}>News & Updates</NavLink>
-                        <NavLink to="/blog" onClick={() => handleNavClick('blog')} className={navLinkClass}>Blog</NavLink>
-                        <NavLink to="/pricing" onClick={() => handleNavClick('pricing')} className={navLinkClass}>Pricing</NavLink>
+                        <NavLink to="/features" onClick={() => handleNavClick('features')} className={navLinkClass} {...navDebugAttributes('features')}>Features</NavLink>
+                        <NavLink to="/inspirations" onClick={() => handleNavClick('inspirations')} className={navLinkClass} {...navDebugAttributes('inspirations')}>Inspirations</NavLink>
+                        <NavLink to="/updates" onClick={() => handleNavClick('updates')} className={navLinkClass} {...navDebugAttributes('updates')}>News & Updates</NavLink>
+                        <NavLink to="/blog" onClick={() => handleNavClick('blog')} className={navLinkClass} {...navDebugAttributes('blog')}>Blog</NavLink>
+                        <NavLink to="/pricing" onClick={() => handleNavClick('pricing')} className={navLinkClass} {...navDebugAttributes('pricing')}>Pricing</NavLink>
                     </nav>
 
                     <div className="flex items-center gap-2">
@@ -71,6 +79,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             to="/login"
                             onClick={() => handleNavClick('login')}
                             className={loginClass}
+                            {...navDebugAttributes('login')}
                         >
                             Login
                         </NavLink>
@@ -82,6 +91,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                         onMyTripsClick();
                                     }}
                                     className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...navDebugAttributes('my_trips')}
                                 >
                                     <Folder size={15} />
                                     My Trips
@@ -92,6 +102,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 to="/create-trip"
                                 onClick={() => handleNavClick('create_trip')}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
+                                {...navDebugAttributes('create_trip')}
                             >
                                 Create Trip
                             </NavLink>
@@ -100,6 +111,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             onClick={() => setIsMobileMenuOpen(true)}
                             className={burgerClass}
                             aria-label="Open menu"
+                            {...getAnalyticsDebugAttributes('mobile_nav__menu--open')}
                         >
                             <List size={22} weight="bold" />
                         </button>

@@ -18,6 +18,8 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
         createdAt,
         updatedAt,
         isFavorite: Boolean(candidate.isFavorite),
+        status: candidate.status === 'archived' ? 'archived' : candidate.status === 'expired' ? 'expired' : 'active',
+        tripExpiresAt: typeof candidate.tripExpiresAt === 'string' ? candidate.tripExpiresAt : null,
     } as ITrip;
 };
 

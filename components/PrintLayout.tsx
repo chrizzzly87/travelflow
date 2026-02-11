@@ -1,6 +1,6 @@
 import React from 'react';
 import { ITrip, ITimelineItem } from '../types';
-import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getTripDistanceKm, getTripDuration } from '../utils';
+import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getHexFromColorClass, getTripDistanceKm, getTripDuration } from '../utils';
 import { MapPin, Calendar, Clock, ArrowRight, Hotel, StickyNote } from 'lucide-react';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
@@ -11,6 +11,7 @@ interface PrintLayoutProps {
   trip: ITrip;
   onClose: () => void;
   onUpdateTrip: (items: ITimelineItem[]) => void;
+  isPaywalled?: boolean;
 }
 
 // Helper to safely parse YYYY-MM-DD to Local Date (avoiding UTC shifts)
@@ -92,8 +93,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                          const shorthand = `${days}D/${nights}N`;
                          
                          const dateStr = `${formatLegendDate(start)} - ${formatLegendDate(end)}`;
-                         // Fix color class
-                         const bgClass = city.color ? city.color.split(' ')[0] : 'bg-gray-200';
+                         const cityColor = getHexFromColorClass(city.color || '');
 
                          return (
                              <div 
@@ -101,7 +101,10 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                 className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
                                 onClick={() => onScrollTo(city.id)}
                              >
-                                 <div className={`w-3 h-3 rounded-full flex-shrink-0 ${bgClass}`} />
+                                 <div
+                                     className="w-3 h-3 rounded-full flex-shrink-0"
+                                     style={{ backgroundColor: cityColor }}
+                                 />
                                  <div className="flex-1 min-w-0">
                                      <div className="font-bold text-gray-800 truncate">{city.title}</div>
                                      <div className="text-gray-400 flex justify-between">
@@ -160,7 +163,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                         >
                                             {/* Render Bars for Cities */}
                                             {activeCities.map(({ item, dayIndex }) => {
-                                                const bgClass = item.color ? item.color.split(' ')[0] : 'bg-gray-200';
+                                                const itemColor = getHexFromColorClass(item.color || '');
                                                 
                                                 const cityStart = item.startDateOffset;
                                                 const cityEnd = item.startDateOffset + item.duration;
@@ -178,8 +181,8 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                                 return (
                                                     <div 
                                                         key={item.id}
-                                                        className={`absolute top-0 bottom-0 -z-10 ${bgClass} ${roundedClass} opacity-70 print:opacity-60`}
-                                                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                                                        className={`absolute top-0 bottom-0 -z-10 ${roundedClass} opacity-70 print:opacity-60`}
+                                                        style={{ left: `${leftPct}%`, width: `${widthPct}%`, backgroundColor: itemColor }}
                                                     />
                                                 );
                                             })}
@@ -200,7 +203,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
     );
 };
 
-export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip }) => {
+export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdateTrip, isPaywalled = false }) => {
   const tripStartDate = parseLocalDate(trip.startDate);
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const totalDistanceKm = getTripDistanceKm(trip.items);
@@ -288,7 +291,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
 
                         {/* RIGHT: Map */}
                         <div className="col-span-5 h-full bg-gray-100 rounded-xl overflow-hidden border border-gray-200 print:border-0 print:bg-white relative print:w-full print:h-[400px] print:break-inside-avoid">
-                             <ItineraryMap items={trip.items} />
+                             <ItineraryMap items={trip.items} mapColorMode={trip.mapColorMode} isPaywalled={isPaywalled} />
                         </div>
                     </div>
                 </section>
@@ -323,7 +326,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                             days.push({ date: dayDate, activities: dayActs });
                         }
 
-                        const cityColor = city.color ? city.color.split(' ')[0] : 'bg-gray-200';
+                        const cityColor = getHexFromColorClass(city.color || '');
 
                         return (
                             <article 
@@ -335,7 +338,7 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
                                         <div className="flex items-center gap-3 mb-1">
-                                            <div className={`w-3 h-3 rounded-full ${cityColor}`} />
+                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cityColor }} />
                                             <h2 className="text-2xl font-bold text-gray-900">{city.title}</h2>
                                         </div>
                                         <div className="text-gray-500 font-medium ml-6">

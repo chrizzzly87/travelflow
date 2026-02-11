@@ -7,6 +7,10 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getBlogPostBySlug, getPublishedBlogPosts } from '../services/blogService';
 import type { Components } from 'react-markdown';
 
+const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
+const BLOG_HEADER_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/10 to-transparent';
+const BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.68)_40%,transparent_100%)]';
+
 /** Convert heading text to a URL-safe slug */
 const toSlug = (text: string): string =>
     text
@@ -142,6 +146,7 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
 export const BlogPostPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const post = useMemo(() => (slug ? getBlogPostBySlug(slug) : undefined), [slug]);
+    const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
     const relatedPosts = useMemo(() => {
         if (!post) return [];
@@ -155,6 +160,10 @@ export const BlogPostPage: React.FC = () => {
     const headings = useMemo(() => (post ? extractHeadings(post.content) : []), [post]);
     const headingSlugs = useMemo(() => headings.map((h) => h.slug), [headings]);
     const activeHeadingId = useActiveHeading(headingSlugs);
+
+    useEffect(() => {
+        setHasHeaderImageError(false);
+    }, [post?.slug]);
 
     if (!post) {
         return (
@@ -200,7 +209,34 @@ export const BlogPostPage: React.FC = () => {
                 </div>
 
                 {/* Cover banner */}
-                <div className={`rounded-2xl ${post.coverColor} h-32 md:h-40 mb-8`} />
+                <div className={`relative mb-8 h-48 overflow-hidden rounded-2xl md:h-64 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                    {!hasHeaderImageError && (
+                        <>
+                            <picture className="absolute inset-0 block h-full w-full">
+                                <source
+                                    type="image/webp"
+                                    srcSet={`${post.images.header.sources.small} 768w, ${post.images.header.sources.large} 1536w`}
+                                    sizes={BLOG_HEADER_IMAGE_SIZES}
+                                />
+                                <img
+                                    src={post.images.header.sources.large}
+                                    srcSet={`${post.images.header.sources.small} 768w, ${post.images.header.sources.large} 1536w`}
+                                    sizes={BLOG_HEADER_IMAGE_SIZES}
+                                    alt={post.images.header.alt}
+                                    loading="eager"
+                                    decoding="async"
+                                    fetchPriority="high"
+                                    width={1536}
+                                    height={1024}
+                                    onError={() => setHasHeaderImageError(true)}
+                                    className="absolute inset-0 h-full w-full object-cover"
+                                />
+                            </picture>
+                            <div className={BLOG_HEADER_IMAGE_FADE} />
+                            <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
+                        </>
+                    )}
+                </div>
 
                 {/* Two-column layout: content + sidebar */}
                 <div className="flex gap-10 lg:gap-14">

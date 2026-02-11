@@ -28,16 +28,45 @@ import { PricingPage } from './pages/PricingPage';
 import { CreateTripV1Page } from './pages/CreateTripV1Page';
 import { CreateTripV2Page } from './pages/CreateTripV2Page';
 import { CreateTripV3Page } from './pages/CreateTripV3Page';
+import { FaqPage } from './pages/FaqPage';
+import { ShareUnavailablePage } from './pages/ShareUnavailablePage';
+import { CreateTripClassicLabPage } from './pages/CreateTripClassicLabPage';
+import { CreateTripSplitWorkspaceLabPage } from './pages/CreateTripSplitWorkspaceLabPage';
+import { CreateTripJourneyArchitectLabPage } from './pages/CreateTripJourneyArchitectLabPage';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
-import { buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import { DB_ENABLED, dbCreateTripVersion, dbGetSharedTrip, dbGetSharedTripVersion, dbGetTrip, dbGetTripVersion, dbUpdateSharedTrip, dbUpsertTrip, dbUpsertUserSettings, ensureDbSession } from './services/dbService';
+import { buildCreateTripUrl, buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
+import {
+    DB_ENABLED,
+    dbCanCreateTrip,
+    dbCreateTripVersion,
+    dbGetSharedTrip,
+    dbGetSharedTripVersion,
+    dbGetTrip,
+    dbGetTripVersion,
+    dbUpdateSharedTrip,
+    dbUpsertTrip,
+    dbUpsertUserSettings,
+    ensureDbSession,
+    isSimulatedLoggedIn,
+    toggleSimulatedLogin,
+} from './services/dbService';
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
+import { OnPageDebugger } from './components/OnPageDebugger';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
+import { buildTripExpiryIso } from './config/productLimits';
+import { getTripLifecycleState } from './config/paywall';
+import { TRIP_FACTORIES } from './data/exampleTripTemplates';
+import { getExampleTripCardByTemplateId } from './data/exampleTripCards';
+
+type AppDebugWindow = Window & typeof globalThis & {
+    toggleSimulatedLogin?: (force?: boolean) => boolean;
+    getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
+};
 
 /** Scroll to top on route change */
 const ScrollToTop: React.FC = () => {
@@ -159,8 +188,9 @@ const TripLoader = ({
                     ...loadedTrip,
                     isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
                 };
-                setViewSettings(view);
-                onTripLoaded(mergedTrip, view);
+                const resolvedView = view ?? mergedTrip.defaultView;
+                setViewSettings(resolvedView);
+                onTripLoaded(mergedTrip, resolvedView);
                 return;
             }
 
@@ -171,8 +201,9 @@ const TripLoader = ({
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         saveTrip(version.trip);
-                        setViewSettings(version.view ?? undefined);
-                        onTripLoaded(version.trip, version.view ?? undefined);
+                        const resolvedView = version.view ?? version.trip.defaultView;
+                        setViewSettings(resolvedView);
+                        onTripLoaded(version.trip, resolvedView);
                         return;
                     }
                 }
@@ -180,16 +211,18 @@ const TripLoader = ({
                     const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                     if (localEntry?.snapshot?.trip) {
                         saveTrip(localEntry.snapshot.trip);
-                        setViewSettings(localEntry.snapshot.view ?? undefined);
-                        onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                        const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                        setViewSettings(resolvedView);
+                        onTripLoaded(localEntry.snapshot.trip, resolvedView);
                         return;
                     }
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
                     saveTrip(dbTrip.trip);
-                    setViewSettings(dbTrip.view ?? undefined);
-                    onTripLoaded(dbTrip.trip, dbTrip.view ?? undefined);
+                    const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(dbTrip.trip, resolvedView);
                     return;
                 }
             }
@@ -199,14 +232,15 @@ const TripLoader = ({
                 const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
                 if (localEntry?.snapshot?.trip) {
                     saveTrip(localEntry.snapshot.trip);
-                    setViewSettings(localEntry.snapshot.view ?? undefined);
-                    onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
                     return;
                 }
             }
             const localTrip = getTripById(tripId);
             if (localTrip) {
-                onTripLoaded(localTrip);
+                onTripLoaded(localTrip, localTrip.defaultView);
                 return;
             }
 
@@ -222,7 +256,7 @@ const TripLoader = ({
     return (
         <TripView
             trip={trip}
-            initialViewSettings={viewSettings}
+            initialViewSettings={viewSettings ?? trip.defaultView}
             onUpdateTrip={handleUpdateTrip}
             onCommitState={handleCommitState}
             onViewSettingsChange={(settings) => {
@@ -278,7 +312,7 @@ const SharedTripLoader = ({
 
         const load = async () => {
             if (!DB_ENABLED) {
-                navigate('/create-trip', { replace: true });
+                navigate('/share-unavailable', { replace: true });
                 return;
             }
 
@@ -288,7 +322,11 @@ const SharedTripLoader = ({
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
-                navigate('/create-trip', { replace: true });
+                navigate('/share-unavailable', { replace: true });
+                return;
+            }
+            if (getTripLifecycleState(shared.trip) !== 'active') {
+                navigate('/share-unavailable', { replace: true });
                 return;
             }
 
@@ -298,8 +336,9 @@ const SharedTripLoader = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    setViewSettings(sharedVersion.view ?? undefined);
-                    onTripLoaded(sharedVersion.trip, sharedVersion.view ?? undefined);
+                    const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(sharedVersion.trip, resolvedView);
                     setSourceShareVersionId(sharedVersion.versionId);
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     setSnapshotState({
@@ -315,8 +354,9 @@ const SharedTripLoader = ({
                     const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    setViewSettings(version.view ?? undefined);
-                    onTripLoaded(version.trip, version.view ?? undefined);
+                    const resolvedView = version.view ?? version.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(version.trip, resolvedView);
                     setSourceShareVersionId(versionId);
                     setSnapshotState({
                         hasNewer: latestVersionMismatch || newerByTimestamp,
@@ -329,8 +369,9 @@ const SharedTripLoader = ({
             if (versionId) {
                 const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
-                    setViewSettings(localEntry.snapshot.view ?? undefined);
-                    onTripLoaded(localEntry.snapshot.trip, localEntry.snapshot.view ?? undefined);
+                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    setViewSettings(resolvedView);
+                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
                     setSourceShareVersionId(isUuid(versionId) ? versionId : null);
                     setSnapshotState({
                         hasNewer: true,
@@ -340,8 +381,9 @@ const SharedTripLoader = ({
                 }
             }
 
-            setViewSettings(shared.view ?? undefined);
-            onTripLoaded(shared.trip, shared.view ?? undefined);
+            const resolvedView = shared.view ?? shared.trip.defaultView;
+            setViewSettings(resolvedView);
+            onTripLoaded(shared.trip, resolvedView);
             setSourceShareVersionId(shared.latestVersionId ?? null);
         };
 
@@ -365,17 +407,29 @@ const SharedTripLoader = ({
 
     const handleCopyTrip = async () => {
         if (!trip) return;
+        if (DB_ENABLED) {
+            const limit = await dbCanCreateTrip();
+            if (!limit.allowCreate) {
+                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                navigate('/pricing');
+                return;
+            }
+        }
         let resolvedSourceShareVersionId = sourceShareVersionId;
         if (!resolvedSourceShareVersionId && token && DB_ENABLED) {
             const sharedNow = await dbGetSharedTrip(token);
             resolvedSourceShareVersionId = sharedNow?.latestVersionId ?? null;
         }
+        const now = Date.now();
         const cloned: ITrip = {
             ...trip,
             id: generateTripId(),
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
+            createdAt: now,
+            updatedAt: now,
             isFavorite: false,
+            status: 'active',
+            tripExpiresAt: buildTripExpiryIso(now),
+            sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
             forkedFromShareVersionId: resolvedSourceShareVersionId || undefined,
@@ -410,8 +464,8 @@ const SharedTripLoader = ({
     return (
         <TripView
             trip={trip}
-            initialViewSettings={viewSettings}
-            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings)}
+            initialViewSettings={viewSettings ?? trip.defaultView}
+            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
             onCommitState={handleCommitShared}
             onViewSettingsChange={(settings) => {
                 setViewSettings(settings);
@@ -425,6 +479,184 @@ const SharedTripLoader = ({
             shareStatus={shareMode}
             shareSnapshotMeta={snapshotState ?? undefined}
             onCopyTrip={allowCopy ? handleCopyTrip : undefined}
+        />
+    );
+};
+
+const ExampleTripLoader = ({
+    trip,
+    onTripLoaded,
+    setIsManagerOpen,
+    setIsSettingsOpen,
+    appLanguage,
+    onViewSettingsChange,
+}: {
+    trip: ITrip | null,
+    onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
+    setIsManagerOpen: (o: boolean) => void,
+    setIsSettingsOpen: (o: boolean) => void,
+    appLanguage: AppLanguage,
+    onViewSettingsChange: (settings: IViewSettings) => void,
+}) => {
+    const { templateId } = useParams();
+    const navigate = useNavigate();
+    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
+    const trackedTemplateRef = useRef<string | null>(null);
+    const templateCard = useMemo(() => {
+        if (!templateId) return null;
+        return getExampleTripCardByTemplateId(templateId) || null;
+    }, [templateId]);
+    const templateCountries = useMemo(
+        () => templateCard?.countries?.map((country) => country.name).filter(Boolean) || [],
+        [templateCard]
+    );
+
+    useEffect(() => {
+        if (!templateId) {
+            navigate('/', { replace: true });
+            return;
+        }
+
+        const factory = TRIP_FACTORIES[templateId];
+        if (!factory) {
+            navigate('/', { replace: true });
+            return;
+        }
+
+        const nowMs = Date.now();
+        const generated = factory(new Date(nowMs).toISOString());
+        const resolvedView: IViewSettings = {
+            layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
+            timelineView: generated.defaultView?.timelineView ?? 'horizontal',
+            mapStyle: generated.defaultView?.mapStyle ?? 'standard',
+            zoomLevel: generated.defaultView?.zoomLevel ?? 1,
+            routeMode: generated.defaultView?.routeMode,
+            showCityNames: generated.defaultView?.showCityNames,
+            sidebarWidth: generated.defaultView?.sidebarWidth,
+            timelineHeight: generated.defaultView?.timelineHeight,
+        };
+        const prepared: ITrip = {
+            ...generated,
+            createdAt: nowMs,
+            updatedAt: nowMs,
+            isFavorite: false,
+            isExample: true,
+            exampleTemplateId: templateId,
+            exampleTemplateCountries: templateCountries,
+            sourceKind: 'example',
+            defaultView: resolvedView,
+        };
+
+        setViewSettings(resolvedView);
+        onTripLoaded(prepared, resolvedView);
+
+        if (trackedTemplateRef.current !== templateId) {
+            trackedTemplateRef.current = templateId;
+            trackEvent('example_trip__open', {
+                template: templateId,
+                country_count: templateCountries.length,
+            });
+        }
+    }, [templateCountries, templateId, navigate, onTripLoaded]);
+
+    const handleCopyExampleTrip = async () => {
+        if (!trip || !templateId) return;
+        if (DB_ENABLED) {
+            const limit = await dbCanCreateTrip();
+            if (!limit.allowCreate) {
+                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                navigate('/pricing');
+                return;
+            }
+        }
+        const now = Date.now();
+        const cloned: ITrip = {
+            ...trip,
+            id: generateTripId(),
+            createdAt: now,
+            updatedAt: now,
+            isFavorite: false,
+            isExample: false,
+            status: 'active',
+            tripExpiresAt: buildTripExpiryIso(now),
+            sourceKind: 'duplicate_trip',
+            sourceTemplateId: templateId,
+            exampleTemplateId: undefined,
+            exampleTemplateCountries: undefined,
+            forkedFromExampleTemplateId: templateId,
+        };
+
+        if (typeof window !== 'undefined') {
+            try {
+                window.sessionStorage.setItem('tf_trip_copy_notice', JSON.stringify({
+                    tripId: cloned.id,
+                    sourceTripId: trip.id,
+                    sourceTitle: trip.title,
+                    sourceShareToken: null,
+                    sourceShareVersionId: null,
+                    createdAt: Date.now(),
+                }));
+            } catch {
+                // ignore storage issues
+            }
+        }
+
+        saveTrip(cloned);
+        trackEvent('example_trip__banner--copy_trip', {
+            template: templateId,
+            country_count: templateCountries.length,
+        });
+
+        if (DB_ENABLED) {
+            await ensureDbSession();
+            await dbUpsertTrip(cloned, viewSettings);
+            await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
+        }
+
+        navigate(buildTripUrl(cloned.id));
+    };
+
+    const handleCreateSimilarTrip = () => {
+        if (!templateId) return;
+        const url = buildCreateTripUrl({
+            countries: templateCountries,
+            meta: {
+                source: 'example_trip',
+                label: templateCard?.title || 'Example trip',
+                templateId,
+            },
+        });
+        trackEvent('example_trip__banner--create_similar', {
+            template: templateId,
+            country_count: templateCountries.length,
+        });
+        navigate(url);
+    };
+
+    if (!trip || !trip.isExample) return null;
+
+    return (
+        <TripView
+            trip={trip}
+            initialViewSettings={viewSettings ?? trip.defaultView}
+            onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
+            onViewSettingsChange={(settings) => {
+                setViewSettings(settings);
+                onViewSettingsChange(settings);
+            }}
+            onOpenManager={() => setIsManagerOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            appLanguage={appLanguage}
+            canShare={false}
+            onCopyTrip={handleCopyExampleTrip}
+            isExamplePreview
+            suppressToasts
+            suppressReleaseNotice
+            exampleTripBanner={{
+                title: templateCard?.title || trip.title,
+                countries: templateCountries,
+                onCreateSimilarTrip: handleCreateSimilarTrip,
+            }}
         />
     );
 };
@@ -499,6 +731,24 @@ const AppContent: React.FC = () => {
         trackPageView(`${location.pathname}${location.search}`);
     }, [location.pathname, location.search]);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const host = window as AppDebugWindow;
+        host.toggleSimulatedLogin = (force?: boolean) => {
+            const next = toggleSimulatedLogin(force);
+            console.info(
+                `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
+            );
+            return next;
+        };
+        host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');
+
+        return () => {
+            delete host.toggleSimulatedLogin;
+            delete host.getSimulatedLoginState;
+        };
+    }, []);
+
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;
         if (userSettingsSaveRef.current) {
@@ -548,33 +798,51 @@ const AppContent: React.FC = () => {
     };
 
     const handleTripGenerated = (newTrip: ITrip) => {
-        const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
-        const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
-        const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
-        trackEvent('app__trip--create', {
-            city_count: cityCount,
-            activity_count: activityCount,
-            travel_segment_count: travelSegmentCount,
-            total_item_count: newTrip.items.length,
-        });
-
-        setTrip(newTrip);
-        saveTrip(newTrip);
-        const createdTs = Date.now();
-        if (!DB_ENABLED) {
-            createLocalHistoryEntry(navigate, newTrip, undefined, 'Data: Created trip', undefined, createdTs);
-            return;
-        }
-
-        createLocalHistoryEntry(navigate, newTrip, undefined, 'Data: Created trip', undefined, createdTs);
-
         const create = async () => {
+            if (DB_ENABLED) {
+                const limit = await dbCanCreateTrip();
+                if (!limit.allowCreate) {
+                    window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
+                    navigate('/pricing');
+                    return;
+                }
+            }
+
+            const now = Date.now();
+            const preparedTrip: ITrip = {
+                ...newTrip,
+                createdAt: typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now,
+                updatedAt: now,
+                status: 'active',
+                tripExpiresAt: newTrip.tripExpiresAt || buildTripExpiryIso(now),
+                sourceKind: newTrip.sourceKind || 'created',
+            };
+            const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
+            const activityCount = newTrip.items.filter((item) => item.type === 'activity').length;
+            const travelSegmentCount = newTrip.items.filter((item) => item.type === 'travel').length;
+            trackEvent('app__trip--create', {
+                city_count: cityCount,
+                activity_count: activityCount,
+                travel_segment_count: travelSegmentCount,
+                total_item_count: newTrip.items.length,
+            });
+
+            setTrip(preparedTrip);
+            saveTrip(preparedTrip);
+            const createdTs = Date.now();
+            if (!DB_ENABLED) {
+                createLocalHistoryEntry(navigate, preparedTrip, undefined, 'Data: Created trip', undefined, createdTs);
+                return;
+            }
+
+            createLocalHistoryEntry(navigate, preparedTrip, undefined, 'Data: Created trip', undefined, createdTs);
             const sessionId = await ensureDbSession();
             if (!sessionId) return;
-            const upserted = await dbUpsertTrip(newTrip, undefined);
-            const versionId = await dbCreateTripVersion(newTrip, undefined, 'Data: Created trip');
+            const upserted = await dbUpsertTrip(preparedTrip, undefined);
+            const versionId = await dbCreateTripVersion(preparedTrip, undefined, 'Data: Created trip');
             if (!upserted || !versionId) return;
         };
+
         void create();
     };
 
@@ -630,6 +898,33 @@ const AppContent: React.FC = () => {
                         />
                     }
                 />
+                <Route
+                    path="/create-trip/labs/classic-card"
+                    element={
+                        <CreateTripClassicLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/split-workspace"
+                    element={
+                        <CreateTripSplitWorkspaceLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/journey-architect"
+                    element={
+                        <CreateTripJourneyArchitectLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />
+                    }
+                />
                 <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/inspirations" element={<InspirationsPage />} />
                 <Route path="/inspirations/themes" element={<ThemesPage />} />
@@ -642,6 +937,8 @@ const AppContent: React.FC = () => {
                 <Route path="/blog" element={<BlogPage />} />
                 <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/share-unavailable" element={<ShareUnavailablePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/imprint" element={<ImprintPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
@@ -663,6 +960,19 @@ const AppContent: React.FC = () => {
                             onLanguageLoaded={setAppLanguage}
                         />
                     } 
+                />
+                <Route
+                    path="/example/:templateId"
+                    element={
+                        <ExampleTripLoader
+                            trip={trip}
+                            onTripLoaded={setTrip}
+                            setIsManagerOpen={setIsManagerOpen}
+                            setIsSettingsOpen={setIsSettingsOpen}
+                            appLanguage={appLanguage}
+                            onViewSettingsChange={handleViewSettingsChange}
+                        />
+                    }
                 />
                 <Route
                     path="/s/:token"
@@ -705,6 +1015,7 @@ const AppContent: React.FC = () => {
 
             <CookieConsentBanner />
             <GlobalTooltipLayer />
+            <OnPageDebugger />
         </TripManagerProvider>
     );
 };
