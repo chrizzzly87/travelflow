@@ -1,5 +1,6 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode, parseTransportMode } from "../../shared/transportModes.ts";
+import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
 
 interface BenchmarkTarget {
   provider: string;
@@ -95,6 +96,7 @@ const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
 const MAX_CONCURRENCY = 4;
 const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
+const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_BENCHMARK_PROVIDER_TIMEOUT_MS", 90_000, 10_000, 180_000);
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
@@ -1112,7 +1114,7 @@ const summarizeRuns = (runs: BenchmarkRunRow[]) => {
 };
 
 const runGeneration = async (
-  request: Request,
+  _request: Request,
   run: BenchmarkRunRow,
   scenario: BenchmarkScenario,
   config: { url: string; anonKey: string },
@@ -1134,26 +1136,18 @@ const runGeneration = async (
     return;
   }
 
-  const endpoint = new URL("/api/ai/generate", request.url).toString();
   const startedMs = Date.now();
 
   try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: scenario.prompt,
-        target: {
-          provider: run.provider,
-          model: run.model,
-        },
-      }),
+    const result = await generateProviderItinerary({
+      prompt: scenario.prompt,
+      provider: run.provider,
+      model: run.model,
+      timeoutMs: BENCHMARK_PROVIDER_TIMEOUT_MS,
     });
 
-    if (!response.ok) {
-      const details = await response.text();
+    if (!result.ok) {
+      const details = JSON.stringify(result.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
@@ -1162,14 +1156,13 @@ const runGeneration = async (
         status: "failed",
         finished_at: new Date().toISOString(),
         latency_ms: Date.now() - startedMs,
-        error_message: `Generation failed (${response.status}): ${formattedDetails}`,
+        error_message: `Generation failed (${result.status}): ${formattedDetails}`,
       });
       return;
     }
 
-    const payload = await safeJsonParse(response);
-    const modelData = payload?.data;
-    const usage: ProviderUsage = payload?.meta?.usage || {};
+    const modelData = result.value.data;
+    const usage: ProviderUsage = result.value.meta?.usage || {};
 
     if (!modelData || typeof modelData !== "object") {
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
