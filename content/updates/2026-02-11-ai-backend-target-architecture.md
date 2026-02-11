@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-11-ai-backend-target-architecture
-version: v0.46.0
+version: v0.47.0
 title: "AI backend target architecture draft"
 date: 2026-02-11
 published_at: 2026-02-11T06:55:46Z
