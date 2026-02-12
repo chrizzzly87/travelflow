@@ -4,6 +4,8 @@
 1. Read `docs/UPDATE_FORMAT.md` before making product changes.
 2. Follow existing project conventions and keep routes/components non-breaking.
 3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
+4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
+5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
 
 ## Mandatory release note rule
 When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.
@@ -26,3 +28,10 @@ Before finalizing, ensure all applicable code changes are represented in release
 ## Direction-Safety Requirement
 - For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.
 - If usage is ambiguous, ask for clarification before shipping.
+
+## Copy Approval Requirement
+- For user-facing copy changes, ask for style approval in English and German before finalizing unless the user explicitly says to skip approval.
+
+## Analytics Requirement
+- For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.
+- Use the existing event naming/payload convention; avoid ad-hoc query param tracking when Umami events are available.

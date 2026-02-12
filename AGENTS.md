@@ -4,6 +4,10 @@ This repository uses markdown release files as the source of truth for product u
 
 ## Agent requirements
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
+- Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
+- For user-facing copy changes, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
+- Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
+- For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
 - Update/finalize that single release note shortly before opening the PR, once final scope is clear.

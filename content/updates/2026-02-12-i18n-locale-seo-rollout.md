@@ -29,5 +29,9 @@ summary: "Shipped multilingual routing and translation foundations, locale-aware
 - [ ] [Internal] 🧱 Introduced centralized locale and route contracts (`config/locales.ts`, `config/routes.ts`) plus locale path parsing/build helpers.
 - [ ] [Internal] 🗺️ Added automated sitemap generation and robots rules for localized marketing/blog crawl coverage.
 - [ ] [Internal] 📘 Added `docs/I18N_PAGE_WORKFLOW.md` and linked it from agent guidance files to standardize localized page implementation steps.
+- [ ] [Internal] ✍️ Added `docs/UX_COPY_GUIDELINES.md` to standardize modern, friendly marketing/planner copy and transcreation quality rules.
+- [ ] [Internal] 🗣️ Added an EN/DE copy sign-off requirement for agents before finalizing user-facing text updates.
+- [ ] [Internal] 🇪🇸 Added baseline Spanish common translation resource at `locales/es/common.json` for future locale rollout.
+- [ ] [Internal] 📊 Added analytics instrumentation requirements to LLM guidance and linked `docs/ANALYTICS_CONVENTION.md` so tracking format is applied consistently.
 - [ ] [Internal] 🧭 Added repository agent rules to require logical-property checks for new UI changes and explicit clarification when direction-aware styling is ambiguous.
 - [ ] [Internal] 🏷️ Added shared app globals (`config/appGlobals.ts`) so app name and default meta branding can be changed in one place across UI and edge metadata generators.

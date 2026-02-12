@@ -19,6 +19,7 @@ This document defines how to add or change localized pages in TravelFlow.
 - Store strings per namespace at `locales/<locale>/<namespace>.json`.
 - Interpolation uses ICU-style placeholders: `{name}` (not `{{name}}`).
 - App name is provided through default interpolation variable `appName`.
+- For tone and copy quality, apply `docs/UX_COPY_GUIDELINES.md` before writing localized strings.
 
 ## New Marketing Page Checklist
 1. Add page component in `pages/` and wrap with `MarketingLayout` when applicable.

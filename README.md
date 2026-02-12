@@ -74,6 +74,12 @@ For adding new localized pages, route keys, SEO metadata, and translation resour
 
 - `docs/I18N_PAGE_WORKFLOW.md`
 
+## UX Writing And Copy Workflow
+
+For marketing copy, CTA wording, planner microcopy, and localization/transcreation tone rules, follow:
+
+- `docs/UX_COPY_GUIDELINES.md`
+
 ## UI and Brand Guidelines
 
 For UI styling, component behavior, and accessibility standards, use:
