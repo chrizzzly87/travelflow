@@ -58,6 +58,7 @@ export interface ProgressiveImageProps {
     className?: string;
     placeholderBlurhash?: string;
     onError?: () => void;
+    disableCdn?: boolean;
 }
 
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
@@ -73,6 +74,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     className,
     placeholderBlurhash,
     onError,
+    disableCdn = false,
 }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
@@ -92,20 +94,20 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     }, [blurhashValue, placeholderMeta?.height, placeholderMeta?.width, width, height]);
 
     const avifSrcSet = useMemo(
-        () => (isImageCdnEnabled() ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
-        [src, srcSetWidths]
+        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'avif', quality: 52 }) : ''),
+        [disableCdn, src, srcSetWidths]
     );
     const webpSrcSet = useMemo(
-        () => (isImageCdnEnabled() ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
-        [src, srcSetWidths]
+        () => (isImageCdnEnabled() && !disableCdn ? buildImageSrcSet(src, srcSetWidths, { format: 'webp', quality: 60 }) : ''),
+        [disableCdn, src, srcSetWidths]
     );
     const imgSrcSet = useMemo(
-        () => buildImageSrcSet(src, srcSetWidths, { quality: 66 }),
-        [src, srcSetWidths]
+        () => (disableCdn ? '' : buildImageSrcSet(src, srcSetWidths, { quality: 66 })),
+        [disableCdn, src, srcSetWidths]
     );
 
     const fallbackWidth = srcSetWidths[srcSetWidths.length - 1] || width;
-    const resolvedSrc = buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
+    const resolvedSrc = disableCdn ? src : buildImageCdnUrl(src, { width: fallbackWidth, quality: 66 });
     const fetchPriorityAttr = fetchPriority
         ? ({ fetchpriority: fetchPriority } as { fetchpriority: 'high' | 'low' | 'auto' })
         : undefined;

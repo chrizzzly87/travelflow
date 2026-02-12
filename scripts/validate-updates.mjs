@@ -181,19 +181,21 @@ const main = async () => {
     }
   }
 
-  const versionToFiles = new Map();
+  const publishedVersionToFiles = new Map();
   for (const entry of parsedByFile) {
+    const status = String(entry.meta.status || '').trim().toLowerCase();
+    if (status !== 'published') continue;
     const version = String(entry.meta.version || '').trim();
     if (!version) continue;
-    const list = versionToFiles.get(version) || [];
+    const list = publishedVersionToFiles.get(version) || [];
     list.push(entry.file);
-    versionToFiles.set(version, list);
+    publishedVersionToFiles.set(version, list);
   }
 
-  for (const [version, matchingFiles] of versionToFiles.entries()) {
+  for (const [version, matchingFiles] of publishedVersionToFiles.entries()) {
     if (matchingFiles.length <= 1) continue;
     hasErrors = true;
-    console.error(`\n[updates:validate] duplicate version detected: ${version}`);
+    console.error(`\n[updates:validate] duplicate published version detected: ${version}`);
     for (const file of matchingFiles) {
       console.error(`  - ${path.relative(process.cwd(), file)}`);
     }
