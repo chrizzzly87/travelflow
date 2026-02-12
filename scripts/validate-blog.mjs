@@ -49,7 +49,7 @@ const parseFrontmatter = (raw) => {
 
 const isValidDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
 const isValidDateTime = (value) => Number.isFinite(Date.parse(value));
-const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'fr', 'it', 'ru']);
+const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'fr', 'it', 'ru', 'pt']);
 
 const validateFile = async (filePath) => {
   const raw = await fs.readFile(filePath, 'utf8');

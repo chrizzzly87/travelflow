@@ -10,7 +10,7 @@ This document defines how to add or change localized pages in TravelFlow.
 ## Locale Contract
 - Locale source of truth: `config/locales.ts`.
 - Route building/parsing source of truth: `config/routes.ts`.
-- Current phase locales: `en`, `de`, `fr`, `it`, `ru`.
+- Current phase locales: `en`, `de`, `fr`, `it`, `ru`, `pt`.
 - Direction map currently remains `ltr` for all active locales.
 - Keep `document.documentElement.lang` and `document.documentElement.dir` in sync via runtime locale updates in `App.tsx`.
 
@@ -33,7 +33,7 @@ This document defines how to add or change localized pages in TravelFlow.
    - `MARKETING_ROUTE_CONFIGS`
    - preload rule (if route-level preloading is needed)
 4. Add prefetch rule in `config/prefetchTargets.ts`.
-5. Add localized strings in required namespaces for `en/de/fr/it/ru`.
+5. Add localized strings in required namespaces for `en/de/fr/it/ru/pt`.
 6. Add SEO metadata in `netlify/edge-functions/site-og-meta.ts`:
    - `MARKETING_PATH_PATTERNS`
    - `PAGE_META`

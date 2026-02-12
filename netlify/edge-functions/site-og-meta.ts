@@ -6,7 +6,7 @@ const SITE_NAME = APP_NAME;
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
-const SUPPORTED_LOCALES = ["en", "de", "fr", "it", "ru"] as const;
+const SUPPORTED_LOCALES = ["en", "de", "fr", "it", "ru", "pt"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 const DEFAULT_LOCALE: SupportedLocale = "en";
 
@@ -181,78 +181,93 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: {
       description: "Планируйте поездки умнее с таймлайном и картой и делитесь ими без лишних шагов.",
     },
+    pt: {
+      description: "Plane viagens de forma mais inteligente com linha do tempo e mapa, e partilhe tudo com facilidade.",
+    },
   },
   "/features": {
     de: { title: "Funktionen", description: "Entdecke alle Funktionen von {{appName}} für bessere Reiseplanung." },
     fr: { title: "Fonctionnalités", description: "Découvrez toutes les fonctionnalités de {{appName}} pour mieux planifier vos voyages." },
     it: { title: "Funzionalità", description: "Scopri tutte le funzionalità di {{appName}} per pianificare viaggi migliori." },
     ru: { title: "Возможности", description: "Узнайте, как {{appName}} помогает планировать поездки удобнее и быстрее." },
+    pt: { title: "Funcionalidades", description: "Descubra tudo o que o {{appName}} oferece para planear e partilhar melhores viagens." },
   },
   "/updates": {
     de: { title: "Neuigkeiten", description: "Alle neuen Verbesserungen und veröffentlichten Funktionen in {{appName}}." },
     fr: { title: "Nouveautés", description: "Les dernières améliorations et fonctionnalités publiées dans {{appName}}." },
     it: { title: "Novità", description: "Tutti gli ultimi miglioramenti e le funzionalità rilasciate in {{appName}}." },
     ru: { title: "Новости и обновления", description: "Последние улучшения и новые функции {{appName}}." },
+    pt: { title: "Novidades do produto", description: "Acompanhe as melhorias mais recentes e as funcionalidades lançadas no {{appName}}." },
   },
   "/blog": {
     de: { title: "Blog", description: "Guides und Tipps für smartere Reiseplanung mit {{appName}}." },
     fr: { title: "Blog", description: "Guides et conseils pratiques pour mieux planifier vos voyages avec {{appName}}." },
     it: { title: "Blog", description: "Guide e consigli pratici per pianificare meglio i viaggi con {{appName}}." },
     ru: { title: "Блог", description: "Гайды и советы по планированию поездок с {{appName}}." },
+    pt: { title: "Blog", description: "Guias e dicas práticas para planear viagens melhores com o {{appName}}." },
   },
   "/pricing": {
     de: { title: "Preise", description: "Starte kostenlos und upgrade bei Bedarf. Transparent und ohne versteckte Kosten." },
     fr: { title: "Tarifs", description: "Commencez gratuitement et passez a une offre superieure si besoin. Sans frais caches." },
     it: { title: "Prezzi", description: "Inizia gratis e passa a un piano superiore quando serve. Nessun costo nascosto." },
     ru: { title: "Тарифы", description: "Начните бесплатно и переходите на расширенный план при необходимости. Без скрытых платежей." },
+    pt: { title: "Preços", description: "Comece grátis e faça upgrade quando precisar. Transparente e sem custos escondidos." },
   },
   "/faq": {
     de: { title: "FAQ", description: "Antworten auf häufige Fragen zu {{appName}}, Preisen und Teilen von Reisen." },
     fr: { title: "FAQ", description: "Réponses aux questions fréquentes sur {{appName}}, les tarifs et le partage de voyages." },
     it: { title: "FAQ", description: "Risposte alle domande frequenti su {{appName}}, prezzi e condivisione dei viaggi." },
     ru: { title: "FAQ", description: "Ответы на частые вопросы о {{appName}}, тарифах и совместном доступе к поездкам." },
+    pt: { title: "Perguntas frequentes", description: "Respostas às perguntas mais comuns sobre {{appName}}, preços e partilha de viagens." },
   },
   "/share-unavailable": {
     de: { title: "Geteilte Reise nicht verfügbar", description: "Dieser geteilte Reiselink ist nicht mehr verfügbar oder abgelaufen." },
     fr: { title: "Voyage partagé indisponible", description: "Ce lien de voyage partagé n'est plus disponible ou a expiré." },
     it: { title: "Viaggio condiviso non disponibile", description: "Questo link condiviso non è più disponibile o è scaduto." },
     ru: { title: "Общий маршрут недоступен", description: "Ссылка на общий маршрут недоступна или истекла." },
+    pt: { title: "Viagem partilhada indisponível", description: "Este link de viagem partilhada não está disponível ou expirou." },
   },
   "/login": {
     de: { title: "Anmelden", description: "Melde dich an und plane deine nächste Reise in {{appName}} weiter." },
     fr: { title: "Connexion", description: "Connectez-vous pour reprendre la planification de votre prochain voyage dans {{appName}}." },
     it: { title: "Accedi", description: "Accedi e continua a pianificare il tuo prossimo viaggio in {{appName}}." },
     ru: { title: "Вход", description: "Войдите, чтобы продолжить планирование следующей поездки в {{appName}}." },
+    pt: { title: "Iniciar sessão", description: "Inicie sessão e continue a planear a sua próxima viagem no {{appName}}." },
   },
   "/contact": {
     de: { title: "Kontakt", description: "Melde Übersetzungsfehler oder Lokalisierungsfeedback zu {{appName}}." },
     fr: { title: "Contact", description: "Signalez des erreurs de traduction ou vos retours de localisation pour {{appName}}." },
     it: { title: "Contatti", description: "Segnala errori di traduzione o feedback sulla localizzazione di {{appName}}." },
     ru: { title: "Контакты", description: "Сообщите об ошибках перевода или оставьте отзыв о локализации {{appName}}." },
+    pt: { title: "Contacto", description: "Reporte erros de tradução ou partilhe feedback de localização sobre o {{appName}}." },
   },
   "/imprint": {
     de: { title: "Impressum", description: "Rechtliche Informationen und Unternehmensangaben zu {{appName}}." },
     fr: { title: "Mentions légales", description: "Informations légales et sociétaires concernant {{appName}}." },
     it: { title: "Note legali", description: "Informazioni legali e societarie su {{appName}}." },
     ru: { title: "Реквизиты", description: "Юридическая и корпоративная информация о {{appName}}." },
+    pt: { title: "Aviso legal", description: "Informações legais e empresariais sobre o {{appName}}." },
   },
   "/privacy": {
     de: { title: "Datenschutzerklärung", description: "Erfahre, wie {{appName}} personenbezogene Daten und Privatsphäre schützt." },
     fr: { title: "Politique de confidentialité", description: "Découvrez comment {{appName}} traite les données personnelles et protège la vie privée." },
     it: { title: "Informativa sulla privacy", description: "Scopri come {{appName}} gestisce i dati personali e protegge la privacy." },
     ru: { title: "Политика конфиденциальности", description: "Узнайте, как {{appName}} обрабатывает персональные данные и защищает конфиденциальность." },
+    pt: { title: "Política de privacidade", description: "Saiba como o {{appName}} trata dados pessoais e protege a privacidade." },
   },
   "/terms": {
     de: { title: "Nutzungsbedingungen", description: "Lies die Bedingungen für die Nutzung von {{appName}}." },
     fr: { title: "Conditions d'utilisation", description: "Consultez les conditions qui régissent l'utilisation de {{appName}}." },
     it: { title: "Termini di servizio", description: "Leggi i termini che regolano l'uso di {{appName}}." },
     ru: { title: "Условия использования", description: "Ознакомьтесь с условиями использования {{appName}}." },
+    pt: { title: "Termos de serviço", description: "Leia os termos que regem a utilização do {{appName}}." },
   },
   "/cookies": {
     de: { title: "Cookie-Richtlinie", description: "Erfahre, wie {{appName}} Cookies und ähnliche Technologien verwendet." },
     fr: { title: "Politique de cookies", description: "Comprenez comment {{appName}} utilise les cookies et technologies similaires." },
     it: { title: "Informativa cookie", description: "Scopri come {{appName}} utilizza cookie e tecnologie simili." },
     ru: { title: "Политика cookie", description: "Узнайте, как {{appName}} использует cookie и похожие технологии." },
+    pt: { title: "Política de cookies", description: "Saiba como o {{appName}} usa cookies e tecnologias semelhantes." },
   },
   "/inspirations": {
     de: {
@@ -275,36 +290,46 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
       description: "Смотрите идеи маршрутов по темам, месяцам, странам и ближайшим фестивалям.",
       pill: "ИДЕИ ПУТЕШЕСТВИЙ",
     },
+    pt: {
+      title: "Para onde vai a seguir?",
+      description: "Explore ideias de viagem por tema, mês, país ou festivais que estão a chegar.",
+      pill: "INSPIRAÇÃO DE VIAGENS",
+    },
   },
   "/inspirations/themes": {
     de: { title: "Nach Reisethema planen" },
     fr: { title: "Voyager par thème" },
     it: { title: "Viaggia per tema" },
     ru: { title: "Путешествия по темам" },
+    pt: { title: "Viajar por tema" },
   },
   "/inspirations/best-time-to-travel": {
     de: { title: "Wann du wohin reisen solltest" },
     fr: { title: "Quand partir et où" },
     it: { title: "Quando andare e dove" },
     ru: { title: "Когда и куда ехать" },
+    pt: { title: "Quando ir e para onde" },
   },
   "/inspirations/countries": {
     de: { title: "Reiseziele nach Ländern entdecken" },
     fr: { title: "Explorer les destinations par pays" },
     it: { title: "Esplora destinazioni per paese" },
     ru: { title: "Направления по странам" },
+    pt: { title: "Explorar destinos por país" },
   },
   "/inspirations/events-and-festivals": {
     de: { title: "Reise rund um Festivals planen" },
     fr: { title: "Planifier autour d'un festival" },
     it: { title: "Pianifica intorno a un festival" },
     ru: { title: "Планируйте поездку вокруг фестиваля" },
+    pt: { title: "Planear à volta de um festival" },
   },
   "/inspirations/weekend-getaways": {
     de: { title: "Kurze Auszeiten für Vielbeschaftigte" },
     fr: { title: "Escapades rapides pour voyageurs occupes" },
     it: { title: "Fughe rapide per chi ha poco tempo" },
     ru: { title: "Быстрые поездки для занятых" },
+    pt: { title: "Escapadinhas rápidas para quem tem pouco tempo" },
   },
 };
 
@@ -443,6 +468,12 @@ const getCountryRouteMeta = (country: string, locale: SupportedLocale): PageDefi
         title: `Путешествие в ${country}`,
         description: `Все для планирования поездки в ${country}: лучшие месяцы, популярные маршруты и полезные советы.`,
         pill: "ИДЕИ ПУТЕШЕСТВИЙ",
+      });
+    case "pt":
+      return finalizePageDefinition({
+        title: `Viajar para ${country}`,
+        description: `Tudo o que precisa para planear a sua viagem a ${country}: melhores meses, roteiros populares e dicas úteis.`,
+        pill: "INSPIRAÇÃO DE VIAGENS",
       });
     default:
       return finalizePageDefinition({

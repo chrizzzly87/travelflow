@@ -1,6 +1,6 @@
 import { AppLanguage } from '../types';
 
-export const SUPPORTED_LOCALES: AppLanguage[] = ['en', 'de', 'fr', 'it', 'ru'];
+export const SUPPORTED_LOCALES: AppLanguage[] = ['en', 'de', 'fr', 'it', 'ru', 'pt'];
 export const DEFAULT_LOCALE: AppLanguage = 'en';
 
 const HTML_LANG_MAP: Record<AppLanguage, string> = {
@@ -9,6 +9,7 @@ const HTML_LANG_MAP: Record<AppLanguage, string> = {
     fr: 'fr',
     it: 'it',
     ru: 'ru',
+    pt: 'pt',
 };
 
 const INTL_LOCALE_MAP: Record<AppLanguage, string> = {
@@ -17,6 +18,7 @@ const INTL_LOCALE_MAP: Record<AppLanguage, string> = {
     fr: 'fr-FR',
     it: 'it-IT',
     ru: 'ru-RU',
+    pt: 'pt-PT',
 };
 
 const DIR_MAP: Record<AppLanguage, 'ltr' | 'rtl'> = {
@@ -25,6 +27,7 @@ const DIR_MAP: Record<AppLanguage, 'ltr' | 'rtl'> = {
     fr: 'ltr',
     it: 'ltr',
     ru: 'ltr',
+    pt: 'ltr',
 };
 
 export const isLocale = (value?: string | null): value is AppLanguage => {
@@ -48,6 +51,7 @@ export const LOCALE_LABELS: Record<AppLanguage, string> = {
     fr: 'Français',
     it: 'Italiano',
     ru: 'Русский',
+    pt: 'Português',
 };
 
 export const LOCALE_FLAGS: Record<AppLanguage, string> = {
@@ -56,6 +60,7 @@ export const LOCALE_FLAGS: Record<AppLanguage, string> = {
     fr: '🇫🇷',
     it: '🇮🇹',
     ru: '🇷🇺',
+    pt: '🇵🇹',
 };
 
 export const formatLocaleOptionLabel = (locale: AppLanguage): string => {

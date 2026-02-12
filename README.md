@@ -59,7 +59,7 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 ## Routes
 
 - `/` marketing landing page
-- `/de/*`, `/fr/*`, `/it/*`, `/ru/*` localized marketing pages (English stays on root paths)
+- `/de/*`, `/fr/*`, `/it/*`, `/ru/*`, `/pt/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)

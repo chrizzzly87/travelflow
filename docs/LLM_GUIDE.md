@@ -11,7 +11,7 @@ This doc is a compact, structured overview of the app to help future agents make
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
-- Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`, plus locale-prefixed variants (`/de/*`, `/fr/*`, `/it/*`, `/ru/*`) for marketing pages.
+- Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`, plus locale-prefixed variants (`/de/*`, `/fr/*`, `/it/*`, `/ru/*`, `/pt/*`) for marketing pages.
 - Trip creation route: `/create-trip`.
 - Core data model: `ITrip` with `ITimelineItem[]` for cities, travel, activities.
 - Primary view: `components/TripView.tsx`.

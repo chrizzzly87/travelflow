@@ -34,6 +34,11 @@ const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; 
         action: `Попробовать ${APP_NAME} на русском`,
         dismiss: 'Закрыть подсказку языка',
     },
+    pt: {
+        message: 'Esta página também está disponível em português.',
+        action: `Experimentar ${APP_NAME} em português`,
+        dismiss: 'Fechar sugestão de idioma',
+    },
 };
 
 const appendLanguageBannerTrackingParams = (target: string, from: AppLanguage, to: AppLanguage): string => {
