@@ -97,5 +97,11 @@
     "description": "Il link potrebbe essere scaduto o disattivato dal proprietario del viaggio. Chiedi un nuovo link o crea il tuo viaggio.",
     "backToHomepage": "Torna alla home",
     "createNewTrip": "Crea nuovo viaggio"
+  },
+  "notFound": {
+    "headline": "Sembra che questa pagina sia già in vacanza!",
+    "planCta": "Pianifica la tua",
+    "missingPrompt": "Pensi che questa pagina dovrebbe esistere ma manca?",
+    "contactCta": "Contattaci"
   }
 }

@@ -97,5 +97,11 @@
     "description": "O link pode ter expirado ou ter sido desativado pelo proprietário da viagem. Peça um novo link ou crie a sua própria viagem para continuar a planear.",
     "backToHomepage": "Voltar à página inicial",
     "createNewTrip": "Criar nova viagem"
+  },
+  "notFound": {
+    "headline": "Parece que esta página já foi de férias!",
+    "planCta": "Planeie as suas",
+    "missingPrompt": "Acha que esta página devia existir e está em falta?",
+    "contactCta": "Contacte-nos"
   }
 }

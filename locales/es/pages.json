@@ -97,5 +97,11 @@
     "description": "Es posible que el enlace haya caducado o que la persona creadora lo haya desactivado. Pídele un enlace nuevo o crea tu propio viaje para seguir planificando.",
     "backToHomepage": "Volver a la página principal",
     "createNewTrip": "Crear nuevo viaje"
+  },
+  "notFound": {
+    "headline": "Parece que esta página ya se fue de vacaciones.",
+    "planCta": "Planea las tuyas",
+    "missingPrompt": "¿Crees que esta página debería existir y se nos escapó?",
+    "contactCta": "Contáctanos"
   }
 }

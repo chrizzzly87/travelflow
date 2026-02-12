@@ -160,6 +160,7 @@ const AdminAiBenchmarkPage = lazy(() => import('./pages/AdminAiBenchmarkPage').t
 const PricingPage = lazy(() => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
 const FaqPage = lazy(() => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazy(() => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 const CreateTripClassicLabPage = lazy(() => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripSplitWorkspaceLabPage = lazy(() => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazy(() => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
@@ -1338,7 +1339,7 @@ const AppContent: React.FC = () => {
                 />
                  {/* Legacy Redirect */}
                  <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
-                 <Route path="*" element={<Navigate to="/" replace />} />
+                 <Route path="*" element={renderWithSuspense(<NotFoundPage />)} />
             </Routes>
 
             {/* Global Modals */}

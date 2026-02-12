@@ -98,6 +98,13 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `features__bottom_cta` | — | — | `FeaturesPage.tsx` |
 | `pricing__tier--{name}` | `free` (others disabled) | — | `PricingPage.tsx` |
 
+### Not Found
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `not_found__view` | — | `{ locale, path }` | `NotFoundPage.tsx` |
+| `not_found__cta--plan_yours` | — | `{ locale }` | `NotFoundPage.tsx` |
+| `not_found__link--contact` | — | `{ locale }` | `NotFoundPage.tsx` |
+
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|

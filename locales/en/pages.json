@@ -97,5 +97,11 @@
     "description": "The link may have expired or was deactivated by the trip owner. Please ask for a fresh link or create your own trip to continue planning.",
     "backToHomepage": "Back to homepage",
     "createNewTrip": "Create new trip"
+  },
+  "notFound": {
+    "headline": "Looks like this page is already on vacation!",
+    "planCta": "Plan yours",
+    "missingPrompt": "Think this page should exist and we missed it?",
+    "contactCta": "Contact us"
   }
 }
