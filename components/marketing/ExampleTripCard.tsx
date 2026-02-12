@@ -3,6 +3,8 @@ import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import type { ExampleTripCard as ExampleTripCardType } from '../../data/exampleTripCards';
 import type { ExampleTemplateMiniCalendar } from '../../data/exampleTripTemplates';
 import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
+import { ProgressiveImage } from '../ProgressiveImage';
+import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
@@ -21,6 +23,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
         ? `${card.mapImagePath}?v=palette-20260210d`
         : null;
     const [mapImageSrc, setMapImageSrc] = React.useState<string | null>(mapPreviewUrl || staticFallbackSrc);
+    const [dynamicBlurhash, setDynamicBlurhash] = React.useState<string>('');
     const mapViewTransitionName = getExampleMapViewTransitionName(enableSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(enableSharedTransition);
     const cityLanes = miniCalendar?.cityLanes || [];
@@ -28,6 +31,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
 
     React.useEffect(() => {
         setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
+        setDynamicBlurhash('');
     }, [mapPreviewUrl, staticFallbackSrc]);
 
     const handleMapImageError = () => {
@@ -38,30 +42,58 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
         setMapImageSrc(null);
     };
 
+    React.useEffect(() => {
+        if (!mapPreviewUrl || !isImageCdnEnabled()) return;
+        let canceled = false;
+        const controller = new AbortController();
+
+        const loadBlurhash = async () => {
+            try {
+                const response = await fetch(buildBlurhashEndpointUrl(mapPreviewUrl), { signal: controller.signal });
+                if (!response.ok) return;
+                const hash = (await response.text()).trim();
+                if (!hash || canceled) return;
+                setDynamicBlurhash(hash);
+            } catch {
+                // Ignore preview placeholder fetch errors.
+            }
+        };
+
+        void loadBlurhash();
+
+        return () => {
+            canceled = true;
+            controller.abort();
+        };
+    }, [mapPreviewUrl]);
+
     return (
         <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
-            {/* Map area */}
             <div
                 className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
                 style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}
             >
                 {mapImageSrc ? (
-                    <img
+                    <ProgressiveImage
                         src={mapImageSrc}
                         alt={`Route map for ${card.title}`}
+                        width={680}
+                        height={288}
+                        sizes="(min-width: 768px) 340px, 300px"
+                        srcSetWidths={[280, 340, 420, 560]}
+                        placeholderKey={card.mapImagePath || mapImageSrc}
+                        placeholderBlurhash={mapImageSrc === mapPreviewUrl ? dynamicBlurhash : undefined}
                         className="h-full w-full object-cover"
                         loading="lazy"
-                        decoding="async"
+                        fetchPriority="low"
                         onError={handleMapImageError}
                     />
                 ) : (
                     <>
-                        {/* Decorative route dots */}
                         <div className={`absolute left-[20%] top-[30%] h-2.5 w-2.5 rounded-full ${card.mapAccent}`} />
                         <div className={`absolute left-[40%] top-[55%] h-2 w-2 rounded-full ${card.mapAccent} opacity-70`} />
                         <div className={`absolute left-[60%] top-[35%] h-3 w-3 rounded-full ${card.mapAccent}`} />
                         <div className={`absolute left-[75%] top-[60%] h-2 w-2 rounded-full ${card.mapAccent} opacity-60`} />
-                        {/* Decorative route line */}
                         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 340 144" fill="none" preserveAspectRatio="none">
                             <path
                                 d="M68 43 L136 79 L204 50 L255 86"
@@ -75,7 +107,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 )}
             </div>
 
-            {/* Body */}
             <div className="p-4">
                 <h3
                     className="text-base font-bold text-slate-900"
@@ -84,7 +115,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     {card.title}
                 </h3>
 
-                {/* Country flags + names */}
                 <div className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-600">
                     {card.countries.map((c) => (
                         <span key={c.name} className="inline-flex items-center gap-1">
@@ -94,7 +124,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     ))}
                 </div>
 
-                {/* Stats row */}
                 <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
                     <span className="inline-flex items-center gap-1">
                         <Clock size={14} weight="duotone" className="text-accent-500" />
@@ -112,7 +141,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                     ) : null}
                 </div>
 
-                {/* Tags */}
                 <div className="mt-3 flex flex-wrap gap-1.5">
                     {card.tags.map((tag) => (
                         <span
@@ -125,7 +153,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 </div>
             </div>
 
-            {/* Mini calendar lane */}
             {cityLanes.length > 0 && (
                 <div className="border-t border-slate-100 px-4 py-2.5">
                     <div className="flex items-center gap-[2px]">
@@ -163,7 +190,6 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 </div>
             )}
 
-            {/* Footer */}
             <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} px-4 py-3 flex items-center gap-2`}>
                 <div className={`h-6 w-6 rounded-full ${card.avatarColor} flex items-center justify-center text-white text-[10px] font-bold`}>
                     {card.username[0].toUpperCase()}

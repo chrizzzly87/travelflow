@@ -20,6 +20,8 @@ Current implementation status:
 13. `/api/internal/ai/benchmark/cancel` is implemented for manual cancellation of active benchmark runs (single run or entire session).
 14. `/admin/ai-benchmark` keeps polling and live latency updates when a persisted session reloads with active runs, and exposes abort actions in the run table/session toolbar.
 15. Benchmark workers now call provider APIs directly (shared edge runtime) with a dedicated provider timeout budget (default 90s), avoiding nested `/api/ai/generate` edge timeout failures.
+16. Benchmark concurrency is capped at 5 parallel workers; extra selected model runs are queued automatically.
+17. Benchmark cost column now falls back to model-catalog estimates when exact provider `cost_usd` metadata is not available.
 
 ## 1) Confirmed decisions (2026-02-11)
 

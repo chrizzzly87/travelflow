@@ -133,7 +133,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
         ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
-        ${isUnsetTravelMode ? 'border-dashed border-amber-300 bg-amber-50 text-amber-700' : ''}
+        ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
       style={finalStyle}

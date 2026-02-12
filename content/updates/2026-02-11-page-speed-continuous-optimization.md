@@ -1,16 +1,26 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.51.0
+version: v0.56.0
 title: "Page speed baseline and continuous optimization"
-date: 2026-02-11
-published_at: 2026-02-11T15:46:16Z
+date: 2026-02-12
+published_at: 2026-02-12T07:59:30Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Significantly improved page speed, cut blog image bandwidth, and shipped fully self-hosted multilingual font fallbacks."
+summary: "Added hybrid BlurHash + Netlify Image CDN delivery, hardened map preview reliability, and reduced first-navigation route stalls via route-module preloading."
 ---
 
 ## Changes
+- [x] [Improved] 🖼️ Added progressive BlurHash placeholders with production Netlify Image CDN delivery (AVIF/WebP + responsive widths) for blog cards/headers, inspirations cards, and homepage example trip cards.
+- [x] [Improved] 🗺️ Reduced example trip map over-download by lowering default preview source dimensions/scale and serving responsive map card `srcset` variants.
+- [x] [Improved] ⚡ Home route no longer eagerly loads Supabase-heavy DB code; trip/session DB modules now lazy-load only when trip flows actually need them.
+- [x] [Improved] 🧠 Added immutable cache headers for hashed `/assets/*` files to improve repeat-visit performance.
+- [x] [Fixed] 🤖 Added a valid `robots.txt` and explicitly disallowed crawler access to `/trip/` and `/s/` while keeping all other paths crawlable.
+- [x] [Fixed] 🛠️ Resolved React runtime warnings by switching progressive image `fetchPriority` delivery to a lowercase DOM `fetchpriority` attribute and removing nested anchor markup in Inspirations cards.
+- [ ] [Internal] 🧱 Added build-time image placeholder manifest generation (`sharp` + `blurhash`) and integrated it into the production build pipeline.
+- [ ] [Internal] 🧩 Moved simulated-login debug state helpers into a lightweight standalone service to decouple debug toggles from Supabase runtime imports.
+- [ ] [Internal] 🎨 Deferred Prism theme CSS loading to the admin benchmark route so non-admin pages avoid that render-blocking stylesheet.
+- [ ] [Internal] 🧹 Production builds now prune `console.log/info/debug` calls while retaining warnings/errors.
 - [x] [Improved] ⚡ Blog and marketing routes now load via lazy route chunks instead of shipping planner-heavy code on first paint.
 - [x] [Improved] 🗺️ Removed globally injected Leaflet CDN assets from the HTML shell so non-map pages stop paying map-library cost.
 - [x] [Improved] 🚀 On `/blog/best-time-visit-japan` (Lighthouse mobile sample), key metrics improved from roughly FCP `4.9s → 2.5s` (~`49%` faster), LCP `5.3s → 3.5s` (~`34%` faster), TBT `80ms → 3ms` (~`96%` lower), and Speed Index `5.5s → 2.5s` (~`55%` faster).
@@ -19,8 +29,11 @@ summary: "Significantly improved page speed, cut blog image bandwidth, and shipp
 - [x] [Improved] 🧩 Added `content-visibility` with intrinsic-size hints for below-the-fold sections on blog detail pages.
 - [x] [Improved] 📦 Added conservative Vite `manualChunks` groups so large dependency buckets can be cached independently.
 - [x] [Improved] 🛠️ Deferred loading of the on-page debugger until explicitly requested (`debug()`/`?debug=1`/persisted auto-open).
+- [x] [Fixed] 🗺️ Homepage example trip cards now use pre-generated map assets instead of runtime preview API calls, removing extra preview request chains and preventing `/.netlify/images` map-preview 403 noise.
 - [x] [Improved] 🔤 Self-hosted `Space Grotesk` with local `woff2` subsets (`latin`, `latin-ext`, `vietnamese`) and `font-display: swap` to remove Google Fonts request chains.
 - [x] [Improved] ✍️ Added a self-hosted `Bricolage Grotesque` heading option (latin/latin-ext/vietnamese subsets) for faster local typography experiments without external font CDNs.
 - [x] [Improved] 🌍 Added self-hosted global script fallbacks (Cyrillic, Greek, Devanagari, Arabic, Hebrew, Thai) so international city/country names render reliably beyond English/German/Spanish/French Latin text.
+- [x] [Fixed] ✅ Static map preview and OG map rendering now gracefully fall back when satellite static maps are unavailable for account/region policy, avoiding hard 403 map responses.
 - [x] [Improved] 🖼️ Updated OG image edge rendering to load local self-hosted fonts first, with resilient fallback if local assets are unavailable.
+- [x] [Improved] 🧭 Added route-module warmup and link-intent preloading so first navigation in local/dev no longer stalls on lazy chunk compilation with a visible blank fallback blink.
 - [ ] [Internal] 📋 Added a persistent performance backlog document to keep route-by-route Lighthouse improvements active.

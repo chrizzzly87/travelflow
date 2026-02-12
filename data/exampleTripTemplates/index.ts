@@ -241,9 +241,11 @@ export const buildExampleTemplateMapPreviewUrl = (
     if (legColors.length > 0) {
         searchParams.set('legColors', legColors.join('|'));
     }
-    searchParams.set('w', String(Math.max(280, Math.round(options?.width ?? 680))));
-    searchParams.set('h', String(Math.max(180, Math.round(options?.height ?? 288))));
-    searchParams.set('scale', String(options?.scale === 1 ? 1 : 2));
+    const requestedWidth = options?.width ?? 560;
+    const requestedHeight = options?.height ?? Math.round((requestedWidth * 288) / 680);
+    searchParams.set('w', String(Math.max(280, Math.round(requestedWidth))));
+    searchParams.set('h', String(Math.max(180, Math.round(requestedHeight))));
+    searchParams.set('scale', String(options?.scale === 2 ? 2 : 1));
 
     return `/api/trip-map-preview?${searchParams.toString()}`;
 };

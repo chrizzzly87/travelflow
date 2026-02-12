@@ -7,21 +7,8 @@ import { CookieConsentBanner } from './components/marketing/CookieConsentBanner'
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildCreateTripUrl, buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import {
-    DB_ENABLED,
-    dbCanCreateTrip,
-    dbCreateTripVersion,
-    dbGetSharedTrip,
-    dbGetSharedTripVersion,
-    dbGetTrip,
-    dbGetTripVersion,
-    dbUpdateSharedTrip,
-    dbUpsertTrip,
-    dbUpsertUserSettings,
-    ensureDbSession,
-    isSimulatedLoggedIn,
-    toggleSimulatedLogin,
-} from './services/dbService';
+import { DB_ENABLED } from './config/db';
+import { isSimulatedLoggedIn, toggleSimulatedLogin } from './services/simulatedLoginService';
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
@@ -59,6 +46,84 @@ type ExampleTripPrefetchState = {
 };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
+const IS_DEV = import.meta.env.DEV;
+
+type DbServiceModule = typeof import('./services/dbService');
+
+let dbServicePromise: Promise<DbServiceModule> | null = null;
+
+const loadDbService = async (): Promise<DbServiceModule> => {
+    if (!dbServicePromise) {
+        dbServicePromise = import('./services/dbService');
+    }
+    return dbServicePromise;
+};
+
+const ensureDbSession = async () => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.ensureDbSession();
+};
+
+const dbCanCreateTrip = async () => {
+    if (!DB_ENABLED) {
+        return {
+            allowCreate: true,
+            activeTripCount: 0,
+            maxTripCount: 0,
+        };
+    }
+    const db = await loadDbService();
+    return db.dbCanCreateTrip();
+};
+
+const dbCreateTripVersion = async (...args: Parameters<DbServiceModule['dbCreateTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbCreateTripVersion(...args);
+};
+
+const dbGetSharedTrip = async (...args: Parameters<DbServiceModule['dbGetSharedTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetSharedTrip(...args);
+};
+
+const dbGetSharedTripVersion = async (...args: Parameters<DbServiceModule['dbGetSharedTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetSharedTripVersion(...args);
+};
+
+const dbGetTrip = async (...args: Parameters<DbServiceModule['dbGetTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetTrip(...args);
+};
+
+const dbGetTripVersion = async (...args: Parameters<DbServiceModule['dbGetTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetTripVersion(...args);
+};
+
+const dbUpdateSharedTrip = async (...args: Parameters<DbServiceModule['dbUpdateSharedTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbUpdateSharedTrip(...args);
+};
+
+const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsertTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbUpsertTrip(...args);
+};
+
+const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
+    if (!DB_ENABLED) return;
+    const db = await loadDbService();
+    await db.dbUpsertUserSettings(...args);
+};
 
 const CreateTripForm = lazy(() => import('./components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
 const TripView = lazy(() => import('./components/TripView').then((module) => ({ default: module.TripView })));
@@ -90,6 +155,60 @@ const ShareUnavailablePage = lazy(() => import('./pages/ShareUnavailablePage').t
 const CreateTripClassicLabPage = lazy(() => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripSplitWorkspaceLabPage = lazy(() => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazy(() => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
+
+type RoutePreloadRule = {
+    key: string;
+    match: (pathname: string) => boolean;
+    preload: () => Promise<unknown>;
+};
+
+const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
+    { key: 'home', match: (pathname) => pathname === '/', preload: () => import('./pages/MarketingHomePage') },
+    { key: 'features', match: (pathname) => pathname === '/features', preload: () => import('./pages/FeaturesPage') },
+    { key: 'inspirations', match: (pathname) => pathname === '/inspirations', preload: () => import('./pages/InspirationsPage') },
+    { key: 'themes', match: (pathname) => pathname === '/inspirations/themes', preload: () => import('./pages/inspirations/ThemesPage') },
+    { key: 'best-time', match: (pathname) => pathname === '/inspirations/best-time-to-travel', preload: () => import('./pages/inspirations/BestTimeToTravelPage') },
+    { key: 'countries', match: (pathname) => pathname === '/inspirations/countries', preload: () => import('./pages/inspirations/CountriesPage') },
+    { key: 'festivals', match: (pathname) => pathname === '/inspirations/events-and-festivals', preload: () => import('./pages/inspirations/FestivalsPage') },
+    { key: 'weekend-getaways', match: (pathname) => pathname === '/inspirations/weekend-getaways', preload: () => import('./pages/inspirations/WeekendGetawaysPage') },
+    { key: 'country-detail', match: (pathname) => pathname.startsWith('/inspirations/country/'), preload: () => import('./pages/inspirations/CountryDetailPage') },
+    { key: 'updates', match: (pathname) => pathname === '/updates', preload: () => import('./pages/UpdatesPage') },
+    { key: 'blog', match: (pathname) => pathname === '/blog', preload: () => import('./pages/BlogPage') },
+    { key: 'blog-post', match: (pathname) => pathname.startsWith('/blog/'), preload: () => import('./pages/BlogPostPage') },
+    { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
+    { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
+    { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./components/CreateTripForm') },
+];
+
+const warmedRouteKeys = new Set<string>();
+
+const getPathnameFromHref = (href: string): string => {
+    try {
+        return new URL(href, window.location.origin).pathname;
+    } catch {
+        return href.split(/[?#]/)[0] || href;
+    }
+};
+
+const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
+    for (const rule of ROUTE_PRELOAD_RULES) {
+        if (rule.match(pathname)) return rule;
+    }
+    return null;
+};
+
+const preloadRouteForPath = async (pathname: string): Promise<void> => {
+    const rule = findRoutePreloadRule(pathname);
+    if (!rule) return;
+    if (warmedRouteKeys.has(rule.key)) return;
+    warmedRouteKeys.add(rule.key);
+    try {
+        await rule.preload();
+    } catch {
+        warmedRouteKeys.delete(rule.key);
+    }
+};
 
 const RouteLoadingFallback: React.FC = () => (
     <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
@@ -134,30 +253,72 @@ const ViewTransitionHandler: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!document.startViewTransition) return;
+        const warmLinkTarget = (target: EventTarget | null) => {
+            const anchor = (target as HTMLElement | null)?.closest?.('a');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href');
+            if (!href || !href.startsWith('/')) return;
+            const pathname = getPathnameFromHref(href);
+            void preloadRouteForPath(pathname);
+        };
 
+        const handleMouseOver = (event: MouseEvent) => warmLinkTarget(event.target);
+        const handleFocusIn = (event: FocusEvent) => warmLinkTarget(event.target);
+        const handleTouchStart = (event: TouchEvent) => warmLinkTarget(event.target);
+
+        document.addEventListener('mouseover', handleMouseOver, true);
+        document.addEventListener('focusin', handleFocusIn, true);
+        document.addEventListener('touchstart', handleTouchStart, true);
+
+        // Warm high-traffic marketing routes in dev so first local navigation
+        // does not wait on Vite's on-demand transforms.
+        let warmupTimerId: number | null = null;
+        if (IS_DEV) {
+            warmupTimerId = window.setTimeout(() => {
+                void preloadRouteForPath('/features');
+                void preloadRouteForPath('/inspirations');
+                void preloadRouteForPath('/blog');
+                void preloadRouteForPath('/pricing');
+            }, 600);
+        }
+
+        const canUseViewTransitions = Boolean(document.startViewTransition);
         const handleClick = (e: MouseEvent) => {
+            if (!canUseViewTransitions) return;
             const anchor = (e.target as HTMLElement).closest('a');
             if (!anchor) return;
             const href = anchor.getAttribute('href');
             if (!href || !href.startsWith('/')) return;
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (href.startsWith('#')) return;
+            const pathname = getPathnameFromHref(href);
             // Skip same-page navigations
-            if (href === window.location.pathname) return;
+            if (pathname === window.location.pathname && !href.includes('?') && !href.includes('#')) return;
 
             e.preventDefault();
             e.stopPropagation();
 
-            document.startViewTransition(() => {
+            const preloadPromise = preloadRouteForPath(pathname);
+            document.startViewTransition(async () => {
+                await preloadPromise;
                 flushSync(() => {
                     navigate(href);
                 });
             });
         };
 
-        document.addEventListener('click', handleClick, true);
-        return () => document.removeEventListener('click', handleClick, true);
+        if (canUseViewTransitions) {
+            document.addEventListener('click', handleClick, true);
+        }
+        return () => {
+            document.removeEventListener('mouseover', handleMouseOver, true);
+            document.removeEventListener('focusin', handleFocusIn, true);
+            document.removeEventListener('touchstart', handleTouchStart, true);
+            if (canUseViewTransitions) {
+                document.removeEventListener('click', handleClick, true);
+            }
+            if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
+        };
     }, [navigate]);
 
     return null;
@@ -915,9 +1076,11 @@ const AppContent: React.FC = () => {
         const host = window as AppDebugWindow;
         host.toggleSimulatedLogin = (force?: boolean) => {
             const next = toggleSimulatedLogin(force);
-            console.info(
-                `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
-            );
+            if (IS_DEV) {
+                console.info(
+                    `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
+                );
+            }
             return next;
         };
         host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');

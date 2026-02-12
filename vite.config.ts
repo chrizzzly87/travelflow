@@ -10,6 +10,20 @@ const getManualChunk = (id: string): string | undefined => {
     const normalized = normalizeModuleId(id);
 
     if (
+        normalized.includes('/node_modules/@phosphor-icons/') ||
+        normalized.includes('/node_modules/lucide-react/')
+    ) {
+        return 'vendor-icons';
+    }
+
+    if (
+        normalized.includes('/node_modules/@radix-ui/') ||
+        normalized.includes('/node_modules/vaul/')
+    ) {
+        return 'vendor-ui';
+    }
+
+    if (
         normalized.includes('/node_modules/react-markdown/') ||
         normalized.includes('/node_modules/remark-gfm/') ||
         normalized.includes('/node_modules/remark-') ||
@@ -24,33 +38,15 @@ const getManualChunk = (id: string): string | undefined => {
         return 'vendor-markdown';
     }
 
-    if (
-        normalized.includes('/node_modules/@phosphor-icons/') ||
-        normalized.includes('/node_modules/lucide-react/')
-    ) {
-        return 'vendor-icons';
-    }
-
-    if (normalized.includes('/node_modules/@supabase/')) {
-        return 'vendor-supabase';
+    if (normalized.includes('/node_modules/prismjs/')) {
+        return 'vendor-prism';
     }
 
     if (normalized.includes('/node_modules/@google/genai/')) {
         return 'vendor-genai';
     }
 
-    if (
-        normalized.includes('/node_modules/@radix-ui/') ||
-        normalized.includes('/node_modules/vaul/')
-    ) {
-        return 'vendor-ui';
-    }
-
-    if (normalized.includes('/node_modules/three/')) {
-        return 'vendor-three';
-    }
-
-    return 'vendor';
+    return undefined;
 };
 
 export default defineConfig(({ mode }) => {
@@ -63,6 +59,20 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react(), tailwindcss()],
       build: {
+        sourcemap: mode !== 'production',
+        minify: mode === 'production' ? 'terser' : 'esbuild',
+        terserOptions: mode === 'production'
+          ? {
+            compress: {
+              pure_funcs: ['console.log', 'console.info', 'console.debug'],
+            },
+          }
+          : undefined,
+        esbuild: {
+          pure: mode === 'production'
+            ? ['console.log', 'console.info', 'console.debug']
+            : [],
+        },
         rollupOptions: {
           output: {
             manualChunks: getManualChunk,

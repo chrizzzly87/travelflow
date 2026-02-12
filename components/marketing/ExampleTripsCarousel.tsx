@@ -8,7 +8,6 @@ import { buildExampleTemplateMapPreviewUrl, getExampleTemplateMiniCalendar, TRIP
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
 
-// Deterministic rotation per card index — alternating slight tilts
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.8];
 const INSPIRATIONS_LINK = '/inspirations';
 
@@ -16,16 +15,11 @@ export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
     const [activeTransitionCardKey, setActiveTransitionCardKey] = useState<string | null>(null);
     const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
-    const tripViewReadyRef = useRef(false);
-    // Duplicate the cards array so the marquee loops seamlessly
     const doubledCards = [...exampleTripCards, ...exampleTripCards];
+
     const prewarmTripView = useCallback(() => {
         if (!tripViewPrefetchRef.current) {
             tripViewPrefetchRef.current = import('../TripView')
-                .then((module) => {
-                    tripViewReadyRef.current = true;
-                    return module;
-                })
                 .catch(() => {
                     tripViewPrefetchRef.current = null;
                     return null;
@@ -37,11 +31,12 @@ export const ExampleTripsCarousel: React.FC = () => {
         prewarmTripView();
     }, [prewarmTripView]);
 
-    const handleCardClick = useCallback(async (templateId: string, transitionKey: string) => {
+    const handleCardClick = useCallback((templateId: string, transitionKey: string) => {
         const factory = TRIP_FACTORIES[templateId];
         if (!factory) return;
         prewarmTripView();
         trackEvent('home__carousel_card', { template: templateId });
+
         const target = `/example/${encodeURIComponent(templateId)}`;
         const nowMs = Date.now();
         const generated = factory(new Date(nowMs).toISOString());
@@ -68,6 +63,7 @@ export const ExampleTripsCarousel: React.FC = () => {
             sourceKind: 'example',
             defaultView: resolvedView,
         };
+
         const navigation = () => navigate(target, {
             state: {
                 useExampleSharedTransition: true,
@@ -87,11 +83,6 @@ export const ExampleTripsCarousel: React.FC = () => {
             setActiveTransitionCardKey(transitionKey);
         });
 
-        if (!tripViewReadyRef.current) {
-            navigation();
-            return;
-        }
-
         document.startViewTransition(() => {
             flushSync(navigation);
         });
@@ -99,7 +90,6 @@ export const ExampleTripsCarousel: React.FC = () => {
 
     return (
         <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
-            {/* Heading stays within parent max-w via normal flow */}
             <div className="animate-scroll-blur-in">
                 <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
                     Trips built with TravelFlow
@@ -109,13 +99,10 @@ export const ExampleTripsCarousel: React.FC = () => {
                 </p>
             </div>
 
-            {/* Full-width breakout container */}
             <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden">
-                {/* Fade edges */}
                 <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-slate-50 to-transparent md:w-24" />
                 <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-slate-50 to-transparent md:w-24" />
 
-                {/* Marquee track — pauses on hover */}
                 <div className="group py-6 overflow-x-hidden md:overflow-visible">
                     <div
                         className="flex w-max gap-6 animate-marquee group-hover:[animation-play-state:paused]"
@@ -130,6 +117,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                 ? getExampleTemplateMiniCalendar(card.templateId)
                                 : null;
                             const transitionKey = `${card.templateId || card.id}-${index}`;
+
                             return (
                                 <button
                                     key={`${card.id}-${index}`}
