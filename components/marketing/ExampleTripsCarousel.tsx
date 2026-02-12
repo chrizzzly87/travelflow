@@ -465,6 +465,9 @@ export const ExampleTripsCarousel: React.FC = () => {
                                 ? getExampleTemplateMiniCalendar(card.templateId)
                                 : null;
                             const transitionKey = `desktop-${card.templateId || card.id}-${index}`;
+                            const examplePath = card.templateId
+                                ? `/example/${encodeURIComponent(card.templateId)}`
+                                : undefined;
 
                             return (
                                 <div
@@ -481,6 +484,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         onMouseEnter={prewarmTripView}
                                         onFocus={prewarmTripView}
                                         onTouchStart={prewarmTripView}
+                                        data-prefetch-href={examplePath}
                                         className="block w-full text-left cursor-pointer transition-transform duration-300 hover:scale-[1.02] active:scale-[0.99]"
                                         {...(card.templateId
                                             ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
@@ -520,6 +524,9 @@ export const ExampleTripsCarousel: React.FC = () => {
                                 ? getExampleTemplateMiniCalendar(card.templateId)
                                 : null;
                             const transitionKey = `mobile-${card.templateId || card.id}-${index}`;
+                            const examplePath = card.templateId
+                                ? `/example/${encodeURIComponent(card.templateId)}`
+                                : undefined;
 
                             return (
                                 <div
@@ -531,6 +538,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         onClick={(event) => handleCardButtonClick(event, card.templateId, transitionKey)}
                                         onTouchStart={prewarmTripView}
                                         onFocus={prewarmTripView}
+                                        data-prefetch-href={examplePath}
                                         className="block w-full text-left cursor-pointer transition-transform duration-300 active:scale-[0.99]"
                                         {...(card.templateId
                                             ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })

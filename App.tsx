@@ -15,6 +15,9 @@ import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
+import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
+import { SpeculationRulesManager } from './components/SpeculationRulesManager';
+import { isNavPrefetchEnabled } from './services/navigationPrefetch';
 
 type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
@@ -249,6 +252,10 @@ const ScrollToTop: React.FC = () => {
 /** Pre-warm internal routes on user intent (hover/focus/touch). */
 const ViewTransitionHandler: React.FC = () => {
     useEffect(() => {
+        // Keep legacy prewarm as a fallback path only when the new
+        // navigation prefetch manager is disabled.
+        if (isNavPrefetchEnabled()) return;
+
         const warmLinkTarget = (target: EventTarget | null) => {
             const anchor = (target as HTMLElement | null)?.closest?.('a');
             if (!anchor) return;
@@ -1162,6 +1169,8 @@ const AppContent: React.FC = () => {
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ScrollToTop />
             <ViewTransitionHandler />
+            <NavigationPrefetchManager />
+            <SpeculationRulesManager />
             <Routes>
                 <Route 
                     path="/" 

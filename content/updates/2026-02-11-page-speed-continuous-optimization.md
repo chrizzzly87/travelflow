@@ -1,44 +1,30 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.47.0
+version: v0.57.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T14:34:52Z
+published_at: 2026-02-12T15:18:56Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Homepage and content pages now load and transition faster, with smoother media previews and a more interactive example-trip carousel."
+summary: "Improved page speed and perceived navigation with lighter initial bundles, smarter route warmups, and better progressive image delivery."
 ---
 
 ## Changes
-- [x] [Improved] ⚡ Homepage, blog, and marketing pages now feel much faster, especially on first visit.
-- [x] [Improved] 🖼️ Images now appear with smoother progressive loading, so cards and headers become readable sooner on slower connections.
-- [x] [Improved] 🗺️ Example trip map previews now load faster and more reliably across homepage and share surfaces.
-- [x] [Improved] 🧭 Opening routes feels smoother with fewer blank-loading flashes between pages.
-- [x] [Improved] 🔤 Typography now loads more reliably with fewer external font delays.
-- [x] [Improved] 🎢 Homepage example trips now use a clean continuous desktop scroll with subtle perspective taper on entry, and now support endless swipe with center snapping on mobile.
-- [x] [Improved] 🧲 Mobile carousel swipe now uses smoother native center snapping after release.
-- [x] [Fixed] 📱 Endless mobile scrolling now stays stable at loop boundaries without jittering or reverse snap jumps.
-- [x] [Improved] 🎯 Mobile carousel snapping now feels more natural with native browser snap behavior and no abrupt post-swipe jumps.
-- [x] [Improved] 🌫️ Mobile carousel edge fades now blend over cards smoothly instead of hard clipping at the viewport edge.
-- [x] [Fixed] 🖼️ Example trip cards now prioritize stable built-in map previews for more consistent image loading.
-- [x] [Fixed] ✅ Map-based previews and social images now fall back gracefully when map provider restrictions occur.
-- [x] [Fixed] 🤖 Private trip/share paths are now kept out of search indexing while public pages remain crawlable.
-- [ ] [Internal] 🧱 Added build-time image placeholder manifest generation (`sharp` + `blurhash`) and integrated it into the production build pipeline.
-- [ ] [Internal] 🧩 Moved simulated-login debug state helpers into a standalone service to decouple debug toggles from Supabase runtime imports.
-- [ ] [Internal] 🎨 Deferred Prism theme CSS loading to the admin benchmark route to avoid render-blocking CSS on non-admin pages.
-- [ ] [Internal] 🧹 Production builds now prune `console.log/info/debug` calls while retaining warnings and errors.
-- [ ] [Internal] 🧭 Reverted homepage example card motion to linear desktop marquee transforms and limited scaling to a short right-edge taper zone.
-- [ ] [Internal] 📱 Mobile carousel now uses a repeated data strip with scroll-position recentering to keep native swipe + snap behavior effectively endless.
-- [ ] [Internal] 🧮 Mobile loop recentering now normalizes centered card positions into the middle strip via measured modular offsets.
-- [ ] [Internal] 🎯 Switched mobile to native `snap-mandatory`; loop recentering now runs after idle/`scrollend` and uses snap-neutral teleporting to prevent boundary direction reversals.
-- [ ] [Internal] 📐 Removed forced post-snap JS center correction and kept native CSS snapping, while preserving endless-loop recentering after idle/`scrollend`.
-- [ ] [Internal] 🌫️ Replaced mobile mask-based edge softening with explicit overlay gradients to avoid hard-cut clipping on some browsers/compositors.
-- [ ] [Internal] 🗺️ Removed runtime map preview URL usage from homepage cards so map images resolve from stable local card assets first.
-- [ ] [Internal] 🧭 Hardened Google Maps loader readiness checks to wait for a constructible `google.maps.Map` before initializing trip maps.
-- [ ] [Internal] 🧭 Added route-module warmup and link-intent preloading for first-navigation chunk compilation smoothness.
-- [ ] [Internal] 📦 Added conservative Vite `manualChunks` groups so heavy dependency buckets can cache independently.
-- [ ] [Internal] 🗺️ Switched homepage example trip cards to pre-generated map assets instead of runtime map preview API calls.
-- [ ] [Internal] 🔤 Self-hosted `Space Grotesk` and `Bricolage Grotesque` font subsets to remove external font request chains.
-- [ ] [Internal] 🌍 Added self-hosted global script font fallbacks (Cyrillic/Greek/Devanagari/Arabic/Hebrew/Thai) for broader locale coverage.
-- [ ] [Internal] 🛠️ Deferred on-page debugger loading behind explicit debug entry points (`debug()`, `?debug=1`, persisted auto-open).
+- [x] [Improved] ⚡ Homepage, blog, and marketing routes now load faster with less initial JS on first visit.
+- [x] [Improved] 🖼️ Progressive BlurHash placeholders and production Netlify Image CDN delivery now make content imagery appear faster and transfer fewer bytes.
+- [x] [Improved] 🗺️ Example trip map previews now use smaller responsive sources to reduce over-download on cards.
+- [x] [Improved] 🚀 Navigation now prewarms likely next routes (hover/focus/touch/viewport/idle) and uses Speculation Rules prefetch hints for quicker follow-up page opens.
+- [x] [Improved] 🎯 Example-card interactions now keep fast direct navigation while still warming trip-view assets ahead of click.
+- [x] [Fixed] 🤖 Trip/share URLs are now correctly disallowed for crawlers while public pages remain crawlable.
+- [x] [Fixed] 🛠️ React warnings were resolved for progressive image `fetchpriority` attributes and nested anchor markup.
+- [x] [Improved] 🔤 Typography now loads more reliably via self-hosted font subsets with reduced external dependency cost.
+- [x] [Improved] 🧠 Hashed `/assets/*` files now ship with immutable cache headers for stronger repeat-visit performance.
+- [ ] [Internal] 🧱 Added build-time image placeholder manifest generation (`sharp` + `blurhash`) to keep placeholder rendering deterministic.
+- [ ] [Internal] 🧩 Moved simulated-login debug helpers into a lightweight standalone service to avoid pulling DB-heavy modules into unrelated routes.
+- [ ] [Internal] 🎨 Deferred Prism theme CSS loading to the admin benchmark route so non-admin pages avoid render-blocking CSS.
+- [ ] [Internal] 🧹 Production builds now prune `console.log/info/debug` while preserving warnings and errors.
+- [ ] [Internal] 🧭 Added centralized prefetch target mapping plus queue/budget/network guardrails to keep prefetching effective without overfetching.
+- [ ] [Internal] 🧪 Added live navigation-prefetch diagnostics to the on-page debugger for attempts/completions/skip-reason visibility.
+- [ ] [Internal] 🧰 Made Navigation Prefetch and View Transition debugger cards collapsible (persisted state), added inline info tooltips, and added an optional overlay that highlights links when prefetch is triggered.
+- [ ] [Internal] 📋 Continued documenting performance and transition guardrails in backlog/docs to prevent regressions during UX iteration.
