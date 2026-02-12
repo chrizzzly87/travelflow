@@ -16,6 +16,7 @@ const target = (key: string, load: () => Promise<unknown>): PrefetchTarget => ({
 const tripViewTarget = target('component:trip-view', () => import('../components/TripView'));
 const exampleTemplatesTarget = target('data:example-trip-templates', () => import('../data/exampleTripTemplates'));
 const exampleCardsTarget = target('data:example-trip-cards', () => import('../data/exampleTripCards'));
+const homeTarget = target('route:home', () => import('../pages/MarketingHomePage'));
 
 const createTripFormTarget = target('route:create-trip', () => import('../components/CreateTripForm'));
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
@@ -44,6 +45,10 @@ const blogTarget = target('route:blog', () => import('../pages/BlogPage'));
 const blogPostTarget = target('route:blog-post', () => import('../pages/BlogPostPage'));
 
 const rules: PrefetchRule[] = [
+    {
+        match: (pathname) => pathname === '/',
+        targets: [homeTarget],
+    },
     {
         match: (pathname) => startsWithSegment(pathname, '/create-trip'),
         targets: [createTripFormTarget, tripViewTarget],

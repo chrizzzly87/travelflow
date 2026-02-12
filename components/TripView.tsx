@@ -2022,16 +2022,17 @@ export const TripView: React.FC<TripViewProps> = ({
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                        <div
+                        <Link
+                            to="/"
                             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                            onClick={() => window.location.href = '/'}
                             title="Go to Homepage"
+                            aria-label="Go to Homepage"
                         >
                             <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
                                 <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
                             </div>
                             <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
-                        </div>
+                        </Link>
                         <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
                         <div className="flex items-start gap-2 min-w-0">
                             <div className="flex flex-col leading-tight min-w-0">
