@@ -149,6 +149,60 @@ const CreateTripClassicLabPage = lazy(() => import('./pages/CreateTripClassicLab
 const CreateTripSplitWorkspaceLabPage = lazy(() => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazy(() => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
 
+type RoutePreloadRule = {
+    key: string;
+    match: (pathname: string) => boolean;
+    preload: () => Promise<unknown>;
+};
+
+const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
+    { key: 'home', match: (pathname) => pathname === '/', preload: () => import('./pages/MarketingHomePage') },
+    { key: 'features', match: (pathname) => pathname === '/features', preload: () => import('./pages/FeaturesPage') },
+    { key: 'inspirations', match: (pathname) => pathname === '/inspirations', preload: () => import('./pages/InspirationsPage') },
+    { key: 'themes', match: (pathname) => pathname === '/inspirations/themes', preload: () => import('./pages/inspirations/ThemesPage') },
+    { key: 'best-time', match: (pathname) => pathname === '/inspirations/best-time-to-travel', preload: () => import('./pages/inspirations/BestTimeToTravelPage') },
+    { key: 'countries', match: (pathname) => pathname === '/inspirations/countries', preload: () => import('./pages/inspirations/CountriesPage') },
+    { key: 'festivals', match: (pathname) => pathname === '/inspirations/events-and-festivals', preload: () => import('./pages/inspirations/FestivalsPage') },
+    { key: 'weekend-getaways', match: (pathname) => pathname === '/inspirations/weekend-getaways', preload: () => import('./pages/inspirations/WeekendGetawaysPage') },
+    { key: 'country-detail', match: (pathname) => pathname.startsWith('/inspirations/country/'), preload: () => import('./pages/inspirations/CountryDetailPage') },
+    { key: 'updates', match: (pathname) => pathname === '/updates', preload: () => import('./pages/UpdatesPage') },
+    { key: 'blog', match: (pathname) => pathname === '/blog', preload: () => import('./pages/BlogPage') },
+    { key: 'blog-post', match: (pathname) => pathname.startsWith('/blog/'), preload: () => import('./pages/BlogPostPage') },
+    { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
+    { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
+    { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./components/CreateTripForm') },
+];
+
+const warmedRouteKeys = new Set<string>();
+
+const getPathnameFromHref = (href: string): string => {
+    try {
+        return new URL(href, window.location.origin).pathname;
+    } catch {
+        return href.split(/[?#]/)[0] || href;
+    }
+};
+
+const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
+    for (const rule of ROUTE_PRELOAD_RULES) {
+        if (rule.match(pathname)) return rule;
+    }
+    return null;
+};
+
+const preloadRouteForPath = async (pathname: string): Promise<void> => {
+    const rule = findRoutePreloadRule(pathname);
+    if (!rule) return;
+    if (warmedRouteKeys.has(rule.key)) return;
+    warmedRouteKeys.add(rule.key);
+    try {
+        await rule.preload();
+    } catch {
+        warmedRouteKeys.delete(rule.key);
+    }
+};
+
 const RouteLoadingFallback: React.FC = () => (
     <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
 );
@@ -192,30 +246,72 @@ const ViewTransitionHandler: React.FC = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!document.startViewTransition) return;
+        const warmLinkTarget = (target: EventTarget | null) => {
+            const anchor = (target as HTMLElement | null)?.closest?.('a');
+            if (!anchor) return;
+            const href = anchor.getAttribute('href');
+            if (!href || !href.startsWith('/')) return;
+            const pathname = getPathnameFromHref(href);
+            void preloadRouteForPath(pathname);
+        };
 
+        const handleMouseOver = (event: MouseEvent) => warmLinkTarget(event.target);
+        const handleFocusIn = (event: FocusEvent) => warmLinkTarget(event.target);
+        const handleTouchStart = (event: TouchEvent) => warmLinkTarget(event.target);
+
+        document.addEventListener('mouseover', handleMouseOver, true);
+        document.addEventListener('focusin', handleFocusIn, true);
+        document.addEventListener('touchstart', handleTouchStart, true);
+
+        // Warm high-traffic marketing routes in dev so first local navigation
+        // does not wait on Vite's on-demand transforms.
+        let warmupTimerId: number | null = null;
+        if (IS_DEV) {
+            warmupTimerId = window.setTimeout(() => {
+                void preloadRouteForPath('/features');
+                void preloadRouteForPath('/inspirations');
+                void preloadRouteForPath('/blog');
+                void preloadRouteForPath('/pricing');
+            }, 600);
+        }
+
+        const canUseViewTransitions = Boolean(document.startViewTransition);
         const handleClick = (e: MouseEvent) => {
+            if (!canUseViewTransitions) return;
             const anchor = (e.target as HTMLElement).closest('a');
             if (!anchor) return;
             const href = anchor.getAttribute('href');
             if (!href || !href.startsWith('/')) return;
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (href.startsWith('#')) return;
+            const pathname = getPathnameFromHref(href);
             // Skip same-page navigations
-            if (href === window.location.pathname) return;
+            if (pathname === window.location.pathname && !href.includes('?') && !href.includes('#')) return;
 
             e.preventDefault();
             e.stopPropagation();
 
-            document.startViewTransition(() => {
+            const preloadPromise = preloadRouteForPath(pathname);
+            document.startViewTransition(async () => {
+                await preloadPromise;
                 flushSync(() => {
                     navigate(href);
                 });
             });
         };
 
-        document.addEventListener('click', handleClick, true);
-        return () => document.removeEventListener('click', handleClick, true);
+        if (canUseViewTransitions) {
+            document.addEventListener('click', handleClick, true);
+        }
+        return () => {
+            document.removeEventListener('mouseover', handleMouseOver, true);
+            document.removeEventListener('focusin', handleFocusIn, true);
+            document.removeEventListener('touchstart', handleTouchStart, true);
+            if (canUseViewTransitions) {
+                document.removeEventListener('click', handleClick, true);
+            }
+            if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
+        };
     }, [navigate]);
 
     return null;

@@ -19,5 +19,6 @@ This backlog stays open as a continuous performance track across routes.
 - [x] Ensure OG image edge functions load local self-hosted fonts first (with fallback) so social image generation does not depend on third-party font CDNs.
 - [x] Use pre-generated homepage example map images instead of runtime `/api/trip-map-preview` requests to avoid extra request chains and preview failures.
 - [x] Add static-map satellite fallback (`satellite` → `clean`) in preview/OG pipelines where satellite/hybrid static map types are unavailable.
+- [x] Preload high-traffic lazy route modules on link intent and dev warmup so first local navigation no longer flashes route fallback while chunks compile.
 - [x] Defer `OnPageDebugger` loading unless explicitly enabled.
 - [ ] Repeat route-by-route Lighthouse sweeps (`/`, `/blog`, `/blog/:slug`, `/inspirations`, `/pricing`, `/create-trip`, `/trip/:id`).

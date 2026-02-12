@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.55.0
+version: v0.56.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T07:45:00Z
+published_at: 2026-02-12T07:59:30Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Added hybrid BlurHash + Netlify Image CDN delivery, reduced homepage/request overhead, and hardened map preview reliability with self-hosted multilingual typography."
+summary: "Added hybrid BlurHash + Netlify Image CDN delivery, hardened map preview reliability, and reduced first-navigation route stalls via route-module preloading."
 ---
 
 ## Changes
@@ -35,4 +35,5 @@ summary: "Added hybrid BlurHash + Netlify Image CDN delivery, reduced homepage/r
 - [x] [Improved] 🌍 Added self-hosted global script fallbacks (Cyrillic, Greek, Devanagari, Arabic, Hebrew, Thai) so international city/country names render reliably beyond English/German/Spanish/French Latin text.
 - [x] [Fixed] ✅ Static map preview and OG map rendering now gracefully fall back when satellite static maps are unavailable for account/region policy, avoiding hard 403 map responses.
 - [x] [Improved] 🖼️ Updated OG image edge rendering to load local self-hosted fonts first, with resilient fallback if local assets are unavailable.
+- [x] [Improved] 🧭 Added route-module warmup and link-intent preloading so first navigation in local/dev no longer stalls on lazy chunk compilation with a visible blank fallback blink.
 - [ ] [Internal] 📋 Added a persistent performance backlog document to keep route-by-route Lighthouse improvements active.
