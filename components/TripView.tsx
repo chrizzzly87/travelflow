@@ -259,7 +259,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const location = useLocation();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
-    const useExampleSharedTransition = trip.isExample && locationState?.useExampleSharedTransition === true;
+    const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
     const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
