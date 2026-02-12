@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Precios simples y transparentes",
+    "description": "Empieza gratis y mejora cuando lo necesites. Sin costes ocultos y con cancelación cuando quieras."
+  },
+  "tiers": {
+    "free": {
+      "name": "Gratis",
+      "badge": "Plan actual",
+      "description": "Empieza rápido con todo lo necesario para planificar viajes con confianza.",
+      "cta": "Empezar",
+      "features": [
+        "Creador de viajes con IA, mapa y línea de tiempo",
+        "Arrastra, edita y comparte en segundos",
+        "Hasta 5 viajes guardados",
+        "Itinerarios limpios listos para imprimir",
+        "Compartir por enlace"
+      ]
+    },
+    "casual": {
+      "name": "Casual",
+      "badge": "Hoja de ruta",
+      "description": "Para quienes quieren flujos más rápidos y mayor control.",
+      "cta": "Próximamente",
+      "features": [
+        "Todo lo incluido en Gratis",
+        "Viajes guardados ilimitados",
+        "Cola de generación prioritaria",
+        "Controles avanzados para compartir y exportar"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "Hoja de ruta",
+      "description": "Pensado para usuarios avanzados y equipos que viajan juntos.",
+      "cta": "Próximamente",
+      "features": [
+        "Todo lo incluido en Casual",
+        "Colaboración para planificación en equipo",
+        "Insights premium y soporte prioritario",
+        "Acceso anticipado a nuevas capacidades"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "Límites de acceso anónimo",
+    "description": "Las personas sin cuenta pueden mantener hasta <strong>{limit}</strong> viajes activos al mismo tiempo. Cada viaje anónimo permanece editable durante <strong>{days} días</strong>, y después se bloquea hasta activar la cuenta.",
+    "footer": "Empieza gratis hoy. Los planes de pago llegarán con funciones avanzadas de cuenta y colaboración."
+  }
+}

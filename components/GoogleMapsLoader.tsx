@@ -13,11 +13,12 @@ export const useGoogleMaps = () => useContext(GoogleMapsContext);
 
 const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
     en: 'en',
+    es: 'es',
     de: 'de',
     fr: 'fr',
-    it: 'it',
-    ru: 'ru',
     pt: 'pt',
+    ru: 'ru',
+    it: 'it',
 };
 
 interface GoogleMapsLoaderProps {

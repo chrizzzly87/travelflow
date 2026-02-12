@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "Planificación de viajes con IA",
+    "titleBefore": "Tu próxima aventura, lista",
+    "titleHighlight": "en segundos",
+    "description": "Cuéntanos adónde quieres ir y cuándo. Nuestra IA crea un itinerario completo día a día con rutas optimizadas, actividades seleccionadas y enlaces reales de reserva. Ajusta todo en una línea de tiempo visual y en el mapa, y compártelo con tu grupo en un clic.",
+    "floating": {
+      "ai": "Itinerarios generados con IA",
+      "share": "Comparte y colabora",
+      "booking": "Enlaces de reserva"
+    }
+  },
+  "examples": {
+    "title": "Viajes creados con TravelFlow",
+    "subtitle": "Explora itinerarios reales de nuestra comunidad: desde escapadas de una semana en islas hasta road trips entre países."
+  },
+  "featureShowcase": {
+    "title": "Todo lo que necesitas para planear, compartir y viajar",
+    "subtitle": "Desde la primera idea hasta la tarjeta de embarque, TravelFlow acompaña todo el recorrido.",
+    "items": {
+      "aiTripCreation": {
+        "title": "Creación de viajes con IA",
+        "description": "Describe tu viaje ideal con lenguaje natural. Nuestra IA construye un plan completo por días con orden inteligente de ciudades, sugerencias de actividades y tiempos de traslado estimados, todo en menos de 30 segundos."
+      },
+      "interactiveMapStyles": {
+        "title": "Estilos de mapa interactivos",
+        "description": "Cambia entre capas satélite, terreno y minimalista. Mira cómo tu ruta cobra vida con líneas animadas, marcadores de ciudad y zoom dinámico que acompaña tu desplazamiento."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Ajustes fáciles del itinerario",
+        "description": "Arrastra ciudades para reordenar, alarga estancias o añade paradas espontáneas directamente en la línea de tiempo visual. Los cambios se actualizan en cascada para mantener fechas y conexiones siempre sincronizadas."
+      },
+      "communityExamples": {
+        "title": "Ejemplos de la comunidad",
+        "description": "Descubre itinerarios de otros viajeros para encontrar joyas ocultas y rutas que ya funcionan. Duplica cualquier viaje de la comunidad y úsalo como base para tu próxima aventura."
+      },
+      "shareCollaborate": {
+        "title": "Comparte y colabora",
+        "description": "Genera un enlace compartible en un clic. Tus compañeros ven el mapa completo, la línea de tiempo y la lista de actividades sin necesidad de cuenta. Los cambios se sincronizan al instante para todos."
+      },
+      "activityBookingLinks": {
+        "title": "Enlaces de reserva de actividades",
+        "description": "Cada actividad sugerida por IA enlaza directamente con plataformas de reserva. Reserva tours, restaurantes y transporte sin salir de tu itinerario para mantener todo en un mismo lugar."
+      }
+    }
+  },
+  "cta": {
+    "title": "¿Listo para planear tu próximo viaje?",
+    "subtitle": "Únete a miles de viajeros que crean mejores itinerarios en minutos. No necesitas cuenta para empezar."
+  }
+}

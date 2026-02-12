@@ -1,0 +1,12 @@
+{
+  "label": "Trabajo en progreso",
+  "footer": "Más detalles y funciones de cuenta llegarán en próximas versiones.",
+  "login": {
+    "title": "Iniciar sesión",
+    "description": "El acceso con cuenta se está desplegando. Iniciar sesión desbloqueará funciones premium, historial de viajes más largo y mejoras más fluidas del paywall."
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "description": "La sección completa de preguntas frecuentes está en progreso. Por ahora, la activación de cuenta y los límites de acceso anónimo se explican en la página de precios mientras preparamos el centro de ayuda completo."
+  }
+}

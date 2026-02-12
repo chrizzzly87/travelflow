@@ -1,0 +1,35 @@
+{
+  "index": {
+    "pill": "Blog",
+    "title": "Insights para planear melhor as suas viagens",
+    "description": "Guias, dicas e análises práticas para planear viagens de forma mais inteligente, desde escapadinhas de fim de semana até aventuras em várias cidades.",
+    "searchPlaceholder": "Pesquisar artigos…",
+    "result": "{count} resultado",
+    "results": "{count} resultados",
+    "noSearch": "Não encontrámos artigos para \"{query}\". Tente outra palavra-chave.",
+    "noTag": "Não encontrámos artigos com esta tag.",
+    "readTime": "{minutes} min de leitura",
+    "languageFilterAriaLabel": "Filtrar idiomas do blog",
+    "languageFilter": {
+      "nativeOnly": "Só português",
+      "nativeAndEnglish": "Português + inglês",
+      "englishOnly": "Só inglês"
+    },
+    "mixedLanguageNotice": "A interface desta página mantém-se em {locale}. Os cartões e artigos em inglês estão assinalados e o conteúdo usa lang=\"en\".",
+    "englishArticleNotice": "Este artigo está escrito em inglês.",
+    "ctaTitle": "Pronto para planear a sua viagem?",
+    "ctaDescription": "Transforme estas ideias num itinerário real. A nossa IA cria o seu plano dia a dia em segundos."
+  },
+  "post": {
+    "notFoundTitle": "Artigo não encontrado",
+    "notFoundDescription": "O artigo que procura não existe.",
+    "inThisArticle": "Neste artigo",
+    "related": "Relacionados",
+    "planTripTitle": "Planeie a sua viagem",
+    "planTripDescription": "Transforme o que acabou de ler num itinerário real com IA, dia a dia.",
+    "explore": "Explorar",
+    "allArticles": "Todos os artigos",
+    "tripInspirations": "Inspiração de viagens",
+    "relatedArticles": "Artigos relacionados"
+  }
+}

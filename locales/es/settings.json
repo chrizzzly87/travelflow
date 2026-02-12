@@ -1,0 +1,31 @@
+{
+  "title": "Configuración",
+  "tabs": {
+    "layout": "Diseño",
+    "appearance": "Apariencia",
+    "language": "Idioma"
+  },
+  "layout": {
+    "timelineOrientation": "Orientación de la línea de tiempo",
+    "horizontal": "Horizontal",
+    "horizontalDescription": "Vista clásica tipo Gantt. Ideal para visualizar solapamientos de duración.",
+    "vertical": "Vertical",
+    "verticalDescription": "Vista tipo lista, ideal para móvil. Más fluida y fácil de leer en pantallas pequeñas."
+  },
+  "appearance": {
+    "mapTiles": "Estilo de mapa",
+    "minimal": "Minimalista",
+    "minimalDescription": "Limpio y enfocado",
+    "standard": "Estándar",
+    "standardDescription": "Google por defecto",
+    "dark": "Oscuro",
+    "darkDescription": "Modo noche",
+    "satellite": "Satélite",
+    "satelliteDescription": "Vista aérea"
+  },
+  "language": {
+    "noteTitle": "Idioma del mapa",
+    "noteDescription": "Las etiquetas del mapa siguen esta configuración.",
+    "appLanguage": "Idioma de la aplicación"
+  }
+}

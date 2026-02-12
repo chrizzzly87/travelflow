@@ -1,0 +1,57 @@
+{
+  "imprint": {
+    "title": "Aviso legal",
+    "intro": "Esta página legal está configurada como marcador de posición. Sustituye los campos de abajo por los datos oficiales de empresa y contacto antes del lanzamiento en producción.",
+    "company": "Empresa:",
+    "companyValue": "TravelFlow (marcador de posición)",
+    "address": "Dirección:",
+    "addressValue": "Sustituir por la dirección legal de la empresa",
+    "email": "Correo electrónico:",
+    "emailValue": "legal@travelflow.example",
+    "responsible": "Persona responsable:",
+    "responsibleValue": "Sustituir por la representación legal",
+    "vat": "IVA / registro:",
+    "vatValue": "Sustituir por los identificadores legales obligatorios"
+  },
+  "privacy": {
+    "title": "Política de privacidad",
+    "intro": "Este texto es un marcador de posición para completar la navegación legal. Debe sustituirse por la política de privacidad aprobada antes del lanzamiento.",
+    "items": [
+      "Qué datos personales se recogen y con qué finalidad.",
+      "Cuánto tiempo se conservan y dónde se almacenan.",
+      "Base jurídica del tratamiento y derechos de la persona usuaria.",
+      "Datos de contacto para solicitudes de privacidad y eliminación."
+    ]
+  },
+  "terms": {
+    "title": "Términos del servicio",
+    "intro": "Esta página de términos es un marcador estructural. Sustitúyela por los términos legales sobre cuenta, facturación, uso permitido y limitación de responsabilidad.",
+    "items": [
+      "Alcance del servicio y responsabilidades de cuenta.",
+      "Condiciones de suscripción/paywall y política de facturación.",
+      "Usos prohibidos y política de suspensión.",
+      "Exención de garantías y limitación de responsabilidad."
+    ]
+  },
+  "cookies": {
+    "title": "Política de cookies",
+    "intro": "TravelFlow guarda la preferencia de consentimiento en local y solo activa analítica cuando se concede consentimiento opcional.",
+    "essential": "Almacenamiento esencial (siempre activo):",
+    "essentialValue": "tf_cookie_consent_choice_v1 en Local Storage para recordar la selección del banner.",
+    "optional": "Analítica opcional:",
+    "optionalValue": "Umami solo se carga cuando eliges Aceptar todo en el banner de cookies.",
+    "mapping": "Asignación de consentimiento:",
+    "mappingValue": "Solo esenciales mantiene la analítica desactivada; Aceptar todo habilita el seguimiento analítico.",
+    "notesTitle": "Notas de configuración de analítica",
+    "notes": [
+      "La URL del script de seguimiento se configura con VITE_UMAMI_SCRIPT_URL.",
+      "El identificador del sitio web se configura con VITE_UMAMI_WEBSITE_ID.",
+      "Si en el futuro habilitas funciones de analítica basadas en cookies en Umami, incluye aquí todos los nombres y duraciones de esas cookies."
+    ],
+    "manageTitle": "Gestionar consentimiento de analítica",
+    "current": "Preferencia actual:",
+    "stateAll": "Aceptar todo",
+    "stateEssential": "Solo esenciales",
+    "stateUnset": "Sin definir"
+  }
+}

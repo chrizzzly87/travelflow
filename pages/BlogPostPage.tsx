@@ -182,12 +182,13 @@ export const BlogPostPage: React.FC = () => {
         day: 'numeric',
         year: 'numeric',
     });
+    const contentLang = post.language;
 
     return (
         <MarketingLayout>
             <div className="reading-progress-bar" />
 
-            <article className="pb-16 md:pb-24">
+            <article className="pb-16 md:pb-24" data-blog-page-locale={locale}>
                 <div className="pt-6 pb-4">
                     <Link
                         to={buildLocalizedMarketingPath('blog', locale)}
@@ -221,7 +222,7 @@ export const BlogPostPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-10 lg:gap-14">
-                    <div className="min-w-0 flex-1 max-w-3xl">
+                    <div className="min-w-0 flex-1 max-w-3xl" lang={contentLang} data-blog-content-lang={contentLang}>
                         <h1
                             className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
                             style={{ fontFamily: 'var(--tf-font-heading)' }}
@@ -305,6 +306,8 @@ export const BlogPostPage: React.FC = () => {
                                             <li key={`${related.language}:${related.slug}`}>
                                                 <Link
                                                     to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                                    lang={related.language}
+                                                    data-blog-related-lang={related.language}
                                                     className="group flex items-start gap-2"
                                                 >
                                                     <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${related.coverColor}`}>
@@ -370,6 +373,8 @@ export const BlogPostPage: React.FC = () => {
                                 <Link
                                     key={`${related.language}:${related.slug}`}
                                     to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                    lang={related.language}
+                                    data-blog-related-lang={related.language}
                                     className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                                 >
                                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>

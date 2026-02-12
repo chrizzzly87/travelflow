@@ -9,7 +9,7 @@ export type ActivityType =
 
 export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
-export type AppLanguage = 'en' | 'de' | 'fr' | 'it' | 'ru' | 'pt';
+export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it';
 export type MapColorMode = 'brand' | 'trip';
 
 export interface ICoordinates {

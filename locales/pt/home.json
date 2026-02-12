@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "Planeamento de viagens com IA",
+    "titleBefore": "A sua próxima aventura, planeada",
+    "titleHighlight": "em segundos",
+    "description": "Diga-nos para onde quer ir e quando. A nossa IA cria um itinerário completo dia a dia com rotas otimizadas, atividades selecionadas e links reais de reserva. Ajuste tudo numa timeline visual e no mapa, e partilhe com o seu grupo num clique.",
+    "floating": {
+      "ai": "Itinerários gerados por IA",
+      "share": "Partilhar e colaborar",
+      "booking": "Links de reserva"
+    }
+  },
+  "examples": {
+    "title": "Viagens criadas com TravelFlow",
+    "subtitle": "Explore itinerários reais criados pela nossa comunidade, desde escapadinhas em ilhas durante uma semana até road trips entre países."
+  },
+  "featureShowcase": {
+    "title": "Tudo o que precisa para planear, partilhar e viajar",
+    "subtitle": "Da primeira ideia ao cartão de embarque, o TravelFlow acompanha toda a jornada.",
+    "items": {
+      "aiTripCreation": {
+        "title": "Criação de viagens com IA",
+        "description": "Descreva a sua viagem ideal em linguagem natural. A nossa IA monta um plano completo por dias com ordem inteligente de cidades, sugestões de atividades e tempos estimados de deslocação, tudo em menos de 30 segundos."
+      },
+      "interactiveMapStyles": {
+        "title": "Estilos de mapa interativos",
+        "description": "Alterne entre camadas satélite, terreno e minimalista. Veja a rota ganhar vida com linhas animadas, marcadores de cidade e zoom dinâmico que acompanha o seu scroll."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Ajustes fáceis de itinerário",
+        "description": "Arraste cidades para reordenar, aumente durações ou adicione paragens espontâneas diretamente na timeline visual. As alterações propagam-se automaticamente para manter datas e ligações sempre sincronizadas."
+      },
+      "communityExamples": {
+        "title": "Exemplos da comunidade",
+        "description": "Explore itinerários de outros viajantes para descobrir joias escondidas e rotas já validadas. Duplique qualquer viagem da comunidade e use-a como base para a sua próxima aventura."
+      },
+      "shareCollaborate": {
+        "title": "Partilhar e colaborar",
+        "description": "Gere um link partilhável com um clique. Os seus companheiros veem o mapa completo, a timeline e a lista de atividades sem necessidade de conta. As atualizações sincronizam em tempo real para todos."
+      },
+      "activityBookingLinks": {
+        "title": "Links de reserva de atividades",
+        "description": "Cada atividade sugerida pela IA liga diretamente a plataformas de reserva. Reserve tours, restaurantes e transportes sem sair do itinerário, mantendo tudo no mesmo lugar."
+      }
+    }
+  },
+  "cta": {
+    "title": "Pronto para planear a sua próxima viagem?",
+    "subtitle": "Junte-se a milhares de viajantes que criam melhores itinerários em minutos. Não precisa de conta para começar."
+  }
+}

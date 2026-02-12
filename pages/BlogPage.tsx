@@ -28,10 +28,13 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
         day: 'numeric',
         year: 'numeric',
     });
+    const cardLang = post.language;
 
     return (
         <Link
             to={buildLocalizedMarketingPath('blogPost', postLocale, { slug: post.slug })}
+            lang={cardLang}
+            data-blog-card-lang={cardLang}
             className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         >
             <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
@@ -142,6 +145,8 @@ export const BlogPage: React.FC = () => {
     }, [posts, selectedTag, search]);
 
     const isSearching = search.trim().length > 0;
+    const showMixedLanguageNotice = supportsMixedLanguage && languageFilter !== 'nativeOnly';
+    const localeDisplayName = t(`common:language.${locale}`, { defaultValue: locale.toUpperCase() });
 
     return (
         <MarketingLayout>
@@ -197,6 +202,11 @@ export const BlogPage: React.FC = () => {
                         </div>
                     )}
                 </div>
+                {showMixedLanguageNotice && (
+                    <p className="mt-3 text-xs text-slate-500 md:text-sm">
+                        {t('index.mixedLanguageNotice', { locale: localeDisplayName })}
+                    </p>
+                )}
             </section>
 
             <section className="pb-8 animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>

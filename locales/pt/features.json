@@ -1,0 +1,99 @@
+{
+  "hero": {
+    "pill": "Capacidades do produto",
+    "title": "Planeie melhor, viaje melhor",
+    "description": "O TravelFlow combina geração com IA, edição visual e colaboração num único espaço. Aqui está tudo o que a plataforma pode fazer pela sua próxima viagem."
+  },
+  "heroCards": {
+    "ai": {
+      "title": "Geração de viagens com IA",
+      "description": "Descreva para onde quer ir e o TravelFlow cria um itinerário completo com rotas otimizadas, atividades selecionadas e tempos realistas em menos de 30 segundos. Os modos Clássico, Assistente e Surpreenda-me adaptam-se ao seu estilo de planeamento."
+    },
+    "map": {
+      "title": "Mapa interativo e timeline",
+      "description": "A sua viagem vive num mapa real com linhas de rota animadas, marcadores de cidade e zoom dinâmico. Abaixo, uma timeline visual mostra cada dia de relance. Alterne entre estilos satélite, terreno e minimalista."
+    },
+    "editing": {
+      "title": "Edição com arrastar e largar",
+      "description": "Reordene cidades, ajuste durações e adicione paragens espontâneas arrastando na timeline. Datas, ligações e mapa atualizam automaticamente para manter tudo sincronizado."
+    }
+  },
+  "workflow": {
+    "title": "Como funciona",
+    "subtitle": "Da ideia ao itinerário em três passos.",
+    "step1Title": "Escolha o destino",
+    "step1Description": "Selecione países, ilhas ou deixe o modo Surpreenda-me sugerir a melhor opção para o seu período de viagem.",
+    "step2Title": "Gerar com IA",
+    "step2Description": "O nosso modelo cria uma rota completa com tempos por cidade, atividades e logística. Ajuste o resultado em segundos.",
+    "step3Title": "Refinar e partilhar",
+    "step3Description": "Arraste cidades, ajuste durações e adicione notas. Depois partilhe um link para que o seu grupo veja o mapa e a timeline em direto."
+  },
+  "more": {
+    "title": "E muito mais",
+    "subtitle": "Cada detalhe foi desenhado para remover fricção no planeamento de viagens."
+  },
+  "secondary": {
+    "sharing": {
+      "title": "Partilha com um clique",
+      "description": "Gere um link e envie-o ao seu grupo. Eles veem mapa, timeline e atividades sem necessidade de conta."
+    },
+    "community": {
+      "title": "Inspiração da comunidade",
+      "description": "Explore viagens selecionadas de viajantes de todo o mundo. Duplique qualquer itinerário e adapte-o ao seu estilo."
+    },
+    "booking": {
+      "title": "Links de reserva",
+      "description": "Cada atividade sugerida pela IA liga a plataformas de reserva de tours, restaurantes e transportes para reservar sem sair do TravelFlow."
+    },
+    "duration": {
+      "title": "Sugestões inteligentes de duração",
+      "description": "O TravelFlow analisa dados sazonais e distâncias para sugerir quanto tempo passar em cada cidade, sem correria."
+    },
+    "mobile": {
+      "title": "Otimizado para móvel",
+      "description": "Planeie em movimento com um layout responsivo para telemóveis e tablets. Mapa, timeline e edição adaptam-se a ecrãs menores."
+    },
+    "print": {
+      "title": "Itinerários prontos para impressão",
+      "description": "Mude para vista de impressão para obter um itinerário limpo, com dias, atividades e logística essencial em papel."
+    },
+    "routing": {
+      "title": "Rotas entre vários países",
+      "description": "Selecione vários países ou ilhas e o TravelFlow cria uma rota transfronteiriça com deslocações realistas entre regiões."
+    },
+    "history": {
+      "title": "Histórico de versões",
+      "description": "Cada alteração importante cria um snapshot. Volte a qualquer versão anterior da sua viagem com um clique."
+    },
+    "privacy": {
+      "title": "Privacidade em primeiro lugar",
+      "description": "As suas viagens ficam locais por defeito. A sincronização na cloud é opcional e depende de consentimento, e a analítica só é ativada com aceitação explícita."
+    }
+  },
+  "comparison": {
+    "title": "Como o TravelFlow se compara",
+    "subtitle": "Comparação lado a lado com folhas de cálculo e outras ferramentas de viagem.",
+    "featureHeader": "Funcionalidade",
+    "travelflowHeader": "TravelFlow",
+    "spreadsheetHeader": "Folha de cálculo",
+    "otherHeader": "Outras ferramentas",
+    "yes": "Sim",
+    "partial": "Parcial",
+    "manual": "Manual",
+    "freemium": "Freemium",
+    "rows": {
+      "ai": "Itinerário gerado por IA",
+      "interactiveMap": "Mapa interativo",
+      "dragDrop": "Timeline com arrastar e largar",
+      "oneClickSharing": "Partilha com um clique",
+      "bookingLinks": "Links de reserva",
+      "offlineFirst": "Dados locais / prioridade offline",
+      "freeToUse": "Gratuito"
+    }
+  },
+  "cta": {
+    "title": "Veja em ação",
+    "subtitle": "Crie o seu primeiro itinerário com IA em menos de um minuto.",
+    "button": "Começar a planear — Grátis"
+  }
+}

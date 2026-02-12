@@ -15,6 +15,7 @@
       "nativeAndEnglish": "Deutsch + Englisch",
       "englishOnly": "Nur Englisch"
     },
+    "mixedLanguageNotice": "Die Seitenoberfläche bleibt auf {locale}. Englische Karten und Artikel sind markiert und ihr Inhalt nutzt lang=\"en\".",
     "englishArticleNotice": "Dieser Artikel ist auf Englisch.",
     "ctaTitle": "Bereit, deine Reise zu planen?",
     "ctaDescription": "Verwandle diese Ideen in eine echte Reiseroute. Unsere KI erstellt deinen Tagesplan in Sekunden."

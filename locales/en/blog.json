@@ -15,6 +15,7 @@
       "nativeAndEnglish": "Native + English",
       "englishOnly": "English only"
     },
+    "mixedLanguageNotice": "This page interface stays in {locale}. English cards and articles are marked, and their content uses lang=\"en\".",
     "englishArticleNotice": "This article is written in English.",
     "ctaTitle": "Ready to plan your trip?",
     "ctaDescription": "Turn these ideas into a real itinerary. Our AI builds your day-by-day plan in seconds."

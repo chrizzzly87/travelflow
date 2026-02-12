@@ -15,6 +15,7 @@
       "nativeAndEnglish": "Français + anglais",
       "englishOnly": "Anglais uniquement"
     },
+    "mixedLanguageNotice": "L'interface de cette page reste en {locale}. Les cartes et articles en anglais sont signalés et leur contenu utilise lang=\"en\".",
     "englishArticleNotice": "Cet article est rédigé en anglais.",
     "ctaTitle": "Prêt à planifier votre voyage ?",
     "ctaDescription": "Transformez ces idées en itinéraire réel. Notre IA crée votre plan jour par jour en quelques secondes."
