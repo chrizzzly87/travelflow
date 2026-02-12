@@ -1,0 +1,65 @@
+{
+  "nav": {
+    "features": "Features",
+    "inspirations": "Inspirations",
+    "updates": "News & Updates",
+    "blog": "Blog",
+    "pricing": "Pricing",
+    "login": "Login",
+    "createTrip": "Create Trip",
+    "myTrips": "My Trips",
+    "openMenu": "Open menu"
+  },
+  "footer": {
+    "rightsReserved": "© {year} {appName}. All rights reserved.",
+    "contact": "Contact",
+    "imprint": "Imprint",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "cookies": "Cookies",
+    "legalNotice": "Legal content is scaffolded and should be replaced with approved production text before public launch."
+  },
+  "language": {
+    "label": "Language",
+    "en": "English",
+    "es": "Español",
+    "de": "Deutsch",
+    "fr": "Français",
+    "it": "Italiano",
+    "ru": "Русский",
+    "pt": "Português"
+  },
+  "buttons": {
+    "startPlanning": "Start Planning",
+    "seeExampleTrips": "See Example Trips",
+    "startPlanningFree": "Start Planning — It's Free",
+    "done": "Done",
+    "essentialOnly": "Essential only",
+    "acceptAll": "Accept all",
+    "backToBlog": "Back to Blog",
+    "all": "All"
+  },
+  "earlyAccess": {
+    "tag": "Early preview",
+    "message": "{appName} is under active development. Features may change, and some things might not work perfectly yet.",
+    "dismiss": "Dismiss banner"
+  },
+  "cookieBanner": {
+    "message": "We use essential cookies to keep {appName} stable and optional cookies to improve your experience. See our",
+    "policyLinkLabel": "Cookie Policy"
+  },
+  "translationNotice": {
+    "message": "This page was recently translated with AI support and may still contain translation errors.",
+    "cta": "Report a translation issue"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Use this page to report translation issues or send localization feedback.",
+    "formStatusTitle": "Contact form coming soon",
+    "formStatusBody": "The dedicated form is not live yet. Please contact us by email in the meantime.",
+    "emailLabel": "Email",
+    "emailValue": "support@travelflow.app",
+    "responseNote": "We usually reply within 2–3 business days.",
+    "backHome": "Back to homepage"
+  }
+}

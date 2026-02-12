@@ -1,29 +1,40 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Article, Clock, Tag, ArrowRight, MagnifyingGlass } from '@phosphor-icons/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { getPublishedBlogPostsForLocales } from '../services/blogService';
 import { ProgressiveImage } from '../components/ProgressiveImage';
-import { getPublishedBlogPosts } from '../services/blogService';
 import type { BlogPost } from '../services/blogService';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
+import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
+import { AppLanguage } from '../types';
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const BLOG_CARD_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_TRANSITION = 'transform-gpu will-change-transform transition-transform duration-500 ease-out motion-reduce:transition-none';
 const BLOG_CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/30 via-slate-900/8 to-transparent';
 const BLOG_CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.65)_44%,transparent_100%)]';
+type BlogLanguageFilter = 'nativeOnly' | 'englishOnly' | 'nativeAndEnglish';
 
-const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
+const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, locale }) => {
+    const { t } = useTranslation('blog');
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
-    const formattedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
+    const postLocale = post.language === DEFAULT_LOCALE ? DEFAULT_LOCALE : post.language;
+    const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
+    const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
     });
+    const cardLang = post.language;
 
     return (
         <Link
-            to={`/blog/${post.slug}`}
+            to={buildLocalizedMarketingPath('blogPost', postLocale, { slug: post.slug })}
+            lang={cardLang}
+            data-blog-card-lang={cardLang}
             className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         >
             <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
@@ -53,13 +64,19 @@ const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
                     {post.title}
                 </h3>
+                {showEnglishBadge && (
+                    <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                        <span aria-hidden="true">🇬🇧</span>
+                        {t('index.englishArticleNotice')}
+                    </p>
+                )}
                 <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3">
                     {post.summary}
                 </p>
                 <div className="mt-3 flex items-center gap-3 text-xs text-slate-400">
                     <span className="inline-flex items-center gap-1">
                         <Clock size={13} weight="duotone" className="text-accent-400" />
-                        {post.readingTimeMin} min read
+                        {t('index.readTime', { minutes: post.readingTimeMin })}
                     </span>
                     <span>{formattedDate}</span>
                 </div>
@@ -79,9 +96,26 @@ const BlogCard: React.FC<{ post: BlogPost }> = ({ post }) => {
 };
 
 export const BlogPage: React.FC = () => {
-    const posts = useMemo(() => getPublishedBlogPosts(), []);
+    const { t } = useTranslation('blog');
+    const location = useLocation();
+    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
+    const [languageFilter, setLanguageFilter] = useState<BlogLanguageFilter>(() =>
+        supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly'
+    );
+    const postLocales = useMemo<AppLanguage[]>(() => {
+        if (!supportsMixedLanguage) return [DEFAULT_LOCALE];
+        if (languageFilter === 'nativeOnly') return [locale];
+        if (languageFilter === 'englishOnly') return [DEFAULT_LOCALE];
+        return [locale, DEFAULT_LOCALE];
+    }, [languageFilter, locale, supportsMixedLanguage]);
+    const posts = useMemo(() => getPublishedBlogPostsForLocales(postLocales), [postLocales]);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        setLanguageFilter(supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly');
+    }, [supportsMixedLanguage, locale]);
 
     const allTags = useMemo(() => {
         const tagSet = new Set<string>();
@@ -104,53 +138,77 @@ export const BlogPage: React.FC = () => {
                 (post) =>
                     post.title.toLowerCase().includes(q) ||
                     post.summary.toLowerCase().includes(q) ||
-                    post.tags.some((t) => t.toLowerCase().includes(q))
+                    post.tags.some((tag) => tag.toLowerCase().includes(q))
             );
         }
         return result;
     }, [posts, selectedTag, search]);
 
     const isSearching = search.trim().length > 0;
+    const showMixedLanguageNotice = supportsMixedLanguage && languageFilter !== 'nativeOnly';
+    const localeDisplayName = t(`common:language.${locale}`, { defaultValue: locale.toUpperCase() });
 
     return (
         <MarketingLayout>
-            {/* Hero */}
             <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
                     <Article size={14} weight="duotone" />
-                    Blog
+                    {t('index.pill')}
                 </span>
                 <h1
                     className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
-                    style={{ fontFamily: "var(--tf-font-heading)" }}
+                    style={{ fontFamily: 'var(--tf-font-heading)' }}
                 >
-                    Travel Planning Insights
+                    {t('index.title')}
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
-                    Guides, tips, and deep-dives to help you plan smarter trips — from weekend getaways to multi-city adventures.
+                    {t('index.description')}
                 </p>
             </section>
 
-            {/* Search */}
             <section className="pb-4 animate-hero-stagger" style={{ '--stagger': '100ms' } as React.CSSProperties}>
-                <div className="relative max-w-xl">
-                    <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <input
-                        type="text"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search articles…"
-                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
-                    />
-                    {isSearching && (
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-                            {filteredPosts.length} result{filteredPosts.length !== 1 ? 's' : ''}
-                        </span>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="relative w-full md:max-w-xl">
+                        <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                            placeholder={t('index.searchPlaceholder')}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
+                        />
+                        {isSearching && (
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+                                {filteredPosts.length === 1
+                                    ? t('index.result', { count: filteredPosts.length })
+                                    : t('index.results', { count: filteredPosts.length })}
+                            </span>
+                        )}
+                    </div>
+                    {supportsMixedLanguage && (
+                        <div className="relative w-full md:w-72">
+                            <GlobeHemisphereWest size={18} weight="duotone" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <select
+                                aria-label={t('index.languageFilterAriaLabel')}
+                                value={languageFilter}
+                                onChange={(event) => setLanguageFilter(event.target.value as BlogLanguageFilter)}
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm font-medium text-slate-800 shadow-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
+                            >
+                                <option value="nativeAndEnglish">{t('index.languageFilter.nativeAndEnglish')}</option>
+                                <option value="nativeOnly">{t('index.languageFilter.nativeOnly')}</option>
+                                <option value="englishOnly">{t('index.languageFilter.englishOnly')}</option>
+                            </select>
+                            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">▾</span>
+                        </div>
                     )}
                 </div>
+                {showMixedLanguageNotice && (
+                    <p className="mt-3 text-xs text-slate-500 md:text-sm">
+                        {t('index.mixedLanguageNotice', { locale: localeDisplayName })}
+                    </p>
+                )}
             </section>
 
-            {/* Tag filter */}
             <section className="pb-8 animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
                 <div className="flex flex-wrap gap-2">
                     <button
@@ -161,7 +219,7 @@ export const BlogPage: React.FC = () => {
                                 : 'bg-white border border-slate-200 text-slate-600 hover:border-accent-300 hover:text-accent-700'
                         }`}
                     >
-                        All
+                        {t('common:buttons.all')}
                     </button>
                     {allTags.map((tag) => (
                         <button
@@ -180,43 +238,41 @@ export const BlogPage: React.FC = () => {
                 </div>
             </section>
 
-            {/* Cards grid */}
             <section className="pb-16 md:pb-24">
                 {filteredPosts.length === 0 ? (
                     <p className="text-sm text-slate-400">
                         {isSearching
-                            ? <>No articles found for &ldquo;{search}&rdquo;. Try a different keyword.</>
-                            : 'No posts found for this tag.'}
+                            ? t('index.noSearch', { query: search })
+                            : t('index.noTag')}
                     </p>
                 ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {filteredPosts.map((post) => (
-                            <div key={post.slug} className="animate-scroll-fade-up">
-                                <BlogCard post={post} />
+                            <div key={`${post.language}:${post.slug}`} className="animate-scroll-fade-up">
+                                <BlogCard post={post} locale={locale} />
                             </div>
                         ))}
                     </div>
                 )}
             </section>
 
-            {/* Bottom CTA */}
             <section className="pb-16 md:pb-24 animate-scroll-scale-in">
                 <div className="relative rounded-3xl bg-gradient-to-br from-accent-600 to-accent-800 px-8 py-14 text-center md:px-16 md:py-20 overflow-hidden">
                     <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-[60px]" />
                     <h2
                         className="relative text-3xl font-black tracking-tight text-white md:text-5xl"
-                        style={{ fontFamily: "var(--tf-font-heading)" }}
+                        style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
-                        Ready to plan your trip?
+                        {t('index.ctaTitle')}
                     </h2>
                     <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">
-                        Turn these ideas into a real itinerary. Our AI builds your day-by-day plan in seconds.
+                        {t('index.ctaDescription')}
                     </p>
                     <Link
-                        to="/create-trip"
+                        to={buildPath('createTrip')}
                         className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
                     >
-                        Start Planning
+                        {t('common:buttons.startPlanning')}
                         <ArrowRight size={18} weight="bold" />
                     </Link>
                 </div>

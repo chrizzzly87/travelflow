@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MobileMenu } from './MobileMenu';
+import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { AppLanguage } from '../../types';
+import { buildLocalizedLocation } from '../../services/localeRoutingService';
+import { APP_NAME } from '../../config/appGlobals';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -28,6 +35,25 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const hasTrips = useHasSavedTrips();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { t } = useTranslation('common');
+
+    const activeLocale = useMemo<AppLanguage>(() => {
+        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    }, [location.pathname]);
+
+    const handleLocaleChange = (nextLocaleRaw: string) => {
+        const nextLocale = normalizeLocale(nextLocaleRaw);
+        const target = buildLocalizedLocation({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            targetLocale: nextLocale,
+        });
+        navigate(target);
+        trackEvent('navigation__language_switch', { from: activeLocale, to: nextLocale });
+    };
 
     const handleNavClick = (target: string) => {
         trackEvent(`navigation__${target}`);
@@ -55,7 +81,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
             <header className={headerClass} style={{ viewTransitionName: 'site-header' }}>
                 <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
                     <NavLink
-                        to="/"
+                        to={buildLocalizedMarketingPath('home', activeLocale)}
                         onClick={() => handleNavClick('brand')}
                         className="flex items-center gap-2"
                         {...navDebugAttributes('brand')}
@@ -63,25 +89,33 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
                             <AirplaneTilt size={16} weight="duotone" />
                         </span>
-                        <span className="text-lg font-extrabold tracking-tight">TravelFlow</span>
+                        <span className="text-lg font-extrabold tracking-tight">{APP_NAME}</span>
                     </NavLink>
 
                     <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
-                        <NavLink to="/features" onClick={() => handleNavClick('features')} className={navLinkClass} {...navDebugAttributes('features')}>Features</NavLink>
-                        <NavLink to="/inspirations" onClick={() => handleNavClick('inspirations')} className={navLinkClass} {...navDebugAttributes('inspirations')}>Inspirations</NavLink>
-                        <NavLink to="/updates" onClick={() => handleNavClick('updates')} className={navLinkClass} {...navDebugAttributes('updates')}>News & Updates</NavLink>
-                        <NavLink to="/blog" onClick={() => handleNavClick('blog')} className={navLinkClass} {...navDebugAttributes('blog')}>Blog</NavLink>
-                        <NavLink to="/pricing" onClick={() => handleNavClick('pricing')} className={navLinkClass} {...navDebugAttributes('pricing')}>Pricing</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('features', activeLocale)} onClick={() => handleNavClick('features')} className={navLinkClass} {...navDebugAttributes('features')}>{t('nav.features')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('inspirations', activeLocale)} onClick={() => handleNavClick('inspirations')} className={navLinkClass} {...navDebugAttributes('inspirations')}>{t('nav.inspirations')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('updates', activeLocale)} onClick={() => handleNavClick('updates')} className={navLinkClass} {...navDebugAttributes('updates')}>{t('nav.updates')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('blog', activeLocale)} onClick={() => handleNavClick('blog')} className={navLinkClass} {...navDebugAttributes('blog')}>{t('nav.blog')}</NavLink>
+                        <NavLink to={buildLocalizedMarketingPath('pricing', activeLocale)} onClick={() => handleNavClick('pricing')} className={navLinkClass} {...navDebugAttributes('pricing')}>{t('nav.pricing')}</NavLink>
                     </nav>
 
                     <div className="flex items-center gap-2">
+                        <div className="relative hidden md:block">
+                            <LanguageSelect
+                                aria-label={t('language.label')}
+                                value={activeLocale}
+                                onChange={handleLocaleChange}
+                                triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            />
+                        </div>
                         <NavLink
-                            to="/login"
+                            to={buildLocalizedMarketingPath('login', activeLocale)}
                             onClick={() => handleNavClick('login')}
                             className={loginClass}
                             {...navDebugAttributes('login')}
                         >
-                            Login
+                            {t('nav.login')}
                         </NavLink>
                         {hideCreateTrip ? (
                             hasTrips && onMyTripsClick && (
@@ -94,23 +128,23 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     {...navDebugAttributes('my_trips')}
                                 >
                                     <Folder size={15} />
-                                    My Trips
+                                    {t('nav.myTrips')}
                                 </button>
                             )
                         ) : (
                             <NavLink
-                                to="/create-trip"
+                                to={buildPath('createTrip')}
                                 onClick={() => handleNavClick('create_trip')}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...navDebugAttributes('create_trip')}
                             >
-                                Create Trip
+                                {t('nav.createTrip')}
                             </NavLink>
                         )}
                         <button
                             onClick={() => setIsMobileMenuOpen(true)}
                             className={burgerClass}
-                            aria-label="Open menu"
+                            aria-label={t('nav.openMenu')}
                             {...getAnalyticsDebugAttributes('mobile_nav__menu--open')}
                         >
                             <List size={22} weight="bold" />

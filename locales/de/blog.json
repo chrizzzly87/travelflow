@@ -1,0 +1,35 @@
+{
+  "index": {
+    "pill": "Blog",
+    "title": "Insights zur Reiseplanung",
+    "description": "Guides, Tipps und Deep Dives für smartere Reisen — von Wochenendtrips bis zu mehrstädtigen Abenteuern.",
+    "searchPlaceholder": "Artikel suchen…",
+    "result": "{count} Ergebnis",
+    "results": "{count} Ergebnisse",
+    "noSearch": "Keine Artikel für \"{query}\" gefunden. Probiere ein anderes Stichwort.",
+    "noTag": "Keine Artikel mit diesem Tag gefunden.",
+    "readTime": "{minutes} Min. Lesezeit",
+    "languageFilterAriaLabel": "Blog-Sprachen filtern",
+    "languageFilter": {
+      "nativeOnly": "Nur Deutsch",
+      "nativeAndEnglish": "Deutsch + Englisch",
+      "englishOnly": "Nur Englisch"
+    },
+    "mixedLanguageNotice": "Die Seitenoberfläche bleibt auf {locale}. Englische Karten und Artikel sind markiert und ihr Inhalt nutzt lang=\"en\".",
+    "englishArticleNotice": "Dieser Artikel ist auf Englisch.",
+    "ctaTitle": "Bereit, deine Reise zu planen?",
+    "ctaDescription": "Verwandle diese Ideen in eine echte Reiseroute. Unsere KI erstellt deinen Tagesplan in Sekunden."
+  },
+  "post": {
+    "notFoundTitle": "Beitrag nicht gefunden",
+    "notFoundDescription": "Der gesuchte Blogbeitrag existiert nicht.",
+    "inThisArticle": "In diesem Artikel",
+    "related": "Ähnliche Artikel",
+    "planTripTitle": "Plane deine Reise",
+    "planTripDescription": "Mach aus dem Gelesenen eine echte Reiseroute — KI-gestützt, Tag für Tag.",
+    "explore": "Entdecken",
+    "allArticles": "Alle Artikel",
+    "tripInspirations": "Reiseinspirationen",
+    "relatedArticles": "Ähnliche Artikel"
+  }
+}

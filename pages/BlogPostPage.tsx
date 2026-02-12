@@ -1,11 +1,14 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ProgressiveImage } from '../components/ProgressiveImage';
 import { getBlogPostBySlug, getPublishedBlogPosts } from '../services/blogService';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
+import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import type { Components } from 'react-markdown';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
@@ -16,7 +19,6 @@ const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
     containIntrinsicSize: '1px 720px',
 };
 
-/** Convert heading text to a URL-safe slug */
 const toSlug = (text: string): string =>
     text
         .toLowerCase()
@@ -31,14 +33,14 @@ const markdownComponents: Components = {
             <h2
                 id={id}
                 className="mt-10 mb-4 text-2xl font-black tracking-tight text-slate-900 scroll-mt-24"
-                style={{ fontFamily: "var(--tf-font-heading)" }}
+                style={{ fontFamily: 'var(--tf-font-heading)' }}
             >
                 {children}
             </h2>
         );
     },
     h3: ({ children }) => (
-        <h3 className="mt-8 mb-3 text-xl font-bold text-slate-800" style={{ fontFamily: "var(--tf-font-heading)" }}>
+        <h3 className="mt-8 mb-3 text-xl font-bold text-slate-800" style={{ fontFamily: 'var(--tf-font-heading)' }}>
             {children}
         </h3>
     ),
@@ -97,7 +99,6 @@ interface HeadingInfo {
     slug: string;
 }
 
-/** Extract h2 headings from markdown for TOC */
 const extractHeadings = (content: string): HeadingInfo[] => {
     const lines = content.split('\n');
     const headings: HeadingInfo[] = [];
@@ -111,15 +112,13 @@ const extractHeadings = (content: string): HeadingInfo[] => {
     return headings;
 };
 
-/** Hook: track which heading is currently visible */
 const useActiveHeading = (headingSlugs: string[]): string | null => {
     const [activeId, setActiveId] = useState<string | null>(null);
     const observerRef = useRef<IntersectionObserver | null>(null);
 
     const handleIntersect = useCallback((entries: IntersectionObserverEntry[]) => {
-        // Find the topmost visible heading
         const visible = entries
-            .filter((e) => e.isIntersecting)
+            .filter((entry) => entry.isIntersecting)
             .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
 
         if (visible.length > 0) {
@@ -136,8 +135,8 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
         });
 
         for (const slug of headingSlugs) {
-            const el = document.getElementById(slug);
-            if (el) observerRef.current.observe(el);
+            const element = document.getElementById(slug);
+            if (element) observerRef.current.observe(element);
         }
 
         return () => {
@@ -150,20 +149,24 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
 
 export const BlogPostPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
-    const post = useMemo(() => (slug ? getBlogPostBySlug(slug) : undefined), [slug]);
+    const location = useLocation();
+    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const { t } = useTranslation('blog');
+
+    const post = useMemo(() => (slug ? getBlogPostBySlug(slug, locale) : undefined), [locale, slug]);
     const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
     const relatedPosts = useMemo(() => {
         if (!post) return [];
-        const allPosts = getPublishedBlogPosts();
+        const allPosts = getPublishedBlogPosts(locale);
         const postTags = new Set(post.tags);
         return allPosts
-            .filter((p) => p.slug !== post.slug && p.tags.some((t) => postTags.has(t)))
+            .filter((entry) => entry.slug !== post.slug && entry.tags.some((tag) => postTags.has(tag)))
             .slice(0, 3);
-    }, [post]);
+    }, [locale, post]);
 
     const headings = useMemo(() => (post ? extractHeadings(post.content) : []), [post]);
-    const headingSlugs = useMemo(() => headings.map((h) => h.slug), [headings]);
+    const headingSlugs = useMemo(() => headings.map((heading) => heading.slug), [headings]);
     const activeHeadingId = useActiveHeading(headingSlugs);
 
     useEffect(() => {
@@ -171,49 +174,31 @@ export const BlogPostPage: React.FC = () => {
     }, [post?.slug]);
 
     if (!post) {
-        return (
-            <MarketingLayout>
-                <section className="py-20 text-center">
-                    <h1 className="text-3xl font-black text-slate-900" style={{ fontFamily: "var(--tf-font-heading)" }}>
-                        Post not found
-                    </h1>
-                    <p className="mt-4 text-slate-500">The blog post you're looking for doesn't exist.</p>
-                    <Link
-                        to="/blog"
-                        className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-accent-700"
-                    >
-                        <ArrowLeft size={16} weight="bold" />
-                        Back to Blog
-                    </Link>
-                </section>
-            </MarketingLayout>
-        );
+        return <Navigate to={buildLocalizedMarketingPath('home', locale)} replace />;
     }
 
-    const formattedDate = new Date(post.publishedAt).toLocaleDateString('en-US', {
+    const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
     });
+    const contentLang = post.language;
 
     return (
         <MarketingLayout>
-            {/* Reading progress bar — pure CSS scroll-driven */}
             <div className="reading-progress-bar" />
 
-            <article className="pb-16 md:pb-24">
-                {/* Back link */}
+            <article className="pb-16 md:pb-24" data-blog-page-locale={locale}>
                 <div className="pt-6 pb-4">
                     <Link
-                        to="/blog"
+                        to={buildLocalizedMarketingPath('blog', locale)}
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors"
                     >
                         <ArrowLeft size={14} weight="bold" />
-                        Back to Blog
+                        {t('common:buttons.backToBlog')}
                     </Link>
                 </div>
 
-                {/* Cover banner */}
                 <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
                     {!hasHeaderImageError && (
                         <>
@@ -236,19 +221,15 @@ export const BlogPostPage: React.FC = () => {
                     )}
                 </div>
 
-                {/* Two-column layout: content + sidebar */}
                 <div className="flex gap-10 lg:gap-14">
-                    {/* Main content */}
-                    <div className="min-w-0 flex-1 max-w-3xl">
-                        {/* Title */}
+                    <div className="min-w-0 flex-1 max-w-3xl" lang={contentLang} data-blog-content-lang={contentLang}>
                         <h1
                             className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                            style={{ fontFamily: "var(--tf-font-heading)" }}
+                            style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
                             {post.title}
                         </h1>
 
-                        {/* Meta row */}
                         <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
                             <span className="inline-flex items-center gap-1.5">
                                 <User size={14} weight="duotone" className="text-accent-400" />
@@ -257,16 +238,15 @@ export const BlogPostPage: React.FC = () => {
                             <span>{formattedDate}</span>
                             <span className="inline-flex items-center gap-1.5">
                                 <Clock size={14} weight="duotone" className="text-accent-400" />
-                                {post.readingTimeMin} min read
+                                {t('index.readTime', { minutes: post.readingTimeMin })}
                             </span>
                         </div>
 
-                        {/* Tags */}
                         <div className="mt-4 flex flex-wrap gap-1.5">
                             {post.tags.map((tag) => (
                                 <Link
                                     key={tag}
-                                    to="/blog"
+                                    to={buildLocalizedMarketingPath('blog', locale)}
                                     className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
                                 >
                                     <Tag size={10} weight="duotone" />
@@ -275,12 +255,10 @@ export const BlogPostPage: React.FC = () => {
                             ))}
                         </div>
 
-                        {/* Summary */}
                         <p className="mt-6 text-lg leading-relaxed text-slate-600 border-l-4 border-accent-200 pl-4">
                             {post.summary}
                         </p>
 
-                        {/* Body */}
                         <div className="mt-10">
                             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                                 {post.content}
@@ -288,19 +266,16 @@ export const BlogPostPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Sidebar (hidden on mobile) */}
                     <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <div className="sticky top-24 space-y-8">
-                            {/* In this article — styled TOC */}
                             {headings.length > 0 && (
                                 <nav>
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">In this article</h4>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.inThisArticle')}</h4>
                                     <ul className="relative border-l border-slate-200">
                                         {headings.map((heading) => {
                                             const isActive = activeHeadingId === heading.slug;
                                             return (
                                                 <li key={heading.slug} className="relative">
-                                                    {/* Active indicator bar */}
                                                     <div
                                                         className={`absolute -left-px top-0 h-full w-0.5 rounded-full transition-colors duration-200 ${
                                                             isActive ? 'bg-accent-500' : 'bg-transparent'
@@ -323,15 +298,16 @@ export const BlogPostPage: React.FC = () => {
                                 </nav>
                             )}
 
-                            {/* Related articles */}
                             {relatedPosts.length > 0 && (
                                 <div>
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Related</h4>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.related')}</h4>
                                     <ul className="space-y-3">
                                         {relatedPosts.map((related) => (
-                                            <li key={related.slug}>
+                                            <li key={`${related.language}:${related.slug}`}>
                                                 <Link
-                                                    to={`/blog/${related.slug}`}
+                                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                                    lang={related.language}
+                                                    data-blog-related-lang={related.language}
                                                     className="group flex items-start gap-2"
                                                 >
                                                     <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${related.coverColor}`}>
@@ -341,7 +317,7 @@ export const BlogPostPage: React.FC = () => {
                                                         <p className="text-sm font-medium text-slate-700 group-hover:text-accent-700 transition-colors line-clamp-2 leading-snug">
                                                             {related.title}
                                                         </p>
-                                                        <p className="mt-0.5 text-xs text-slate-400">{related.readingTimeMin} min</p>
+                                                        <p className="mt-0.5 text-xs text-slate-400">{t('index.readTime', { minutes: related.readingTimeMin })}</p>
                                                     </div>
                                                 </Link>
                                             </li>
@@ -350,35 +326,33 @@ export const BlogPostPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* CTA */}
                             <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-accent-50 to-white p-5">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Compass size={18} weight="duotone" className="text-accent-500" />
-                                    <h4 className="text-sm font-bold text-slate-900">Plan your trip</h4>
+                                    <h4 className="text-sm font-bold text-slate-900">{t('post.planTripTitle')}</h4>
                                 </div>
                                 <p className="text-xs leading-relaxed text-slate-500 mb-3">
-                                    Turn what you've read into a real itinerary — AI-powered, day by day.
+                                    {t('post.planTripDescription')}
                                 </p>
                                 <Link
-                                    to="/create-trip"
+                                    to={buildPath('createTrip')}
                                     className="inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md"
                                 >
-                                    Start Planning
+                                    {t('common:buttons.startPlanning')}
                                     <ArrowRight size={12} weight="bold" />
                                 </Link>
                             </div>
 
-                            {/* Browse more */}
                             <div>
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Explore</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">{t('post.explore')}</h4>
                                 <div className="space-y-2">
-                                    <Link to="/blog" className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
+                                    <Link to={buildLocalizedMarketingPath('blog', locale)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
                                         <Article size={14} weight="duotone" className="text-slate-400" />
-                                        All articles
+                                        {t('post.allArticles')}
                                     </Link>
-                                    <Link to="/inspirations" className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
+                                    <Link to={buildLocalizedMarketingPath('inspirations', locale)} className="flex items-center gap-2 text-sm text-slate-600 hover:text-accent-700 transition-colors">
                                         <Compass size={14} weight="duotone" className="text-slate-400" />
-                                        Trip inspirations
+                                        {t('post.tripInspirations')}
                                     </Link>
                                 </div>
                             </div>
@@ -386,20 +360,21 @@ export const BlogPostPage: React.FC = () => {
                     </aside>
                 </div>
 
-                {/* Related posts — mobile (below content, visible on small screens) */}
                 {relatedPosts.length > 0 && (
                     <div className="mt-16 border-t border-slate-200 pt-10 lg:hidden" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <h2
                             className="text-xl font-black tracking-tight text-slate-900"
-                            style={{ fontFamily: "var(--tf-font-heading)" }}
+                            style={{ fontFamily: 'var(--tf-font-heading)' }}
                         >
-                            Related Articles
+                            {t('post.relatedArticles')}
                         </h2>
                         <div className="mt-6 grid gap-4 sm:grid-cols-2">
                             {relatedPosts.map((related) => (
                                 <Link
-                                    key={related.slug}
-                                    to={`/blog/${related.slug}`}
+                                    key={`${related.language}:${related.slug}`}
+                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                    lang={related.language}
+                                    data-blog-related-lang={related.language}
                                     className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
                                 >
                                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${related.coverColor}`}>
@@ -410,7 +385,7 @@ export const BlogPostPage: React.FC = () => {
                                             {related.title}
                                         </h3>
                                         <p className="mt-1 text-xs text-slate-400">
-                                            {related.readingTimeMin} min read
+                                            {t('index.readTime', { minutes: related.readingTimeMin })}
                                         </p>
                                     </div>
                                 </Link>

@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "Planification de voyage par IA",
+    "titleBefore": "Votre prochaine aventure, planifiée",
+    "titleHighlight": "en quelques secondes",
+    "description": "Dites-nous où et quand vous voulez partir, et notre IA crée un itinéraire complet jour par jour avec trajets optimisés, activités sélectionnées et vrais liens de réservation. Ajustez tout sur une timeline visuelle et une carte, puis partagez en un clic.",
+    "floating": {
+      "ai": "Itinéraires générés par IA",
+      "share": "Partager et collaborer",
+      "booking": "Liens de réservation"
+    }
+  },
+  "examples": {
+    "title": "Voyages créés avec TravelFlow",
+    "subtitle": "Parcourez des itinéraires réels de la communauté - des escapades d'une semaine aux road trips multi-étapes."
+  },
+  "featureShowcase": {
+    "title": "Tout ce qu'il faut pour planifier, partager et partir",
+    "subtitle": "De la première idée à l'embarquement - TravelFlow couvre tout le parcours.",
+    "items": {
+      "aiTripCreation": {
+        "title": "Création de voyage par IA",
+        "description": "Décrivez votre voyage idéal en langage naturel. Notre IA crée un plan complet jour par jour avec ordre de villes intelligent, suggestions d'activités et temps de trajet estimés en moins de 30 secondes."
+      },
+      "interactiveMapStyles": {
+        "title": "Styles de carte interactifs",
+        "description": "Basculez entre satellite, terrain et carte minimaliste. Suivez votre itinéraire avec lignes animées, marqueurs de villes et zoom dynamique."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Ajustements faciles",
+        "description": "Réorganisez les villes, ajustez les durées ou ajoutez des étapes spontanées sur la timeline. Les dates et connexions restent synchronisées automatiquement."
+      },
+      "communityExamples": {
+        "title": "Exemples de la communauté",
+        "description": "Explorez des itinéraires partagés par d'autres voyageurs et réutilisez-les comme base pour votre propre voyage."
+      },
+      "shareCollaborate": {
+        "title": "Partager et collaborer",
+        "description": "Générez un lien partageable en un clic. Vos co-voyageurs voient carte, timeline et activités sans créer de compte."
+      },
+      "activityBookingLinks": {
+        "title": "Liens de réservation",
+        "description": "Chaque activité proposée par l'IA renvoie vers une plateforme de réservation pour garder toute l'organisation au même endroit."
+      }
+    }
+  },
+  "cta": {
+    "title": "Prêt à planifier votre prochain voyage ?",
+    "subtitle": "Rejoignez des milliers de voyageurs qui créent des itinéraires plus intelligents en quelques minutes."
+  }
+}

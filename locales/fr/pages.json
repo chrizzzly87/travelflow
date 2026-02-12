@@ -1,0 +1,101 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "Inspirations de voyage",
+      "title": "Où partirez-vous ensuite ?",
+      "description": "Vous ne savez pas par où commencer ? Explorez des idées de voyages par thème, mois, pays ou festivals à venir. Cliquez sur un itinéraire pour l'utiliser comme point de départ."
+    },
+    "searchPlaceholder": "Rechercher des destinations, festivals, pays...",
+    "searchResultLabel": "{count} résultats",
+    "noResults": "Aucun résultat pour \"{query}\". Essayez un autre mot-clé.",
+    "searchSections": {
+      "destinations": "Destinations",
+      "eventsFestivals": "Événements et festivals",
+      "weekendGetaways": "Escapades week-end"
+    },
+    "jumpTo": "Aller à",
+    "quickStart": "Démarrage rapide",
+    "sections": {
+      "byTheme": "Par thème",
+      "byMonth": "Par mois",
+      "byCountry": "Par pays",
+      "eventsFestivals": "Événements et festivals",
+      "weekendGetaways": "Escapades week-end",
+      "bestTimeTitle": "Meilleure période pour voyager",
+      "browseCountryTitle": "Explorer par pays",
+      "upcomingFestivalsTitle": "Événements et festivals à venir",
+      "weekendTitle": "Escapades week-end spontanées"
+    },
+    "links": {
+      "allThemes": "Tous les thèmes",
+      "monthGuide": "Guide mensuel",
+      "allCountries": "Tous les pays",
+      "allEvents": "Tous les événements",
+      "viewAllEvents": "Voir les {count} événements",
+      "allGetaways": "Toutes les escapades"
+    },
+    "stats": {
+      "curatedDestinations": "Destinations sélectionnées",
+      "countriesCovered": "Pays couverts",
+      "festivalsEvents": "Festivals et événements",
+      "weekendGetaways": "Escapades week-end"
+    },
+    "bottomCta": {
+      "title": "Inspiré ?",
+      "description": "Choisissez une destination et laissez notre IA créer votre itinéraire jour par jour en quelques secondes.",
+      "button": "Commencer à planifier"
+    },
+    "subpages": {
+      "backToInspirations": "Retour aux inspirations",
+      "comingSoon": "Bientôt disponible",
+      "themes": {
+        "pill": "Thèmes de voyage",
+        "title": "Voyager par thème",
+        "description": "Aventure, gastronomie ou photo détendue : trouvez des idées de voyages qui correspondent à votre style.",
+        "comingSoonDescription": "Des pages thématiques détaillées avec itinéraires, checklists et conseils locaux arrivent bientôt."
+      },
+      "bestTime": {
+        "pill": "Meilleure période",
+        "title": "Quand partir et où",
+        "description": "Chaque destination a sa période idéale. Utilisez notre guide mois par mois pour choisir le meilleur moment.",
+        "comingSoonDescription": "Des guides saisonniers détaillés avec météo, alertes haute saison et conseils budget arrivent bientôt."
+      },
+      "countries": {
+        "pill": "Explorer par pays",
+        "title": "Explorer les destinations par pays",
+        "description": "Des cerisiers du Japon aux côtes du Portugal, découvrez des guides pays avec recommandations et conseils locaux.",
+        "comingSoonDescription": "Des profils pays détaillés avec visas, budgets et itinéraires multi-villes arrivent bientôt."
+      },
+      "festivals": {
+        "pill": "Événements et festivals",
+        "title": "Planifiez votre voyage autour d'un festival",
+        "description": "Les plus grandes célébrations méritent plus qu'un vol de dernière minute. Trouvez les événements à venir et construisez votre itinéraire autour d'eux.",
+        "comingSoonDescription": "Des guides festivals détaillés avec programmes, hébergements et suggestions jour par jour arrivent bientôt."
+      },
+      "weekendGetaways": {
+        "pill": "Escapades week-end",
+        "title": "Escapades rapides pour voyageurs occupés",
+        "description": "Pas besoin de deux semaines de congés pour un voyage inoubliable. Ces idées courtes sont faites pour les départs spontanés.",
+        "comingSoonDescription": "Des modèles de week-end avec options train ou vol, budgets et checklists arrivent bientôt."
+      },
+      "country": {
+        "notFoundTitle": "Pays introuvable",
+        "notFoundDescription": "Nous n'avons pas encore de données d'inspiration pour \"{country}\".",
+        "pill": "Guide pays",
+        "title": "Voyager en {country}",
+        "description": "Tout pour planifier votre voyage en {country} : meilleures périodes, itinéraires populaires et conseils utiles.",
+        "comingSoonDescription": "Des guides détaillés pour {country} - villes, culture, visas et itinéraires multi-jours - arrivent bientôt.",
+        "cta": "Planifier un voyage en {country}"
+      }
+    }
+  },
+  "updates": {
+    "title": "Nouveautés"
+  },
+  "shareUnavailable": {
+    "title": "Ce voyage partagé n'est plus disponible",
+    "description": "Le lien a peut-être expiré ou a été désactivé par le propriétaire du voyage. Demandez un nouveau lien ou créez votre propre voyage.",
+    "backToHomepage": "Retour à l'accueil",
+    "createNewTrip": "Créer un nouveau voyage"
+  }
+}

@@ -11,6 +11,16 @@ const GoogleMapsContext = createContext<GoogleMapsContextType>({ isLoaded: false
 
 export const useGoogleMaps = () => useContext(GoogleMapsContext);
 
+const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
+    en: 'en',
+    es: 'es',
+    de: 'de',
+    fr: 'fr',
+    pt: 'pt',
+    ru: 'ru',
+    it: 'it',
+};
+
 interface GoogleMapsLoaderProps {
     children: React.ReactNode;
     language?: AppLanguage;
@@ -20,6 +30,7 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<Error | null>(null);
     const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
+    const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
 
     useEffect(() => {
         const isGoogleMapsReady = () => Boolean(window.google?.maps?.Map && typeof window.google.maps.Map === 'function');
@@ -58,8 +69,8 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}&loading=async`;
-        script.dataset.language = requestedLanguage;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedMapLanguage)}&loading=async`;
+        script.dataset.language = requestedMapLanguage;
         script.async = true;
         script.defer = true;
         
@@ -109,7 +120,7 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
                 readyCheckTimeout = null;
             }
         };
-    }, [requestedLanguage]);
+    }, [requestedMapLanguage]);
 
     return (
         <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>

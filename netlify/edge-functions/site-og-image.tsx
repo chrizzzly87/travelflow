@@ -1,9 +1,10 @@
 import React from "https://esm.sh/react@18.3.1";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
+import { APP_NAME } from "../../config/appGlobals.ts";
 
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
-const SITE_NAME = "TravelFlow";
+const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
 const LOCAL_HEADLINE_FONT_PATH =
   "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2";
@@ -12,7 +13,7 @@ const LOCAL_SPACE_FONT_PATH =
 const LEGACY_HEADLINE_FONT_URL =
   "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
 
-const DEFAULT_TITLE = "TravelFlow";
+const DEFAULT_TITLE = APP_NAME;
 const DEFAULT_SUBLINE = "Plan and share travel routes with timeline and map previews.";
 
 // Keep OG visuals aligned with global app accent tokens.
@@ -245,7 +246,7 @@ export default async (request: Request): Promise<Response> => {
 
     const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
-    const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || "TravelFlow";
+    const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || SITE_NAME;
     const pagePath = normalizePath(getSearchParam(url, "path"));
     const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
@@ -369,7 +370,7 @@ export default async (request: Request): Promise<Response> => {
                     justifyContent: "center",
                   }}
                 >
-                  <img src={FOOTER_PLANE_ICON_URI} alt="TravelFlow icon" style={{ width: 18, height: 18 }} />
+                  <img src={FOOTER_PLANE_ICON_URI} alt={`${SITE_NAME} icon`} style={{ width: 18, height: 18 }} />
                 </div>
                 <div
                   style={{

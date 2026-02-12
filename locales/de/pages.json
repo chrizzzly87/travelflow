@@ -1,0 +1,101 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "Reiseinspirationen",
+      "title": "Wohin geht es als Nächstes?",
+      "description": "Du weißt noch nicht, wo du anfangen sollst? Entdecke kuratierte Reiseideen nach Thema, Monat, Land oder kommenden Festivals. Klicke auf eine Route und nutze sie als Startpunkt."
+    },
+    "searchPlaceholder": "Ziele, Festivals, Länder suchen...",
+    "searchResultLabel": "{count} Ergebnisse",
+    "noResults": "Keine Ergebnisse für \"{query}\" gefunden. Probiere ein anderes Stichwort.",
+    "searchSections": {
+      "destinations": "Reiseziele",
+      "eventsFestivals": "Events & Festivals",
+      "weekendGetaways": "Wochenendtrips"
+    },
+    "jumpTo": "Springen zu",
+    "quickStart": "Schnellstart",
+    "sections": {
+      "byTheme": "Nach Thema",
+      "byMonth": "Nach Monat",
+      "byCountry": "Nach Land",
+      "eventsFestivals": "Events & Festivals",
+      "weekendGetaways": "Wochenendtrips",
+      "bestTimeTitle": "Beste Reisezeit",
+      "browseCountryTitle": "Nach Land entdecken",
+      "upcomingFestivalsTitle": "Kommende Events & Festivals",
+      "weekendTitle": "Spontane Wochenendtrips"
+    },
+    "links": {
+      "allThemes": "Alle Themen",
+      "monthGuide": "Monatsguide",
+      "allCountries": "Alle Länder",
+      "allEvents": "Alle Events",
+      "viewAllEvents": "Alle {count} Events ansehen",
+      "allGetaways": "Alle Kurztrips"
+    },
+    "stats": {
+      "curatedDestinations": "Kuratierte Reiseziele",
+      "countriesCovered": "Abgedeckte Länder",
+      "festivalsEvents": "Festivals & Events",
+      "weekendGetaways": "Wochenendtrips"
+    },
+    "bottomCta": {
+      "title": "Inspiriert?",
+      "description": "Wähle ein Ziel und lass unsere KI in Sekunden einen Tagesplan für dich erstellen.",
+      "button": "Jetzt Reise planen"
+    },
+    "subpages": {
+      "backToInspirations": "Zurück zu Inspirationen",
+      "comingSoon": "Bald verfügbar",
+      "themes": {
+        "pill": "Reisethemen",
+        "title": "Nach Reisethema planen",
+        "description": "Ob Adrenalin, Kulinarik oder entspannte Foto-Spots - finde kuratierte Reiseideen, die zu deinem Stil passen.",
+        "comingSoonDescription": "Ausführliche Themenseiten mit Routen, Packlisten und Insidertipps folgen bald."
+      },
+      "bestTime": {
+        "pill": "Beste Reisezeit",
+        "title": "Wann du wohin reisen solltest",
+        "description": "Jedes Reiseziel hat seine beste Zeit. Nutze unseren Monatsguide, um den idealen Zeitraum für deine nächste Reise zu finden.",
+        "comingSoonDescription": "Detaillierte Saison-Guides mit Wetterdaten, Hochsaison-Hinweisen und Budgettipps folgen bald."
+      },
+      "countries": {
+        "pill": "Nach Land entdecken",
+        "title": "Reiseziele nach Ländern entdecken",
+        "description": "Von Japans Kirschblüte bis Portugals Küste - entdecke länderspezifische Guides mit Empfehlungen und lokalen Tipps.",
+        "comingSoonDescription": "Ausführliche Länderprofile mit Visa-Infos, Budgetübersichten und Multi-City-Routen folgen bald."
+      },
+      "festivals": {
+        "pill": "Events & Festivals",
+        "title": "Plane deine Reise rund um ein Festival",
+        "description": "Die größten Feste der Welt verdienen mehr als einen Last-Minute-Flug. Finde kommende Events nach Datum und plane deine Route darum herum.",
+        "comingSoonDescription": "Detaillierte Festival-Guides mit Zeitplänen, Unterkunftstipps und Tagesplänen folgen bald."
+      },
+      "weekendGetaways": {
+        "pill": "Wochenendtrips",
+        "title": "Kurze Auszeiten für Vielbeschäftigte",
+        "description": "Für unvergessliche Reisen brauchst du keine zwei Wochen Urlaub. Diese Kurztrips sind für spontane Abenteuer gemacht.",
+        "comingSoonDescription": "Wochenend-Templates mit Zug- oder Flugoptionen, Budgetschätzungen und Packlisten folgen bald."
+      },
+      "country": {
+        "notFoundTitle": "Land nicht gefunden",
+        "notFoundDescription": "Für \"{country}\" haben wir noch keine Inspirationsdaten.",
+        "pill": "Länderguide",
+        "title": "Reise nach {country}",
+        "description": "Alles für die Reiseplanung nach {country} - beste Reisezeit, beliebte Routen und praktische Tipps.",
+        "comingSoonDescription": "Detaillierte Guides für {country} - inklusive Städteüberblick, Kulturtipps, Visa-Infos und kuratierten Mehrtagesrouten - folgen bald.",
+        "cta": "Reise nach {country} planen"
+      }
+    }
+  },
+  "updates": {
+    "title": "Neuigkeiten"
+  },
+  "shareUnavailable": {
+    "title": "Diese geteilte Reise ist nicht mehr verfügbar",
+    "description": "Der Link ist möglicherweise abgelaufen oder wurde vom Reiseinhaber deaktiviert. Bitte frage nach einem neuen Link oder erstelle eine eigene Reise.",
+    "backToHomepage": "Zur Startseite",
+    "createNewTrip": "Neue Reise erstellen"
+  }
+}

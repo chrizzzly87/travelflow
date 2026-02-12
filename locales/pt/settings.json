@@ -1,0 +1,31 @@
+{
+  "title": "Definições",
+  "tabs": {
+    "layout": "Layout",
+    "appearance": "Aspeto",
+    "language": "Idioma"
+  },
+  "layout": {
+    "timelineOrientation": "Orientação da timeline",
+    "horizontal": "Horizontal",
+    "horizontalDescription": "Vista clássica tipo Gantt. Ideal para visualizar sobreposição de durações.",
+    "vertical": "Vertical",
+    "verticalDescription": "Vista em lista, ideal para mobile. Mais fluida e fácil de ler em ecrãs pequenos."
+  },
+  "appearance": {
+    "mapTiles": "Estilo do mapa",
+    "minimal": "Minimal",
+    "minimalDescription": "Limpo e focado",
+    "standard": "Standard",
+    "standardDescription": "Google por defeito",
+    "dark": "Escuro",
+    "darkDescription": "Modo noite",
+    "satellite": "Satélite",
+    "satelliteDescription": "Vista aérea"
+  },
+  "language": {
+    "noteTitle": "Idioma do mapa",
+    "noteDescription": "As etiquetas do mapa seguem esta definição.",
+    "appLanguage": "Idioma da aplicação"
+  }
+}

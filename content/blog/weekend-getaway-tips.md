@@ -1,5 +1,7 @@
 ---
 slug: weekend-getaway-tips
+language: en
+translation_group: weekend-getaway-tips
 title: "Weekend Getaway Planning: From Idea to Boarding Pass"
 date: 2026-02-01
 published_at: 2026-02-01T10:00:00Z

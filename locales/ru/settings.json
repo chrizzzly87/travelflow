@@ -1,0 +1,31 @@
+{
+  "title": "Настройки",
+  "tabs": {
+    "layout": "Макет",
+    "appearance": "Вид",
+    "language": "Язык"
+  },
+  "layout": {
+    "timelineOrientation": "Ориентация таймлайна",
+    "horizontal": "Горизонтально",
+    "horizontalDescription": "Классический режим Gantt. Удобно видеть пересечения.",
+    "vertical": "Вертикально",
+    "verticalDescription": "Список для мобильных. Удобнее на маленьких экранах."
+  },
+  "appearance": {
+    "mapTiles": "Стиль карты",
+    "minimal": "Минимал",
+    "minimalDescription": "Чисто и фокусно",
+    "standard": "Стандарт",
+    "standardDescription": "Стандарт Google",
+    "dark": "Тёмный",
+    "darkDescription": "Ночной режим",
+    "satellite": "Спутник",
+    "satelliteDescription": "Вид сверху"
+  },
+  "language": {
+    "noteTitle": "Язык карты",
+    "noteDescription": "Подписи на карте зависят от этой настройки.",
+    "appLanguage": "Язык приложения"
+  }
+}

@@ -2,6 +2,7 @@ import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import popularIslandDestinationsJson from './data/popularIslandDestinations.json';
 import { normalizeTransportMode } from './shared/transportModes';
+import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -22,7 +23,7 @@ export const getApiKey = (): string => {
 };
 
 export const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';
-export const DEFAULT_APP_LANGUAGE: AppLanguage = 'en';
+export const DEFAULT_APP_LANGUAGE: AppLanguage = DEFAULT_LOCALE;
 
 export const generateTripId = (): string => {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -95,8 +96,7 @@ export const isUuid = (value?: string | null): boolean => {
 };
 
 export const normalizeAppLanguage = (value?: string | null): AppLanguage => {
-    if (value === 'en') return 'en';
-    return DEFAULT_APP_LANGUAGE;
+    return normalizeLocale(value);
 };
 
 export const getStoredAppLanguage = (): AppLanguage => {
@@ -107,6 +107,10 @@ export const getStoredAppLanguage = (): AppLanguage => {
 export const setStoredAppLanguage = (language: AppLanguage): void => {
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, normalizeAppLanguage(language));
+};
+
+export const getIntlLocaleForAppLanguage = (language: AppLanguage): string => {
+    return localeToIntlLocale(normalizeAppLanguage(language));
 };
 
 // --- HELPERS ---
@@ -188,8 +192,8 @@ export const formatDurationHours = (hours: number | null | undefined): string | 
     return `${h}h ${m}m`;
 };
 
-export const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+export const formatDate = (date: Date, language: AppLanguage = DEFAULT_APP_LANGUAGE): string => {
+  return date.toLocaleDateString(getIntlLocaleForAppLanguage(language), { month: 'short', day: 'numeric', weekday: 'short' });
 };
 
 export const addDays = (date: Date, days: number): Date => {

@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "Pianificazione viaggi con IA",
+    "titleBefore": "La tua prossima avventura, pianificata",
+    "titleHighlight": "in pochi secondi",
+    "description": "Dicci dove vuoi andare e quando, e la nostra IA crea un itinerario completo giorno per giorno con percorsi ottimizzati, attività selezionate e link reali per prenotare. Modifica tutto su timeline e mappa, poi condividi con un clic.",
+    "floating": {
+      "ai": "Itinerari generati dall'IA",
+      "share": "Condividi e collabora",
+      "booking": "Link di prenotazione"
+    }
+  },
+  "examples": {
+    "title": "Viaggi creati con TravelFlow",
+    "subtitle": "Sfoglia itinerari reali della community: da weekend lunghi a viaggi multi-città."
+  },
+  "featureShowcase": {
+    "title": "Tutto ciò che serve per pianificare, condividere e partire",
+    "subtitle": "Dalla prima idea al boarding pass - TravelFlow gestisce tutto il percorso.",
+    "items": {
+      "aiTripCreation": {
+        "title": "Creazione viaggio con IA",
+        "description": "Descrivi il viaggio dei tuoi sogni in linguaggio naturale. In meno di 30 secondi l'IA crea un piano completo con ordine intelligente delle città, attività suggerite e tempi di spostamento stimati."
+      },
+      "interactiveMapStyles": {
+        "title": "Mappe interattive",
+        "description": "Passa da satellite a terreno o stile minimale. Segui il percorso con linee animate, marker e zoom dinamico collegato alla timeline."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Modifiche facili all'itinerario",
+        "description": "Sposta città, allunga le soste o aggiungi tappe spontanee direttamente sulla timeline. Date e collegamenti restano sincronizzati automaticamente."
+      },
+      "communityExamples": {
+        "title": "Esempi della community",
+        "description": "Scopri itinerari reali condivisi da altri viaggiatori e usali come base per creare il tuo viaggio."
+      },
+      "shareCollaborate": {
+        "title": "Condividi e collabora",
+        "description": "Genera un link condivisibile con un clic. Chi viaggia con te vede mappa, timeline e attività anche senza account."
+      },
+      "activityBookingLinks": {
+        "title": "Link di prenotazione attività",
+        "description": "Ogni attività suggerita dall'IA include link diretti per prenotare tour, ristoranti e trasporti senza uscire dal piano viaggio."
+      }
+    }
+  },
+  "cta": {
+    "title": "Pronto a pianificare il tuo prossimo viaggio?",
+    "subtitle": "Unisciti a migliaia di viaggiatori che creano itinerari migliori in pochi minuti."
+  }
+}

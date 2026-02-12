@@ -1,0 +1,35 @@
+{
+  "index": {
+    "pill": "Blog",
+    "title": "Travel Planning Insights",
+    "description": "Guides, tips, and deep-dives to help you plan smarter trips — from weekend getaways to multi-city adventures.",
+    "searchPlaceholder": "Search articles…",
+    "result": "{count} result",
+    "results": "{count} results",
+    "noSearch": "No articles found for \"{query}\". Try a different keyword.",
+    "noTag": "No posts found for this tag.",
+    "readTime": "{minutes} min read",
+    "languageFilterAriaLabel": "Filter blog languages",
+    "languageFilter": {
+      "nativeOnly": "Native language only",
+      "nativeAndEnglish": "Native + English",
+      "englishOnly": "English only"
+    },
+    "mixedLanguageNotice": "This page interface stays in {locale}. English cards and articles are marked, and their content uses lang=\"en\".",
+    "englishArticleNotice": "This article is written in English.",
+    "ctaTitle": "Ready to plan your trip?",
+    "ctaDescription": "Turn these ideas into a real itinerary. Our AI builds your day-by-day plan in seconds."
+  },
+  "post": {
+    "notFoundTitle": "Post not found",
+    "notFoundDescription": "The blog post you're looking for doesn't exist.",
+    "inThisArticle": "In this article",
+    "related": "Related",
+    "planTripTitle": "Plan your trip",
+    "planTripDescription": "Turn what you've read into a real itinerary — AI-powered, day by day.",
+    "explore": "Explore",
+    "allArticles": "All articles",
+    "tripInspirations": "Trip inspirations",
+    "relatedArticles": "Related Articles"
+  }
+}

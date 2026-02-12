@@ -1,0 +1,31 @@
+{
+  "title": "Einstellungen",
+  "tabs": {
+    "layout": "Layout",
+    "appearance": "Darstellung",
+    "language": "Sprache"
+  },
+  "layout": {
+    "timelineOrientation": "Timeline-Ausrichtung",
+    "horizontal": "Horizontal",
+    "horizontalDescription": "Klassische Gantt-Ansicht. Ideal für Überschneidungen.",
+    "vertical": "Vertikal",
+    "verticalDescription": "Mobile-freundliche Listenansicht. Leichter auf kleinen Bildschirmen."
+  },
+  "appearance": {
+    "mapTiles": "Kartenstil",
+    "minimal": "Minimal",
+    "minimalDescription": "Klar & fokussiert",
+    "standard": "Standard",
+    "standardDescription": "Google-Standard",
+    "dark": "Dunkel",
+    "darkDescription": "Nachtmodus",
+    "satellite": "Satellit",
+    "satelliteDescription": "Luftansicht"
+  },
+  "language": {
+    "noteTitle": "Kartensprache",
+    "noteDescription": "Kartenbeschriftungen folgen dieser Einstellung.",
+    "appLanguage": "App-Sprache"
+  }
+}

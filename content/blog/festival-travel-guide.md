@@ -1,5 +1,7 @@
 ---
 slug: festival-travel-guide
+language: en
+translation_group: festival-travel-guide
 title: "How to Plan a Trip Around a Festival"
 date: 2026-01-28
 published_at: 2026-01-28T10:00:00Z

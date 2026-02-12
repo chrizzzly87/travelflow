@@ -59,6 +59,7 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 ## Routes
 
 - `/` marketing landing page
+- `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
 - `/trip/:tripId` planner
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
@@ -66,6 +67,18 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/updates` marketing updates feed from markdown release files
 - `/admin/dashboard` admin metrics placeholder (future role-gated)
 - `/admin/ai-benchmark` internal AI benchmark workspace (classic input + multi-model runs + persisted session table + persisted run ranking)
+
+## I18n And Locale Routing Workflow
+
+For adding new localized pages, route keys, SEO metadata, and translation resources, follow:
+
+- `docs/I18N_PAGE_WORKFLOW.md`
+
+## UX Writing And Copy Workflow
+
+For marketing copy, CTA wording, planner microcopy, and localization/transcreation tone rules, follow:
+
+- `docs/UX_COPY_GUIDELINES.md`
 
 ## UI and Brand Guidelines
 

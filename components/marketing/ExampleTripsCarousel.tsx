@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { ITrip, IViewSettings } from '../../types';
 import { exampleTripCards } from '../../data/exampleTripCards';
 import { getExampleTemplateMiniCalendar, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
@@ -47,6 +48,7 @@ const normalizeLoopOffset = (offset: number, loopWidth: number): number => {
 
 export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation('home');
     const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
     const [isMobileViewport, setIsMobileViewport] = useState(() => (
         typeof window !== 'undefined' ? window.matchMedia(MOBILE_QUERY).matches : false
@@ -438,10 +440,10 @@ export const ExampleTripsCarousel: React.FC = () => {
         <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
             <div className="animate-scroll-blur-in">
                 <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-                    Trips built with TravelFlow
+                    {t('examples.title')}
                 </h2>
                 <p className="mt-3 max-w-xl text-base text-slate-600">
-                    Browse real itineraries created by our community — from week-long island getaways to cross-country road trips.
+                    {t('examples.subtitle')}
                 </p>
             </div>
 

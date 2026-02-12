@@ -1,0 +1,99 @@
+{
+  "hero": {
+    "pill": "Produktfunktionen",
+    "title": "Smarter planen, besser reisen",
+    "description": "TravelFlow combines AI generation, visual editing, and collaboration into one workspace. Here is everything the platform can do for your next trip."
+  },
+  "heroCards": {
+    "ai": {
+      "title": "KI-Reiseerstellung",
+      "description": "Describe where you want to go and TravelFlow creates a full itinerary — optimized routes, curated activities, realistic timing — in under 30 seconds. Classic, Wizard, or Surprise Me modes adapt to how you like to plan."
+    },
+    "map": {
+      "title": "Interaktive Karte und Timeline",
+      "description": "Your trip lives on a real map with animated route lines, city markers, and dynamic zoom. Below the map, a visual timeline shows every day at a glance. Switch between satellite, terrain, and minimalist styles."
+    },
+    "editing": {
+      "title": "Drag-and-Drop Bearbeitung",
+      "description": "Reorder cities, stretch stay durations, and insert spontaneous stops — all by dragging on the timeline. Dates, connections, and the map update automatically so everything stays in sync."
+    }
+  },
+  "workflow": {
+    "title": "So funktioniert es",
+    "subtitle": "From idea to itinerary in three steps.",
+    "step1Title": "Choose your destination",
+    "step1Description": "Pick countries, islands, or let Surprise Me suggest the perfect match for your travel window.",
+    "step2Title": "Generate with AI",
+    "step2Description": "Our model drafts a full route with city timing, activities, and logistics. Tweak the result in seconds.",
+    "step3Title": "Refine & share",
+    "step3Description": "Drag cities, adjust durations, add notes. Then share a link — your crew sees the live map and timeline."
+  },
+  "more": {
+    "title": "Und vieles mehr",
+    "subtitle": "Every detail is designed to remove friction from trip planning."
+  },
+  "secondary": {
+    "sharing": {
+      "title": "Teilen mit einem Klick",
+      "description": "Generate a link and send it to your travel crew. They see the full map, timeline, and activities — no account needed."
+    },
+    "community": {
+      "title": "Community-Inspirationen",
+      "description": "Browse curated trips from travelers worldwide. Fork any itinerary as a starting point and make it your own."
+    },
+    "booking": {
+      "title": "Buchungslinks",
+      "description": "Every AI-suggested activity links to booking platforms — tours, restaurants, transport — so you can reserve without leaving TravelFlow."
+    },
+    "duration": {
+      "title": "Smarte Dauerhinweise",
+      "description": "TravelFlow analyzes seasonal data and travel distances to suggest how long to spend in each city so you never feel rushed."
+    },
+    "mobile": {
+      "title": "Mobil optimiert",
+      "description": "Plan on the go with a responsive layout tuned for phones and tablets. The map, timeline, and editing all adapt to smaller screens."
+    },
+    "print": {
+      "title": "Druckfertige Routen",
+      "description": "Switch to print view for a clean, paper-friendly itinerary with day headers, activity lists, and essential logistics."
+    },
+    "routing": {
+      "title": "Routing über mehrere Länder",
+      "description": "Select multiple countries or islands and TravelFlow builds a cross-border route with realistic transit between regions."
+    },
+    "history": {
+      "title": "Versionsverlauf",
+      "description": "Every meaningful change creates a snapshot. Jump back to any previous version of your trip with a single click."
+    },
+    "privacy": {
+      "title": "Datenschutz zuerst",
+      "description": "Your trips stay local by default. Optional cloud sync is consent-gated, and analytics only run after explicit opt-in."
+    }
+  },
+  "comparison": {
+    "title": "So schneidet TravelFlow ab",
+    "subtitle": "Side-by-side against spreadsheet planning and other trip tools.",
+    "featureHeader": "Feature",
+    "travelflowHeader": "TravelFlow",
+    "spreadsheetHeader": "Spreadsheet",
+    "otherHeader": "Other Tools",
+    "yes": "Yes",
+    "partial": "Partial",
+    "manual": "Manual",
+    "freemium": "Freemium",
+    "rows": {
+      "ai": "AI-generated itinerary",
+      "interactiveMap": "Interactive map",
+      "dragDrop": "Drag-and-drop timeline",
+      "oneClickSharing": "One-click sharing",
+      "bookingLinks": "Booking links",
+      "offlineFirst": "Offline-first / local data",
+      "freeToUse": "Free to use"
+    }
+  },
+  "cta": {
+    "title": "Sieh es in Aktion",
+    "subtitle": "Create your first AI-powered itinerary in under a minute.",
+    "button": "Start Planning — Free"
+  }
+}

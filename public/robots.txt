@@ -1,4 +1,8 @@
 User-agent: *
+Allow: /
 Disallow: /trip/
 Disallow: /s/
-Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: /sitemap.xml

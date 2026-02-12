@@ -1,10 +1,17 @@
 import React, { useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Globe, ArrowRight } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
 import { countryGroups } from '../../data/inspirationsData';
+import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { DEFAULT_LOCALE } from '../../config/locales';
 
 export const CountryDetailPage: React.FC = () => {
+    const { t } = useTranslation('pages');
+    const location = useLocation();
+    const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const inspirationsPath = buildLocalizedMarketingPath('inspirations', locale);
     const { countryName } = useParams<{ countryName: string }>();
     const decoded = countryName ? decodeURIComponent(countryName) : '';
 
@@ -21,17 +28,17 @@ export const CountryDetailPage: React.FC = () => {
                         className="text-3xl font-black text-slate-900"
                         style={{ fontFamily: "var(--tf-font-heading)" }}
                     >
-                        Country not found
+                        {t('inspirations.subpages.country.notFoundTitle')}
                     </h1>
                     <p className="mt-4 text-slate-500">
-                        We don't have inspiration data for "{decoded}" yet.
+                        {t('inspirations.subpages.country.notFoundDescription', { country: decoded })}
                     </p>
                     <Link
-                        to="/inspirations"
+                        to={inspirationsPath}
                         className="mt-6 inline-flex items-center gap-2 rounded-xl bg-accent-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-accent-700"
                     >
                         <ArrowLeft size={16} weight="bold" />
-                        Back to Inspirations
+                        {t('inspirations.subpages.backToInspirations')}
                     </Link>
                 </section>
             </MarketingLayout>
@@ -42,24 +49,24 @@ export const CountryDetailPage: React.FC = () => {
         <MarketingLayout>
             <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
                 <Link
-                    to="/inspirations#countries"
+                    to={`${inspirationsPath}#countries`}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors mb-6"
                 >
                     <ArrowLeft size={14} weight="bold" />
-                    Back to Inspirations
+                    {t('inspirations.subpages.backToInspirations')}
                 </Link>
                 <span className="flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700 w-fit">
                     <Globe size={14} weight="duotone" />
-                    Country Guide
+                    {t('inspirations.subpages.country.pill')}
                 </span>
                 <h1
                     className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
                     style={{ fontFamily: "var(--tf-font-heading)" }}
                 >
-                    {country.flag} Travel to {country.country}
+                    {country.flag} {t('inspirations.subpages.country.title', { country: country.country })}
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
-                    Everything you need to plan your trip to {country.country} — best months to visit, popular itineraries, and travel tips.
+                    {t('inspirations.subpages.country.description', { country: country.country })}
                 </p>
             </section>
 
@@ -91,16 +98,16 @@ export const CountryDetailPage: React.FC = () => {
             <section className="pb-16 md:pb-24 animate-hero-stagger" style={{ '--stagger': '200ms' } as React.CSSProperties}>
                 <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
                     <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
-                        Coming soon
+                        {t('inspirations.subpages.comingSoon')}
                     </span>
                     <p className="mt-4 text-sm text-slate-500">
-                        Detailed guides for {country.country} — including city breakdowns, cultural tips, visa information, and curated multi-day itineraries — are on the way.
+                        {t('inspirations.subpages.country.comingSoonDescription', { country: country.country })}
                     </p>
                     <Link
                         to="/create-trip"
                         className="mt-6 inline-flex items-center gap-1.5 rounded-xl bg-accent-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-accent-700"
                     >
-                        Plan a trip to {country.country}
+                        {t('inspirations.subpages.country.cta', { country: country.country })}
                         <ArrowRight size={14} weight="bold" />
                     </Link>
                 </div>

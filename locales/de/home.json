@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "KI-gestützte Reiseplanung",
+    "titleBefore": "Dein nächstes Abenteuer, geplant",
+    "titleHighlight": "in Sekunden",
+    "description": "Sag uns, wohin und wann du reisen möchtest, und unsere KI erstellt einen kompletten Tagesplan mit optimierten Routen, kuratierten Aktivitäten und echten Buchungslinks. Passe alles auf einer visuellen Timeline und Karte an und teile die Reise mit einem Klick.",
+    "floating": {
+      "ai": "KI-generierte Routen",
+      "share": "Teilen und gemeinsam planen",
+      "booking": "Buchungslinks"
+    }
+  },
+  "examples": {
+    "title": "Mit TravelFlow geplante Reisen",
+    "subtitle": "Entdecke echte Routen aus der Community - von einwöchigen Inseltrips bis zu langen Roadtrips."
+  },
+  "featureShowcase": {
+    "title": "Alles, was du zum Planen brauchst",
+    "subtitle": "Von der ersten Idee bis zur Bordkarte - TravelFlow begleitet die ganze Reise.",
+    "items": {
+      "aiTripCreation": {
+        "title": "KI-Reiseerstellung",
+        "description": "Beschreibe deine Wunschreise in normaler Sprache. Unsere KI erstellt in unter 30 Sekunden einen kompletten Tagesplan mit sinnvoller Reihenfolge, Aktivitätsideen und geschätzten Reisezeiten."
+      },
+      "interactiveMapStyles": {
+        "title": "Interaktive Kartenstile",
+        "description": "Wechsle zwischen Satellit, Terrain und minimalem Kartenstil. Sieh deine Route mit animierten Linien, Stadtmarkern und dynamischem Zoom entlang deiner Timeline."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Flexible Anpassungen",
+        "description": "Verschiebe Städte per Drag-and-drop, verlängere Aufenthalte oder füge spontane Stopps hinzu. Daten und Verbindungen bleiben automatisch synchron."
+      },
+      "communityExamples": {
+        "title": "Community-Beispiele",
+        "description": "Entdecke Reisen anderer Nutzer, finde versteckte Highlights und nutze jede Route als Vorlage für dein eigenes Abenteuer."
+      },
+      "shareCollaborate": {
+        "title": "Teilen und zusammen planen",
+        "description": "Erzeuge einen Link mit einem Klick. Mitreisende sehen Karte, Timeline und Aktivitäten ohne Konto - Änderungen sind sofort für alle sichtbar."
+      },
+      "activityBookingLinks": {
+        "title": "Buchungslinks für Aktivitäten",
+        "description": "Jede KI-Empfehlung verlinkt direkt zu passenden Buchungsplattformen. Reserviere Touren, Restaurants und Transport direkt aus deiner Planung."
+      }
+    }
+  },
+  "cta": {
+    "title": "Bereit für deine nächste Reise?",
+    "subtitle": "Plane in wenigen Minuten smartere Routen. Kein Konto nötig, um zu starten."
+  }
+}

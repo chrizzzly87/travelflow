@@ -1,3 +1,5 @@
+import { stripLocalePrefix } from './routes';
+
 export interface PrefetchTarget {
     key: string;
     load: () => Promise<unknown>;
@@ -28,6 +30,7 @@ const updatesTarget = target('route:updates', () => import('../pages/UpdatesPage
 const pricingTarget = target('route:pricing', () => import('../pages/PricingPage'));
 const faqTarget = target('route:faq', () => import('../pages/FaqPage'));
 const loginTarget = target('route:login', () => import('../pages/LoginPage'));
+const contactTarget = target('route:contact', () => import('../pages/ContactPage'));
 const imprintTarget = target('route:imprint', () => import('../pages/ImprintPage'));
 const privacyTarget = target('route:privacy', () => import('../pages/PrivacyPage'));
 const termsTarget = target('route:terms', () => import('../pages/TermsPage'));
@@ -94,6 +97,10 @@ const rules: PrefetchRule[] = [
         targets: [loginTarget],
     },
     {
+        match: (pathname) => pathname === '/contact',
+        targets: [contactTarget],
+    },
+    {
         match: (pathname) => pathname === '/imprint',
         targets: [imprintTarget],
     },
@@ -148,11 +155,12 @@ const rules: PrefetchRule[] = [
 ];
 
 export const resolvePrefetchTargets = (pathname: string): PrefetchTarget[] => {
+    const normalizedPathname = stripLocalePrefix(pathname || '/');
     const matched: PrefetchTarget[] = [];
     const seen = new Set<string>();
 
     rules.forEach((rule) => {
-        if (!rule.match(pathname)) return;
+        if (!rule.match(normalizedPathname)) return;
         rule.targets.forEach((candidate) => {
             if (seen.has(candidate.key)) return;
             seen.add(candidate.key);
@@ -164,26 +172,28 @@ export const resolvePrefetchTargets = (pathname: string): PrefetchTarget[] => {
 };
 
 export const getIdleWarmupPaths = (pathname: string): string[] => {
-    if (pathname === '/') {
+    const normalizedPathname = stripLocalePrefix(pathname || '/');
+
+    if (normalizedPathname === '/') {
         return ['/create-trip', '/example/__prefetch__'];
     }
 
-    if (startsWithSegment(pathname, '/create-trip')) {
+    if (startsWithSegment(normalizedPathname, '/create-trip')) {
         return ['/trip/__prefetch__', '/example/__prefetch__'];
     }
 
-    if (pathname === '/blog') {
+    if (normalizedPathname === '/blog') {
         return [];
     }
 
-    if (startsWithSegment(pathname, '/inspirations')) {
+    if (startsWithSegment(normalizedPathname, '/inspirations')) {
         return [];
     }
 
     if (
-        pathname === '/features' ||
-        pathname === '/pricing' ||
-        pathname === '/updates'
+        normalizedPathname === '/features' ||
+        normalizedPathname === '/pricing' ||
+        normalizedPathname === '/updates'
     ) {
         return ['/create-trip', '/inspirations'];
     }

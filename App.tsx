@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, Suspense, lazy } from 'react';
 import { flushSync } from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
@@ -15,6 +16,9 @@ import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, localeToDir, localeToHtmlLang, normalizeLocale } from './config/locales';
+import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
+import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
 import { SpeculationRulesManager } from './components/SpeculationRulesManager';
 import { isNavPrefetchEnabled } from './services/navigationPrefetch';
@@ -146,6 +150,7 @@ const FestivalsPage = lazy(() => import('./pages/inspirations/FestivalsPage').th
 const WeekendGetawaysPage = lazy(() => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
 const CountryDetailPage = lazy(() => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then((module) => ({ default: module.ContactPage })));
 const ImprintPage = lazy(() => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 const TermsPage = lazy(() => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
@@ -181,6 +186,7 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
     { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
     { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./components/CreateTripForm') },
 ];
 
@@ -202,7 +208,8 @@ const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
 };
 
 const preloadRouteForPath = async (pathname: string): Promise<void> => {
-    const rule = findRoutePreloadRule(pathname);
+    const normalizedPathname = stripLocalePrefix(pathname || '/');
+    const rule = findRoutePreloadRule(normalizedPathname);
     if (!rule) return;
     if (warmedRouteKeys.has(rule.key)) return;
     warmedRouteKeys.add(rule.key);
@@ -222,6 +229,37 @@ const renderWithSuspense = (node: React.ReactElement) => (
         {node}
     </Suspense>
 );
+
+const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
+
+const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement }> = [
+    { path: '/', element: <MarketingHomePage /> },
+    { path: '/features', element: <FeaturesPage /> },
+    { path: '/inspirations', element: <InspirationsPage /> },
+    { path: '/inspirations/themes', element: <ThemesPage /> },
+    { path: '/inspirations/best-time-to-travel', element: <BestTimeToTravelPage /> },
+    { path: '/inspirations/countries', element: <CountriesPage /> },
+    { path: '/inspirations/events-and-festivals', element: <FestivalsPage /> },
+    { path: '/inspirations/weekend-getaways', element: <WeekendGetawaysPage /> },
+    { path: '/inspirations/country/:countryName', element: <CountryDetailPage /> },
+    { path: '/updates', element: <UpdatesPage /> },
+    { path: '/blog', element: <BlogPage /> },
+    { path: '/blog/:slug', element: <BlogPostPage /> },
+    { path: '/pricing', element: <PricingPage /> },
+    { path: '/faq', element: <FaqPage /> },
+    { path: '/share-unavailable', element: <ShareUnavailablePage /> },
+    { path: '/login', element: <LoginPage /> },
+    { path: '/contact', element: <ContactPage /> },
+    { path: '/imprint', element: <ImprintPage /> },
+    { path: '/privacy', element: <PrivacyPage /> },
+    { path: '/terms', element: <TermsPage /> },
+    { path: '/cookies', element: <CookiesPage /> },
+];
+
+const getLocalizedMarketingRoutePath = (path: string, locale: AppLanguage): string => {
+    if (path === '/') return `/${locale}`;
+    return `/${locale}${path}`;
+};
 
 const shouldEnableDebuggerOnBoot = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -947,6 +985,7 @@ const CreateTripRoute: React.FC<{
 };
 
 const AppContent: React.FC = () => {
+    const { i18n } = useTranslation();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -958,8 +997,38 @@ const AppContent: React.FC = () => {
     const debugQueueRef = useRef<AppDebugCommand[]>([]);
     const debugStubRef = useRef<((command?: AppDebugCommand) => unknown) | null>(null);
 
+    const resolvedRouteLocale = useMemo<AppLanguage>(() => {
+        if (isToolRoute(location.pathname)) {
+            return normalizeLocale(appLanguage);
+        }
+
+        const localeFromPath = extractLocaleFromPath(location.pathname);
+        if (localeFromPath) return localeFromPath;
+        return DEFAULT_LOCALE;
+    }, [appLanguage, location.pathname]);
+
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
+
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = localeToHtmlLang(resolvedRouteLocale);
+            document.documentElement.dir = localeToDir(resolvedRouteLocale);
+        }
+
+        const currentI18nLanguage = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
+        if (currentI18nLanguage !== resolvedRouteLocale) {
+            void i18n.changeLanguage(resolvedRouteLocale);
+        }
+    }, [i18n, resolvedRouteLocale]);
+
+    useEffect(() => {
+        if (isToolRoute(location.pathname)) return;
+        const localeFromPath = extractLocaleFromPath(location.pathname);
+        if (!localeFromPath) return;
+        if (localeFromPath === appLanguage) return;
+        setAppLanguage(localeFromPath);
+    }, [appLanguage, location.pathname]);
 
     const isInitialLanguageRef = useRef(true);
     useEffect(() => {
@@ -1049,7 +1118,7 @@ const AppContent: React.FC = () => {
             const next = toggleSimulatedLogin(force);
             if (IS_DEV) {
                 console.info(
-                    `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
+                    `[${APP_NAME}] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
                 );
             }
             return next;
@@ -1172,10 +1241,22 @@ const AppContent: React.FC = () => {
             <NavigationPrefetchManager />
             <SpeculationRulesManager />
             <Routes>
-                <Route 
-                    path="/" 
-                    element={renderWithSuspense(<MarketingHomePage />)}
-                />
+                {MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
+                    <Route
+                        key={`marketing:${path}`}
+                        path={path}
+                        element={renderWithSuspense(element)}
+                    />
+                ))}
+                {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
+                    MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
+                        <Route
+                            key={`marketing:${locale}:${path}`}
+                            path={getLocalizedMarketingRoutePath(path, locale)}
+                            element={renderWithSuspense(element)}
+                        />
+                    ))
+                )}
                 <Route
                     path="/create-trip"
                     element={
@@ -1213,25 +1294,6 @@ const AppContent: React.FC = () => {
                         />)
                     }
                 />
-                <Route path="/features" element={renderWithSuspense(<FeaturesPage />)} />
-                <Route path="/inspirations" element={renderWithSuspense(<InspirationsPage />)} />
-                <Route path="/inspirations/themes" element={renderWithSuspense(<ThemesPage />)} />
-                <Route path="/inspirations/best-time-to-travel" element={renderWithSuspense(<BestTimeToTravelPage />)} />
-                <Route path="/inspirations/countries" element={renderWithSuspense(<CountriesPage />)} />
-                <Route path="/inspirations/events-and-festivals" element={renderWithSuspense(<FestivalsPage />)} />
-                <Route path="/inspirations/weekend-getaways" element={renderWithSuspense(<WeekendGetawaysPage />)} />
-                <Route path="/inspirations/country/:countryName" element={renderWithSuspense(<CountryDetailPage />)} />
-                <Route path="/updates" element={renderWithSuspense(<UpdatesPage />)} />
-                <Route path="/blog" element={renderWithSuspense(<BlogPage />)} />
-                <Route path="/blog/:slug" element={renderWithSuspense(<BlogPostPage />)} />
-                <Route path="/pricing" element={renderWithSuspense(<PricingPage />)} />
-                <Route path="/faq" element={renderWithSuspense(<FaqPage />)} />
-                <Route path="/share-unavailable" element={renderWithSuspense(<ShareUnavailablePage />)} />
-                <Route path="/login" element={renderWithSuspense(<LoginPage />)} />
-                <Route path="/imprint" element={renderWithSuspense(<ImprintPage />)} />
-                <Route path="/privacy" element={renderWithSuspense(<PrivacyPage />)} />
-                <Route path="/terms" element={renderWithSuspense(<TermsPage />)} />
-                <Route path="/cookies" element={renderWithSuspense(<CookiesPage />)} />
                 <Route path="/admin/dashboard" element={renderWithSuspense(<AdminDashboardPage />)} />
                 <Route path="/admin/ai-benchmark" element={renderWithSuspense(<AdminAiBenchmarkPage />)} />
                 <Route 

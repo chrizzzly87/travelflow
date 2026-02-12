@@ -1,0 +1,57 @@
+{
+  "imprint": {
+    "title": "Mentions legales",
+    "intro": "This legal imprint page is set up as a placeholder. Replace the fields below with your official business and contact details before production launch.",
+    "company": "Company:",
+    "companyValue": "TravelFlow (placeholder)",
+    "address": "Address:",
+    "addressValue": "Replace with legal business address",
+    "email": "Email:",
+    "emailValue": "legal@travelflow.example",
+    "responsible": "Responsible person:",
+    "responsibleValue": "Replace with legal representative",
+    "vat": "VAT / registration:",
+    "vatValue": "Replace with required local registration identifiers"
+  },
+  "privacy": {
+    "title": "Politique de confidentialite",
+    "intro": "This policy placeholder exists so legal navigation is complete. Replace this with your approved privacy policy text before launch.",
+    "items": [
+      "What personal data is collected and why.",
+      "How long data is stored and where.",
+      "Lawful basis for processing and user rights.",
+      "Contact details for privacy requests and deletion."
+    ]
+  },
+  "terms": {
+    "title": "Conditions d'utilisation",
+    "intro": "This terms page is a structural placeholder. Replace with your legal terms for account, billing, acceptable use, and liability limitations.",
+    "items": [
+      "Service scope and account responsibilities.",
+      "Subscription/paywall terms and billing policy.",
+      "Prohibited uses and suspension policy.",
+      "Warranty disclaimer and limitation of liability."
+    ]
+  },
+  "cookies": {
+    "title": "Politique de cookies",
+    "intro": "TravelFlow stores consent preferences locally and only activates analytics after optional consent is granted.",
+    "essential": "Essential storage (always active):",
+    "essentialValue": "tf_cookie_consent_choice_v1 in Local Storage to remember your banner selection.",
+    "optional": "Optional analytics:",
+    "optionalValue": "Umami is loaded only when you choose Accept all in the cookie banner.",
+    "mapping": "Consent mapping:",
+    "mappingValue": "Essential only keeps analytics disabled; Accept all enables analytics tracking.",
+    "notesTitle": "Analytics configuration notes",
+    "notes": [
+      "Tracker script URL is configured via VITE_UMAMI_SCRIPT_URL.",
+      "Website identifier is configured via VITE_UMAMI_WEBSITE_ID.",
+      "If you enable cookie-based analytics features in Umami later, list all resulting cookie names and durations here."
+    ],
+    "manageTitle": "Manage analytics consent",
+    "current": "Current preference:",
+    "stateAll": "Accept all",
+    "stateEssential": "Essential only",
+    "stateUnset": "Not set"
+  }
+}

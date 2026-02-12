@@ -35,6 +35,7 @@ import {
     TRIP_EXPIRY_DEBUG_EVENT,
 } from '../config/paywall';
 import { trackEvent } from '../services/analyticsService';
+import { APP_NAME } from '../config/appGlobals';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -848,7 +849,7 @@ export const TripView: React.FC<TripViewProps> = ({
             }));
             if (IS_DEV) {
                 console.info(
-                    `[TravelFlow] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
+                    `[${APP_NAME}] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
                 );
             }
             return nextExpired;

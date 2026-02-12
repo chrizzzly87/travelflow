@@ -1,5 +1,7 @@
 ---
 slug: budget-travel-europe
+language: en
+translation_group: budget-travel-europe
 title: "Budget Travel Hacks for Europe"
 date: 2026-01-25
 published_at: 2026-01-25T10:00:00Z

@@ -1,5 +1,7 @@
 ---
 slug: best-time-visit-japan
+language: en
+translation_group: best-time-visit-japan
 title: "The Best Time to Visit Japan — A Month-by-Month Guide"
 date: 2026-02-03
 published_at: 2026-02-03T10:00:00Z

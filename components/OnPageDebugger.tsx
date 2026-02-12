@@ -20,6 +20,7 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
+import { APP_NAME } from '../config/appGlobals';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
 import {
     PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
@@ -194,8 +195,11 @@ const describePayload = (payloadRaw: string | null): string => {
     }
 };
 
+const APP_NAME_REGEX_SAFE = APP_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TITLE_SUFFIX_REGEX = new RegExp(`\\s+\\|\\s+${APP_NAME_REGEX_SAFE}$`, 'i');
+
 const ensureTaglessTitle = (rawTitle: string): string =>
-    rawTitle.replace(/\s+\|\s+TravelFlow$/i, '').trim();
+    rawTitle.replace(TITLE_SUFFIX_REGEX, '').trim();
 
 const readMetaSnapshot = (): MetaSnapshot => {
     if (typeof document === 'undefined') {

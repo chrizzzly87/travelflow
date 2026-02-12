@@ -14,9 +14,10 @@ import {
   type OgRouteMode,
   parseRouteTarget,
 } from "../edge-lib/trip-og-data.ts";
+import { APP_NAME, APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
 
-const SITE_NAME = "TravelFlow";
-const DEFAULT_DESCRIPTION = "Plan and share travel routes with TravelFlow.";
+const SITE_NAME = APP_NAME;
+const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SHARE_CACHE_CONTROL = "public, max-age=0, s-maxage=300, stale-while-revalidate=86400";
 const TRIP_CACHE_CONTROL = "public, max-age=0, s-maxage=120, stale-while-revalidate=3600";
 

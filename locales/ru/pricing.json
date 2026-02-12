@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Простые и прозрачные тарифы",
+    "description": "Start for free and upgrade when you need more. No hidden fees, cancel anytime."
+  },
+  "tiers": {
+    "free": {
+      "name": "Бесплатно",
+      "badge": "Current plan",
+      "description": "Start fast with everything needed for confident trip planning.",
+      "cta": "Get Started",
+      "features": [
+        "AI trip builder with map + timeline",
+        "Drag, edit, and share in seconds",
+        "Up to 5 saved trips",
+        "Clean print-ready itineraries",
+        "Share via link"
+      ]
+    },
+    "casual": {
+      "name": "Casual",
+      "badge": "Roadmap",
+      "description": "For travelers who want faster workflows and deeper control.",
+      "cta": "Launching Soon",
+      "features": [
+        "Everything in Free",
+        "Unlimited saved trips",
+        "Priority generation queue",
+        "Advanced sharing + export controls"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "Roadmap",
+      "description": "Built for power users and collaborative travel teams.",
+      "cta": "Launching Soon",
+      "features": [
+        "Everything in Casual",
+        "Team-ready planning collaboration",
+        "Premium insights + priority support",
+        "Early access to new capabilities"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "Ограничения для анонимного доступа",
+    "description": "Anonymous users can keep up to <strong>{limit}</strong> active trips at a time. Each anonymous trip stays editable for <strong>{days} days</strong>, then becomes locked until account activation.",
+    "footer": "Start free today. Paid plans will roll out with advanced account and collaboration features."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Impostazioni",
+  "tabs": {
+    "layout": "Layout",
+    "appearance": "Aspetto",
+    "language": "Lingua"
+  },
+  "layout": {
+    "timelineOrientation": "Orientamento timeline",
+    "horizontal": "Orizzontale",
+    "horizontalDescription": "Vista classica in stile Gantt. Ottima per sovrapposizioni.",
+    "vertical": "Verticale",
+    "verticalDescription": "Vista elenco mobile-friendly. Più leggibile su schermi piccoli."
+  },
+  "appearance": {
+    "mapTiles": "Stile mappa",
+    "minimal": "Minimal",
+    "minimalDescription": "Pulito e focalizzato",
+    "standard": "Standard",
+    "standardDescription": "Predefinito Google",
+    "dark": "Scuro",
+    "darkDescription": "Modalità notte",
+    "satellite": "Satellite",
+    "satelliteDescription": "Vista aerea"
+  },
+  "language": {
+    "noteTitle": "Lingua mappa",
+    "noteDescription": "Le etichette mappa seguono questa impostazione.",
+    "appLanguage": "Lingua app"
+  }
+}
