@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
-import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
+import { TRIP_FACTORIES } from '../../data/exampleTripTemplates';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
 
@@ -46,9 +46,6 @@ export const ExampleTripsCarousel: React.FC = () => {
                     >
                         {doubledCards.map((card, index) => {
                             const rotation = ROTATIONS[index % ROTATIONS.length];
-                            const mapPreviewUrl = card.templateId
-                                ? buildExampleTemplateMapPreviewUrl(card.templateId)
-                                : null;
                             return (
                                 <button
                                     key={`${card.id}-${index}`}
@@ -60,7 +57,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
                                         : {})}
                                 >
-                                    <ExampleTripCard card={card} mapPreviewUrl={mapPreviewUrl} />
+                                    <ExampleTripCard card={card} />
                                 </button>
                             );
                         })}

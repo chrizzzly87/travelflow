@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.54.0
+version: v0.56.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T06:25:49Z
+published_at: 2026-02-12T07:59:30Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Added hybrid BlurHash + Netlify Image CDN delivery, removed eager homepage DB bundle loading, and fixed crawler/caching edge cases."
+summary: "Added hybrid BlurHash + Netlify Image CDN delivery, hardened map preview reliability, and reduced first-navigation route stalls via route-module preloading."
 ---
 
 ## Changes
@@ -29,8 +29,11 @@ summary: "Added hybrid BlurHash + Netlify Image CDN delivery, removed eager home
 - [x] [Improved] 🧩 Added `content-visibility` with intrinsic-size hints for below-the-fold sections on blog detail pages.
 - [x] [Improved] 📦 Added conservative Vite `manualChunks` groups so large dependency buckets can be cached independently.
 - [x] [Improved] 🛠️ Deferred loading of the on-page debugger until explicitly requested (`debug()`/`?debug=1`/persisted auto-open).
+- [x] [Fixed] 🗺️ Homepage example trip cards now use pre-generated map assets instead of runtime preview API calls, removing extra preview request chains and preventing `/.netlify/images` map-preview 403 noise.
 - [x] [Improved] 🔤 Self-hosted `Space Grotesk` with local `woff2` subsets (`latin`, `latin-ext`, `vietnamese`) and `font-display: swap` to remove Google Fonts request chains.
 - [x] [Improved] ✍️ Added a self-hosted `Bricolage Grotesque` heading option (latin/latin-ext/vietnamese subsets) for faster local typography experiments without external font CDNs.
 - [x] [Improved] 🌍 Added self-hosted global script fallbacks (Cyrillic, Greek, Devanagari, Arabic, Hebrew, Thai) so international city/country names render reliably beyond English/German/Spanish/French Latin text.
+- [x] [Fixed] ✅ Static map preview and OG map rendering now gracefully fall back when satellite static maps are unavailable for account/region policy, avoiding hard 403 map responses.
 - [x] [Improved] 🖼️ Updated OG image edge rendering to load local self-hosted fonts first, with resilient fallback if local assets are unavailable.
+- [x] [Improved] 🧭 Added route-module warmup and link-intent preloading so first navigation in local/dev no longer stalls on lazy chunk compilation with a visible blank fallback blink.
 - [ ] [Internal] 📋 Added a persistent performance backlog document to keep route-by-route Lighthouse improvements active.
