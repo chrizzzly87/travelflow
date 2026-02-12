@@ -5,10 +5,11 @@ This doc is a compact, structured overview of the app to help future agents make
 **Design Reference**
 - UI and component styling rules: `docs/BRAND_CI_GUIDELINES.md`.
 - Paywall/lifecycle behavior rules: `docs/PAYWALL_GUIDELINES.md`.
+- Locale routing + translation workflow: `docs/I18N_PAGE_WORKFLOW.md`.
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
-- Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`.
+- Marketing routes: `/`, `/features`, `/updates`, `/blog`, `/login`, plus locale-prefixed variants (`/de/*`, `/fr/*`, `/it/*`, `/ru/*`) for marketing pages.
 - Trip creation route: `/create-trip`.
 - Core data model: `ITrip` with `ITimelineItem[]` for cities, travel, activities.
 - Primary view: `components/TripView.tsx`.
@@ -94,3 +95,4 @@ This doc is a compact, structured overview of the app to help future agents make
 5. Confirm selection and hover styles are visible against existing backgrounds.
 6. If behavior/features changed, update markdown release notes following `docs/UPDATE_FORMAT.md`.
 7. If publishing a new release entry, bump to a new strictly increasing `version`.
+8. Check direction safety and logical property usage (`inline`/`block`/`start`/`end`) for new UI; if unclear, ask for clarification before finalizing.

@@ -18,6 +18,7 @@ export type RouteKey =
     | 'faq'
     | 'shareUnavailable'
     | 'login'
+    | 'contact'
     | 'imprint'
     | 'privacy'
     | 'terms'
@@ -60,6 +61,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/faq$/,
     /^\/share-unavailable$/,
     /^\/login$/,
+    /^\/contact$/,
     /^\/imprint$/,
     /^\/privacy$/,
     /^\/terms$/,
@@ -85,6 +87,7 @@ export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'faq',
     'shareUnavailable',
     'login',
+    'contact',
     'imprint',
     'privacy',
     'terms',
@@ -133,6 +136,8 @@ export const buildPath = <K extends RouteKey>(
             return '/share-unavailable';
         case 'login':
             return '/login';
+        case 'contact':
+            return '/contact';
         case 'imprint':
             return '/imprint';
         case 'privacy':

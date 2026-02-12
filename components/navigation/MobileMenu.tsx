@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { X, AirplaneTilt, CaretDown } from '@phosphor-icons/react';
+import { X, AirplaneTilt } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
+import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, formatLocaleOptionLabel, normalizeLocale } from '../../config/locales';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
 
@@ -114,22 +115,13 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     </div>
 
                     <div className="border-b border-slate-100 px-4 py-3">
-                        <label className="sr-only" htmlFor="mobile-language-select">
-                            {t('language.label')}
-                        </label>
-                        <div className="relative">
-                            <select
-                                id="mobile-language-select"
-                                value={activeLocale}
-                                onChange={(event) => handleLocaleChange(event.target.value)}
-                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
-                            >
-                                {SUPPORTED_LOCALES.map((locale) => (
-                                    <option key={locale} value={locale}>{formatLocaleOptionLabel(locale)}</option>
-                                ))}
-                            </select>
-                            <CaretDown size={12} weight="bold" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        </div>
+                        <LanguageSelect
+                            ariaLabel={t('language.label')}
+                            value={activeLocale}
+                            onChange={handleLocaleChange}
+                            triggerClassName="h-10 w-full rounded-xl border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            contentAlign="start"
+                        />
                     </div>
 
                     <nav className="flex-1 overflow-y-auto px-3 py-4">

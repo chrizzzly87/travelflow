@@ -3,6 +3,7 @@
 ## Startup checklist
 1. Read `docs/UPDATE_FORMAT.md`.
 2. If the task changes product behavior, plan release-note updates alongside code changes.
+3. For any locale, translation, or page-routing change, read `docs/I18N_PAGE_WORKFLOW.md`.
 
 ## Required behavior for Codex
 At the end of every completed feature or fix, update `content/updates/*.md`.
@@ -24,3 +25,7 @@ Rules:
 
 ## Validation
 Run `npm run updates:validate` (or `npm run build`, which includes validation) before final handoff when possible.
+
+## Direction-Safety Requirement
+- For new or updated UI components, check whether CSS logical properties are appropriate for direction safety (`inline`, `block`, `start`, `end`).
+- If it is unclear whether logical properties should be used, ask for clarification before finalizing.

@@ -17,7 +17,7 @@ import { initializeAnalytics, trackEvent, trackPageView } from './services/analy
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, localeToDir, localeToHtmlLang, normalizeLocale } from './config/locales';
-import { extractLocaleFromPath, isToolRoute } from './config/routes';
+import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
 import { SpeculationRulesManager } from './components/SpeculationRulesManager';
@@ -150,6 +150,7 @@ const FestivalsPage = lazy(() => import('./pages/inspirations/FestivalsPage').th
 const WeekendGetawaysPage = lazy(() => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
 const CountryDetailPage = lazy(() => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then((module) => ({ default: module.ContactPage })));
 const ImprintPage = lazy(() => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 const TermsPage = lazy(() => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
@@ -185,6 +186,7 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
     { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
     { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./components/CreateTripForm') },
 ];
 
@@ -206,7 +208,8 @@ const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
 };
 
 const preloadRouteForPath = async (pathname: string): Promise<void> => {
-    const rule = findRoutePreloadRule(pathname);
+    const normalizedPathname = stripLocalePrefix(pathname || '/');
+    const rule = findRoutePreloadRule(normalizedPathname);
     if (!rule) return;
     if (warmedRouteKeys.has(rule.key)) return;
     warmedRouteKeys.add(rule.key);
@@ -246,6 +249,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/faq', element: <FaqPage /> },
     { path: '/share-unavailable', element: <ShareUnavailablePage /> },
     { path: '/login', element: <LoginPage /> },
+    { path: '/contact', element: <ContactPage /> },
     { path: '/imprint', element: <ImprintPage /> },
     { path: '/privacy', element: <PrivacyPage /> },
     { path: '/terms', element: <TermsPage /> },

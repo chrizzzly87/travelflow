@@ -62,6 +62,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
   /^\/faq$/,
   /^\/share-unavailable$/,
   /^\/login$/,
+  /^\/contact$/,
   /^\/imprint$/,
   /^\/privacy$/,
   /^\/terms$/,
@@ -99,6 +100,10 @@ const PAGE_META: Record<string, PageDefinition> = {
   "/login": {
     title: "Login",
     description: "Sign in and continue planning your next trip in {{appName}}.",
+  },
+  "/contact": {
+    title: "Contact",
+    description: "Reach out to report translation issues or localization feedback for {{appName}}.",
   },
   "/imprint": {
     title: "Imprint",
@@ -218,6 +223,12 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     fr: { title: "Connexion", description: "Connectez-vous pour reprendre la planification de votre prochain voyage dans {{appName}}." },
     it: { title: "Accedi", description: "Accedi e continua a pianificare il tuo prossimo viaggio in {{appName}}." },
     ru: { title: "Вход", description: "Войдите, чтобы продолжить планирование следующей поездки в {{appName}}." },
+  },
+  "/contact": {
+    de: { title: "Kontakt", description: "Melde Übersetzungsfehler oder Lokalisierungsfeedback zu {{appName}}." },
+    fr: { title: "Contact", description: "Signalez des erreurs de traduction ou vos retours de localisation pour {{appName}}." },
+    it: { title: "Contatti", description: "Segnala errori di traduzione o feedback sulla localizzazione di {{appName}}." },
+    ru: { title: "Контакты", description: "Сообщите об ошибках перевода или оставьте отзыв о локализации {{appName}}." },
   },
   "/imprint": {
     de: { title: "Impressum", description: "Rechtliche Informationen und Unternehmensangaben zu {{appName}}." },

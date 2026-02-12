@@ -21,10 +21,13 @@ summary: "Shipped multilingual routing and translation foundations, locale-aware
 - [x] [Improved] 🌐 Locale-prefixed marketing pages now emit localized meta titles and descriptions in addition to localized `hreflang`/canonical clusters.
 - [x] [Improved] ✍️ Fixed locale typography fidelity (umlauts/accents) across newly added DE/FR/IT translation strings and localized metadata labels.
 - [x] [Fixed] 🧩 Locale placeholders now interpolate correctly across all languages (for example year/app name/count/query in footer, cookie banner, and dynamic labels).
+- [x] [Improved] ⚠️ Non-English marketing pages now show an AI-translation disclaimer with a localized link to report translation issues.
+- [x] [Improved] 📬 Added a localized contact placeholder page for translation feedback, available on `/contact` and locale-prefixed marketing routes.
 - [x] [Improved] 📰 Non-English blog pages can now show native and English articles together with a language filter and clear English-article badge.
-- [x] [Fixed] 🏳️ Language suggestion prompts no longer appear when the active locale already matches the browser's primary language.
+- [x] [Fixed] 🏳️ Language suggestion prompts no longer appear when the active locale is already part of the browser's preferred supported languages.
 - [x] [Improved] 🎛️ Navigation language selectors now use a consistent input/button style with accessible labeling and flag-enhanced options.
 - [ ] [Internal] 🧱 Introduced centralized locale and route contracts (`config/locales.ts`, `config/routes.ts`) plus locale path parsing/build helpers.
 - [ ] [Internal] 🗺️ Added automated sitemap generation and robots rules for localized marketing/blog crawl coverage.
+- [ ] [Internal] 📘 Added `docs/I18N_PAGE_WORKFLOW.md` and linked it from agent guidance files to standardize localized page implementation steps.
 - [ ] [Internal] 🧭 Added repository agent rules to require logical-property checks for new UI changes and explicit clarification when direction-aware styling is ambiguous.
 - [ ] [Internal] 🏷️ Added shared app globals (`config/appGlobals.ts`) so app name and default meta branding can be changed in one place across UI and edge metadata generators.

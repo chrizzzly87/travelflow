@@ -3,6 +3,7 @@
 ## Startup checklist
 1. Read `docs/UPDATE_FORMAT.md` before making product changes.
 2. Follow existing project conventions and keep routes/components non-breaking.
+3. For locale/translation/routing updates, follow `docs/I18N_PAGE_WORKFLOW.md`.
 
 ## Mandatory release note rule
 When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.
@@ -21,3 +22,7 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.
+
+## Direction-Safety Requirement
+- For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.
+- If usage is ambiguous, ask for clarification before shipping.

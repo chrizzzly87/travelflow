@@ -23,6 +23,7 @@ const MARKETING_PATHS = [
     '/pricing',
     '/faq',
     '/login',
+    '/contact',
     '/imprint',
     '/privacy',
     '/terms',

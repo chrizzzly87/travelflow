@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { AirplaneTilt, List, Folder, CaretDown } from '@phosphor-icons/react';
+import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MobileMenu } from './MobileMenu';
+import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, formatLocaleOptionLabel, normalizeLocale } from '../../config/locales';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
@@ -101,17 +102,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
                     <div className="flex items-center gap-2">
                         <div className="relative hidden md:block">
-                            <select
+                            <LanguageSelect
                                 aria-label={t('language.label')}
                                 value={activeLocale}
-                                onChange={(event) => handleLocaleChange(event.target.value)}
-                                className="h-9 appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-3 pr-8 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
-                            >
-                                {SUPPORTED_LOCALES.map((locale) => (
-                                    <option key={locale} value={locale}>{formatLocaleOptionLabel(locale)}</option>
-                                ))}
-                            </select>
-                            <CaretDown size={12} weight="bold" className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                onChange={handleLocaleChange}
+                                triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                            />
                         </div>
                         <NavLink
                             to={buildLocalizedMarketingPath('login', activeLocale)}

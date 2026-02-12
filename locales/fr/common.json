@@ -12,6 +12,7 @@
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. Tous droits réservés.",
+    "contact": "Contact",
     "imprint": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "Conditions",
@@ -44,5 +45,19 @@
   "cookieBanner": {
     "message": "Nous utilisons des cookies essentiels pour garantir la stabilité de {appName} et des cookies optionnels pour améliorer l'expérience. Voir notre",
     "policyLinkLabel": "Politique de cookies"
+  },
+  "translationNotice": {
+    "message": "Cette page a été récemment traduite avec l'aide de l'IA et peut encore contenir des erreurs de traduction.",
+    "cta": "Signaler une erreur de traduction"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Utilisez cette page pour signaler des erreurs de traduction ou partager un retour sur la localisation.",
+    "formStatusTitle": "Formulaire de contact bientôt disponible",
+    "formStatusBody": "Le formulaire dédié n'est pas encore en ligne. Veuillez nous contacter par e-mail en attendant.",
+    "emailLabel": "E-mail",
+    "emailValue": "support@travelflow.app",
+    "responseNote": "Nous répondons généralement sous 2 à 3 jours ouvrés.",
+    "backHome": "Retour à l'accueil"
   }
 }

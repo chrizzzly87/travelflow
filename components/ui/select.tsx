@@ -70,7 +70,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={[
-        'relative z-50 max-h-80 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg',
+        'relative z-[80] max-h-80 min-w-[10rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         position === 'popper'
           ? 'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1'
@@ -85,7 +85,7 @@ const SelectContent = React.forwardRef<
         className={[
           'p-1',
           position === 'popper'
-            ? 'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]'
+            ? 'w-full min-w-[var(--radix-select-trigger-width)]'
             : '',
         ].join(' ')}
       >
@@ -119,13 +119,13 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={[
-      'relative flex w-full cursor-default select-none items-start rounded-sm py-2 pl-8 pr-2 text-sm text-slate-800 outline-none',
-      'focus:bg-accent-50 focus:text-accent-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-default select-none items-center rounded-sm py-2 pl-8 pr-2 text-sm text-slate-800 outline-none',
+      'data-[highlighted]:bg-accent-50 data-[highlighted]:text-accent-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className || '',
     ].join(' ')}
     {...props}
   >
-    <span className="absolute left-2 top-2.5 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="absolute left-2 top-1/2 flex h-3.5 w-3.5 -translate-y-1/2 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>

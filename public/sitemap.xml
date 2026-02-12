@@ -586,6 +586,51 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/login" />
   </url>
   <url>
+    <loc>https://travelflow.app/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/contact" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://travelflow.app/fr/contact" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://travelflow.app/it/contact" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://travelflow.app/ru/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/contact" />
+  </url>
+  <url>
+    <loc>https://travelflow.app/de/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/contact" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://travelflow.app/fr/contact" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://travelflow.app/it/contact" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://travelflow.app/ru/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/contact" />
+  </url>
+  <url>
+    <loc>https://travelflow.app/fr/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/contact" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://travelflow.app/fr/contact" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://travelflow.app/it/contact" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://travelflow.app/ru/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/contact" />
+  </url>
+  <url>
+    <loc>https://travelflow.app/it/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/contact" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://travelflow.app/fr/contact" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://travelflow.app/it/contact" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://travelflow.app/ru/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/contact" />
+  </url>
+  <url>
+    <loc>https://travelflow.app/ru/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/contact" />
+    <xhtml:link rel="alternate" hreflang="fr" href="https://travelflow.app/fr/contact" />
+    <xhtml:link rel="alternate" hreflang="it" href="https://travelflow.app/it/contact" />
+    <xhtml:link rel="alternate" hreflang="ru" href="https://travelflow.app/ru/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://travelflow.app/contact" />
+  </url>
+  <url>
     <loc>https://travelflow.app/imprint</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://travelflow.app/imprint" />
     <xhtml:link rel="alternate" hreflang="de" href="https://travelflow.app/de/imprint" />

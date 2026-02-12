@@ -12,6 +12,7 @@
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. Alle Rechte vorbehalten.",
+    "contact": "Kontakt",
     "imprint": "Impressum",
     "privacy": "Datenschutz",
     "terms": "AGB",
@@ -44,5 +45,19 @@
   "cookieBanner": {
     "message": "Wir verwenden essenzielle Cookies, um {appName} stabil zu halten, und optionale Cookies zur Verbesserung der Nutzung. Siehe unsere",
     "policyLinkLabel": "Cookie-Richtlinie"
+  },
+  "translationNotice": {
+    "message": "Diese Seite wurde kürzlich mit KI-Unterstützung übersetzt und kann noch Übersetzungsfehler enthalten.",
+    "cta": "Übersetzungsfehler melden"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "description": "Nutze diese Seite, um Übersetzungsfehler oder Feedback zur Lokalisierung zu melden.",
+    "formStatusTitle": "Kontaktformular folgt in Kürze",
+    "formStatusBody": "Das Kontaktformular ist noch nicht live. Bitte schreibe uns bis dahin per E-Mail.",
+    "emailLabel": "E-Mail",
+    "emailValue": "support@travelflow.app",
+    "responseNote": "Wir antworten in der Regel innerhalb von 2 bis 3 Werktagen.",
+    "backHome": "Zur Startseite"
   }
 }
