@@ -2,6 +2,7 @@ import { AppLanguage } from '../types';
 
 export const SUPPORTED_LOCALES: AppLanguage[] = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it'];
 export const DEFAULT_LOCALE: AppLanguage = 'en';
+export const LOCALE_DROPDOWN_ORDER: AppLanguage[] = ['en', 'es', 'de', 'fr', 'it', 'pt', 'ru'];
 
 const HTML_LANG_MAP: Record<AppLanguage, string> = {
     en: 'en',
