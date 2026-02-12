@@ -122,6 +122,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                         className="h-full w-full object-cover"
                         loading="lazy"
                         fetchPriority="low"
+                        disableCdn={Boolean(card.mapImagePath && mapImageSrc?.includes(card.mapImagePath))}
                         onError={handleMapImageError}
                     />
                 ) : (

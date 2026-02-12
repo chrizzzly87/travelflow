@@ -265,7 +265,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Initial Map Setup
     useEffect(() => {
-        if (!isLoaded || !mapRef.current || googleMapRef.current) return;
+        if (!isLoaded || !mapRef.current || googleMapRef.current || !window.google?.maps?.Map) return;
 
         try {
             googleMapRef.current = new window.google.maps.Map(mapRef.current, {
