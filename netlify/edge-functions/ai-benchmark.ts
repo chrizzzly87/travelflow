@@ -419,7 +419,7 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
   const activities = Array.isArray(data.activities) ? data.activities : [];
   const travelSegments = Array.isArray(data.travelSegments) ? data.travelSegments : [];
 
-  const requiredTopLevelKeys = ["tripTitle", "countryInfo", "cities", "travelSegments", "activities"];
+  const requiredTopLevelKeys = ["tripTitle", "cities", "travelSegments", "activities"];
   const topLevelContractValid = requiredTopLevelKeys.every((key) => hasOwn(data, key));
   if (!topLevelContractValid) {
     errors.push("Top-level contract missing one or more required keys");
@@ -481,6 +481,7 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
   }
 
   const countryInfo = isRecord(data.countryInfo) ? data.countryInfo : null;
+  const countryInfoPresent = !!countryInfo;
   const countryInfoValid = !!countryInfo && (
     (hasText(countryInfo.currency) || (hasText(countryInfo.currencyCode) && hasText(countryInfo.currencyName))) &&
     (Number.isFinite(Number(countryInfo.exchangeRate)) || Number.isFinite(Number(countryInfo.exchangeRateToEUR))) &&
@@ -490,8 +491,10 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     (hasText(countryInfo.visaInfoUrl) || hasText(countryInfo.visaLink)) &&
     (hasText(countryInfo.auswaertigesAmtUrl) || hasText(countryInfo.auswaertigesAmtLink))
   );
-  if (!countryInfoValid) {
-    errors.push("countryInfo is missing required fields or has invalid formatting");
+  if (!countryInfoPresent) {
+    warnings.push("countryInfo is missing (non-blocking)");
+  } else if (!countryInfoValid) {
+    warnings.push("countryInfo is missing required fields or has invalid formatting (non-blocking)");
   }
 
   const markdownSectionsValid = cities.every((city) => {
@@ -626,6 +629,7 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     cityCountValid,
     requiredFieldsValid,
     cityCoordinatesValid,
+    countryInfoPresent,
     countryInfoValid,
     activityTypesValid,
     activityTypesCanonicalValid,
@@ -647,7 +651,6 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     cityCountValid,
     requiredFieldsValid,
     cityCoordinatesValid,
-    countryInfoValid,
     activityTypesValid,
     activityDurationFormatValid,
     cityIndexValid,
