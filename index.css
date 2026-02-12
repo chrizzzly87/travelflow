@@ -453,13 +453,32 @@ h6,
   z-index: 9999;
 }
 
-.example-city-lane {
-  transition: transform 150ms ease, box-shadow 150ms ease;
+.example-city-lane-hitbox {
+  display: flex;
+  align-items: center;
+  height: 14px;
 }
 
-.example-city-lane:hover {
-  transform: translateY(-1px);
-  box-shadow: 1px 1px 0 1px currentColor;
+.example-city-lane {
+  position: relative;
+  width: 100%;
+  height: 6px;
+}
+
+.example-city-lane::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.example-city-lane-hitbox:hover .example-city-lane::after,
+.example-city-lane-hitbox:focus-within .example-city-lane::after {
+  opacity: 1;
 }
 
 @utility glass-card {

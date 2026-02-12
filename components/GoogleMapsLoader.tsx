@@ -48,7 +48,7 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}&loading=async`;
         script.dataset.language = requestedLanguage;
         script.async = true;
         script.defer = true;

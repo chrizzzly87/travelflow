@@ -111,6 +111,7 @@ interface ViewTransitionDiagnostics {
     tripTitleAnchors: number;
     tripCityLaneAnchors: number;
     trackedAnchorNames: string[];
+    duplicateAnchorNames: string[];
     updatedAtLabel: string;
 }
 
@@ -229,24 +230,39 @@ const getAccessibleName = (element: HTMLElement): string => {
 
 const CITY_LANE_TRANSITION_PATTERN = /^trip-city-lane-\d+$/;
 
-const collectTrackedViewTransitionNames = (): string[] => {
-    if (typeof document === 'undefined' || typeof window === 'undefined' || !document.body) return [];
-    const elements = Array.from(document.body.querySelectorAll<HTMLElement>('*'));
-    const found = new Set<string>();
+interface ViewTransitionNameSnapshot {
+    names: string[];
+    duplicates: string[];
+}
+
+const collectTrackedViewTransitionNames = (): ViewTransitionNameSnapshot => {
+    if (typeof document === 'undefined' || typeof window === 'undefined' || !document.body) {
+        return { names: [], duplicates: [] };
+    }
+    const elements = Array.from(document.body.querySelectorAll<HTMLElement>('[style*="view-transition-name"]'));
+    const names: string[] = [];
+    const counts = new Map<string, number>();
 
     elements.forEach((element) => {
-        const transitionName = window.getComputedStyle(element).getPropertyValue('view-transition-name').trim();
+        const transitionName = element.style.viewTransitionName?.trim() || '';
         if (!transitionName || transitionName === 'none') return;
         if (
-            transitionName === 'trip-map'
-            || transitionName === 'trip-title'
-            || CITY_LANE_TRANSITION_PATTERN.test(transitionName)
+            transitionName !== 'trip-map'
+            && transitionName !== 'trip-title'
+            && !CITY_LANE_TRANSITION_PATTERN.test(transitionName)
         ) {
-            found.add(transitionName);
+            return;
         }
+        names.push(transitionName);
+        counts.set(transitionName, (counts.get(transitionName) || 0) + 1);
     });
 
-    return Array.from(found).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const duplicates = Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name, count]) => `${name} (${count})`)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    return { names, duplicates };
 };
 
 const buildViewTransitionDiagnostics = (route: string): ViewTransitionDiagnostics => {
@@ -259,14 +275,17 @@ const buildViewTransitionDiagnostics = (route: string): ViewTransitionDiagnostic
             tripTitleAnchors: 0,
             tripCityLaneAnchors: 0,
             trackedAnchorNames: [],
+            duplicateAnchorNames: [],
             updatedAtLabel: '',
         };
     }
 
-    const trackedAnchorNames = collectTrackedViewTransitionNames();
-    const tripMapAnchors = trackedAnchorNames.filter((name) => name === 'trip-map').length;
-    const tripTitleAnchors = trackedAnchorNames.filter((name) => name === 'trip-title').length;
-    const tripCityLaneAnchors = trackedAnchorNames.filter((name) => CITY_LANE_TRANSITION_PATTERN.test(name)).length;
+    const snapshot = collectTrackedViewTransitionNames();
+    const tripMapAnchors = snapshot.names.filter((name) => name === 'trip-map').length;
+    const tripTitleAnchors = snapshot.names.filter((name) => name === 'trip-title').length;
+    const tripCityLaneAnchors = snapshot.names.filter((name) => CITY_LANE_TRANSITION_PATTERN.test(name)).length;
+    const trackedAnchorNames = Array.from(new Set(snapshot.names))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
     return {
         supported: typeof document.startViewTransition === 'function',
@@ -276,6 +295,7 @@ const buildViewTransitionDiagnostics = (route: string): ViewTransitionDiagnostic
         tripTitleAnchors,
         tripCityLaneAnchors,
         trackedAnchorNames,
+        duplicateAnchorNames: snapshot.duplicates,
         updatedAtLabel: new Date().toLocaleTimeString(),
     };
 };
@@ -812,10 +832,7 @@ export const OnPageDebugger: React.FC = () => {
             return [nextEntry, ...prev].slice(0, 10);
         });
 
-        if (isOpen) {
-            runViewTransitionAuditAndStore();
-        }
-    }, [isOpen, runViewTransitionAuditAndStore]);
+    }, []);
 
     useEffect(() => {
         const handler = (event: Event) => handleViewTransitionDebugEvent(event);
@@ -1200,6 +1217,13 @@ export const OnPageDebugger: React.FC = () => {
                                         ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
                                         : 'none detected'}
                                 </div>
+
+                                {viewTransitionDiagnostics.duplicateAnchorNames.length > 0 && (
+                                    <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                                        <strong>Duplicate anchor names:</strong>{' '}
+                                        {viewTransitionDiagnostics.duplicateAnchorNames.join(', ')}
+                                    </div>
+                                )}
 
                                 <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
                                     <strong className="text-slate-900">Recent transition events:</strong>{' '}

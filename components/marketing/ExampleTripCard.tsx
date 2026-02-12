@@ -49,11 +49,6 @@ const buildLaneOutlineColor = (color: string): string => {
     return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`;
 };
 
-const formatNightsLabel = (nights: number): string => {
-    const rounded = Number.isInteger(nights) ? `${Math.round(nights)}` : nights.toFixed(1).replace(/\.0$/, '');
-    return `${rounded} ${Math.abs(nights - 1) < 0.001 ? 'night' : 'nights'}`;
-};
-
 export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     card,
     mapPreviewUrl,
@@ -203,16 +198,22 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                             return (
                                 <React.Fragment key={cityLane.id}>
                                     <span
-                                        className="example-city-lane block h-[6px] rounded-[1px]"
-                                        data-tooltip={`${cityLane.title}: ${formatNightsLabel(cityLane.nights)}`}
+                                        className="example-city-lane-hitbox block cursor-pointer"
+                                        data-tooltip={cityLane.title}
                                         style={{
                                             flexGrow: cityLane.nights,
                                             flexBasis: 0,
-                                            backgroundColor: cityLane.color,
-                                            color: buildLaneOutlineColor(cityLane.color),
-                                            ...(laneName ? ({ viewTransitionName: laneName } as React.CSSProperties) : {}),
                                         }}
-                                    />
+                                    >
+                                        <span
+                                            className="example-city-lane block rounded-[1px]"
+                                            style={{
+                                                backgroundColor: cityLane.color,
+                                                color: buildLaneOutlineColor(cityLane.color),
+                                                ...(laneName ? ({ viewTransitionName: laneName } as React.CSSProperties) : {}),
+                                            }}
+                                        />
+                                    </span>
                                     {routeLane && (
                                         <span
                                             className="block h-[3px] self-center rounded-[1px]"

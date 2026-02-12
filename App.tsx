@@ -246,12 +246,8 @@ const ScrollToTop: React.FC = () => {
     return null;
 };
 
-/** Intercept internal link clicks to wrap in View Transition API.
- *  Uses the capture phase so we run BEFORE React Router's onClick,
- *  preventing a double-navigate that causes duplicated content. */
+/** Pre-warm internal routes on user intent (hover/focus/touch). */
 const ViewTransitionHandler: React.FC = () => {
-    const navigate = useNavigate();
-
     useEffect(() => {
         const warmLinkTarget = (target: EventTarget | null) => {
             const anchor = (target as HTMLElement | null)?.closest?.('a');
@@ -281,45 +277,13 @@ const ViewTransitionHandler: React.FC = () => {
                 void preloadRouteForPath('/pricing');
             }, 600);
         }
-
-        const canUseViewTransitions = Boolean(document.startViewTransition);
-        const handleClick = (e: MouseEvent) => {
-            if (!canUseViewTransitions) return;
-            const anchor = (e.target as HTMLElement).closest('a');
-            if (!anchor) return;
-            const href = anchor.getAttribute('href');
-            if (!href || !href.startsWith('/')) return;
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-            if (href.startsWith('#')) return;
-            const pathname = getPathnameFromHref(href);
-            // Skip same-page navigations
-            if (pathname === window.location.pathname && !href.includes('?') && !href.includes('#')) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            const preloadPromise = preloadRouteForPath(pathname);
-            document.startViewTransition(async () => {
-                await preloadPromise;
-                flushSync(() => {
-                    navigate(href);
-                });
-            });
-        };
-
-        if (canUseViewTransitions) {
-            document.addEventListener('click', handleClick, true);
-        }
         return () => {
             document.removeEventListener('mouseover', handleMouseOver, true);
             document.removeEventListener('focusin', handleFocusIn, true);
             document.removeEventListener('touchstart', handleTouchStart, true);
-            if (canUseViewTransitions) {
-                document.removeEventListener('click', handleClick, true);
-            }
             if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
         };
-    }, [navigate]);
+    }, []);
 
     return null;
 };

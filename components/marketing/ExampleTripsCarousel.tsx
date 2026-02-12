@@ -1,5 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
 import { ITrip, IViewSettings } from '../../types';
@@ -29,7 +28,6 @@ const emitViewTransitionDebug = (detail: ViewTransitionDebugDetail): void => {
 
 export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
-    const [activeTransitionCardKey, setActiveTransitionCardKey] = useState<string | null>(null);
     const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
     const doubledCards = [...exampleTripCards, ...exampleTripCards];
 
@@ -97,104 +95,13 @@ export const ExampleTripsCarousel: React.FC = () => {
             targetPath: target,
         });
 
-        if (!document.startViewTransition) {
-            emitViewTransitionDebug({
-                phase: 'navigate-fallback',
-                templateId,
-                transitionKey,
-                targetPath: target,
-                reason: 'startViewTransition-api-missing',
-            });
-            navigation();
-            return;
-        }
-
-        flushSync(() => {
-            setActiveTransitionCardKey(transitionKey);
+        emitViewTransitionDebug({
+            phase: 'navigate-direct',
+            templateId,
+            transitionKey,
+            targetPath: target,
         });
-
-        const startTime = performance.now();
-
-        try {
-            const transition = document.startViewTransition(() => {
-                flushSync(navigation);
-            });
-
-            emitViewTransitionDebug({
-                phase: 'transition-started',
-                templateId,
-                transitionKey,
-                targetPath: target,
-            });
-
-            void transition.ready
-                .then(() => {
-                    emitViewTransitionDebug({
-                        phase: 'transition-ready',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                    });
-                })
-                .catch((error: unknown) => {
-                    emitViewTransitionDebug({
-                        phase: 'transition-ready-failed',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                });
-
-            void transition.updateCallbackDone
-                .then(() => {
-                    emitViewTransitionDebug({
-                        phase: 'update-callback-done',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                    });
-                })
-                .catch((error: unknown) => {
-                    emitViewTransitionDebug({
-                        phase: 'update-callback-failed',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                });
-
-            void transition.finished
-                .then(() => {
-                    emitViewTransitionDebug({
-                        phase: 'transition-finished',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                        durationMs: Math.round(performance.now() - startTime),
-                    });
-                })
-                .catch((error: unknown) => {
-                    emitViewTransitionDebug({
-                        phase: 'transition-failed',
-                        templateId,
-                        transitionKey,
-                        targetPath: target,
-                        durationMs: Math.round(performance.now() - startTime),
-                        error: error instanceof Error ? error.message : String(error),
-                    });
-                });
-        } catch (error) {
-            emitViewTransitionDebug({
-                phase: 'transition-start-failed',
-                templateId,
-                transitionKey,
-                targetPath: target,
-                error: error instanceof Error ? error.message : String(error),
-            });
-            navigation();
-        }
+        navigation();
     }, [navigate, prewarmTripView]);
 
     return (
@@ -235,7 +142,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                     onMouseEnter={prewarmTripView}
                                     onFocus={prewarmTripView}
                                     onTouchStart={prewarmTripView}
-                                    className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
+                                    className="block w-[300px] md:w-[340px] flex-shrink-0 transform-gpu will-change-transform transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
                                     style={{ transform: `rotate(${rotation}deg)` }}
                                     {...(card.templateId
                                         ? getAnalyticsDebugAttributes('home__carousel_card', { template: card.templateId })
@@ -245,7 +152,6 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         card={card}
                                         mapPreviewUrl={mapPreviewUrl}
                                         miniCalendar={miniCalendar}
-                                        enableSharedTransition={activeTransitionCardKey === transitionKey}
                                     />
                                 </button>
                             );
