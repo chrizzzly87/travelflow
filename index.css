@@ -453,6 +453,15 @@ h6,
   z-index: 9999;
 }
 
+.example-city-lane {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.example-city-lane:hover {
+  transform: translateY(-1px);
+  box-shadow: 1px 1px 0 1px currentColor;
+}
+
 @utility glass-card {
   background: rgb(255 255 255 / 0.7);
   backdrop-filter: blur(16px);

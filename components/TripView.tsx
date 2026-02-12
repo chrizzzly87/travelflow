@@ -132,7 +132,16 @@ const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
+const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
+
+interface ViewTransitionDebugDetail {
+    phase: string;
+    templateId?: string;
+    useExampleSharedTransition?: boolean;
+    expectedCityLaneCount?: number;
+    reason?: string;
+}
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
 
@@ -300,6 +309,10 @@ export const TripView: React.FC<TripViewProps> = ({
         () => (isTripLockedByExpiry ? buildPaywalledTripDisplay(trip) : trip),
         [isTripLockedByExpiry, trip]
     );
+    const expectedCityLaneCount = useMemo(
+        () => displayTrip.items.filter((item) => item.type === 'city').length,
+        [displayTrip.items]
+    );
     const expirationLabel = useMemo(() => {
         if (!tripExpiresAtMs) return null;
         const date = new Date(tripExpiresAtMs);
@@ -318,6 +331,25 @@ export const TripView: React.FC<TripViewProps> = ({
         if (diffDays === 0) return 'Expires today';
         return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
     }, [tripExpiresAtMs, nowMs]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !trip.isExample) return;
+        window.dispatchEvent(new CustomEvent<ViewTransitionDebugDetail>(VIEW_TRANSITION_DEBUG_EVENT, {
+            detail: {
+                phase: 'trip-view-mounted',
+                templateId: trip.exampleTemplateId,
+                useExampleSharedTransition,
+                expectedCityLaneCount,
+                reason: mapViewTransitionName ? undefined : 'shared-map-anchor-disabled',
+            },
+        }));
+    }, [
+        expectedCityLaneCount,
+        mapViewTransitionName,
+        trip.exampleTemplateId,
+        trip.isExample,
+        useExampleSharedTransition,
+    ]);
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);

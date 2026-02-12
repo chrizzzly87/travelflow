@@ -16,9 +16,11 @@ summary: "Stabilized the homepage example carousel on mobile and upgraded exampl
 - [x] [Improved] 🔗 Added a harmonized “Discover more inspirations” section link below the homepage carousel and tracked clicks via Umami event analytics.
 - [x] [Fixed] ⚡ Reduced delay when opening example trips by prewarming the trip view in the background instead of blocking navigation on click.
 - [x] [Improved] 🗓️ Added minimal bottom calendar lanes on every example card that mirror city stay colors and relative stay/route sizing.
+- [x] [Improved] 🏷️ Added city-lane hover tooltips on example cards with subtle offset outlines derived from each lane color.
 - [x] [Improved] 🧬 Linked example card map/title/city-lane visuals to matching trip-page elements via shared View Transition names for smoother morph animations.
 - [x] [Fixed] 🎞️ Kept shared transition anchors active during first render so example card-to-trip animations trigger reliably even while the map is loading.
 - [x] [Fixed] 🔤 Restored system sans-serif body text and stabilized local Space Grotesk subset loading to avoid visual jumps on resize.
 - [x] [Improved] 🪶 Applied global headline `text-wrap: pretty` for cleaner line breaks across pages.
 - [ ] [Internal] 🧩 Added shared transition-name helpers and example-template mini-calendar data utilities to keep card and trip visual mapping consistent.
+- [ ] [Internal] 🧪 Added View Transition diagnostics to the on-page debugger, including lifecycle events and live anchor audits.
 - [ ] [Internal] 📐 Extended brand guidelines with a documented section-link style and tracking rule to keep content-link UI patterns consistent.

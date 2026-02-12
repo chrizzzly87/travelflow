@@ -10,6 +10,22 @@ import { ExampleTripCard } from './ExampleTripCard';
 
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.8];
 const INSPIRATIONS_LINK = '/inspirations';
+const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
+
+interface ViewTransitionDebugDetail {
+    phase: string;
+    templateId?: string;
+    transitionKey?: string;
+    targetPath?: string;
+    durationMs?: number;
+    reason?: string;
+    error?: string;
+}
+
+const emitViewTransitionDebug = (detail: ViewTransitionDebugDetail): void => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new CustomEvent<ViewTransitionDebugDetail>(VIEW_TRANSITION_DEBUG_EVENT, { detail }));
+};
 
 export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
@@ -74,7 +90,21 @@ export const ExampleTripsCarousel: React.FC = () => {
             },
         });
 
+        emitViewTransitionDebug({
+            phase: 'card-click',
+            templateId,
+            transitionKey,
+            targetPath: target,
+        });
+
         if (!document.startViewTransition) {
+            emitViewTransitionDebug({
+                phase: 'navigate-fallback',
+                templateId,
+                transitionKey,
+                targetPath: target,
+                reason: 'startViewTransition-api-missing',
+            });
             navigation();
             return;
         }
@@ -83,9 +113,88 @@ export const ExampleTripsCarousel: React.FC = () => {
             setActiveTransitionCardKey(transitionKey);
         });
 
-        document.startViewTransition(() => {
-            flushSync(navigation);
-        });
+        const startTime = performance.now();
+
+        try {
+            const transition = document.startViewTransition(() => {
+                flushSync(navigation);
+            });
+
+            emitViewTransitionDebug({
+                phase: 'transition-started',
+                templateId,
+                transitionKey,
+                targetPath: target,
+            });
+
+            void transition.ready
+                .then(() => {
+                    emitViewTransitionDebug({
+                        phase: 'transition-ready',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                    });
+                })
+                .catch((error: unknown) => {
+                    emitViewTransitionDebug({
+                        phase: 'transition-ready-failed',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                });
+
+            void transition.updateCallbackDone
+                .then(() => {
+                    emitViewTransitionDebug({
+                        phase: 'update-callback-done',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                    });
+                })
+                .catch((error: unknown) => {
+                    emitViewTransitionDebug({
+                        phase: 'update-callback-failed',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                });
+
+            void transition.finished
+                .then(() => {
+                    emitViewTransitionDebug({
+                        phase: 'transition-finished',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                        durationMs: Math.round(performance.now() - startTime),
+                    });
+                })
+                .catch((error: unknown) => {
+                    emitViewTransitionDebug({
+                        phase: 'transition-failed',
+                        templateId,
+                        transitionKey,
+                        targetPath: target,
+                        durationMs: Math.round(performance.now() - startTime),
+                        error: error instanceof Error ? error.message : String(error),
+                    });
+                });
+        } catch (error) {
+            emitViewTransitionDebug({
+                phase: 'transition-start-failed',
+                templateId,
+                transitionKey,
+                targetPath: target,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            navigation();
+        }
     }, [navigate, prewarmTripView]);
 
     return (

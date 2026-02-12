@@ -16,7 +16,7 @@ Opens and controls the toolbar.
 Supported calls:
 - `debug()` -> open toolbar
 - `debug(true|false)` -> force open/close
-- `debug({ open, tracking, seo, a11y, simulatedLogin })`
+- `debug({ open, tracking, seo, a11y, simulatedLogin, viewTransition })`
 
 Examples:
 - `debug()`
@@ -39,6 +39,7 @@ Current methods:
 - `openLighthouse()`
 - `runSeoAudit()`
 - `runA11yAudit()`
+- `runViewTransitionAudit()`
 - `getState()`
 
 ### `window.toggleSimulatedLogin(next?)`
@@ -156,9 +157,35 @@ Producer:
 Consumer:
 - Paywall/auth-gated UI (future hooks)
 
+Event name:
+- `tf:view-transition-debug`
+
+Payload shape (common fields):
+```ts
+{
+  phase: string;
+  templateId?: string;
+  transitionKey?: string;
+  targetPath?: string;
+  durationMs?: number;
+  reason?: string;
+  error?: string;
+  useExampleSharedTransition?: boolean;
+  expectedCityLaneCount?: number;
+}
+```
+
+Producers:
+- `ExampleTripsCarousel` (transition lifecycle on click/navigation)
+- `TripView` (example trip mount + shared transition mode)
+
+Consumer:
+- `OnPageDebugger` (View Transition Diagnostics panel)
+
 ## Quick verification checklist
 - `debug()` opens toolbar.
 - Tracking boxes appear on known tracked controls.
+- `onPageDebugger.runViewTransitionAudit()` returns anchor counts for `trip-map`, `trip-title`, and `trip-city-lane-*`.
 - On `/trip/:id`, SEO UI is hidden and `Set Trip Expired` is visible.
 - `window.toggleExpired(true)` shows expired banner and disables editing.
 - `window.toggleSimulatedLogin(true)` sets simulated login to enabled.

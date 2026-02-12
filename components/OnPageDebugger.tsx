@@ -27,6 +27,7 @@ const DEBUG_H1_HIGHLIGHT_STORAGE_KEY = 'tf_debug_h1_highlight';
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
+const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
 
 interface TrackingBox {
@@ -84,6 +85,35 @@ interface DebuggerStateDebugDetail {
     open: boolean;
 }
 
+interface ViewTransitionDebugDetail {
+    phase: string;
+    templateId?: string;
+    transitionKey?: string;
+    targetPath?: string;
+    durationMs?: number;
+    reason?: string;
+    error?: string;
+    useExampleSharedTransition?: boolean;
+    expectedCityLaneCount?: number;
+}
+
+interface ViewTransitionEventEntry {
+    id: string;
+    timestampLabel: string;
+    detail: ViewTransitionDebugDetail;
+}
+
+interface ViewTransitionDiagnostics {
+    supported: boolean;
+    prefersReducedMotion: boolean;
+    route: string;
+    tripMapAnchors: number;
+    tripTitleAnchors: number;
+    tripCityLaneAnchors: number;
+    trackedAnchorNames: string[];
+    updatedAtLabel: string;
+}
+
 interface OnPageDebuggerApi {
     show: () => void;
     hide: () => void;
@@ -96,6 +126,7 @@ interface OnPageDebuggerApi {
     openLighthouse: () => void;
     runSeoAudit: () => AuditResult;
     runA11yAudit: () => AuditResult;
+    runViewTransitionAudit: () => ViewTransitionDiagnostics;
     getState: () => DebugState;
 }
 
@@ -107,6 +138,7 @@ type DebugCommand =
         seo?: boolean;
         a11y?: boolean;
         simulatedLogin?: boolean;
+        viewTransition?: boolean;
     };
 
 declare global {
@@ -193,6 +225,59 @@ const getAccessibleName = (element: HTMLElement): string => {
 
     const text = element.textContent?.replace(/\s+/g, ' ').trim();
     return text ?? '';
+};
+
+const CITY_LANE_TRANSITION_PATTERN = /^trip-city-lane-\d+$/;
+
+const collectTrackedViewTransitionNames = (): string[] => {
+    if (typeof document === 'undefined' || typeof window === 'undefined' || !document.body) return [];
+    const elements = Array.from(document.body.querySelectorAll<HTMLElement>('*'));
+    const found = new Set<string>();
+
+    elements.forEach((element) => {
+        const transitionName = window.getComputedStyle(element).getPropertyValue('view-transition-name').trim();
+        if (!transitionName || transitionName === 'none') return;
+        if (
+            transitionName === 'trip-map'
+            || transitionName === 'trip-title'
+            || CITY_LANE_TRANSITION_PATTERN.test(transitionName)
+        ) {
+            found.add(transitionName);
+        }
+    });
+
+    return Array.from(found).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+};
+
+const buildViewTransitionDiagnostics = (route: string): ViewTransitionDiagnostics => {
+    if (typeof window === 'undefined') {
+        return {
+            supported: false,
+            prefersReducedMotion: false,
+            route,
+            tripMapAnchors: 0,
+            tripTitleAnchors: 0,
+            tripCityLaneAnchors: 0,
+            trackedAnchorNames: [],
+            updatedAtLabel: '',
+        };
+    }
+
+    const trackedAnchorNames = collectTrackedViewTransitionNames();
+    const tripMapAnchors = trackedAnchorNames.filter((name) => name === 'trip-map').length;
+    const tripTitleAnchors = trackedAnchorNames.filter((name) => name === 'trip-title').length;
+    const tripCityLaneAnchors = trackedAnchorNames.filter((name) => CITY_LANE_TRANSITION_PATTERN.test(name)).length;
+
+    return {
+        supported: typeof document.startViewTransition === 'function',
+        prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        route,
+        tripMapAnchors,
+        tripTitleAnchors,
+        tripCityLaneAnchors,
+        trackedAnchorNames,
+        updatedAtLabel: new Date().toLocaleTimeString(),
+    };
 };
 
 const runSeoAudit = (): AuditResult => {
@@ -404,6 +489,10 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
+        buildViewTransitionDiagnostics(`${location.pathname}${location.search}`)
+    );
+    const [viewTransitionEvents, setViewTransitionEvents] = useState<ViewTransitionEventEntry[]>([]);
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
 
     useEffect(() => {
@@ -646,6 +735,18 @@ export const OnPageDebugger: React.FC = () => {
         return result;
     }, []);
 
+    const runViewTransitionAuditAndStore = useCallback(() => {
+        const route = `${location.pathname}${location.search}`;
+        const result = buildViewTransitionDiagnostics(route);
+        setViewTransitionDiagnostics(result);
+        return result;
+    }, [location.pathname, location.search]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        runViewTransitionAuditAndStore();
+    }, [isOpen, location.pathname, location.search, runViewTransitionAuditAndStore]);
+
     const toggleAutoOpen = useCallback(() => {
         const next = !autoOpenEnabled;
         setAutoOpenEnabled(next);
@@ -697,6 +798,33 @@ export const OnPageDebugger: React.FC = () => {
         setTripExpiredDebug(resolved);
     }, []);
 
+    const handleViewTransitionDebugEvent = useCallback((event: Event) => {
+        const customEvent = event as CustomEvent<ViewTransitionDebugDetail | undefined>;
+        const detail = customEvent.detail;
+        if (!detail || typeof detail.phase !== 'string') return;
+
+        setViewTransitionEvents((prev) => {
+            const nextEntry: ViewTransitionEventEntry = {
+                id: `${Date.now()}-${detail.phase}-${Math.random().toString(16).slice(2, 8)}`,
+                timestampLabel: new Date().toLocaleTimeString(),
+                detail,
+            };
+            return [nextEntry, ...prev].slice(0, 10);
+        });
+
+        if (isOpen) {
+            runViewTransitionAuditAndStore();
+        }
+    }, [isOpen, runViewTransitionAuditAndStore]);
+
+    useEffect(() => {
+        const handler = (event: Event) => handleViewTransitionDebugEvent(event);
+        window.addEventListener(VIEW_TRANSITION_DEBUG_EVENT, handler as EventListener);
+        return () => {
+            window.removeEventListener(VIEW_TRANSITION_DEBUG_EVENT, handler as EventListener);
+        };
+    }, [handleViewTransitionDebugEvent]);
+
     const api = useMemo<OnPageDebuggerApi>(() => ({
         show: () => {
             setIsOpen(true);
@@ -713,8 +841,9 @@ export const OnPageDebugger: React.FC = () => {
         openLighthouse,
         runSeoAudit: runSeoAuditAndStore,
         runA11yAudit: runA11yAuditAndStore,
+        runViewTransitionAudit: runViewTransitionAuditAndStore,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
+    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
@@ -745,6 +874,9 @@ export const OnPageDebugger: React.FC = () => {
                 if (command.a11y) {
                     runA11yAuditAndStore();
                 }
+                if (command.viewTransition) {
+                    runViewTransitionAuditAndStore();
+                }
                 return api;
             }
 
@@ -764,7 +896,7 @@ export const OnPageDebugger: React.FC = () => {
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
         };
-    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, showSeoTools, toggleSimulatedLogin]);
 
     useEffect(() => {
         return () => {
@@ -837,6 +969,13 @@ export const OnPageDebugger: React.FC = () => {
                         </span>
                         <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
                             {trackingBoxes.length} tracked in viewport
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            viewTransitionDiagnostics.supported
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-amber-300 bg-amber-50 text-amber-700'
+                        }`}>
+                            VT API {viewTransitionDiagnostics.supported ? 'on' : 'off'}
                         </span>
                         {showSeoTools && seoAudit && (
                             <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -977,6 +1116,15 @@ export const OnPageDebugger: React.FC = () => {
 
                                 <button
                                     type="button"
+                                    onClick={runViewTransitionAuditAndStore}
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <RocketLaunch size={16} weight="duotone" />
+                                    Refresh VT Diagnostics
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={openLighthouse}
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
@@ -1004,7 +1152,8 @@ export const OnPageDebugger: React.FC = () => {
                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                                 <span>
                                     Console: run <code className="rounded bg-slate-200 px-1 py-0.5">debug()</code> to reopen,{' '}
-                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation.
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation,{' '}
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">onPageDebugger.runViewTransitionAudit()</code> for transition anchors.
                                 </span>
                                 <button
                                     type="button"
@@ -1017,6 +1166,65 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     {autoOpenEnabled ? 'Auto-open enabled' : 'Enable auto-open'}
                                 </button>
+                            </div>
+
+                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <h3 className="font-semibold uppercase tracking-wide text-slate-500">
+                                        View Transition Diagnostics
+                                    </h3>
+                                    <span className="text-slate-500">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
+                                </div>
+
+                                <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">API:</strong>{' '}
+                                        {viewTransitionDiagnostics.supported ? 'available' : 'missing'}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Reduced motion:</strong>{' '}
+                                        {viewTransitionDiagnostics.prefersReducedMotion ? 'on' : 'off'}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Route:</strong> {viewTransitionDiagnostics.route}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Anchors:</strong>{' '}
+                                        map {viewTransitionDiagnostics.tripMapAnchors}, title {viewTransitionDiagnostics.tripTitleAnchors}, lanes {viewTransitionDiagnostics.tripCityLaneAnchors}
+                                    </div>
+                                </div>
+
+                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                    <strong className="text-slate-900">Tracked anchor names:</strong>{' '}
+                                    {viewTransitionDiagnostics.trackedAnchorNames.length > 0
+                                        ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
+                                        : 'none detected'}
+                                </div>
+
+                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                    <strong className="text-slate-900">Recent transition events:</strong>{' '}
+                                    {viewTransitionEvents.length === 0 ? 'none captured yet' : ''}
+                                    {viewTransitionEvents.length > 0 && (
+                                        <ul className="mt-1 space-y-0.5">
+                                            {viewTransitionEvents.map((entry) => (
+                                                <li key={entry.id}>
+                                                    <span className="font-medium text-slate-900">{entry.timestampLabel}</span>{' '}
+                                                    <span className="font-medium">{entry.detail.phase}</span>
+                                                    {entry.detail.templateId ? ` • ${entry.detail.templateId}` : ''}
+                                                    {entry.detail.durationMs ? ` • ${entry.detail.durationMs}ms` : ''}
+                                                    {typeof entry.detail.useExampleSharedTransition === 'boolean'
+                                                        ? ` • shared ${entry.detail.useExampleSharedTransition ? 'on' : 'off'}`
+                                                        : ''}
+                                                    {typeof entry.detail.expectedCityLaneCount === 'number'
+                                                        ? ` • lanes ${entry.detail.expectedCityLaneCount}`
+                                                        : ''}
+                                                    {entry.detail.reason ? ` • ${entry.detail.reason}` : ''}
+                                                    {entry.detail.error ? ` • ${entry.detail.error}` : ''}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
 
                             {showSeoTools && (

@@ -13,6 +13,47 @@ interface ExampleTripCardProps {
     enableSharedTransition?: boolean;
 }
 
+const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const RGB_COLOR_PATTERN = /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i;
+
+const parseHexColor = (color: string): [number, number, number] | null => {
+    const normalized = color.trim();
+    const match = normalized.match(HEX_COLOR_PATTERN);
+    if (!match) return null;
+    const raw = match[1];
+    const expanded = raw.length === 3 ? raw.split('').map((part) => `${part}${part}`).join('') : raw;
+    const red = Number.parseInt(expanded.slice(0, 2), 16);
+    const green = Number.parseInt(expanded.slice(2, 4), 16);
+    const blue = Number.parseInt(expanded.slice(4, 6), 16);
+    if ([red, green, blue].some((channel) => Number.isNaN(channel))) return null;
+    return [red, green, blue];
+};
+
+const parseRgbColor = (color: string): [number, number, number] | null => {
+    const match = color.trim().match(RGB_COLOR_PATTERN);
+    if (!match) return null;
+    const red = Number.parseFloat(match[1]);
+    const green = Number.parseFloat(match[2]);
+    const blue = Number.parseFloat(match[3]);
+    if ([red, green, blue].some((channel) => !Number.isFinite(channel))) return null;
+    return [Math.round(red), Math.round(green), Math.round(blue)];
+};
+
+const buildLaneOutlineColor = (color: string): string => {
+    if (typeof CSS !== 'undefined' && CSS.supports?.('color', `color(from ${color} srgb r g b / 0.45)`)) {
+        return `color(from ${color} srgb r g b / 0.45)`;
+    }
+
+    const rgb = parseHexColor(color) || parseRgbColor(color);
+    if (!rgb) return 'rgb(15 23 42 / 0.2)';
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`;
+};
+
+const formatNightsLabel = (nights: number): string => {
+    const rounded = Number.isInteger(nights) ? `${Math.round(nights)}` : nights.toFixed(1).replace(/\.0$/, '');
+    return `${rounded} ${Math.abs(nights - 1) < 0.001 ? 'night' : 'nights'}`;
+};
+
 export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     card,
     mapPreviewUrl,
@@ -162,12 +203,13 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                             return (
                                 <React.Fragment key={cityLane.id}>
                                     <span
-                                        className="block h-[6px] rounded-[1px]"
-                                        title={`${cityLane.title}: ${cityLane.nights} nights`}
+                                        className="example-city-lane block h-[6px] rounded-[1px]"
+                                        data-tooltip={`${cityLane.title}: ${formatNightsLabel(cityLane.nights)}`}
                                         style={{
                                             flexGrow: cityLane.nights,
                                             flexBasis: 0,
                                             backgroundColor: cityLane.color,
+                                            color: buildLaneOutlineColor(cityLane.color),
                                             ...(laneName ? ({ viewTransitionName: laneName } as React.CSSProperties) : {}),
                                         }}
                                     />
