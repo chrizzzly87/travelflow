@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { exampleTripCards } from '../../data/exampleTripCards';
-import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
+import { buildExampleTemplateMapPreviewUrl } from '../../data/exampleTripTemplates';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
 
@@ -9,16 +9,12 @@ import { ExampleTripCard } from './ExampleTripCard';
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.8];
 
 export const ExampleTripsCarousel: React.FC = () => {
-    const navigate = useNavigate();
     // Duplicate the cards array so the marquee loops seamlessly
     const doubledCards = [...exampleTripCards, ...exampleTripCards];
 
-    const handleCardClick = useCallback((templateId: string) => {
-        const factory = TRIP_FACTORIES[templateId];
-        if (!factory) return;
+    const handleCardClick = (templateId: string) => {
         trackEvent('home__carousel_card', { template: templateId });
-        navigate(`/example/${encodeURIComponent(templateId)}`);
-    }, [navigate]);
+    };
 
     return (
         <section id="examples" className="py-16 md:py-24">
@@ -49,11 +45,28 @@ export const ExampleTripsCarousel: React.FC = () => {
                             const mapPreviewUrl = card.templateId
                                 ? buildExampleTemplateMapPreviewUrl(card.templateId)
                                 : null;
+                            const examplePath = card.templateId
+                                ? `/example/${encodeURIComponent(card.templateId)}`
+                                : null;
+
+                            if (!examplePath) {
+                                return (
+                                    <div
+                                        key={`${card.id}-${index}`}
+                                        className="block w-[300px] md:w-[340px] flex-shrink-0 text-left"
+                                        style={{ transform: `rotate(${rotation}deg)` }}
+                                    >
+                                        <ExampleTripCard card={card} mapPreviewUrl={mapPreviewUrl} />
+                                    </div>
+                                );
+                            }
+
                             return (
-                                <button
+                                <Link
                                     key={`${card.id}-${index}`}
-                                    type="button"
-                                    onClick={() => card.templateId && handleCardClick(card.templateId)}
+                                    to={examplePath}
+                                    onClick={() => handleCardClick(card.templateId!)}
+                                    data-prefetch-href={examplePath}
                                     className="block w-[300px] md:w-[340px] flex-shrink-0 transition-transform duration-300 hover:!rotate-0 hover:scale-105 text-left cursor-pointer"
                                     style={{ transform: `rotate(${rotation}deg)` }}
                                     {...(card.templateId
@@ -61,7 +74,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                                         : {})}
                                 >
                                     <ExampleTripCard card={card} mapPreviewUrl={mapPreviewUrl} />
-                                </button>
+                                </Link>
                             );
                         })}
                     </div>

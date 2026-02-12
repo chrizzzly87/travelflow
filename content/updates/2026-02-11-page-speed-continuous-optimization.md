@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.54.0
+version: v0.56.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T06:25:49Z
+published_at: 2026-02-12T07:44:27Z
 status: published
 notify_in_app: true
 in_app_hours: 24
@@ -17,7 +17,9 @@ summary: "Added hybrid BlurHash + Netlify Image CDN delivery, removed eager home
 - [x] [Improved] 🧠 Added immutable cache headers for hashed `/assets/*` files to improve repeat-visit performance.
 - [x] [Fixed] 🤖 Added a valid `robots.txt` and explicitly disallowed crawler access to `/trip/` and `/s/` while keeping all other paths crawlable.
 - [x] [Fixed] 🛠️ Resolved React runtime warnings by switching progressive image `fetchPriority` delivery to a lowercase DOM `fetchpriority` attribute and removing nested anchor markup in Inspirations cards.
+- [x] [Improved] 🚀 Added automatic navigation warmups for likely next routes (hover/focus/touch/viewport/idle) plus Speculation Rules prefetch hints to reduce perceived load time on create-trip/example/blog/inspirations flows.
 - [ ] [Internal] 🧱 Added build-time image placeholder manifest generation (`sharp` + `blurhash`) and integrated it into the production build pipeline.
+- [ ] [Internal] 🧠 Added a centralized route-prefetch target registry and queue with network/device guardrails, session budgets, and debug stats publishing.
 - [ ] [Internal] 🧩 Moved simulated-login debug state helpers into a lightweight standalone service to decouple debug toggles from Supabase runtime imports.
 - [ ] [Internal] 🎨 Deferred Prism theme CSS loading to the admin benchmark route so non-admin pages avoid that render-blocking stylesheet.
 - [ ] [Internal] 🧹 Production builds now prune `console.log/info/debug` calls while retaining warnings/errors.

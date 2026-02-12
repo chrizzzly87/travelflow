@@ -15,6 +15,8 @@ import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
+import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
+import { SpeculationRulesManager } from './components/SpeculationRulesManager';
 
 type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
@@ -1043,6 +1045,8 @@ const AppContent: React.FC = () => {
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ScrollToTop />
             <ViewTransitionHandler />
+            <NavigationPrefetchManager />
+            <SpeculationRulesManager />
             <Routes>
                 <Route 
                     path="/" 

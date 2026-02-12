@@ -18,6 +18,12 @@ import {
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
+import {
+    PREFETCH_STATS_DEBUG_EVENT,
+    getPrefetchStats,
+    isNavPrefetchEnabled,
+    type PrefetchStats,
+} from '../services/navigationPrefetch';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -404,7 +410,13 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
+    const isPrefetchEnabled = isNavPrefetchEnabled();
+    const totalPrefetchSkips = prefetchStats.skippedDisabled
+        + prefetchStats.skippedNetwork
+        + prefetchStats.skippedBudget
+        + prefetchStats.skippedUnsupportedPath;
 
     useEffect(() => {
         if (autoOpenEnabled) {
@@ -447,6 +459,19 @@ export const OnPageDebugger: React.FC = () => {
     useEffect(() => {
         persistStoredDebuggerBoolean(SIMULATED_LOGIN_STORAGE_KEY, simulatedLoggedIn, false);
     }, [simulatedLoggedIn]);
+
+    useEffect(() => {
+        setPrefetchStats(getPrefetchStats());
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent<PrefetchStats>).detail;
+            if (!detail) return;
+            setPrefetchStats(detail);
+        };
+        window.addEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        return () => {
+            window.removeEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        };
+    }, []);
 
     useEffect(() => {
         setMetaSnapshot(readMetaSnapshot());
@@ -838,6 +863,19 @@ export const OnPageDebugger: React.FC = () => {
                         <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
                             {trackingBoxes.length} tracked in viewport
                         </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            isPrefetchEnabled
+                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                        }`}>
+                            Prefetch {isPrefetchEnabled ? 'on' : 'off'}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Prefetch {prefetchStats.completed}/{prefetchStats.attempts}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Prefetch skips {totalPrefetchSkips}
+                        </span>
                         {showSeoTools && seoAudit && (
                             <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
                                 SEO {seoAudit.passCount}/{seoAudit.checks.length}
@@ -1017,6 +1055,34 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     {autoOpenEnabled ? 'Auto-open enabled' : 'Enable auto-open'}
                                 </button>
+                            </div>
+
+                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                <div className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</div>
+                                <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Attempts:</strong> {prefetchStats.attempts}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Completed:</strong> {prefetchStats.completed}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Skips:</strong> {totalPrefetchSkips}
+                                    </div>
+                                </div>
+                                <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Skip reasons:</strong>{' '}
+                                        disabled {prefetchStats.skippedDisabled}, network {prefetchStats.skippedNetwork}, budget {prefetchStats.skippedBudget}, unsupported {prefetchStats.skippedUnsupportedPath}
+                                    </div>
+                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                        <strong className="text-slate-900">Triggers:</strong>{' '}
+                                        hover {prefetchStats.reasons.hover}, focus {prefetchStats.reasons.focus}, pointer {prefetchStats.reasons.pointerdown}, touch {prefetchStats.reasons.touchstart}, viewport {prefetchStats.reasons.viewport}, idle {prefetchStats.reasons.idle}
+                                    </div>
+                                </div>
                             </div>
 
                             {showSeoTools && (
