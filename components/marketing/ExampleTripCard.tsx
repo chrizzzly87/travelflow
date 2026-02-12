@@ -1,17 +1,30 @@
 import React from 'react';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import type { ExampleTripCard as ExampleTripCardType } from '../../data/exampleTripCards';
+import type { ExampleTemplateMiniCalendar } from '../../data/exampleTripTemplates';
+import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
     mapPreviewUrl?: string | null;
+    miniCalendar?: ExampleTemplateMiniCalendar | null;
+    enableSharedTransition?: boolean;
 }
 
-export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPreviewUrl }) => {
+export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
+    card,
+    mapPreviewUrl,
+    miniCalendar = null,
+    enableSharedTransition = false,
+}) => {
     const staticFallbackSrc = card.mapImagePath
         ? `${card.mapImagePath}?v=palette-20260210d`
         : null;
     const [mapImageSrc, setMapImageSrc] = React.useState<string | null>(mapPreviewUrl || staticFallbackSrc);
+    const mapViewTransitionName = getExampleMapViewTransitionName(enableSharedTransition);
+    const titleViewTransitionName = getExampleTitleViewTransitionName(enableSharedTransition);
+    const cityLanes = miniCalendar?.cityLanes || [];
+    const routeLanes = miniCalendar?.routeLanes || [];
 
     React.useEffect(() => {
         setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
@@ -28,7 +41,10 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPrevi
     return (
         <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
             {/* Map area */}
-            <div className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}>
+            <div
+                className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}
+                style={mapViewTransitionName ? ({ viewTransitionName: mapViewTransitionName } as React.CSSProperties) : undefined}
+            >
                 {mapImageSrc ? (
                     <img
                         src={mapImageSrc}
@@ -61,7 +77,12 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPrevi
 
             {/* Body */}
             <div className="p-4">
-                <h3 className="text-base font-bold text-slate-900">{card.title}</h3>
+                <h3
+                    className="text-base font-bold text-slate-900"
+                    style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
+                >
+                    {card.title}
+                </h3>
 
                 {/* Country flags + names */}
                 <div className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-600">
@@ -104,8 +125,46 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPrevi
                 </div>
             </div>
 
+            {/* Mini calendar lane */}
+            {cityLanes.length > 0 && (
+                <div className="border-t border-slate-100 px-4 py-2.5">
+                    <div className="flex items-center gap-[2px]">
+                        {cityLanes.map((cityLane, index) => {
+                            const routeLane = routeLanes[index];
+                            const laneName = getExampleCityLaneViewTransitionName(enableSharedTransition, index);
+                            return (
+                                <React.Fragment key={cityLane.id}>
+                                    <span
+                                        className="block h-[6px] rounded-[1px]"
+                                        title={`${cityLane.title}: ${cityLane.nights} nights`}
+                                        style={{
+                                            flexGrow: cityLane.nights,
+                                            flexBasis: 0,
+                                            backgroundColor: cityLane.color,
+                                            ...(laneName ? ({ viewTransitionName: laneName } as React.CSSProperties) : {}),
+                                        }}
+                                    />
+                                    {routeLane && (
+                                        <span
+                                            className="block h-[3px] self-center rounded-[1px]"
+                                            title={`Route leg: ${routeLane.durationDays.toFixed(2)} days`}
+                                            style={{
+                                                flexGrow: routeLane.durationDays,
+                                                flexBasis: 0,
+                                                backgroundColor: routeLane.color,
+                                                opacity: 0.45,
+                                            }}
+                                        />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Footer */}
-            <div className="border-t border-slate-100 px-4 py-3 flex items-center gap-2">
+            <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} px-4 py-3 flex items-center gap-2`}>
                 <div className={`h-6 w-6 rounded-full ${card.avatarColor} flex items-center justify-center text-white text-[10px] font-bold`}>
                     {card.username[0].toUpperCase()}
                 </div>

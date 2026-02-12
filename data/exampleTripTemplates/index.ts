@@ -1,5 +1,5 @@
-import { ITrip, MapColorMode, MapStyle, RouteMode } from '../../types';
-import { CityColorPaletteId, applyCityPaletteToItems, getHexFromColorClass } from '../../utils';
+import { ITimelineItem, ITrip, MapColorMode, MapStyle, RouteMode } from '../../types';
+import { CityColorPaletteId, applyCityPaletteToItems, findTravelBetweenCities, getHexFromColorClass } from '../../utils';
 
 // Re-export validation
 export { validateTripSchema } from './_validation';
@@ -156,6 +156,60 @@ export const TRIP_FACTORIES: Record<string, (startDate: string) => ITrip> = {
     'new-zealand-wild': (startDate) => applyTemplateConfigToTrip('new-zealand-wild', createNewZealandTrip(startDate)),
     'morocco-medina': (startDate) => applyTemplateConfigToTrip('morocco-medina', createMoroccoTrip(startDate)),
     'iceland-ring': (startDate) => applyTemplateConfigToTrip('iceland-ring', createIcelandTrip(startDate)),
+};
+
+export interface ExampleTemplateMiniCalendarCityLane {
+    id: string;
+    title: string;
+    nights: number;
+    color: string;
+}
+
+export interface ExampleTemplateMiniCalendarRouteLane {
+    id: string;
+    durationDays: number;
+    color: string;
+}
+
+export interface ExampleTemplateMiniCalendar {
+    cityLanes: ExampleTemplateMiniCalendarCityLane[];
+    routeLanes: ExampleTemplateMiniCalendarRouteLane[];
+}
+
+const resolveTemplateCityItems = (templateId: string): ITimelineItem[] => {
+    const template = TRIP_TEMPLATES[templateId];
+    return (template?.items || [])
+        .filter((item): item is ITimelineItem => item.type === 'city')
+        .sort((a, b) => a.startDateOffset - b.startDateOffset);
+};
+
+export const getExampleTemplateMiniCalendar = (templateId: string): ExampleTemplateMiniCalendar | null => {
+    const template = TRIP_TEMPLATES[templateId];
+    const allItems = template?.items || [];
+    const cityItems = resolveTemplateCityItems(templateId);
+
+    if (cityItems.length === 0) return null;
+
+    const cityLanes: ExampleTemplateMiniCalendarCityLane[] = cityItems.map((city, index) => ({
+        id: city.id || `city-${index + 1}`,
+        title: city.title || `City ${index + 1}`,
+        nights: Math.max(0.5, Number.isFinite(city.duration) ? city.duration : 1),
+        color: getHexFromColorClass(city.color || '#4f46e5'),
+    }));
+
+    const routeLanes: ExampleTemplateMiniCalendarRouteLane[] = cityItems
+        .slice(0, -1)
+        .map((fromCity, index) => {
+            const toCity = cityItems[index + 1];
+            const travelItem = findTravelBetweenCities(allItems, fromCity, toCity);
+            return {
+                id: travelItem?.id || `route-${fromCity.id}-${toCity.id}`,
+                durationDays: Math.max(0.1, travelItem?.duration ?? 0.2),
+                color: getHexFromColorClass(fromCity.color || '#4f46e5'),
+            };
+        });
+
+    return { cityLanes, routeLanes };
 };
 
 export const buildExampleTemplateMapPreviewUrl = (
