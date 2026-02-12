@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { X, Flask } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 const STORAGE_KEY = 'tf_early_access_dismissed';
 
 export const EarlyAccessBanner: React.FC = () => {
+    const { t } = useTranslation('common');
     const [dismissed, setDismissed] = useState(() => {
         try {
             return localStorage.getItem(STORAGE_KEY) === '1';
@@ -30,15 +32,15 @@ export const EarlyAccessBanner: React.FC = () => {
             <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-5 py-2.5 md:px-8">
                 <Flask size={16} weight="duotone" className="shrink-0 text-amber-600" />
                 <p className="flex-1 text-xs leading-relaxed text-amber-900 sm:text-sm">
-                    <span className="font-bold">Early preview</span>
-                    <span className="mx-1.5 text-amber-400">—</span>
-                    TravelFlow is under active development. Features may change, and some things might not work perfectly yet.
+                    <span className="font-bold">{t('earlyAccess.tag')}</span>
+                    <span className="mx-1.5 text-amber-400">-</span>
+                    {t('earlyAccess.message')}
                 </p>
                 <button
                     type="button"
                     onClick={handleDismiss}
                     className="shrink-0 rounded-lg p-1.5 text-amber-500 transition-colors hover:bg-amber-100 hover:text-amber-700"
-                    aria-label="Dismiss banner"
+                    aria-label={t('earlyAccess.dismiss')}
                     {...getAnalyticsDebugAttributes('banner__early_access--dismiss')}
                 >
                     <X size={14} weight="bold" />

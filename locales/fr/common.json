@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "features": "Fonctionnalités",
+    "inspirations": "Inspirations",
+    "updates": "Nouveautés",
+    "blog": "Blog",
+    "pricing": "Tarifs",
+    "login": "Connexion",
+    "createTrip": "Créer un voyage",
+    "myTrips": "Mes voyages",
+    "openMenu": "Ouvrir le menu"
+  },
+  "footer": {
+    "rightsReserved": "© {year} {appName}. Tous droits réservés.",
+    "imprint": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "cookies": "Cookies",
+    "legalNotice": "Le contenu juridique est provisoire et doit être remplacé par des textes validés avant la mise en production."
+  },
+  "language": {
+    "label": "Langue",
+    "en": "English",
+    "de": "Deutsch",
+    "fr": "Français",
+    "it": "Italiano",
+    "ru": "Русский"
+  },
+  "buttons": {
+    "startPlanning": "Commencer",
+    "seeExampleTrips": "Voir des exemples de voyages",
+    "startPlanningFree": "Commencer — Gratuit",
+    "done": "Terminé",
+    "essentialOnly": "Essentiel uniquement",
+    "acceptAll": "Tout accepter",
+    "backToBlog": "Retour au blog",
+    "all": "Tous"
+  },
+  "earlyAccess": {
+    "tag": "Aperçu anticipé",
+    "message": "{appName} est en développement actif. Les fonctionnalités peuvent évoluer et certains éléments ne sont pas encore parfaits.",
+    "dismiss": "Fermer la bannière"
+  },
+  "cookieBanner": {
+    "message": "Nous utilisons des cookies essentiels pour garantir la stabilité de {appName} et des cookies optionnels pour améliorer l'expérience. Voir notre",
+    "policyLinkLabel": "Politique de cookies"
+  }
+}

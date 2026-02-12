@@ -1,0 +1,34 @@
+{
+  "index": {
+    "pill": "Blog",
+    "title": "Insight per pianificare il viaggio",
+    "description": "Guide, consigli e approfondimenti per organizzare viaggi in modo più intelligente — dai weekend fuori porta alle avventure multi-città.",
+    "searchPlaceholder": "Cerca articoli…",
+    "result": "{count} risultato",
+    "results": "{count} risultati",
+    "noSearch": "Nessun articolo trovato per \"{query}\". Prova un'altra parola chiave.",
+    "noTag": "Nessun articolo trovato per questo tag.",
+    "readTime": "{minutes} min di lettura",
+    "languageFilterAriaLabel": "Filtra le lingue del blog",
+    "languageFilter": {
+      "nativeOnly": "Solo italiano",
+      "nativeAndEnglish": "Italiano + inglese",
+      "englishOnly": "Solo inglese"
+    },
+    "englishArticleNotice": "Questo articolo è scritto in inglese.",
+    "ctaTitle": "Pronto a pianificare il tuo viaggio?",
+    "ctaDescription": "Trasforma queste idee in un itinerario reale. La nostra IA crea il tuo piano giorno per giorno in pochi secondi."
+  },
+  "post": {
+    "notFoundTitle": "Articolo non trovato",
+    "notFoundDescription": "L'articolo che stai cercando non esiste.",
+    "inThisArticle": "In questo articolo",
+    "related": "Correlati",
+    "planTripTitle": "Pianifica il tuo viaggio",
+    "planTripDescription": "Trasforma ciò che hai letto in un itinerario reale — con l'AI, giorno per giorno.",
+    "explore": "Esplora",
+    "allArticles": "Tutti gli articoli",
+    "tripInspirations": "Ispirazioni di viaggio",
+    "relatedArticles": "Articoli correlati"
+  }
+}

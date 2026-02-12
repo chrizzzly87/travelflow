@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ReleasePill } from '../components/marketing/ReleasePill';
 import { getPublishedReleaseNotes, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -65,6 +66,7 @@ const readInitialSimulatedLogin = (): boolean => {
 };
 
 export const UpdatesPage: React.FC = () => {
+    const { t } = useTranslation('pages');
     const releases = useMemo(() => getPublishedReleaseNotes(), []);
     const [isDebuggerOpen, setIsDebuggerOpen] = useState<boolean>(() => readInitialDebuggerOpen());
     const [isSimulatedLoggedIn, setIsSimulatedLoggedIn] = useState<boolean>(() => readInitialSimulatedLogin());
@@ -122,7 +124,7 @@ export const UpdatesPage: React.FC = () => {
     return (
         <MarketingLayout>
             <section className="pt-5 pb-10 text-center md:pb-12">
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">News & Updates</h1>
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('updates.title')}</h1>
             </section>
 
             <section className="mt-2 space-y-4">

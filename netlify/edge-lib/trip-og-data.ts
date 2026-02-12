@@ -1,8 +1,10 @@
+import { APP_DEFAULT_DESCRIPTION } from "../../config/appGlobals.ts";
+
 const TRIP_VERSION_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const DEFAULT_SUMMARY_TITLE = "Shared Trip";
-const DEFAULT_DESCRIPTION = "Plan and share travel routes with TravelFlow.";
+const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const DEFAULT_MAP_LANGUAGE = "en";
 const DEFAULT_OG_MAP_STYLE: OgMapStyle = "clean";
 const DEFAULT_OG_ROUTE_MODE: OgRouteMode = "simple";

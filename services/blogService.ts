@@ -1,4 +1,6 @@
 import { buildBlogImageSeed, getBlogImageMedia } from '../data/blogImageMedia';
+import { AppLanguage } from '../types';
+import { DEFAULT_LOCALE, isLocale } from '../config/locales';
 
 export type BlogStatus = 'published' | 'draft';
 
@@ -27,6 +29,8 @@ export interface BlogPostImages {
 
 export interface BlogPost {
     slug: string;
+    language: AppLanguage;
+    translationGroup: string;
     title: string;
     date: string;
     publishedAt: string;
@@ -93,6 +97,9 @@ const parseTags = (raw: string | undefined): string[] => {
 const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
     const { meta, body } = parseFrontmatter(raw);
     const slug = meta.slug || '';
+    const languageRaw = meta.language?.trim().toLowerCase() || DEFAULT_LOCALE;
+    const language = isLocale(languageRaw) ? languageRaw : DEFAULT_LOCALE;
+    const translationGroup = meta.translation_group?.trim() || slug;
     const title = meta.title || 'Untitled';
     const date = meta.date || new Date(0).toISOString().slice(0, 10);
     const publishedAt = meta.published_at || `${date}T00:00:00Z`;
@@ -126,6 +133,8 @@ const parseBlogFile = (sourcePath: string, raw: string): BlogPost | null => {
 
     return {
         slug,
+        language,
+        translationGroup,
         title,
         date,
         publishedAt,
@@ -156,16 +165,36 @@ const allBlogPosts: BlogPost[] = Object.entries(BLOG_FILES)
 
 export const getAllBlogPosts = (): BlogPost[] => allBlogPosts;
 
-export const getPublishedBlogPosts = (): BlogPost[] => {
+export const getPublishedBlogPosts = (locale: AppLanguage = DEFAULT_LOCALE): BlogPost[] => {
+    return allBlogPosts.filter((post) => post.status === 'published' && post.language === locale);
+};
+
+export const getPublishedBlogPostsForLocales = (locales: ReadonlyArray<AppLanguage>): BlogPost[] => {
+    if (locales.length === 0) return [];
+    const allowed = new Set<AppLanguage>(locales);
+    return allBlogPosts.filter((post) => post.status === 'published' && allowed.has(post.language));
+};
+
+export const getPublishedBlogPostsAllLocales = (): BlogPost[] => {
     return allBlogPosts.filter((post) => post.status === 'published');
 };
 
-export const getBlogPostBySlug = (slug: string): BlogPost | undefined => {
-    return allBlogPosts.find((post) => post.slug === slug);
+export const getBlogPostBySlug = (slug: string, locale: AppLanguage = DEFAULT_LOCALE): BlogPost | undefined => {
+    return allBlogPosts.find((post) => post.slug === slug && post.language === locale);
 };
 
-export const getBlogPostsBySlugs = (slugs: string[]): BlogPost[] => {
+export const getBlogPostTranslations = (translationGroup: string): BlogPost[] => {
+    return allBlogPosts
+        .filter((post) => post.translationGroup === translationGroup && post.status === 'published')
+        .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+};
+
+export const hasBlogPostInLocale = (slug: string, locale: AppLanguage): boolean => {
+    return Boolean(getBlogPostBySlug(slug, locale));
+};
+
+export const getBlogPostsBySlugs = (slugs: string[], locale: AppLanguage = DEFAULT_LOCALE): BlogPost[] => {
     if (!slugs || slugs.length === 0) return [];
     const slugSet = new Set(slugs);
-    return allBlogPosts.filter((post) => slugSet.has(post.slug) && post.status === 'published');
+    return allBlogPosts.filter((post) => slugSet.has(post.slug) && post.status === 'published' && post.language === locale);
 };

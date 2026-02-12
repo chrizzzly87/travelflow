@@ -14,10 +14,11 @@ import {
   type TripOgMapLabel,
   type OgRouteMode,
 } from "../edge-lib/trip-og-data.ts";
+import { APP_NAME } from "../../config/appGlobals.ts";
 
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
-const SITE_NAME = "TravelFlow";
+const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
 const LOCAL_HEADLINE_FONT_PATH =
   "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2";
@@ -546,7 +547,7 @@ export default async (request: Request): Promise<Response> => {
                   }}
                 >
                   <div style={{ display: "flex", transform: "rotate(-3deg)" }}>
-                    {iconImage(FOOTER_PLANE_ICON_URI, "TravelFlow plane logo")}
+                    {iconImage(FOOTER_PLANE_ICON_URI, `${SITE_NAME} plane logo`)}
                   </div>
                 </div>
                 <div

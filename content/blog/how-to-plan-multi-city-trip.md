@@ -1,5 +1,7 @@
 ---
 slug: how-to-plan-multi-city-trip
+language: en
+translation_group: how-to-plan-multi-city-trip
 title: "How to Plan the Perfect Multi-City Trip"
 date: 2026-02-05
 published_at: 2026-02-05T10:00:00Z

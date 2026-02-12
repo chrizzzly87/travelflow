@@ -1,0 +1,48 @@
+{
+  "nav": {
+    "features": "Funktionen",
+    "inspirations": "Inspirationen",
+    "updates": "Neuigkeiten",
+    "blog": "Blog",
+    "pricing": "Preise",
+    "login": "Anmelden",
+    "createTrip": "Reise erstellen",
+    "myTrips": "Meine Reisen",
+    "openMenu": "Menü öffnen"
+  },
+  "footer": {
+    "rightsReserved": "© {year} {appName}. Alle Rechte vorbehalten.",
+    "imprint": "Impressum",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "cookies": "Cookies",
+    "legalNotice": "Die Rechtstexte sind Platzhalter und müssen vor dem Launch durch freigegebene Inhalte ersetzt werden."
+  },
+  "language": {
+    "label": "Sprache",
+    "en": "English",
+    "de": "Deutsch",
+    "fr": "Français",
+    "it": "Italiano",
+    "ru": "Русский"
+  },
+  "buttons": {
+    "startPlanning": "Jetzt planen",
+    "seeExampleTrips": "Beispielreisen ansehen",
+    "startPlanningFree": "Jetzt planen — kostenlos",
+    "done": "Fertig",
+    "essentialOnly": "Nur essenziell",
+    "acceptAll": "Alle akzeptieren",
+    "backToBlog": "Zurück zum Blog",
+    "all": "Alle"
+  },
+  "earlyAccess": {
+    "tag": "Früher Zugriff",
+    "message": "{appName} befindet sich in aktiver Entwicklung. Funktionen können sich ändern und einige Dinge funktionieren eventuell noch nicht perfekt.",
+    "dismiss": "Hinweis schließen"
+  },
+  "cookieBanner": {
+    "message": "Wir verwenden essenzielle Cookies, um {appName} stabil zu halten, und optionale Cookies zur Verbesserung der Nutzung. Siehe unsere",
+    "policyLinkLabel": "Cookie-Richtlinie"
+  }
+}

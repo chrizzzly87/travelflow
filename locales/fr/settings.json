@@ -1,0 +1,31 @@
+{
+  "title": "Paramètres",
+  "tabs": {
+    "layout": "Disposition",
+    "appearance": "Apparence",
+    "language": "Langue"
+  },
+  "layout": {
+    "timelineOrientation": "Orientation de la frise",
+    "horizontal": "Horizontale",
+    "horizontalDescription": "Vue Gantt classique. Idéale pour voir les chevauchements.",
+    "vertical": "Verticale",
+    "verticalDescription": "Vue liste adaptée au mobile. Plus lisible sur petits écrans."
+  },
+  "appearance": {
+    "mapTiles": "Style de carte",
+    "minimal": "Minimal",
+    "minimalDescription": "Clair et focalisé",
+    "standard": "Standard",
+    "standardDescription": "Par défaut Google",
+    "dark": "Sombre",
+    "darkDescription": "Mode nuit",
+    "satellite": "Satellite",
+    "satelliteDescription": "Vue aérienne"
+  },
+  "language": {
+    "noteTitle": "Langue de la carte",
+    "noteDescription": "Les libellés de carte suivent ce réglage.",
+    "appLanguage": "Langue de l'application"
+  }
+}

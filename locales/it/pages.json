@@ -1,0 +1,101 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "Ispirazioni di viaggio",
+      "title": "Dove andrai la prossima volta?",
+      "description": "Non sai da dove iniziare? Esplora idee di viaggio per tema, mese, paese o festival in arrivo. Clicca un itinerario e usalo come punto di partenza."
+    },
+    "searchPlaceholder": "Cerca destinazioni, festival, paesi...",
+    "searchResultLabel": "{count} risultati",
+    "noResults": "Nessun risultato per \"{query}\". Prova con un'altra parola.",
+    "searchSections": {
+      "destinations": "Destinazioni",
+      "eventsFestivals": "Eventi e festival",
+      "weekendGetaways": "Weekend getaway"
+    },
+    "jumpTo": "Vai a",
+    "quickStart": "Avvio rapido",
+    "sections": {
+      "byTheme": "Per tema",
+      "byMonth": "Per mese",
+      "byCountry": "Per paese",
+      "eventsFestivals": "Eventi e festival",
+      "weekendGetaways": "Weekend getaway",
+      "bestTimeTitle": "Periodo migliore per viaggiare",
+      "browseCountryTitle": "Esplora per paese",
+      "upcomingFestivalsTitle": "Eventi e festival in arrivo",
+      "weekendTitle": "Weekend spontanei"
+    },
+    "links": {
+      "allThemes": "Tutti i temi",
+      "monthGuide": "Guida mensile",
+      "allCountries": "Tutti i paesi",
+      "allEvents": "Tutti gli eventi",
+      "viewAllEvents": "Vedi tutti i {count} eventi",
+      "allGetaways": "Tutte le idee weekend"
+    },
+    "stats": {
+      "curatedDestinations": "Destinazioni curate",
+      "countriesCovered": "Paesi coperti",
+      "festivalsEvents": "Festival ed eventi",
+      "weekendGetaways": "Weekend getaway"
+    },
+    "bottomCta": {
+      "title": "Ti senti ispirato?",
+      "description": "Scegli una destinazione e lascia che la nostra IA trasformi l'idea in un piano giorno per giorno in pochi secondi.",
+      "button": "Inizia ora"
+    },
+    "subpages": {
+      "backToInspirations": "Torna alle ispirazioni",
+      "comingSoon": "In arrivo",
+      "themes": {
+        "pill": "Temi di viaggio",
+        "title": "Viaggia per tema",
+        "description": "Avventura, cibo o fotografia rilassata: trova idee curate che corrispondono al tuo stile.",
+        "comingSoonDescription": "Pagine tematiche complete con itinerari dettagliati, checklist e consigli locali in arrivo."
+      },
+      "bestTime": {
+        "pill": "Periodo migliore",
+        "title": "Quando andare e dove",
+        "description": "Ogni destinazione ha il suo periodo ideale. Usa la guida mese per mese per scegliere il momento migliore.",
+        "comingSoonDescription": "Guide stagionali dettagliate con meteo, avvisi di alta stagione e consigli di budget in arrivo."
+      },
+      "countries": {
+        "pill": "Esplora per paese",
+        "title": "Esplora destinazioni per paese",
+        "description": "Dai ciliegi del Giappone alle coste del Portogallo, scopri guide paese con consigli pratici.",
+        "comingSoonDescription": "Profili paese dettagliati con visti, budget e itinerari multi-città in arrivo."
+      },
+      "festivals": {
+        "pill": "Eventi e festival",
+        "title": "Pianifica il viaggio intorno a un festival",
+        "description": "Le celebrazioni più grandi meritano più di un volo last minute. Scopri i festival in arrivo e costruisci l'itinerario intorno all'evento.",
+        "comingSoonDescription": "Guide festival dettagliate con programmi, consigli alloggio e suggerimenti giorno per giorno in arrivo."
+      },
+      "weekendGetaways": {
+        "pill": "Weekend getaway",
+        "title": "Fughe rapide per chi ha poco tempo",
+        "description": "Non servono due settimane di ferie per un viaggio memorabile. Queste idee brevi sono pensate per partenze spontanee.",
+        "comingSoonDescription": "Template weekend con opzioni treno o volo, budget stimati e checklist in arrivo."
+      },
+      "country": {
+        "notFoundTitle": "Paese non trovato",
+        "notFoundDescription": "Non abbiamo ancora dati di ispirazione per \"{country}\".",
+        "pill": "Guida paese",
+        "title": "Viaggia in {country}",
+        "description": "Tutto ciò che serve per pianificare un viaggio in {country}: periodi migliori, itinerari popolari e consigli utili.",
+        "comingSoonDescription": "Guide dettagliate per {country} - città, cultura, visti e itinerari multi-giorno - in arrivo.",
+        "cta": "Pianifica un viaggio in {country}"
+      }
+    }
+  },
+  "updates": {
+    "title": "Novità"
+  },
+  "shareUnavailable": {
+    "title": "Questo viaggio condiviso non è più disponibile",
+    "description": "Il link potrebbe essere scaduto o disattivato dal proprietario del viaggio. Chiedi un nuovo link o crea il tuo viaggio.",
+    "backToHomepage": "Torna alla home",
+    "createNewTrip": "Crea nuovo viaggio"
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { exampleTripCards } from '../../data/exampleTripCards';
 import { buildExampleTemplateMapPreviewUrl, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -10,6 +11,7 @@ const ROTATIONS = [-2, 1.5, -1, 2, -1.5, 1, -2.5, 1.8];
 
 export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation('home');
     // Duplicate the cards array so the marquee loops seamlessly
     const doubledCards = [...exampleTripCards, ...exampleTripCards];
 
@@ -25,10 +27,10 @@ export const ExampleTripsCarousel: React.FC = () => {
             {/* Heading stays within parent max-w via normal flow */}
             <div className="animate-scroll-blur-in">
                 <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-                    Trips built with TravelFlow
+                    {t('examples.title')}
                 </h2>
                 <p className="mt-3 max-w-xl text-base text-slate-600">
-                    Browse real itineraries created by our community — from week-long island getaways to cross-country road trips.
+                    {t('examples.subtitle')}
                 </p>
             </div>
 

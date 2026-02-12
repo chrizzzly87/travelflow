@@ -18,6 +18,7 @@ import {
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/dbService';
+import { APP_NAME } from '../config/appGlobals';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -136,8 +137,11 @@ const describePayload = (payloadRaw: string | null): string => {
     }
 };
 
+const APP_NAME_REGEX_SAFE = APP_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const TITLE_SUFFIX_REGEX = new RegExp(`\\s+\\|\\s+${APP_NAME_REGEX_SAFE}$`, 'i');
+
 const ensureTaglessTitle = (rawTitle: string): string =>
-    rawTitle.replace(/\s+\|\s+TravelFlow$/i, '').trim();
+    rawTitle.replace(TITLE_SUFFIX_REGEX, '').trim();
 
 const readMetaSnapshot = (): MetaSnapshot => {
     if (typeof document === 'undefined') {

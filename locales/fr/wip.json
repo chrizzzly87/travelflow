@@ -1,0 +1,12 @@
+{
+  "label": "En cours",
+  "footer": "Plus de détails et d'actions de compte arrivent dans les prochaines versions.",
+  "login": {
+    "title": "Connexion",
+    "description": "L'accès au compte arrive bientôt. La connexion débloquera les fonctionnalités premium et un historique plus long."
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "La FAQ complète est en cours. Pour l'instant, les limites anonymes sont décrites sur la page Tarifs."
+  }
+}

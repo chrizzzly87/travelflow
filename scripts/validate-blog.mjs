@@ -6,6 +6,7 @@ const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 
 const REQUIRED_FIELDS = [
   'slug',
+  'language',
   'title',
   'date',
   'published_at',
@@ -48,6 +49,7 @@ const parseFrontmatter = (raw) => {
 
 const isValidDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
 const isValidDateTime = (value) => Number.isFinite(Date.parse(value));
+const SUPPORTED_LANGUAGES = new Set(['en', 'de', 'fr', 'it', 'ru']);
 
 const validateFile = async (filePath) => {
   const raw = await fs.readFile(filePath, 'utf8');
@@ -77,6 +79,14 @@ const validateFile = async (filePath) => {
 
   if (meta.status && !['published', 'draft'].includes(meta.status.trim().toLowerCase())) {
     errors.push(`invalid status (expected published|draft): ${meta.status}`);
+  }
+
+  if (meta.language && !SUPPORTED_LANGUAGES.has(meta.language.trim().toLowerCase())) {
+    errors.push(`invalid language (expected one of ${Array.from(SUPPORTED_LANGUAGES).join(', ')}): ${meta.language}`);
+  }
+
+  if (meta.translation_group && !/^[a-z0-9-_.]+$/i.test(meta.translation_group.trim())) {
+    errors.push(`invalid translation_group (expected slug-like value): ${meta.translation_group}`);
   }
 
   if (meta.reading_time_min) {
@@ -123,9 +133,11 @@ const main = async () => {
 
     if (parsed?.meta?.slug) {
       const slug = String(parsed.meta.slug).trim();
-      const list = slugs.get(slug) || [];
+      const language = String(parsed.meta.language || '').trim().toLowerCase();
+      const key = `${language}:${slug}`;
+      const list = slugs.get(key) || [];
       list.push(file);
-      slugs.set(slug, list);
+      slugs.set(key, list);
     }
 
     if (errors.length === 0) continue;
@@ -138,10 +150,11 @@ const main = async () => {
     }
   }
 
-  for (const [slug, matchingFiles] of slugs.entries()) {
+  for (const [key, matchingFiles] of slugs.entries()) {
     if (matchingFiles.length <= 1) continue;
+    const [language, slug] = key.split(':');
     hasErrors = true;
-    console.error(`\n[blog:validate] duplicate slug detected: ${slug}`);
+    console.error(`\n[blog:validate] duplicate slug detected for language ${language}: ${slug}`);
     for (const file of matchingFiles) {
       console.error(`  - ${path.relative(process.cwd(), file)}`);
     }

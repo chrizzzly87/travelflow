@@ -1,0 +1,12 @@
+{
+  "label": "In Arbeit",
+  "footer": "Weitere Details und Kontofunktionen folgen in den nächsten Releases.",
+  "login": {
+    "title": "Anmelden",
+    "description": "Der Kontozugang wird bald ausgerollt. Login schaltet Premium-Funktionen, längere Verlaufshistorie und reibungslosere Upgrades frei."
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "Das vollständige FAQ ist in Arbeit. Aktuell findest du Infos zu Kontoaktivierung und anonymen Limits auf der Preisseite."
+  }
+}

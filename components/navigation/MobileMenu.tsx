@@ -1,9 +1,15 @@
-import React, { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
-import { X, AirplaneTilt } from '@phosphor-icons/react';
+import React, { useEffect, useMemo } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { X, AirplaneTilt, CaretDown } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
+import { AppLanguage } from '../../types';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, formatLocaleOptionLabel, normalizeLocale } from '../../config/locales';
+import { buildLocalizedLocation } from '../../services/localeRoutingService';
+import { APP_NAME } from '../../config/appGlobals';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -20,6 +26,13 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick }) => {
     const hasTrips = useHasSavedTrips();
+    const { t } = useTranslation('common');
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    const activeLocale = useMemo<AppLanguage>(() => {
+        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    }, [location.pathname]);
 
     useEffect(() => {
         if (isOpen) {
@@ -47,14 +60,26 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         onClose();
     };
 
+    const handleLocaleChange = (nextLocaleRaw: string) => {
+        const nextLocale = normalizeLocale(nextLocaleRaw);
+        const target = buildLocalizedLocation({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+            targetLocale: nextLocale,
+        });
+        navigate(target);
+        trackEvent('mobile_nav__language_switch', { from: activeLocale, to: nextLocale });
+        onClose();
+    };
+
     const mobileNavDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
-    const visibleItems = NAV_ITEMS.filter((item) => !item.requiresTrips);
+    const visibleItems = NAV_ITEMS;
 
     return (
         <>
-            {/* Backdrop */}
             <div
                 className={`fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
                     isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
@@ -63,7 +88,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                 aria-hidden="true"
             />
 
-            {/* Panel */}
             <div
                 className={`fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -73,13 +97,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                 aria-label="Navigation menu"
             >
                 <div className="flex h-full flex-col">
-                    {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                         <div className="flex items-center gap-2">
                             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
                                 <AirplaneTilt size={16} weight="duotone" />
                             </span>
-                            <span className="text-lg font-extrabold tracking-tight">TravelFlow</span>
+                            <span className="text-lg font-extrabold tracking-tight">{APP_NAME}</span>
                         </div>
                         <button
                             onClick={onClose}
@@ -90,24 +113,41 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         </button>
                     </div>
 
-                    {/* Nav links */}
+                    <div className="border-b border-slate-100 px-4 py-3">
+                        <label className="sr-only" htmlFor="mobile-language-select">
+                            {t('language.label')}
+                        </label>
+                        <div className="relative">
+                            <select
+                                id="mobile-language-select"
+                                value={activeLocale}
+                                onChange={(event) => handleLocaleChange(event.target.value)}
+                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                            >
+                                {SUPPORTED_LOCALES.map((locale) => (
+                                    <option key={locale} value={locale}>{formatLocaleOptionLabel(locale)}</option>
+                                ))}
+                            </select>
+                            <CaretDown size={12} weight="bold" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        </div>
+                    </div>
+
                     <nav className="flex-1 overflow-y-auto px-3 py-4">
                         <div className="space-y-1">
                             {visibleItems.map((item) => (
                                 <NavLink
-                                    key={item.to}
-                                    to={item.to}
+                                    key={item.id}
+                                    to={buildLocalizedMarketingPath(item.routeKey, activeLocale)}
                                     className={navLinkClass}
-                                    onClick={() => handleNavClick(item.label.toLowerCase())}
-                                    {...mobileNavDebugAttributes(item.label.toLowerCase())}
+                                    onClick={() => handleNavClick(item.id)}
+                                    {...mobileNavDebugAttributes(item.id)}
                                 >
-                                    {item.label}
+                                    {t(item.labelKey)}
                                 </NavLink>
                             ))}
                         </div>
                     </nav>
 
-                    {/* Footer CTA */}
                     <div className="border-t border-slate-100 p-4 space-y-2">
                         {onMyTripsClick && hasTrips ? (
                             <button
@@ -118,25 +158,25 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...mobileNavDebugAttributes('my_trips')}
                             >
-                                My Trips
+                                {t('nav.myTrips')}
                             </button>
                         ) : (
                             <NavLink
-                                to="/create-trip"
+                                to={buildPath('createTrip')}
                                 onClick={() => handleNavClick('create_trip')}
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...mobileNavDebugAttributes('create_trip')}
                             >
-                                Create Trip
+                                {t('nav.createTrip')}
                             </NavLink>
                         )}
                         <NavLink
-                            to="/login"
+                            to={buildLocalizedMarketingPath('login', activeLocale)}
                             onClick={() => handleNavClick('login')}
                             className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                             {...mobileNavDebugAttributes('login')}
                         >
-                            Login
+                            {t('nav.login')}
                         </NavLink>
                     </div>
                 </div>

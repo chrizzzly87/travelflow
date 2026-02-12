@@ -1,0 +1,12 @@
+{
+  "label": "In lavorazione",
+  "footer": "Altri dettagli e azioni account arriveranno nelle prossime release.",
+  "login": {
+    "title": "Accesso",
+    "description": "L'accesso account arriverà presto. Il login sbloccherà funzioni premium e storico più lungo."
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "La FAQ completa è in arrivo. Per ora, i limiti anonimi sono descritti nella pagina Prezzi."
+  }
+}

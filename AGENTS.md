@@ -14,6 +14,9 @@ This repository uses markdown release files as the source of truth for product u
 - Keep versions strictly increasing; never reuse prior versions.
 - Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 - Keep entries concise, prioritized, and accurate.
+- For new UI components and layout changes, explicitly check whether direction-aware styling is needed.
+- Prefer CSS logical properties (for example `margin-inline`, `padding-inline`, `inset-inline`) over left/right-specific properties when it makes sense.
+- If it is unclear whether logical properties are appropriate for a change, stop and ask the user for clarification before finalizing.
 
 ## Scope
 These instructions apply to all coding agents and LLM assistants working in this repo.
