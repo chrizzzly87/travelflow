@@ -90,6 +90,15 @@ const getBrowserPreferredLocale = (currentLocale: AppLanguage): AppLanguage | nu
     return preferredLocales[0] ?? null;
 };
 
+const isDismissedForSession = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+        return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+
 export const LanguageSuggestionBanner: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -103,19 +112,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
         return getBrowserPreferredLocale(activeLocale);
     }, [activeLocale, location.pathname]);
 
-    const [dismissed, setDismissed] = useState<boolean>(false);
-
-    React.useEffect(() => {
-        if (!suggestedLocale || typeof window === 'undefined') {
-            setDismissed(false);
-            return;
-        }
-        try {
-            setDismissed(window.sessionStorage.getItem(SESSION_DISMISS_KEY) === '1');
-        } catch {
-            setDismissed(false);
-        }
-    }, [suggestedLocale]);
+    const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
 
     if (!suggestedLocale || dismissed) return null;
 

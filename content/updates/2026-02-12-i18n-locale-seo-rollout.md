@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-12-i18n-locale-seo-rollout
-version: v0.48.0
+version: v0.49.0
 title: "I18n foundation and locale-aware SEO rollout"
 date: 2026-02-12
-published_at: 2026-02-12T20:23:55Z
+published_at: 2026-02-12T20:35:58Z
 status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Rolled out multilingual marketing + blog foundations with locale-aware SEO, complete ES/PT coverage, and mobile language-switch UX improvements."
+summary: "Improved multilingual UX with faster switching and persistent locale-banner dismissal across language changes."
 ---
 
 ## Changes
@@ -20,6 +20,7 @@ summary: "Rolled out multilingual marketing + blog foundations with locale-aware
 - [x] [Improved] 🏷️ Locale and translation-info banners now use shorter mobile CTA labels to avoid awkward wrapping on small screens.
 - [x] [Fixed] 🙈 Global hover tooltips are now disabled on touch/mobile devices to prevent sticky floating labels.
 - [x] [Improved] 🔕 Dismissing the locale suggestion banner now hides it for the rest of the current session.
+- [x] [Fixed] ✅ Locale suggestion dismissal now remains persistent while switching between languages in the same session.
 - [x] [Improved] 📰 Non-English blog pages can show native + English articles with a locale-aware language filter and clear English-content notice.
 - [x] [Fixed] 🔗 English blog entries opened from non-English views now route to the correct article language variant.
 - [x] [Improved] ✍️ Blog pages now feature a creator-focused community CTA for bloggers and storytellers to submit ideas via contact.
