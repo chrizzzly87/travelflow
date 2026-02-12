@@ -17,7 +17,6 @@ import {
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
-import 'prismjs/themes/prism-tomorrow.css';
 import {
     AI_MODEL_CATALOG,
     getDefaultCreateTripModel,
@@ -25,7 +24,8 @@ import {
     sortAiModels,
 } from '../config/aiModelCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
-import { dbGetAccessToken, ensureDbSession, isSimulatedLoggedIn } from '../services/dbService';
+import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
+import { isSimulatedLoggedIn } from '../services/simulatedLoginService';
 import { getDaysDifference, getDefaultTripDates, getDestinationPromptLabel, resolveDestinationName } from '../utils';
 import {
     Select,
@@ -576,6 +576,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [liveNow]);
 
     const benchmarkSessionParam = (searchParams.get('session') || '').trim();
+
+    useEffect(() => {
+        void import('prismjs/themes/prism-tomorrow.css');
+    }, []);
 
     useEffect(() => {
         const handleStorageChange = (event: StorageEvent) => {

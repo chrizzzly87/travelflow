@@ -7,21 +7,8 @@ import { CookieConsentBanner } from './components/marketing/CookieConsentBanner'
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
 import { buildCreateTripUrl, buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
-import {
-    DB_ENABLED,
-    dbCanCreateTrip,
-    dbCreateTripVersion,
-    dbGetSharedTrip,
-    dbGetSharedTripVersion,
-    dbGetTrip,
-    dbGetTripVersion,
-    dbUpdateSharedTrip,
-    dbUpsertTrip,
-    dbUpsertUserSettings,
-    ensureDbSession,
-    isSimulatedLoggedIn,
-    toggleSimulatedLogin,
-} from './services/dbService';
+import { DB_ENABLED } from './config/db';
+import { isSimulatedLoggedIn, toggleSimulatedLogin } from './services/simulatedLoginService';
 import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
@@ -52,6 +39,84 @@ type ExampleTripCardSummary = {
 };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
+const IS_DEV = import.meta.env.DEV;
+
+type DbServiceModule = typeof import('./services/dbService');
+
+let dbServicePromise: Promise<DbServiceModule> | null = null;
+
+const loadDbService = async (): Promise<DbServiceModule> => {
+    if (!dbServicePromise) {
+        dbServicePromise = import('./services/dbService');
+    }
+    return dbServicePromise;
+};
+
+const ensureDbSession = async () => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.ensureDbSession();
+};
+
+const dbCanCreateTrip = async () => {
+    if (!DB_ENABLED) {
+        return {
+            allowCreate: true,
+            activeTripCount: 0,
+            maxTripCount: 0,
+        };
+    }
+    const db = await loadDbService();
+    return db.dbCanCreateTrip();
+};
+
+const dbCreateTripVersion = async (...args: Parameters<DbServiceModule['dbCreateTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbCreateTripVersion(...args);
+};
+
+const dbGetSharedTrip = async (...args: Parameters<DbServiceModule['dbGetSharedTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetSharedTrip(...args);
+};
+
+const dbGetSharedTripVersion = async (...args: Parameters<DbServiceModule['dbGetSharedTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetSharedTripVersion(...args);
+};
+
+const dbGetTrip = async (...args: Parameters<DbServiceModule['dbGetTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetTrip(...args);
+};
+
+const dbGetTripVersion = async (...args: Parameters<DbServiceModule['dbGetTripVersion']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbGetTripVersion(...args);
+};
+
+const dbUpdateSharedTrip = async (...args: Parameters<DbServiceModule['dbUpdateSharedTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbUpdateSharedTrip(...args);
+};
+
+const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsertTrip']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbUpsertTrip(...args);
+};
+
+const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
+    if (!DB_ENABLED) return;
+    const db = await loadDbService();
+    await db.dbUpsertUserSettings(...args);
+};
 
 const CreateTripForm = lazy(() => import('./components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
 const TripView = lazy(() => import('./components/TripView').then((module) => ({ default: module.TripView })));
@@ -856,9 +921,11 @@ const AppContent: React.FC = () => {
         const host = window as AppDebugWindow;
         host.toggleSimulatedLogin = (force?: boolean) => {
             const next = toggleSimulatedLogin(force);
-            console.info(
-                `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
-            );
+            if (IS_DEV) {
+                console.info(
+                    `[TravelFlow] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
+                );
+            }
             return next;
         };
         host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');

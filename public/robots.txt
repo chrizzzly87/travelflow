@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /trip/
+Disallow: /s/
+Allow: /

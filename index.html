@@ -22,16 +22,6 @@
     <meta name="twitter:description" content="Plan and share travel routes with timeline and map previews in TravelFlow." />
     <meta name="twitter:image" content="/api/og/site" />
     <link rel="preload" href="/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2" as="font" type="font/woff2" crossorigin>
-    <script>
-      // Polyfill for process.env to allow environment variable injection
-      // Use logical OR to prevent overwriting if already defined by environment
-      window.process = window.process || {};
-      window.process.env = window.process.env || {};
-      // Only initialize if not present to avoid clobbering injected values
-      if (typeof window.process.env.API_KEY === 'undefined') {
-        window.process.env.API_KEY = ''; 
-      }
-    </script>
     <style>
       /* Custom scrollbar for the timeline */
       .timeline-scroll::-webkit-scrollbar {
@@ -107,22 +97,6 @@
         z-index: 99999 !important;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.3.1",
-    "react/": "https://esm.sh/react@18.3.1/",
-    "react-dom": "https://esm.sh/react-dom@18.3.1?deps=react@18.3.1",
-    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client?deps=react@18.3.1",
-    "lucide-react": "https://esm.sh/lucide-react@0.378.0?deps=react@18.3.1",
-    "lz-string": "https://esm.sh/lz-string@1.5.0",
-    "@google/genai": "https://esm.sh/@google/genai",
-    "react-markdown": "https://esm.sh/react-markdown@9.0.1?bundle&deps=react@18.3.1",
-    "remark-gfm": "https://esm.sh/remark-gfm@4.0.0?bundle",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
-  }
-}
-</script>
 </head>
   <body>
     <div id="root"></div>

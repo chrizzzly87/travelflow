@@ -15,6 +15,7 @@ import {
     Article,
 } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { ProgressiveImage } from '../components/ProgressiveImage';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     categories,
@@ -69,20 +70,30 @@ const suggestedStartForDays = (days: number): Date => {
 
 /* ── Blog link helper ── */
 
-const BlogLinks: React.FC<{ slugs?: string[] }> = ({ slugs }) => {
+const BlogLinks: React.FC<{ slugs?: string[]; asText?: boolean }> = ({ slugs, asText = false }) => {
     const posts = useMemo(() => getBlogPostsBySlugs(slugs || []), [slugs]);
     if (posts.length === 0) return null;
     return (
         <div className="flex flex-wrap gap-x-3 gap-y-1">
             {posts.map((post) => (
-                <Link
-                    key={post.slug}
-                    to={`/blog/${post.slug}`}
-                    className="inline-flex items-center gap-1 text-xs text-accent-700 hover:underline"
-                >
-                    <Article size={11} weight="duotone" />
-                    {post.title}
-                </Link>
+                asText ? (
+                    <span
+                        key={post.slug}
+                        className="inline-flex items-center gap-1 text-xs text-accent-700"
+                    >
+                        <Article size={11} weight="duotone" />
+                        {post.title}
+                    </span>
+                ) : (
+                    <Link
+                        key={post.slug}
+                        to={`/blog/${post.slug}`}
+                        className="inline-flex items-center gap-1 text-xs text-accent-700 hover:underline"
+                    >
+                        <Article size={11} weight="duotone" />
+                        {post.title}
+                    </Link>
+                )
             ))}
         </div>
     );
@@ -132,36 +143,19 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
         <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-slate-100' : destination.mapColor}`}>
             {showPhoto && media ? (
                 <>
-                    <picture className="absolute inset-0 block h-full w-full">
-                        <source
-                            type="image/webp"
-                            srcSet={[
-                                `${media.sources.xsmall} 480w`,
-                                `${media.sources.small} 768w`,
-                                `${media.sources.medium} 1024w`,
-                                `${media.sources.large} 1536w`,
-                            ].join(', ')}
-                            sizes={CARD_IMAGE_SIZES}
-                        />
-                        <img
-                            src={media.sources.small}
-                            srcSet={[
-                                `${media.sources.xsmall} 480w`,
-                                `${media.sources.small} 768w`,
-                                `${media.sources.medium} 1024w`,
-                                `${media.sources.large} 1536w`,
-                            ].join(', ')}
-                            sizes={CARD_IMAGE_SIZES}
-                            alt={media.alt}
-                            loading="lazy"
-                            decoding="async"
-                            fetchPriority="low"
-                            width={1536}
-                            height={1024}
-                            onError={() => setHasImageError(true)}
-                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
-                        />
-                    </picture>
+                    <ProgressiveImage
+                        src={media.sources.large}
+                        alt={media.alt}
+                        width={1536}
+                        height={1024}
+                        sizes={CARD_IMAGE_SIZES}
+                        srcSetWidths={[480, 768, 1024, 1536]}
+                        placeholderKey={media.sources.large}
+                        loading="lazy"
+                        fetchPriority="low"
+                        onError={() => setHasImageError(true)}
+                        className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                    />
                     <div className={CARD_IMAGE_FADE} />
                     <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
                 </>
@@ -231,36 +225,19 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
         <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showPhoto ? 'bg-slate-100' : `${event.mapColor} flex items-center justify-center`}`}>
             {showPhoto && media ? (
                 <>
-                    <picture className="absolute inset-0 block h-full w-full">
-                        <source
-                            type="image/webp"
-                            srcSet={[
-                                `${media.sources.xsmall} 480w`,
-                                `${media.sources.small} 768w`,
-                                `${media.sources.medium} 1024w`,
-                                `${media.sources.large} 1536w`,
-                            ].join(', ')}
-                            sizes={CARD_IMAGE_SIZES}
-                        />
-                        <img
-                            src={media.sources.small}
-                            srcSet={[
-                                `${media.sources.xsmall} 480w`,
-                                `${media.sources.small} 768w`,
-                                `${media.sources.medium} 1024w`,
-                                `${media.sources.large} 1536w`,
-                            ].join(', ')}
-                            sizes={CARD_IMAGE_SIZES}
-                            alt={media.alt}
-                            loading="lazy"
-                            decoding="async"
-                            fetchPriority="low"
-                            width={1536}
-                            height={1024}
-                            onError={() => setHasImageError(true)}
-                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
-                        />
-                    </picture>
+                    <ProgressiveImage
+                        src={media.sources.large}
+                        alt={media.alt}
+                        width={1536}
+                        height={1024}
+                        sizes={CARD_IMAGE_SIZES}
+                        srcSetWidths={[480, 768, 1024, 1536]}
+                        placeholderKey={media.sources.large}
+                        loading="lazy"
+                        fetchPriority="low"
+                        onError={() => setHasImageError(true)}
+                        className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${CARD_IMAGE_ZOOM_TRANSITION} scale-[1.06] group-hover:scale-100`}
+                    />
                     <div className={CARD_IMAGE_FADE} />
                     <div className={CARD_IMAGE_PROGRESSIVE_BLUR} />
                 </>
@@ -281,7 +258,7 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
             </div>
             {event.blogSlugs && event.blogSlugs.length > 0 && (
                 <div className="mt-2">
-                    <BlogLinks slugs={event.blogSlugs} />
+                    <BlogLinks slugs={event.blogSlugs} asText />
                 </div>
             )}
         </div>
@@ -320,7 +297,7 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
             <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">{getaway.description}</p>
             {getaway.blogSlugs && getaway.blogSlugs.length > 0 && (
                 <div className="mt-2">
-                    <BlogLinks slugs={getaway.blogSlugs} />
+                    <BlogLinks slugs={getaway.blogSlugs} asText />
                 </div>
             )}
         </div>
@@ -349,7 +326,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
             </div>
             {group.blogSlugs && group.blogSlugs.length > 0 && (
                 <div className="mt-2">
-                    <BlogLinks slugs={group.blogSlugs} />
+                    <BlogLinks slugs={group.blogSlugs} asText />
                 </div>
             )}
         </div>
