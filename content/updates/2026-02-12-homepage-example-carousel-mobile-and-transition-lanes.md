@@ -28,3 +28,4 @@ summary: "Stabilized the homepage example carousel on mobile and upgraded exampl
 - [ ] [Internal] 🧪 Added View Transition diagnostics to the on-page debugger, including lifecycle events and live anchor audits.
 - [ ] [Internal] 🧱 Optimized debugger transition-anchor scanning and added duplicate-name detection to reduce debug overhead on large trip pages.
 - [ ] [Internal] 📐 Extended brand guidelines with a documented section-link style and tracking rule to keep content-link UI patterns consistent.
+- [ ] [Internal] 📚 Documented navigation prewarm and transition guardrails in the performance backlog to prevent blocking route transitions during future speed work.
