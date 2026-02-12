@@ -97,5 +97,11 @@
     "description": "Der Link ist möglicherweise abgelaufen oder wurde vom Reiseinhaber deaktiviert. Bitte frage nach einem neuen Link oder erstelle eine eigene Reise.",
     "backToHomepage": "Zur Startseite",
     "createNewTrip": "Neue Reise erstellen"
+  },
+  "notFound": {
+    "headline": "Sieht so aus, als wäre diese Seite schon im Urlaub!",
+    "planCta": "Plane deinen Urlaub",
+    "missingPrompt": "Meinst du, diese Seite sollte es geben und sie fehlt?",
+    "contactCta": "Kontakt aufnehmen"
   }
 }
