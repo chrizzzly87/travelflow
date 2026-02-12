@@ -3,7 +3,7 @@ id: rel-2026-02-11-page-speed-continuous-optimization
 version: v0.55.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T12:16:00Z
+published_at: 2026-02-12T07:45:00Z
 status: published
 notify_in_app: true
 in_app_hours: 24
