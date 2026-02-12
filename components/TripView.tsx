@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbRevokeTripShares, dbSetTripSharingEnabled, dbUpsertTrip, ensureDbSession } from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
@@ -132,6 +133,16 @@ const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
+const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
+const IS_DEV = import.meta.env.DEV;
+
+interface ViewTransitionDebugDetail {
+    phase: string;
+    templateId?: string;
+    useExampleSharedTransition?: boolean;
+    expectedCityLaneCount?: number;
+    reason?: string;
+}
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
 
@@ -230,6 +241,10 @@ interface TripViewProps {
     };
 }
 
+interface ExampleTransitionLocationState {
+    useExampleSharedTransition?: boolean;
+}
+
 export const TripView: React.FC<TripViewProps> = ({
     trip,
     onUpdateTrip,
@@ -253,6 +268,10 @@ export const TripView: React.FC<TripViewProps> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
+    const locationState = location.state as ExampleTransitionLocationState | null;
+    const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
+    const mapViewTransitionName = getExampleMapViewTransitionName(useExampleSharedTransition);
+    const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     tripRef.current = trip;
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
@@ -291,6 +310,10 @@ export const TripView: React.FC<TripViewProps> = ({
         () => (isTripLockedByExpiry ? buildPaywalledTripDisplay(trip) : trip),
         [isTripLockedByExpiry, trip]
     );
+    const expectedCityLaneCount = useMemo(
+        () => displayTrip.items.filter((item) => item.type === 'city').length,
+        [displayTrip.items]
+    );
     const expirationLabel = useMemo(() => {
         if (!tripExpiresAtMs) return null;
         const date = new Date(tripExpiresAtMs);
@@ -309,6 +332,25 @@ export const TripView: React.FC<TripViewProps> = ({
         if (diffDays === 0) return 'Expires today';
         return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
     }, [tripExpiresAtMs, nowMs]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !trip.isExample) return;
+        window.dispatchEvent(new CustomEvent<ViewTransitionDebugDetail>(VIEW_TRANSITION_DEBUG_EVENT, {
+            detail: {
+                phase: 'trip-view-mounted',
+                templateId: trip.exampleTemplateId,
+                useExampleSharedTransition,
+                expectedCityLaneCount,
+                reason: mapViewTransitionName ? undefined : 'shared-map-anchor-disabled',
+            },
+        }));
+    }, [
+        expectedCityLaneCount,
+        mapViewTransitionName,
+        trip.exampleTemplateId,
+        trip.isExample,
+        useExampleSharedTransition,
+    ]);
 
     // View State
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -561,6 +603,7 @@ export const TripView: React.FC<TripViewProps> = ({
     }, []);
 
     const debugHistory = useCallback((message: string, data?: any) => {
+        if (!IS_DEV) return;
         if (typeof window === 'undefined') return;
         const enabled = (window as any).__TF_DEBUG_HISTORY;
         if (!enabled) return;
@@ -574,11 +617,13 @@ export const TripView: React.FC<TripViewProps> = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if ((window as any).__TF_DEBUG_HISTORY === undefined) {
-            (window as any).__TF_DEBUG_HISTORY = true;
+            (window as any).__TF_DEBUG_HISTORY = IS_DEV;
         }
         (window as any).tfSetHistoryDebug = (enabled: boolean) => {
             (window as any).__TF_DEBUG_HISTORY = enabled;
-            console.log(`[History] debug ${enabled ? 'enabled' : 'disabled'}`);
+            if (IS_DEV) {
+                console.log(`[History] debug ${enabled ? 'enabled' : 'disabled'}`);
+            }
         };
         (window as any).__tfOnCommit = (window as any).__tfOnCommit || null;
     }, []);
@@ -802,9 +847,11 @@ export const TripView: React.FC<TripViewProps> = ({
             window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
                 detail: { available: true, expired: nextExpired },
             }));
-            console.info(
-                `[${APP_NAME}] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
-            );
+            if (IS_DEV) {
+                console.info(
+                    `[${APP_NAME}] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
+                );
+            }
             return nextExpired;
         };
 
@@ -1976,16 +2023,17 @@ export const TripView: React.FC<TripViewProps> = ({
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                        <div
+                        <Link
+                            to="/"
                             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                            onClick={() => window.location.href = '/'}
                             title="Go to Homepage"
+                            aria-label="Go to Homepage"
                         >
                             <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
                                 <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
                             </div>
                             <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
-                        </div>
+                        </Link>
                         <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
                         <div className="flex items-start gap-2 min-w-0">
                             <div className="flex flex-col leading-tight min-w-0">
@@ -2007,7 +2055,12 @@ export const TripView: React.FC<TripViewProps> = ({
                                         className={`flex items-center gap-2 ${!isMobile && canManageTripMetadata ? 'group cursor-pointer' : ''}`}
                                         onClick={!isMobile && canManageTripMetadata ? handleStartTitleEdit : undefined}
                                     >
-                                        <h1 className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md">{trip.title}</h1>
+                                        <h1
+                                            className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
+                                            style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
+                                        >
+                                            {trip.title}
+                                        </h1>
                                         {!isMobile && canManageTripMetadata && (
                                             <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                                         )}
@@ -2221,6 +2274,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             onForceFill={handleForceFill}
                                             onSwapSelectedCities={handleReverseSelectedCities}
                                             pixelsPerDay={pixelsPerDay}
+                                            enableExampleSharedTransition={useExampleSharedTransition}
                                         />
                                     ) : (
                                         <Timeline
@@ -2235,6 +2289,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             onForceFill={handleForceFill}
                                             onSwapSelectedCities={handleReverseSelectedCities}
                                             pixelsPerDay={pixelsPerDay}
+                                            enableExampleSharedTransition={useExampleSharedTransition}
                                         />
                                     )}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
@@ -2270,6 +2325,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         onRouteStatus={handleRouteStatus}
                                         fitToRouteKey={trip.id}
                                         isPaywalled={isTripLockedByExpiry}
+                                        viewTransitionName={mapViewTransitionName}
                                     />
                                 </div>
                             </div>
@@ -2293,6 +2349,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
                                                             pixelsPerDay={pixelsPerDay}
+                                                            enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
                                                     ) : (
                                                         <Timeline
@@ -2307,6 +2364,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
                                                             pixelsPerDay={pixelsPerDay}
+                                                            enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
                                                     )}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
@@ -2389,6 +2447,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
                                                 isPaywalled={isTripLockedByExpiry}
+                                                viewTransitionName={mapViewTransitionName}
                                             />
                                         </div>
                                     </>
@@ -2413,6 +2472,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
                                                 isPaywalled={isTripLockedByExpiry}
+                                                viewTransitionName={mapViewTransitionName}
                                             />
                                         </div>
                                         <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
@@ -2434,6 +2494,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
                                                             pixelsPerDay={pixelsPerDay}
+                                                            enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
                                                     ) : (
                                                         <Timeline
@@ -2448,6 +2509,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
                                                             pixelsPerDay={pixelsPerDay}
+                                                            enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
                                                     )}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">

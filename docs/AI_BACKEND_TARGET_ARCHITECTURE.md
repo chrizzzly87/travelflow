@@ -19,6 +19,9 @@ Current implementation status:
 12. Benchmark execution now starts asynchronously in edge background (`waitUntil`) and `/admin/ai-benchmark` polls session status until runs settle, reducing deployed timeout failures.
 13. `/api/internal/ai/benchmark/cancel` is implemented for manual cancellation of active benchmark runs (single run or entire session).
 14. `/admin/ai-benchmark` keeps polling and live latency updates when a persisted session reloads with active runs, and exposes abort actions in the run table/session toolbar.
+15. Benchmark workers now call provider APIs directly (shared edge runtime) with a dedicated provider timeout budget (default 90s), avoiding nested `/api/ai/generate` edge timeout failures.
+16. Benchmark concurrency is capped at 5 parallel workers; extra selected model runs are queued automatically.
+17. Benchmark cost column now falls back to model-catalog estimates when exact provider `cost_usd` metadata is not available.
 
 ## 1) Confirmed decisions (2026-02-11)
 
@@ -248,6 +251,11 @@ Response includes:
 2. run rows with status/latency/validation/usage/cost/trip URL
 3. summary counts
 4. persisted session token for URL reload/share
+
+Execution notes:
+1. Benchmark run workers call providers directly via shared edge runtime helpers (instead of nested `/api/ai/generate` calls).
+2. Provider timeout budget is configurable with `AI_BENCHMARK_PROVIDER_TIMEOUT_MS` (default `90000`, hard minimum `90000` for benchmark workers).
+3. `/api/ai/generate` uses a separate timeout (`AI_GENERATE_PROVIDER_TIMEOUT_MS`, default `35000`) to stay inside synchronous edge response limits.
 
 ## 8.3 Benchmark read endpoint
 

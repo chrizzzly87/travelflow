@@ -6,15 +6,34 @@ interface CountryInfoProps {
     info: Partial<ICountryInfo> | ICountryInfo;
 }
 
+const parseStrictPositiveNumber = (value: unknown): number | null => {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? value : null;
+    }
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
 export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
-    const currencyCode = typeof info.currencyCode === 'string' && info.currencyCode.trim() ? info.currencyCode.trim() : 'LOCAL';
-    const exchangeRate = typeof info.exchangeRate === 'number' && Number.isFinite(info.exchangeRate) && info.exchangeRate > 0
-        ? info.exchangeRate
-        : null;
+    const legacyInfo = info as Partial<ICountryInfo> & Record<string, unknown>;
+    const currencyCode = typeof info.currencyCode === 'string' && info.currencyCode.trim()
+        ? info.currencyCode.trim()
+        : (typeof legacyInfo.currency === 'string' && legacyInfo.currency.trim() ? legacyInfo.currency.trim() : 'LOCAL');
+    const exchangeRate = parseStrictPositiveNumber(info.exchangeRate ?? legacyInfo.exchangeRateToEUR);
+    const converterEnabled = exchangeRate !== null;
     const languages = Array.isArray(info.languages) ? info.languages.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0) : [];
     const electricSockets = typeof info.electricSockets === 'string' && info.electricSockets.trim().length > 0
         ? info.electricSockets
-        : 'Not available';
+        : (typeof legacyInfo.sockets === 'string' && legacyInfo.sockets.trim().length > 0 ? legacyInfo.sockets : 'Not available');
+    const visaInfoUrl = typeof info.visaInfoUrl === 'string' && info.visaInfoUrl.trim().length > 0
+        ? info.visaInfoUrl
+        : (typeof legacyInfo.visaLink === 'string' && legacyInfo.visaLink.trim().length > 0 ? legacyInfo.visaLink : '');
+    const auswaertigesAmtUrl = typeof info.auswaertigesAmtUrl === 'string' && info.auswaertigesAmtUrl.trim().length > 0
+        ? info.auswaertigesAmtUrl
+        : (typeof legacyInfo.auswaertigesAmtLink === 'string' && legacyInfo.auswaertigesAmtLink.trim().length > 0 ? legacyInfo.auswaertigesAmtLink : '');
 
     // Converter State with Persistence
     const [amount, setAmount] = useState<number>(() => {
@@ -58,7 +77,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                     <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1">
                         <Banknote size={12} /> Currency Converter
                     </label>
-                    <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                    <div className={`flex items-center gap-2 p-2 rounded-lg border ${converterEnabled ? 'bg-gray-50 border-gray-200' : 'bg-gray-50/60 border-gray-200 opacity-70'}`}>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                                 <span>{direction === 'eurToLocal' ? 'EUR' : currencyCode}</span>
@@ -67,12 +86,14 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                                 type="number" 
                                 value={amount}
                                 onChange={(e) => setAmount(Number(e.target.value))}
-                                className="w-full bg-transparent font-bold text-gray-800 outline-none min-w-0"
+                                disabled={!converterEnabled}
+                                className={`w-full bg-transparent font-bold outline-none min-w-0 ${converterEnabled ? 'text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
                             />
                         </div>
                         <button 
                             onClick={() => setDirection(direction === 'eurToLocal' ? 'localToEur' : 'eurToLocal')}
-                            className="p-1.5 bg-white shadow-sm border border-gray-200 rounded-full hover:bg-gray-100 text-accent-600 flex-shrink-0" aria-label="Swap conversion direction"
+                            disabled={!converterEnabled}
+                            className={`p-1.5 bg-white shadow-sm border border-gray-200 rounded-full flex-shrink-0 ${converterEnabled ? 'hover:bg-gray-100 text-accent-600' : 'text-gray-400 cursor-not-allowed'}`} aria-label="Swap conversion direction"
                         >
                             <ArrowRightLeft size={14} />
                         </button>
@@ -88,7 +109,7 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         </div>
                     </div>
                     <div className="text-[10px] text-gray-400 text-center truncate">
-                        {exchangeRate === null
+                        {!converterEnabled
                             ? `Rate unavailable for ${currencyCode}`
                             : `Rate: 1 EUR ≈ ${exchangeRate.toFixed(2)} ${currencyCode}`}
                     </div>
@@ -127,17 +148,17 @@ export const CountryInfo: React.FC<CountryInfoProps> = ({ info }) => {
                         <FileText size={12} /> Important Links
                     </label>
                     <div className="flex flex-col gap-2">
-                        {info.visaInfoUrl && (
-                            <a href={info.visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                        {visaInfoUrl && (
+                            <a href={visaInfoUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Visa Information
                             </a>
                         )}
-                        {info.auswaertigesAmtUrl && (
-                            <a href={info.auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
+                        {auswaertigesAmtUrl && (
+                            <a href={auswaertigesAmtUrl} target="_blank" rel="noreferrer" className="text-xs text-accent-600 hover:underline flex items-center gap-1 truncate">
                                 <ExternalLink size={10} className="flex-shrink-0" /> Auswärtiges Amt (DE)
                             </a>
                         )}
-                        {!info.visaInfoUrl && !info.auswaertigesAmtUrl && (
+                        {!visaInfoUrl && !auswaertigesAmtUrl && (
                             <span className="text-xs text-gray-400 italic">No specific links available</span>
                         )}
                     </div>

@@ -28,6 +28,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
    ```
 4. **Use `snake_case`** within each segment, separated by `__` and `--`.
 5. **Prefix grouping** — all events from a page share the same prefix (`inspirations__*`), making dashboard filtering trivial.
+6. **Do not use URL query parameters as analytics tracking** when Umami event tracking is available. Track intent with `trackEvent(...)` and payload properties instead.
 
 ## When to use payload vs `--detail`
 
@@ -61,6 +62,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `home__hero_cta--{cta}` | `start_planning`, `see_examples` | — | `HeroSection.tsx` |
 | `home__bottom_cta` | — | — | `CtaBanner.tsx` |
 | `home__carousel_card` | — | `{ template }` | `ExampleTripsCarousel.tsx` |
+| `home__carousel_cta--inspirations` | — | — | `ExampleTripsCarousel.tsx` |
 
 ### Example Trips
 | Event | Detail | Payload | File |

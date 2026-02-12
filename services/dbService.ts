@@ -3,8 +3,10 @@ import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
 import { getAllTrips, setAllTrips } from './storageService';
 import { ANONYMOUS_TRIP_LIMIT, isTripExpiredByTimestamp } from '../config/productLimits';
+import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from './simulatedLoginService';
 
 export const DB_ENABLED = isSupabaseEnabled;
+export { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin };
 
 let cachedUserId: string | null = null;
 let isReauthInFlight = false;
@@ -17,45 +19,6 @@ let authBlockedUntil = 0;
 const AUTH_COOLDOWN_MS = 3000;
 const SESSION_POLL_MS = 200;
 const SESSION_POLL_ATTEMPTS = 6;
-const DEBUG_SIMULATED_LOGIN_KEY = 'tf_debug_simulated_login';
-let simulatedLoginOverride: boolean | null = null;
-
-const readSimulatedLoginOverride = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    try {
-        return window.localStorage.getItem(DEBUG_SIMULATED_LOGIN_KEY) === '1';
-    } catch {
-        return false;
-    }
-};
-
-export const isSimulatedLoggedIn = (): boolean => {
-    if (simulatedLoginOverride === null) {
-        simulatedLoginOverride = readSimulatedLoginOverride();
-    }
-    return simulatedLoginOverride;
-};
-
-export const setSimulatedLoggedIn = (enabled: boolean): boolean => {
-    simulatedLoginOverride = Boolean(enabled);
-    if (typeof window !== 'undefined') {
-        try {
-            if (simulatedLoginOverride) {
-                window.localStorage.setItem(DEBUG_SIMULATED_LOGIN_KEY, '1');
-            } else {
-                window.localStorage.removeItem(DEBUG_SIMULATED_LOGIN_KEY);
-            }
-        } catch {
-            // ignore storage issues
-        }
-    }
-    return simulatedLoginOverride;
-};
-
-export const toggleSimulatedLogin = (force?: boolean): boolean => {
-    const next = typeof force === 'boolean' ? force : !isSimulatedLoggedIn();
-    return setSimulatedLoggedIn(next);
-};
 
 const isDebugEnabled = () => {
     if (typeof window === 'undefined') return false;

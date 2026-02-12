@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "updates:validate": "node scripts/validate-updates.mjs",
+    "updates:next-version": "node scripts/next-release-version.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "edge:validate": "node scripts/validate-edge-functions.mjs",
     "sitemap:generate": "node scripts/generate-sitemap.mjs",
@@ -15,8 +16,9 @@
     "blog:images:jobs": "tsx scripts/build-blog-image-batch.ts",
     "build:blog-images": "tsx scripts/build-blog-images.ts",
     "blog:images:optimize": "tsx scripts/build-blog-images.ts --skip-generation",
+    "build:image-placeholders": "tsx scripts/build-image-placeholders.ts",
     "release:prepare": "npm run build:blog-images && npm run build",
-    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
+    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run build:image-placeholders && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },
@@ -27,6 +29,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@supabase/supabase-js": "^2.49.1",
     "@types/google.maps": "^3.58.1",
+    "blurhash": "^2.0.5",
     "lucide-react": "0.378.0",
     "lz-string": "1.5.0",
     "prismjs": "^1.30.0",
@@ -50,6 +53,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "sharp": "^0.34.2",
     "tailwindcss": "^4.1.18",
+    "terser": "^5.46.0",
     "tsx": "^4.19.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

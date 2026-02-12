@@ -22,6 +22,7 @@ type MapPreviewColorMode = "brand" | "trip";
 
 const BRAND_ROUTE_COLOR = "4f46e5";
 const MAX_REALISTIC_DIRECTION_LEGS = 8;
+const STATIC_MAP_SATELLITE_FALLBACK: MapPreviewStyle = "clean";
 
 const CLEAN_STYLE = [
   "element:geometry|color:0xf9f9f9",
@@ -161,6 +162,13 @@ const getMapType = (style: MapPreviewStyle): "roadmap" | "satellite" => {
   return "roadmap";
 };
 
+const getEffectiveStaticMapStyle = (style: MapPreviewStyle): MapPreviewStyle => {
+  // Static Maps satellite/hybrid requests can be blocked by account/region policy.
+  // Fall back to a styled roadmap for deterministic, non-error previews.
+  if (style === "satellite") return STATIC_MAP_SATELLITE_FALLBACK;
+  return style;
+};
+
 const fetchDirectionsPolyline = async (
   from: { lat: number; lng: number },
   to: { lat: number; lng: number },
@@ -263,7 +271,8 @@ export default async (request: Request) => {
   const w = clampInt(Number.parseInt(url.searchParams.get("w") || "680", 10), 240, 1280);
   const h = clampInt(Number.parseInt(url.searchParams.get("h") || "288", 10), 160, 960);
   const scale = clampInt(Number.parseInt(url.searchParams.get("scale") || "2", 10), 1, 2);
-  const style = parseStyle(url.searchParams.get("style"));
+  const requestedStyle = parseStyle(url.searchParams.get("style"));
+  const style = getEffectiveStaticMapStyle(requestedStyle);
   const routeMode = parseRouteMode(url.searchParams.get("routeMode"));
   const colorMode = parseColorMode(url.searchParams.get("colorMode"));
 

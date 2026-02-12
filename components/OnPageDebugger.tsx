@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
+    CaretDown,
+    CaretRight,
     Compass,
     Flask,
     Globe,
+    Info,
     List,
     MagnifyingGlass,
     RocketLaunch,
@@ -17,17 +20,30 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
-import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/dbService';
 import { APP_NAME } from '../config/appGlobals';
+import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
+import {
+    PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
+    PREFETCH_STATS_DEBUG_EVENT,
+    getPrefetchStats,
+    isNavPrefetchEnabled,
+    type PrefetchAttemptOutcome,
+    type PrefetchLinkHighlightDebugDetail,
+    type PrefetchStats,
+} from '../services/navigationPrefetch';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
 const DEBUG_TRACKING_ENABLED_STORAGE_KEY = 'tf_debug_tracking_enabled';
 const DEBUG_PANEL_EXPANDED_STORAGE_KEY = 'tf_debug_panel_expanded';
 const DEBUG_H1_HIGHLIGHT_STORAGE_KEY = 'tf_debug_h1_highlight';
+const DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY = 'tf_debug_prefetch_section_expanded';
+const DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY = 'tf_debug_view_transition_section_expanded';
+const DEBUG_PREFETCH_OVERLAY_STORAGE_KEY = 'tf_debug_prefetch_overlay';
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
+const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
 
 interface TrackingBox {
@@ -70,6 +86,16 @@ interface H1HighlightBox {
     placeLabelBelow: boolean;
 }
 
+interface PrefetchHighlightBox {
+    id: string;
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+    label: string;
+    placeLabelBelow: boolean;
+}
+
 interface TripExpiredDebugDetail {
     available: boolean;
     expired: boolean;
@@ -85,6 +111,36 @@ interface DebuggerStateDebugDetail {
     open: boolean;
 }
 
+interface ViewTransitionDebugDetail {
+    phase: string;
+    templateId?: string;
+    transitionKey?: string;
+    targetPath?: string;
+    durationMs?: number;
+    reason?: string;
+    error?: string;
+    useExampleSharedTransition?: boolean;
+    expectedCityLaneCount?: number;
+}
+
+interface ViewTransitionEventEntry {
+    id: string;
+    timestampLabel: string;
+    detail: ViewTransitionDebugDetail;
+}
+
+interface ViewTransitionDiagnostics {
+    supported: boolean;
+    prefersReducedMotion: boolean;
+    route: string;
+    tripMapAnchors: number;
+    tripTitleAnchors: number;
+    tripCityLaneAnchors: number;
+    trackedAnchorNames: string[];
+    duplicateAnchorNames: string[];
+    updatedAtLabel: string;
+}
+
 interface OnPageDebuggerApi {
     show: () => void;
     hide: () => void;
@@ -97,6 +153,7 @@ interface OnPageDebuggerApi {
     openLighthouse: () => void;
     runSeoAudit: () => AuditResult;
     runA11yAudit: () => AuditResult;
+    runViewTransitionAudit: () => ViewTransitionDiagnostics;
     getState: () => DebugState;
 }
 
@@ -108,6 +165,7 @@ type DebugCommand =
         seo?: boolean;
         a11y?: boolean;
         simulatedLogin?: boolean;
+        viewTransition?: boolean;
     };
 
 declare global {
@@ -197,6 +255,104 @@ const getAccessibleName = (element: HTMLElement): string => {
 
     const text = element.textContent?.replace(/\s+/g, ' ').trim();
     return text ?? '';
+};
+
+const CITY_LANE_TRANSITION_PATTERN = /^trip-city-lane-\d+$/;
+
+interface ViewTransitionNameSnapshot {
+    names: string[];
+    duplicates: string[];
+}
+
+const collectTrackedViewTransitionNames = (): ViewTransitionNameSnapshot => {
+    if (typeof document === 'undefined' || typeof window === 'undefined' || !document.body) {
+        return { names: [], duplicates: [] };
+    }
+    const elements = Array.from(document.body.querySelectorAll<HTMLElement>('[style*="view-transition-name"]'));
+    const names: string[] = [];
+    const counts = new Map<string, number>();
+
+    elements.forEach((element) => {
+        const transitionName = element.style.viewTransitionName?.trim() || '';
+        if (!transitionName || transitionName === 'none') return;
+        if (
+            transitionName !== 'trip-map'
+            && transitionName !== 'trip-title'
+            && !CITY_LANE_TRANSITION_PATTERN.test(transitionName)
+        ) {
+            return;
+        }
+        names.push(transitionName);
+        counts.set(transitionName, (counts.get(transitionName) || 0) + 1);
+    });
+
+    const duplicates = Array.from(counts.entries())
+        .filter(([, count]) => count > 1)
+        .map(([name, count]) => `${name} (${count})`)
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    return { names, duplicates };
+};
+
+const buildViewTransitionDiagnostics = (route: string): ViewTransitionDiagnostics => {
+    if (typeof window === 'undefined') {
+        return {
+            supported: false,
+            prefersReducedMotion: false,
+            route,
+            tripMapAnchors: 0,
+            tripTitleAnchors: 0,
+            tripCityLaneAnchors: 0,
+            trackedAnchorNames: [],
+            duplicateAnchorNames: [],
+            updatedAtLabel: '',
+        };
+    }
+
+    const snapshot = collectTrackedViewTransitionNames();
+    const tripMapAnchors = snapshot.names.filter((name) => name === 'trip-map').length;
+    const tripTitleAnchors = snapshot.names.filter((name) => name === 'trip-title').length;
+    const tripCityLaneAnchors = snapshot.names.filter((name) => CITY_LANE_TRANSITION_PATTERN.test(name)).length;
+    const trackedAnchorNames = Array.from(new Set(snapshot.names))
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    return {
+        supported: typeof document.startViewTransition === 'function',
+        prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        route,
+        tripMapAnchors,
+        tripTitleAnchors,
+        tripCityLaneAnchors,
+        trackedAnchorNames,
+        duplicateAnchorNames: snapshot.duplicates,
+        updatedAtLabel: new Date().toLocaleTimeString(),
+    };
+};
+
+const formatPrefetchAttemptOutcome = (outcome: PrefetchAttemptOutcome): string => {
+    switch (outcome) {
+        case 'scheduled':
+            return 'scheduled';
+        case 'already-warm':
+            return 'already warm';
+        case 'skipped-disabled':
+            return 'disabled';
+        case 'skipped-network':
+            return 'network skipped';
+        case 'skipped-budget':
+            return 'budget skipped';
+        case 'skipped-unsupported':
+            return 'unsupported';
+        case 'no-targets':
+            return 'no targets';
+        default:
+            return outcome;
+    }
+};
+
+const formatPrefetchAttemptTime = (timestampMs: number): string => {
+    if (!Number.isFinite(timestampMs)) return '';
+    return new Date(timestampMs).toLocaleTimeString();
 };
 
 const runSeoAudit = (): AuditResult => {
@@ -391,6 +547,15 @@ export const OnPageDebugger: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, true)
     );
+    const [prefetchSectionExpanded, setPrefetchSectionExpanded] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY, false)
+    );
+    const [viewTransitionSectionExpanded, setViewTransitionSectionExpanded] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY, false)
+    );
+    const [prefetchOverlayEnabled, setPrefetchOverlayEnabled] = useState(() =>
+        readStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, false)
+    );
     const [trackingEnabled, setTrackingEnabled] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, true)
     );
@@ -408,7 +573,25 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
+    const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
+    const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
+        buildViewTransitionDiagnostics(`${location.pathname}${location.search}`)
+    );
+    const [viewTransitionEvents, setViewTransitionEvents] = useState<ViewTransitionEventEntry[]>([]);
     const simulatedLoggedInRef = useRef(simulatedLoggedIn);
+    const prefetchOverlayTimeoutsRef = useRef<number[]>([]);
+    const isPrefetchEnabled = isNavPrefetchEnabled();
+    const totalPrefetchSkips = prefetchStats.skippedDisabled
+        + prefetchStats.skippedNetwork
+        + prefetchStats.skippedBudget
+        + prefetchStats.skippedUnsupportedPath;
+    const recentPrefetchAttempts = prefetchStats.recentAttempts.slice(0, 10);
+    const recentlyWarmedRoutePaths = Array.from(new Set(
+        prefetchStats.recentAttempts
+            .filter((attempt) => attempt.outcome === 'scheduled' || attempt.outcome === 'already-warm')
+            .map((attempt) => attempt.path)
+    )).slice(0, 8);
 
     useEffect(() => {
         if (autoOpenEnabled) {
@@ -437,6 +620,18 @@ export const OnPageDebugger: React.FC = () => {
     }, [isExpanded]);
 
     useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY, prefetchSectionExpanded, false);
+    }, [prefetchSectionExpanded]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_VIEW_TRANSITION_SECTION_EXPANDED_STORAGE_KEY, viewTransitionSectionExpanded, false);
+    }, [viewTransitionSectionExpanded]);
+
+    useEffect(() => {
+        persistStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, prefetchOverlayEnabled, false);
+    }, [prefetchOverlayEnabled]);
+
+    useEffect(() => {
         persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, true);
     }, [trackingEnabled]);
 
@@ -451,6 +646,26 @@ export const OnPageDebugger: React.FC = () => {
     useEffect(() => {
         persistStoredDebuggerBoolean(SIMULATED_LOGIN_STORAGE_KEY, simulatedLoggedIn, false);
     }, [simulatedLoggedIn]);
+
+    useEffect(() => {
+        return () => {
+            prefetchOverlayTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+            prefetchOverlayTimeoutsRef.current = [];
+        };
+    }, []);
+
+    useEffect(() => {
+        setPrefetchStats(getPrefetchStats());
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent<PrefetchStats>).detail;
+            if (!detail) return;
+            setPrefetchStats(detail);
+        };
+        window.addEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        return () => {
+            window.removeEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        };
+    }, []);
 
     useEffect(() => {
         setMetaSnapshot(readMetaSnapshot());
@@ -650,6 +865,18 @@ export const OnPageDebugger: React.FC = () => {
         return result;
     }, []);
 
+    const runViewTransitionAuditAndStore = useCallback(() => {
+        const route = `${location.pathname}${location.search}`;
+        const result = buildViewTransitionDiagnostics(route);
+        setViewTransitionDiagnostics(result);
+        return result;
+    }, [location.pathname, location.search]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        runViewTransitionAuditAndStore();
+    }, [isOpen, location.pathname, location.search, runViewTransitionAuditAndStore]);
+
     const toggleAutoOpen = useCallback(() => {
         const next = !autoOpenEnabled;
         setAutoOpenEnabled(next);
@@ -659,9 +886,6 @@ export const OnPageDebugger: React.FC = () => {
         const resolved = setDbSimulatedLoggedIn(next);
         setSimulatedLoggedIn(resolved);
         simulatedLoggedInRef.current = resolved;
-        window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
-            detail: { available: true, loggedIn: resolved },
-        }));
         return resolved;
     }, []);
 
@@ -704,6 +928,72 @@ export const OnPageDebugger: React.FC = () => {
         setTripExpiredDebug(resolved);
     }, []);
 
+    const handleViewTransitionDebugEvent = useCallback((event: Event) => {
+        const customEvent = event as CustomEvent<ViewTransitionDebugDetail | undefined>;
+        const detail = customEvent.detail;
+        if (!detail || typeof detail.phase !== 'string') return;
+
+        setViewTransitionEvents((prev) => {
+            const nextEntry: ViewTransitionEventEntry = {
+                id: `${Date.now()}-${detail.phase}-${Math.random().toString(16).slice(2, 8)}`,
+                timestampLabel: new Date().toLocaleTimeString(),
+                detail,
+            };
+            return [nextEntry, ...prev].slice(0, 10);
+        });
+
+    }, []);
+
+    const handlePrefetchLinkHighlightEvent = useCallback((event: Event) => {
+        if (!isOpen || !prefetchOverlayEnabled) return;
+        const customEvent = event as CustomEvent<PrefetchLinkHighlightDebugDetail | undefined>;
+        const detail = customEvent.detail;
+        if (!detail) return;
+
+        const id = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        const label = truncate(`${detail.reason} → ${detail.path}`, 96);
+
+        setPrefetchHighlightBoxes((prev) => ([
+            {
+                id,
+                top: detail.top,
+                left: detail.left,
+                width: detail.width,
+                height: detail.height,
+                label,
+                placeLabelBelow: detail.top < 22,
+            },
+            ...prev,
+        ]).slice(0, 18));
+
+        const timeoutId = window.setTimeout(() => {
+            setPrefetchHighlightBoxes((prev) => prev.filter((box) => box.id !== id));
+            prefetchOverlayTimeoutsRef.current = prefetchOverlayTimeoutsRef.current.filter((activeId) => activeId !== timeoutId);
+        }, 1800);
+        prefetchOverlayTimeoutsRef.current.push(timeoutId);
+    }, [isOpen, prefetchOverlayEnabled]);
+
+    useEffect(() => {
+        const handler = (event: Event) => handleViewTransitionDebugEvent(event);
+        window.addEventListener(VIEW_TRANSITION_DEBUG_EVENT, handler as EventListener);
+        return () => {
+            window.removeEventListener(VIEW_TRANSITION_DEBUG_EVENT, handler as EventListener);
+        };
+    }, [handleViewTransitionDebugEvent]);
+
+    useEffect(() => {
+        const handler = (event: Event) => handlePrefetchLinkHighlightEvent(event);
+        window.addEventListener(PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT, handler as EventListener);
+        return () => {
+            window.removeEventListener(PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT, handler as EventListener);
+        };
+    }, [handlePrefetchLinkHighlightEvent]);
+
+    useEffect(() => {
+        if (isOpen && prefetchOverlayEnabled) return;
+        setPrefetchHighlightBoxes([]);
+    }, [isOpen, prefetchOverlayEnabled]);
+
     const api = useMemo<OnPageDebuggerApi>(() => ({
         show: () => {
             setIsOpen(true);
@@ -720,8 +1010,9 @@ export const OnPageDebugger: React.FC = () => {
         openLighthouse,
         runSeoAudit: runSeoAuditAndStore,
         runA11yAudit: runA11yAuditAndStore,
+        runViewTransitionAudit: runViewTransitionAuditAndStore,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
+    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
@@ -752,6 +1043,9 @@ export const OnPageDebugger: React.FC = () => {
                 if (command.a11y) {
                     runA11yAuditAndStore();
                 }
+                if (command.viewTransition) {
+                    runViewTransitionAuditAndStore();
+                }
                 return api;
             }
 
@@ -771,7 +1065,7 @@ export const OnPageDebugger: React.FC = () => {
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
         };
-    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, showSeoTools, toggleSimulatedLogin]);
 
     useEffect(() => {
         return () => {
@@ -814,6 +1108,30 @@ export const OnPageDebugger: React.FC = () => {
                 </div>
             )}
 
+            {prefetchOverlayEnabled && prefetchHighlightBoxes.length > 0 && (
+                <div className="pointer-events-none fixed inset-0 z-[1592]">
+                    {prefetchHighlightBoxes.map((box) => (
+                        <div
+                            key={box.id}
+                            className="absolute border border-cyan-500 bg-cyan-500/10"
+                            style={{
+                                top: `${box.top}px`,
+                                left: `${box.left}px`,
+                                width: `${box.width}px`,
+                                height: `${box.height}px`,
+                            }}
+                        >
+                            <span
+                                className="absolute left-0 z-[1] max-w-[340px] rounded bg-cyan-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-md"
+                                style={box.placeLabelBelow ? { top: '100%', marginTop: '2px' } : { bottom: '100%', marginBottom: '2px' }}
+                            >
+                                {box.label}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {showSeoTools && h1HighlightEnabled && h1HighlightBox && (
                 <div className="pointer-events-none fixed inset-0 z-[1595]">
                     <div
@@ -844,6 +1162,26 @@ export const OnPageDebugger: React.FC = () => {
                         </span>
                         <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
                             {trackingBoxes.length} tracked in viewport
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            isPrefetchEnabled
+                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                        }`}>
+                            Prefetch {isPrefetchEnabled ? 'on' : 'off'}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Prefetch {prefetchStats.completed}/{prefetchStats.attempts}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Prefetch skips {totalPrefetchSkips}
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            viewTransitionDiagnostics.supported
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-amber-300 bg-amber-50 text-amber-700'
+                        }`}>
+                            VT API {viewTransitionDiagnostics.supported ? 'on' : 'off'}
                         </span>
                         {showSeoTools && seoAudit && (
                             <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
@@ -927,6 +1265,19 @@ export const OnPageDebugger: React.FC = () => {
 
                                 <button
                                     type="button"
+                                    onClick={() => setPrefetchOverlayEnabled((prev) => !prev)}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                        prefetchOverlayEnabled
+                                            ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <RocketLaunch size={16} weight="duotone" />
+                                    {prefetchOverlayEnabled ? 'Hide Prefetch Overlay' : 'Show Prefetch Overlay'}
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={() => toggleSimulatedLogin()}
                                     className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                         simulatedLoggedIn
@@ -984,6 +1335,15 @@ export const OnPageDebugger: React.FC = () => {
 
                                 <button
                                     type="button"
+                                    onClick={runViewTransitionAuditAndStore}
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <RocketLaunch size={16} weight="duotone" />
+                                    Refresh VT Diagnostics
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={openLighthouse}
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
@@ -1011,7 +1371,8 @@ export const OnPageDebugger: React.FC = () => {
                             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                                 <span>
                                     Console: run <code className="rounded bg-slate-200 px-1 py-0.5">debug()</code> to reopen,{' '}
-                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation.
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation,{' '}
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">onPageDebugger.runViewTransitionAudit()</code> for transition anchors.
                                 </span>
                                 <button
                                     type="button"
@@ -1024,6 +1385,183 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     {autoOpenEnabled ? 'Auto-open enabled' : 'Enable auto-open'}
                                 </button>
+                            </div>
+
+                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
+                                        <span
+                                            title="Navigation prefetch warms route chunks before a user navigates, based on hover/focus/touch/viewport/idle intent."
+                                            className="inline-flex items-center text-slate-500"
+                                        >
+                                            <Info size={14} weight="duotone" />
+                                        </span>
+                                        <span
+                                            title="Guardrails: skips prefetching when disabled by env, on hidden tabs, with Save-Data, or on 2g/slow-2g connections."
+                                            className="inline-flex items-center text-slate-500"
+                                        >
+                                            <Info size={14} />
+                                        </span>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 text-slate-500">
+                                        {prefetchSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                                        {prefetchSectionExpanded ? 'Hide' : 'Show'}
+                                    </span>
+                                </button>
+
+                                {prefetchSectionExpanded && (
+                                    <div className="mt-2">
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
+                                            This warms likely next-route assets in the background to reduce follow-up navigation latency. The list below shows what was attempted in this session and why each attempt was used or skipped.
+                                        </div>
+
+                                        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Attempts:</strong> {prefetchStats.attempts}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Completed:</strong> {prefetchStats.completed}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Skips:</strong> {totalPrefetchSkips}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Skip reasons:</strong>{' '}
+                                                disabled {prefetchStats.skippedDisabled}, network {prefetchStats.skippedNetwork}, budget {prefetchStats.skippedBudget}, unsupported {prefetchStats.skippedUnsupportedPath}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Triggers:</strong>{' '}
+                                                hover {prefetchStats.reasons.hover}, focus {prefetchStats.reasons.focus}, pointer {prefetchStats.reasons.pointerdown}, touch {prefetchStats.reasons.touchstart}, viewport {prefetchStats.reasons.viewport}, idle {prefetchStats.reasons.idle}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                            <strong className="text-slate-900">Recently warmed routes:</strong>{' '}
+                                            {recentlyWarmedRoutePaths.length > 0 ? recentlyWarmedRoutePaths.join(', ') : 'none yet'}
+                                        </div>
+
+                                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Prefetched target modules:</strong>{' '}
+                                                {prefetchStats.prefetchedTargetKeys.length > 0
+                                                    ? prefetchStats.prefetchedTargetKeys.slice(0, 16).join(', ')
+                                                    : 'none yet'}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Active queue:</strong>{' '}
+                                                queued {prefetchStats.queuedTargetKeys.length}, in-flight {prefetchStats.inFlightTargetKeys.length}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                            <strong className="text-slate-900">Recent prefetch attempts:</strong>{' '}
+                                            {recentPrefetchAttempts.length === 0 ? 'none captured yet' : ''}
+                                            {recentPrefetchAttempts.length > 0 && (
+                                                <ul className="mt-1 space-y-0.5">
+                                                    {recentPrefetchAttempts.map((attempt) => (
+                                                        <li key={attempt.id}>
+                                                            <span className="font-medium text-slate-900">{formatPrefetchAttemptTime(attempt.timestampMs)}</span>{' '}
+                                                            <span className="font-medium">{attempt.reason}</span>{' '}
+                                                            <span>• {formatPrefetchAttemptOutcome(attempt.outcome)}</span>{' '}
+                                                            <span>• {attempt.path}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
+                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-semibold uppercase tracking-wide text-slate-500">
+                                            View Transition Diagnostics
+                                        </h3>
+                                        <span className="text-slate-500">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1 text-slate-500">
+                                        {viewTransitionSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                                        {viewTransitionSectionExpanded ? 'Hide' : 'Show'}
+                                    </span>
+                                </button>
+
+                                {viewTransitionSectionExpanded && (
+                                    <div className="mt-2">
+                                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">API:</strong>{' '}
+                                                {viewTransitionDiagnostics.supported ? 'available' : 'missing'}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Reduced motion:</strong>{' '}
+                                                {viewTransitionDiagnostics.prefersReducedMotion ? 'on' : 'off'}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Route:</strong> {viewTransitionDiagnostics.route}
+                                            </div>
+                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                <strong className="text-slate-900">Anchors:</strong>{' '}
+                                                map {viewTransitionDiagnostics.tripMapAnchors}, title {viewTransitionDiagnostics.tripTitleAnchors}, lanes {viewTransitionDiagnostics.tripCityLaneAnchors}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                            <strong className="text-slate-900">Tracked anchor names:</strong>{' '}
+                                            {viewTransitionDiagnostics.trackedAnchorNames.length > 0
+                                                ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
+                                                : 'none detected'}
+                                        </div>
+
+                                        {viewTransitionDiagnostics.duplicateAnchorNames.length > 0 && (
+                                            <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                                                <strong>Duplicate anchor names:</strong>{' '}
+                                                {viewTransitionDiagnostics.duplicateAnchorNames.join(', ')}
+                                            </div>
+                                        )}
+
+                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                            <strong className="text-slate-900">Recent transition events:</strong>{' '}
+                                            {viewTransitionEvents.length === 0 ? 'none captured yet' : ''}
+                                            {viewTransitionEvents.length > 0 && (
+                                                <ul className="mt-1 space-y-0.5">
+                                                    {viewTransitionEvents.map((entry) => (
+                                                        <li key={entry.id}>
+                                                            <span className="font-medium text-slate-900">{entry.timestampLabel}</span>{' '}
+                                                            <span className="font-medium">{entry.detail.phase}</span>
+                                                            {entry.detail.templateId ? ` • ${entry.detail.templateId}` : ''}
+                                                            {entry.detail.durationMs ? ` • ${entry.detail.durationMs}ms` : ''}
+                                                            {typeof entry.detail.useExampleSharedTransition === 'boolean'
+                                                                ? ` • shared ${entry.detail.useExampleSharedTransition ? 'on' : 'off'}`
+                                                                : ''}
+                                                            {typeof entry.detail.expectedCityLaneCount === 'number'
+                                                                ? ` • lanes ${entry.detail.expectedCityLaneCount}`
+                                                                : ''}
+                                                            {entry.detail.reason ? ` • ${entry.detail.reason}` : ''}
+                                                            {entry.detail.error ? ` • ${entry.detail.error}` : ''}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {showSeoTools && (

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPostsForLocales } from '../services/blogService';
+import { ProgressiveImage } from '../components/ProgressiveImage';
 import type { BlogPost } from '../services/blogService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
@@ -36,36 +37,19 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
             <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
                 {showImage ? (
                     <>
-                        <picture className="absolute inset-0 block h-full w-full">
-                            <source
-                                type="image/webp"
-                                srcSet={[
-                                    `${post.images.card.sources.xsmall} 480w`,
-                                    `${post.images.card.sources.small} 768w`,
-                                    `${post.images.card.sources.medium} 1024w`,
-                                    `${post.images.card.sources.large} 1536w`,
-                                ].join(', ')}
-                                sizes={BLOG_CARD_IMAGE_SIZES}
-                            />
-                            <img
-                                src={post.images.card.sources.small}
-                                srcSet={[
-                                    `${post.images.card.sources.xsmall} 480w`,
-                                    `${post.images.card.sources.small} 768w`,
-                                    `${post.images.card.sources.medium} 1024w`,
-                                    `${post.images.card.sources.large} 1536w`,
-                                ].join(', ')}
-                                sizes={BLOG_CARD_IMAGE_SIZES}
-                                alt={post.images.card.alt}
-                                loading="lazy"
-                                decoding="async"
-                                fetchPriority="low"
-                                width={1536}
-                                height={1024}
-                                onError={() => setHasImageError(true)}
-                                className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
-                            />
-                        </picture>
+                        <ProgressiveImage
+                            src={post.images.card.sources.large}
+                            alt={post.images.card.alt}
+                            width={1536}
+                            height={1024}
+                            sizes={BLOG_CARD_IMAGE_SIZES}
+                            srcSetWidths={[480, 768, 1024, 1536]}
+                            placeholderKey={post.images.card.sources.large}
+                            loading="lazy"
+                            fetchPriority="low"
+                            onError={() => setHasImageError(true)}
+                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
+                        />
                         <div className={BLOG_CARD_IMAGE_FADE} />
                         <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
                     </>

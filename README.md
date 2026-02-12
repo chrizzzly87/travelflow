@@ -32,6 +32,12 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
+# Optional provider request timeout tuning (ms)
+# /api/ai/generate default: 35000 (kept below typical edge response timeout window)
+AI_GENERATE_PROVIDER_TIMEOUT_MS=35000
+# /api/internal/ai/benchmark worker default: 90000
+# Values below 90000 are ignored (benchmark keeps a hard 90s minimum).
+AI_BENCHMARK_PROVIDER_TIMEOUT_MS=90000
 # Temporary internal API guard (admin benchmark endpoints)
 TF_ADMIN_API_KEY=replace_with_a_long_random_secret
 ```

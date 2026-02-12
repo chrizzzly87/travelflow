@@ -53,3 +53,10 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🔄 Added benchmark-page startup bootstrap to auto-load the latest persisted benchmark session when no `session` URL param is present, so refresh does not appear to lose prior runs.
 - [ ] [Internal] 🛑 Added benchmark cancellation support (`POST /api/internal/ai/benchmark/cancel`) with per-run and per-session abort actions in `/admin/ai-benchmark`.
 - [ ] [Internal] 📡 Kept benchmark polling/live-latency updates active after reloading an in-progress session so running rows continue updating until completion or manual abort.
+- [ ] [Internal] ⏳ Switched benchmark execution off nested `/api/ai/generate` calls to direct provider runtime execution with a dedicated benchmark timeout budget (`AI_BENCHMARK_PROVIDER_TIMEOUT_MS`, default 90s) to reduce edge timeout failures.
+- [ ] [Internal] 🧰 Added provider timeout environment controls for runtime and benchmark paths (`AI_GENERATE_PROVIDER_TIMEOUT_MS`, `AI_BENCHMARK_PROVIDER_TIMEOUT_MS`) and documented expected defaults.
+- [ ] [Internal] 🛡️ Enforced a hard 90s minimum benchmark provider timeout so low env overrides (for example `10000`) can no longer force premature benchmark request aborts.
+- [ ] [Internal] 🧭 Improved `/admin/ai-benchmark` execution UX by auto-scrolling to results on `Test all`, removing redundant “Left panel” labeling, and tightening the internal auth card layout on small screens.
+- [ ] [Internal] 🚦 Increased benchmark parallel execution cap to 5 workers (with automatic queueing for additional selected models) and surfaced this directly in the model-selection UI.
+- [ ] [Internal] 💵 Added benchmark cost-display fallback to model-catalog estimates when exact provider `cost_usd` is unavailable, plus clarifying copy in the results section.
+- [ ] [Internal] 🧪 Downgraded `countryInfo` benchmark validation failures to non-blocking warnings, tightened AI prompt/schema guidance to require numeric `exchangeRate`, and hardened destination info UI to disable currency conversion when malformed exchange data is returned.

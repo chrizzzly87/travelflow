@@ -709,6 +709,13 @@ const buildMapLabels = (
 const getMapType = (mapStyle: OgMapStyle): "roadmap" | "satellite" =>
   mapStyle === "satellite" ? "satellite" : "roadmap";
 
+const getEffectiveStaticMapStyle = (mapStyle: OgMapStyle): OgMapStyle => {
+  // Static Maps satellite/hybrid requests can be unavailable for some account/region combinations.
+  // Use clean roadmap as deterministic fallback for OG rendering reliability.
+  if (mapStyle === "satellite") return "clean";
+  return mapStyle;
+};
+
 const getMapStyleQuery = (mapStyle: OgMapStyle): string => {
   if (mapStyle === "clean") return TOOLTIP_CLEAN_STYLE;
   if (mapStyle === "minimal") return MINIMAL_MAP_STYLE;
@@ -828,6 +835,7 @@ const buildMapPreviewUrl = async (
   if (routeCoordinates.length === 0) return { mapUrl: null, mapLabels: [] };
 
   const mapStyle = normalizeOgMapStyle(preferences?.mapStyle);
+  const effectiveMapStyle = getEffectiveStaticMapStyle(mapStyle);
   const routeMode = normalizeOgRouteMode(preferences?.routeMode);
   const mapColorMode = normalizeMapColorMode(preferences?.mapColorMode ?? trip.mapColorMode);
   const routeColor = mapColorMode === "trip" ? getTripPrimaryCityColorHex(trip) : BRAND_ROUTE_COLOR_HEX;
@@ -878,10 +886,10 @@ const buildMapPreviewUrl = async (
     if (simplePath) pathParams = [simplePath];
   }
 
-  const styleParams = [getMapStyleQuery(mapStyle)];
+  const styleParams = [getMapStyleQuery(effectiveMapStyle)];
 
   const mapUrl =
-    `https://maps.googleapis.com/maps/api/staticmap?size=${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}&scale=2&maptype=${getMapType(mapStyle)}` +
+    `https://maps.googleapis.com/maps/api/staticmap?size=${OG_MAP_WIDTH}x${OG_MAP_HEIGHT}&scale=2&maptype=${getMapType(effectiveMapStyle)}` +
     `&center=${encodeURIComponent(formatCoord(viewport.center))}` +
     `&zoom=${viewport.zoom}` +
     (styleParams.filter(Boolean).length > 0 ? `&${styleParams.filter(Boolean).join("&")}` : "") +

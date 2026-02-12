@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article } from '@phos
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { ProgressiveImage } from '../components/ProgressiveImage';
 import { getBlogPostBySlug, getPublishedBlogPosts } from '../services/blogService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
@@ -200,36 +201,19 @@ export const BlogPostPage: React.FC = () => {
                 <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
                     {!hasHeaderImageError && (
                         <>
-                            <picture className="absolute inset-0 block h-full w-full">
-                                <source
-                                    type="image/webp"
-                                    srcSet={[
-                                        `${post.images.header.sources.xsmall} 480w`,
-                                        `${post.images.header.sources.small} 768w`,
-                                        `${post.images.header.sources.medium} 1024w`,
-                                        `${post.images.header.sources.large} 1536w`,
-                                    ].join(', ')}
-                                    sizes={BLOG_HEADER_IMAGE_SIZES}
-                                />
-                                <img
-                                    src={post.images.header.sources.medium}
-                                    srcSet={[
-                                        `${post.images.header.sources.xsmall} 480w`,
-                                        `${post.images.header.sources.small} 768w`,
-                                        `${post.images.header.sources.medium} 1024w`,
-                                        `${post.images.header.sources.large} 1536w`,
-                                    ].join(', ')}
-                                    sizes={BLOG_HEADER_IMAGE_SIZES}
-                                    alt={post.images.header.alt}
-                                    loading="eager"
-                                    decoding="async"
-                                    fetchPriority="high"
-                                    width={1536}
-                                    height={1024}
-                                    onError={() => setHasHeaderImageError(true)}
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                />
-                            </picture>
+                            <ProgressiveImage
+                                src={post.images.header.sources.large}
+                                alt={post.images.header.alt}
+                                width={1536}
+                                height={1024}
+                                sizes={BLOG_HEADER_IMAGE_SIZES}
+                                srcSetWidths={[480, 768, 1024, 1536]}
+                                placeholderKey={post.images.header.sources.large}
+                                loading="eager"
+                                fetchPriority="high"
+                                onError={() => setHasHeaderImageError(true)}
+                                className="absolute inset-0 h-full w-full object-cover"
+                            />
                             <div className={BLOG_HEADER_IMAGE_FADE} />
                             <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                         </>
