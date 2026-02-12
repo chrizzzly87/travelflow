@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.57.0
+version: v0.46.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
 published_at: 2026-02-12T15:18:56Z
