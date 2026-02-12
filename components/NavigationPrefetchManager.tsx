@@ -3,9 +3,12 @@ import { useLocation } from 'react-router-dom';
 import {
     clearHoverIntentTimer,
     isNavPrefetchEnabled,
+    PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
     publishPrefetchStats,
     scheduleHoverIntentWarmup,
     scheduleIdleWarmups,
+    type PrefetchLinkHighlightDebugDetail,
+    type PrefetchReason,
     warmRouteAssets,
 } from '../services/navigationPrefetch';
 
@@ -51,6 +54,31 @@ export const NavigationPrefetchManager: React.FC = () => {
     if (!prefetchEnabled) {
         return null;
     }
+
+    const emitPrefetchLinkHighlight = (element: Element, path: string, reason: PrefetchReason) => {
+        if (typeof window === 'undefined') return;
+        const rect = element.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+        if (rect.bottom < 0 || rect.top > window.innerHeight || rect.right < 0 || rect.left > window.innerWidth) return;
+
+        const top = Math.max(0, rect.top);
+        const left = Math.max(0, rect.left);
+        const width = Math.max(0, Math.min(rect.width, window.innerWidth - left));
+        const height = Math.max(0, Math.min(rect.height, window.innerHeight - top));
+        if (width <= 0 || height <= 0) return;
+
+        const detail: PrefetchLinkHighlightDebugDetail = {
+            path,
+            reason,
+            top,
+            left,
+            width,
+            height,
+        };
+        window.dispatchEvent(new CustomEvent<PrefetchLinkHighlightDebugDetail>(PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT, {
+            detail,
+        }));
+    };
 
     const toInternalPath = (rawHref: string): string | null => {
         if (!rawHref) return null;
@@ -104,7 +132,9 @@ export const NavigationPrefetchManager: React.FC = () => {
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
-            scheduleHoverIntentWarmup(intent.sourceElement, intent.path);
+            scheduleHoverIntentWarmup(intent.sourceElement, intent.path, () => {
+                emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'hover');
+            });
         };
 
         const onPointerLeave = (event: Event) => {
@@ -117,6 +147,7 @@ export const NavigationPrefetchManager: React.FC = () => {
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
+            emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'focus');
             void warmRouteAssets(intent.path, 'focus');
             publishPrefetchStats();
         };
@@ -125,6 +156,7 @@ export const NavigationPrefetchManager: React.FC = () => {
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
+            emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'pointerdown');
             void warmRouteAssets(intent.path, 'pointerdown');
             publishPrefetchStats();
         };
@@ -133,6 +165,7 @@ export const NavigationPrefetchManager: React.FC = () => {
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
+            emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'touchstart');
             void warmRouteAssets(intent.path, 'touchstart');
             publishPrefetchStats();
         };
@@ -165,6 +198,7 @@ export const NavigationPrefetchManager: React.FC = () => {
                 if (!intent) return;
                 if (intent.path === window.location.pathname) return;
                 viewportWarmups += 1;
+                emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'viewport');
                 void warmRouteAssets(intent.path, 'viewport');
                 observer.unobserve(element);
                 publishPrefetchStats();

@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-11-page-speed-continuous-optimization
-version: v0.56.0
+version: v0.57.0
 title: "Page speed baseline and continuous optimization"
 date: 2026-02-12
-published_at: 2026-02-12T14:45:48Z
+published_at: 2026-02-12T15:18:56Z
 status: published
 notify_in_app: true
 in_app_hours: 24
@@ -26,4 +26,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧹 Production builds now prune `console.log/info/debug` while preserving warnings and errors.
 - [ ] [Internal] 🧭 Added centralized prefetch target mapping plus queue/budget/network guardrails to keep prefetching effective without overfetching.
 - [ ] [Internal] 🧪 Added live navigation-prefetch diagnostics to the on-page debugger for attempts/completions/skip-reason visibility.
+- [ ] [Internal] 🧰 Made Navigation Prefetch and View Transition debugger cards collapsible (persisted state), added inline info tooltips, and added an optional overlay that highlights links when prefetch is triggered.
 - [ ] [Internal] 📋 Continued documenting performance and transition guardrails in backlog/docs to prevent regressions during UX iteration.
