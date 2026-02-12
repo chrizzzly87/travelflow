@@ -602,7 +602,9 @@ const ExampleTripLoader = ({
                     import('./data/exampleTripCards'),
                 ]);
                 if (cancelled) return;
-                setTemplateFactory((TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null);
+                const nextFactory = (TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null;
+                // Factory values are functions, so pass an updater callback to set the function itself.
+                setTemplateFactory(() => nextFactory);
                 setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? null);
             } catch {
                 if (cancelled) return;
