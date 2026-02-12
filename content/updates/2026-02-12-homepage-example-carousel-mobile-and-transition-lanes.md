@@ -13,6 +13,7 @@ summary: "Stabilized the homepage example carousel on mobile and upgraded exampl
 ## Changes
 - [x] [Fixed] 📱 Removed homepage horizontal body overflow on mobile around the animated example carousel.
 - [x] [Fixed] 🖼️ Restored the original desktop carousel breakout/fade behavior while keeping the mobile overflow fix.
+- [x] [Fixed] 🖐️ Disabled text selection on homepage example cards (including iOS touch callout) for smoother swipe and tap behavior.
 - [x] [Improved] 🔗 Added a harmonized “Discover more inspirations” section link below the homepage carousel and tracked clicks via Umami event analytics.
 - [x] [Fixed] ⚡ Reduced delay when opening example trips by prewarming the trip view in the background instead of blocking navigation on click.
 - [x] [Improved] 🗓️ Added minimal bottom calendar lanes on every example card that mirror city stay colors and relative stay/route sizing.
