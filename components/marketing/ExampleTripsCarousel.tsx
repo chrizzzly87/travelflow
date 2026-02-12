@@ -115,7 +115,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                 </p>
             </div>
 
-            <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden">
+            <div className="relative mt-12 -mx-5 md:-mx-8 lg:mx-[calc(-50vw+50%)] overflow-hidden pb-3">
                 <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-slate-50 to-transparent md:w-24" />
                 <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-slate-50 to-transparent md:w-24" />
 

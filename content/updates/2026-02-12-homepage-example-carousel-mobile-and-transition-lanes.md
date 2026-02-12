@@ -19,6 +19,7 @@ summary: "Stabilized the homepage example carousel on mobile and upgraded exampl
 - [x] [Improved] 🏷️ Added city-lane hover tooltips on example cards with subtle offset outlines derived from each lane color.
 - [x] [Fixed] 🎯 Increased city-lane hover hit area, switched tooltips to city names only, and stabilized lane hover styling to avoid visible card jitter.
 - [x] [Fixed] 🧭 Refined city-lane hover visuals with a tighter, thicker border effect and kept pointer cursor behavior.
+- [x] [Fixed] 🪟 Added extra carousel vertical buffer so example card hover shadows are no longer clipped at the wrapper edge.
 - [x] [Improved] 🧬 Linked example card map/title/city-lane visuals to matching trip-page elements via shared View Transition names for smoother morph animations.
 - [x] [Fixed] 🎞️ Temporarily disabled homepage-to-example View Transition triggering to restore fast, direct navigation while transition reliability is investigated.
 - [x] [Fixed] ⚙️ Removed global click-based View Transition wrapping for route changes to avoid slow back navigation from trip pages.
