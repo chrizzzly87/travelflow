@@ -7,6 +7,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
 import { APP_NAME } from './config/appGlobals';
 
 const localeModules = import.meta.glob('./locales/*/*.json');
+const preloadCache = new Set<string>();
 
 const loadLocaleNamespace = async (language: string, namespace: string) => {
     const normalizedLanguage = isLocale(language) ? language : DEFAULT_LOCALE;
@@ -26,6 +27,20 @@ const loadLocaleNamespace = async (language: string, namespace: string) => {
     }
 
     return {};
+};
+
+export const preloadLocaleNamespaces = async (language: string, namespaces: string[]): Promise<void> => {
+    const normalizedLanguage = isLocale(language) ? language : DEFAULT_LOCALE;
+    const uniqueNamespaces = Array.from(new Set(namespaces.filter(Boolean)));
+
+    await Promise.all(uniqueNamespaces.map(async (namespace) => {
+        const cacheKey = `${normalizedLanguage}:${namespace}`;
+        if (preloadCache.has(cacheKey) || i18n.hasResourceBundle(normalizedLanguage, namespace)) return;
+
+        const resources = await loadLocaleNamespace(normalizedLanguage, namespace);
+        i18n.addResourceBundle(normalizedLanguage, namespace, resources, true, true);
+        preloadCache.add(cacheKey);
+    }));
 };
 
 void i18n

@@ -6,11 +6,12 @@ import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { DEFAULT_LOCALE, localeToDir, localeToHtmlLang, normalizeLocale } from '../../config/locales';
+import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
+import { preloadLocaleNamespaces } from '../../i18n';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -61,30 +62,32 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         onClose();
     };
 
-    const handleLocaleChange = async (nextLocaleRaw: string) => {
+    const handleLocaleChange = (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
         if (nextLocale === activeLocale) {
             onClose();
             return;
         }
+
+        onClose();
+
+        if (!isToolRoute(location.pathname)) {
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
+        } else {
+            void preloadLocaleNamespaces(nextLocale, ['common']);
+        }
+
+        applyDocumentLocale(nextLocale);
+        void i18n.changeLanguage(nextLocale);
+
         const target = buildLocalizedLocation({
             pathname: location.pathname,
             search: location.search,
             hash: location.hash,
             targetLocale: nextLocale,
         });
-        try {
-            await i18n.changeLanguage(nextLocale);
-        } catch {
-            // Route locale still drives language as a fallback in App.tsx.
-        }
-        if (typeof document !== 'undefined') {
-            document.documentElement.lang = localeToHtmlLang(nextLocale);
-            document.documentElement.dir = localeToDir(nextLocale);
-        }
         navigate(target);
         trackEvent('mobile_nav__language_switch', { from: activeLocale, to: nextLocale });
-        onClose();
     };
 
     const mobileNavDebugAttributes = (target: string) =>

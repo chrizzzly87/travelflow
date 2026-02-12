@@ -72,3 +72,19 @@ export const LOCALE_FLAGS: Record<AppLanguage, string> = {
 export const formatLocaleOptionLabel = (locale: AppLanguage): string => {
     return `${LOCALE_FLAGS[locale]} ${LOCALE_LABELS[locale]}`;
 };
+
+export const applyDocumentLocale = (locale: AppLanguage): void => {
+    if (typeof document === 'undefined') return;
+
+    const htmlLang = localeToHtmlLang(locale);
+    document.documentElement.lang = htmlLang;
+    document.documentElement.dir = localeToDir(locale);
+
+    let contentLanguageMeta = document.querySelector('meta[name="content-language"]') as HTMLMetaElement | null;
+    if (!contentLanguageMeta) {
+        contentLanguageMeta = document.createElement('meta');
+        contentLanguageMeta.setAttribute('name', 'content-language');
+        document.head.appendChild(contentLanguageMeta);
+    }
+    contentLanguageMeta.setAttribute('content', htmlLang);
+};

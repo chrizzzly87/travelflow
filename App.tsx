@@ -16,7 +16,7 @@ import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, localeToDir, localeToHtmlLang, normalizeLocale } from './config/locales';
+import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
@@ -1011,10 +1011,7 @@ const AppContent: React.FC = () => {
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
 
     useEffect(() => {
-        if (typeof document !== 'undefined') {
-            document.documentElement.lang = localeToHtmlLang(resolvedRouteLocale);
-            document.documentElement.dir = localeToDir(resolvedRouteLocale);
-        }
+        applyDocumentLocale(resolvedRouteLocale);
 
         const currentI18nLanguage = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
         if (currentI18nLanguage !== resolvedRouteLocale) {

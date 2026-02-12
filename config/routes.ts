@@ -229,3 +229,15 @@ export const getBlogSlugFromPath = (pathname: string): string | null => {
     const match = stripped.match(/^\/blog\/([^/]+)\/?$/);
     return match?.[1] ?? null;
 };
+
+export const getNamespacesForMarketingPath = (pathname: string): string[] => {
+    const stripped = stripLocalePrefix(pathname);
+
+    if (stripped === '/') return ['common', 'home'];
+    if (stripped === '/features') return ['common', 'features'];
+    if (stripped === '/pricing') return ['common', 'pricing'];
+    if (stripped.startsWith('/blog')) return ['common', 'blog'];
+    if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
+    if (['/faq', '/login'].includes(stripped)) return ['common', 'wip'];
+    return ['common', 'pages'];
+};

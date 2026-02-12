@@ -1,13 +1,13 @@
 ---
 id: rel-2026-02-12-i18n-locale-seo-rollout
-version: v0.47.0
+version: v0.48.0
 title: "I18n foundation and locale-aware SEO rollout"
 date: 2026-02-12
-published_at: 2026-02-12T19:20:03Z
+published_at: 2026-02-12T20:23:55Z
 status: published
 notify_in_app: false
 in_app_hours: 24
-summary: "Rolled out multilingual marketing + blog foundations with locale-aware SEO, complete ES/PT coverage, and improved language switching UX."
+summary: "Rolled out multilingual marketing + blog foundations with locale-aware SEO, complete ES/PT coverage, and mobile language-switch UX improvements."
 ---
 
 ## Changes

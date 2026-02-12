@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { X, Translate } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { extractLocaleFromPath, isToolRoute } from '../../config/routes';
+import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
+import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import i18n, { preloadLocaleNamespaces } from '../../i18n';
 
 const SESSION_DISMISS_KEY = 'tf_locale_suggestion_dismissed_session';
 
@@ -135,6 +136,10 @@ export const LanguageSuggestionBanner: React.FC = () => {
     };
 
     const handleSwitch = () => {
+        void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(location.pathname));
+        applyDocumentLocale(suggestedLocale);
+        void i18n.changeLanguage(suggestedLocale);
+
         const baseTarget = buildLocalizedLocation({
             pathname: location.pathname,
             search: location.search,
