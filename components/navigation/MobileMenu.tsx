@@ -8,7 +8,7 @@ import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
+import { DEFAULT_LOCALE, localeToDir, localeToHtmlLang, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
 
@@ -27,7 +27,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick }) => {
     const hasTrips = useHasSavedTrips();
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -61,14 +61,27 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         onClose();
     };
 
-    const handleLocaleChange = (nextLocaleRaw: string) => {
+    const handleLocaleChange = async (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
+        if (nextLocale === activeLocale) {
+            onClose();
+            return;
+        }
         const target = buildLocalizedLocation({
             pathname: location.pathname,
             search: location.search,
             hash: location.hash,
             targetLocale: nextLocale,
         });
+        try {
+            await i18n.changeLanguage(nextLocale);
+        } catch {
+            // Route locale still drives language as a fallback in App.tsx.
+        }
+        if (typeof document !== 'undefined') {
+            document.documentElement.lang = localeToHtmlLang(nextLocale);
+            document.documentElement.dir = localeToDir(nextLocale);
+        }
         navigate(target);
         trackEvent('mobile_nav__language_switch', { from: activeLocale, to: nextLocale });
         onClose();

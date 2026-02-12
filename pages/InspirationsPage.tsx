@@ -92,7 +92,7 @@ const BlogLinks: React.FC<{ slugs?: string[]; asText?: boolean }> = ({ slugs, as
                 ) : (
                     <Link
                         key={`${post.language}:${post.slug}`}
-                        to={buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })}
+                        to={buildLocalizedMarketingPath('blogPost', post.language, { slug: post.slug })}
                         className="inline-flex items-center gap-1 text-xs text-accent-700 hover:underline"
                     >
                         <Article size={11} weight="duotone" />

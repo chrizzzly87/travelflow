@@ -12,8 +12,14 @@ interface TooltipPosition {
 const SHOW_DELAY_MS = 550;
 const OFFSET_PX = 10;
 const VIEWPORT_MARGIN_PX = 8;
+const HOVER_CAPABLE_QUERY = '(hover: hover) and (pointer: fine)';
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
+
+const canUseGlobalTooltips = (): boolean => {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
+  return window.matchMedia(HOVER_CAPABLE_QUERY).matches;
+};
 
 const getTooltipTarget = (target: EventTarget | null): HTMLElement | null => {
   if (!(target instanceof Element)) return null;
@@ -101,6 +107,7 @@ const computeTooltipPosition = (
 };
 
 export const GlobalTooltipLayer: React.FC = () => {
+  const [isEnabled, setIsEnabled] = React.useState<boolean>(() => canUseGlobalTooltips());
   const [label, setLabel] = React.useState<string | null>(null);
   const [position, setPosition] = React.useState<TooltipPosition | null>(null);
   const [isVisible, setIsVisible] = React.useState(false);
@@ -164,7 +171,29 @@ export const GlobalTooltipLayer: React.FC = () => {
   }, [label, updatePosition]);
 
   React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const media = window.matchMedia(HOVER_CAPABLE_QUERY);
+    const handleMediaChange = (event: MediaQueryListEvent) => {
+      setIsEnabled(event.matches);
+      if (!event.matches) {
+        hideTooltip();
+      }
+    };
+
+    setIsEnabled(media.matches);
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleMediaChange);
+      return () => media.removeEventListener('change', handleMediaChange);
+    }
+
+    const legacyListener = (event: MediaQueryListEvent) => handleMediaChange(event);
+    media.addListener(legacyListener);
+    return () => media.removeListener(legacyListener);
+  }, [hideTooltip]);
+
+  React.useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!isEnabled) return;
 
     const onMouseOver = (event: MouseEvent) => {
       const targetAnchor = getTooltipTarget(event.target);
@@ -220,9 +249,9 @@ export const GlobalTooltipLayer: React.FC = () => {
       window.removeEventListener('resize', onScrollOrResize);
       clearTimers();
     };
-  }, [clearTimers, hideTooltip, label, scheduleShow, updatePosition]);
+  }, [clearTimers, hideTooltip, isEnabled, label, scheduleShow, updatePosition]);
 
-  if (typeof document === 'undefined' || !label) {
+  if (typeof document === 'undefined' || !label || !isEnabled) {
     return null;
   }
 

@@ -15,10 +15,11 @@
       "nativeAndEnglish": "Native + English",
       "englishOnly": "English only"
     },
-    "mixedLanguageNotice": "This page interface stays in {locale}. English cards and articles are marked, and their content uses lang=\"en\".",
+    "mixedLanguageNotice": "Some posts below are in English so you can discover more stories.",
     "englishArticleNotice": "This article is written in English.",
-    "ctaTitle": "Ready to plan your trip?",
-    "ctaDescription": "Turn these ideas into a real itinerary. Our AI builds your day-by-day plan in seconds."
+    "communityCtaTitle": "Write for the TravelFlow community",
+    "communityCtaDescription": "Are you a blogger or creator with travel stories to share? Reach out and let's publish your ideas together.",
+    "communityCtaButton": "Share your story"
   },
   "post": {
     "notFoundTitle": "Post not found",

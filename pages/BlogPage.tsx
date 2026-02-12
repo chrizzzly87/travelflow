@@ -6,7 +6,7 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPostsForLocales } from '../services/blogService';
 import { ProgressiveImage } from '../components/ProgressiveImage';
 import type { BlogPost } from '../services/blogService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
+import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import { AppLanguage } from '../types';
 
@@ -263,16 +263,16 @@ export const BlogPage: React.FC = () => {
                         className="relative text-3xl font-black tracking-tight text-white md:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                     >
-                        {t('index.ctaTitle')}
+                        {t('index.communityCtaTitle')}
                     </h2>
                     <p className="relative mx-auto mt-4 max-w-xl text-base text-accent-100 md:text-lg">
-                        {t('index.ctaDescription')}
+                        {t('index.communityCtaDescription')}
                     </p>
                     <Link
-                        to={buildPath('createTrip')}
+                        to={buildLocalizedMarketingPath('contact', locale)}
                         className="relative mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:shadow-xl hover:bg-accent-50 hover:scale-[1.03] active:scale-[0.98]"
                     >
-                        {t('common:buttons.startPlanning')}
+                        {t('index.communityCtaButton')}
                         <ArrowRight size={18} weight="bold" />
                     </Link>
                 </div>

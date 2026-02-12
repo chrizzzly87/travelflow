@@ -15,10 +15,11 @@
       "nativeAndEnglish": "Español + inglés",
       "englishOnly": "Solo inglés"
     },
-    "mixedLanguageNotice": "La interfaz de esta página permanece en {locale}. Las tarjetas y artículos en inglés están marcados y su contenido usa lang=\"en\".",
+    "mixedLanguageNotice": "Algunos artículos aquí están en inglés para que descubras más historias.",
     "englishArticleNotice": "Este artículo está escrito en inglés.",
-    "ctaTitle": "¿Listo para planear tu viaje?",
-    "ctaDescription": "Convierte estas ideas en un itinerario real. Nuestra IA construye tu plan día a día en segundos."
+    "communityCtaTitle": "Escribe para la comunidad de TravelFlow",
+    "communityCtaDescription": "¿Eres blogger o creador y quieres compartir tus ideas de viaje? Contáctanos para publicar tu historia.",
+    "communityCtaButton": "Compartir mi historia"
   },
   "post": {
     "notFoundTitle": "Artículo no encontrado",

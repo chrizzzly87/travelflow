@@ -16,7 +16,13 @@ summary: "Rolled out multilingual marketing + blog foundations with locale-aware
 - [x] [New feature] 🇵🇹 Added full Portuguese translations across all active namespaces (home, features, pages, pricing, blog, legal, settings, and shared UI).
 - [x] [Improved] 🎛️ Language selectors now use a consistent style, include Spanish correctly, and follow the requested order: English, Spanish, German, French, Italian, Portuguese, Russian.
 - [x] [Improved] 🧭 Language switching preserves the current route when possible and avoids forced browser-language redirects.
+- [x] [Fixed] 📱 Mobile language switching now updates reliably from the menu and applies locale changes consistently across page sections.
+- [x] [Improved] 🏷️ Locale and translation-info banners now use shorter mobile CTA labels to avoid awkward wrapping on small screens.
+- [x] [Fixed] 🙈 Global hover tooltips are now disabled on touch/mobile devices to prevent sticky floating labels.
+- [x] [Improved] 🔕 Dismissing the locale suggestion banner now hides it for the rest of the current session.
 - [x] [Improved] 📰 Non-English blog pages can show native + English articles with a locale-aware language filter and clear English-content notice.
+- [x] [Fixed] 🔗 English blog entries opened from non-English views now route to the correct article language variant.
+- [x] [Improved] ✍️ Blog pages now feature a creator-focused community CTA for bloggers and storytellers to submit ideas via contact.
 - [x] [Improved] 🔤 Blog cards and article content now set explicit `lang` attributes per post language (including `lang="en"` for English content on non-English pages).
 - [x] [Improved] 🔎 Localized marketing pages now output locale-aware canonical and `hreflang` clusters, including `x-default`, plus localized title/description metadata.
 - [x] [Improved] 🍪 Cookie consent banner and shared footer/header CTA copy are now localized for all supported locales.

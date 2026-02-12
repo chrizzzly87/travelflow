@@ -305,7 +305,7 @@ export const BlogPostPage: React.FC = () => {
                                         {relatedPosts.map((related) => (
                                             <li key={`${related.language}:${related.slug}`}>
                                                 <Link
-                                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                                    to={buildLocalizedMarketingPath('blogPost', related.language, { slug: related.slug })}
                                                     lang={related.language}
                                                     data-blog-related-lang={related.language}
                                                     className="group flex items-start gap-2"
@@ -372,7 +372,7 @@ export const BlogPostPage: React.FC = () => {
                             {relatedPosts.map((related) => (
                                 <Link
                                     key={`${related.language}:${related.slug}`}
-                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
+                                    to={buildLocalizedMarketingPath('blogPost', related.language, { slug: related.slug })}
                                     lang={related.language}
                                     data-blog-related-lang={related.language}
                                     className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"

@@ -50,7 +50,8 @@
   },
   "translationNotice": {
     "message": "Esta página foi traduzida recentemente com apoio de IA e ainda pode conter erros de tradução.",
-    "cta": "Reportar erro de tradução"
+    "cta": "Reportar erro de tradução",
+    "ctaShort": "Reportar"
   },
   "contact": {
     "title": "Contacto",

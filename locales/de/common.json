@@ -50,7 +50,8 @@
   },
   "translationNotice": {
     "message": "Diese Seite wurde kürzlich mit KI-Unterstützung übersetzt und kann noch Übersetzungsfehler enthalten.",
-    "cta": "Übersetzungsfehler melden"
+    "cta": "Übersetzungsfehler melden",
+    "ctaShort": "Melden"
   },
   "contact": {
     "title": "Kontakt",

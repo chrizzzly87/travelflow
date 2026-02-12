@@ -15,18 +15,19 @@ export const TranslationNoticeBanner: React.FC = () => {
 
     return (
         <div className="border-b border-amber-200/70 bg-amber-50/90">
-            <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-5 py-2.5 md:px-8">
+            <div className="mx-auto flex w-full max-w-7xl items-start gap-2 px-5 py-2.5 sm:items-center sm:gap-3 md:px-8">
                 <WarningCircle size={16} weight="duotone" className="shrink-0 text-amber-700" />
-                <p className="flex-1 text-xs leading-relaxed text-amber-900 sm:text-sm">
+                <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-amber-900 sm:text-sm">
                     {t('translationNotice.message')}
                 </p>
                 <Link
                     to={buildLocalizedMarketingPath('contact', activeLocale)}
                     onClick={() => trackEvent('i18n_notice__contact')}
-                    className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                    className="shrink-0 rounded-lg border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 sm:px-2.5"
                     {...getAnalyticsDebugAttributes('i18n_notice__contact')}
                 >
-                    {t('translationNotice.cta')}
+                    <span className="sm:hidden">{t('translationNotice.ctaShort')}</span>
+                    <span className="hidden sm:inline">{t('translationNotice.cta')}</span>
                 </Link>
             </div>
         </div>
