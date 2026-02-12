@@ -131,6 +131,7 @@ const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
+const IS_DEV = import.meta.env.DEV;
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
 
@@ -560,6 +561,7 @@ export const TripView: React.FC<TripViewProps> = ({
     }, []);
 
     const debugHistory = useCallback((message: string, data?: any) => {
+        if (!IS_DEV) return;
         if (typeof window === 'undefined') return;
         const enabled = (window as any).__TF_DEBUG_HISTORY;
         if (!enabled) return;
@@ -573,11 +575,13 @@ export const TripView: React.FC<TripViewProps> = ({
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if ((window as any).__TF_DEBUG_HISTORY === undefined) {
-            (window as any).__TF_DEBUG_HISTORY = true;
+            (window as any).__TF_DEBUG_HISTORY = IS_DEV;
         }
         (window as any).tfSetHistoryDebug = (enabled: boolean) => {
             (window as any).__TF_DEBUG_HISTORY = enabled;
-            console.log(`[History] debug ${enabled ? 'enabled' : 'disabled'}`);
+            if (IS_DEV) {
+                console.log(`[History] debug ${enabled ? 'enabled' : 'disabled'}`);
+            }
         };
         (window as any).__tfOnCommit = (window as any).__tfOnCommit || null;
     }, []);
@@ -801,9 +805,11 @@ export const TripView: React.FC<TripViewProps> = ({
             window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
                 detail: { available: true, expired: nextExpired },
             }));
-            console.info(
-                `[TravelFlow] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
-            );
+            if (IS_DEV) {
+                console.info(
+                    `[TravelFlow] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
+                );
+            }
             return nextExpired;
         };
 

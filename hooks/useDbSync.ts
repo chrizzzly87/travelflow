@@ -1,16 +1,19 @@
 import { useEffect, useRef } from 'react';
-import {
-    DB_ENABLED,
-    applyUserSettingsToLocalStorage,
-    dbGetUserSettings,
-    ensureDbSession,
-    syncTripsFromDb,
-    uploadLocalTripsToDb,
-} from '../services/dbService';
+import { DB_ENABLED } from '../config/db';
 import { AppLanguage } from '../types';
 
 /** Has the DB sync already run in this session? */
 let hasSynced = false;
+
+type DbServiceModule = typeof import('../services/dbService');
+let dbServicePromise: Promise<DbServiceModule> | null = null;
+
+const loadDbService = async (): Promise<DbServiceModule> => {
+    if (!dbServicePromise) {
+        dbServicePromise = import('../services/dbService');
+    }
+    return dbServicePromise;
+};
 
 /**
  * Runs the DB bootstrap (session, upload local trips, sync from DB, load user
@@ -29,12 +32,13 @@ export const useDbSync = (onLanguageLoaded?: (lang: AppLanguage) => void) => {
         let cancelled = false;
 
         const init = async () => {
-            await ensureDbSession();
-            await uploadLocalTripsToDb();
-            await syncTripsFromDb();
-            const settings = await dbGetUserSettings();
+            const db = await loadDbService();
+            await db.ensureDbSession();
+            await db.uploadLocalTripsToDb();
+            await db.syncTripsFromDb();
+            const settings = await db.dbGetUserSettings();
             if (!cancelled && settings) {
-                applyUserSettingsToLocalStorage(settings);
+                db.applyUserSettingsToLocalStorage(settings);
                 if (settings.language && onLanguageLoaded) {
                     onLanguageLoaded(settings.language);
                 }

@@ -17,7 +17,7 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
-import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/dbService';
+import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
 
 const UMAMI_DASHBOARD_URL = 'https://cloud.umami.is/analytics/eu/websites/d8a78257-7625-4891-8954-1a20b10f7537';
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -655,9 +655,6 @@ export const OnPageDebugger: React.FC = () => {
         const resolved = setDbSimulatedLoggedIn(next);
         setSimulatedLoggedIn(resolved);
         simulatedLoggedInRef.current = resolved;
-        window.dispatchEvent(new CustomEvent<SimulatedLoginDebugDetail>(SIMULATED_LOGIN_DEBUG_EVENT, {
-            detail: { available: true, loggedIn: resolved },
-        }));
         return resolved;
     }, []);
 

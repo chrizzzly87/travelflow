@@ -1,6 +1,8 @@
 import React from 'react';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import type { ExampleTripCard as ExampleTripCardType } from '../../data/exampleTripCards';
+import { ProgressiveImage } from '../ProgressiveImage';
+import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
@@ -12,9 +14,11 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPrevi
         ? `${card.mapImagePath}?v=palette-20260210d`
         : null;
     const [mapImageSrc, setMapImageSrc] = React.useState<string | null>(mapPreviewUrl || staticFallbackSrc);
+    const [dynamicBlurhash, setDynamicBlurhash] = React.useState<string>('');
 
     React.useEffect(() => {
         setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
+        setDynamicBlurhash('');
     }, [mapPreviewUrl, staticFallbackSrc]);
 
     const handleMapImageError = () => {
@@ -25,17 +29,48 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({ card, mapPrevi
         setMapImageSrc(null);
     };
 
+    React.useEffect(() => {
+        if (!mapPreviewUrl || !isImageCdnEnabled()) return;
+        let canceled = false;
+        const controller = new AbortController();
+
+        const loadBlurhash = async () => {
+            try {
+                const response = await fetch(buildBlurhashEndpointUrl(mapPreviewUrl), { signal: controller.signal });
+                if (!response.ok) return;
+                const hash = (await response.text()).trim();
+                if (!hash || canceled) return;
+                setDynamicBlurhash(hash);
+            } catch {
+                // ignore preview placeholder fetch errors
+            }
+        };
+
+        void loadBlurhash();
+
+        return () => {
+            canceled = true;
+            controller.abort();
+        };
+    }, [mapPreviewUrl]);
+
     return (
         <article className="rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg cursor-pointer">
             {/* Map area */}
             <div className={`relative h-36 rounded-t-2xl overflow-hidden ${mapImageSrc ? 'bg-slate-100' : card.mapColor}`}>
                 {mapImageSrc ? (
-                    <img
+                    <ProgressiveImage
                         src={mapImageSrc}
                         alt={`Route map for ${card.title}`}
+                        width={680}
+                        height={288}
+                        sizes="(min-width: 768px) 340px, 300px"
+                        srcSetWidths={[280, 340, 420, 560]}
+                        placeholderKey={card.mapImagePath || mapImageSrc}
+                        placeholderBlurhash={mapImageSrc === mapPreviewUrl ? dynamicBlurhash : undefined}
                         className="h-full w-full object-cover"
                         loading="lazy"
-                        decoding="async"
+                        fetchPriority="low"
                         onError={handleMapImageError}
                     />
                 ) : (

@@ -75,7 +75,7 @@ import {
     getDefaultCreateTripModel,
     groupAiModelsByProvider,
 } from '../config/aiModelCatalog';
-import { isSimulatedLoggedIn } from '../services/dbService';
+import { isSimulatedLoggedIn } from '../services/simulatedLoginService';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
