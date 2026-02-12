@@ -5,6 +5,7 @@ import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 
 interface TimelineProps {
   trip: ITrip;
@@ -18,6 +19,7 @@ interface TimelineProps {
   onAddCity: () => void;
   pixelsPerDay: number;
   readOnly?: boolean;
+  enableExampleSharedTransition?: boolean;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -49,7 +51,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   onSwapSelectedCities,
   onAddCity,
   pixelsPerDay,
-  readOnly = false
+  readOnly = false,
+  enableExampleSharedTransition = false
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -703,6 +706,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     pixelsPerDay={pixelsPerDay}
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
+                                    viewTransitionName={getExampleCityLaneViewTransitionName(enableExampleSharedTransition, index)}
                                 />
                             );
                         })}
@@ -770,7 +774,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-amber-50 border-amber-300 border-dashed text-amber-700' : 'bg-white border-gray-200 text-gray-600')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth }}

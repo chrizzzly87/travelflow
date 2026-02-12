@@ -208,6 +208,7 @@ h6,
 .font-heading {
   font-family: var(--tf-font-heading);
   letter-spacing: -0.015em;
+  text-wrap: pretty;
 }
 
 /* ── Scroll-driven animations ── */
@@ -452,6 +453,34 @@ h6,
   z-index: 9999;
 }
 
+.example-city-lane-hitbox {
+  display: flex;
+  align-items: center;
+  height: 14px;
+}
+
+.example-city-lane {
+  position: relative;
+  width: 100%;
+  height: 6px;
+}
+
+.example-city-lane::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.example-city-lane-hitbox:hover .example-city-lane::after,
+.example-city-lane-hitbox:focus-within .example-city-lane::after {
+  opacity: 1;
+}
+
 @utility glass-card {
   background: rgb(255 255 255 / 0.7);
   backdrop-filter: blur(16px);
@@ -491,4 +520,22 @@ h6,
 ::view-transition-new(site-header) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+::view-transition-group(trip-map),
+::view-transition-group(trip-title),
+::view-transition-group(trip-city-lane-0),
+::view-transition-group(trip-city-lane-1),
+::view-transition-group(trip-city-lane-2),
+::view-transition-group(trip-city-lane-3),
+::view-transition-group(trip-city-lane-4),
+::view-transition-group(trip-city-lane-5),
+::view-transition-group(trip-city-lane-6),
+::view-transition-group(trip-city-lane-7),
+::view-transition-group(trip-city-lane-8),
+::view-transition-group(trip-city-lane-9),
+::view-transition-group(trip-city-lane-10),
+::view-transition-group(trip-city-lane-11) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }

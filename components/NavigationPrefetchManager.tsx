@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     clearHoverIntentTimer,
+    isNavPrefetchEnabled,
     publishPrefetchStats,
     scheduleHoverIntentWarmup,
     scheduleIdleWarmups,
@@ -45,6 +46,11 @@ const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | nul
 
 export const NavigationPrefetchManager: React.FC = () => {
     const location = useLocation();
+    const prefetchEnabled = isNavPrefetchEnabled();
+
+    if (!prefetchEnabled) {
+        return null;
+    }
 
     const toInternalPath = (rawHref: string): string | null => {
         if (!rawHref) return null;

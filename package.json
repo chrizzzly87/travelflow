@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "updates:validate": "node scripts/validate-updates.mjs",
+    "updates:next-version": "node scripts/next-release-version.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "edge:validate": "node scripts/validate-edge-functions.mjs",
     "inspirations:images:jobs": "tsx scripts/build-inspiration-image-batch.ts",

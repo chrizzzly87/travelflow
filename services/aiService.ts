@@ -42,7 +42,7 @@ const itinerarySchema = {
         properties: {
             currencyCode: { type: Type.STRING, description: "ISO code, e.g. JPY" },
             currencyName: { type: Type.STRING, description: "e.g. Japanese Yen" },
-            exchangeRate: { type: Type.NUMBER, description: "Approximate exchange rate: 1 EUR = X local currency" },
+            exchangeRate: { type: Type.NUMBER, description: "Number only: local currency units for exactly 1 EUR (example: 163)" },
             languages: { type: Type.ARRAY, items: { type: Type.STRING } },
             electricSockets: { type: Type.STRING, description: "Short description of socket types, e.g. 'Type A, Type B'" },
             visaInfoUrl: { type: Type.STRING, description: "Generic URL to visa policy on Wikipedia or official gov site" },
@@ -223,6 +223,10 @@ const BASE_ITINERARY_RULES_PROMPT = `
          ### Must Do (3-4 activities)
          Use - [ ] for all items to make them checkboxes.
       4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+         - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
+         - Valid example: "exchangeRate": 163
+         - Invalid example: "exchangeRateToEUR": "1 EUR ≈ 160 JPY"
+         - Do NOT include text, units, symbols, or approximation words in exchangeRate.
       5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
          [${ACTIVITY_TYPES_PROMPT_LIST}]
          Do not return unknown activity types and do not leave activityTypes empty.
@@ -266,6 +270,7 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          [${TRANSPORT_MODES_PROMPT_LIST}]
       8. travelSegments.duration must be NUMBER (hours), never a string with units.
       9. activities.duration must be NUMBER (days), never a string with units.
+      10. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
     `;
 
 const buildIslandConstraintPrompt = (

@@ -24,6 +24,12 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Banner cards: subtle border, soft blur background, clear visual hierarchy (eyebrow, headline, support text, CTA row).
 - In floating banners and cards with multiple CTAs, right-align actions (`justify-end`) unless a page pattern explicitly differs.
 
+## Section Link Pattern
+- For content-section links (for example "Discover more inspirations"), use the shared inline-link visual pattern instead of outlined button styling:
+  - `inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800`
+- Keep these links in normal content flow (typically under section content) unless the page already has a different established layout.
+- Track section-link interaction via Umami event names (`trackEvent(...)`) following `docs/ANALYTICS_CONVENTION.md`; do not add ad-hoc tracking query parameters when event tracking is already available.
+
 ## Accessibility
 - Maintain visible keyboard focus (`focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2`).
 - Keep text contrast high enough against backgrounds (avoid low-contrast gray-on-gray pairs).

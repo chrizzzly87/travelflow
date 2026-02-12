@@ -26,6 +26,7 @@ interface ItineraryMapProps {
     mapColorMode?: MapColorMode;
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;
+    viewTransitionName?: string;
 }
 
 const MAP_STYLES = {
@@ -234,7 +235,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     onRouteStatus,
     mapColorMode = DEFAULT_MAP_COLOR_MODE,
     onMapColorModeChange,
-    isPaywalled = false
+    isPaywalled = false,
+    viewTransitionName
 }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const googleMapRef = useRef<any>(null); // google.maps.Map
@@ -263,7 +265,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
     // Initial Map Setup
     useEffect(() => {
-        if (!isLoaded || !mapRef.current || googleMapRef.current) return;
+        if (!isLoaded || !mapRef.current || googleMapRef.current || !window.google?.maps?.Map) return;
 
         try {
             googleMapRef.current = new window.google.maps.Map(mapRef.current, {
@@ -982,11 +984,32 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         });
     }, [focusLocationQuery, mapInitialized, cities.length]);
 
-    if (loadError) return <div className="p-4 text-red-500">Error loading map: {loadError.message}</div>;
-    if (!isLoaded) return <div className="w-full h-full bg-gray-100 flex items-center justify-center">Loading Map...</div>;
+    if (loadError) {
+        return (
+            <div
+                className="p-4 text-red-500"
+                style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
+            >
+                Error loading map: {loadError.message}
+            </div>
+        );
+    }
+    if (!isLoaded) {
+        return (
+            <div
+                className="w-full h-full bg-gray-100 flex items-center justify-center"
+                style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
+            >
+                Loading Map...
+            </div>
+        );
+    }
 
     return (
-        <div className="relative w-full h-full group bg-gray-100">
+        <div
+            className="relative w-full h-full group bg-gray-100"
+            style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
+        >
             <div ref={mapRef} className="w-full h-full" />
             
             {/* Controls */}

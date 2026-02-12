@@ -22,8 +22,16 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
     const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
 
     useEffect(() => {
-        if (window.google?.maps) {
+        const isGoogleMapsReady = () => Boolean(window.google?.maps?.Map && typeof window.google.maps.Map === 'function');
+        const settleLoaded = () => {
             setIsLoaded(true);
+            setLoadError(null);
+        };
+        let readyCheckLoop: number | null = null;
+        let readyCheckTimeout: number | null = null;
+
+        if (isGoogleMapsReady()) {
+            settleLoaded();
             return;
         }
 
@@ -36,30 +44,70 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
         const scriptId = 'google-maps-script';
         const existingScript = document.getElementById(scriptId);
         if (existingScript) {
-             // Script already exists, wait for it
-             const checkLoop = setInterval(() => {
-                 if (window.google?.maps) {
-                     clearInterval(checkLoop);
-                     setIsLoaded(true);
-                 }
-             }, 100);
-             return;
+            // Script already exists; poll until constructors are ready.
+            const checkLoop = window.setInterval(() => {
+                if (isGoogleMapsReady()) {
+                    window.clearInterval(checkLoop);
+                    settleLoaded();
+                }
+            }, 50);
+            return () => {
+                window.clearInterval(checkLoop);
+            };
         }
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,marker,geometry&language=${encodeURIComponent(requestedLanguage)}&loading=async`;
         script.dataset.language = requestedLanguage;
         script.async = true;
         script.defer = true;
         
-        script.onload = () => setIsLoaded(true);
-        script.onerror = (e) => setLoadError(new Error("Failed to load Google Maps script"));
+        script.onload = () => {
+            if (isGoogleMapsReady()) {
+                settleLoaded();
+                return;
+            }
+
+            // Some environments expose `google.maps` before constructors are fully ready.
+            readyCheckLoop = window.setInterval(() => {
+                if (isGoogleMapsReady()) {
+                    if (readyCheckLoop !== null) {
+                        window.clearInterval(readyCheckLoop);
+                        readyCheckLoop = null;
+                    }
+                    if (readyCheckTimeout !== null) {
+                        window.clearTimeout(readyCheckTimeout);
+                        readyCheckTimeout = null;
+                    }
+                    settleLoaded();
+                }
+            }, 50);
+
+            readyCheckTimeout = window.setTimeout(() => {
+                if (readyCheckLoop !== null) {
+                    window.clearInterval(readyCheckLoop);
+                    readyCheckLoop = null;
+                }
+                readyCheckTimeout = null;
+                if (!isGoogleMapsReady()) {
+                    setLoadError(new Error('Google Maps constructors did not initialize in time'));
+                }
+            }, 10000);
+        };
+        script.onerror = () => setLoadError(new Error("Failed to load Google Maps script"));
 
         document.head.appendChild(script);
 
         return () => {
-            // Optional cleanup if needed
+            if (readyCheckLoop !== null) {
+                window.clearInterval(readyCheckLoop);
+                readyCheckLoop = null;
+            }
+            if (readyCheckTimeout !== null) {
+                window.clearTimeout(readyCheckTimeout);
+                readyCheckTimeout = null;
+            }
         };
     }, [requestedLanguage]);
 

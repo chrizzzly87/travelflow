@@ -17,6 +17,7 @@ import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
 import { SpeculationRulesManager } from './components/SpeculationRulesManager';
+import { isNavPrefetchEnabled } from './services/navigationPrefetch';
 
 type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
@@ -38,6 +39,13 @@ type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
 type ExampleTripCardSummary = {
     title: string;
     countries: { name: string }[];
+};
+type ExampleTripPrefetchState = {
+    useExampleSharedTransition?: boolean;
+    prefetchedExampleTrip?: ITrip;
+    prefetchedExampleView?: IViewSettings;
+    prefetchedTemplateTitle?: string;
+    prefetchedTemplateCountries?: string[];
 };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -151,6 +159,60 @@ const CreateTripClassicLabPage = lazy(() => import('./pages/CreateTripClassicLab
 const CreateTripSplitWorkspaceLabPage = lazy(() => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazy(() => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
 
+type RoutePreloadRule = {
+    key: string;
+    match: (pathname: string) => boolean;
+    preload: () => Promise<unknown>;
+};
+
+const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
+    { key: 'home', match: (pathname) => pathname === '/', preload: () => import('./pages/MarketingHomePage') },
+    { key: 'features', match: (pathname) => pathname === '/features', preload: () => import('./pages/FeaturesPage') },
+    { key: 'inspirations', match: (pathname) => pathname === '/inspirations', preload: () => import('./pages/InspirationsPage') },
+    { key: 'themes', match: (pathname) => pathname === '/inspirations/themes', preload: () => import('./pages/inspirations/ThemesPage') },
+    { key: 'best-time', match: (pathname) => pathname === '/inspirations/best-time-to-travel', preload: () => import('./pages/inspirations/BestTimeToTravelPage') },
+    { key: 'countries', match: (pathname) => pathname === '/inspirations/countries', preload: () => import('./pages/inspirations/CountriesPage') },
+    { key: 'festivals', match: (pathname) => pathname === '/inspirations/events-and-festivals', preload: () => import('./pages/inspirations/FestivalsPage') },
+    { key: 'weekend-getaways', match: (pathname) => pathname === '/inspirations/weekend-getaways', preload: () => import('./pages/inspirations/WeekendGetawaysPage') },
+    { key: 'country-detail', match: (pathname) => pathname.startsWith('/inspirations/country/'), preload: () => import('./pages/inspirations/CountryDetailPage') },
+    { key: 'updates', match: (pathname) => pathname === '/updates', preload: () => import('./pages/UpdatesPage') },
+    { key: 'blog', match: (pathname) => pathname === '/blog', preload: () => import('./pages/BlogPage') },
+    { key: 'blog-post', match: (pathname) => pathname.startsWith('/blog/'), preload: () => import('./pages/BlogPostPage') },
+    { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
+    { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
+    { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./components/CreateTripForm') },
+];
+
+const warmedRouteKeys = new Set<string>();
+
+const getPathnameFromHref = (href: string): string => {
+    try {
+        return new URL(href, window.location.origin).pathname;
+    } catch {
+        return href.split(/[?#]/)[0] || href;
+    }
+};
+
+const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
+    for (const rule of ROUTE_PRELOAD_RULES) {
+        if (rule.match(pathname)) return rule;
+    }
+    return null;
+};
+
+const preloadRouteForPath = async (pathname: string): Promise<void> => {
+    const rule = findRoutePreloadRule(pathname);
+    if (!rule) return;
+    if (warmedRouteKeys.has(rule.key)) return;
+    warmedRouteKeys.add(rule.key);
+    try {
+        await rule.preload();
+    } catch {
+        warmedRouteKeys.delete(rule.key);
+    }
+};
+
 const RouteLoadingFallback: React.FC = () => (
     <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
 );
@@ -187,38 +249,48 @@ const ScrollToTop: React.FC = () => {
     return null;
 };
 
-/** Intercept internal link clicks to wrap in View Transition API.
- *  Uses the capture phase so we run BEFORE React Router's onClick,
- *  preventing a double-navigate that causes duplicated content. */
+/** Pre-warm internal routes on user intent (hover/focus/touch). */
 const ViewTransitionHandler: React.FC = () => {
-    const navigate = useNavigate();
-
     useEffect(() => {
-        if (!document.startViewTransition) return;
+        // Keep legacy prewarm as a fallback path only when the new
+        // navigation prefetch manager is disabled.
+        if (isNavPrefetchEnabled()) return;
 
-        const handleClick = (e: MouseEvent) => {
-            const anchor = (e.target as HTMLElement).closest('a');
+        const warmLinkTarget = (target: EventTarget | null) => {
+            const anchor = (target as HTMLElement | null)?.closest?.('a');
             if (!anchor) return;
             const href = anchor.getAttribute('href');
             if (!href || !href.startsWith('/')) return;
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-            if (href.startsWith('#')) return;
-            // Skip same-page navigations
-            if (href === window.location.pathname) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            document.startViewTransition(() => {
-                flushSync(() => {
-                    navigate(href);
-                });
-            });
+            const pathname = getPathnameFromHref(href);
+            void preloadRouteForPath(pathname);
         };
 
-        document.addEventListener('click', handleClick, true);
-        return () => document.removeEventListener('click', handleClick, true);
-    }, [navigate]);
+        const handleMouseOver = (event: MouseEvent) => warmLinkTarget(event.target);
+        const handleFocusIn = (event: FocusEvent) => warmLinkTarget(event.target);
+        const handleTouchStart = (event: TouchEvent) => warmLinkTarget(event.target);
+
+        document.addEventListener('mouseover', handleMouseOver, true);
+        document.addEventListener('focusin', handleFocusIn, true);
+        document.addEventListener('touchstart', handleTouchStart, true);
+
+        // Warm high-traffic marketing routes in dev so first local navigation
+        // does not wait on Vite's on-demand transforms.
+        let warmupTimerId: number | null = null;
+        if (IS_DEV) {
+            warmupTimerId = window.setTimeout(() => {
+                void preloadRouteForPath('/features');
+                void preloadRouteForPath('/inspirations');
+                void preloadRouteForPath('/blog');
+                void preloadRouteForPath('/pricing');
+            }, 600);
+        }
+        return () => {
+            document.removeEventListener('mouseover', handleMouseOver, true);
+            document.removeEventListener('focusin', handleFocusIn, true);
+            document.removeEventListener('touchstart', handleTouchStart, true);
+            if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
+        };
+    }, []);
 
     return null;
 };
@@ -609,19 +681,46 @@ const ExampleTripLoader = ({
 }) => {
     const { templateId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const trackedTemplateRef = useRef<string | null>(null);
+    const hydratedTemplateRef = useRef<string | null>(null);
+    const prefetchedState = location.state as ExampleTripPrefetchState | null;
+    const prefetchedTrip = useMemo<ITrip | null>(() => {
+        if (!templateId) return null;
+        const candidate = prefetchedState?.prefetchedExampleTrip;
+        if (!candidate) return null;
+        if (!candidate.isExample) return null;
+        if (candidate.exampleTemplateId !== templateId) return null;
+        return candidate;
+    }, [prefetchedState, templateId]);
+    const prefetchedView = useMemo<IViewSettings | undefined>(() => {
+        if (!prefetchedTrip) return undefined;
+        return prefetchedState?.prefetchedExampleView ?? prefetchedTrip.defaultView;
+    }, [prefetchedState, prefetchedTrip]);
+    const prefetchedTemplateCard = useMemo<ExampleTripCardSummary | null>(() => {
+        if (!prefetchedTrip) return null;
+        const names = prefetchedState?.prefetchedTemplateCountries
+            || prefetchedTrip.exampleTemplateCountries
+            || [];
+        return {
+            title: prefetchedState?.prefetchedTemplateTitle || prefetchedTrip.title,
+            countries: names.map((name) => ({ name })),
+        };
+    }, [prefetchedState, prefetchedTrip]);
     const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
-    const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(null);
-    const templateCountries = useMemo(
-        () => templateCard?.countries?.map((country) => country.name).filter(Boolean) || [],
-        [templateCard]
-    );
+    const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(prefetchedTemplateCard);
+
+    useEffect(() => {
+        if (prefetchedTemplateCard) {
+            setTemplateCard(prefetchedTemplateCard);
+        }
+    }, [prefetchedTemplateCard, templateId]);
 
     useEffect(() => {
         if (!templateId) {
             setTemplateFactory(null);
-            setTemplateCard(null);
+            setTemplateCard(prefetchedTemplateCard ?? null);
             return;
         }
 
@@ -636,13 +735,12 @@ const ExampleTripLoader = ({
                 ]);
                 if (cancelled) return;
                 const nextFactory = (TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null;
-                // React treats function arguments to setState as updaters; wrap to store the function itself.
                 setTemplateFactory(() => nextFactory);
-                setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? null);
+                setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null);
             } catch {
                 if (cancelled) return;
                 setTemplateFactory(null);
-                setTemplateCard(null);
+                setTemplateCard(prefetchedTemplateCard ?? null);
             }
         };
 
@@ -651,7 +749,14 @@ const ExampleTripLoader = ({
         return () => {
             cancelled = true;
         };
-    }, [templateId]);
+    }, [prefetchedTemplateCard, templateId]);
+
+    const templateCountries = useMemo(
+        () => templateCard?.countries?.map((country) => country.name).filter(Boolean)
+            || prefetchedTrip?.exampleTemplateCountries
+            || [],
+        [templateCard, prefetchedTrip]
+    );
 
     useEffect(() => {
         if (!templateId) {
@@ -659,41 +764,53 @@ const ExampleTripLoader = ({
             return;
         }
 
-        if (templateFactory === undefined) {
-            return;
+        const hasActiveExampleTrip =
+            !!trip &&
+            trip.isExample === true &&
+            trip.exampleTemplateId === templateId;
+        const hasHydratedTemplate = hydratedTemplateRef.current === templateId;
+        const shouldHydrateTrip = !hasHydratedTemplate || !hasActiveExampleTrip;
+
+        if (shouldHydrateTrip && prefetchedTrip) {
+            const resolvedView = prefetchedView ?? prefetchedTrip.defaultView;
+            setViewSettings(resolvedView);
+            onTripLoaded(prefetchedTrip, resolvedView);
+            hydratedTemplateRef.current = templateId;
+        } else if (shouldHydrateTrip) {
+            if (templateFactory === undefined) return;
+            if (typeof templateFactory !== 'function') {
+                navigate('/', { replace: true });
+                return;
+            }
+
+            const nowMs = Date.now();
+            const generated = templateFactory(new Date(nowMs).toISOString());
+            const resolvedView: IViewSettings = {
+                layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
+                timelineView: generated.defaultView?.timelineView ?? 'horizontal',
+                mapStyle: generated.defaultView?.mapStyle ?? 'standard',
+                zoomLevel: generated.defaultView?.zoomLevel ?? 1,
+                routeMode: generated.defaultView?.routeMode,
+                showCityNames: generated.defaultView?.showCityNames,
+                sidebarWidth: generated.defaultView?.sidebarWidth,
+                timelineHeight: generated.defaultView?.timelineHeight,
+            };
+            const prepared: ITrip = {
+                ...generated,
+                createdAt: nowMs,
+                updatedAt: nowMs,
+                isFavorite: false,
+                isExample: true,
+                exampleTemplateId: templateId,
+                exampleTemplateCountries: templateCountries,
+                sourceKind: 'example',
+                defaultView: resolvedView,
+            };
+
+            setViewSettings(resolvedView);
+            onTripLoaded(prepared, resolvedView);
+            hydratedTemplateRef.current = templateId;
         }
-
-        if (typeof templateFactory !== 'function') {
-            navigate('/', { replace: true });
-            return;
-        }
-
-        const nowMs = Date.now();
-        const generated = templateFactory(new Date(nowMs).toISOString());
-        const resolvedView: IViewSettings = {
-            layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
-            timelineView: generated.defaultView?.timelineView ?? 'horizontal',
-            mapStyle: generated.defaultView?.mapStyle ?? 'standard',
-            zoomLevel: generated.defaultView?.zoomLevel ?? 1,
-            routeMode: generated.defaultView?.routeMode,
-            showCityNames: generated.defaultView?.showCityNames,
-            sidebarWidth: generated.defaultView?.sidebarWidth,
-            timelineHeight: generated.defaultView?.timelineHeight,
-        };
-        const prepared: ITrip = {
-            ...generated,
-            createdAt: nowMs,
-            updatedAt: nowMs,
-            isFavorite: false,
-            isExample: true,
-            exampleTemplateId: templateId,
-            exampleTemplateCountries: templateCountries,
-            sourceKind: 'example',
-            defaultView: resolvedView,
-        };
-
-        setViewSettings(resolvedView);
-        onTripLoaded(prepared, resolvedView);
 
         if (trackedTemplateRef.current !== templateId) {
             trackedTemplateRef.current = templateId;
@@ -702,10 +819,17 @@ const ExampleTripLoader = ({
                 country_count: templateCountries.length,
             });
         }
-    }, [templateCountries, templateFactory, templateId, navigate, onTripLoaded]);
+    }, [templateCountries, templateFactory, templateId, trip, prefetchedTrip, prefetchedView, navigate, onTripLoaded]);
+
+    const activeTrip = useMemo(() => {
+        if (trip?.isExample && trip.exampleTemplateId === templateId) {
+            return trip;
+        }
+        return prefetchedTrip;
+    }, [templateId, trip, prefetchedTrip]);
 
     const handleCopyExampleTrip = async () => {
-        if (!trip || !templateId) return;
+        if (!activeTrip || !templateId) return;
         if (DB_ENABLED) {
             const limit = await dbCanCreateTrip();
             if (!limit.allowCreate) {
@@ -716,7 +840,7 @@ const ExampleTripLoader = ({
         }
         const now = Date.now();
         const cloned: ITrip = {
-            ...trip,
+            ...activeTrip,
             id: generateTripId(),
             createdAt: now,
             updatedAt: now,
@@ -735,8 +859,8 @@ const ExampleTripLoader = ({
             try {
                 window.sessionStorage.setItem('tf_trip_copy_notice', JSON.stringify({
                     tripId: cloned.id,
-                    sourceTripId: trip.id,
-                    sourceTitle: trip.title,
+                    sourceTripId: activeTrip.id,
+                    sourceTitle: activeTrip.title,
                     sourceShareToken: null,
                     sourceShareVersionId: null,
                     createdAt: Date.now(),
@@ -778,13 +902,13 @@ const ExampleTripLoader = ({
         navigate(url);
     };
 
-    if (!trip || !trip.isExample) return null;
+    if (!activeTrip || !activeTrip.isExample) return null;
 
     return (
         <Suspense fallback={<RouteLoadingFallback />}>
             <TripView
-                trip={trip}
-                initialViewSettings={viewSettings ?? trip.defaultView}
+                trip={activeTrip}
+                initialViewSettings={viewSettings ?? activeTrip.defaultView}
                 onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
                 onViewSettingsChange={(settings) => {
                     setViewSettings(settings);
@@ -799,7 +923,7 @@ const ExampleTripLoader = ({
                 suppressToasts
                 suppressReleaseNotice
                 exampleTripBanner={{
-                    title: templateCard?.title || trip.title,
+                    title: templateCard?.title || activeTrip.title,
                     countries: templateCountries,
                     onCreateSimilarTrip: handleCreateSimilarTrip,
                 }}

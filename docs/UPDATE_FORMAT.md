@@ -73,6 +73,7 @@ Write visible items from the user's perspective — focus on the benefit, not th
 2. Keep coding notes locally while implementing; avoid creating multiple incremental release files for one feature.
 3. Shortly before opening the PR, update/finalize that one release file with final shipped scope.
 4. When ready to publish, bump the version to the next release number and set:
+   - You can get the next merged/published version with `npm run updates:next-version`.
    - `status: published`
    - `published_at` to the publish time
    - `notify_in_app` as needed
@@ -83,6 +84,7 @@ Write visible items from the user's perspective — focus on the benefit, not th
 - Every new published release must use a new version.
 - Versions must be strictly increasing over publish time.
 - Reusing a previous version is not allowed and should fail validation.
+- Draft versions are provisional and do not reserve a published version number.
 
 ## Timezone rule
 The site displays dates in CET (UTC+1). To ensure the correct date appears on the `/updates` page:
