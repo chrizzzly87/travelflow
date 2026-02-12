@@ -24,6 +24,7 @@ interface TimelineBlockProps {
   timelineStartOffset?: number;
   vertical?: boolean;
   canEdit?: boolean;
+  viewTransitionName?: string;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -44,6 +45,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   timelineStartOffset = 0,
   vertical = false,
   canEdit = true,
+  viewTransitionName,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -119,6 +121,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           color: getContrastTextColor(cityHex),
       }
       : style;
+  const finalStyle: React.CSSProperties = viewTransitionName
+      ? { ...mergedStyle, viewTransitionName }
+      : mergedStyle;
 
   return (
     <div
@@ -131,7 +136,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
-      style={mergedStyle}
+      style={finalStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
     >

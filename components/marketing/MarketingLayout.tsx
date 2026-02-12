@@ -12,7 +12,7 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
     const { openTripManager } = useTripManager();
 
     return (
-        <div className="min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col">
+        <div className="min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-hidden">
             <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.18),_transparent_48%),radial-gradient(circle_at_80%_30%,_rgba(15,23,42,0.10),_transparent_35%)]" />
             <SiteHeader onMyTripsClick={openTripManager} />
             <EarlyAccessBanner />

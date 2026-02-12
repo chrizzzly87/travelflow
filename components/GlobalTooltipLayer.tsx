@@ -15,14 +15,21 @@ const VIEWPORT_MARGIN_PX = 8;
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(value, max));
 
-const getTooltipTarget = (target: EventTarget | null): HTMLButtonElement | null => {
+const getTooltipTarget = (target: EventTarget | null): HTMLElement | null => {
   if (!(target instanceof Element)) return null;
-  const button = target.closest(
-    'button:not([data-no-global-tooltip="true"])[aria-label], button:not([data-no-global-tooltip="true"])[title]'
+  const tooltipTarget = target.closest<HTMLElement>(
+    '[data-tooltip]:not([data-no-global-tooltip="true"]), button:not([data-no-global-tooltip="true"])[aria-label], button:not([data-no-global-tooltip="true"])[title]'
   );
-  if (!button || !(button instanceof HTMLButtonElement)) return null;
-  if (button.disabled) return null;
-  return button;
+  if (!tooltipTarget) return null;
+  if (tooltipTarget instanceof HTMLButtonElement && tooltipTarget.disabled) return null;
+  const label = (
+    tooltipTarget.getAttribute('data-tooltip')
+    || tooltipTarget.getAttribute('aria-label')
+    || tooltipTarget.getAttribute('title')
+    || ''
+  ).trim();
+  if (!label) return null;
+  return tooltipTarget;
 };
 
 const getPlacement = (
@@ -98,7 +105,7 @@ export const GlobalTooltipLayer: React.FC = () => {
   const [position, setPosition] = React.useState<TooltipPosition | null>(null);
   const [isVisible, setIsVisible] = React.useState(false);
   const tooltipRef = React.useRef<HTMLDivElement | null>(null);
-  const activeButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const activeTargetRef = React.useRef<HTMLElement | null>(null);
   const showTimerRef = React.useRef<number | null>(null);
 
   const clearTimers = React.useCallback(() => {
@@ -110,18 +117,18 @@ export const GlobalTooltipLayer: React.FC = () => {
 
   const hideTooltip = React.useCallback(() => {
     clearTimers();
-    activeButtonRef.current = null;
+    activeTargetRef.current = null;
     setIsVisible(false);
     setLabel(null);
     setPosition(null);
   }, [clearTimers]);
 
   const updatePosition = React.useCallback(() => {
-    const activeButton = activeButtonRef.current;
+    const activeTarget = activeTargetRef.current;
     const tooltipEl = tooltipRef.current;
-    if (!activeButton || !tooltipEl) return;
+    if (!activeTarget || !tooltipEl) return;
 
-    const rect = activeButton.getBoundingClientRect();
+    const rect = activeTarget.getBoundingClientRect();
     const tooltipWidth = tooltipEl.offsetWidth;
     const tooltipHeight = tooltipEl.offsetHeight;
     const viewportWidth = window.innerWidth;
@@ -131,12 +138,17 @@ export const GlobalTooltipLayer: React.FC = () => {
     setPosition(nextPosition);
   }, []);
 
-  const scheduleShow = React.useCallback((button: HTMLButtonElement, delayMs: number) => {
-    const nextLabel = (button.getAttribute('aria-label') || button.getAttribute('title') || '').trim();
+  const scheduleShow = React.useCallback((target: HTMLElement, delayMs: number) => {
+    const nextLabel = (
+      target.getAttribute('data-tooltip')
+      || target.getAttribute('aria-label')
+      || target.getAttribute('title')
+      || ''
+    ).trim();
     if (!nextLabel) return;
 
     clearTimers();
-    activeButtonRef.current = button;
+    activeTargetRef.current = target;
     setIsVisible(false);
     setLabel(null);
     setPosition(null);
@@ -155,25 +167,25 @@ export const GlobalTooltipLayer: React.FC = () => {
     if (typeof window === 'undefined') return;
 
     const onMouseOver = (event: MouseEvent) => {
-      const targetButton = getTooltipTarget(event.target);
-      if (!targetButton) return;
-      // Ignore nested pointerover events while hovering the same button.
-      if (activeButtonRef.current === targetButton) return;
-      scheduleShow(targetButton, SHOW_DELAY_MS);
+      const targetAnchor = getTooltipTarget(event.target);
+      if (!targetAnchor) return;
+      // Ignore nested pointerover events while hovering the same target.
+      if (activeTargetRef.current === targetAnchor) return;
+      scheduleShow(targetAnchor, SHOW_DELAY_MS);
     };
 
     const onMouseOut = (event: MouseEvent) => {
-      const activeButton = activeButtonRef.current;
-      if (!activeButton) return;
+      const activeTarget = activeTargetRef.current;
+      if (!activeTarget) return;
       const relatedTarget = event.relatedTarget;
-      if (relatedTarget instanceof Node && activeButton.contains(relatedTarget)) return;
+      if (relatedTarget instanceof Node && activeTarget.contains(relatedTarget)) return;
       hideTooltip();
     };
 
     const onFocusIn = (event: FocusEvent) => {
-      const targetButton = getTooltipTarget(event.target);
-      if (!targetButton) return;
-      scheduleShow(targetButton, 350);
+      const targetAnchor = getTooltipTarget(event.target);
+      if (!targetAnchor) return;
+      scheduleShow(targetAnchor, 350);
     };
 
     const onFocusOut = () => {
@@ -181,7 +193,7 @@ export const GlobalTooltipLayer: React.FC = () => {
     };
 
     const onScrollOrResize = () => {
-      if (!activeButtonRef.current) return;
+      if (!activeTargetRef.current) return;
       if (!label) return;
       updatePosition();
     };

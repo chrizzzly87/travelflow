@@ -7,6 +7,19 @@ This backlog stays open as a continuous performance track across routes.
 - Record FCP, LCP, TBT, CLS, Speed Index and top blocking requests.
 - Apply one scoped improvement, rerun Lighthouse, and keep the best variant.
 
+## Navigation Prewarm Guardrails (Current Default)
+- Keep route/module warmup **non-blocking**. Prewarm calls should be fire-and-forget (`void preloadRouteForPath(...)`), never awaited before navigation.
+- Keep click navigation direct. Do not wrap global route clicks with `document.startViewTransition(...)` while speed work is active.
+- Current prewarm behavior:
+  - `App.tsx` prewarms route chunks on link intent (`mouseover`, `focusin`, `touchstart`).
+  - `App.tsx` prewarms select marketing routes in dev only (`IS_DEV` delayed warmup).
+  - `components/marketing/ExampleTripsCarousel.tsx` prewarms `TripView` chunk for example-card flows.
+- `viewTransitionName` attributes and `::view-transition-*` CSS may remain in code; they are inert unless a `startViewTransition` call executes.
+- When testing any transition reintroduction, gate it behind a reversible flag and validate both directions:
+  - homepage -> example trip
+  - browser back example trip -> homepage
+- Reject any change that regresses navigation responsiveness, adds blocking waits, or increases route fallback flashes.
+
 ## Active Work Items
 - [x] Remove globally loaded Leaflet assets from `index.html`.
 - [x] Split app routes with `React.lazy` + `Suspense` so blog routes avoid planner bundles.
@@ -21,4 +34,5 @@ This backlog stays open as a continuous performance track across routes.
 - [x] Add static-map satellite fallback (`satellite` → `clean`) in preview/OG pipelines where satellite/hybrid static map types are unavailable.
 - [x] Preload high-traffic lazy route modules on link intent and dev warmup so first local navigation no longer flashes route fallback while chunks compile.
 - [x] Defer `OnPageDebugger` loading unless explicitly enabled.
+- [x] Document navigation prewarm and transition guardrails to keep future speed optimizations from reintroducing blocking route transitions.
 - [ ] Repeat route-by-route Lighthouse sweeps (`/`, `/blog`, `/blog/:slug`, `/inspirations`, `/pricing`, `/create-trip`, `/trip/:id`).

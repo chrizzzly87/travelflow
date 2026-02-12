@@ -5,6 +5,7 @@ import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
 import { normalizeTransportMode } from '../shared/transportModes';
+import { getExampleCityLaneViewTransitionName } from '../shared/viewTransitionNames';
 
 interface TimelineProps {
   trip: ITrip;
@@ -18,6 +19,7 @@ interface TimelineProps {
   onAddCity: () => void;
   pixelsPerDay: number;
   readOnly?: boolean;
+  enableExampleSharedTransition?: boolean;
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -49,7 +51,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   onSwapSelectedCities,
   onAddCity,
   pixelsPerDay,
-  readOnly = false
+  readOnly = false,
+  enableExampleSharedTransition = false
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -703,6 +706,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     pixelsPerDay={pixelsPerDay}
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
+                                    viewTransitionName={getExampleCityLaneViewTransitionName(enableExampleSharedTransition, index)}
                                 />
                             );
                         })}
