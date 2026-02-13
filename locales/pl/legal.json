@@ -1,0 +1,57 @@
+{
+  "imprint": {
+    "title": "Informacje prawne",
+    "intro": "Ta strona z informacjami prawnymi jest przygotowana jako placeholder. Przed wdrożeniem produkcyjnym zastąp poniższe pola oficjalnymi danymi firmy i kontaktem.",
+    "company": "Firma:",
+    "companyValue": "TravelFlow (placeholder)",
+    "address": "Adres:",
+    "addressValue": "Zastąp oficjalnym adresem firmy",
+    "email": "E-mail:",
+    "emailValue": "legal@travelflow.example",
+    "responsible": "Osoba odpowiedzialna:",
+    "responsibleValue": "Zastąp danymi przedstawiciela prawnego",
+    "vat": "VAT / rejestracja:",
+    "vatValue": "Zastąp wymaganymi lokalnymi identyfikatorami rejestracyjnymi"
+  },
+  "privacy": {
+    "title": "Polityka prywatności",
+    "intro": "Ten placeholder polityki istnieje, aby nawigacja prawna była kompletna. Przed uruchomieniem zastąp go zatwierdzonym tekstem polityki prywatności.",
+    "items": [
+      "Jakie dane osobowe są zbierane i dlaczego.",
+      "Jak długo dane są przechowywane i gdzie.",
+      "Podstawa prawna przetwarzania i prawa użytkownika.",
+      "Dane kontaktowe do żądań dotyczących prywatności i usunięcia danych."
+    ]
+  },
+  "terms": {
+    "title": "Warunki korzystania z usługi",
+    "intro": "Ta strona z warunkami to strukturalny placeholder. Zastąp ją właściwymi warunkami dotyczącymi konta, rozliczeń, dozwolonego użycia i ograniczeń odpowiedzialności.",
+    "items": [
+      "Zakres usługi i odpowiedzialność użytkownika konta.",
+      "Warunki subskrypcji/paywalla oraz polityka rozliczeń.",
+      "Niedozwolone użycia i polityka zawieszeń.",
+      "Wyłączenie gwarancji i ograniczenie odpowiedzialności."
+    ]
+  },
+  "cookies": {
+    "title": "Polityka cookies",
+    "intro": "TravelFlow przechowuje preferencje zgody lokalnie i aktywuje analitykę dopiero po udzieleniu opcjonalnej zgody.",
+    "essential": "Pamięć niezbędna (zawsze aktywna):",
+    "essentialValue": "tf_cookie_consent_choice_v1 w Local Storage do zapamiętania wyboru z banera.",
+    "optional": "Analityka opcjonalna:",
+    "optionalValue": "Umami jest ładowane tylko wtedy, gdy wybierzesz „Akceptuj wszystkie” w banerze cookie.",
+    "mapping": "Mapowanie zgody:",
+    "mappingValue": "Tylko niezbędne utrzymuje analitykę wyłączoną; Akceptuj wszystkie włącza śledzenie analityczne.",
+    "notesTitle": "Uwagi o konfiguracji analityki",
+    "notes": [
+      "Adres skryptu trackera jest konfigurowany przez VITE_UMAMI_SCRIPT_URL.",
+      "Identyfikator witryny jest konfigurowany przez VITE_UMAMI_WEBSITE_ID.",
+      "Jeśli później włączysz cookie-based funkcje analityczne w Umami, wpisz tutaj wszystkie nazwy cookie i ich czas trwania."
+    ],
+    "manageTitle": "Zarządzaj zgodą analityczną",
+    "current": "Obecna preferencja:",
+    "stateAll": "Akceptuj wszystkie",
+    "stateEssential": "Tylko niezbędne",
+    "stateUnset": "Nie ustawiono"
+  }
+}

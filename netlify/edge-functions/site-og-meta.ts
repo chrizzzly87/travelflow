@@ -6,7 +6,7 @@ const SITE_NAME = APP_NAME;
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
-const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it"] as const;
+const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 const DEFAULT_LOCALE: SupportedLocale = "en";
 
@@ -187,6 +187,9 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     pt: {
       description: "Plane viagens de forma mais inteligente com linha do tempo e mapa, e partilhe tudo com facilidade.",
     },
+    pl: {
+      description: "Planuj podróże sprytniej dzięki osi czasu i mapie, a potem łatwo je udostępniaj.",
+    },
   },
   "/features": {
     es: { title: "Funciones", description: "Descubre todo lo que {{appName}} ofrece para planificar y compartir mejores viajes." },
@@ -195,6 +198,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Funzionalità", description: "Scopri tutte le funzionalità di {{appName}} per pianificare viaggi migliori." },
     ru: { title: "Возможности", description: "Узнайте, как {{appName}} помогает планировать поездки удобнее и быстрее." },
     pt: { title: "Funcionalidades", description: "Descubra tudo o que o {{appName}} oferece para planear e partilhar melhores viagens." },
+    pl: { title: "Funkcje", description: "Sprawdź wszystko, co {{appName}} oferuje do lepszego planowania i udostępniania podróży." },
   },
   "/updates": {
     es: { title: "Novedades del producto", description: "Sigue las últimas mejoras y funcionalidades lanzadas en {{appName}}." },
@@ -203,6 +207,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Novità", description: "Tutti gli ultimi miglioramenti e le funzionalità rilasciate in {{appName}}." },
     ru: { title: "Новости и обновления", description: "Последние улучшения и новые функции {{appName}}." },
     pt: { title: "Novidades do produto", description: "Acompanhe as melhorias mais recentes e as funcionalidades lançadas no {{appName}}." },
+    pl: { title: "Nowości produktu", description: "Sprawdź najnowsze usprawnienia i funkcje wdrożone w {{appName}}." },
   },
   "/blog": {
     es: { title: "Blog", description: "Guías y consejos prácticos para planificar mejores viajes con {{appName}}." },
@@ -211,6 +216,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Blog", description: "Guide e consigli pratici per pianificare meglio i viaggi con {{appName}}." },
     ru: { title: "Блог", description: "Гайды и советы по планированию поездок с {{appName}}." },
     pt: { title: "Blog", description: "Guias e dicas práticas para planear viagens melhores com o {{appName}}." },
+    pl: { title: "Blog", description: "Poradniki i praktyczne wskazówki, które pomagają lepiej planować podróże z {{appName}}." },
   },
   "/pricing": {
     es: { title: "Precios", description: "Empieza gratis y mejora cuando lo necesites. Transparente y sin costes ocultos." },
@@ -219,6 +225,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Prezzi", description: "Inizia gratis e passa a un piano superiore quando serve. Nessun costo nascosto." },
     ru: { title: "Тарифы", description: "Начните бесплатно и переходите на расширенный план при необходимости. Без скрытых платежей." },
     pt: { title: "Preços", description: "Comece grátis e faça upgrade quando precisar. Transparente e sem custos escondidos." },
+    pl: { title: "Cennik", description: "Zacznij za darmo i przejdź na wyższy plan, gdy będzie potrzeba. Bez ukrytych opłat." },
   },
   "/faq": {
     es: { title: "Preguntas frecuentes", description: "Respuestas a preguntas comunes sobre {{appName}}, precios y viajes compartidos." },
@@ -227,6 +234,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "FAQ", description: "Risposte alle domande frequenti su {{appName}}, prezzi e condivisione dei viaggi." },
     ru: { title: "FAQ", description: "Ответы на частые вопросы о {{appName}}, тарифах и совместном доступе к поездкам." },
     pt: { title: "Perguntas frequentes", description: "Respostas às perguntas mais comuns sobre {{appName}}, preços e partilha de viagens." },
+    pl: { title: "Najczęściej zadawane pytania", description: "Odpowiedzi na najczęstsze pytania o {{appName}}, cennik i udostępnianie podróży." },
   },
   "/share-unavailable": {
     es: { title: "Viaje compartido no disponible", description: "Este enlace de viaje compartido ya no está disponible o ha caducado." },
@@ -235,6 +243,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Viaggio condiviso non disponibile", description: "Questo link condiviso non è più disponibile o è scaduto." },
     ru: { title: "Общий маршрут недоступен", description: "Ссылка на общий маршрут недоступна или истекла." },
     pt: { title: "Viagem partilhada indisponível", description: "Este link de viagem partilhada não está disponível ou expirou." },
+    pl: { title: "Udostępniona podróż jest niedostępna", description: "Ten link do udostępnionej podróży jest niedostępny lub wygasł." },
   },
   "/login": {
     es: { title: "Iniciar sesión", description: "Inicia sesión y sigue planificando tu próximo viaje en {{appName}}." },
@@ -243,6 +252,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Accedi", description: "Accedi e continua a pianificare il tuo prossimo viaggio in {{appName}}." },
     ru: { title: "Вход", description: "Войдите, чтобы продолжить планирование следующей поездки в {{appName}}." },
     pt: { title: "Iniciar sessão", description: "Inicie sessão e continue a planear a sua próxima viagem no {{appName}}." },
+    pl: { title: "Logowanie", description: "Zaloguj się i kontynuuj planowanie kolejnej podróży w {{appName}}." },
   },
   "/contact": {
     es: { title: "Contacto", description: "Reporta errores de traducción o comparte feedback de localización sobre {{appName}}." },
@@ -251,6 +261,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Contatti", description: "Segnala errori di traduzione o feedback sulla localizzazione di {{appName}}." },
     ru: { title: "Контакты", description: "Сообщите об ошибках перевода или оставьте отзыв о локализации {{appName}}." },
     pt: { title: "Contacto", description: "Reporte erros de tradução ou partilhe feedback de localização sobre o {{appName}}." },
+    pl: { title: "Kontakt", description: "Zgłoś błędy tłumaczenia lub prześlij opinię o lokalizacji {{appName}}." },
   },
   "/imprint": {
     es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
@@ -259,6 +270,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Note legali", description: "Informazioni legali e societarie su {{appName}}." },
     ru: { title: "Реквизиты", description: "Юридическая и корпоративная информация о {{appName}}." },
     pt: { title: "Aviso legal", description: "Informações legais e empresariais sobre o {{appName}}." },
+    pl: { title: "Informacje prawne", description: "Informacje prawne i firmowe dotyczące {{appName}}." },
   },
   "/privacy": {
     es: { title: "Política de privacidad", description: "Descubre cómo {{appName}} trata los datos personales y protege la privacidad." },
@@ -267,6 +279,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Informativa sulla privacy", description: "Scopri come {{appName}} gestisce i dati personali e protegge la privacy." },
     ru: { title: "Политика конфиденциальности", description: "Узнайте, как {{appName}} обрабатывает персональные данные и защищает конфиденциальность." },
     pt: { title: "Política de privacidade", description: "Saiba como o {{appName}} trata dados pessoais e protege a privacidade." },
+    pl: { title: "Polityka prywatności", description: "Sprawdź, jak {{appName}} przetwarza dane osobowe i chroni prywatność." },
   },
   "/terms": {
     es: { title: "Términos del servicio", description: "Consulta los términos que regulan el uso de {{appName}}." },
@@ -275,6 +288,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Termini di servizio", description: "Leggi i termini che regolano l'uso di {{appName}}." },
     ru: { title: "Условия использования", description: "Ознакомьтесь с условиями использования {{appName}}." },
     pt: { title: "Termos de serviço", description: "Leia os termos que regem a utilização do {{appName}}." },
+    pl: { title: "Warunki korzystania z usługi", description: "Przeczytaj zasady korzystania z {{appName}}." },
   },
   "/cookies": {
     es: { title: "Política de cookies", description: "Descubre cómo {{appName}} usa cookies y tecnologías similares." },
@@ -283,6 +297,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Informativa cookie", description: "Scopri come {{appName}} utilizza cookie e tecnologie simili." },
     ru: { title: "Политика cookie", description: "Узнайте, как {{appName}} использует cookie и похожие технологии." },
     pt: { title: "Política de cookies", description: "Saiba como o {{appName}} usa cookies e tecnologias semelhantes." },
+    pl: { title: "Polityka cookies", description: "Dowiedz się, jak {{appName}} używa plików cookie i podobnych technologii." },
   },
   "/inspirations": {
     es: {
@@ -315,6 +330,11 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
       description: "Explore ideias de viagem por tema, mês, país ou festivais que estão a chegar.",
       pill: "INSPIRAÇÃO DE VIAGENS",
     },
+    pl: {
+      title: "Dokąd wybierzesz się następnym razem?",
+      description: "Przeglądaj pomysły na podróże według motywu, miesiąca, kraju lub nadchodzących festiwali.",
+      pill: "INSPIRACJE PODRÓŻNICZE",
+    },
   },
   "/inspirations/themes": {
     es: { title: "Viajar por temática" },
@@ -323,6 +343,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Viaggia per tema" },
     ru: { title: "Путешествия по темам" },
     pt: { title: "Viajar por tema" },
+    pl: { title: "Podróże według motywu" },
   },
   "/inspirations/best-time-to-travel": {
     es: { title: "Cuándo ir y a dónde" },
@@ -331,6 +352,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Quando andare e dove" },
     ru: { title: "Когда и куда ехать" },
     pt: { title: "Quando ir e para onde" },
+    pl: { title: "Kiedy i dokąd jechać" },
   },
   "/inspirations/countries": {
     es: { title: "Explorar destinos por país" },
@@ -339,6 +361,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Esplora destinazioni per paese" },
     ru: { title: "Направления по странам" },
     pt: { title: "Explorar destinos por país" },
+    pl: { title: "Odkrywaj kierunki według kraju" },
   },
   "/inspirations/events-and-festivals": {
     es: { title: "Planear alrededor de un festival" },
@@ -347,6 +370,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Pianifica intorno a un festival" },
     ru: { title: "Планируйте поездку вокруг фестиваля" },
     pt: { title: "Planear à volta de um festival" },
+    pl: { title: "Zaplanuj podróż wokół festiwalu" },
   },
   "/inspirations/weekend-getaways": {
     es: { title: "Escapadas rápidas para agendas ocupadas" },
@@ -355,6 +379,7 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     it: { title: "Fughe rapide per chi ha poco tempo" },
     ru: { title: "Быстрые поездки для занятых" },
     pt: { title: "Escapadinhas rápidas para quem tem pouco tempo" },
+    pl: { title: "Szybkie wypady dla zapracowanych" },
   },
 };
 
@@ -505,6 +530,12 @@ const getCountryRouteMeta = (country: string, locale: SupportedLocale): PageDefi
         title: `Viajar para ${country}`,
         description: `Tudo o que precisa para planear a sua viagem a ${country}: melhores meses, roteiros populares e dicas úteis.`,
         pill: "INSPIRAÇÃO DE VIAGENS",
+      });
+    case "pl":
+      return finalizePageDefinition({
+        title: `Podróż do ${country}`,
+        description: `Wszystko, czego potrzebujesz, aby zaplanować podróż do ${country}: najlepsze miesiące, popularne trasy i praktyczne wskazówki.`,
+        pill: "INSPIRACJE PODRÓŻNICZE",
       });
     default:
       return finalizePageDefinition({

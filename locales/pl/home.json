@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "Planowanie podróży z AI",
+    "titleBefore": "Twoja kolejna przygoda, zaplanowana",
+    "titleHighlight": "w kilka sekund",
+    "description": "Powiedz nam dokąd i kiedy chcesz jechać — nasze AI przygotuje kompletny plan dzień po dniu z zoptymalizowaną trasą, dobranymi atrakcjami i realnymi linkami do rezerwacji. Wszystko możesz edytować na wizualnej osi czasu i mapie, a potem udostępnić ekipie jednym kliknięciem.",
+    "floating": {
+      "ai": "Plany tworzone przez AI",
+      "share": "Udostępniaj i współpracuj",
+      "booking": "Linki do rezerwacji"
+    }
+  },
+  "examples": {
+    "title": "Podróże zbudowane w TravelFlow",
+    "subtitle": "Przeglądaj prawdziwe plany tworzone przez naszą społeczność — od tygodniowych wypadów na wyspy po road tripy przez cały kraj."
+  },
+  "featureShowcase": {
+    "title": "Wszystko, czego potrzebujesz, by planować, udostępniać i ruszać w drogę",
+    "subtitle": "Od pierwszej iskry inspiracji po kartę pokładową — TravelFlow wspiera całą podróż.",
+    "items": {
+      "aiTripCreation": {
+        "title": "Tworzenie planu przez AI",
+        "description": "Opisz wymarzoną podróż zwykłym językiem. Nasze AI buduje kompletny plan dzień po dniu ze sprytną kolejnością miast, propozycjami atrakcji i szacowanym czasem przejazdów — wszystko w mniej niż 30 sekund."
+      },
+      "interactiveMapStyles": {
+        "title": "Interaktywne style mapy",
+        "description": "Przełączaj między satelitą, terenem i minimalistycznymi warstwami mapy. Obserwuj trasę z animowanymi liniami, markerami miast i dynamicznym przybliżeniem podążającym za przewijaniem."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Łatwa edycja planu",
+        "description": "Przeciągaj miasta, zmieniaj długość pobytu albo dodawaj spontaniczne przystanki — wszystko na wizualnej osi czasu. Zmiany propagują się automatycznie, więc daty i połączenia zawsze pozostają spójne."
+      },
+      "communityExamples": {
+        "title": "Przykłady społeczności",
+        "description": "Przeglądaj plany innych podróżników, by odkrywać ukryte perełki i sprawdzone trasy. Skopiuj dowolny plan społeczności jako punkt startowy swojej przygody."
+      },
+      "shareCollaborate": {
+        "title": "Udostępniaj i współpracuj",
+        "description": "Wygeneruj link do udostępnienia jednym kliknięciem. Współpodróżni zobaczą pełną mapę, oś czasu i listę atrakcji — bez zakładania konta. Aktualizacje synchronizują się natychmiast dla wszystkich."
+      },
+      "activityBookingLinks": {
+        "title": "Linki do rezerwacji atrakcji",
+        "description": "Każda atrakcja sugerowana przez AI prowadzi bezpośrednio do platform rezerwacyjnych. Rezerwuj wycieczki, restauracje i transport bez opuszczania planu — wszystko w jednym miejscu."
+      }
+    }
+  },
+  "cta": {
+    "title": "Gotowy zaplanować kolejną podróż?",
+    "subtitle": "Dołącz do tysięcy podróżników, którzy tworzą lepsze plany w kilka minut. Nie potrzebujesz konta, żeby zacząć."
+  }
+}

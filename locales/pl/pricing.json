@@ -1,0 +1,50 @@
+{
+  "hero": {
+    "title": "Prosty i przejrzysty cennik",
+    "description": "Zacznij za darmo i przejdź na wyższy plan, gdy potrzebujesz więcej. Bez ukrytych opłat, anulujesz w każdej chwili."
+  },
+  "tiers": {
+    "free": {
+      "name": "Free",
+      "badge": "Obecny plan",
+      "description": "Szybki start ze wszystkim, czego potrzebujesz do pewnego planowania podróży.",
+      "cta": "Zacznij",
+      "features": [
+        "Kreator podróży AI z mapą i osią czasu",
+        "Przeciągaj, edytuj i udostępniaj w kilka sekund",
+        "Do 5 zapisanych podróży",
+        "Czytelne plany gotowe do druku",
+        "Udostępnianie linkiem"
+      ]
+    },
+    "casual": {
+      "name": "Casual",
+      "badge": "Roadmapa",
+      "description": "Dla podróżników, którzy chcą szybszego workflow i większej kontroli.",
+      "cta": "Wkrótce",
+      "features": [
+        "Wszystko z planu Free",
+        "Nielimitowana liczba zapisanych podróży",
+        "Priorytetowa kolejka generowania",
+        "Zaawansowane opcje udostępniania i eksportu"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "Roadmapa",
+      "description": "Stworzony dla power userów i zespołów planujących wspólne podróże.",
+      "cta": "Wkrótce",
+      "features": [
+        "Wszystko z planu Casual",
+        "Współpraca zespołowa przy planowaniu",
+        "Premium insights i priorytetowe wsparcie",
+        "Wczesny dostęp do nowych możliwości"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "Limity dostępu anonimowego",
+    "description": "Użytkownicy anonimowi mogą utrzymywać jednocześnie do <strong>{limit}</strong> aktywnych podróży. Każda anonimowa podróż pozostaje edytowalna przez <strong>{days} dni</strong>, a potem zostaje zablokowana do czasu aktywacji konta.",
+    "footer": "Zacznij za darmo już dziś. Płatne plany pojawią się wraz z rozbudowanymi funkcjami konta i współpracy."
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Ustawienia",
+  "tabs": {
+    "layout": "Układ",
+    "appearance": "Wygląd",
+    "language": "Język"
+  },
+  "layout": {
+    "timelineOrientation": "Orientacja osi czasu",
+    "horizontal": "Pozioma",
+    "horizontalDescription": "Klasyczny widok w stylu Gantta. Najlepszy do wizualizacji nakładających się czasów trwania.",
+    "vertical": "Pionowa",
+    "verticalDescription": "Widok listy przyjazny mobile. Łatwiej się przewija i czyta na małych ekranach."
+  },
+  "appearance": {
+    "mapTiles": "Warstwy mapy",
+    "minimal": "Minimal",
+    "minimalDescription": "Czysto i konkretnie",
+    "standard": "Standard",
+    "standardDescription": "Domyślny Google",
+    "dark": "Ciemny",
+    "darkDescription": "Tryb nocny",
+    "satellite": "Satelita",
+    "satelliteDescription": "Widok z lotu"
+  },
+  "language": {
+    "noteTitle": "Język mapy",
+    "noteDescription": "Etykiety na mapie podążają za tym ustawieniem.",
+    "appLanguage": "Język aplikacji"
+  }
+}

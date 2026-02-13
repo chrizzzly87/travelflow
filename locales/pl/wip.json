@@ -1,0 +1,12 @@
+{
+  "label": "W trakcie prac",
+  "footer": "Więcej szczegółów i funkcje konta pojawią się w kolejnych wydaniach.",
+  "login": {
+    "title": "Logowanie",
+    "description": "Dostęp do konta pojawi się wkrótce. Logowanie odblokuje funkcje premium, dłuższą historię podróży i płynniejsze przejścia przy upgrade paywalla."
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "Pełna sekcja FAQ jest aktualnie w przygotowaniu. Na razie limity dostępu anonimowego i aktywacji konta opisaliśmy na stronie Cennik, a kompletne centrum pomocy wkrótce udostępnimy."
+  }
+}

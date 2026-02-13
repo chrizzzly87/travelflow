@@ -6,7 +6,7 @@ const BLOG_DIR = path.join(ROOT, 'content', 'blog');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
 
 const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://travelflow.app').replace(/\/$/, '');
-const SUPPORTED_LOCALES = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it'];
+const SUPPORTED_LOCALES = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it', 'pl'];
 const DEFAULT_LOCALE = 'en';
 
 const MARKETING_PATHS = [
