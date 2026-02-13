@@ -51,6 +51,12 @@ This document defines how to add or change localized pages in TravelFlow.
 - Localized marketing pages show translation disclaimer banner via `components/marketing/TranslationNoticeBanner.tsx`.
 - Banner is injected by `components/marketing/MarketingLayout.tsx`.
 - Banner links to localized `/contact` route for reporting translation issues.
+- Banner can be dismissed for the current browser session (session storage).
+
+## Language Suggestion Banner Behavior
+- Banner is shown only on marketing pages when browser-preferred locale differs from current locale.
+- Dismissing the banner hides it for the current browser session.
+- Switching via banner CTA permanently acknowledges the hint (stored locally), so it is not shown again on future visits unless storage is cleared.
 
 ## Logical Properties Requirement (Direction Safety)
 - For every new or updated component, evaluate if CSS logical properties should be used for direction safety:
