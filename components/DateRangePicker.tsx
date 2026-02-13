@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar, ArrowRight } from 'lucide-react';
 
@@ -7,12 +7,54 @@ interface DateRangePickerProps {
     endDate: string;
     onChange: (start: string, end: string) => void;
     disabled?: boolean;
+    showLabel?: boolean;
+    monthLabelFormat?: 'short' | 'long';
+    locale?: string;
+    labels?: Partial<DateRangePickerLabels>;
 }
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+interface DateRangePickerLabels {
+    range: string;
+    start: string;
+    end: string;
+    selectDate: string;
+    selectStartDate: string;
+    selectEndDate: string;
+    previousMonth: string;
+    nextMonth: string;
+}
 
-export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, endDate, onChange, disabled }) => {
+const DEFAULT_LABELS: DateRangePickerLabels = {
+    range: 'Trip Dates',
+    start: 'Start',
+    end: 'End',
+    selectDate: 'Select Date',
+    selectStartDate: 'Select start date',
+    selectEndDate: 'Select end date',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+};
+
+const getWeekdayLabels = (locale: string): string[] => {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const monday = new Date(Date.UTC(2024, 0, 1)); // 2024-01-01 is a Monday
+    return Array.from({ length: 7 }, (_entry, index) => {
+        const value = new Date(monday);
+        value.setUTCDate(monday.getUTCDate() + index);
+        return formatter.format(value);
+    });
+};
+
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+    startDate,
+    endDate,
+    onChange,
+    disabled,
+    showLabel = true,
+    monthLabelFormat = 'short',
+    locale = 'en-US',
+    labels,
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [viewDate, setViewDate] = useState(new Date());
     const [mode, setMode] = useState<'start' | 'end'>('start');
@@ -21,6 +63,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
     
     const containerRef = useRef<HTMLDivElement>(null);
     const calendarRef = useRef<HTMLDivElement>(null);
+    const text = { ...DEFAULT_LABELS, ...(labels || {}) };
+    const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
 
     // Parse YYYY-MM-DD string to local Date object
     const parseDate = (str: string) => {
@@ -252,9 +296,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
 
     return (
         <div className="relative" ref={containerRef}>
-             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Calendar size={14} className="text-accent-500"/> Trip Dates
-            </label>
+            {showLabel && (
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-500">
+                    <Calendar size={14} className="text-accent-500" /> {text.range}
+                </label>
+            )}
 
             {/* Input Trigger */}
             <div className={`flex items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 transition-all ${isOpen ? 'ring-2 ring-accent-500 bg-white' : ''} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -262,9 +308,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                     className={`flex-1 cursor-pointer ${mode === 'start' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('start'); } }}
                  >
-                    <span className="text-xs text-gray-400 font-semibold block">Start</span>
+                    <span className="text-xs text-gray-400 font-semibold block">{text.start}</span>
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
-                        {sDate ? sDate.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : 'Select Date'}
+                        {sDate ? sDate.toLocaleDateString(locale, { month: monthLabelFormat, day: 'numeric' }) : text.selectDate}
                     </span>
                  </div>
                  
@@ -276,9 +322,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                     className={`flex-1 text-right cursor-pointer ${mode === 'end' && isOpen ? 'text-accent-600' : ''}`}
                     onClick={() => { if(!disabled) { openCalendar('end'); } }}
                  >
-                    <span className="text-xs text-gray-400 font-semibold block text-right">End</span>
+                    <span className="text-xs text-gray-400 font-semibold block text-right">{text.end}</span>
                     <span className="text-sm font-medium text-gray-900 block min-h-[1.25rem]">
-                        {eDate ? eDate.toLocaleDateString('en-US', {month: 'short', day: 'numeric'}) : 'Select Date'}
+                        {eDate ? eDate.toLocaleDateString(locale, { month: monthLabelFormat, day: 'numeric' }) : text.selectDate}
                     </span>
                  </div>
             </div>
@@ -293,22 +339,22 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
                     
                     {/* Header */}
                     <div className="flex items-center justify-between mb-4">
-                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label="Previous month">
+                        <button onClick={() => changeMonth(-1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.previousMonth}>
                             <ChevronLeft size={20} />
                         </button>
                         <span className="font-bold text-gray-800">
-                            {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
+                            {viewDate.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
                         </span>
-                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label="Next month">
+                        <button onClick={() => changeMonth(1)} className="p-1 hover:bg-gray-100 rounded-full text-gray-500" aria-label={text.nextMonth}>
                             <ChevronRight size={20} />
                         </button>
                     </div>
 
                     {/* Weekdays */}
                     <div className="grid grid-cols-7 mb-2">
-                        {DAYS.map(d => (
-                            <div key={d} className="text-xs text-center font-bold text-gray-400 uppercase">
-                                {d}
+                        {weekdayLabels.map((dayLabel, index) => (
+                            <div key={`${dayLabel}-${index}`} className="text-xs text-center font-bold text-gray-400 uppercase">
+                                {dayLabel}
                             </div>
                         ))}
                     </div>
@@ -334,7 +380,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({ startDate, end
 
                     {/* Footer Info */}
                     <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-center text-gray-500 font-medium">
-                        {mode === 'start' ? 'Select start date' : 'Select end date'}
+                        {mode === 'start' ? text.selectStartDate : text.selectEndDate}
                     </div>
                 </div>,
                 document.body

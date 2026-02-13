@@ -6,7 +6,7 @@ import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -74,7 +74,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         if (!isToolRoute(location.pathname)) {
             void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, ['common']);
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
         }
 
         applyDocumentLocale(nextLocale);

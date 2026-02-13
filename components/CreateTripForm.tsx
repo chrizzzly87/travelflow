@@ -882,7 +882,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             <div className="pointer-events-none absolute -right-10 bottom-20 z-[1] h-80 w-80 rounded-full bg-accent-300/30 blur-[80px]" />
 
             <div className="relative z-20">
-                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
+                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
             </div>
 
             <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-4 pt-6 sm:pt-8 md:pt-10 overflow-y-auto w-full">
@@ -896,33 +896,40 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
                                 <div className="text-xs font-bold uppercase tracking-[0.14em] text-accent-700">Design Labs</div>
-                                <p className="text-sm text-gray-600">Test 3 new create-trip layouts without changing this page.</p>
+                                <p className="text-sm text-gray-600">Compare the default create-trip flow with all lab concepts and this legacy form.</p>
                             </div>
                             <span className="rounded-full border border-accent-200 bg-accent-50 px-2.5 py-1 text-[11px] font-semibold text-accent-700">
                                 Experimental
                             </span>
                         </div>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                             <Link
-                                to="/create-trip/labs/classic-card"
+                                to="/create-trip"
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
                             >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 1</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Default / Lab 1</div>
                                 <div className="text-sm font-semibold text-gray-800">Classic Card Overhaul</div>
                             </Link>
                             <Link
                                 to="/create-trip/labs/split-workspace"
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
                             >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 2</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Lab 2</div>
                                 <div className="text-sm font-semibold text-gray-800">Split Workspace 50/50</div>
                             </Link>
                             <Link
                                 to="/create-trip/labs/journey-architect"
                                 className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
                             >
-                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Concept 3</div>
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Lab 3</div>
                                 <div className="text-sm font-semibold text-gray-800">Journey Architect</div>
+                            </Link>
+                            <Link
+                                to="/create-trip/labs/classic-legacy"
+                                className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-left transition-colors hover:border-accent-300 hover:bg-accent-50/70"
+                            >
+                                <div className="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Legacy</div>
+                                <div className="text-sm font-semibold text-gray-800">Classic Form (current)</div>
                             </Link>
                         </div>
                     </div>

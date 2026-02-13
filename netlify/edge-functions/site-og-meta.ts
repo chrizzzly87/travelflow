@@ -5,6 +5,7 @@ import { APP_DEFAULT_DESCRIPTION, APP_NAME, applyAppNameTemplate } from "../../c
 const SITE_NAME = APP_NAME;
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
+const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
 const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -70,6 +71,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
 ];
 
 const TOOL_PATH_PREFIXES = ["/create-trip", "/trip", "/s", "/example", "/admin", "/api"];
+const STRICT_TOOL_HTML_PREFIXES = ["/create-trip", "/admin", "/example"];
 
 const PAGE_META: Record<string, PageDefinition> = {
   "/": {
@@ -448,6 +450,10 @@ const matchesPrefix = (pathname: string, prefix: string): boolean => {
 
 const isToolBasePath = (pathname: string): boolean => {
   return TOOL_PATH_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+};
+
+const shouldUseStrictToolHtmlCache = (pathname: string): boolean => {
+  return STRICT_TOOL_HTML_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 };
 
 const isLocalizedMarketingBasePath = (pathname: string): boolean => {
@@ -853,7 +859,10 @@ export default async (request: Request, context: { next: () => Promise<Response>
     const rewrittenHtml = injectMetaTags(html, metadata);
     const headers = new Headers(baseResponse.headers);
     headers.set("content-type", "text/html; charset=utf-8");
-    headers.set("cache-control", SITE_CACHE_CONTROL);
+    headers.set(
+      "cache-control",
+      shouldUseStrictToolHtmlCache(url.pathname) ? TOOL_APP_CACHE_CONTROL : SITE_CACHE_CONTROL,
+    );
     headers.delete("content-length");
     headers.delete("etag");
 

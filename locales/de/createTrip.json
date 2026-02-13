@@ -1,0 +1,169 @@
+{
+  "destination": {
+    "title": "Reiseziel",
+    "searchPlaceholder": "Land oder Insel suchen",
+    "noMatches": "Kein passendes Reiseziel gefunden",
+    "islandOf": "Insel von {country}",
+    "pinAsStart": "{destination} als Startpunkt setzen",
+    "removeDestination": "{destination} entfernen",
+    "idealTravelTime": "Beste Reisezeit",
+    "roundTrip": {
+      "title": "Zum Start zurückkehren",
+      "description": "Die Route endet am Ausgangspunkt."
+    },
+    "routeLock": {
+      "title": "Feste Route",
+      "description": "Reihenfolge festlegen und forcieren"
+    }
+  },
+  "dates": {
+    "title": "Reisedaten",
+    "mode": {
+      "exact": "Genaue Daten",
+      "flex": "Flexibles Zeitfenster"
+    },
+    "summary": "Entwurf: insgesamt {days} Tage.",
+    "labels": {
+      "start": "Start",
+      "end": "Ende",
+      "selectDate": "Datum wählen",
+      "selectStartDate": "Startdatum wählen",
+      "selectEndDate": "Enddatum wählen",
+      "previousMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat"
+    },
+    "flexWindow": {
+      "weeksLabel": "Reisedauer (Wochen)",
+      "rangeLabel": "Bevorzugter Zeitraum",
+      "options": {
+        "spring": "Frühlingsfenster",
+        "summer": "Sommerfenster",
+        "autumn": "Herbstfenster",
+        "winter": "Winterfenster",
+        "shoulder": "Nebensaison"
+      }
+    }
+  },
+  "traveler": {
+    "title": "Reisende",
+    "options": {
+      "solo": "Solo",
+      "couple": "Paar",
+      "friends": "Freunde",
+      "family": "Familie"
+    },
+    "settings": {
+      "optionalDetails": "Optionale Details",
+      "helper": "Diese Angaben sind optional und verbessern nur die Relevanz der Vorschläge.",
+      "gender": "Geschlecht (optional)",
+      "notSpecified": "Nicht angegeben",
+      "genderFemale": "Weiblich",
+      "genderMale": "Männlich",
+      "genderNonBinary": "Nicht-binär",
+      "genderPreferNot": "Keine Angabe",
+      "age": "Alter (optional)",
+      "agePlaceholder": "z. B. 31",
+      "comfortMode": "Komfortmodus",
+      "comfortOptions": {
+        "social": "Sozial",
+        "balanced": "Ausgewogen",
+        "private": "Privat"
+      },
+      "travelerA": "Reisende Person A (optional)",
+      "travelerB": "Reisende Person B (optional)",
+      "occasion": "Anlass (optional)",
+      "occasionOptions": {
+        "none": "Kein besonderer Anlass",
+        "honeymoon": "Flitterwochen",
+        "anniversary": "Jahrestag",
+        "cityBreak": "Städtetrip"
+      },
+      "groupSize": "Gruppengröße",
+      "groupEnergy": "Gruppenenergie",
+      "energyOptions": {
+        "chill": "Entspannt",
+        "mixed": "Gemischt",
+        "full-send": "Vollgas"
+      },
+      "adults": "Erwachsene",
+      "children": "Kinder",
+      "babies": "Babys",
+      "summaryHint": "Optionale Details",
+      "open": "{{traveler}}-Einstellungen bearbeiten",
+      "title": "{{traveler}}-Einstellungen anpassen",
+      "description": "Optionale Details zur Verfeinerung der Vorschläge für dieses Reisenden-Setup.",
+      "mobileDescription": "Optionale Details für relevantere Planung.",
+      "done": "Fertig"
+    }
+  },
+  "style": {
+    "title": "Reisestil",
+    "empty": "Kein Stil ausgewählt",
+    "options": {
+      "culture": "Kultur",
+      "food": "Kulinarik",
+      "nature": "Natur",
+      "beaches": "Strand",
+      "nightlife": "Nachtleben",
+      "remoteWork": "Remote Work"
+    }
+  },
+  "transport": {
+    "title": "Transportpräferenzen",
+    "options": {
+      "auto": "Automatisch",
+      "plane": "Flugzeug",
+      "car": "Auto",
+      "train": "Zug",
+      "bus": "Bus",
+      "cycle": "Fahrrad",
+      "walk": "Zu Fuß",
+      "camper": "Camper"
+    },
+    "camperDisabled": "Camper ist sichtbar, aber in dieser Version noch deaktiviert.",
+    "overrideHint": "Eigene Transportwahl weicht vom automatischen Default der Generierung ab."
+  },
+  "previewOnly": {
+    "title": "Nur Vorschau",
+    "global": "Diese Bereiche sind aktuell nur Vorschau. Für die Generierung gelten feste Defaults: Solo-Reisende, Stil = alles außer Remote Work, Transport = Automatisch.",
+    "traveler": "Aktuell nur Vorschau: Die Reisenden-Auswahl ist sichtbar, aber die Generierung nutzt fest Solo-Reisende.",
+    "style": "Aktuell nur Vorschau: Stil-Auswahl ist sichtbar, aber die Generierung nutzt fest „alles außer Remote Work“.",
+    "transport": "Aktuell nur Vorschau: Transport-Auswahl ist sichtbar, aber die Generierung nutzt fest Automatisch."
+  },
+  "notes": {
+    "title": "Besondere Hinweise",
+    "hint": "Kurz halten: z. B. Mobilität, Food-Fokus oder gewünschtes Komfortniveau.",
+    "placeholder": "Optionale Hinweise für den Planer"
+  },
+  "snapshot": {
+    "title": "Reise-Snapshot",
+    "destinations": "Reiseziele",
+    "emptyDestinations": "Füge Reiseziele hinzu, um die Route zu sehen.",
+    "days": "{days} Tage",
+    "avgPerStop": "Ø {days} pro Stopp",
+    "addDestinations": "Reiseziele hinzufügen, um Werte zu berechnen",
+    "previewOnly": "Nur Vorschau",
+    "style": "Stil",
+    "transport": "Transport",
+    "start": "Start",
+    "startEnd": "Start & Ende"
+  },
+  "mobileSnapshot": {
+    "title": "Reise-Snapshot",
+    "showDetails": "Details anzeigen",
+    "hideDetails": "Details ausblenden",
+    "days": "Tage",
+    "traveler": "Reisende",
+    "style": "Stil",
+    "transport": "Transport"
+  },
+  "cta": {
+    "label": "Reise erstellen",
+    "loading": "Wird erstellt..."
+  },
+  "errors": {
+    "destinationRequired": "Füge mindestens ein Reiseziel hinzu, bevor du die Reise erstellst.",
+    "genericGenerate": "Die Reise konnte nicht erstellt werden. Bitte versuche es erneut."
+  },
+  "prefillBadge": "Vorausgefüllt aus: {{label}}"
+}

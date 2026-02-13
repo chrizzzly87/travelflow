@@ -25,6 +25,7 @@ export type RouteKey =
     | 'cookies'
     | 'createTrip'
     | 'createTripClassicLab'
+    | 'createTripClassicLegacyLab'
     | 'createTripSplitWorkspaceLab'
     | 'createTripJourneyArchitectLab'
     | 'tripDetail'
@@ -150,6 +151,8 @@ export const buildPath = <K extends RouteKey>(
             return '/create-trip';
         case 'createTripClassicLab':
             return '/create-trip/labs/classic-card';
+        case 'createTripClassicLegacyLab':
+            return '/create-trip/labs/classic-legacy';
         case 'createTripSplitWorkspaceLab':
             return '/create-trip/labs/split-workspace';
         case 'createTripJourneyArchitectLab':
@@ -240,4 +243,10 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
     if (['/faq', '/login'].includes(stripped)) return ['common', 'wip'];
     return ['common', 'pages'];
+};
+
+export const getNamespacesForToolPath = (pathname: string): string[] => {
+    const stripped = stripLocalePrefix(pathname);
+    if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    return ['common'];
 };
