@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Layout, Map, Globe, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, MapStyle } from '../types';
-import { LOCALE_LABELS } from '../config/locales';
+import { LOCALE_DROPDOWN_ORDER, LOCALE_LABELS } from '../config/locales';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -183,9 +183,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         onChange={(e) => onAppLanguageChange?.(e.target.value as AppLanguage)}
                                         className="w-full p-2 border border-gray-300 rounded-lg bg-white"
                                      >
-                                        {Object.entries(LOCALE_LABELS).map(([locale, label]) => (
+                                        {LOCALE_DROPDOWN_ORDER.map((locale) => (
                                             <option key={locale} value={locale}>
-                                                {label}
+                                                {LOCALE_LABELS[locale]}
                                             </option>
                                         ))}
                                      </select>

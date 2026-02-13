@@ -20,10 +20,14 @@ const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
-const LOCAL_HEADLINE_FONT_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2";
-const LOCAL_SPACE_FONT_PATH =
-  "/fonts/space-grotesk/space-grotesk-latin.woff2";
+const LOCAL_HEADLINE_FONT_PATHS = [
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext.woff2",
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2",
+];
+const LOCAL_SPACE_FONT_PATHS = [
+  "/fonts/space-grotesk/space-grotesk-latin-ext.woff2",
+  "/fonts/space-grotesk/space-grotesk-latin.woff2",
+];
 const LEGACY_HEADLINE_FONT_URL =
   "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
 
@@ -43,8 +47,8 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
 };
 
 const buildHeadingFontUrls = (requestUrl: URL): string[] => [
-  new URL(LOCAL_HEADLINE_FONT_PATH, requestUrl.origin).toString(),
-  new URL(LOCAL_SPACE_FONT_PATH, requestUrl.origin).toString(),
+  ...LOCAL_HEADLINE_FONT_PATHS.map((path) => new URL(path, requestUrl.origin).toString()),
+  ...LOCAL_SPACE_FONT_PATHS.map((path) => new URL(path, requestUrl.origin).toString()),
   LEGACY_HEADLINE_FONT_URL,
 ];
 
