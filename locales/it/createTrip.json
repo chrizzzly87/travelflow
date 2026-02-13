@@ -165,5 +165,5 @@
     "destinationRequired": "Aggiungi almeno una destinazione prima di creare il tuo viaggio.",
     "genericGenerate": "Generazione viaggio non riuscita. Riprova."
   },
-  "prefillBadge": "Precompilato da: {{label}}"
+  "prefillBadge": "Precompilato da: {label}"
 }

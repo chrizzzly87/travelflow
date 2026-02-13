@@ -165,5 +165,5 @@
     "destinationRequired": "Füge mindestens ein Reiseziel hinzu, bevor du die Reise erstellst.",
     "genericGenerate": "Die Reise konnte nicht erstellt werden. Bitte versuche es erneut."
   },
-  "prefillBadge": "Vorausgefüllt aus: {{label}}"
+  "prefillBadge": "Vorausgefüllt aus: {label}"
 }

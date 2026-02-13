@@ -165,5 +165,5 @@
     "destinationRequired": "Dodaj co najmniej jeden kierunek przed utworzeniem podróży.",
     "genericGenerate": "Nie udało się wygenerować podróży. Spróbuj ponownie."
   },
-  "prefillBadge": "Wstępnie wypełniono z: {{label}}"
+  "prefillBadge": "Wstępnie wypełniono z: {label}"
 }

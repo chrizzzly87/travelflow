@@ -165,5 +165,5 @@
     "destinationRequired": "Add at least one destination before creating your trip.",
     "genericGenerate": "Trip generation failed. Please try again."
   },
-  "prefillBadge": "Pre-filled from: {{label}}"
+  "prefillBadge": "Pre-filled from: {label}"
 }

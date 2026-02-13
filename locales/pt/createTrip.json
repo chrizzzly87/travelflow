@@ -165,5 +165,5 @@
     "destinationRequired": "Adiciona pelo menos um destino antes de criares a tua viagem.",
     "genericGenerate": "A geração da viagem falhou. Tenta novamente."
   },
-  "prefillBadge": "Pré-preenchido de: {{label}}"
+  "prefillBadge": "Pré-preenchido de: {label}"
 }
