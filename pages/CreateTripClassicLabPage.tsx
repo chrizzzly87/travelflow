@@ -1148,7 +1148,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
                                                             <div className="text-xs font-semibold text-gray-900">{t('destination.idealTravelTime')}</div>
                                                             {metaLabel && <div className="mt-0.5 text-[11px] text-gray-500">{metaLabel}</div>}
-                                                            <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
+                                                            <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} locale={i18n.language} />
                                                         </div>
                                                     )}
                                                 </span>

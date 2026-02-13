@@ -22,6 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
@@ -311,7 +312,8 @@ const SelectionCard: React.FC<{
 const SeasonAwareCountryTag: React.FC<{
     countryName: string;
     onRemove: () => void;
-}> = ({ countryName, onRemove }) => {
+    locale?: string;
+}> = ({ countryName, onRemove, locale }) => {
     const destination = getDestinationOptionByName(countryName);
     const season = getCountrySeasonByName(getDestinationSeasonCountryName(countryName));
     const fallback = COUNTRIES.find((country) => country.name === countryName);
@@ -329,7 +331,7 @@ const SeasonAwareCountryTag: React.FC<{
             {season && (
                 <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
                     <div className="text-xs font-semibold text-gray-900">Ideal travel time</div>
-                    <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
+                    <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} locale={locale} />
                 </div>
             )}
         </div>
@@ -337,6 +339,7 @@ const SeasonAwareCountryTag: React.FC<{
 };
 
 export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated, onOpenManager }) => {
+    const { i18n } = useTranslation();
     const defaultDates = getDefaultTripDates();
     const [searchParams] = useSearchParams();
 
@@ -1296,6 +1299,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                     key={countryName}
                                                     countryName={countryName}
                                                     onRemove={() => removeSharedCountry(countryName)}
+                                                    locale={i18n.language}
                                                 />
                                             ))}
 
