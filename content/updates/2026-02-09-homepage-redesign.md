@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-homepage-redesign
-version: v0.23.0
+version: v0.21.0
 title: "View transitions, country pages, and blog & homepage redesign"
 date: 2026-02-09
 published_at: 2026-02-09T12:00:00Z

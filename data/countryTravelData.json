@@ -15835,5 +15835,6121 @@
         }
       ]
     }
-  ]
+  ],
+  "localizedDestinationNames": {
+    "countries": {
+      "AF": {
+        "en": "Afghanistan",
+        "es": "Afganistán",
+        "de": "Afghanistan",
+        "fr": "Afghanistan",
+        "it": "Afghanistan",
+        "pt": "Afeganistão",
+        "ru": "Афганистан",
+        "pl": "Afganistan"
+      },
+      "AL": {
+        "en": "Albania",
+        "es": "Albania",
+        "de": "Albanien",
+        "fr": "Albanie",
+        "it": "Albania",
+        "pt": "Albânia",
+        "ru": "Албания",
+        "pl": "Albania"
+      },
+      "DZ": {
+        "en": "Algeria",
+        "es": "Argelia",
+        "de": "Algerien",
+        "fr": "Algérie",
+        "it": "Algeria",
+        "pt": "Argélia",
+        "ru": "Алжир",
+        "pl": "Algieria"
+      },
+      "AD": {
+        "en": "Andorra",
+        "es": "Andorra",
+        "de": "Andorra",
+        "fr": "Andorre",
+        "it": "Andorra",
+        "pt": "Andorra",
+        "ru": "Андорра",
+        "pl": "Andora"
+      },
+      "AO": {
+        "en": "Angola",
+        "es": "Angola",
+        "de": "Angola",
+        "fr": "Angola",
+        "it": "Angola",
+        "pt": "Angola",
+        "ru": "Ангола",
+        "pl": "Angola"
+      },
+      "AG": {
+        "en": "Antigua and Barbuda",
+        "es": "Antigua y Barbuda",
+        "de": "Antigua und Barbuda",
+        "fr": "Antigua-et-Barbuda",
+        "it": "Antigua e Barbuda",
+        "pt": "Antígua e Barbuda",
+        "ru": "Антигуа и Барбуда",
+        "pl": "Antigua i Barbuda"
+      },
+      "AR": {
+        "en": "Argentina",
+        "es": "Argentina",
+        "de": "Argentinien",
+        "fr": "Argentine",
+        "it": "Argentina",
+        "pt": "Argentina",
+        "ru": "Аргентина",
+        "pl": "Argentyna"
+      },
+      "AM": {
+        "en": "Armenia",
+        "es": "Armenia",
+        "de": "Armenien",
+        "fr": "Arménie",
+        "it": "Armenia",
+        "pt": "Arménia",
+        "ru": "Армения",
+        "pl": "Armenia"
+      },
+      "AU": {
+        "en": "Australia",
+        "es": "Australia",
+        "de": "Australien",
+        "fr": "Australie",
+        "it": "Australia",
+        "pt": "Austrália",
+        "ru": "Австралия",
+        "pl": "Australia"
+      },
+      "AT": {
+        "en": "Austria",
+        "es": "Austria",
+        "de": "Österreich",
+        "fr": "Autriche",
+        "it": "Austria",
+        "pt": "Áustria",
+        "ru": "Австрия",
+        "pl": "Austria"
+      },
+      "AZ": {
+        "en": "Azerbaijan",
+        "es": "Azerbaiyán",
+        "de": "Aserbaidschan",
+        "fr": "Azerbaïdjan",
+        "it": "Azerbaigian",
+        "pt": "Azerbaijão",
+        "ru": "Азербайджан",
+        "pl": "Azerbejdżan"
+      },
+      "BS": {
+        "en": "Bahamas",
+        "es": "Bahamas",
+        "de": "Bahamas",
+        "fr": "Bahamas",
+        "it": "Bahamas",
+        "pt": "Baamas",
+        "ru": "Багамы",
+        "pl": "Bahamy"
+      },
+      "BH": {
+        "en": "Bahrain",
+        "es": "Baréin",
+        "de": "Bahrain",
+        "fr": "Bahreïn",
+        "it": "Bahrein",
+        "pt": "Barém",
+        "ru": "Бахрейн",
+        "pl": "Bahrajn"
+      },
+      "BD": {
+        "en": "Bangladesh",
+        "es": "Bangladés",
+        "de": "Bangladesch",
+        "fr": "Bangladesh",
+        "it": "Bangladesh",
+        "pt": "Bangladeche",
+        "ru": "Бангладеш",
+        "pl": "Bangladesz"
+      },
+      "BB": {
+        "en": "Barbados",
+        "es": "Barbados",
+        "de": "Barbados",
+        "fr": "Barbade",
+        "it": "Barbados",
+        "pt": "Barbados",
+        "ru": "Барбадос",
+        "pl": "Barbados"
+      },
+      "BY": {
+        "en": "Belarus",
+        "es": "Bielorrusia",
+        "de": "Belarus",
+        "fr": "Biélorussie",
+        "it": "Bielorussia",
+        "pt": "Bielorrússia",
+        "ru": "Беларусь",
+        "pl": "Białoruś"
+      },
+      "BE": {
+        "en": "Belgium",
+        "es": "Bélgica",
+        "de": "Belgien",
+        "fr": "Belgique",
+        "it": "Belgio",
+        "pt": "Bélgica",
+        "ru": "Бельгия",
+        "pl": "Belgia"
+      },
+      "BZ": {
+        "en": "Belize",
+        "es": "Belice",
+        "de": "Belize",
+        "fr": "Belize",
+        "it": "Belize",
+        "pt": "Belize",
+        "ru": "Белиз",
+        "pl": "Belize"
+      },
+      "BJ": {
+        "en": "Benin",
+        "es": "Benín",
+        "de": "Benin",
+        "fr": "Bénin",
+        "it": "Benin",
+        "pt": "Benim",
+        "ru": "Бенин",
+        "pl": "Benin"
+      },
+      "BT": {
+        "en": "Bhutan",
+        "es": "Bután",
+        "de": "Bhutan",
+        "fr": "Bhoutan",
+        "it": "Bhutan",
+        "pt": "Butão",
+        "ru": "Бутан",
+        "pl": "Bhutan"
+      },
+      "BO": {
+        "en": "Bolivia",
+        "es": "Bolivia",
+        "de": "Bolivien",
+        "fr": "Bolivie",
+        "it": "Bolivia",
+        "pt": "Bolívia",
+        "ru": "Боливия",
+        "pl": "Boliwia"
+      },
+      "BA": {
+        "en": "Bosnia and Herzegovina",
+        "es": "Bosnia y Herzegovina",
+        "de": "Bosnien und Herzegowina",
+        "fr": "Bosnie-Herzégovine",
+        "it": "Bosnia ed Erzegovina",
+        "pt": "Bósnia e Herzegovina",
+        "ru": "Босния и Герцеговина",
+        "pl": "Bośnia i Hercegowina"
+      },
+      "BW": {
+        "en": "Botswana",
+        "es": "Botsuana",
+        "de": "Botsuana",
+        "fr": "Botswana",
+        "it": "Botswana",
+        "pt": "Botsuana",
+        "ru": "Ботсвана",
+        "pl": "Botswana"
+      },
+      "BR": {
+        "en": "Brazil",
+        "es": "Brasil",
+        "de": "Brasilien",
+        "fr": "Brésil",
+        "it": "Brasile",
+        "pt": "Brasil",
+        "ru": "Бразилия",
+        "pl": "Brazylia"
+      },
+      "BN": {
+        "en": "Brunei",
+        "es": "Brunéi",
+        "de": "Brunei Darussalam",
+        "fr": "Brunei",
+        "it": "Brunei",
+        "pt": "Brunei",
+        "ru": "Бруней",
+        "pl": "Brunei"
+      },
+      "BG": {
+        "en": "Bulgaria",
+        "es": "Bulgaria",
+        "de": "Bulgarien",
+        "fr": "Bulgarie",
+        "it": "Bulgaria",
+        "pt": "Bulgária",
+        "ru": "Болгария",
+        "pl": "Bułgaria"
+      },
+      "BF": {
+        "en": "Burkina Faso",
+        "es": "Burkina Faso",
+        "de": "Burkina Faso",
+        "fr": "Burkina Faso",
+        "it": "Burkina Faso",
+        "pt": "Burquina Faso",
+        "ru": "Буркина-Фасо",
+        "pl": "Burkina Faso"
+      },
+      "BI": {
+        "en": "Burundi",
+        "es": "Burundi",
+        "de": "Burundi",
+        "fr": "Burundi",
+        "it": "Burundi",
+        "pt": "Burundi",
+        "ru": "Бурунди",
+        "pl": "Burundi"
+      },
+      "KH": {
+        "en": "Cambodia",
+        "es": "Camboya",
+        "de": "Kambodscha",
+        "fr": "Cambodge",
+        "it": "Cambogia",
+        "pt": "Camboja",
+        "ru": "Камбоджа",
+        "pl": "Kambodża"
+      },
+      "CM": {
+        "en": "Cameroon",
+        "es": "Camerún",
+        "de": "Kamerun",
+        "fr": "Cameroun",
+        "it": "Camerun",
+        "pt": "Camarões",
+        "ru": "Камерун",
+        "pl": "Kamerun"
+      },
+      "CA": {
+        "en": "Canada",
+        "es": "Canadá",
+        "de": "Kanada",
+        "fr": "Canada",
+        "it": "Canada",
+        "pt": "Canadá",
+        "ru": "Канада",
+        "pl": "Kanada"
+      },
+      "CV": {
+        "en": "Cape Verde",
+        "es": "Cabo Verde",
+        "de": "Cabo Verde",
+        "fr": "Cap-Vert",
+        "it": "Capo Verde",
+        "pt": "Cabo Verde",
+        "ru": "Кабо-Верде",
+        "pl": "Republika Zielonego Przylądka"
+      },
+      "CF": {
+        "en": "Central African Republic",
+        "es": "República Centroafricana",
+        "de": "Zentralafrikanische Republik",
+        "fr": "République centrafricaine",
+        "it": "Repubblica Centrafricana",
+        "pt": "República Centro-Africana",
+        "ru": "Центрально-Африканская Республика",
+        "pl": "Republika Środkowoafrykańska"
+      },
+      "TD": {
+        "en": "Chad",
+        "es": "Chad",
+        "de": "Tschad",
+        "fr": "Tchad",
+        "it": "Ciad",
+        "pt": "Chade",
+        "ru": "Чад",
+        "pl": "Czad"
+      },
+      "CL": {
+        "en": "Chile",
+        "es": "Chile",
+        "de": "Chile",
+        "fr": "Chili",
+        "it": "Cile",
+        "pt": "Chile",
+        "ru": "Чили",
+        "pl": "Chile"
+      },
+      "CN": {
+        "en": "China",
+        "es": "China",
+        "de": "China",
+        "fr": "Chine",
+        "it": "Cina",
+        "pt": "China",
+        "ru": "Китай",
+        "pl": "Chiny"
+      },
+      "CO": {
+        "en": "Colombia",
+        "es": "Colombia",
+        "de": "Kolumbien",
+        "fr": "Colombie",
+        "it": "Colombia",
+        "pt": "Colômbia",
+        "ru": "Колумбия",
+        "pl": "Kolumbia"
+      },
+      "KM": {
+        "en": "Comoros",
+        "es": "Comoras",
+        "de": "Komoren",
+        "fr": "Comores",
+        "it": "Comore",
+        "pt": "Comores",
+        "ru": "Коморы",
+        "pl": "Komory"
+      },
+      "CD": {
+        "en": "Congo (Democratic Republic)",
+        "es": "República Democrática del Congo",
+        "de": "Kongo-Kinshasa",
+        "fr": "Congo-Kinshasa",
+        "it": "Congo - Kinshasa",
+        "pt": "Congo-Kinshasa",
+        "ru": "Конго - Киншаса",
+        "pl": "Demokratyczna Republika Konga"
+      },
+      "CG": {
+        "en": "Congo (Republic)",
+        "es": "Congo",
+        "de": "Kongo-Brazzaville",
+        "fr": "Congo-Brazzaville",
+        "it": "Congo-Brazzaville",
+        "pt": "Congo-Brazzaville",
+        "ru": "Конго - Браззавиль",
+        "pl": "Kongo"
+      },
+      "CR": {
+        "en": "Costa Rica",
+        "es": "Costa Rica",
+        "de": "Costa Rica",
+        "fr": "Costa Rica",
+        "it": "Costa Rica",
+        "pt": "Costa Rica",
+        "ru": "Коста-Рика",
+        "pl": "Kostaryka"
+      },
+      "HR": {
+        "en": "Croatia",
+        "es": "Croacia",
+        "de": "Kroatien",
+        "fr": "Croatie",
+        "it": "Croazia",
+        "pt": "Croácia",
+        "ru": "Хорватия",
+        "pl": "Chorwacja"
+      },
+      "CU": {
+        "en": "Cuba",
+        "es": "Cuba",
+        "de": "Kuba",
+        "fr": "Cuba",
+        "it": "Cuba",
+        "pt": "Cuba",
+        "ru": "Куба",
+        "pl": "Kuba"
+      },
+      "CY": {
+        "en": "Cyprus",
+        "es": "Chipre",
+        "de": "Zypern",
+        "fr": "Chypre",
+        "it": "Cipro",
+        "pt": "Chipre",
+        "ru": "Кипр",
+        "pl": "Cypr"
+      },
+      "CZ": {
+        "en": "Czech Republic",
+        "es": "Chequia",
+        "de": "Tschechien",
+        "fr": "Tchéquie",
+        "it": "Cechia",
+        "pt": "Chéquia",
+        "ru": "Чехия",
+        "pl": "Czechy"
+      },
+      "DK": {
+        "en": "Denmark",
+        "es": "Dinamarca",
+        "de": "Dänemark",
+        "fr": "Danemark",
+        "it": "Danimarca",
+        "pt": "Dinamarca",
+        "ru": "Дания",
+        "pl": "Dania"
+      },
+      "DJ": {
+        "en": "Djibouti",
+        "es": "Yibuti",
+        "de": "Dschibuti",
+        "fr": "Djibouti",
+        "it": "Gibuti",
+        "pt": "Jibuti",
+        "ru": "Джибути",
+        "pl": "Dżibuti"
+      },
+      "DM": {
+        "en": "Dominica",
+        "es": "Dominica",
+        "de": "Dominica",
+        "fr": "Dominique",
+        "it": "Dominica",
+        "pt": "Domínica",
+        "ru": "Доминика",
+        "pl": "Dominika"
+      },
+      "DO": {
+        "en": "Dominican Republic",
+        "es": "República Dominicana",
+        "de": "Dominikanische Republik",
+        "fr": "République dominicaine",
+        "it": "Repubblica Dominicana",
+        "pt": "República Dominicana",
+        "ru": "Доминиканская Республика",
+        "pl": "Dominikana"
+      },
+      "TL": {
+        "en": "East Timor",
+        "es": "Timor-Leste",
+        "de": "Timor-Leste",
+        "fr": "Timor oriental",
+        "it": "Timor Est",
+        "pt": "Timor-Leste",
+        "ru": "Восточный Тимор",
+        "pl": "Timor Wschodni"
+      },
+      "EC": {
+        "en": "Ecuador",
+        "es": "Ecuador",
+        "de": "Ecuador",
+        "fr": "Équateur",
+        "it": "Ecuador",
+        "pt": "Equador",
+        "ru": "Эквадор",
+        "pl": "Ekwador"
+      },
+      "EG": {
+        "en": "Egypt",
+        "es": "Egipto",
+        "de": "Ägypten",
+        "fr": "Égypte",
+        "it": "Egitto",
+        "pt": "Egito",
+        "ru": "Египет",
+        "pl": "Egipt"
+      },
+      "SV": {
+        "en": "El Salvador",
+        "es": "El Salvador",
+        "de": "El Salvador",
+        "fr": "Salvador",
+        "it": "El Salvador",
+        "pt": "Salvador",
+        "ru": "Сальвадор",
+        "pl": "Salwador"
+      },
+      "GQ": {
+        "en": "Equatorial Guinea",
+        "es": "Guinea Ecuatorial",
+        "de": "Äquatorialguinea",
+        "fr": "Guinée équatoriale",
+        "it": "Guinea Equatoriale",
+        "pt": "Guiné Equatorial",
+        "ru": "Экваториальная Гвинея",
+        "pl": "Gwinea Równikowa"
+      },
+      "ER": {
+        "en": "Eritrea",
+        "es": "Eritrea",
+        "de": "Eritrea",
+        "fr": "Érythrée",
+        "it": "Eritrea",
+        "pt": "Eritreia",
+        "ru": "Эритрея",
+        "pl": "Erytrea"
+      },
+      "EE": {
+        "en": "Estonia",
+        "es": "Estonia",
+        "de": "Estland",
+        "fr": "Estonie",
+        "it": "Estonia",
+        "pt": "Estónia",
+        "ru": "Эстония",
+        "pl": "Estonia"
+      },
+      "SZ": {
+        "en": "Eswatini",
+        "es": "Esuatini",
+        "de": "Eswatini",
+        "fr": "Eswatini",
+        "it": "Eswatini",
+        "pt": "Essuatíni",
+        "ru": "Эсватини",
+        "pl": "Eswatini"
+      },
+      "ET": {
+        "en": "Ethiopia",
+        "es": "Etiopía",
+        "de": "Äthiopien",
+        "fr": "Éthiopie",
+        "it": "Etiopia",
+        "pt": "Etiópia",
+        "ru": "Эфиопия",
+        "pl": "Etiopia"
+      },
+      "FJ": {
+        "en": "Fiji",
+        "es": "Fiyi",
+        "de": "Fidschi",
+        "fr": "Fidji",
+        "it": "Figi",
+        "pt": "Fiji",
+        "ru": "Фиджи",
+        "pl": "Fidżi"
+      },
+      "FI": {
+        "en": "Finland",
+        "es": "Finlandia",
+        "de": "Finnland",
+        "fr": "Finlande",
+        "it": "Finlandia",
+        "pt": "Finlândia",
+        "ru": "Финляндия",
+        "pl": "Finlandia"
+      },
+      "FR": {
+        "en": "France",
+        "es": "Francia",
+        "de": "Frankreich",
+        "fr": "France",
+        "it": "Francia",
+        "pt": "França",
+        "ru": "Франция",
+        "pl": "Francja"
+      },
+      "GA": {
+        "en": "Gabon",
+        "es": "Gabón",
+        "de": "Gabun",
+        "fr": "Gabon",
+        "it": "Gabon",
+        "pt": "Gabão",
+        "ru": "Габон",
+        "pl": "Gabon"
+      },
+      "GM": {
+        "en": "Gambia",
+        "es": "Gambia",
+        "de": "Gambia",
+        "fr": "Gambie",
+        "it": "Gambia",
+        "pt": "Gâmbia",
+        "ru": "Гамбия",
+        "pl": "Gambia"
+      },
+      "GE": {
+        "en": "Georgia",
+        "es": "Georgia",
+        "de": "Georgien",
+        "fr": "Géorgie",
+        "it": "Georgia",
+        "pt": "Geórgia",
+        "ru": "Грузия",
+        "pl": "Gruzja"
+      },
+      "DE": {
+        "en": "Germany",
+        "es": "Alemania",
+        "de": "Deutschland",
+        "fr": "Allemagne",
+        "it": "Germania",
+        "pt": "Alemanha",
+        "ru": "Германия",
+        "pl": "Niemcy"
+      },
+      "GH": {
+        "en": "Ghana",
+        "es": "Ghana",
+        "de": "Ghana",
+        "fr": "Ghana",
+        "it": "Ghana",
+        "pt": "Gana",
+        "ru": "Гана",
+        "pl": "Ghana"
+      },
+      "GR": {
+        "en": "Greece",
+        "es": "Grecia",
+        "de": "Griechenland",
+        "fr": "Grèce",
+        "it": "Grecia",
+        "pt": "Grécia",
+        "ru": "Греция",
+        "pl": "Grecja"
+      },
+      "GD": {
+        "en": "Grenada",
+        "es": "Granada",
+        "de": "Grenada",
+        "fr": "Grenade",
+        "it": "Grenada",
+        "pt": "Granada",
+        "ru": "Гренада",
+        "pl": "Grenada"
+      },
+      "GT": {
+        "en": "Guatemala",
+        "es": "Guatemala",
+        "de": "Guatemala",
+        "fr": "Guatemala",
+        "it": "Guatemala",
+        "pt": "Guatemala",
+        "ru": "Гватемала",
+        "pl": "Gwatemala"
+      },
+      "GN": {
+        "en": "Guinea",
+        "es": "Guinea",
+        "de": "Guinea",
+        "fr": "Guinée",
+        "it": "Guinea",
+        "pt": "Guiné",
+        "ru": "Гвинея",
+        "pl": "Gwinea"
+      },
+      "GW": {
+        "en": "Guinea-Bissau",
+        "es": "Guinea-Bisáu",
+        "de": "Guinea-Bissau",
+        "fr": "Guinée-Bissau",
+        "it": "Guinea-Bissau",
+        "pt": "Guiné-Bissau",
+        "ru": "Гвинея-Бисау",
+        "pl": "Gwinea Bissau"
+      },
+      "GY": {
+        "en": "Guyana",
+        "es": "Guyana",
+        "de": "Guyana",
+        "fr": "Guyana",
+        "it": "Guyana",
+        "pt": "Guiana",
+        "ru": "Гайана",
+        "pl": "Gujana"
+      },
+      "HT": {
+        "en": "Haiti",
+        "es": "Haití",
+        "de": "Haiti",
+        "fr": "Haïti",
+        "it": "Haiti",
+        "pt": "Haiti",
+        "ru": "Гаити",
+        "pl": "Haiti"
+      },
+      "HN": {
+        "en": "Honduras",
+        "es": "Honduras",
+        "de": "Honduras",
+        "fr": "Honduras",
+        "it": "Honduras",
+        "pt": "Honduras",
+        "ru": "Гондурас",
+        "pl": "Honduras"
+      },
+      "HU": {
+        "en": "Hungary",
+        "es": "Hungría",
+        "de": "Ungarn",
+        "fr": "Hongrie",
+        "it": "Ungheria",
+        "pt": "Hungria",
+        "ru": "Венгрия",
+        "pl": "Węgry"
+      },
+      "IS": {
+        "en": "Iceland",
+        "es": "Islandia",
+        "de": "Island",
+        "fr": "Islande",
+        "it": "Islanda",
+        "pt": "Islândia",
+        "ru": "Исландия",
+        "pl": "Islandia"
+      },
+      "IN": {
+        "en": "India",
+        "es": "India",
+        "de": "Indien",
+        "fr": "Inde",
+        "it": "India",
+        "pt": "Índia",
+        "ru": "Индия",
+        "pl": "Indie"
+      },
+      "ID": {
+        "en": "Indonesia",
+        "es": "Indonesia",
+        "de": "Indonesien",
+        "fr": "Indonésie",
+        "it": "Indonesia",
+        "pt": "Indonésia",
+        "ru": "Индонезия",
+        "pl": "Indonezja"
+      },
+      "IR": {
+        "en": "Iran",
+        "es": "Irán",
+        "de": "Iran",
+        "fr": "Iran",
+        "it": "Iran",
+        "pt": "Irão",
+        "ru": "Иран",
+        "pl": "Iran"
+      },
+      "IQ": {
+        "en": "Iraq",
+        "es": "Irak",
+        "de": "Irak",
+        "fr": "Irak",
+        "it": "Iraq",
+        "pt": "Iraque",
+        "ru": "Ирак",
+        "pl": "Irak"
+      },
+      "IE": {
+        "en": "Ireland",
+        "es": "Irlanda",
+        "de": "Irland",
+        "fr": "Irlande",
+        "it": "Irlanda",
+        "pt": "Irlanda",
+        "ru": "Ирландия",
+        "pl": "Irlandia"
+      },
+      "IL": {
+        "en": "Israel",
+        "es": "Israel",
+        "de": "Israel",
+        "fr": "Israël",
+        "it": "Israele",
+        "pt": "Israel",
+        "ru": "Израиль",
+        "pl": "Izrael"
+      },
+      "IT": {
+        "en": "Italy",
+        "es": "Italia",
+        "de": "Italien",
+        "fr": "Italie",
+        "it": "Italia",
+        "pt": "Itália",
+        "ru": "Италия",
+        "pl": "Włochy"
+      },
+      "CI": {
+        "en": "Ivory Coast",
+        "es": "Côte d’Ivoire",
+        "de": "Côte d’Ivoire",
+        "fr": "Côte d’Ivoire",
+        "it": "Costa d’Avorio",
+        "pt": "Côte d’Ivoire (Costa do Marfim)",
+        "ru": "Кот-д’Ивуар",
+        "pl": "Côte d’Ivoire"
+      },
+      "JM": {
+        "en": "Jamaica",
+        "es": "Jamaica",
+        "de": "Jamaika",
+        "fr": "Jamaïque",
+        "it": "Giamaica",
+        "pt": "Jamaica",
+        "ru": "Ямайка",
+        "pl": "Jamajka"
+      },
+      "JP": {
+        "en": "Japan",
+        "es": "Japón",
+        "de": "Japan",
+        "fr": "Japon",
+        "it": "Giappone",
+        "pt": "Japão",
+        "ru": "Япония",
+        "pl": "Japonia"
+      },
+      "JO": {
+        "en": "Jordan",
+        "es": "Jordania",
+        "de": "Jordanien",
+        "fr": "Jordanie",
+        "it": "Giordania",
+        "pt": "Jordânia",
+        "ru": "Иордания",
+        "pl": "Jordania"
+      },
+      "KZ": {
+        "en": "Kazakhstan",
+        "es": "Kazajistán",
+        "de": "Kasachstan",
+        "fr": "Kazakhstan",
+        "it": "Kazakistan",
+        "pt": "Cazaquistão",
+        "ru": "Казахстан",
+        "pl": "Kazachstan"
+      },
+      "KE": {
+        "en": "Kenya",
+        "es": "Kenia",
+        "de": "Kenia",
+        "fr": "Kenya",
+        "it": "Kenya",
+        "pt": "Quénia",
+        "ru": "Кения",
+        "pl": "Kenia"
+      },
+      "KI": {
+        "en": "Kiribati",
+        "es": "Kiribati",
+        "de": "Kiribati",
+        "fr": "Kiribati",
+        "it": "Kiribati",
+        "pt": "Quiribáti",
+        "ru": "Кирибати",
+        "pl": "Kiribati"
+      },
+      "XK": {
+        "en": "Kosovo",
+        "es": "Kosovo",
+        "de": "Kosovo",
+        "fr": "Kosovo",
+        "it": "Kosovo",
+        "pt": "Kosovo",
+        "ru": "Косово",
+        "pl": "Kosowo"
+      },
+      "KW": {
+        "en": "Kuwait",
+        "es": "Kuwait",
+        "de": "Kuwait",
+        "fr": "Koweït",
+        "it": "Kuwait",
+        "pt": "Koweit",
+        "ru": "Кувейт",
+        "pl": "Kuwejt"
+      },
+      "KG": {
+        "en": "Kyrgyzstan",
+        "es": "Kirguistán",
+        "de": "Kirgisistan",
+        "fr": "Kirghizstan",
+        "it": "Kirghizistan",
+        "pt": "Quirguistão",
+        "ru": "Киргизия",
+        "pl": "Kirgistan"
+      },
+      "LA": {
+        "en": "Laos",
+        "es": "Laos",
+        "de": "Laos",
+        "fr": "Laos",
+        "it": "Laos",
+        "pt": "Laos",
+        "ru": "Лаос",
+        "pl": "Laos"
+      },
+      "LV": {
+        "en": "Latvia",
+        "es": "Letonia",
+        "de": "Lettland",
+        "fr": "Lettonie",
+        "it": "Lettonia",
+        "pt": "Letónia",
+        "ru": "Латвия",
+        "pl": "Łotwa"
+      },
+      "LB": {
+        "en": "Lebanon",
+        "es": "Líbano",
+        "de": "Libanon",
+        "fr": "Liban",
+        "it": "Libano",
+        "pt": "Líbano",
+        "ru": "Ливан",
+        "pl": "Liban"
+      },
+      "LS": {
+        "en": "Lesotho",
+        "es": "Lesoto",
+        "de": "Lesotho",
+        "fr": "Lesotho",
+        "it": "Lesotho",
+        "pt": "Lesoto",
+        "ru": "Лесото",
+        "pl": "Lesotho"
+      },
+      "LR": {
+        "en": "Liberia",
+        "es": "Liberia",
+        "de": "Liberia",
+        "fr": "Liberia",
+        "it": "Liberia",
+        "pt": "Libéria",
+        "ru": "Либерия",
+        "pl": "Liberia"
+      },
+      "LY": {
+        "en": "Libya",
+        "es": "Libia",
+        "de": "Libyen",
+        "fr": "Libye",
+        "it": "Libia",
+        "pt": "Líbia",
+        "ru": "Ливия",
+        "pl": "Libia"
+      },
+      "LI": {
+        "en": "Liechtenstein",
+        "es": "Liechtenstein",
+        "de": "Liechtenstein",
+        "fr": "Liechtenstein",
+        "it": "Liechtenstein",
+        "pt": "Listenstaine",
+        "ru": "Лихтенштейн",
+        "pl": "Liechtenstein"
+      },
+      "LT": {
+        "en": "Lithuania",
+        "es": "Lituania",
+        "de": "Litauen",
+        "fr": "Lituanie",
+        "it": "Lituania",
+        "pt": "Lituânia",
+        "ru": "Литва",
+        "pl": "Litwa"
+      },
+      "LU": {
+        "en": "Luxembourg",
+        "es": "Luxemburgo",
+        "de": "Luxemburg",
+        "fr": "Luxembourg",
+        "it": "Lussemburgo",
+        "pt": "Luxemburgo",
+        "ru": "Люксембург",
+        "pl": "Luksemburg"
+      },
+      "MG": {
+        "en": "Madagascar",
+        "es": "Madagascar",
+        "de": "Madagaskar",
+        "fr": "Madagascar",
+        "it": "Madagascar",
+        "pt": "Madagáscar",
+        "ru": "Мадагаскар",
+        "pl": "Madagaskar"
+      },
+      "MW": {
+        "en": "Malawi",
+        "es": "Malaui",
+        "de": "Malawi",
+        "fr": "Malawi",
+        "it": "Malawi",
+        "pt": "Maláui",
+        "ru": "Малави",
+        "pl": "Malawi"
+      },
+      "MY": {
+        "en": "Malaysia",
+        "es": "Malasia",
+        "de": "Malaysia",
+        "fr": "Malaisie",
+        "it": "Malaysia",
+        "pt": "Malásia",
+        "ru": "Малайзия",
+        "pl": "Malezja"
+      },
+      "MV": {
+        "en": "Maldives",
+        "es": "Maldivas",
+        "de": "Malediven",
+        "fr": "Maldives",
+        "it": "Maldive",
+        "pt": "Maldivas",
+        "ru": "Мальдивы",
+        "pl": "Malediwy"
+      },
+      "ML": {
+        "en": "Mali",
+        "es": "Mali",
+        "de": "Mali",
+        "fr": "Mali",
+        "it": "Mali",
+        "pt": "Mali",
+        "ru": "Мали",
+        "pl": "Mali"
+      },
+      "MT": {
+        "en": "Malta",
+        "es": "Malta",
+        "de": "Malta",
+        "fr": "Malte",
+        "it": "Malta",
+        "pt": "Malta",
+        "ru": "Мальта",
+        "pl": "Malta"
+      },
+      "MH": {
+        "en": "Marshall Islands",
+        "es": "Islas Marshall",
+        "de": "Marshallinseln",
+        "fr": "Îles Marshall",
+        "it": "Isole Marshall",
+        "pt": "Ilhas Marshall",
+        "ru": "Маршалловы о-ва",
+        "pl": "Wyspy Marshalla"
+      },
+      "MR": {
+        "en": "Mauritania",
+        "es": "Mauritania",
+        "de": "Mauretanien",
+        "fr": "Mauritanie",
+        "it": "Mauritania",
+        "pt": "Mauritânia",
+        "ru": "Мавритания",
+        "pl": "Mauretania"
+      },
+      "MU": {
+        "en": "Mauritius",
+        "es": "Mauricio",
+        "de": "Mauritius",
+        "fr": "Maurice",
+        "it": "Mauritius",
+        "pt": "Maurícia",
+        "ru": "Маврикий",
+        "pl": "Mauritius"
+      },
+      "MX": {
+        "en": "Mexico",
+        "es": "México",
+        "de": "Mexiko",
+        "fr": "Mexique",
+        "it": "Messico",
+        "pt": "México",
+        "ru": "Мексика",
+        "pl": "Meksyk"
+      },
+      "FM": {
+        "en": "Micronesia",
+        "es": "Micronesia",
+        "de": "Mikronesien",
+        "fr": "Micronésie",
+        "it": "Micronesia",
+        "pt": "Micronésia",
+        "ru": "Федеративные Штаты Микронезии",
+        "pl": "Mikronezja"
+      },
+      "MD": {
+        "en": "Moldova",
+        "es": "Moldavia",
+        "de": "Republik Moldau",
+        "fr": "Moldavie",
+        "it": "Moldavia",
+        "pt": "Moldávia",
+        "ru": "Молдова",
+        "pl": "Mołdawia"
+      },
+      "MC": {
+        "en": "Monaco",
+        "es": "Mónaco",
+        "de": "Monaco",
+        "fr": "Monaco",
+        "it": "Monaco",
+        "pt": "Mónaco",
+        "ru": "Монако",
+        "pl": "Monako"
+      },
+      "MN": {
+        "en": "Mongolia",
+        "es": "Mongolia",
+        "de": "Mongolei",
+        "fr": "Mongolie",
+        "it": "Mongolia",
+        "pt": "Mongólia",
+        "ru": "Монголия",
+        "pl": "Mongolia"
+      },
+      "ME": {
+        "en": "Montenegro",
+        "es": "Montenegro",
+        "de": "Montenegro",
+        "fr": "Monténégro",
+        "it": "Montenegro",
+        "pt": "Montenegro",
+        "ru": "Черногория",
+        "pl": "Czarnogóra"
+      },
+      "MA": {
+        "en": "Morocco",
+        "es": "Marruecos",
+        "de": "Marokko",
+        "fr": "Maroc",
+        "it": "Marocco",
+        "pt": "Marrocos",
+        "ru": "Марокко",
+        "pl": "Maroko"
+      },
+      "MZ": {
+        "en": "Mozambique",
+        "es": "Mozambique",
+        "de": "Mosambik",
+        "fr": "Mozambique",
+        "it": "Mozambico",
+        "pt": "Moçambique",
+        "ru": "Мозамбик",
+        "pl": "Mozambik"
+      },
+      "MM": {
+        "en": "Myanmar",
+        "es": "Myanmar (Birmania)",
+        "de": "Myanmar",
+        "fr": "Myanmar (Birmanie)",
+        "it": "Myanmar (Birmania)",
+        "pt": "Mianmar (Birmânia)",
+        "ru": "Мьянма (Бирма)",
+        "pl": "Mjanma (Birma)"
+      },
+      "NA": {
+        "en": "Namibia",
+        "es": "Namibia",
+        "de": "Namibia",
+        "fr": "Namibie",
+        "it": "Namibia",
+        "pt": "Namíbia",
+        "ru": "Намибия",
+        "pl": "Namibia"
+      },
+      "NR": {
+        "en": "Nauru",
+        "es": "Nauru",
+        "de": "Nauru",
+        "fr": "Nauru",
+        "it": "Nauru",
+        "pt": "Nauru",
+        "ru": "Науру",
+        "pl": "Nauru"
+      },
+      "NP": {
+        "en": "Nepal",
+        "es": "Nepal",
+        "de": "Nepal",
+        "fr": "Népal",
+        "it": "Nepal",
+        "pt": "Nepal",
+        "ru": "Непал",
+        "pl": "Nepal"
+      },
+      "NL": {
+        "en": "Netherlands",
+        "es": "Países Bajos",
+        "de": "Niederlande",
+        "fr": "Pays-Bas",
+        "it": "Paesi Bassi",
+        "pt": "Países Baixos",
+        "ru": "Нидерланды",
+        "pl": "Holandia"
+      },
+      "NZ": {
+        "en": "New Zealand",
+        "es": "Nueva Zelanda",
+        "de": "Neuseeland",
+        "fr": "Nouvelle-Zélande",
+        "it": "Nuova Zelanda",
+        "pt": "Nova Zelândia",
+        "ru": "Новая Зеландия",
+        "pl": "Nowa Zelandia"
+      },
+      "NI": {
+        "en": "Nicaragua",
+        "es": "Nicaragua",
+        "de": "Nicaragua",
+        "fr": "Nicaragua",
+        "it": "Nicaragua",
+        "pt": "Nicarágua",
+        "ru": "Никарагуа",
+        "pl": "Nikaragua"
+      },
+      "NE": {
+        "en": "Niger",
+        "es": "Níger",
+        "de": "Niger",
+        "fr": "Niger",
+        "it": "Niger",
+        "pt": "Níger",
+        "ru": "Нигер",
+        "pl": "Niger"
+      },
+      "NG": {
+        "en": "Nigeria",
+        "es": "Nigeria",
+        "de": "Nigeria",
+        "fr": "Nigeria",
+        "it": "Nigeria",
+        "pt": "Nigéria",
+        "ru": "Нигерия",
+        "pl": "Nigeria"
+      },
+      "KP": {
+        "en": "North Korea",
+        "es": "Corea del Norte",
+        "de": "Nordkorea",
+        "fr": "Corée du Nord",
+        "it": "Corea del Nord",
+        "pt": "Coreia do Norte",
+        "ru": "КНДР",
+        "pl": "Korea Północna"
+      },
+      "MK": {
+        "en": "North Macedonia",
+        "es": "Macedonia del Norte",
+        "de": "Nordmazedonien",
+        "fr": "Macédoine du Nord",
+        "it": "Macedonia del Nord",
+        "pt": "Macedónia do Norte",
+        "ru": "Северная Македония",
+        "pl": "Macedonia Północna"
+      },
+      "NO": {
+        "en": "Norway",
+        "es": "Noruega",
+        "de": "Norwegen",
+        "fr": "Norvège",
+        "it": "Norvegia",
+        "pt": "Noruega",
+        "ru": "Норвегия",
+        "pl": "Norwegia"
+      },
+      "OM": {
+        "en": "Oman",
+        "es": "Omán",
+        "de": "Oman",
+        "fr": "Oman",
+        "it": "Oman",
+        "pt": "Omã",
+        "ru": "Оман",
+        "pl": "Oman"
+      },
+      "PK": {
+        "en": "Pakistan",
+        "es": "Pakistán",
+        "de": "Pakistan",
+        "fr": "Pakistan",
+        "it": "Pakistan",
+        "pt": "Paquistão",
+        "ru": "Пакистан",
+        "pl": "Pakistan"
+      },
+      "PW": {
+        "en": "Palau",
+        "es": "Palaos",
+        "de": "Palau",
+        "fr": "Palaos",
+        "it": "Palau",
+        "pt": "Palau",
+        "ru": "Палау",
+        "pl": "Palau"
+      },
+      "PS": {
+        "en": "Palestine",
+        "es": "Territorios Palestinos",
+        "de": "Palästinensische Autonomiegebiete",
+        "fr": "Territoires palestiniens",
+        "it": "Territori Palestinesi",
+        "pt": "Territórios palestinianos",
+        "ru": "Палестинские территории",
+        "pl": "Terytoria Palestyńskie"
+      },
+      "PA": {
+        "en": "Panama",
+        "es": "Panamá",
+        "de": "Panama",
+        "fr": "Panama",
+        "it": "Panama",
+        "pt": "Panamá",
+        "ru": "Панама",
+        "pl": "Panama"
+      },
+      "PG": {
+        "en": "Papua New Guinea",
+        "es": "Papúa Nueva Guinea",
+        "de": "Papua-Neuguinea",
+        "fr": "Papouasie-Nouvelle-Guinée",
+        "it": "Papua Nuova Guinea",
+        "pt": "Papua-Nova Guiné",
+        "ru": "Папуа — Новая Гвинея",
+        "pl": "Papua-Nowa Gwinea"
+      },
+      "PY": {
+        "en": "Paraguay",
+        "es": "Paraguay",
+        "de": "Paraguay",
+        "fr": "Paraguay",
+        "it": "Paraguay",
+        "pt": "Paraguai",
+        "ru": "Парагвай",
+        "pl": "Paragwaj"
+      },
+      "PE": {
+        "en": "Peru",
+        "es": "Perú",
+        "de": "Peru",
+        "fr": "Pérou",
+        "it": "Perù",
+        "pt": "Peru",
+        "ru": "Перу",
+        "pl": "Peru"
+      },
+      "PH": {
+        "en": "Philippines",
+        "es": "Filipinas",
+        "de": "Philippinen",
+        "fr": "Philippines",
+        "it": "Filippine",
+        "pt": "Filipinas",
+        "ru": "Филиппины",
+        "pl": "Filipiny"
+      },
+      "PL": {
+        "en": "Poland",
+        "es": "Polonia",
+        "de": "Polen",
+        "fr": "Pologne",
+        "it": "Polonia",
+        "pt": "Polónia",
+        "ru": "Польша",
+        "pl": "Polska"
+      },
+      "PT": {
+        "en": "Portugal",
+        "es": "Portugal",
+        "de": "Portugal",
+        "fr": "Portugal",
+        "it": "Portogallo",
+        "pt": "Portugal",
+        "ru": "Португалия",
+        "pl": "Portugalia"
+      },
+      "QA": {
+        "en": "Qatar",
+        "es": "Catar",
+        "de": "Katar",
+        "fr": "Qatar",
+        "it": "Qatar",
+        "pt": "Catar",
+        "ru": "Катар",
+        "pl": "Katar"
+      },
+      "RO": {
+        "en": "Romania",
+        "es": "Rumanía",
+        "de": "Rumänien",
+        "fr": "Roumanie",
+        "it": "Romania",
+        "pt": "Roménia",
+        "ru": "Румыния",
+        "pl": "Rumunia"
+      },
+      "RU": {
+        "en": "Russia",
+        "es": "Rusia",
+        "de": "Russland",
+        "fr": "Russie",
+        "it": "Russia",
+        "pt": "Rússia",
+        "ru": "Россия",
+        "pl": "Rosja"
+      },
+      "RW": {
+        "en": "Rwanda",
+        "es": "Ruanda",
+        "de": "Ruanda",
+        "fr": "Rwanda",
+        "it": "Ruanda",
+        "pt": "Ruanda",
+        "ru": "Руанда",
+        "pl": "Rwanda"
+      },
+      "KN": {
+        "en": "Saint Kitts and Nevis",
+        "es": "San Cristóbal y Nieves",
+        "de": "St. Kitts und Nevis",
+        "fr": "Saint-Christophe-et-Niévès",
+        "it": "Saint Kitts e Nevis",
+        "pt": "São Cristóvão e Neves",
+        "ru": "Сент-Китс и Невис",
+        "pl": "Saint Kitts i Nevis"
+      },
+      "LC": {
+        "en": "Saint Lucia",
+        "es": "Santa Lucía",
+        "de": "St. Lucia",
+        "fr": "Sainte-Lucie",
+        "it": "Saint Lucia",
+        "pt": "Santa Lúcia",
+        "ru": "Сент-Люсия",
+        "pl": "Saint Lucia"
+      },
+      "VC": {
+        "en": "Saint Vincent and the Grenadines",
+        "es": "San Vicente y las Granadinas",
+        "de": "St. Vincent und die Grenadinen",
+        "fr": "Saint-Vincent-et-les Grenadines",
+        "it": "Saint Vincent e Grenadine",
+        "pt": "São Vicente e Granadinas",
+        "ru": "Сент-Винсент и Гренадины",
+        "pl": "Saint Vincent i Grenadyny"
+      },
+      "WS": {
+        "en": "Samoa",
+        "es": "Samoa",
+        "de": "Samoa",
+        "fr": "Samoa",
+        "it": "Samoa",
+        "pt": "Samoa",
+        "ru": "Самоа",
+        "pl": "Samoa"
+      },
+      "SM": {
+        "en": "San Marino",
+        "es": "San Marino",
+        "de": "San Marino",
+        "fr": "Saint-Marin",
+        "it": "San Marino",
+        "pt": "São Marinho",
+        "ru": "Сан-Марино",
+        "pl": "San Marino"
+      },
+      "ST": {
+        "en": "Sao Tome and Principe",
+        "es": "Santo Tomé y Príncipe",
+        "de": "São Tomé und Príncipe",
+        "fr": "Sao Tomé-et-Principe",
+        "it": "São Tomé e Príncipe",
+        "pt": "São Tomé e Príncipe",
+        "ru": "Сан-Томе и Принсипи",
+        "pl": "Wyspy Świętego Tomasza i Książęca"
+      },
+      "SA": {
+        "en": "Saudi Arabia",
+        "es": "Arabia Saudí",
+        "de": "Saudi-Arabien",
+        "fr": "Arabie saoudite",
+        "it": "Arabia Saudita",
+        "pt": "Arábia Saudita",
+        "ru": "Саудовская Аравия",
+        "pl": "Arabia Saudyjska"
+      },
+      "SN": {
+        "en": "Senegal",
+        "es": "Senegal",
+        "de": "Senegal",
+        "fr": "Sénégal",
+        "it": "Senegal",
+        "pt": "Senegal",
+        "ru": "Сенегал",
+        "pl": "Senegal"
+      },
+      "RS": {
+        "en": "Serbia",
+        "es": "Serbia",
+        "de": "Serbien",
+        "fr": "Serbie",
+        "it": "Serbia",
+        "pt": "Sérvia",
+        "ru": "Сербия",
+        "pl": "Serbia"
+      },
+      "SC": {
+        "en": "Seychelles",
+        "es": "Seychelles",
+        "de": "Seychellen",
+        "fr": "Seychelles",
+        "it": "Seychelles",
+        "pt": "Seicheles",
+        "ru": "Сейшельские о-ва",
+        "pl": "Seszele"
+      },
+      "SL": {
+        "en": "Sierra Leone",
+        "es": "Sierra Leona",
+        "de": "Sierra Leone",
+        "fr": "Sierra Leone",
+        "it": "Sierra Leone",
+        "pt": "Serra Leoa",
+        "ru": "Сьерра-Леоне",
+        "pl": "Sierra Leone"
+      },
+      "SG": {
+        "en": "Singapore",
+        "es": "Singapur",
+        "de": "Singapur",
+        "fr": "Singapour",
+        "it": "Singapore",
+        "pt": "Singapura",
+        "ru": "Сингапур",
+        "pl": "Singapur"
+      },
+      "SK": {
+        "en": "Slovakia",
+        "es": "Eslovaquia",
+        "de": "Slowakei",
+        "fr": "Slovaquie",
+        "it": "Slovacchia",
+        "pt": "Eslováquia",
+        "ru": "Словакия",
+        "pl": "Słowacja"
+      },
+      "SI": {
+        "en": "Slovenia",
+        "es": "Eslovenia",
+        "de": "Slowenien",
+        "fr": "Slovénie",
+        "it": "Slovenia",
+        "pt": "Eslovénia",
+        "ru": "Словения",
+        "pl": "Słowenia"
+      },
+      "SB": {
+        "en": "Solomon Islands",
+        "es": "Islas Salomón",
+        "de": "Salomonen",
+        "fr": "Îles Salomon",
+        "it": "Isole Salomone",
+        "pt": "Ilhas Salomão",
+        "ru": "Соломоновы о-ва",
+        "pl": "Wyspy Salomona"
+      },
+      "SO": {
+        "en": "Somalia",
+        "es": "Somalia",
+        "de": "Somalia",
+        "fr": "Somalie",
+        "it": "Somalia",
+        "pt": "Somália",
+        "ru": "Сомали",
+        "pl": "Somalia"
+      },
+      "ZA": {
+        "en": "South Africa",
+        "es": "Sudáfrica",
+        "de": "Südafrika",
+        "fr": "Afrique du Sud",
+        "it": "Sudafrica",
+        "pt": "África do Sul",
+        "ru": "Южно-Африканская Республика",
+        "pl": "Republika Południowej Afryki"
+      },
+      "KR": {
+        "en": "South Korea",
+        "es": "Corea del Sur",
+        "de": "Südkorea",
+        "fr": "Corée du Sud",
+        "it": "Corea del Sud",
+        "pt": "Coreia do Sul",
+        "ru": "Республика Корея",
+        "pl": "Korea Południowa"
+      },
+      "SS": {
+        "en": "South Sudan",
+        "es": "Sudán del Sur",
+        "de": "Südsudan",
+        "fr": "Soudan du Sud",
+        "it": "Sud Sudan",
+        "pt": "Sudão do Sul",
+        "ru": "Южный Судан",
+        "pl": "Sudan Południowy"
+      },
+      "ES": {
+        "en": "Spain",
+        "es": "España",
+        "de": "Spanien",
+        "fr": "Espagne",
+        "it": "Spagna",
+        "pt": "Espanha",
+        "ru": "Испания",
+        "pl": "Hiszpania"
+      },
+      "LK": {
+        "en": "Sri Lanka",
+        "es": "Sri Lanka",
+        "de": "Sri Lanka",
+        "fr": "Sri Lanka",
+        "it": "Sri Lanka",
+        "pt": "Sri Lanca",
+        "ru": "Шри-Ланка",
+        "pl": "Sri Lanka"
+      },
+      "SD": {
+        "en": "Sudan",
+        "es": "Sudán",
+        "de": "Sudan",
+        "fr": "Soudan",
+        "it": "Sudan",
+        "pt": "Sudão",
+        "ru": "Судан",
+        "pl": "Sudan"
+      },
+      "SR": {
+        "en": "Suriname",
+        "es": "Surinam",
+        "de": "Suriname",
+        "fr": "Suriname",
+        "it": "Suriname",
+        "pt": "Suriname",
+        "ru": "Суринам",
+        "pl": "Surinam"
+      },
+      "SE": {
+        "en": "Sweden",
+        "es": "Suecia",
+        "de": "Schweden",
+        "fr": "Suède",
+        "it": "Svezia",
+        "pt": "Suécia",
+        "ru": "Швеция",
+        "pl": "Szwecja"
+      },
+      "CH": {
+        "en": "Switzerland",
+        "es": "Suiza",
+        "de": "Schweiz",
+        "fr": "Suisse",
+        "it": "Svizzera",
+        "pt": "Suíça",
+        "ru": "Швейцария",
+        "pl": "Szwajcaria"
+      },
+      "SY": {
+        "en": "Syria",
+        "es": "Siria",
+        "de": "Syrien",
+        "fr": "Syrie",
+        "it": "Siria",
+        "pt": "Síria",
+        "ru": "Сирия",
+        "pl": "Syria"
+      },
+      "TW": {
+        "en": "Taiwan",
+        "es": "Taiwán",
+        "de": "Taiwan",
+        "fr": "Taïwan",
+        "it": "Taiwan",
+        "pt": "Taiwan",
+        "ru": "Тайвань",
+        "pl": "Tajwan"
+      },
+      "TJ": {
+        "en": "Tajikistan",
+        "es": "Tayikistán",
+        "de": "Tadschikistan",
+        "fr": "Tadjikistan",
+        "it": "Tagikistan",
+        "pt": "Tajiquistão",
+        "ru": "Таджикистан",
+        "pl": "Tadżykistan"
+      },
+      "TZ": {
+        "en": "Tanzania",
+        "es": "Tanzania",
+        "de": "Tansania",
+        "fr": "Tanzanie",
+        "it": "Tanzania",
+        "pt": "Tanzânia",
+        "ru": "Танзания",
+        "pl": "Tanzania"
+      },
+      "TH": {
+        "en": "Thailand",
+        "es": "Tailandia",
+        "de": "Thailand",
+        "fr": "Thaïlande",
+        "it": "Thailandia",
+        "pt": "Tailândia",
+        "ru": "Таиланд",
+        "pl": "Tajlandia"
+      },
+      "TG": {
+        "en": "Togo",
+        "es": "Togo",
+        "de": "Togo",
+        "fr": "Togo",
+        "it": "Togo",
+        "pt": "Togo",
+        "ru": "Того",
+        "pl": "Togo"
+      },
+      "TO": {
+        "en": "Tonga",
+        "es": "Tonga",
+        "de": "Tonga",
+        "fr": "Tonga",
+        "it": "Tonga",
+        "pt": "Tonga",
+        "ru": "Тонга",
+        "pl": "Tonga"
+      },
+      "TT": {
+        "en": "Trinidad and Tobago",
+        "es": "Trinidad y Tobago",
+        "de": "Trinidad und Tobago",
+        "fr": "Trinité-et-Tobago",
+        "it": "Trinidad e Tobago",
+        "pt": "Trindade e Tobago",
+        "ru": "Тринидад и Тобаго",
+        "pl": "Trynidad i Tobago"
+      },
+      "TN": {
+        "en": "Tunisia",
+        "es": "Túnez",
+        "de": "Tunesien",
+        "fr": "Tunisie",
+        "it": "Tunisia",
+        "pt": "Tunísia",
+        "ru": "Тунис",
+        "pl": "Tunezja"
+      },
+      "TR": {
+        "en": "Turkey",
+        "es": "Turquía",
+        "de": "Türkei",
+        "fr": "Turquie",
+        "it": "Turchia",
+        "pt": "Turquia",
+        "ru": "Турция",
+        "pl": "Turcja"
+      },
+      "TM": {
+        "en": "Turkmenistan",
+        "es": "Turkmenistán",
+        "de": "Turkmenistan",
+        "fr": "Turkménistan",
+        "it": "Turkmenistan",
+        "pt": "Turquemenistão",
+        "ru": "Туркменистан",
+        "pl": "Turkmenistan"
+      },
+      "TV": {
+        "en": "Tuvalu",
+        "es": "Tuvalu",
+        "de": "Tuvalu",
+        "fr": "Tuvalu",
+        "it": "Tuvalu",
+        "pt": "Tuvalu",
+        "ru": "Тувалу",
+        "pl": "Tuvalu"
+      },
+      "UG": {
+        "en": "Uganda",
+        "es": "Uganda",
+        "de": "Uganda",
+        "fr": "Ouganda",
+        "it": "Uganda",
+        "pt": "Uganda",
+        "ru": "Уганда",
+        "pl": "Uganda"
+      },
+      "UA": {
+        "en": "Ukraine",
+        "es": "Ucrania",
+        "de": "Ukraine",
+        "fr": "Ukraine",
+        "it": "Ucraina",
+        "pt": "Ucrânia",
+        "ru": "Украина",
+        "pl": "Ukraina"
+      },
+      "AE": {
+        "en": "United Arab Emirates",
+        "es": "Emiratos Árabes Unidos",
+        "de": "Vereinigte Arabische Emirate",
+        "fr": "Émirats arabes unis",
+        "it": "Emirati Arabi Uniti",
+        "pt": "Emirados Árabes Unidos",
+        "ru": "ОАЭ",
+        "pl": "Zjednoczone Emiraty Arabskie"
+      },
+      "GB": {
+        "en": "United Kingdom",
+        "es": "Reino Unido",
+        "de": "Vereinigtes Königreich",
+        "fr": "Royaume-Uni",
+        "it": "Regno Unito",
+        "pt": "Reino Unido",
+        "ru": "Великобритания",
+        "pl": "Wielka Brytania"
+      },
+      "US": {
+        "en": "United States",
+        "es": "Estados Unidos",
+        "de": "Vereinigte Staaten",
+        "fr": "États-Unis",
+        "it": "Stati Uniti",
+        "pt": "Estados Unidos",
+        "ru": "Соединенные Штаты",
+        "pl": "Stany Zjednoczone"
+      },
+      "UY": {
+        "en": "Uruguay",
+        "es": "Uruguay",
+        "de": "Uruguay",
+        "fr": "Uruguay",
+        "it": "Uruguay",
+        "pt": "Uruguai",
+        "ru": "Уругвай",
+        "pl": "Urugwaj"
+      },
+      "UZ": {
+        "en": "Uzbekistan",
+        "es": "Uzbekistán",
+        "de": "Usbekistan",
+        "fr": "Ouzbékistan",
+        "it": "Uzbekistan",
+        "pt": "Usbequistão",
+        "ru": "Узбекистан",
+        "pl": "Uzbekistan"
+      },
+      "VU": {
+        "en": "Vanuatu",
+        "es": "Vanuatu",
+        "de": "Vanuatu",
+        "fr": "Vanuatu",
+        "it": "Vanuatu",
+        "pt": "Vanuatu",
+        "ru": "Вануату",
+        "pl": "Vanuatu"
+      },
+      "VA": {
+        "en": "Vatican City",
+        "es": "Ciudad del Vaticano",
+        "de": "Vatikanstadt",
+        "fr": "État de la Cité du Vatican",
+        "it": "Città del Vaticano",
+        "pt": "Cidade do Vaticano",
+        "ru": "Ватикан",
+        "pl": "Watykan"
+      },
+      "VE": {
+        "en": "Venezuela",
+        "es": "Venezuela",
+        "de": "Venezuela",
+        "fr": "Venezuela",
+        "it": "Venezuela",
+        "pt": "Venezuela",
+        "ru": "Венесуэла",
+        "pl": "Wenezuela"
+      },
+      "VN": {
+        "en": "Vietnam",
+        "es": "Vietnam",
+        "de": "Vietnam",
+        "fr": "Viêt Nam",
+        "it": "Vietnam",
+        "pt": "Vietname",
+        "ru": "Вьетнам",
+        "pl": "Wietnam"
+      },
+      "YE": {
+        "en": "Yemen",
+        "es": "Yemen",
+        "de": "Jemen",
+        "fr": "Yémen",
+        "it": "Yemen",
+        "pt": "Iémen",
+        "ru": "Йемен",
+        "pl": "Jemen"
+      },
+      "ZM": {
+        "en": "Zambia",
+        "es": "Zambia",
+        "de": "Sambia",
+        "fr": "Zambie",
+        "it": "Zambia",
+        "pt": "Zâmbia",
+        "ru": "Замбия",
+        "pl": "Zambia"
+      },
+      "ZW": {
+        "en": "Zimbabwe",
+        "es": "Zimbabue",
+        "de": "Simbabwe",
+        "fr": "Zimbabwe",
+        "it": "Zimbabwe",
+        "pt": "Zimbabué",
+        "ru": "Зимбабве",
+        "pl": "Zimbabwe"
+      }
+    },
+    "islands": {
+      "AE-palm-jumeirah": {
+        "en": "Palm Jumeirah",
+        "es": "Palm Jumeirah",
+        "de": "Palm Jumeirah",
+        "fr": "Palm Jumeirah",
+        "it": "Palm Jumeirah",
+        "pt": "Palm Jumeirah",
+        "ru": "Palm Jumeirah",
+        "pl": "Palm Jumeirah"
+      },
+      "AE-yas-island": {
+        "en": "Yas Island",
+        "es": "Yas Island",
+        "de": "Yas Island",
+        "fr": "Yas Island",
+        "it": "Yas Island",
+        "pt": "Yas Island",
+        "ru": "Yas Island",
+        "pl": "Yas Island"
+      },
+      "AE-saadiyat-island": {
+        "en": "Saadiyat Island",
+        "es": "Saadiyat Island",
+        "de": "Saadiyat Island",
+        "fr": "Saadiyat Island",
+        "it": "Saadiyat Island",
+        "pt": "Saadiyat Island",
+        "ru": "Saadiyat Island",
+        "pl": "Saadiyat Island"
+      },
+      "AE-sir-bani-yas-island": {
+        "en": "Sir Bani Yas Island",
+        "es": "Sir Bani Yas Island",
+        "de": "Sir Bani Yas Island",
+        "fr": "Sir Bani Yas Island",
+        "it": "Sir Bani Yas Island",
+        "pt": "Sir Bani Yas Island",
+        "ru": "Sir Bani Yas Island",
+        "pl": "Sir Bani Yas Island"
+      },
+      "AU-TAS": {
+        "en": "Tasmania",
+        "es": "Tasmania",
+        "de": "Tasmania",
+        "fr": "Tasmania",
+        "it": "Tasmania",
+        "pt": "Tasmania",
+        "ru": "Tasmania",
+        "pl": "Tasmania"
+      },
+      "AU-kangaroo-island": {
+        "en": "Kangaroo Island",
+        "es": "Kangaroo Island",
+        "de": "Kangaroo Island",
+        "fr": "Kangaroo Island",
+        "it": "Kangaroo Island",
+        "pt": "Kangaroo Island",
+        "ru": "Kangaroo Island",
+        "pl": "Kangaroo Island"
+      },
+      "AU-k-gari": {
+        "en": "K'gari",
+        "es": "K'gari",
+        "de": "K'gari",
+        "fr": "K'gari",
+        "it": "K'gari",
+        "pt": "K'gari",
+        "ru": "K'gari",
+        "pl": "K'gari"
+      },
+      "AU-whitsunday-island": {
+        "en": "Whitsunday Island",
+        "es": "Whitsunday Island",
+        "de": "Whitsunday Island",
+        "fr": "Whitsunday Island",
+        "it": "Whitsunday Island",
+        "pt": "Whitsunday Island",
+        "ru": "Whitsunday Island",
+        "pl": "Whitsunday Island"
+      },
+      "AU-hamilton-island": {
+        "en": "Hamilton Island",
+        "es": "Hamilton Island",
+        "de": "Hamilton Island",
+        "fr": "Hamilton Island",
+        "it": "Hamilton Island",
+        "pt": "Hamilton Island",
+        "ru": "Hamilton Island",
+        "pl": "Hamilton Island"
+      },
+      "AU-magnetic-island": {
+        "en": "Magnetic Island",
+        "es": "Magnetic Island",
+        "de": "Magnetic Island",
+        "fr": "Magnetic Island",
+        "it": "Magnetic Island",
+        "pt": "Magnetic Island",
+        "ru": "Magnetic Island",
+        "pl": "Magnetic Island"
+      },
+      "AU-phillip-island": {
+        "en": "Phillip Island",
+        "es": "Phillip Island",
+        "de": "Phillip Island",
+        "fr": "Phillip Island",
+        "it": "Phillip Island",
+        "pt": "Phillip Island",
+        "ru": "Phillip Island",
+        "pl": "Phillip Island"
+      },
+      "AU-rottnest-island": {
+        "en": "Rottnest Island",
+        "es": "Rottnest Island",
+        "de": "Rottnest Island",
+        "fr": "Rottnest Island",
+        "it": "Rottnest Island",
+        "pt": "Rottnest Island",
+        "ru": "Rottnest Island",
+        "pl": "Rottnest Island"
+      },
+      "AU-lord-howe-island": {
+        "en": "Lord Howe Island",
+        "es": "Lord Howe Island",
+        "de": "Lord Howe Island",
+        "fr": "Lord Howe Island",
+        "it": "Lord Howe Island",
+        "pt": "Lord Howe Island",
+        "ru": "Lord Howe Island",
+        "pl": "Lord Howe Island"
+      },
+      "AU-norfolk-island": {
+        "en": "Norfolk Island",
+        "es": "Norfolk Island",
+        "de": "Norfolk Island",
+        "fr": "Norfolk Island",
+        "it": "Norfolk Island",
+        "pt": "Norfolk Island",
+        "ru": "Norfolk Island",
+        "pl": "Norfolk Island"
+      },
+      "AU-christmas-island-au": {
+        "en": "Christmas Island (AU)",
+        "es": "Christmas Island (AU)",
+        "de": "Christmas Island (AU)",
+        "fr": "Christmas Island (AU)",
+        "it": "Christmas Island (AU)",
+        "pt": "Christmas Island (AU)",
+        "ru": "Christmas Island (AU)",
+        "pl": "Christmas Island (AU)"
+      },
+      "AU-cocos-keeling-islands": {
+        "en": "Cocos (Keeling) Islands",
+        "es": "Cocos (Keeling) Islands",
+        "de": "Cocos (Keeling) Islands",
+        "fr": "Cocos (Keeling) Islands",
+        "it": "Cocos (Keeling) Islands",
+        "pt": "Cocos (Keeling) Islands",
+        "ru": "Cocos (Keeling) Islands",
+        "pl": "Cocos (Keeling) Islands"
+      },
+      "AU-tiwi-islands": {
+        "en": "Tiwi Islands",
+        "es": "Tiwi Islands",
+        "de": "Tiwi Islands",
+        "fr": "Tiwi Islands",
+        "it": "Tiwi Islands",
+        "pt": "Tiwi Islands",
+        "ru": "Tiwi Islands",
+        "pl": "Tiwi Islands"
+      },
+      "AU-bruny-island": {
+        "en": "Bruny Island",
+        "es": "Bruny Island",
+        "de": "Bruny Island",
+        "fr": "Bruny Island",
+        "it": "Bruny Island",
+        "pt": "Bruny Island",
+        "ru": "Bruny Island",
+        "pl": "Bruny Island"
+      },
+      "BS-new-providence": {
+        "en": "New Providence",
+        "es": "New Providence",
+        "de": "New Providence",
+        "fr": "New Providence",
+        "it": "New Providence",
+        "pt": "New Providence",
+        "ru": "New Providence",
+        "pl": "New Providence"
+      },
+      "BS-grand-bahama": {
+        "en": "Grand Bahama",
+        "es": "Grand Bahama",
+        "de": "Grand Bahama",
+        "fr": "Grand Bahama",
+        "it": "Grand Bahama",
+        "pt": "Grand Bahama",
+        "ru": "Grand Bahama",
+        "pl": "Grand Bahama"
+      },
+      "BS-great-exuma": {
+        "en": "Great Exuma",
+        "es": "Great Exuma",
+        "de": "Great Exuma",
+        "fr": "Great Exuma",
+        "it": "Great Exuma",
+        "pt": "Great Exuma",
+        "ru": "Great Exuma",
+        "pl": "Great Exuma"
+      },
+      "BS-andros": {
+        "en": "Andros",
+        "es": "Andros",
+        "de": "Andros",
+        "fr": "Andros",
+        "it": "Andros",
+        "pt": "Andros",
+        "ru": "Andros",
+        "pl": "Andros"
+      },
+      "BS-eleuthera": {
+        "en": "Eleuthera",
+        "es": "Eleuthera",
+        "de": "Eleuthera",
+        "fr": "Eleuthera",
+        "it": "Eleuthera",
+        "pt": "Eleuthera",
+        "ru": "Eleuthera",
+        "pl": "Eleuthera"
+      },
+      "BS-abaco": {
+        "en": "Abaco",
+        "es": "Abaco",
+        "de": "Abaco",
+        "fr": "Abaco",
+        "it": "Abaco",
+        "pt": "Abaco",
+        "ru": "Abaco",
+        "pl": "Abaco"
+      },
+      "BS-harbour-island": {
+        "en": "Harbour Island",
+        "es": "Harbour Island",
+        "de": "Harbour Island",
+        "fr": "Harbour Island",
+        "it": "Harbour Island",
+        "pt": "Harbour Island",
+        "ru": "Harbour Island",
+        "pl": "Harbour Island"
+      },
+      "BS-bimini": {
+        "en": "Bimini",
+        "es": "Bimini",
+        "de": "Bimini",
+        "fr": "Bimini",
+        "it": "Bimini",
+        "pt": "Bimini",
+        "ru": "Bimini",
+        "pl": "Bimini"
+      },
+      "BS-cat-island-bahamas": {
+        "en": "Cat Island (Bahamas)",
+        "es": "Cat Island (Bahamas)",
+        "de": "Cat Island (Bahamas)",
+        "fr": "Cat Island (Bahamas)",
+        "it": "Cat Island (Bahamas)",
+        "pt": "Cat Island (Bahamas)",
+        "ru": "Cat Island (Bahamas)",
+        "pl": "Cat Island (Bahamas)"
+      },
+      "BS-long-island-bahamas": {
+        "en": "Long Island (Bahamas)",
+        "es": "Long Island (Bahamas)",
+        "de": "Long Island (Bahamas)",
+        "fr": "Long Island (Bahamas)",
+        "it": "Long Island (Bahamas)",
+        "pt": "Long Island (Bahamas)",
+        "ru": "Long Island (Bahamas)",
+        "pl": "Long Island (Bahamas)"
+      },
+      "BS-san-salvador-island": {
+        "en": "San Salvador Island",
+        "es": "San Salvador Island",
+        "de": "San Salvador Island",
+        "fr": "San Salvador Island",
+        "it": "San Salvador Island",
+        "pt": "San Salvador Island",
+        "ru": "San Salvador Island",
+        "pl": "San Salvador Island"
+      },
+      "BH-muharraq-island": {
+        "en": "Muharraq Island",
+        "es": "Muharraq Island",
+        "de": "Muharraq Island",
+        "fr": "Muharraq Island",
+        "it": "Muharraq Island",
+        "pt": "Muharraq Island",
+        "ru": "Muharraq Island",
+        "pl": "Muharraq Island"
+      },
+      "BH-hawar-islands": {
+        "en": "Hawar Islands",
+        "es": "Hawar Islands",
+        "de": "Hawar Islands",
+        "fr": "Hawar Islands",
+        "it": "Hawar Islands",
+        "pt": "Hawar Islands",
+        "ru": "Hawar Islands",
+        "pl": "Hawar Islands"
+      },
+      "BR-fernando-de-noronha": {
+        "en": "Fernando de Noronha",
+        "es": "Fernando de Noronha",
+        "de": "Fernando de Noronha",
+        "fr": "Fernando de Noronha",
+        "it": "Fernando de Noronha",
+        "pt": "Fernando de Noronha",
+        "ru": "Fernando de Noronha",
+        "pl": "Fernando de Noronha"
+      },
+      "BR-ilha-grande": {
+        "en": "Ilha Grande",
+        "es": "Ilha Grande",
+        "de": "Ilha Grande",
+        "fr": "Ilha Grande",
+        "it": "Ilha Grande",
+        "pt": "Ilha Grande",
+        "ru": "Ilha Grande",
+        "pl": "Ilha Grande"
+      },
+      "BR-ilhabela": {
+        "en": "Ilhabela",
+        "es": "Ilhabela",
+        "de": "Ilhabela",
+        "fr": "Ilhabela",
+        "it": "Ilhabela",
+        "pt": "Ilhabela",
+        "ru": "Ilhabela",
+        "pl": "Ilhabela"
+      },
+      "BR-santa-catarina-island": {
+        "en": "Santa Catarina Island",
+        "es": "Santa Catarina Island",
+        "de": "Santa Catarina Island",
+        "fr": "Santa Catarina Island",
+        "it": "Santa Catarina Island",
+        "pt": "Santa Catarina Island",
+        "ru": "Santa Catarina Island",
+        "pl": "Santa Catarina Island"
+      },
+      "BR-marajo-island": {
+        "en": "Marajo Island",
+        "es": "Marajo Island",
+        "de": "Marajo Island",
+        "fr": "Marajo Island",
+        "it": "Marajo Island",
+        "pt": "Marajo Island",
+        "ru": "Marajo Island",
+        "pl": "Marajo Island"
+      },
+      "BZ-ambergris-caye": {
+        "en": "Ambergris Caye",
+        "es": "Ambergris Caye",
+        "de": "Ambergris Caye",
+        "fr": "Ambergris Caye",
+        "it": "Ambergris Caye",
+        "pt": "Ambergris Caye",
+        "ru": "Ambergris Caye",
+        "pl": "Ambergris Caye"
+      },
+      "BZ-caye-caulker": {
+        "en": "Caye Caulker",
+        "es": "Caye Caulker",
+        "de": "Caye Caulker",
+        "fr": "Caye Caulker",
+        "it": "Caye Caulker",
+        "pt": "Caye Caulker",
+        "ru": "Caye Caulker",
+        "pl": "Caye Caulker"
+      },
+      "BZ-tobacco-caye": {
+        "en": "Tobacco Caye",
+        "es": "Tobacco Caye",
+        "de": "Tobacco Caye",
+        "fr": "Tobacco Caye",
+        "it": "Tobacco Caye",
+        "pt": "Tobacco Caye",
+        "ru": "Tobacco Caye",
+        "pl": "Tobacco Caye"
+      },
+      "CA-vancouver-island": {
+        "en": "Vancouver Island",
+        "es": "Vancouver Island",
+        "de": "Vancouver Island",
+        "fr": "Vancouver Island",
+        "it": "Vancouver Island",
+        "pt": "Vancouver Island",
+        "ru": "Vancouver Island",
+        "pl": "Vancouver Island"
+      },
+      "CA-NL": {
+        "en": "Newfoundland",
+        "es": "Newfoundland",
+        "de": "Newfoundland",
+        "fr": "Newfoundland",
+        "it": "Newfoundland",
+        "pt": "Newfoundland",
+        "ru": "Newfoundland",
+        "pl": "Newfoundland"
+      },
+      "CA-PE": {
+        "en": "Prince Edward Island",
+        "es": "Prince Edward Island",
+        "de": "Prince Edward Island",
+        "fr": "Prince Edward Island",
+        "it": "Prince Edward Island",
+        "pt": "Prince Edward Island",
+        "ru": "Prince Edward Island",
+        "pl": "Prince Edward Island"
+      },
+      "CA-cape-breton-island": {
+        "en": "Cape Breton Island",
+        "es": "Cape Breton Island",
+        "de": "Cape Breton Island",
+        "fr": "Cape Breton Island",
+        "it": "Cape Breton Island",
+        "pt": "Cape Breton Island",
+        "ru": "Cape Breton Island",
+        "pl": "Cape Breton Island"
+      },
+      "CA-baffin-island": {
+        "en": "Baffin Island",
+        "es": "Baffin Island",
+        "de": "Baffin Island",
+        "fr": "Baffin Island",
+        "it": "Baffin Island",
+        "pt": "Baffin Island",
+        "ru": "Baffin Island",
+        "pl": "Baffin Island"
+      },
+      "CA-manitoulin-island": {
+        "en": "Manitoulin Island",
+        "es": "Manitoulin Island",
+        "de": "Manitoulin Island",
+        "fr": "Manitoulin Island",
+        "it": "Manitoulin Island",
+        "pt": "Manitoulin Island",
+        "ru": "Manitoulin Island",
+        "pl": "Manitoulin Island"
+      },
+      "CL-easter-island-rapa-nui": {
+        "en": "Easter Island (Rapa Nui)",
+        "es": "Easter Island (Rapa Nui)",
+        "de": "Easter Island (Rapa Nui)",
+        "fr": "Easter Island (Rapa Nui)",
+        "it": "Easter Island (Rapa Nui)",
+        "pt": "Easter Island (Rapa Nui)",
+        "ru": "Easter Island (Rapa Nui)",
+        "pl": "Easter Island (Rapa Nui)"
+      },
+      "CL-chiloe-island": {
+        "en": "Chiloe Island",
+        "es": "Chiloe Island",
+        "de": "Chiloe Island",
+        "fr": "Chiloe Island",
+        "it": "Chiloe Island",
+        "pt": "Chiloe Island",
+        "ru": "Chiloe Island",
+        "pl": "Chiloe Island"
+      },
+      "CL-robinson-crusoe-island": {
+        "en": "Robinson Crusoe Island",
+        "es": "Robinson Crusoe Island",
+        "de": "Robinson Crusoe Island",
+        "fr": "Robinson Crusoe Island",
+        "it": "Robinson Crusoe Island",
+        "pt": "Robinson Crusoe Island",
+        "ru": "Robinson Crusoe Island",
+        "pl": "Robinson Crusoe Island"
+      },
+      "CN-HI": {
+        "en": "Hainan",
+        "es": "Hainan",
+        "de": "Hainan",
+        "fr": "Hainan",
+        "it": "Hainan",
+        "pt": "Hainan",
+        "ru": "Hainan",
+        "pl": "Hainan"
+      },
+      "CN-hong-kong-island": {
+        "en": "Hong Kong Island",
+        "es": "Hong Kong Island",
+        "de": "Hong Kong Island",
+        "fr": "Hong Kong Island",
+        "it": "Hong Kong Island",
+        "pt": "Hong Kong Island",
+        "ru": "Hong Kong Island",
+        "pl": "Hong Kong Island"
+      },
+      "CN-lantau-island": {
+        "en": "Lantau Island",
+        "es": "Lantau Island",
+        "de": "Lantau Island",
+        "fr": "Lantau Island",
+        "it": "Lantau Island",
+        "pt": "Lantau Island",
+        "ru": "Lantau Island",
+        "pl": "Lantau Island"
+      },
+      "CO-san-andres": {
+        "en": "San Andres",
+        "es": "San Andres",
+        "de": "San Andres",
+        "fr": "San Andres",
+        "it": "San Andres",
+        "pt": "San Andres",
+        "ru": "San Andres",
+        "pl": "San Andres"
+      },
+      "CO-providencia": {
+        "en": "Providencia",
+        "es": "Providencia",
+        "de": "Providencia",
+        "fr": "Providencia",
+        "it": "Providencia",
+        "pt": "Providencia",
+        "ru": "Providencia",
+        "pl": "Providencia"
+      },
+      "CO-baru-island": {
+        "en": "Baru Island",
+        "es": "Baru Island",
+        "de": "Baru Island",
+        "fr": "Baru Island",
+        "it": "Baru Island",
+        "pt": "Baru Island",
+        "ru": "Baru Island",
+        "pl": "Baru Island"
+      },
+      "CO-rosario-islands": {
+        "en": "Rosario Islands",
+        "es": "Rosario Islands",
+        "de": "Rosario Islands",
+        "fr": "Rosario Islands",
+        "it": "Rosario Islands",
+        "pt": "Rosario Islands",
+        "ru": "Rosario Islands",
+        "pl": "Rosario Islands"
+      },
+      "CR-isla-tortuga": {
+        "en": "Isla Tortuga",
+        "es": "Isla Tortuga",
+        "de": "Isla Tortuga",
+        "fr": "Isla Tortuga",
+        "it": "Isla Tortuga",
+        "pt": "Isla Tortuga",
+        "ru": "Isla Tortuga",
+        "pl": "Isla Tortuga"
+      },
+      "CR-cocos-island-costa-rica": {
+        "en": "Cocos Island (Costa Rica)",
+        "es": "Cocos Island (Costa Rica)",
+        "de": "Cocos Island (Costa Rica)",
+        "fr": "Cocos Island (Costa Rica)",
+        "it": "Cocos Island (Costa Rica)",
+        "pt": "Cocos Island (Costa Rica)",
+        "ru": "Cocos Island (Costa Rica)",
+        "pl": "Cocos Island (Costa Rica)"
+      },
+      "CU-99": {
+        "en": "Isla de la Juventud",
+        "es": "Isla de la Juventud",
+        "de": "Isla de la Juventud",
+        "fr": "Isla de la Juventud",
+        "it": "Isla de la Juventud",
+        "pt": "Isla de la Juventud",
+        "ru": "Isla de la Juventud",
+        "pl": "Isla de la Juventud"
+      },
+      "CU-cayo-coco": {
+        "en": "Cayo Coco",
+        "es": "Cayo Coco",
+        "de": "Cayo Coco",
+        "fr": "Cayo Coco",
+        "it": "Cayo Coco",
+        "pt": "Cayo Coco",
+        "ru": "Cayo Coco",
+        "pl": "Cayo Coco"
+      },
+      "CU-cayo-guillermo": {
+        "en": "Cayo Guillermo",
+        "es": "Cayo Guillermo",
+        "de": "Cayo Guillermo",
+        "fr": "Cayo Guillermo",
+        "it": "Cayo Guillermo",
+        "pt": "Cayo Guillermo",
+        "ru": "Cayo Guillermo",
+        "pl": "Cayo Guillermo"
+      },
+      "CU-cayo-santa-maria": {
+        "en": "Cayo Santa Maria",
+        "es": "Cayo Santa Maria",
+        "de": "Cayo Santa Maria",
+        "fr": "Cayo Santa Maria",
+        "it": "Cayo Santa Maria",
+        "pt": "Cayo Santa Maria",
+        "ru": "Cayo Santa Maria",
+        "pl": "Cayo Santa Maria"
+      },
+      "CV-sal": {
+        "en": "Sal",
+        "es": "Sal",
+        "de": "Sal",
+        "fr": "Sal",
+        "it": "Sal",
+        "pt": "Sal",
+        "ru": "Sal",
+        "pl": "Sal"
+      },
+      "CV-boa-vista": {
+        "en": "Boa Vista",
+        "es": "Boa Vista",
+        "de": "Boa Vista",
+        "fr": "Boa Vista",
+        "it": "Boa Vista",
+        "pt": "Boa Vista",
+        "ru": "Boa Vista",
+        "pl": "Boa Vista"
+      },
+      "CV-santiago-cape-verde": {
+        "en": "Santiago (Cape Verde)",
+        "es": "Santiago (Cape Verde)",
+        "de": "Santiago (Cape Verde)",
+        "fr": "Santiago (Cape Verde)",
+        "it": "Santiago (Cape Verde)",
+        "pt": "Santiago (Cape Verde)",
+        "ru": "Santiago (Cape Verde)",
+        "pl": "Santiago (Cape Verde)"
+      },
+      "CV-sao-vicente": {
+        "en": "Sao Vicente",
+        "es": "Sao Vicente",
+        "de": "Sao Vicente",
+        "fr": "Sao Vicente",
+        "it": "Sao Vicente",
+        "pt": "Sao Vicente",
+        "ru": "Sao Vicente",
+        "pl": "Sao Vicente"
+      },
+      "CV-santo-antao": {
+        "en": "Santo Antao",
+        "es": "Santo Antao",
+        "de": "Santo Antao",
+        "fr": "Santo Antao",
+        "it": "Santo Antao",
+        "pt": "Santo Antao",
+        "ru": "Santo Antao",
+        "pl": "Santo Antao"
+      },
+      "CV-fogo": {
+        "en": "Fogo",
+        "es": "Fogo",
+        "de": "Fogo",
+        "fr": "Fogo",
+        "it": "Fogo",
+        "pt": "Fogo",
+        "ru": "Fogo",
+        "pl": "Fogo"
+      },
+      "CV-maio": {
+        "en": "Maio",
+        "es": "Maio",
+        "de": "Maio",
+        "fr": "Maio",
+        "it": "Maio",
+        "pt": "Maio",
+        "ru": "Maio",
+        "pl": "Maio"
+      },
+      "DK-bornholm": {
+        "en": "Bornholm",
+        "es": "Bornholm",
+        "de": "Bornholm",
+        "fr": "Bornholm",
+        "it": "Bornholm",
+        "pt": "Bornholm",
+        "ru": "Bornholm",
+        "pl": "Bornholm"
+      },
+      "DK-zealand": {
+        "en": "Zealand",
+        "es": "Zealand",
+        "de": "Zealand",
+        "fr": "Zealand",
+        "it": "Zealand",
+        "pt": "Zealand",
+        "ru": "Zealand",
+        "pl": "Zealand"
+      },
+      "DK-funen": {
+        "en": "Funen",
+        "es": "Funen",
+        "de": "Funen",
+        "fr": "Funen",
+        "it": "Funen",
+        "pt": "Funen",
+        "ru": "Funen",
+        "pl": "Funen"
+      },
+      "DO-saona-island": {
+        "en": "Saona Island",
+        "es": "Saona Island",
+        "de": "Saona Island",
+        "fr": "Saona Island",
+        "it": "Saona Island",
+        "pt": "Saona Island",
+        "ru": "Saona Island",
+        "pl": "Saona Island"
+      },
+      "DO-catalina-island-dominican-republic": {
+        "en": "Catalina Island (Dominican Republic)",
+        "es": "Catalina Island (Dominican Republic)",
+        "de": "Catalina Island (Dominican Republic)",
+        "fr": "Catalina Island (Dominican Republic)",
+        "it": "Catalina Island (Dominican Republic)",
+        "pt": "Catalina Island (Dominican Republic)",
+        "ru": "Catalina Island (Dominican Republic)",
+        "pl": "Catalina Island (Dominican Republic)"
+      },
+      "EC-isabela-island-galapagos": {
+        "en": "Isabela Island (Galapagos)",
+        "es": "Isabela Island (Galapagos)",
+        "de": "Isabela Island (Galapagos)",
+        "fr": "Isabela Island (Galapagos)",
+        "it": "Isabela Island (Galapagos)",
+        "pt": "Isabela Island (Galapagos)",
+        "ru": "Isabela Island (Galapagos)",
+        "pl": "Isabela Island (Galapagos)"
+      },
+      "EC-santa-cruz-island-galapagos": {
+        "en": "Santa Cruz Island (Galapagos)",
+        "es": "Santa Cruz Island (Galapagos)",
+        "de": "Santa Cruz Island (Galapagos)",
+        "fr": "Santa Cruz Island (Galapagos)",
+        "it": "Santa Cruz Island (Galapagos)",
+        "pt": "Santa Cruz Island (Galapagos)",
+        "ru": "Santa Cruz Island (Galapagos)",
+        "pl": "Santa Cruz Island (Galapagos)"
+      },
+      "EC-san-cristobal-island-galapagos": {
+        "en": "San Cristobal Island (Galapagos)",
+        "es": "San Cristobal Island (Galapagos)",
+        "de": "San Cristobal Island (Galapagos)",
+        "fr": "San Cristobal Island (Galapagos)",
+        "it": "San Cristobal Island (Galapagos)",
+        "pt": "San Cristobal Island (Galapagos)",
+        "ru": "San Cristobal Island (Galapagos)",
+        "pl": "San Cristobal Island (Galapagos)"
+      },
+      "EC-floreana-island": {
+        "en": "Floreana Island",
+        "es": "Floreana Island",
+        "de": "Floreana Island",
+        "fr": "Floreana Island",
+        "it": "Floreana Island",
+        "pt": "Floreana Island",
+        "ru": "Floreana Island",
+        "pl": "Floreana Island"
+      },
+      "EC-baltra-island": {
+        "en": "Baltra Island",
+        "es": "Baltra Island",
+        "de": "Baltra Island",
+        "fr": "Baltra Island",
+        "it": "Baltra Island",
+        "pt": "Baltra Island",
+        "ru": "Baltra Island",
+        "pl": "Baltra Island"
+      },
+      "ES-mallorca": {
+        "en": "Mallorca",
+        "es": "Mallorca",
+        "de": "Mallorca",
+        "fr": "Mallorca",
+        "it": "Mallorca",
+        "pt": "Mallorca",
+        "ru": "Mallorca",
+        "pl": "Mallorca"
+      },
+      "ES-menorca": {
+        "en": "Menorca",
+        "es": "Menorca",
+        "de": "Menorca",
+        "fr": "Menorca",
+        "it": "Menorca",
+        "pt": "Menorca",
+        "ru": "Menorca",
+        "pl": "Menorca"
+      },
+      "ES-ibiza": {
+        "en": "Ibiza",
+        "es": "Ibiza",
+        "de": "Ibiza",
+        "fr": "Ibiza",
+        "it": "Ibiza",
+        "pt": "Ibiza",
+        "ru": "Ibiza",
+        "pl": "Ibiza"
+      },
+      "ES-formentera": {
+        "en": "Formentera",
+        "es": "Formentera",
+        "de": "Formentera",
+        "fr": "Formentera",
+        "it": "Formentera",
+        "pt": "Formentera",
+        "ru": "Formentera",
+        "pl": "Formentera"
+      },
+      "ES-tenerife": {
+        "en": "Tenerife",
+        "es": "Tenerife",
+        "de": "Tenerife",
+        "fr": "Tenerife",
+        "it": "Tenerife",
+        "pt": "Tenerife",
+        "ru": "Tenerife",
+        "pl": "Tenerife"
+      },
+      "ES-gran-canaria": {
+        "en": "Gran Canaria",
+        "es": "Gran Canaria",
+        "de": "Gran Canaria",
+        "fr": "Gran Canaria",
+        "it": "Gran Canaria",
+        "pt": "Gran Canaria",
+        "ru": "Gran Canaria",
+        "pl": "Gran Canaria"
+      },
+      "ES-lanzarote": {
+        "en": "Lanzarote",
+        "es": "Lanzarote",
+        "de": "Lanzarote",
+        "fr": "Lanzarote",
+        "it": "Lanzarote",
+        "pt": "Lanzarote",
+        "ru": "Lanzarote",
+        "pl": "Lanzarote"
+      },
+      "ES-fuerteventura": {
+        "en": "Fuerteventura",
+        "es": "Fuerteventura",
+        "de": "Fuerteventura",
+        "fr": "Fuerteventura",
+        "it": "Fuerteventura",
+        "pt": "Fuerteventura",
+        "ru": "Fuerteventura",
+        "pl": "Fuerteventura"
+      },
+      "ES-la-palma": {
+        "en": "La Palma",
+        "es": "La Palma",
+        "de": "La Palma",
+        "fr": "La Palma",
+        "it": "La Palma",
+        "pt": "La Palma",
+        "ru": "La Palma",
+        "pl": "La Palma"
+      },
+      "ES-la-gomera": {
+        "en": "La Gomera",
+        "es": "La Gomera",
+        "de": "La Gomera",
+        "fr": "La Gomera",
+        "it": "La Gomera",
+        "pt": "La Gomera",
+        "ru": "La Gomera",
+        "pl": "La Gomera"
+      },
+      "ES-el-hierro": {
+        "en": "El Hierro",
+        "es": "El Hierro",
+        "de": "El Hierro",
+        "fr": "El Hierro",
+        "it": "El Hierro",
+        "pt": "El Hierro",
+        "ru": "El Hierro",
+        "pl": "El Hierro"
+      },
+      "FJ-viti-levu": {
+        "en": "Viti Levu",
+        "es": "Viti Levu",
+        "de": "Viti Levu",
+        "fr": "Viti Levu",
+        "it": "Viti Levu",
+        "pt": "Viti Levu",
+        "ru": "Viti Levu",
+        "pl": "Viti Levu"
+      },
+      "FJ-vanua-levu": {
+        "en": "Vanua Levu",
+        "es": "Vanua Levu",
+        "de": "Vanua Levu",
+        "fr": "Vanua Levu",
+        "it": "Vanua Levu",
+        "pt": "Vanua Levu",
+        "ru": "Vanua Levu",
+        "pl": "Vanua Levu"
+      },
+      "FJ-taveuni": {
+        "en": "Taveuni",
+        "es": "Taveuni",
+        "de": "Taveuni",
+        "fr": "Taveuni",
+        "it": "Taveuni",
+        "pt": "Taveuni",
+        "ru": "Taveuni",
+        "pl": "Taveuni"
+      },
+      "FJ-yasawa-islands": {
+        "en": "Yasawa Islands",
+        "es": "Yasawa Islands",
+        "de": "Yasawa Islands",
+        "fr": "Yasawa Islands",
+        "it": "Yasawa Islands",
+        "pt": "Yasawa Islands",
+        "ru": "Yasawa Islands",
+        "pl": "Yasawa Islands"
+      },
+      "FJ-mamanuca-islands": {
+        "en": "Mamanuca Islands",
+        "es": "Mamanuca Islands",
+        "de": "Mamanuca Islands",
+        "fr": "Mamanuca Islands",
+        "it": "Mamanuca Islands",
+        "pt": "Mamanuca Islands",
+        "ru": "Mamanuca Islands",
+        "pl": "Mamanuca Islands"
+      },
+      "FJ-kadavu": {
+        "en": "Kadavu",
+        "es": "Kadavu",
+        "de": "Kadavu",
+        "fr": "Kadavu",
+        "it": "Kadavu",
+        "pt": "Kadavu",
+        "ru": "Kadavu",
+        "pl": "Kadavu"
+      },
+      "FI-AL": {
+        "en": "Aland Islands",
+        "es": "Aland Islands",
+        "de": "Aland Islands",
+        "fr": "Aland Islands",
+        "it": "Aland Islands",
+        "pt": "Aland Islands",
+        "ru": "Aland Islands",
+        "pl": "Aland Islands"
+      },
+      "FR-corsica": {
+        "en": "Corsica",
+        "es": "Corsica",
+        "de": "Corsica",
+        "fr": "Corsica",
+        "it": "Corsica",
+        "pt": "Corsica",
+        "ru": "Corsica",
+        "pl": "Corsica"
+      },
+      "FR-RE": {
+        "en": "Reunion",
+        "es": "Reunion",
+        "de": "Reunion",
+        "fr": "Reunion",
+        "it": "Reunion",
+        "pt": "Reunion",
+        "ru": "Reunion",
+        "pl": "Reunion"
+      },
+      "FR-GP": {
+        "en": "Guadeloupe",
+        "es": "Guadeloupe",
+        "de": "Guadeloupe",
+        "fr": "Guadeloupe",
+        "it": "Guadeloupe",
+        "pt": "Guadeloupe",
+        "ru": "Guadeloupe",
+        "pl": "Guadeloupe"
+      },
+      "FR-MQ": {
+        "en": "Martinique",
+        "es": "Martinique",
+        "de": "Martinique",
+        "fr": "Martinique",
+        "it": "Martinique",
+        "pt": "Martinique",
+        "ru": "Martinique",
+        "pl": "Martinique"
+      },
+      "FR-saint-martin": {
+        "en": "Saint Martin",
+        "es": "Saint Martin",
+        "de": "Saint Martin",
+        "fr": "Saint Martin",
+        "it": "Saint Martin",
+        "pt": "Saint Martin",
+        "ru": "Saint Martin",
+        "pl": "Saint Martin"
+      },
+      "FR-tahiti": {
+        "en": "Tahiti",
+        "es": "Tahiti",
+        "de": "Tahiti",
+        "fr": "Tahiti",
+        "it": "Tahiti",
+        "pt": "Tahiti",
+        "ru": "Tahiti",
+        "pl": "Tahiti"
+      },
+      "FR-bora-bora": {
+        "en": "Bora Bora",
+        "es": "Bora Bora",
+        "de": "Bora Bora",
+        "fr": "Bora Bora",
+        "it": "Bora Bora",
+        "pt": "Bora Bora",
+        "ru": "Bora Bora",
+        "pl": "Bora Bora"
+      },
+      "FR-moorea": {
+        "en": "Moorea",
+        "es": "Moorea",
+        "de": "Moorea",
+        "fr": "Moorea",
+        "it": "Moorea",
+        "pt": "Moorea",
+        "ru": "Moorea",
+        "pl": "Moorea"
+      },
+      "FR-raiatea": {
+        "en": "Raiatea",
+        "es": "Raiatea",
+        "de": "Raiatea",
+        "fr": "Raiatea",
+        "it": "Raiatea",
+        "pt": "Raiatea",
+        "ru": "Raiatea",
+        "pl": "Raiatea"
+      },
+      "FR-huahine": {
+        "en": "Huahine",
+        "es": "Huahine",
+        "de": "Huahine",
+        "fr": "Huahine",
+        "it": "Huahine",
+        "pt": "Huahine",
+        "ru": "Huahine",
+        "pl": "Huahine"
+      },
+      "FR-rangiroa": {
+        "en": "Rangiroa",
+        "es": "Rangiroa",
+        "de": "Rangiroa",
+        "fr": "Rangiroa",
+        "it": "Rangiroa",
+        "pt": "Rangiroa",
+        "ru": "Rangiroa",
+        "pl": "Rangiroa"
+      },
+      "FR-tikehau": {
+        "en": "Tikehau",
+        "es": "Tikehau",
+        "de": "Tikehau",
+        "fr": "Tikehau",
+        "it": "Tikehau",
+        "pt": "Tikehau",
+        "ru": "Tikehau",
+        "pl": "Tikehau"
+      },
+      "FR-grande-terre-new-caledonia": {
+        "en": "Grande Terre (New Caledonia)",
+        "es": "Grande Terre (New Caledonia)",
+        "de": "Grande Terre (New Caledonia)",
+        "fr": "Grande Terre (New Caledonia)",
+        "it": "Grande Terre (New Caledonia)",
+        "pt": "Grande Terre (New Caledonia)",
+        "ru": "Grande Terre (New Caledonia)",
+        "pl": "Grande Terre (New Caledonia)"
+      },
+      "FR-lifou": {
+        "en": "Lifou",
+        "es": "Lifou",
+        "de": "Lifou",
+        "fr": "Lifou",
+        "it": "Lifou",
+        "pt": "Lifou",
+        "ru": "Lifou",
+        "pl": "Lifou"
+      },
+      "FR-isle-of-pines": {
+        "en": "Isle of Pines",
+        "es": "Isle of Pines",
+        "de": "Isle of Pines",
+        "fr": "Isle of Pines",
+        "it": "Isle of Pines",
+        "pt": "Isle of Pines",
+        "ru": "Isle of Pines",
+        "pl": "Isle of Pines"
+      },
+      "GB-isle-of-skye": {
+        "en": "Isle of Skye",
+        "es": "Isle of Skye",
+        "de": "Isle of Skye",
+        "fr": "Isle of Skye",
+        "it": "Isle of Skye",
+        "pt": "Isle of Skye",
+        "ru": "Isle of Skye",
+        "pl": "Isle of Skye"
+      },
+      "GB-isle-of-mull": {
+        "en": "Isle of Mull",
+        "es": "Isle of Mull",
+        "de": "Isle of Mull",
+        "fr": "Isle of Mull",
+        "it": "Isle of Mull",
+        "pt": "Isle of Mull",
+        "ru": "Isle of Mull",
+        "pl": "Isle of Mull"
+      },
+      "GB-isle-of-islay": {
+        "en": "Isle of Islay",
+        "es": "Isle of Islay",
+        "de": "Isle of Islay",
+        "fr": "Isle of Islay",
+        "it": "Isle of Islay",
+        "pt": "Isle of Islay",
+        "ru": "Isle of Islay",
+        "pl": "Isle of Islay"
+      },
+      "GB-isle-of-arran": {
+        "en": "Isle of Arran",
+        "es": "Isle of Arran",
+        "de": "Isle of Arran",
+        "fr": "Isle of Arran",
+        "it": "Isle of Arran",
+        "pt": "Isle of Arran",
+        "ru": "Isle of Arran",
+        "pl": "Isle of Arran"
+      },
+      "GB-isle-of-wight": {
+        "en": "Isle of Wight",
+        "es": "Isle of Wight",
+        "de": "Isle of Wight",
+        "fr": "Isle of Wight",
+        "it": "Isle of Wight",
+        "pt": "Isle of Wight",
+        "ru": "Isle of Wight",
+        "pl": "Isle of Wight"
+      },
+      "GB-anglesey": {
+        "en": "Anglesey",
+        "es": "Anglesey",
+        "de": "Anglesey",
+        "fr": "Anglesey",
+        "it": "Anglesey",
+        "pt": "Anglesey",
+        "ru": "Anglesey",
+        "pl": "Anglesey"
+      },
+      "GB-lewis-and-harris": {
+        "en": "Lewis and Harris",
+        "es": "Lewis and Harris",
+        "de": "Lewis and Harris",
+        "fr": "Lewis and Harris",
+        "it": "Lewis and Harris",
+        "pt": "Lewis and Harris",
+        "ru": "Lewis and Harris",
+        "pl": "Lewis and Harris"
+      },
+      "GB-ORK": {
+        "en": "Orkney Mainland",
+        "es": "Orkney Mainland",
+        "de": "Orkney Mainland",
+        "fr": "Orkney Mainland",
+        "it": "Orkney Mainland",
+        "pt": "Orkney Mainland",
+        "ru": "Orkney Mainland",
+        "pl": "Orkney Mainland"
+      },
+      "GB-ZET": {
+        "en": "Shetland Mainland",
+        "es": "Shetland Mainland",
+        "de": "Shetland Mainland",
+        "fr": "Shetland Mainland",
+        "it": "Shetland Mainland",
+        "pt": "Shetland Mainland",
+        "ru": "Shetland Mainland",
+        "pl": "Shetland Mainland"
+      },
+      "GR-M": {
+        "en": "Crete",
+        "es": "Crete",
+        "de": "Crete",
+        "fr": "Crete",
+        "it": "Crete",
+        "pt": "Crete",
+        "ru": "Crete",
+        "pl": "Crete"
+      },
+      "GR-rhodes": {
+        "en": "Rhodes",
+        "es": "Rhodes",
+        "de": "Rhodes",
+        "fr": "Rhodes",
+        "it": "Rhodes",
+        "pt": "Rhodes",
+        "ru": "Rhodes",
+        "pl": "Rhodes"
+      },
+      "GR-corfu": {
+        "en": "Corfu",
+        "es": "Corfu",
+        "de": "Corfu",
+        "fr": "Corfu",
+        "it": "Corfu",
+        "pt": "Corfu",
+        "ru": "Corfu",
+        "pl": "Corfu"
+      },
+      "GR-kos": {
+        "en": "Kos",
+        "es": "Kos",
+        "de": "Kos",
+        "fr": "Kos",
+        "it": "Kos",
+        "pt": "Kos",
+        "ru": "Kos",
+        "pl": "Kos"
+      },
+      "GR-santorini": {
+        "en": "Santorini",
+        "es": "Santorini",
+        "de": "Santorini",
+        "fr": "Santorini",
+        "it": "Santorini",
+        "pt": "Santorini",
+        "ru": "Santorini",
+        "pl": "Santorini"
+      },
+      "GR-mykonos": {
+        "en": "Mykonos",
+        "es": "Mykonos",
+        "de": "Mykonos",
+        "fr": "Mykonos",
+        "it": "Mykonos",
+        "pt": "Mykonos",
+        "ru": "Mykonos",
+        "pl": "Mykonos"
+      },
+      "GR-naxos": {
+        "en": "Naxos",
+        "es": "Naxos",
+        "de": "Naxos",
+        "fr": "Naxos",
+        "it": "Naxos",
+        "pt": "Naxos",
+        "ru": "Naxos",
+        "pl": "Naxos"
+      },
+      "GR-paros": {
+        "en": "Paros",
+        "es": "Paros",
+        "de": "Paros",
+        "fr": "Paros",
+        "it": "Paros",
+        "pt": "Paros",
+        "ru": "Paros",
+        "pl": "Paros"
+      },
+      "GR-milos": {
+        "en": "Milos",
+        "es": "Milos",
+        "de": "Milos",
+        "fr": "Milos",
+        "it": "Milos",
+        "pt": "Milos",
+        "ru": "Milos",
+        "pl": "Milos"
+      },
+      "GR-zakynthos": {
+        "en": "Zakynthos",
+        "es": "Zakynthos",
+        "de": "Zakynthos",
+        "fr": "Zakynthos",
+        "it": "Zakynthos",
+        "pt": "Zakynthos",
+        "ru": "Zakynthos",
+        "pl": "Zakynthos"
+      },
+      "GR-kefalonia": {
+        "en": "Kefalonia",
+        "es": "Kefalonia",
+        "de": "Kefalonia",
+        "fr": "Kefalonia",
+        "it": "Kefalonia",
+        "pt": "Kefalonia",
+        "ru": "Kefalonia",
+        "pl": "Kefalonia"
+      },
+      "GR-lefkada": {
+        "en": "Lefkada",
+        "es": "Lefkada",
+        "de": "Lefkada",
+        "fr": "Lefkada",
+        "it": "Lefkada",
+        "pt": "Lefkada",
+        "ru": "Lefkada",
+        "pl": "Lefkada"
+      },
+      "GR-samos": {
+        "en": "Samos",
+        "es": "Samos",
+        "de": "Samos",
+        "fr": "Samos",
+        "it": "Samos",
+        "pt": "Samos",
+        "ru": "Samos",
+        "pl": "Samos"
+      },
+      "GR-chios": {
+        "en": "Chios",
+        "es": "Chios",
+        "de": "Chios",
+        "fr": "Chios",
+        "it": "Chios",
+        "pt": "Chios",
+        "ru": "Chios",
+        "pl": "Chios"
+      },
+      "GR-lesbos": {
+        "en": "Lesbos",
+        "es": "Lesbos",
+        "de": "Lesbos",
+        "fr": "Lesbos",
+        "it": "Lesbos",
+        "pt": "Lesbos",
+        "ru": "Lesbos",
+        "pl": "Lesbos"
+      },
+      "GR-skiathos": {
+        "en": "Skiathos",
+        "es": "Skiathos",
+        "de": "Skiathos",
+        "fr": "Skiathos",
+        "it": "Skiathos",
+        "pt": "Skiathos",
+        "ru": "Skiathos",
+        "pl": "Skiathos"
+      },
+      "GR-skopelos": {
+        "en": "Skopelos",
+        "es": "Skopelos",
+        "de": "Skopelos",
+        "fr": "Skopelos",
+        "it": "Skopelos",
+        "pt": "Skopelos",
+        "ru": "Skopelos",
+        "pl": "Skopelos"
+      },
+      "GR-hydra": {
+        "en": "Hydra",
+        "es": "Hydra",
+        "de": "Hydra",
+        "fr": "Hydra",
+        "it": "Hydra",
+        "pt": "Hydra",
+        "ru": "Hydra",
+        "pl": "Hydra"
+      },
+      "GR-aegina": {
+        "en": "Aegina",
+        "es": "Aegina",
+        "de": "Aegina",
+        "fr": "Aegina",
+        "it": "Aegina",
+        "pt": "Aegina",
+        "ru": "Aegina",
+        "pl": "Aegina"
+      },
+      "GR-ios": {
+        "en": "Ios",
+        "es": "Ios",
+        "de": "Ios",
+        "fr": "Ios",
+        "it": "Ios",
+        "pt": "Ios",
+        "ru": "Ios",
+        "pl": "Ios"
+      },
+      "HN-roatan": {
+        "en": "Roatan",
+        "es": "Roatan",
+        "de": "Roatan",
+        "fr": "Roatan",
+        "it": "Roatan",
+        "pt": "Roatan",
+        "ru": "Roatan",
+        "pl": "Roatan"
+      },
+      "HN-utila": {
+        "en": "Utila",
+        "es": "Utila",
+        "de": "Utila",
+        "fr": "Utila",
+        "it": "Utila",
+        "pt": "Utila",
+        "ru": "Utila",
+        "pl": "Utila"
+      },
+      "HN-guanaja": {
+        "en": "Guanaja",
+        "es": "Guanaja",
+        "de": "Guanaja",
+        "fr": "Guanaja",
+        "it": "Guanaja",
+        "pt": "Guanaja",
+        "ru": "Guanaja",
+        "pl": "Guanaja"
+      },
+      "HR-hvar": {
+        "en": "Hvar",
+        "es": "Hvar",
+        "de": "Hvar",
+        "fr": "Hvar",
+        "it": "Hvar",
+        "pt": "Hvar",
+        "ru": "Hvar",
+        "pl": "Hvar"
+      },
+      "HR-brac": {
+        "en": "Brac",
+        "es": "Brac",
+        "de": "Brac",
+        "fr": "Brac",
+        "it": "Brac",
+        "pt": "Brac",
+        "ru": "Brac",
+        "pl": "Brac"
+      },
+      "HR-korcula": {
+        "en": "Korcula",
+        "es": "Korcula",
+        "de": "Korcula",
+        "fr": "Korcula",
+        "it": "Korcula",
+        "pt": "Korcula",
+        "ru": "Korcula",
+        "pl": "Korcula"
+      },
+      "HR-vis": {
+        "en": "Vis",
+        "es": "Vis",
+        "de": "Vis",
+        "fr": "Vis",
+        "it": "Vis",
+        "pt": "Vis",
+        "ru": "Vis",
+        "pl": "Vis"
+      },
+      "HR-krk": {
+        "en": "Krk",
+        "es": "Krk",
+        "de": "Krk",
+        "fr": "Krk",
+        "it": "Krk",
+        "pt": "Krk",
+        "ru": "Krk",
+        "pl": "Krk"
+      },
+      "HR-cres": {
+        "en": "Cres",
+        "es": "Cres",
+        "de": "Cres",
+        "fr": "Cres",
+        "it": "Cres",
+        "pt": "Cres",
+        "ru": "Cres",
+        "pl": "Cres"
+      },
+      "HR-pag": {
+        "en": "Pag",
+        "es": "Pag",
+        "de": "Pag",
+        "fr": "Pag",
+        "it": "Pag",
+        "pt": "Pag",
+        "ru": "Pag",
+        "pl": "Pag"
+      },
+      "HR-mljet": {
+        "en": "Mljet",
+        "es": "Mljet",
+        "de": "Mljet",
+        "fr": "Mljet",
+        "it": "Mljet",
+        "pt": "Mljet",
+        "ru": "Mljet",
+        "pl": "Mljet"
+      },
+      "HR-rab": {
+        "en": "Rab",
+        "es": "Rab",
+        "de": "Rab",
+        "fr": "Rab",
+        "it": "Rab",
+        "pt": "Rab",
+        "ru": "Rab",
+        "pl": "Rab"
+      },
+      "ID-BA": {
+        "en": "Bali",
+        "es": "Bali",
+        "de": "Bali",
+        "fr": "Bali",
+        "it": "Bali",
+        "pt": "Bali",
+        "ru": "Bali",
+        "pl": "Bali"
+      },
+      "ID-lombok": {
+        "en": "Lombok",
+        "es": "Lombok",
+        "de": "Lombok",
+        "fr": "Lombok",
+        "it": "Lombok",
+        "pt": "Lombok",
+        "ru": "Lombok",
+        "pl": "Lombok"
+      },
+      "ID-gili-trawangan": {
+        "en": "Gili Trawangan",
+        "es": "Gili Trawangan",
+        "de": "Gili Trawangan",
+        "fr": "Gili Trawangan",
+        "it": "Gili Trawangan",
+        "pt": "Gili Trawangan",
+        "ru": "Gili Trawangan",
+        "pl": "Gili Trawangan"
+      },
+      "ID-gili-air": {
+        "en": "Gili Air",
+        "es": "Gili Air",
+        "de": "Gili Air",
+        "fr": "Gili Air",
+        "it": "Gili Air",
+        "pt": "Gili Air",
+        "ru": "Gili Air",
+        "pl": "Gili Air"
+      },
+      "ID-gili-meno": {
+        "en": "Gili Meno",
+        "es": "Gili Meno",
+        "de": "Gili Meno",
+        "fr": "Gili Meno",
+        "it": "Gili Meno",
+        "pt": "Gili Meno",
+        "ru": "Gili Meno",
+        "pl": "Gili Meno"
+      },
+      "ID-nusa-penida": {
+        "en": "Nusa Penida",
+        "es": "Nusa Penida",
+        "de": "Nusa Penida",
+        "fr": "Nusa Penida",
+        "it": "Nusa Penida",
+        "pt": "Nusa Penida",
+        "ru": "Nusa Penida",
+        "pl": "Nusa Penida"
+      },
+      "ID-nusa-lembongan": {
+        "en": "Nusa Lembongan",
+        "es": "Nusa Lembongan",
+        "de": "Nusa Lembongan",
+        "fr": "Nusa Lembongan",
+        "it": "Nusa Lembongan",
+        "pt": "Nusa Lembongan",
+        "ru": "Nusa Lembongan",
+        "pl": "Nusa Lembongan"
+      },
+      "ID-nusa-ceningan": {
+        "en": "Nusa Ceningan",
+        "es": "Nusa Ceningan",
+        "de": "Nusa Ceningan",
+        "fr": "Nusa Ceningan",
+        "it": "Nusa Ceningan",
+        "pt": "Nusa Ceningan",
+        "ru": "Nusa Ceningan",
+        "pl": "Nusa Ceningan"
+      },
+      "ID-java": {
+        "en": "Java",
+        "es": "Java",
+        "de": "Java",
+        "fr": "Java",
+        "it": "Java",
+        "pt": "Java",
+        "ru": "Java",
+        "pl": "Java"
+      },
+      "ID-sumatra": {
+        "en": "Sumatra",
+        "es": "Sumatra",
+        "de": "Sumatra",
+        "fr": "Sumatra",
+        "it": "Sumatra",
+        "pt": "Sumatra",
+        "ru": "Sumatra",
+        "pl": "Sumatra"
+      },
+      "ID-sulawesi": {
+        "en": "Sulawesi",
+        "es": "Sulawesi",
+        "de": "Sulawesi",
+        "fr": "Sulawesi",
+        "it": "Sulawesi",
+        "pt": "Sulawesi",
+        "ru": "Sulawesi",
+        "pl": "Sulawesi"
+      },
+      "ID-borneo-kalimantan": {
+        "en": "Borneo (Kalimantan)",
+        "es": "Borneo (Kalimantan)",
+        "de": "Borneo (Kalimantan)",
+        "fr": "Borneo (Kalimantan)",
+        "it": "Borneo (Kalimantan)",
+        "pt": "Borneo (Kalimantan)",
+        "ru": "Borneo (Kalimantan)",
+        "pl": "Borneo (Kalimantan)"
+      },
+      "ID-flores-indonesia": {
+        "en": "Flores (Indonesia)",
+        "es": "Flores (Indonesia)",
+        "de": "Flores (Indonesia)",
+        "fr": "Flores (Indonesia)",
+        "it": "Flores (Indonesia)",
+        "pt": "Flores (Indonesia)",
+        "ru": "Flores (Indonesia)",
+        "pl": "Flores (Indonesia)"
+      },
+      "ID-komodo": {
+        "en": "Komodo",
+        "es": "Komodo",
+        "de": "Komodo",
+        "fr": "Komodo",
+        "it": "Komodo",
+        "pt": "Komodo",
+        "ru": "Komodo",
+        "pl": "Komodo"
+      },
+      "ID-rinca": {
+        "en": "Rinca",
+        "es": "Rinca",
+        "de": "Rinca",
+        "fr": "Rinca",
+        "it": "Rinca",
+        "pt": "Rinca",
+        "ru": "Rinca",
+        "pl": "Rinca"
+      },
+      "ID-sumba": {
+        "en": "Sumba",
+        "es": "Sumba",
+        "de": "Sumba",
+        "fr": "Sumba",
+        "it": "Sumba",
+        "pt": "Sumba",
+        "ru": "Sumba",
+        "pl": "Sumba"
+      },
+      "ID-sumbawa": {
+        "en": "Sumbawa",
+        "es": "Sumbawa",
+        "de": "Sumbawa",
+        "fr": "Sumbawa",
+        "it": "Sumbawa",
+        "pt": "Sumbawa",
+        "ru": "Sumbawa",
+        "pl": "Sumbawa"
+      },
+      "ID-timor-indonesia": {
+        "en": "Timor (Indonesia)",
+        "es": "Timor (Indonesia)",
+        "de": "Timor (Indonesia)",
+        "fr": "Timor (Indonesia)",
+        "it": "Timor (Indonesia)",
+        "pt": "Timor (Indonesia)",
+        "ru": "Timor (Indonesia)",
+        "pl": "Timor (Indonesia)"
+      },
+      "ID-seram": {
+        "en": "Seram",
+        "es": "Seram",
+        "de": "Seram",
+        "fr": "Seram",
+        "it": "Seram",
+        "pt": "Seram",
+        "ru": "Seram",
+        "pl": "Seram"
+      },
+      "ID-ambon": {
+        "en": "Ambon",
+        "es": "Ambon",
+        "de": "Ambon",
+        "fr": "Ambon",
+        "it": "Ambon",
+        "pt": "Ambon",
+        "ru": "Ambon",
+        "pl": "Ambon"
+      },
+      "ID-bintan": {
+        "en": "Bintan",
+        "es": "Bintan",
+        "de": "Bintan",
+        "fr": "Bintan",
+        "it": "Bintan",
+        "pt": "Bintan",
+        "ru": "Bintan",
+        "pl": "Bintan"
+      },
+      "ID-batam": {
+        "en": "Batam",
+        "es": "Batam",
+        "de": "Batam",
+        "fr": "Batam",
+        "it": "Batam",
+        "pt": "Batam",
+        "ru": "Batam",
+        "pl": "Batam"
+      },
+      "ID-belitung": {
+        "en": "Belitung",
+        "es": "Belitung",
+        "de": "Belitung",
+        "fr": "Belitung",
+        "it": "Belitung",
+        "pt": "Belitung",
+        "ru": "Belitung",
+        "pl": "Belitung"
+      },
+      "ID-bangka": {
+        "en": "Bangka",
+        "es": "Bangka",
+        "de": "Bangka",
+        "fr": "Bangka",
+        "it": "Bangka",
+        "pt": "Bangka",
+        "ru": "Bangka",
+        "pl": "Bangka"
+      },
+      "ID-weh-island": {
+        "en": "Weh Island",
+        "es": "Weh Island",
+        "de": "Weh Island",
+        "fr": "Weh Island",
+        "it": "Weh Island",
+        "pt": "Weh Island",
+        "ru": "Weh Island",
+        "pl": "Weh Island"
+      },
+      "ID-nias": {
+        "en": "Nias",
+        "es": "Nias",
+        "de": "Nias",
+        "fr": "Nias",
+        "it": "Nias",
+        "pt": "Nias",
+        "ru": "Nias",
+        "pl": "Nias"
+      },
+      "ID-mentawai-islands": {
+        "en": "Mentawai Islands",
+        "es": "Mentawai Islands",
+        "de": "Mentawai Islands",
+        "fr": "Mentawai Islands",
+        "it": "Mentawai Islands",
+        "pt": "Mentawai Islands",
+        "ru": "Mentawai Islands",
+        "pl": "Mentawai Islands"
+      },
+      "ID-raja-ampat": {
+        "en": "Raja Ampat",
+        "es": "Raja Ampat",
+        "de": "Raja Ampat",
+        "fr": "Raja Ampat",
+        "it": "Raja Ampat",
+        "pt": "Raja Ampat",
+        "ru": "Raja Ampat",
+        "pl": "Raja Ampat"
+      },
+      "ID-misool": {
+        "en": "Misool",
+        "es": "Misool",
+        "de": "Misool",
+        "fr": "Misool",
+        "it": "Misool",
+        "pt": "Misool",
+        "ru": "Misool",
+        "pl": "Misool"
+      },
+      "ID-waigeo": {
+        "en": "Waigeo",
+        "es": "Waigeo",
+        "de": "Waigeo",
+        "fr": "Waigeo",
+        "it": "Waigeo",
+        "pt": "Waigeo",
+        "ru": "Waigeo",
+        "pl": "Waigeo"
+      },
+      "ID-kri-island": {
+        "en": "Kri Island",
+        "es": "Kri Island",
+        "de": "Kri Island",
+        "fr": "Kri Island",
+        "it": "Kri Island",
+        "pt": "Kri Island",
+        "ru": "Kri Island",
+        "pl": "Kri Island"
+      },
+      "ID-biak": {
+        "en": "Biak",
+        "es": "Biak",
+        "de": "Biak",
+        "fr": "Biak",
+        "it": "Biak",
+        "pt": "Biak",
+        "ru": "Biak",
+        "pl": "Biak"
+      },
+      "ID-karimunjawa": {
+        "en": "Karimunjawa",
+        "es": "Karimunjawa",
+        "de": "Karimunjawa",
+        "fr": "Karimunjawa",
+        "it": "Karimunjawa",
+        "pt": "Karimunjawa",
+        "ru": "Karimunjawa",
+        "pl": "Karimunjawa"
+      },
+      "ID-alor": {
+        "en": "Alor",
+        "es": "Alor",
+        "de": "Alor",
+        "fr": "Alor",
+        "it": "Alor",
+        "pt": "Alor",
+        "ru": "Alor",
+        "pl": "Alor"
+      },
+      "ID-bunaken": {
+        "en": "Bunaken",
+        "es": "Bunaken",
+        "de": "Bunaken",
+        "fr": "Bunaken",
+        "it": "Bunaken",
+        "pt": "Bunaken",
+        "ru": "Bunaken",
+        "pl": "Bunaken"
+      },
+      "IE-achill-island": {
+        "en": "Achill Island",
+        "es": "Achill Island",
+        "de": "Achill Island",
+        "fr": "Achill Island",
+        "it": "Achill Island",
+        "pt": "Achill Island",
+        "ru": "Achill Island",
+        "pl": "Achill Island"
+      },
+      "IE-inis-mor": {
+        "en": "Inis Mor",
+        "es": "Inis Mor",
+        "de": "Inis Mor",
+        "fr": "Inis Mor",
+        "it": "Inis Mor",
+        "pt": "Inis Mor",
+        "ru": "Inis Mor",
+        "pl": "Inis Mor"
+      },
+      "IE-inis-meain": {
+        "en": "Inis Meain",
+        "es": "Inis Meain",
+        "de": "Inis Meain",
+        "fr": "Inis Meain",
+        "it": "Inis Meain",
+        "pt": "Inis Meain",
+        "ru": "Inis Meain",
+        "pl": "Inis Meain"
+      },
+      "IE-inis-oirr": {
+        "en": "Inis Oirr",
+        "es": "Inis Oirr",
+        "de": "Inis Oirr",
+        "fr": "Inis Oirr",
+        "it": "Inis Oirr",
+        "pt": "Inis Oirr",
+        "ru": "Inis Oirr",
+        "pl": "Inis Oirr"
+      },
+      "IN-andaman-islands": {
+        "en": "Andaman Islands",
+        "es": "Andaman Islands",
+        "de": "Andaman Islands",
+        "fr": "Andaman Islands",
+        "it": "Andaman Islands",
+        "pt": "Andaman Islands",
+        "ru": "Andaman Islands",
+        "pl": "Andaman Islands"
+      },
+      "IN-nicobar-islands": {
+        "en": "Nicobar Islands",
+        "es": "Nicobar Islands",
+        "de": "Nicobar Islands",
+        "fr": "Nicobar Islands",
+        "it": "Nicobar Islands",
+        "pt": "Nicobar Islands",
+        "ru": "Nicobar Islands",
+        "pl": "Nicobar Islands"
+      },
+      "IN-havelock-island": {
+        "en": "Havelock Island",
+        "es": "Havelock Island",
+        "de": "Havelock Island",
+        "fr": "Havelock Island",
+        "it": "Havelock Island",
+        "pt": "Havelock Island",
+        "ru": "Havelock Island",
+        "pl": "Havelock Island"
+      },
+      "IN-neil-island": {
+        "en": "Neil Island",
+        "es": "Neil Island",
+        "de": "Neil Island",
+        "fr": "Neil Island",
+        "it": "Neil Island",
+        "pt": "Neil Island",
+        "ru": "Neil Island",
+        "pl": "Neil Island"
+      },
+      "IN-little-andaman": {
+        "en": "Little Andaman",
+        "es": "Little Andaman",
+        "de": "Little Andaman",
+        "fr": "Little Andaman",
+        "it": "Little Andaman",
+        "pt": "Little Andaman",
+        "ru": "Little Andaman",
+        "pl": "Little Andaman"
+      },
+      "IN-lakshadweep": {
+        "en": "Lakshadweep",
+        "es": "Lakshadweep",
+        "de": "Lakshadweep",
+        "fr": "Lakshadweep",
+        "it": "Lakshadweep",
+        "pt": "Lakshadweep",
+        "ru": "Lakshadweep",
+        "pl": "Lakshadweep"
+      },
+      "IN-minicoy": {
+        "en": "Minicoy",
+        "es": "Minicoy",
+        "de": "Minicoy",
+        "fr": "Minicoy",
+        "it": "Minicoy",
+        "pt": "Minicoy",
+        "ru": "Minicoy",
+        "pl": "Minicoy"
+      },
+      "IN-agatti": {
+        "en": "Agatti",
+        "es": "Agatti",
+        "de": "Agatti",
+        "fr": "Agatti",
+        "it": "Agatti",
+        "pt": "Agatti",
+        "ru": "Agatti",
+        "pl": "Agatti"
+      },
+      "IN-bangaram": {
+        "en": "Bangaram",
+        "es": "Bangaram",
+        "de": "Bangaram",
+        "fr": "Bangaram",
+        "it": "Bangaram",
+        "pt": "Bangaram",
+        "ru": "Bangaram",
+        "pl": "Bangaram"
+      },
+      "IN-kadmat": {
+        "en": "Kadmat",
+        "es": "Kadmat",
+        "de": "Kadmat",
+        "fr": "Kadmat",
+        "it": "Kadmat",
+        "pt": "Kadmat",
+        "ru": "Kadmat",
+        "pl": "Kadmat"
+      },
+      "IN-diu-island": {
+        "en": "Diu Island",
+        "es": "Diu Island",
+        "de": "Diu Island",
+        "fr": "Diu Island",
+        "it": "Diu Island",
+        "pt": "Diu Island",
+        "ru": "Diu Island",
+        "pl": "Diu Island"
+      },
+      "IN-majuli": {
+        "en": "Majuli",
+        "es": "Majuli",
+        "de": "Majuli",
+        "fr": "Majuli",
+        "it": "Majuli",
+        "pt": "Majuli",
+        "ru": "Majuli",
+        "pl": "Majuli"
+      },
+      "IR-kish-island": {
+        "en": "Kish Island",
+        "es": "Kish Island",
+        "de": "Kish Island",
+        "fr": "Kish Island",
+        "it": "Kish Island",
+        "pt": "Kish Island",
+        "ru": "Kish Island",
+        "pl": "Kish Island"
+      },
+      "IR-qeshm-island": {
+        "en": "Qeshm Island",
+        "es": "Qeshm Island",
+        "de": "Qeshm Island",
+        "fr": "Qeshm Island",
+        "it": "Qeshm Island",
+        "pt": "Qeshm Island",
+        "ru": "Qeshm Island",
+        "pl": "Qeshm Island"
+      },
+      "IR-hormuz-island": {
+        "en": "Hormuz Island",
+        "es": "Hormuz Island",
+        "de": "Hormuz Island",
+        "fr": "Hormuz Island",
+        "it": "Hormuz Island",
+        "pt": "Hormuz Island",
+        "ru": "Hormuz Island",
+        "pl": "Hormuz Island"
+      },
+      "IT-82": {
+        "en": "Sicily",
+        "es": "Sicily",
+        "de": "Sicily",
+        "fr": "Sicily",
+        "it": "Sicily",
+        "pt": "Sicily",
+        "ru": "Sicily",
+        "pl": "Sicily"
+      },
+      "IT-88": {
+        "en": "Sardinia",
+        "es": "Sardinia",
+        "de": "Sardinia",
+        "fr": "Sardinia",
+        "it": "Sardinia",
+        "pt": "Sardinia",
+        "ru": "Sardinia",
+        "pl": "Sardinia"
+      },
+      "IT-capri": {
+        "en": "Capri",
+        "es": "Capri",
+        "de": "Capri",
+        "fr": "Capri",
+        "it": "Capri",
+        "pt": "Capri",
+        "ru": "Capri",
+        "pl": "Capri"
+      },
+      "IT-ischia": {
+        "en": "Ischia",
+        "es": "Ischia",
+        "de": "Ischia",
+        "fr": "Ischia",
+        "it": "Ischia",
+        "pt": "Ischia",
+        "ru": "Ischia",
+        "pl": "Ischia"
+      },
+      "IT-procida": {
+        "en": "Procida",
+        "es": "Procida",
+        "de": "Procida",
+        "fr": "Procida",
+        "it": "Procida",
+        "pt": "Procida",
+        "ru": "Procida",
+        "pl": "Procida"
+      },
+      "IT-elba": {
+        "en": "Elba",
+        "es": "Elba",
+        "de": "Elba",
+        "fr": "Elba",
+        "it": "Elba",
+        "pt": "Elba",
+        "ru": "Elba",
+        "pl": "Elba"
+      },
+      "IT-lampedusa": {
+        "en": "Lampedusa",
+        "es": "Lampedusa",
+        "de": "Lampedusa",
+        "fr": "Lampedusa",
+        "it": "Lampedusa",
+        "pt": "Lampedusa",
+        "ru": "Lampedusa",
+        "pl": "Lampedusa"
+      },
+      "IT-pantelleria": {
+        "en": "Pantelleria",
+        "es": "Pantelleria",
+        "de": "Pantelleria",
+        "fr": "Pantelleria",
+        "it": "Pantelleria",
+        "pt": "Pantelleria",
+        "ru": "Pantelleria",
+        "pl": "Pantelleria"
+      },
+      "IT-lipari": {
+        "en": "Lipari",
+        "es": "Lipari",
+        "de": "Lipari",
+        "fr": "Lipari",
+        "it": "Lipari",
+        "pt": "Lipari",
+        "ru": "Lipari",
+        "pl": "Lipari"
+      },
+      "IT-stromboli": {
+        "en": "Stromboli",
+        "es": "Stromboli",
+        "de": "Stromboli",
+        "fr": "Stromboli",
+        "it": "Stromboli",
+        "pt": "Stromboli",
+        "ru": "Stromboli",
+        "pl": "Stromboli"
+      },
+      "IT-vulcano": {
+        "en": "Vulcano",
+        "es": "Vulcano",
+        "de": "Vulcano",
+        "fr": "Vulcano",
+        "it": "Vulcano",
+        "pt": "Vulcano",
+        "ru": "Vulcano",
+        "pl": "Vulcano"
+      },
+      "IT-salina": {
+        "en": "Salina",
+        "es": "Salina",
+        "de": "Salina",
+        "fr": "Salina",
+        "it": "Salina",
+        "pt": "Salina",
+        "ru": "Salina",
+        "pl": "Salina"
+      },
+      "IT-favignana": {
+        "en": "Favignana",
+        "es": "Favignana",
+        "de": "Favignana",
+        "fr": "Favignana",
+        "it": "Favignana",
+        "pt": "Favignana",
+        "ru": "Favignana",
+        "pl": "Favignana"
+      },
+      "JP-01": {
+        "en": "Hokkaido",
+        "es": "Hokkaido",
+        "de": "Hokkaido",
+        "fr": "Hokkaido",
+        "it": "Hokkaido",
+        "pt": "Hokkaido",
+        "ru": "Hokkaido",
+        "pl": "Hokkaido"
+      },
+      "JP-honshu": {
+        "en": "Honshu",
+        "es": "Honshu",
+        "de": "Honshu",
+        "fr": "Honshu",
+        "it": "Honshu",
+        "pt": "Honshu",
+        "ru": "Honshu",
+        "pl": "Honshu"
+      },
+      "JP-shikoku": {
+        "en": "Shikoku",
+        "es": "Shikoku",
+        "de": "Shikoku",
+        "fr": "Shikoku",
+        "it": "Shikoku",
+        "pt": "Shikoku",
+        "ru": "Shikoku",
+        "pl": "Shikoku"
+      },
+      "JP-kyushu": {
+        "en": "Kyushu",
+        "es": "Kyushu",
+        "de": "Kyushu",
+        "fr": "Kyushu",
+        "it": "Kyushu",
+        "pt": "Kyushu",
+        "ru": "Kyushu",
+        "pl": "Kyushu"
+      },
+      "JP-47": {
+        "en": "Okinawa",
+        "es": "Okinawa",
+        "de": "Okinawa",
+        "fr": "Okinawa",
+        "it": "Okinawa",
+        "pt": "Okinawa",
+        "ru": "Okinawa",
+        "pl": "Okinawa"
+      },
+      "JP-ishigaki": {
+        "en": "Ishigaki",
+        "es": "Ishigaki",
+        "de": "Ishigaki",
+        "fr": "Ishigaki",
+        "it": "Ishigaki",
+        "pt": "Ishigaki",
+        "ru": "Ishigaki",
+        "pl": "Ishigaki"
+      },
+      "JP-iriomote": {
+        "en": "Iriomote",
+        "es": "Iriomote",
+        "de": "Iriomote",
+        "fr": "Iriomote",
+        "it": "Iriomote",
+        "pt": "Iriomote",
+        "ru": "Iriomote",
+        "pl": "Iriomote"
+      },
+      "JP-miyakojima": {
+        "en": "Miyakojima",
+        "es": "Miyakojima",
+        "de": "Miyakojima",
+        "fr": "Miyakojima",
+        "it": "Miyakojima",
+        "pt": "Miyakojima",
+        "ru": "Miyakojima",
+        "pl": "Miyakojima"
+      },
+      "JP-yakushima": {
+        "en": "Yakushima",
+        "es": "Yakushima",
+        "de": "Yakushima",
+        "fr": "Yakushima",
+        "it": "Yakushima",
+        "pt": "Yakushima",
+        "ru": "Yakushima",
+        "pl": "Yakushima"
+      },
+      "JP-amami-oshima": {
+        "en": "Amami Oshima",
+        "es": "Amami Oshima",
+        "de": "Amami Oshima",
+        "fr": "Amami Oshima",
+        "it": "Amami Oshima",
+        "pt": "Amami Oshima",
+        "ru": "Amami Oshima",
+        "pl": "Amami Oshima"
+      },
+      "JP-sado": {
+        "en": "Sado",
+        "es": "Sado",
+        "de": "Sado",
+        "fr": "Sado",
+        "it": "Sado",
+        "pt": "Sado",
+        "ru": "Sado",
+        "pl": "Sado"
+      },
+      "JP-naoshima": {
+        "en": "Naoshima",
+        "es": "Naoshima",
+        "de": "Naoshima",
+        "fr": "Naoshima",
+        "it": "Naoshima",
+        "pt": "Naoshima",
+        "ru": "Naoshima",
+        "pl": "Naoshima"
+      },
+      "JP-tsushima": {
+        "en": "Tsushima",
+        "es": "Tsushima",
+        "de": "Tsushima",
+        "fr": "Tsushima",
+        "it": "Tsushima",
+        "pt": "Tsushima",
+        "ru": "Tsushima",
+        "pl": "Tsushima"
+      },
+      "KH-koh-rong": {
+        "en": "Koh Rong",
+        "es": "Koh Rong",
+        "de": "Koh Rong",
+        "fr": "Koh Rong",
+        "it": "Koh Rong",
+        "pt": "Koh Rong",
+        "ru": "Koh Rong",
+        "pl": "Koh Rong"
+      },
+      "KH-koh-rong-samloem": {
+        "en": "Koh Rong Samloem",
+        "es": "Koh Rong Samloem",
+        "de": "Koh Rong Samloem",
+        "fr": "Koh Rong Samloem",
+        "it": "Koh Rong Samloem",
+        "pt": "Koh Rong Samloem",
+        "ru": "Koh Rong Samloem",
+        "pl": "Koh Rong Samloem"
+      },
+      "KH-koh-tonsay": {
+        "en": "Koh Tonsay",
+        "es": "Koh Tonsay",
+        "de": "Koh Tonsay",
+        "fr": "Koh Tonsay",
+        "it": "Koh Tonsay",
+        "pt": "Koh Tonsay",
+        "ru": "Koh Tonsay",
+        "pl": "Koh Tonsay"
+      },
+      "KH-koh-sdach": {
+        "en": "Koh Sdach",
+        "es": "Koh Sdach",
+        "de": "Koh Sdach",
+        "fr": "Koh Sdach",
+        "it": "Koh Sdach",
+        "pt": "Koh Sdach",
+        "ru": "Koh Sdach",
+        "pl": "Koh Sdach"
+      },
+      "KI-tarawa": {
+        "en": "Tarawa",
+        "es": "Tarawa",
+        "de": "Tarawa",
+        "fr": "Tarawa",
+        "it": "Tarawa",
+        "pt": "Tarawa",
+        "ru": "Tarawa",
+        "pl": "Tarawa"
+      },
+      "KI-kiritimati": {
+        "en": "Kiritimati",
+        "es": "Kiritimati",
+        "de": "Kiritimati",
+        "fr": "Kiritimati",
+        "it": "Kiritimati",
+        "pt": "Kiritimati",
+        "ru": "Kiritimati",
+        "pl": "Kiritimati"
+      },
+      "KR-49": {
+        "en": "Jeju Island",
+        "es": "Jeju Island",
+        "de": "Jeju Island",
+        "fr": "Jeju Island",
+        "it": "Jeju Island",
+        "pt": "Jeju Island",
+        "ru": "Jeju Island",
+        "pl": "Jeju Island"
+      },
+      "KR-ulleungdo": {
+        "en": "Ulleungdo",
+        "es": "Ulleungdo",
+        "de": "Ulleungdo",
+        "fr": "Ulleungdo",
+        "it": "Ulleungdo",
+        "pt": "Ulleungdo",
+        "ru": "Ulleungdo",
+        "pl": "Ulleungdo"
+      },
+      "MG-nosy-be": {
+        "en": "Nosy Be",
+        "es": "Nosy Be",
+        "de": "Nosy Be",
+        "fr": "Nosy Be",
+        "it": "Nosy Be",
+        "pt": "Nosy Be",
+        "ru": "Nosy Be",
+        "pl": "Nosy Be"
+      },
+      "MG-sainte-marie-island": {
+        "en": "Sainte Marie Island",
+        "es": "Sainte Marie Island",
+        "de": "Sainte Marie Island",
+        "fr": "Sainte Marie Island",
+        "it": "Sainte Marie Island",
+        "pt": "Sainte Marie Island",
+        "ru": "Sainte Marie Island",
+        "pl": "Sainte Marie Island"
+      },
+      "MG-nosy-komba": {
+        "en": "Nosy Komba",
+        "es": "Nosy Komba",
+        "de": "Nosy Komba",
+        "fr": "Nosy Komba",
+        "it": "Nosy Komba",
+        "pt": "Nosy Komba",
+        "ru": "Nosy Komba",
+        "pl": "Nosy Komba"
+      },
+      "MH-majuro-atoll": {
+        "en": "Majuro Atoll",
+        "es": "Majuro Atoll",
+        "de": "Majuro Atoll",
+        "fr": "Majuro Atoll",
+        "it": "Majuro Atoll",
+        "pt": "Majuro Atoll",
+        "ru": "Majuro Atoll",
+        "pl": "Majuro Atoll"
+      },
+      "MH-kwajalein-atoll": {
+        "en": "Kwajalein Atoll",
+        "es": "Kwajalein Atoll",
+        "de": "Kwajalein Atoll",
+        "fr": "Kwajalein Atoll",
+        "it": "Kwajalein Atoll",
+        "pt": "Kwajalein Atoll",
+        "ru": "Kwajalein Atoll",
+        "pl": "Kwajalein Atoll"
+      },
+      "MT-gozo": {
+        "en": "Gozo",
+        "es": "Gozo",
+        "de": "Gozo",
+        "fr": "Gozo",
+        "it": "Gozo",
+        "pt": "Gozo",
+        "ru": "Gozo",
+        "pl": "Gozo"
+      },
+      "MT-comino": {
+        "en": "Comino",
+        "es": "Comino",
+        "de": "Comino",
+        "fr": "Comino",
+        "it": "Comino",
+        "pt": "Comino",
+        "ru": "Comino",
+        "pl": "Comino"
+      },
+      "MU-mauritius-island": {
+        "en": "Mauritius Island",
+        "es": "Mauritius Island",
+        "de": "Mauritius Island",
+        "fr": "Mauritius Island",
+        "it": "Mauritius Island",
+        "pt": "Mauritius Island",
+        "ru": "Mauritius Island",
+        "pl": "Mauritius Island"
+      },
+      "MU-rodrigues": {
+        "en": "Rodrigues",
+        "es": "Rodrigues",
+        "de": "Rodrigues",
+        "fr": "Rodrigues",
+        "it": "Rodrigues",
+        "pt": "Rodrigues",
+        "ru": "Rodrigues",
+        "pl": "Rodrigues"
+      },
+      "MU-ile-aux-cerfs": {
+        "en": "Ile aux Cerfs",
+        "es": "Ile aux Cerfs",
+        "de": "Ile aux Cerfs",
+        "fr": "Ile aux Cerfs",
+        "it": "Ile aux Cerfs",
+        "pt": "Ile aux Cerfs",
+        "ru": "Ile aux Cerfs",
+        "pl": "Ile aux Cerfs"
+      },
+      "MV-male-island": {
+        "en": "Male Island",
+        "es": "Male Island",
+        "de": "Male Island",
+        "fr": "Male Island",
+        "it": "Male Island",
+        "pt": "Male Island",
+        "ru": "Male Island",
+        "pl": "Male Island"
+      },
+      "MV-maafushi": {
+        "en": "Maafushi",
+        "es": "Maafushi",
+        "de": "Maafushi",
+        "fr": "Maafushi",
+        "it": "Maafushi",
+        "pt": "Maafushi",
+        "ru": "Maafushi",
+        "pl": "Maafushi"
+      },
+      "MV-thulusdhoo": {
+        "en": "Thulusdhoo",
+        "es": "Thulusdhoo",
+        "de": "Thulusdhoo",
+        "fr": "Thulusdhoo",
+        "it": "Thulusdhoo",
+        "pt": "Thulusdhoo",
+        "ru": "Thulusdhoo",
+        "pl": "Thulusdhoo"
+      },
+      "MV-fulidhoo": {
+        "en": "Fulidhoo",
+        "es": "Fulidhoo",
+        "de": "Fulidhoo",
+        "fr": "Fulidhoo",
+        "it": "Fulidhoo",
+        "pt": "Fulidhoo",
+        "ru": "Fulidhoo",
+        "pl": "Fulidhoo"
+      },
+      "MV-dhigurah": {
+        "en": "Dhigurah",
+        "es": "Dhigurah",
+        "de": "Dhigurah",
+        "fr": "Dhigurah",
+        "it": "Dhigurah",
+        "pt": "Dhigurah",
+        "ru": "Dhigurah",
+        "pl": "Dhigurah"
+      },
+      "MV-baa-atoll": {
+        "en": "Baa Atoll",
+        "es": "Baa Atoll",
+        "de": "Baa Atoll",
+        "fr": "Baa Atoll",
+        "it": "Baa Atoll",
+        "pt": "Baa Atoll",
+        "ru": "Baa Atoll",
+        "pl": "Baa Atoll"
+      },
+      "MV-ari-atoll": {
+        "en": "Ari Atoll",
+        "es": "Ari Atoll",
+        "de": "Ari Atoll",
+        "fr": "Ari Atoll",
+        "it": "Ari Atoll",
+        "pt": "Ari Atoll",
+        "ru": "Ari Atoll",
+        "pl": "Ari Atoll"
+      },
+      "MY-07": {
+        "en": "Penang",
+        "es": "Penang",
+        "de": "Penang",
+        "fr": "Penang",
+        "it": "Penang",
+        "pt": "Penang",
+        "ru": "Penang",
+        "pl": "Penang"
+      },
+      "MY-langkawi": {
+        "en": "Langkawi",
+        "es": "Langkawi",
+        "de": "Langkawi",
+        "fr": "Langkawi",
+        "it": "Langkawi",
+        "pt": "Langkawi",
+        "ru": "Langkawi",
+        "pl": "Langkawi"
+      },
+      "MY-tioman": {
+        "en": "Tioman",
+        "es": "Tioman",
+        "de": "Tioman",
+        "fr": "Tioman",
+        "it": "Tioman",
+        "pt": "Tioman",
+        "ru": "Tioman",
+        "pl": "Tioman"
+      },
+      "MY-redang": {
+        "en": "Redang",
+        "es": "Redang",
+        "de": "Redang",
+        "fr": "Redang",
+        "it": "Redang",
+        "pt": "Redang",
+        "ru": "Redang",
+        "pl": "Redang"
+      },
+      "MY-perhentian-kecil": {
+        "en": "Perhentian Kecil",
+        "es": "Perhentian Kecil",
+        "de": "Perhentian Kecil",
+        "fr": "Perhentian Kecil",
+        "it": "Perhentian Kecil",
+        "pt": "Perhentian Kecil",
+        "ru": "Perhentian Kecil",
+        "pl": "Perhentian Kecil"
+      },
+      "MY-perhentian-besar": {
+        "en": "Perhentian Besar",
+        "es": "Perhentian Besar",
+        "de": "Perhentian Besar",
+        "fr": "Perhentian Besar",
+        "it": "Perhentian Besar",
+        "pt": "Perhentian Besar",
+        "ru": "Perhentian Besar",
+        "pl": "Perhentian Besar"
+      },
+      "MY-pangkor": {
+        "en": "Pangkor",
+        "es": "Pangkor",
+        "de": "Pangkor",
+        "fr": "Pangkor",
+        "it": "Pangkor",
+        "pt": "Pangkor",
+        "ru": "Pangkor",
+        "pl": "Pangkor"
+      },
+      "MY-labuan": {
+        "en": "Labuan",
+        "es": "Labuan",
+        "de": "Labuan",
+        "fr": "Labuan",
+        "it": "Labuan",
+        "pt": "Labuan",
+        "ru": "Labuan",
+        "pl": "Labuan"
+      },
+      "MY-sipadan": {
+        "en": "Sipadan",
+        "es": "Sipadan",
+        "de": "Sipadan",
+        "fr": "Sipadan",
+        "it": "Sipadan",
+        "pt": "Sipadan",
+        "ru": "Sipadan",
+        "pl": "Sipadan"
+      },
+      "MY-mabul": {
+        "en": "Mabul",
+        "es": "Mabul",
+        "de": "Mabul",
+        "fr": "Mabul",
+        "it": "Mabul",
+        "pt": "Mabul",
+        "ru": "Mabul",
+        "pl": "Mabul"
+      },
+      "MY-mataking": {
+        "en": "Mataking",
+        "es": "Mataking",
+        "de": "Mataking",
+        "fr": "Mataking",
+        "it": "Mataking",
+        "pt": "Mataking",
+        "ru": "Mataking",
+        "pl": "Mataking"
+      },
+      "MZ-bazaruto-island": {
+        "en": "Bazaruto Island",
+        "es": "Bazaruto Island",
+        "de": "Bazaruto Island",
+        "fr": "Bazaruto Island",
+        "it": "Bazaruto Island",
+        "pt": "Bazaruto Island",
+        "ru": "Bazaruto Island",
+        "pl": "Bazaruto Island"
+      },
+      "MZ-benguerra-island": {
+        "en": "Benguerra Island",
+        "es": "Benguerra Island",
+        "de": "Benguerra Island",
+        "fr": "Benguerra Island",
+        "it": "Benguerra Island",
+        "pt": "Benguerra Island",
+        "ru": "Benguerra Island",
+        "pl": "Benguerra Island"
+      },
+      "MZ-ilha-de-mocambique": {
+        "en": "Ilha de Mocambique",
+        "es": "Ilha de Mocambique",
+        "de": "Ilha de Mocambique",
+        "fr": "Ilha de Mocambique",
+        "it": "Ilha de Mocambique",
+        "pt": "Ilha de Mocambique",
+        "ru": "Ilha de Mocambique",
+        "pl": "Ilha de Mocambique"
+      },
+      "MZ-ibo-island": {
+        "en": "Ibo Island",
+        "es": "Ibo Island",
+        "de": "Ibo Island",
+        "fr": "Ibo Island",
+        "it": "Ibo Island",
+        "pt": "Ibo Island",
+        "ru": "Ibo Island",
+        "pl": "Ibo Island"
+      },
+      "NI-ometepe": {
+        "en": "Ometepe",
+        "es": "Ometepe",
+        "de": "Ometepe",
+        "fr": "Ometepe",
+        "it": "Ometepe",
+        "pt": "Ometepe",
+        "ru": "Ometepe",
+        "pl": "Ometepe"
+      },
+      "NI-big-corn-island": {
+        "en": "Big Corn Island",
+        "es": "Big Corn Island",
+        "de": "Big Corn Island",
+        "fr": "Big Corn Island",
+        "it": "Big Corn Island",
+        "pt": "Big Corn Island",
+        "ru": "Big Corn Island",
+        "pl": "Big Corn Island"
+      },
+      "NI-little-corn-island": {
+        "en": "Little Corn Island",
+        "es": "Little Corn Island",
+        "de": "Little Corn Island",
+        "fr": "Little Corn Island",
+        "it": "Little Corn Island",
+        "pt": "Little Corn Island",
+        "ru": "Little Corn Island",
+        "pl": "Little Corn Island"
+      },
+      "NL-texel": {
+        "en": "Texel",
+        "es": "Texel",
+        "de": "Texel",
+        "fr": "Texel",
+        "it": "Texel",
+        "pt": "Texel",
+        "ru": "Texel",
+        "pl": "Texel"
+      },
+      "NL-terschelling": {
+        "en": "Terschelling",
+        "es": "Terschelling",
+        "de": "Terschelling",
+        "fr": "Terschelling",
+        "it": "Terschelling",
+        "pt": "Terschelling",
+        "ru": "Terschelling",
+        "pl": "Terschelling"
+      },
+      "NL-bonaire": {
+        "en": "Bonaire",
+        "es": "Bonaire",
+        "de": "Bonaire",
+        "fr": "Bonaire",
+        "it": "Bonaire",
+        "pt": "Bonaire",
+        "ru": "Bonaire",
+        "pl": "Bonaire"
+      },
+      "NL-curacao": {
+        "en": "Curacao",
+        "es": "Curacao",
+        "de": "Curacao",
+        "fr": "Curacao",
+        "it": "Curacao",
+        "pt": "Curacao",
+        "ru": "Curacao",
+        "pl": "Curacao"
+      },
+      "NL-aruba": {
+        "en": "Aruba",
+        "es": "Aruba",
+        "de": "Aruba",
+        "fr": "Aruba",
+        "it": "Aruba",
+        "pt": "Aruba",
+        "ru": "Aruba",
+        "pl": "Aruba"
+      },
+      "NL-sint-maarten": {
+        "en": "Sint Maarten",
+        "es": "Sint Maarten",
+        "de": "Sint Maarten",
+        "fr": "Sint Maarten",
+        "it": "Sint Maarten",
+        "pt": "Sint Maarten",
+        "ru": "Sint Maarten",
+        "pl": "Sint Maarten"
+      },
+      "NO-21": {
+        "en": "Svalbard",
+        "es": "Svalbard",
+        "de": "Svalbard",
+        "fr": "Svalbard",
+        "it": "Svalbard",
+        "pt": "Svalbard",
+        "ru": "Svalbard",
+        "pl": "Svalbard"
+      },
+      "NO-senja": {
+        "en": "Senja",
+        "es": "Senja",
+        "de": "Senja",
+        "fr": "Senja",
+        "it": "Senja",
+        "pt": "Senja",
+        "ru": "Senja",
+        "pl": "Senja"
+      },
+      "NO-lofoten-islands": {
+        "en": "Lofoten Islands",
+        "es": "Lofoten Islands",
+        "de": "Lofoten Islands",
+        "fr": "Lofoten Islands",
+        "it": "Lofoten Islands",
+        "pt": "Lofoten Islands",
+        "ru": "Lofoten Islands",
+        "pl": "Lofoten Islands"
+      },
+      "NZ-north-island-new-zealand": {
+        "en": "North Island (New Zealand)",
+        "es": "North Island (New Zealand)",
+        "de": "North Island (New Zealand)",
+        "fr": "North Island (New Zealand)",
+        "it": "North Island (New Zealand)",
+        "pt": "North Island (New Zealand)",
+        "ru": "North Island (New Zealand)",
+        "pl": "North Island (New Zealand)"
+      },
+      "NZ-south-island-new-zealand": {
+        "en": "South Island (New Zealand)",
+        "es": "South Island (New Zealand)",
+        "de": "South Island (New Zealand)",
+        "fr": "South Island (New Zealand)",
+        "it": "South Island (New Zealand)",
+        "pt": "South Island (New Zealand)",
+        "ru": "South Island (New Zealand)",
+        "pl": "South Island (New Zealand)"
+      },
+      "NZ-stewart-island": {
+        "en": "Stewart Island",
+        "es": "Stewart Island",
+        "de": "Stewart Island",
+        "fr": "Stewart Island",
+        "it": "Stewart Island",
+        "pt": "Stewart Island",
+        "ru": "Stewart Island",
+        "pl": "Stewart Island"
+      },
+      "NZ-waiheke-island": {
+        "en": "Waiheke Island",
+        "es": "Waiheke Island",
+        "de": "Waiheke Island",
+        "fr": "Waiheke Island",
+        "it": "Waiheke Island",
+        "pt": "Waiheke Island",
+        "ru": "Waiheke Island",
+        "pl": "Waiheke Island"
+      },
+      "NZ-great-barrier-island": {
+        "en": "Great Barrier Island",
+        "es": "Great Barrier Island",
+        "de": "Great Barrier Island",
+        "fr": "Great Barrier Island",
+        "it": "Great Barrier Island",
+        "pt": "Great Barrier Island",
+        "ru": "Great Barrier Island",
+        "pl": "Great Barrier Island"
+      },
+      "NZ-chatham-island": {
+        "en": "Chatham Island",
+        "es": "Chatham Island",
+        "de": "Chatham Island",
+        "fr": "Chatham Island",
+        "it": "Chatham Island",
+        "pt": "Chatham Island",
+        "ru": "Chatham Island",
+        "pl": "Chatham Island"
+      },
+      "PA-colon-island": {
+        "en": "Colon Island",
+        "es": "Colon Island",
+        "de": "Colon Island",
+        "fr": "Colon Island",
+        "it": "Colon Island",
+        "pt": "Colon Island",
+        "ru": "Colon Island",
+        "pl": "Colon Island"
+      },
+      "PA-bastimentos": {
+        "en": "Bastimentos",
+        "es": "Bastimentos",
+        "de": "Bastimentos",
+        "fr": "Bastimentos",
+        "it": "Bastimentos",
+        "pt": "Bastimentos",
+        "ru": "Bastimentos",
+        "pl": "Bastimentos"
+      },
+      "PA-coiba-island": {
+        "en": "Coiba Island",
+        "es": "Coiba Island",
+        "de": "Coiba Island",
+        "fr": "Coiba Island",
+        "it": "Coiba Island",
+        "pt": "Coiba Island",
+        "ru": "Coiba Island",
+        "pl": "Coiba Island"
+      },
+      "PA-contadora-island": {
+        "en": "Contadora Island",
+        "es": "Contadora Island",
+        "de": "Contadora Island",
+        "fr": "Contadora Island",
+        "it": "Contadora Island",
+        "pt": "Contadora Island",
+        "ru": "Contadora Island",
+        "pl": "Contadora Island"
+      },
+      "PA-san-blas-islands": {
+        "en": "San Blas Islands",
+        "es": "San Blas Islands",
+        "de": "San Blas Islands",
+        "fr": "San Blas Islands",
+        "it": "San Blas Islands",
+        "pt": "San Blas Islands",
+        "ru": "San Blas Islands",
+        "pl": "San Blas Islands"
+      },
+      "PG-new-britain": {
+        "en": "New Britain",
+        "es": "New Britain",
+        "de": "New Britain",
+        "fr": "New Britain",
+        "it": "New Britain",
+        "pt": "New Britain",
+        "ru": "New Britain",
+        "pl": "New Britain"
+      },
+      "PG-new-ireland": {
+        "en": "New Ireland",
+        "es": "New Ireland",
+        "de": "New Ireland",
+        "fr": "New Ireland",
+        "it": "New Ireland",
+        "pt": "New Ireland",
+        "ru": "New Ireland",
+        "pl": "New Ireland"
+      },
+      "PG-bougainville-island": {
+        "en": "Bougainville Island",
+        "es": "Bougainville Island",
+        "de": "Bougainville Island",
+        "fr": "Bougainville Island",
+        "it": "Bougainville Island",
+        "pt": "Bougainville Island",
+        "ru": "Bougainville Island",
+        "pl": "Bougainville Island"
+      },
+      "PG-manus-island": {
+        "en": "Manus Island",
+        "es": "Manus Island",
+        "de": "Manus Island",
+        "fr": "Manus Island",
+        "it": "Manus Island",
+        "pt": "Manus Island",
+        "ru": "Manus Island",
+        "pl": "Manus Island"
+      },
+      "PH-luzon": {
+        "en": "Luzon",
+        "es": "Luzon",
+        "de": "Luzon",
+        "fr": "Luzon",
+        "it": "Luzon",
+        "pt": "Luzon",
+        "ru": "Luzon",
+        "pl": "Luzon"
+      },
+      "PH-PLW": {
+        "en": "Palawan",
+        "es": "Palawan",
+        "de": "Palawan",
+        "fr": "Palawan",
+        "it": "Palawan",
+        "pt": "Palawan",
+        "ru": "Palawan",
+        "pl": "Palawan"
+      },
+      "PH-boracay": {
+        "en": "Boracay",
+        "es": "Boracay",
+        "de": "Boracay",
+        "fr": "Boracay",
+        "it": "Boracay",
+        "pt": "Boracay",
+        "ru": "Boracay",
+        "pl": "Boracay"
+      },
+      "PH-CEB": {
+        "en": "Cebu",
+        "es": "Cebu",
+        "de": "Cebu",
+        "fr": "Cebu",
+        "it": "Cebu",
+        "pt": "Cebu",
+        "ru": "Cebu",
+        "pl": "Cebu"
+      },
+      "PH-BOH": {
+        "en": "Bohol",
+        "es": "Bohol",
+        "de": "Bohol",
+        "fr": "Bohol",
+        "it": "Bohol",
+        "pt": "Bohol",
+        "ru": "Bohol",
+        "pl": "Bohol"
+      },
+      "PH-siargao": {
+        "en": "Siargao",
+        "es": "Siargao",
+        "de": "Siargao",
+        "fr": "Siargao",
+        "it": "Siargao",
+        "pt": "Siargao",
+        "ru": "Siargao",
+        "pl": "Siargao"
+      },
+      "PH-coron-island": {
+        "en": "Coron Island",
+        "es": "Coron Island",
+        "de": "Coron Island",
+        "fr": "Coron Island",
+        "it": "Coron Island",
+        "pt": "Coron Island",
+        "ru": "Coron Island",
+        "pl": "Coron Island"
+      },
+      "PH-busuanga": {
+        "en": "Busuanga",
+        "es": "Busuanga",
+        "de": "Busuanga",
+        "fr": "Busuanga",
+        "it": "Busuanga",
+        "pt": "Busuanga",
+        "ru": "Busuanga",
+        "pl": "Busuanga"
+      },
+      "PH-CAM": {
+        "en": "Camiguin",
+        "es": "Camiguin",
+        "de": "Camiguin",
+        "fr": "Camiguin",
+        "it": "Camiguin",
+        "pt": "Camiguin",
+        "ru": "Camiguin",
+        "pl": "Camiguin"
+      },
+      "PH-mindoro": {
+        "en": "Mindoro",
+        "es": "Mindoro",
+        "de": "Mindoro",
+        "fr": "Mindoro",
+        "it": "Mindoro",
+        "pt": "Mindoro",
+        "ru": "Mindoro",
+        "pl": "Mindoro"
+      },
+      "PH-negros": {
+        "en": "Negros",
+        "es": "Negros",
+        "de": "Negros",
+        "fr": "Negros",
+        "it": "Negros",
+        "pt": "Negros",
+        "ru": "Negros",
+        "pl": "Negros"
+      },
+      "PH-panay": {
+        "en": "Panay",
+        "es": "Panay",
+        "de": "Panay",
+        "fr": "Panay",
+        "it": "Panay",
+        "pt": "Panay",
+        "ru": "Panay",
+        "pl": "Panay"
+      },
+      "PH-samar": {
+        "en": "Samar",
+        "es": "Samar",
+        "de": "Samar",
+        "fr": "Samar",
+        "it": "Samar",
+        "pt": "Samar",
+        "ru": "Samar",
+        "pl": "Samar"
+      },
+      "PH-LEY": {
+        "en": "Leyte",
+        "es": "Leyte",
+        "de": "Leyte",
+        "fr": "Leyte",
+        "it": "Leyte",
+        "pt": "Leyte",
+        "ru": "Leyte",
+        "pl": "Leyte"
+      },
+      "PH-bantayan": {
+        "en": "Bantayan",
+        "es": "Bantayan",
+        "de": "Bantayan",
+        "fr": "Bantayan",
+        "it": "Bantayan",
+        "pt": "Bantayan",
+        "ru": "Bantayan",
+        "pl": "Bantayan"
+      },
+      "PH-malapascua": {
+        "en": "Malapascua",
+        "es": "Malapascua",
+        "de": "Malapascua",
+        "fr": "Malapascua",
+        "it": "Malapascua",
+        "pt": "Malapascua",
+        "ru": "Malapascua",
+        "pl": "Malapascua"
+      },
+      "PH-SIG": {
+        "en": "Siquijor",
+        "es": "Siquijor",
+        "de": "Siquijor",
+        "fr": "Siquijor",
+        "it": "Siquijor",
+        "pt": "Siquijor",
+        "ru": "Siquijor",
+        "pl": "Siquijor"
+      },
+      "PH-CAT": {
+        "en": "Catanduanes",
+        "es": "Catanduanes",
+        "de": "Catanduanes",
+        "fr": "Catanduanes",
+        "it": "Catanduanes",
+        "pt": "Catanduanes",
+        "ru": "Catanduanes",
+        "pl": "Catanduanes"
+      },
+      "PH-dinagat-islands": {
+        "en": "Dinagat Islands",
+        "es": "Dinagat Islands",
+        "de": "Dinagat Islands",
+        "fr": "Dinagat Islands",
+        "it": "Dinagat Islands",
+        "pt": "Dinagat Islands",
+        "ru": "Dinagat Islands",
+        "pl": "Dinagat Islands"
+      },
+      "PK-astola-island": {
+        "en": "Astola Island",
+        "es": "Astola Island",
+        "de": "Astola Island",
+        "fr": "Astola Island",
+        "it": "Astola Island",
+        "pt": "Astola Island",
+        "ru": "Astola Island",
+        "pl": "Astola Island"
+      },
+      "PT-30": {
+        "en": "Madeira",
+        "es": "Madeira",
+        "de": "Madeira",
+        "fr": "Madeira",
+        "it": "Madeira",
+        "pt": "Madeira",
+        "ru": "Madeira",
+        "pl": "Madeira"
+      },
+      "PT-porto-santo": {
+        "en": "Porto Santo",
+        "es": "Porto Santo",
+        "de": "Porto Santo",
+        "fr": "Porto Santo",
+        "it": "Porto Santo",
+        "pt": "Porto Santo",
+        "ru": "Porto Santo",
+        "pl": "Porto Santo"
+      },
+      "PT-sao-miguel": {
+        "en": "Sao Miguel",
+        "es": "Sao Miguel",
+        "de": "Sao Miguel",
+        "fr": "Sao Miguel",
+        "it": "Sao Miguel",
+        "pt": "Sao Miguel",
+        "ru": "Sao Miguel",
+        "pl": "Sao Miguel"
+      },
+      "PT-terceira": {
+        "en": "Terceira",
+        "es": "Terceira",
+        "de": "Terceira",
+        "fr": "Terceira",
+        "it": "Terceira",
+        "pt": "Terceira",
+        "ru": "Terceira",
+        "pl": "Terceira"
+      },
+      "PT-pico": {
+        "en": "Pico",
+        "es": "Pico",
+        "de": "Pico",
+        "fr": "Pico",
+        "it": "Pico",
+        "pt": "Pico",
+        "ru": "Pico",
+        "pl": "Pico"
+      },
+      "PT-faial": {
+        "en": "Faial",
+        "es": "Faial",
+        "de": "Faial",
+        "fr": "Faial",
+        "it": "Faial",
+        "pt": "Faial",
+        "ru": "Faial",
+        "pl": "Faial"
+      },
+      "PT-flores-azores": {
+        "en": "Flores (Azores)",
+        "es": "Flores (Azores)",
+        "de": "Flores (Azores)",
+        "fr": "Flores (Azores)",
+        "it": "Flores (Azores)",
+        "pt": "Flores (Azores)",
+        "ru": "Flores (Azores)",
+        "pl": "Flores (Azores)"
+      },
+      "PT-sao-jorge": {
+        "en": "Sao Jorge",
+        "es": "Sao Jorge",
+        "de": "Sao Jorge",
+        "fr": "Sao Jorge",
+        "it": "Sao Jorge",
+        "pt": "Sao Jorge",
+        "ru": "Sao Jorge",
+        "pl": "Sao Jorge"
+      },
+      "PT-graciosa": {
+        "en": "Graciosa",
+        "es": "Graciosa",
+        "de": "Graciosa",
+        "fr": "Graciosa",
+        "it": "Graciosa",
+        "pt": "Graciosa",
+        "ru": "Graciosa",
+        "pl": "Graciosa"
+      },
+      "PT-santa-maria-azores": {
+        "en": "Santa Maria (Azores)",
+        "es": "Santa Maria (Azores)",
+        "de": "Santa Maria (Azores)",
+        "fr": "Santa Maria (Azores)",
+        "it": "Santa Maria (Azores)",
+        "pt": "Santa Maria (Azores)",
+        "ru": "Santa Maria (Azores)",
+        "pl": "Santa Maria (Azores)"
+      },
+      "PW-babeldaob": {
+        "en": "Babeldaob",
+        "es": "Babeldaob",
+        "de": "Babeldaob",
+        "fr": "Babeldaob",
+        "it": "Babeldaob",
+        "pt": "Babeldaob",
+        "ru": "Babeldaob",
+        "pl": "Babeldaob"
+      },
+      "PW-koror-island": {
+        "en": "Koror Island",
+        "es": "Koror Island",
+        "de": "Koror Island",
+        "fr": "Koror Island",
+        "it": "Koror Island",
+        "pt": "Koror Island",
+        "ru": "Koror Island",
+        "pl": "Koror Island"
+      },
+      "PW-peleliu": {
+        "en": "Peleliu",
+        "es": "Peleliu",
+        "de": "Peleliu",
+        "fr": "Peleliu",
+        "it": "Peleliu",
+        "pt": "Peleliu",
+        "ru": "Peleliu",
+        "pl": "Peleliu"
+      },
+      "RU-sakhalin": {
+        "en": "Sakhalin",
+        "es": "Sakhalin",
+        "de": "Sakhalin",
+        "fr": "Sakhalin",
+        "it": "Sakhalin",
+        "pt": "Sakhalin",
+        "ru": "Sakhalin",
+        "pl": "Sakhalin"
+      },
+      "RU-iturup": {
+        "en": "Iturup",
+        "es": "Iturup",
+        "de": "Iturup",
+        "fr": "Iturup",
+        "it": "Iturup",
+        "pt": "Iturup",
+        "ru": "Iturup",
+        "pl": "Iturup"
+      },
+      "RU-kunashir": {
+        "en": "Kunashir",
+        "es": "Kunashir",
+        "de": "Kunashir",
+        "fr": "Kunashir",
+        "it": "Kunashir",
+        "pt": "Kunashir",
+        "ru": "Kunashir",
+        "pl": "Kunashir"
+      },
+      "SA-farasan-islands": {
+        "en": "Farasan Islands",
+        "es": "Farasan Islands",
+        "de": "Farasan Islands",
+        "fr": "Farasan Islands",
+        "it": "Farasan Islands",
+        "pt": "Farasan Islands",
+        "ru": "Farasan Islands",
+        "pl": "Farasan Islands"
+      },
+      "SB-guadalcanal": {
+        "en": "Guadalcanal",
+        "es": "Guadalcanal",
+        "de": "Guadalcanal",
+        "fr": "Guadalcanal",
+        "it": "Guadalcanal",
+        "pt": "Guadalcanal",
+        "ru": "Guadalcanal",
+        "pl": "Guadalcanal"
+      },
+      "SB-malaita": {
+        "en": "Malaita",
+        "es": "Malaita",
+        "de": "Malaita",
+        "fr": "Malaita",
+        "it": "Malaita",
+        "pt": "Malaita",
+        "ru": "Malaita",
+        "pl": "Malaita"
+      },
+      "SB-gizo-island": {
+        "en": "Gizo Island",
+        "es": "Gizo Island",
+        "de": "Gizo Island",
+        "fr": "Gizo Island",
+        "it": "Gizo Island",
+        "pt": "Gizo Island",
+        "ru": "Gizo Island",
+        "pl": "Gizo Island"
+      },
+      "SC-mahe": {
+        "en": "Mahe",
+        "es": "Mahe",
+        "de": "Mahe",
+        "fr": "Mahe",
+        "it": "Mahe",
+        "pt": "Mahe",
+        "ru": "Mahe",
+        "pl": "Mahe"
+      },
+      "SC-praslin": {
+        "en": "Praslin",
+        "es": "Praslin",
+        "de": "Praslin",
+        "fr": "Praslin",
+        "it": "Praslin",
+        "pt": "Praslin",
+        "ru": "Praslin",
+        "pl": "Praslin"
+      },
+      "SC-la-digue": {
+        "en": "La Digue",
+        "es": "La Digue",
+        "de": "La Digue",
+        "fr": "La Digue",
+        "it": "La Digue",
+        "pt": "La Digue",
+        "ru": "La Digue",
+        "pl": "La Digue"
+      },
+      "SC-silhouette-island": {
+        "en": "Silhouette Island",
+        "es": "Silhouette Island",
+        "de": "Silhouette Island",
+        "fr": "Silhouette Island",
+        "it": "Silhouette Island",
+        "pt": "Silhouette Island",
+        "ru": "Silhouette Island",
+        "pl": "Silhouette Island"
+      },
+      "SC-denis-island": {
+        "en": "Denis Island",
+        "es": "Denis Island",
+        "de": "Denis Island",
+        "fr": "Denis Island",
+        "it": "Denis Island",
+        "pt": "Denis Island",
+        "ru": "Denis Island",
+        "pl": "Denis Island"
+      },
+      "SC-bird-island": {
+        "en": "Bird Island",
+        "es": "Bird Island",
+        "de": "Bird Island",
+        "fr": "Bird Island",
+        "it": "Bird Island",
+        "pt": "Bird Island",
+        "ru": "Bird Island",
+        "pl": "Bird Island"
+      },
+      "SE-I": {
+        "en": "Gotland",
+        "es": "Gotland",
+        "de": "Gotland",
+        "fr": "Gotland",
+        "it": "Gotland",
+        "pt": "Gotland",
+        "ru": "Gotland",
+        "pl": "Gotland"
+      },
+      "SE-oland": {
+        "en": "Oland",
+        "es": "Oland",
+        "de": "Oland",
+        "fr": "Oland",
+        "it": "Oland",
+        "pt": "Oland",
+        "ru": "Oland",
+        "pl": "Oland"
+      },
+      "SG-sentosa": {
+        "en": "Sentosa",
+        "es": "Sentosa",
+        "de": "Sentosa",
+        "fr": "Sentosa",
+        "it": "Sentosa",
+        "pt": "Sentosa",
+        "ru": "Sentosa",
+        "pl": "Sentosa"
+      },
+      "TH-83": {
+        "en": "Phuket",
+        "es": "Phuket",
+        "de": "Phuket",
+        "fr": "Phuket",
+        "it": "Phuket",
+        "pt": "Phuket",
+        "ru": "Phuket",
+        "pl": "Phuket"
+      },
+      "TH-koh-samui": {
+        "en": "Koh Samui",
+        "es": "Koh Samui",
+        "de": "Koh Samui",
+        "fr": "Koh Samui",
+        "it": "Koh Samui",
+        "pt": "Koh Samui",
+        "ru": "Koh Samui",
+        "pl": "Koh Samui"
+      },
+      "TH-koh-phangan": {
+        "en": "Koh Phangan",
+        "es": "Koh Phangan",
+        "de": "Koh Phangan",
+        "fr": "Koh Phangan",
+        "it": "Koh Phangan",
+        "pt": "Koh Phangan",
+        "ru": "Koh Phangan",
+        "pl": "Koh Phangan"
+      },
+      "TH-koh-tao": {
+        "en": "Koh Tao",
+        "es": "Koh Tao",
+        "de": "Koh Tao",
+        "fr": "Koh Tao",
+        "it": "Koh Tao",
+        "pt": "Koh Tao",
+        "ru": "Koh Tao",
+        "pl": "Koh Tao"
+      },
+      "TH-koh-lanta": {
+        "en": "Koh Lanta",
+        "es": "Koh Lanta",
+        "de": "Koh Lanta",
+        "fr": "Koh Lanta",
+        "it": "Koh Lanta",
+        "pt": "Koh Lanta",
+        "ru": "Koh Lanta",
+        "pl": "Koh Lanta"
+      },
+      "TH-koh-phi-phi-don": {
+        "en": "Koh Phi Phi Don",
+        "es": "Koh Phi Phi Don",
+        "de": "Koh Phi Phi Don",
+        "fr": "Koh Phi Phi Don",
+        "it": "Koh Phi Phi Don",
+        "pt": "Koh Phi Phi Don",
+        "ru": "Koh Phi Phi Don",
+        "pl": "Koh Phi Phi Don"
+      },
+      "TH-koh-phi-phi-leh": {
+        "en": "Koh Phi Phi Leh",
+        "es": "Koh Phi Phi Leh",
+        "de": "Koh Phi Phi Leh",
+        "fr": "Koh Phi Phi Leh",
+        "it": "Koh Phi Phi Leh",
+        "pt": "Koh Phi Phi Leh",
+        "ru": "Koh Phi Phi Leh",
+        "pl": "Koh Phi Phi Leh"
+      },
+      "TH-koh-chang": {
+        "en": "Koh Chang",
+        "es": "Koh Chang",
+        "de": "Koh Chang",
+        "fr": "Koh Chang",
+        "it": "Koh Chang",
+        "pt": "Koh Chang",
+        "ru": "Koh Chang",
+        "pl": "Koh Chang"
+      },
+      "TH-koh-lipe": {
+        "en": "Koh Lipe",
+        "es": "Koh Lipe",
+        "de": "Koh Lipe",
+        "fr": "Koh Lipe",
+        "it": "Koh Lipe",
+        "pt": "Koh Lipe",
+        "ru": "Koh Lipe",
+        "pl": "Koh Lipe"
+      },
+      "TH-koh-kood": {
+        "en": "Koh Kood",
+        "es": "Koh Kood",
+        "de": "Koh Kood",
+        "fr": "Koh Kood",
+        "it": "Koh Kood",
+        "pt": "Koh Kood",
+        "ru": "Koh Kood",
+        "pl": "Koh Kood"
+      },
+      "TH-koh-mak": {
+        "en": "Koh Mak",
+        "es": "Koh Mak",
+        "de": "Koh Mak",
+        "fr": "Koh Mak",
+        "it": "Koh Mak",
+        "pt": "Koh Mak",
+        "ru": "Koh Mak",
+        "pl": "Koh Mak"
+      },
+      "TH-koh-yao-yai": {
+        "en": "Koh Yao Yai",
+        "es": "Koh Yao Yai",
+        "de": "Koh Yao Yai",
+        "fr": "Koh Yao Yai",
+        "it": "Koh Yao Yai",
+        "pt": "Koh Yao Yai",
+        "ru": "Koh Yao Yai",
+        "pl": "Koh Yao Yai"
+      },
+      "TH-koh-yao-noi": {
+        "en": "Koh Yao Noi",
+        "es": "Koh Yao Noi",
+        "de": "Koh Yao Noi",
+        "fr": "Koh Yao Noi",
+        "it": "Koh Yao Noi",
+        "pt": "Koh Yao Noi",
+        "ru": "Koh Yao Noi",
+        "pl": "Koh Yao Noi"
+      },
+      "TH-koh-samet": {
+        "en": "Koh Samet",
+        "es": "Koh Samet",
+        "de": "Koh Samet",
+        "fr": "Koh Samet",
+        "it": "Koh Samet",
+        "pt": "Koh Samet",
+        "ru": "Koh Samet",
+        "pl": "Koh Samet"
+      },
+      "TH-koh-mook": {
+        "en": "Koh Mook",
+        "es": "Koh Mook",
+        "de": "Koh Mook",
+        "fr": "Koh Mook",
+        "it": "Koh Mook",
+        "pt": "Koh Mook",
+        "ru": "Koh Mook",
+        "pl": "Koh Mook"
+      },
+      "TH-koh-kradan": {
+        "en": "Koh Kradan",
+        "es": "Koh Kradan",
+        "de": "Koh Kradan",
+        "fr": "Koh Kradan",
+        "it": "Koh Kradan",
+        "pt": "Koh Kradan",
+        "ru": "Koh Kradan",
+        "pl": "Koh Kradan"
+      },
+      "TH-koh-jum": {
+        "en": "Koh Jum",
+        "es": "Koh Jum",
+        "de": "Koh Jum",
+        "fr": "Koh Jum",
+        "it": "Koh Jum",
+        "pt": "Koh Jum",
+        "ru": "Koh Jum",
+        "pl": "Koh Jum"
+      },
+      "TN-djerba": {
+        "en": "Djerba",
+        "es": "Djerba",
+        "de": "Djerba",
+        "fr": "Djerba",
+        "it": "Djerba",
+        "pt": "Djerba",
+        "ru": "Djerba",
+        "pl": "Djerba"
+      },
+      "TO-tongatapu": {
+        "en": "Tongatapu",
+        "es": "Tongatapu",
+        "de": "Tongatapu",
+        "fr": "Tongatapu",
+        "it": "Tongatapu",
+        "pt": "Tongatapu",
+        "ru": "Tongatapu",
+        "pl": "Tongatapu"
+      },
+      "TO-vavau-islands": {
+        "en": "Vavau Islands",
+        "es": "Vavau Islands",
+        "de": "Vavau Islands",
+        "fr": "Vavau Islands",
+        "it": "Vavau Islands",
+        "pt": "Vavau Islands",
+        "ru": "Vavau Islands",
+        "pl": "Vavau Islands"
+      },
+      "TO-haapai-islands": {
+        "en": "Haapai Islands",
+        "es": "Haapai Islands",
+        "de": "Haapai Islands",
+        "fr": "Haapai Islands",
+        "it": "Haapai Islands",
+        "pt": "Haapai Islands",
+        "ru": "Haapai Islands",
+        "pl": "Haapai Islands"
+      },
+      "TR-buyukada": {
+        "en": "Buyukada",
+        "es": "Buyukada",
+        "de": "Buyukada",
+        "fr": "Buyukada",
+        "it": "Buyukada",
+        "pt": "Buyukada",
+        "ru": "Buyukada",
+        "pl": "Buyukada"
+      },
+      "TR-bozcaada": {
+        "en": "Bozcaada",
+        "es": "Bozcaada",
+        "de": "Bozcaada",
+        "fr": "Bozcaada",
+        "it": "Bozcaada",
+        "pt": "Bozcaada",
+        "ru": "Bozcaada",
+        "pl": "Bozcaada"
+      },
+      "TR-gokceada": {
+        "en": "Gokceada",
+        "es": "Gokceada",
+        "de": "Gokceada",
+        "fr": "Gokceada",
+        "it": "Gokceada",
+        "pt": "Gokceada",
+        "ru": "Gokceada",
+        "pl": "Gokceada"
+      },
+      "TT-TOB": {
+        "en": "Tobago",
+        "es": "Tobago",
+        "de": "Tobago",
+        "fr": "Tobago",
+        "it": "Tobago",
+        "pt": "Tobago",
+        "ru": "Tobago",
+        "pl": "Tobago"
+      },
+      "TW-PEN": {
+        "en": "Penghu",
+        "es": "Penghu",
+        "de": "Penghu",
+        "fr": "Penghu",
+        "it": "Penghu",
+        "pt": "Penghu",
+        "ru": "Penghu",
+        "pl": "Penghu"
+      },
+      "TW-green-island-taiwan": {
+        "en": "Green Island (Taiwan)",
+        "es": "Green Island (Taiwan)",
+        "de": "Green Island (Taiwan)",
+        "fr": "Green Island (Taiwan)",
+        "it": "Green Island (Taiwan)",
+        "pt": "Green Island (Taiwan)",
+        "ru": "Green Island (Taiwan)",
+        "pl": "Green Island (Taiwan)"
+      },
+      "TW-orchid-island": {
+        "en": "Orchid Island",
+        "es": "Orchid Island",
+        "de": "Orchid Island",
+        "fr": "Orchid Island",
+        "it": "Orchid Island",
+        "pt": "Orchid Island",
+        "ru": "Orchid Island",
+        "pl": "Orchid Island"
+      },
+      "TW-KIN": {
+        "en": "Kinmen",
+        "es": "Kinmen",
+        "de": "Kinmen",
+        "fr": "Kinmen",
+        "it": "Kinmen",
+        "pt": "Kinmen",
+        "ru": "Kinmen",
+        "pl": "Kinmen"
+      },
+      "TW-matsu-islands": {
+        "en": "Matsu Islands",
+        "es": "Matsu Islands",
+        "de": "Matsu Islands",
+        "fr": "Matsu Islands",
+        "it": "Matsu Islands",
+        "pt": "Matsu Islands",
+        "ru": "Matsu Islands",
+        "pl": "Matsu Islands"
+      },
+      "TZ-zanzibar": {
+        "en": "Zanzibar",
+        "es": "Zanzibar",
+        "de": "Zanzibar",
+        "fr": "Zanzibar",
+        "it": "Zanzibar",
+        "pt": "Zanzibar",
+        "ru": "Zanzibar",
+        "pl": "Zanzibar"
+      },
+      "TZ-pemba-island-tanzania": {
+        "en": "Pemba Island (Tanzania)",
+        "es": "Pemba Island (Tanzania)",
+        "de": "Pemba Island (Tanzania)",
+        "fr": "Pemba Island (Tanzania)",
+        "it": "Pemba Island (Tanzania)",
+        "pt": "Pemba Island (Tanzania)",
+        "ru": "Pemba Island (Tanzania)",
+        "pl": "Pemba Island (Tanzania)"
+      },
+      "TZ-mafia-island": {
+        "en": "Mafia Island",
+        "es": "Mafia Island",
+        "de": "Mafia Island",
+        "fr": "Mafia Island",
+        "it": "Mafia Island",
+        "pt": "Mafia Island",
+        "ru": "Mafia Island",
+        "pl": "Mafia Island"
+      },
+      "TZ-chumbe-island": {
+        "en": "Chumbe Island",
+        "es": "Chumbe Island",
+        "de": "Chumbe Island",
+        "fr": "Chumbe Island",
+        "it": "Chumbe Island",
+        "pt": "Chumbe Island",
+        "ru": "Chumbe Island",
+        "pl": "Chumbe Island"
+      },
+      "TZ-mnemba-island": {
+        "en": "Mnemba Island",
+        "es": "Mnemba Island",
+        "de": "Mnemba Island",
+        "fr": "Mnemba Island",
+        "it": "Mnemba Island",
+        "pt": "Mnemba Island",
+        "ru": "Mnemba Island",
+        "pl": "Mnemba Island"
+      },
+      "US-hawaii-big-island": {
+        "en": "Hawaii (Big Island)",
+        "es": "Hawaii (Big Island)",
+        "de": "Hawaii (Big Island)",
+        "fr": "Hawaii (Big Island)",
+        "it": "Hawaii (Big Island)",
+        "pt": "Hawaii (Big Island)",
+        "ru": "Hawaii (Big Island)",
+        "pl": "Hawaii (Big Island)"
+      },
+      "US-oahu": {
+        "en": "Oahu",
+        "es": "Oahu",
+        "de": "Oahu",
+        "fr": "Oahu",
+        "it": "Oahu",
+        "pt": "Oahu",
+        "ru": "Oahu",
+        "pl": "Oahu"
+      },
+      "US-maui": {
+        "en": "Maui",
+        "es": "Maui",
+        "de": "Maui",
+        "fr": "Maui",
+        "it": "Maui",
+        "pt": "Maui",
+        "ru": "Maui",
+        "pl": "Maui"
+      },
+      "US-kauai": {
+        "en": "Kauai",
+        "es": "Kauai",
+        "de": "Kauai",
+        "fr": "Kauai",
+        "it": "Kauai",
+        "pt": "Kauai",
+        "ru": "Kauai",
+        "pl": "Kauai"
+      },
+      "US-molokai": {
+        "en": "Molokai",
+        "es": "Molokai",
+        "de": "Molokai",
+        "fr": "Molokai",
+        "it": "Molokai",
+        "pt": "Molokai",
+        "ru": "Molokai",
+        "pl": "Molokai"
+      },
+      "US-lanai": {
+        "en": "Lanai",
+        "es": "Lanai",
+        "de": "Lanai",
+        "fr": "Lanai",
+        "it": "Lanai",
+        "pt": "Lanai",
+        "ru": "Lanai",
+        "pl": "Lanai"
+      },
+      "US-puerto-rico": {
+        "en": "Puerto Rico",
+        "es": "Puerto Rico",
+        "de": "Puerto Rico",
+        "fr": "Puerto Rico",
+        "it": "Puerto Rico",
+        "pt": "Puerto Rico",
+        "ru": "Puerto Rico",
+        "pl": "Puerto Rico"
+      },
+      "US-vieques": {
+        "en": "Vieques",
+        "es": "Vieques",
+        "de": "Vieques",
+        "fr": "Vieques",
+        "it": "Vieques",
+        "pt": "Vieques",
+        "ru": "Vieques",
+        "pl": "Vieques"
+      },
+      "US-culebra": {
+        "en": "Culebra",
+        "es": "Culebra",
+        "de": "Culebra",
+        "fr": "Culebra",
+        "it": "Culebra",
+        "pt": "Culebra",
+        "ru": "Culebra",
+        "pl": "Culebra"
+      },
+      "US-key-west": {
+        "en": "Key West",
+        "es": "Key West",
+        "de": "Key West",
+        "fr": "Key West",
+        "it": "Key West",
+        "pt": "Key West",
+        "ru": "Key West",
+        "pl": "Key West"
+      },
+      "US-long-island-new-york": {
+        "en": "Long Island (New York)",
+        "es": "Long Island (New York)",
+        "de": "Long Island (New York)",
+        "fr": "Long Island (New York)",
+        "it": "Long Island (New York)",
+        "pt": "Long Island (New York)",
+        "ru": "Long Island (New York)",
+        "pl": "Long Island (New York)"
+      },
+      "US-nantucket": {
+        "en": "Nantucket",
+        "es": "Nantucket",
+        "de": "Nantucket",
+        "fr": "Nantucket",
+        "it": "Nantucket",
+        "pt": "Nantucket",
+        "ru": "Nantucket",
+        "pl": "Nantucket"
+      },
+      "US-martha-s-vineyard": {
+        "en": "Martha's Vineyard",
+        "es": "Martha's Vineyard",
+        "de": "Martha's Vineyard",
+        "fr": "Martha's Vineyard",
+        "it": "Martha's Vineyard",
+        "pt": "Martha's Vineyard",
+        "ru": "Martha's Vineyard",
+        "pl": "Martha's Vineyard"
+      },
+      "US-catalina-island-california": {
+        "en": "Catalina Island (California)",
+        "es": "Catalina Island (California)",
+        "de": "Catalina Island (California)",
+        "fr": "Catalina Island (California)",
+        "it": "Catalina Island (California)",
+        "pt": "Catalina Island (California)",
+        "ru": "Catalina Island (California)",
+        "pl": "Catalina Island (California)"
+      },
+      "US-san-juan-island-washington": {
+        "en": "San Juan Island (Washington)",
+        "es": "San Juan Island (Washington)",
+        "de": "San Juan Island (Washington)",
+        "fr": "San Juan Island (Washington)",
+        "it": "San Juan Island (Washington)",
+        "pt": "San Juan Island (Washington)",
+        "ru": "San Juan Island (Washington)",
+        "pl": "San Juan Island (Washington)"
+      },
+      "US-amelia-island": {
+        "en": "Amelia Island",
+        "es": "Amelia Island",
+        "de": "Amelia Island",
+        "fr": "Amelia Island",
+        "it": "Amelia Island",
+        "pt": "Amelia Island",
+        "ru": "Amelia Island",
+        "pl": "Amelia Island"
+      },
+      "VE-margarita-island": {
+        "en": "Margarita Island",
+        "es": "Margarita Island",
+        "de": "Margarita Island",
+        "fr": "Margarita Island",
+        "it": "Margarita Island",
+        "pt": "Margarita Island",
+        "ru": "Margarita Island",
+        "pl": "Margarita Island"
+      },
+      "VE-coche-island": {
+        "en": "Coche Island",
+        "es": "Coche Island",
+        "de": "Coche Island",
+        "fr": "Coche Island",
+        "it": "Coche Island",
+        "pt": "Coche Island",
+        "ru": "Coche Island",
+        "pl": "Coche Island"
+      },
+      "VE-los-roques": {
+        "en": "Los Roques",
+        "es": "Los Roques",
+        "de": "Los Roques",
+        "fr": "Los Roques",
+        "it": "Los Roques",
+        "pt": "Los Roques",
+        "ru": "Los Roques",
+        "pl": "Los Roques"
+      },
+      "VN-phu-quoc": {
+        "en": "Phu Quoc",
+        "es": "Phu Quoc",
+        "de": "Phu Quoc",
+        "fr": "Phu Quoc",
+        "it": "Phu Quoc",
+        "pt": "Phu Quoc",
+        "ru": "Phu Quoc",
+        "pl": "Phu Quoc"
+      },
+      "VN-cat-ba-island": {
+        "en": "Cat Ba Island",
+        "es": "Cat Ba Island",
+        "de": "Cat Ba Island",
+        "fr": "Cat Ba Island",
+        "it": "Cat Ba Island",
+        "pt": "Cat Ba Island",
+        "ru": "Cat Ba Island",
+        "pl": "Cat Ba Island"
+      },
+      "VN-con-son-island": {
+        "en": "Con Son Island",
+        "es": "Con Son Island",
+        "de": "Con Son Island",
+        "fr": "Con Son Island",
+        "it": "Con Son Island",
+        "pt": "Con Son Island",
+        "ru": "Con Son Island",
+        "pl": "Con Son Island"
+      },
+      "VN-ly-son-island": {
+        "en": "Ly Son Island",
+        "es": "Ly Son Island",
+        "de": "Ly Son Island",
+        "fr": "Ly Son Island",
+        "it": "Ly Son Island",
+        "pt": "Ly Son Island",
+        "ru": "Ly Son Island",
+        "pl": "Ly Son Island"
+      },
+      "VN-hon-tre-island": {
+        "en": "Hon Tre Island",
+        "es": "Hon Tre Island",
+        "de": "Hon Tre Island",
+        "fr": "Hon Tre Island",
+        "it": "Hon Tre Island",
+        "pt": "Hon Tre Island",
+        "ru": "Hon Tre Island",
+        "pl": "Hon Tre Island"
+      },
+      "VN-cham-islands": {
+        "en": "Cham Islands",
+        "es": "Cham Islands",
+        "de": "Cham Islands",
+        "fr": "Cham Islands",
+        "it": "Cham Islands",
+        "pt": "Cham Islands",
+        "ru": "Cham Islands",
+        "pl": "Cham Islands"
+      },
+      "VU-efate": {
+        "en": "Efate",
+        "es": "Efate",
+        "de": "Efate",
+        "fr": "Efate",
+        "it": "Efate",
+        "pt": "Efate",
+        "ru": "Efate",
+        "pl": "Efate"
+      },
+      "VU-espiritu-santo": {
+        "en": "Espiritu Santo",
+        "es": "Espiritu Santo",
+        "de": "Espiritu Santo",
+        "fr": "Espiritu Santo",
+        "it": "Espiritu Santo",
+        "pt": "Espiritu Santo",
+        "ru": "Espiritu Santo",
+        "pl": "Espiritu Santo"
+      },
+      "VU-tanna": {
+        "en": "Tanna",
+        "es": "Tanna",
+        "de": "Tanna",
+        "fr": "Tanna",
+        "it": "Tanna",
+        "pt": "Tanna",
+        "ru": "Tanna",
+        "pl": "Tanna"
+      },
+      "WS-upolu": {
+        "en": "Upolu",
+        "es": "Upolu",
+        "de": "Upolu",
+        "fr": "Upolu",
+        "it": "Upolu",
+        "pt": "Upolu",
+        "ru": "Upolu",
+        "pl": "Upolu"
+      },
+      "WS-savaii": {
+        "en": "Savaii",
+        "es": "Savaii",
+        "de": "Savaii",
+        "fr": "Savaii",
+        "it": "Savaii",
+        "pt": "Savaii",
+        "ru": "Savaii",
+        "pl": "Savaii"
+      },
+      "YE-socotra": {
+        "en": "Socotra",
+        "es": "Socotra",
+        "de": "Socotra",
+        "fr": "Socotra",
+        "it": "Socotra",
+        "pt": "Socotra",
+        "ru": "Socotra",
+        "pl": "Socotra"
+      }
+    }
+  }
 }

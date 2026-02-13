@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-12-i18n-locale-seo-rollout
-version: v0.49.0
+version: v0.37.0
 title: "I18n foundation and locale-aware SEO rollout"
 date: 2026-02-12
 published_at: 2026-02-12T20:35:58Z

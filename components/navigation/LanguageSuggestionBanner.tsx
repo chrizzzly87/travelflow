@@ -55,6 +55,12 @@ const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; 
         actionShort: '🇮🇹 Italiano',
         dismiss: 'Chiudi suggerimento lingua',
     },
+    pl: {
+        message: 'Ta strona jest również dostępna po polsku.',
+        action: `Wypróbuj ${APP_NAME} po polsku`,
+        actionShort: '🇵🇱 Polski',
+        dismiss: 'Zamknij podpowiedź języka',
+    },
 };
 
 const getBrowserPreferredLocale = (currentLocale: AppLanguage): AppLanguage | null => {

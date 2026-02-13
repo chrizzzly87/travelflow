@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-create-trip-visual-overhaul-labs
-version: v0.38.0
+version: v0.30.0
 title: "Create trip visual overhaul labs"
 date: 2026-02-10
 published_at: 2026-02-10T08:09:29Z

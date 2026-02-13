@@ -1045,12 +1045,10 @@ export const TripView: React.FC<TripViewProps> = ({
                 return;
             }
             const upserted = await dbUpsertTrip(trip, currentViewSettings);
-            if (!upserted) {
-                const existing = await dbGetTrip(trip.id);
-                if (!existing?.trip) {
-                    showToast('Could not save trip before sharing.', { tone: 'remove', title: 'Share link' });
-                    return;
-                }
+            const existing = await dbGetTrip(trip.id);
+            if (!upserted || !existing?.trip) {
+                showToast('Could not save trip before sharing.', { tone: 'remove', title: 'Share link' });
+                return;
             }
             const result = await dbCreateShareLink(trip.id, shareMode);
             if (!result?.token) {

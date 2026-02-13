@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-trip-palettes-map-color-modes
-version: v0.42.0
+version: v0.32.0
 title: "Trip palettes and map color modes"
 date: 2026-02-10
 published_at: 2026-02-10T13:50:00Z

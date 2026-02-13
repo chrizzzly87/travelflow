@@ -183,6 +183,18 @@ export const getBlogPostBySlug = (slug: string, locale: AppLanguage = DEFAULT_LO
     return allBlogPosts.find((post) => post.slug === slug && post.language === locale);
 };
 
+export const getBlogPostBySlugWithFallback = (
+    slug: string,
+    locale: AppLanguage = DEFAULT_LOCALE,
+    fallbackLocale: AppLanguage = DEFAULT_LOCALE
+): BlogPost | undefined => {
+    const localizedPost = getBlogPostBySlug(slug, locale);
+    if (localizedPost) return localizedPost;
+
+    if (locale === fallbackLocale) return undefined;
+    return getBlogPostBySlug(slug, fallbackLocale);
+};
+
 export const getBlogPostTranslations = (translationGroup: string): BlogPost[] => {
     return allBlogPosts
         .filter((post) => post.translationGroup === translationGroup && post.status === 'published')

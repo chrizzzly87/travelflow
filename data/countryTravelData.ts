@@ -41,9 +41,53 @@ export interface CountryTravelDataDocument {
     avoid: string;
   };
   countries: CountrySeasonEntry[];
+  localizedDestinationNames?: {
+    countries: Record<string, Record<string, string>>;
+    islands: Record<string, Record<string, string>>;
+  };
 }
 
 export const COUNTRY_TRAVEL_DATA = countryTravelDataJson as CountryTravelDataDocument;
+
+const EMPTY_LOCALIZED_DESTINATION_NAMES = {
+  countries: {} as Record<string, Record<string, string>>,
+  islands: {} as Record<string, Record<string, string>>,
+};
+
+export const LOCALIZED_DESTINATION_NAMES =
+  COUNTRY_TRAVEL_DATA.localizedDestinationNames || EMPTY_LOCALIZED_DESTINATION_NAMES;
+
+const normalizeLocaleKey = (locale?: string): string => {
+  if (!locale) return 'en';
+  const trimmed = locale.trim().toLowerCase();
+  if (!trimmed) return 'en';
+  const [base] = trimmed.split('-');
+  return base || 'en';
+};
+
+const getLocalizedDestinationName = (
+  source: Record<string, Record<string, string>>,
+  code: string,
+  locale?: string
+): string | undefined => {
+  const normalizedCode = code.trim();
+  if (!normalizedCode) return undefined;
+
+  const localizedByLocale =
+    source[normalizedCode]
+    || source[normalizedCode.toUpperCase()]
+    || source[normalizedCode.toLowerCase()];
+  if (!localizedByLocale) return undefined;
+
+  const localeKey = normalizeLocaleKey(locale);
+  return localizedByLocale[localeKey] || localizedByLocale.en || Object.values(localizedByLocale).find(Boolean);
+};
+
+export const getLocalizedCountryNameFromData = (countryCode: string, locale?: string): string | undefined =>
+  getLocalizedDestinationName(LOCALIZED_DESTINATION_NAMES.countries, countryCode, locale);
+
+export const getLocalizedIslandNameFromData = (islandCode: string, locale?: string): string | undefined =>
+  getLocalizedDestinationName(LOCALIZED_DESTINATION_NAMES.islands, islandCode, locale);
 
 const COUNTRY_BY_NAME = new Map<string, CountrySeasonEntry>(
   COUNTRY_TRAVEL_DATA.countries.map((entry) => [entry.countryName.toLocaleLowerCase(), entry])

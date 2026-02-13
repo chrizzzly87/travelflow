@@ -1,0 +1,67 @@
+{
+  "nav": {
+    "features": "Funkcje",
+    "inspirations": "Inspiracje",
+    "updates": "Aktualności",
+    "blog": "Blog",
+    "pricing": "Cennik",
+    "login": "Zaloguj się",
+    "createTrip": "Utwórz podróż",
+    "myTrips": "Moje podróże",
+    "openMenu": "Otwórz menu"
+  },
+  "footer": {
+    "rightsReserved": "© {year} {appName}. Wszelkie prawa zastrzeżone.",
+    "contact": "Kontakt",
+    "imprint": "Informacje prawne",
+    "privacy": "Prywatność",
+    "terms": "Warunki",
+    "cookies": "Cookies",
+    "legalNotice": "Treści prawne są obecnie szkieletem i przed publiczną publikacją muszą zostać zastąpione zatwierdzonym tekstem produkcyjnym."
+  },
+  "language": {
+    "label": "Język",
+    "en": "English",
+    "es": "Español",
+    "de": "Deutsch",
+    "fr": "Français",
+    "it": "Italiano",
+    "ru": "Русский",
+    "pt": "Português",
+    "pl": "Polski"
+  },
+  "buttons": {
+    "startPlanning": "Zacznij planować",
+    "seeExampleTrips": "Zobacz przykładowe podróże",
+    "startPlanningFree": "Zacznij planować — za darmo",
+    "done": "Gotowe",
+    "essentialOnly": "Tylko niezbędne",
+    "acceptAll": "Akceptuj wszystkie",
+    "backToBlog": "Wróć do bloga",
+    "all": "Wszystkie"
+  },
+  "earlyAccess": {
+    "tag": "Wczesny podgląd",
+    "message": "{appName} jest w aktywnym rozwoju. Funkcje mogą się zmieniać, a niektóre elementy mogą jeszcze nie działać idealnie.",
+    "dismiss": "Zamknij baner"
+  },
+  "cookieBanner": {
+    "message": "Używamy niezbędnych plików cookie, aby {appName} działał stabilnie, oraz opcjonalnych cookie, aby poprawić Twoje doświadczenie. Zobacz naszą",
+    "policyLinkLabel": "Politykę cookies"
+  },
+  "translationNotice": {
+    "message": "Ta strona została niedawno przetłumaczona z pomocą AI i może nadal zawierać błędy tłumaczenia.",
+    "cta": "Zgłoś błąd tłumaczenia",
+    "ctaShort": "Zgłoś"
+  },
+  "contact": {
+    "title": "Kontakt",
+    "description": "Użyj tej strony, aby zgłosić błędy tłumaczenia lub przesłać opinię o lokalizacji.",
+    "formStatusTitle": "Formularz kontaktowy wkrótce",
+    "formStatusBody": "Dedykowany formularz nie jest jeszcze dostępny. Na razie skontaktuj się z nami mailowo.",
+    "emailLabel": "E-mail",
+    "emailValue": "support@travelflow.app",
+    "responseNote": "Zwykle odpowiadamy w ciągu 2–3 dni roboczych.",
+    "backHome": "Wróć do strony głównej"
+  }
+}

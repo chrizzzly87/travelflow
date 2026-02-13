@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-inspiration-prefill-links
-version: v0.25.0
+version: v0.23.0
 title: "Inspiration links now pre-fill the trip form"
 date: 2026-02-09
 published_at: 2026-02-09T22:00:00Z
