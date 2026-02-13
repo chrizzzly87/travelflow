@@ -41,8 +41,10 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const { t, i18n } = useTranslation('common');
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        const routeLocale = extractLocaleFromPath(location.pathname);
+        if (routeLocale) return routeLocale;
+        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
+    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
@@ -115,7 +117,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <div className="flex items-center gap-2">
                         <div className="relative hidden md:block">
                             <LanguageSelect
-                                aria-label={t('language.label')}
+                                ariaLabel={t('language.label')}
                                 value={activeLocale}
                                 onChange={handleLocaleChange}
                                 triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"

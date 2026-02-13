@@ -19,6 +19,7 @@ import {
     Laptop,
     MagicWand,
     MapPin,
+    MagnifyingGlass,
     Minus,
     MoonStars,
     Mountains,
@@ -961,8 +962,80 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     />
                                 </div>
 
+                                <div className="relative" ref={searchWrapperRef}>
+                                    <MagnifyingGlass
+                                        size={18}
+                                        weight="duotone"
+                                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                    />
+                                    <input
+                                        value={query}
+                                        onChange={(event) => {
+                                            setQuery(event.target.value);
+                                            openSearch();
+                                        }}
+                                        onFocus={openSearch}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                if (suggestions[0]) addDestination(suggestions[0].name);
+                                            }
+                                        }}
+                                        placeholder={t('destination.searchPlaceholder')}
+                                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm transition-shadow placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                                    />
+                                </div>
+
+                                {searchOpen && searchPosition && (query.trim() || suggestions.length > 0) && typeof document !== 'undefined' && createPortal(
+                                    <div
+                                        ref={searchDropdownRef}
+                                        className="fixed z-[9999] max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
+                                        style={{
+                                            top: searchPosition.top,
+                                            left: searchPosition.left,
+                                            width: searchPosition.width,
+                                        }}
+                                    >
+                                        {suggestions.length > 0 ? (
+                                            suggestions.map((option) => {
+                                                const optionLabel = option.kind === 'country'
+                                                    ? getLocalizedCountryName(option.code, option.name)
+                                                    : option.name;
+                                                const islandMeta = option.kind === 'island' && option.parentCountryName
+                                                    ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
+                                                    : undefined;
+                                                return (
+                                                    <button
+                                                        key={option.code}
+                                                        type="button"
+                                                        onClick={() => addDestination(option.name)}
+                                                        className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate text-sm font-medium text-slate-800">
+                                                                    {option.flag} {optionLabel}
+                                                                </div>
+                                                                {islandMeta && (
+                                                                    <div className="mt-0.5 text-xs text-slate-500">
+                                                                        {islandMeta}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <Plus size={14} className="mt-0.5 text-accent-500" />
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
+                                        )}
+                                    </div>,
+                                    document.body
+                                )}
+
                                 {destinations.length > 0 && (
-                                    <div className="mb-3 flex flex-wrap gap-2">
+                                    <div className="mt-3 flex flex-wrap gap-2">
                                         {destinations.map((destination, index) => {
                                             const option = getDestinationOptionByName(destination);
                                             const dragActive = routeLock && dragOverIndex === index && dragIndex !== null;
@@ -980,10 +1053,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         onDrop={() => handleDestinationDrop(index)}
                                                         onDragEnd={handleDestinationDragEnd}
                                                         className={[
-                                                            'inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-sm font-medium',
+                                                            'inline-flex items-center gap-2 rounded-lg border bg-white px-2.5 py-1 text-sm font-medium text-slate-800 shadow-sm',
                                                             isStartStop
-                                                                ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-[0_0_0_1px_rgba(37,99,235,0.08)]'
-                                                                : 'border-accent-200 text-slate-700',
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200',
                                                             routeLock ? 'cursor-grab active:cursor-grabbing' : '',
                                                             dragActive ? 'ring-2 ring-accent-200' : '',
                                                         ].join(' ')}
@@ -1036,78 +1109,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             );
                                         })}
                                     </div>
-                                )}
-
-                                <div className="relative mb-3" ref={searchWrapperRef}>
-                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-inner">
-                                        <div className="flex items-center gap-2">
-                                            <Compass size={16} weight="duotone" className="text-accent-500" />
-                                            <input
-                                                value={query}
-                                                onChange={(event) => {
-                                                    setQuery(event.target.value);
-                                                    openSearch();
-                                                }}
-                                                onFocus={openSearch}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter') {
-                                                        event.preventDefault();
-                                                        if (suggestions[0]) addDestination(suggestions[0].name);
-                                                    }
-                                                }}
-                                                placeholder={t('destination.searchPlaceholder')}
-                                                className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {searchOpen && searchPosition && (query.trim() || suggestions.length > 0) && typeof document !== 'undefined' && createPortal(
-                                    <div
-                                        ref={searchDropdownRef}
-                                        className="fixed z-[9999] max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
-                                        style={{
-                                            top: searchPosition.top,
-                                            left: searchPosition.left,
-                                            width: searchPosition.width,
-                                        }}
-                                    >
-                                        {suggestions.length > 0 ? (
-                                            suggestions.map((option) => {
-                                                const optionLabel = option.kind === 'country'
-                                                    ? getLocalizedCountryName(option.code, option.name)
-                                                    : option.name;
-                                                const islandMeta = option.kind === 'island' && option.parentCountryName
-                                                    ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
-                                                    : undefined;
-                                                return (
-                                                    <button
-                                                        key={option.code}
-                                                        type="button"
-                                                        onClick={() => addDestination(option.name)}
-                                                        className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div className="min-w-0">
-                                                                <div className="truncate text-sm font-medium text-slate-800">
-                                                                    {option.flag} {optionLabel}
-                                                                </div>
-                                                                {islandMeta && (
-                                                                    <div className="mt-0.5 text-xs text-slate-500">
-                                                                        {islandMeta}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <Plus size={14} className="mt-0.5 text-accent-500" />
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
-                                        )}
-                                    </div>,
-                                    document.body
                                 )}
 
                                 <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1606,7 +1607,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     </section>
                 </main>
 
-                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-indigo-300/20 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 p-3 text-slate-100 backdrop-blur md:hidden">
+                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-indigo-300/20 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 p-3 text-slate-100 backdrop-blur lg:hidden">
                     <div className="mx-auto max-w-[1260px]">
                         <div className="flex items-center gap-3">
                             <div className="min-w-0 flex-1">

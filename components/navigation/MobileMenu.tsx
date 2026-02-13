@@ -33,8 +33,10 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const navigate = useNavigate();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        const routeLocale = extractLocaleFromPath(location.pathname);
+        if (routeLocale) return routeLocale;
+        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
+    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     useEffect(() => {
         if (isOpen) {
