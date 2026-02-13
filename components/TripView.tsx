@@ -34,7 +34,7 @@ import {
     shouldShowTripPaywall,
     TRIP_EXPIRY_DEBUG_EVENT,
 } from '../config/paywall';
-import { trackEvent } from '../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { APP_NAME } from '../config/appGlobals';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
@@ -2100,19 +2100,29 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <Printer size={18} />
                                     </button>
                                 </div>
-                                <button onClick={() => setIsHistoryOpen(true)} className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg" aria-label="History">
+                                <button
+                                    onClick={() => {
+                                        trackEvent('app__trip_history--open', { source: 'desktop_header' });
+                                        setIsHistoryOpen(true);
+                                    }}
+                                    className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
+                                    aria-label="History"
+                                    {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'desktop_header' })}
+                                >
                                     <History size={18} />
                                 </button>
                             </>
                         )}
-                        <button
-                            onClick={onOpenManager}
-                            className={`flex items-center gap-2 rounded-lg font-medium ${isMobile ? 'p-2 bg-gray-100 text-gray-700 hover:bg-gray-200' : 'p-2 text-gray-500 hover:bg-gray-100 text-sm'}`}
-                            aria-label="My plans"
-                        >
-                            <Route size={18} />
-                            <span className={isMobile ? 'sr-only' : 'hidden lg:inline'}>My Plans</span>
-                        </button>
+                        {!isMobile && (
+                            <button
+                                onClick={onOpenManager}
+                                className="flex items-center gap-2 rounded-lg font-medium p-2 text-gray-500 hover:bg-gray-100 text-sm"
+                                aria-label="My plans"
+                            >
+                                <Route size={18} />
+                                <span className="hidden lg:inline">My Plans</span>
+                            </button>
+                        )}
                         {canShare && (
                             <button
                                 onClick={handleShare}
@@ -2131,11 +2141,25 @@ export const TripView: React.FC<TripViewProps> = ({
                         {isMobile && (
                             <button
                                 type="button"
-                                onClick={() => setIsTripInfoOpen(true)}
+                                onClick={() => {
+                                    trackEvent('app__trip_history--open', { source: 'mobile_header' });
+                                    setIsHistoryOpen(true);
+                                }}
                                 className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                                aria-label="Trip information"
+                                aria-label="History"
+                                {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'mobile_header' })}
                             >
-                                <Info size={18} />
+                                <History size={18} />
+                            </button>
+                        )}
+                        {isMobile && (
+                            <button
+                                onClick={onOpenManager}
+                                className="flex items-center gap-2 rounded-lg font-medium p-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                aria-label="My plans"
+                            >
+                                <Route size={18} />
+                                <span className="sr-only">My Plans</span>
                             </button>
                         )}
                     </div>

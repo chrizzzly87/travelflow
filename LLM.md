@@ -11,7 +11,7 @@
 - Any completed feature/fix must be reflected in `content/updates/*.md`.
 - For new components, check whether logical CSS properties should be used for direction safety; if unclear, ask for clarification.
 - For user-facing copy edits, ask the user for EN/DE style sign-off unless they explicitly opt out.
-- Release notes in `content/updates/*.md` are always written in English and do not require EN/DE style sign-off.
+- Release notes in `content/updates/*.md` are always written in English and do not require EN/DE translation prompts or style sign-off unless explicitly requested.
 - For clickable marketing/planner UI updates, add `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` in the standard format unless explicitly excluded.
 
 ## Update entry policy
