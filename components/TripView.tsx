@@ -17,7 +17,7 @@ import { AddCityModal } from './AddCityModal';
 import { Drawer, DrawerContent } from './ui/drawer';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight
+    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight, Loader2
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -135,6 +135,13 @@ const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
+const GENERATION_PROGRESS_MESSAGES = [
+    'Analyzing your travel preferences...',
+    'Scouting top-rated cities and stops...',
+    'Calculating optimal travel routes...',
+    'Structuring your daily timeline...',
+    'Finalizing logistics and details...',
+];
 
 interface ViewTransitionDebugDetail {
     phase: string;
@@ -908,6 +915,22 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [trip.items, selectedCityIds, selectedItemId]);
 
+    const showGenerationOverlay = isTripDetailRoute && isLoadingPreview;
+
+    useEffect(() => {
+        if (!showGenerationOverlay) {
+            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
+            return;
+        }
+        let index = 0;
+        setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
+        const timer = window.setInterval(() => {
+            index = (index + 1) % GENERATION_PROGRESS_MESSAGES.length;
+            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[index]);
+        }, 2200);
+        return () => window.clearInterval(timer);
+    }, [showGenerationOverlay]);
+
     const tripMeta = useMemo(() => {
         const cityItems = trip.items
             .filter(i => i.type === 'city')
@@ -944,6 +967,22 @@ export const TripView: React.FC<TripViewProps> = ({
         };
     }, [trip.items, trip.startDate]);
     const tripSummary = tripMeta.summaryLine;
+    const isLoadingPreview = useMemo(
+        () => displayTrip.items.some((item) => item.loading),
+        [displayTrip.items]
+    );
+    const loadingDestinationSummary = useMemo(() => {
+        const locations = displayTrip.items
+            .filter((item) => item.type === 'city' && typeof item.location === 'string')
+            .map((item) => item.location?.trim() ?? '')
+            .filter((location) => location.length > 0);
+        const uniqueLocations = Array.from(new Set(locations));
+        if (uniqueLocations.length > 0) {
+            return uniqueLocations.join(', ');
+        }
+        return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
+    }, [displayTrip.items, displayTrip.title]);
+    const [generationProgressMessage, setGenerationProgressMessage] = useState(GENERATION_PROGRESS_MESSAGES[0]);
 
     const forkMeta = useMemo(() => {
         if (trip.forkedFromShareToken) {
@@ -2016,7 +2055,7 @@ export const TripView: React.FC<TripViewProps> = ({
 
     return (
         <GoogleMapsLoader language={appLanguage}>
-            <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
+            <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
                 
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
@@ -3218,6 +3257,28 @@ export const TripView: React.FC<TripViewProps> = ({
                                             Preview mode stays visible, while advanced planning controls unlock after activation.
                                         </p>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showGenerationOverlay && (
+                        <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
+                            <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
+                                        <Loader2 size={18} className="animate-spin" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-semibold text-accent-900 truncate">Planning your trip</div>
+                                        <div className="text-xs text-gray-600 truncate">{generationProgressMessage}</div>
+                                    </div>
+                                </div>
+                                <div className="mt-3 text-xs text-gray-500">
+                                    {loadingDestinationSummary} • {tripMeta.dateRange} • {tripMeta.totalDaysLabel} days
+                                </div>
+                                <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                    <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
                                 </div>
                             </div>
                         </div>

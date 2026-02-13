@@ -358,6 +358,16 @@ const createLocalHistoryEntry = (
     return url;
 };
 
+const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
+    const locations = trip.items
+        .filter((item) => item.type === 'city' && typeof item.location === 'string')
+        .map((item) => item.location?.trim() ?? '')
+        .filter((location) => location.length > 0);
+    const uniqueLocations = Array.from(new Set(locations));
+    if (uniqueLocations.length === 0) return undefined;
+    return uniqueLocations.join(' || ');
+};
+
 // Legacy compressed URLs still supported in TripLoader.
 
 // Component to handle trip loading from URL
@@ -481,6 +491,7 @@ const TripLoader = ({
         <Suspense fallback={<RouteLoadingFallback />}>
             <TripView
                 trip={trip}
+                initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
                 initialViewSettings={viewSettings ?? trip.defaultView}
                 onUpdateTrip={handleUpdateTrip}
                 onCommitState={handleCommitState}

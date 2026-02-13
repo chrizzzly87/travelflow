@@ -175,6 +175,7 @@ const formatDestinationList = (destinations: string[]): string => {
 const buildLoadingTripPreview = (params: {
     tripId: string;
     destinationLabel: string;
+    focusLocations: string[];
     startDate: string;
     totalDays: number;
     requestedStops: number;
@@ -187,8 +188,19 @@ const buildLoadingTripPreview = (params: {
     const remainder = totalDays % stops;
 
     let offset = 0;
+    const normalizedFocusLocations = Array.from(
+        new Set(
+            params.focusLocations
+                .map((location) => location.trim())
+                .filter((location) => location.length > 0)
+        )
+    );
+    const fallbackLocation = params.destinationLabel.trim() || 'Destination';
     const items = Array.from({ length: stops }).map((_, index) => {
         const cityDuration = baseDuration + (index < remainder ? 1 : 0);
+        const location = normalizedFocusLocations.length > 0
+            ? normalizedFocusLocations[index % normalizedFocusLocations.length]
+            : fallbackLocation;
         const item = {
             id: `loading-city-${index}-${now}`,
             type: 'city' as const,
@@ -197,7 +209,7 @@ const buildLoadingTripPreview = (params: {
             duration: cityDuration,
             color: 'bg-slate-100 border-slate-200 text-slate-400',
             description: 'AI is generating this part of your itinerary.',
-            location: params.destinationLabel,
+            location,
             loading: true,
         };
         offset += cityDuration;
@@ -1297,11 +1309,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         });
 
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
-        const destinationLabel = formatDestinationList(orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)));
+        const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
+        const destinationLabel = formatDestinationList(localizedDestinationLabels);
         const optimisticTripId = generateTripId();
         const optimisticTrip = buildLoadingTripPreview({
             tripId: optimisticTripId,
             destinationLabel,
+            focusLocations: localizedDestinationLabels,
             startDate,
             totalDays: dayCount,
             requestedStops: Math.max(orderedDestinations.length, 2),
