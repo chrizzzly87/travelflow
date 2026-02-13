@@ -32,10 +32,14 @@ const CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-400-normal.woff";
 const CDN_HEADLINE_FONT_400_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-400-normal.woff";
+const GOOGLE_HEADLINE_FONT_400_WOFF_URL =
+  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM4&skey=7f69194495102d00&v=v9";
 const CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-700-normal.woff";
 const CDN_HEADLINE_FONT_700_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-700-normal.woff";
+const GOOGLE_HEADLINE_FONT_700_WOFF_URL =
+  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM4&skey=7f69194495102d00&v=v9";
 const LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH =
   "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-800-normal.woff";
 const LOCAL_HEADLINE_FONT_800_WOFF_PATH =
@@ -44,8 +48,8 @@ const CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-800-normal.woff";
 const CDN_HEADLINE_FONT_800_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-800-normal.woff";
-const LEGACY_HEADLINE_FONT_URL =
-  "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
+const GOOGLE_HEADLINE_FONT_800_WOFF_URL =
+  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvZvlyM4&skey=7f69194495102d00&v=v9";
 
 const VERSION_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -89,13 +93,9 @@ const buildHeadingFontUrls = (requestUrl: URL, weight: 400 | 700 | 800): string[
     return [
       local800LatinExt,
       local800,
+      GOOGLE_HEADLINE_FONT_800_WOFF_URL,
       cdn800LatinExt,
       cdn800,
-      local700LatinExt,
-      local700,
-      cdn700LatinExt,
-      cdn700,
-      LEGACY_HEADLINE_FONT_URL,
     ];
   }
 
@@ -103,26 +103,18 @@ const buildHeadingFontUrls = (requestUrl: URL, weight: 400 | 700 | 800): string[
     return [
       local700LatinExt,
       local700,
+      GOOGLE_HEADLINE_FONT_700_WOFF_URL,
       cdn700LatinExt,
       cdn700,
-      local400LatinExt,
-      local400,
-      cdn400LatinExt,
-      cdn400,
-      LEGACY_HEADLINE_FONT_URL,
     ];
   }
 
   return [
     local400LatinExt,
     local400,
+    GOOGLE_HEADLINE_FONT_400_WOFF_URL,
     cdn400LatinExt,
     cdn400,
-    local700LatinExt,
-    local700,
-    cdn700LatinExt,
-    cdn700,
-    LEGACY_HEADLINE_FONT_URL,
   ];
 };
 
@@ -541,7 +533,7 @@ export default async (request: Request): Promise<Response> => {
     const { lines: titleLines, fontSize: headlineFontSize } = getTitleSpec(
       summary.title || "Shared Trip",
     );
-    const displayUrl = truncateText(`${url.host}${routePath}`, 50);
+    const displayUrl = truncateText(`${url.host}${routePath}`, 56);
 
     return new ImageResponse(
       (
@@ -676,6 +668,7 @@ export default async (request: Request): Promise<Response> => {
                   display: "flex",
                   minWidth: 0,
                   overflow: "hidden",
+                  textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
                 }}
               >
