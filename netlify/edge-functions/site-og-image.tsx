@@ -6,10 +6,18 @@ const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-400-normal.woff";
+const LOCAL_HEADLINE_FONT_400_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-400-normal.woff";
 const LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH =
   "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-700-normal.woff";
 const LOCAL_HEADLINE_FONT_700_WOFF_PATH =
   "/fonts/bricolage-grotesque/bricolage-grotesque-latin-700-normal.woff";
+const CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-400-normal.woff";
+const CDN_HEADLINE_FONT_400_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-400-normal.woff";
 const CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL =
   "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-700-normal.woff";
 const CDN_HEADLINE_FONT_700_WOFF_URL =
@@ -36,7 +44,7 @@ const ACCENT_700 = "#4338ca";
 
 type LoadedHeadingFont = {
   data: ArrayBuffer;
-  weight: 700 | 800;
+  weight: 400 | 700 | 800;
 };
 
 const headingFontPromiseByOrigin = new Map<string, Promise<LoadedHeadingFont[]>>();
@@ -55,9 +63,13 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
   }
 };
 
-const buildHeadingFontUrls = (requestUrl: URL, weight: 700 | 800): string[] => {
+const buildHeadingFontUrls = (requestUrl: URL, weight: 400 | 700 | 800): string[] => {
+  const local400LatinExt = new URL(LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
+  const local400 = new URL(LOCAL_HEADLINE_FONT_400_WOFF_PATH, requestUrl.origin).toString();
   const local700LatinExt = new URL(LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
   const local700 = new URL(LOCAL_HEADLINE_FONT_700_WOFF_PATH, requestUrl.origin).toString();
+  const cdn400LatinExt = CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL;
+  const cdn400 = CDN_HEADLINE_FONT_400_WOFF_URL;
   const cdn700LatinExt = CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL;
   const local800 = new URL(LOCAL_HEADLINE_FONT_800_WOFF_PATH, requestUrl.origin).toString();
   const local800LatinExt = new URL(LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
@@ -79,7 +91,31 @@ const buildHeadingFontUrls = (requestUrl: URL, weight: 700 | 800): string[] => {
     ];
   }
 
-  return [local700LatinExt, local700, cdn700LatinExt, cdn700, LEGACY_HEADLINE_FONT_URL];
+  if (weight === 700) {
+    return [
+      local700LatinExt,
+      local700,
+      cdn700LatinExt,
+      cdn700,
+      local400LatinExt,
+      local400,
+      cdn400LatinExt,
+      cdn400,
+      LEGACY_HEADLINE_FONT_URL,
+    ];
+  }
+
+  return [
+    local400LatinExt,
+    local400,
+    cdn400LatinExt,
+    cdn400,
+    local700LatinExt,
+    local700,
+    cdn700LatinExt,
+    cdn700,
+    LEGACY_HEADLINE_FONT_URL,
+  ];
 };
 
 const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
@@ -95,7 +131,7 @@ const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
 
 const loadHeadingFontByWeight = async (
   requestUrl: URL,
-  weight: 700 | 800,
+  weight: 400 | 700 | 800,
 ): Promise<ArrayBuffer | null> => {
   for (const fontUrl of buildHeadingFontUrls(requestUrl, weight)) {
     const fontData = await fetchFontArrayBuffer(fontUrl);
@@ -110,10 +146,12 @@ const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> =
 
   if (!fontPromise) {
     fontPromise = (async () => {
+      const font400 = await loadHeadingFontByWeight(requestUrl, 400);
       const font700 = await loadHeadingFontByWeight(requestUrl, 700);
       const font800 = await loadHeadingFontByWeight(requestUrl, 800);
 
       const fonts: LoadedHeadingFont[] = [];
+      if (font400) fonts.push({ data: font400, weight: 400 });
       if (font700) fonts.push({ data: font700, weight: 700 });
       if (font800) fonts.push({ data: font800, weight: 800 });
       return fonts;
@@ -314,7 +352,7 @@ export default async (request: Request): Promise<Response> => {
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
     const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || SITE_NAME;
     const pagePath = normalizePath(getSearchParam(url, "path"));
-    const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+    const displayUrl = truncateText(`${url.host}${pagePath}`, 52);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
     const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
     const blogTintIntensity = normalizeTintIntensity(getSearchParam(url, "blog_tint_intensity"), 60);
@@ -336,6 +374,8 @@ export default async (request: Request): Promise<Response> => {
             display: "flex",
             padding: 28,
             color: "#0f172a",
+            fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+            fontWeight: 400,
             background:
               "linear-gradient(165deg, #f8fafc 0%, #eef2ff 62%, #e0e7ff 100%)",
           }}
@@ -459,7 +499,6 @@ export default async (request: Request): Promise<Response> => {
                   minWidth: 0,
                   overflow: "hidden",
                   whiteSpace: "nowrap",
-                  textOverflow: "ellipsis",
                 }}
               >
                 {displayUrl}
