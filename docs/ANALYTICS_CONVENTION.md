@@ -29,6 +29,16 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 4. **Use `snake_case`** within each segment, separated by `__` and `--`.
 5. **Prefix grouping** — all events from a page share the same prefix (`inspirations__*`), making dashboard filtering trivial.
 6. **Do not use URL query parameters as analytics tracking** when Umami event tracking is available. Track intent with `trackEvent(...)` and payload properties instead.
+7. **`getAnalyticsDebugAttributes(...)` is for QA/debug overlays only.** It does not replace `trackEvent(...)`.
+
+## Locale switch tracking guidance
+
+- For locale switches (`header select`, `mobile select`, `language suggestion banner`), prefer `trackEvent(...)` payload properties such as:
+  - `source` (for example `language_banner`, `header_select`, `mobile_menu`)
+  - `from`, `to`
+  - `target` (localized path)
+- Avoid appending UTM-style query params to internal route switches solely for analytics attribution.
+- Keep attribution in Umami events and payload fields so URLs stay clean/canonical-safe.
 
 ## When to use payload vs `--detail`
 
