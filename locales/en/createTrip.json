@@ -89,8 +89,8 @@
       "children": "Children",
       "babies": "Babies",
       "summaryHint": "Optional details",
-      "open": "Edit {{traveler}} settings",
-      "title": "Customize {{traveler}} preferences",
+      "open": "Edit {traveler} settings",
+      "title": "Customize {traveler} preferences",
       "description": "Add optional details to refine generated suggestions for this traveler setup.",
       "mobileDescription": "Optional details to improve planning relevance.",
       "done": "Done"

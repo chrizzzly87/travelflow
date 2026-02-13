@@ -89,8 +89,8 @@
       "children": "Kinder",
       "babies": "Babys",
       "summaryHint": "Optionale Details",
-      "open": "{{traveler}}-Einstellungen bearbeiten",
-      "title": "{{traveler}}-Einstellungen anpassen",
+      "open": "{traveler}-Einstellungen bearbeiten",
+      "title": "{traveler}-Einstellungen anpassen",
       "description": "Optionale Details zur Verfeinerung der Vorschläge für dieses Reisenden-Setup.",
       "mobileDescription": "Optionale Details für relevantere Planung.",
       "done": "Fertig"

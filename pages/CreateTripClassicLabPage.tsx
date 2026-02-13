@@ -253,6 +253,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         transport: false,
     });
     const [mobileSnapshotExpanded, setMobileSnapshotExpanded] = useState(false);
+    const [mobileSnapshotFooterOffset, setMobileSnapshotFooterOffset] = useState(0);
 
     const searchWrapperRef = useRef<HTMLDivElement | null>(null);
     const searchDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -354,6 +355,16 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (dateInputMode === 'flex') return Math.max(7, flexWeeks * 7);
         return getDaysDifference(startDate, endDate);
     }, [dateInputMode, endDate, flexWeeks, startDate]);
+
+    const mobileDateRangeLabel = useMemo(() => {
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return t('dates.summary', { days: dayCount });
+        }
+        const formatter = new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric' });
+        return `${formatter.format(start)} - ${formatter.format(end)}`;
+    }, [dayCount, endDate, i18n.language, startDate, t]);
 
     const averageDaysPerStop = useMemo(() => {
         if (orderedDestinations.length === 0) return 0;
@@ -476,6 +487,27 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             setDragOverIndex(null);
         }
     }, [canLockRoute]);
+
+    useEffect(() => {
+        const updateMobileSnapshotOffset = () => {
+            const footer = document.querySelector('footer');
+            if (!footer) {
+                setMobileSnapshotFooterOffset(0);
+                return;
+            }
+            const rect = footer.getBoundingClientRect();
+            const overlap = Math.max(0, window.innerHeight - rect.top);
+            setMobileSnapshotFooterOffset((previous) => (Math.abs(previous - overlap) < 0.5 ? previous : overlap));
+        };
+
+        updateMobileSnapshotOffset();
+        window.addEventListener('resize', updateMobileSnapshotOffset);
+        window.addEventListener('scroll', updateMobileSnapshotOffset, true);
+        return () => {
+            window.removeEventListener('resize', updateMobileSnapshotOffset);
+            window.removeEventListener('scroll', updateMobileSnapshotOffset, true);
+        };
+    }, []);
 
     useEffect(() => {
         if (destinations.length === 0) {
@@ -681,6 +713,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     }, []);
 
     const settingsTravelerLabel = t(`traveler.options.${settingsTraveler}`);
+    const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
+        coupleTravelerA === 'non-binary'
+        || coupleTravelerB === 'non-binary'
+        || (
+            (coupleTravelerA === 'female' || coupleTravelerA === 'male')
+            && coupleTravelerA === coupleTravelerB
+        )
+    );
 
     const settingsContent = (
         <div className="space-y-4">
@@ -744,6 +784,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             {settingsTraveler === 'couple' && (
                 <div className="space-y-3">
+                    {isLgbtqCoupleMode && (
+                        <div
+                            aria-hidden="true"
+                            className="h-1.5 rounded-full bg-[linear-gradient(90deg,#e11d48_0%,#f97316_18%,#eab308_36%,#22c55e_54%,#3b82f6_72%,#6366f1_86%,#a855f7_100%)]"
+                        />
+                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
@@ -933,7 +979,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             <div className="relative z-10">
                 <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
 
-                <main className="mx-auto w-full max-w-[1260px] px-4 pb-52 pt-8 sm:px-6 lg:px-8 lg:pb-14">
+                <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
                         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800">
                             <Sparkle size={13} weight="duotone" />
@@ -1111,20 +1157,20 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     </div>
                                 )}
 
-                                <div className="mt-3 grid grid-cols-2 gap-2">
-                                    <label className="inline-flex items-center gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-sm text-slate-700">
+                                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <label className="inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
                                         <Switch
                                             checked={roundTrip}
                                             onCheckedChange={handleRoundTripChange}
                                             {...getAnalyticsDebugAttributes('create_trip__toggle--roundtrip', { enabled: roundTrip })}
                                         />
                                         <span>
-                                            <span className="block font-semibold text-slate-800">{t('destination.roundTrip.title')}</span>
-                                            <span className="block text-xs text-slate-500">{t('destination.roundTrip.description')}</span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.roundTrip.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.roundTrip.description')}</span>
                                         </span>
                                     </label>
 
-                                    <label className={['inline-flex items-center gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-sm text-slate-700', canLockRoute ? '' : 'opacity-50'].join(' ')}>
+                                    <label className={['inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
                                         <Switch
                                             checked={routeLock}
                                             onCheckedChange={handleRouteLockChange}
@@ -1132,8 +1178,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             {...getAnalyticsDebugAttributes('create_trip__toggle--route_lock', { enabled: routeLock })}
                                         />
                                         <span>
-                                            <span className="block font-semibold text-slate-800">{t('destination.routeLock.title')}</span>
-                                            <span className="block text-xs text-slate-500">{t('destination.routeLock.description')}</span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.routeLock.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.routeLock.description')}</span>
                                         </span>
                                     </label>
                                 </div>
@@ -1201,18 +1247,38 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <label className="space-y-1.5 text-sm">
                                             <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.weeksLabel')}</span>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                max={8}
-                                                value={flexWeeks}
-                                                onChange={(event) => {
-                                                    const value = Number(event.target.value);
-                                                    const normalized = Number.isFinite(value) ? Math.min(8, Math.max(1, value)) : 1;
-                                                    setFlexWeeks(normalized);
-                                                }}
-                                                className="h-9 w-24 rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-800 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                            />
+                                            <div className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous - 1, 1, 8))}
+                                                    disabled={flexWeeks <= 1}
+                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Decrease weeks"
+                                                >
+                                                    <Minus size={13} />
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={8}
+                                                    value={flexWeeks}
+                                                    onChange={(event) => {
+                                                        const value = Number(event.target.value);
+                                                        const normalized = Number.isFinite(value) ? Math.min(8, Math.max(1, value)) : 1;
+                                                        setFlexWeeks(normalized);
+                                                    }}
+                                                    className="h-7 w-10 rounded-md border-0 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous + 1, 1, 8))}
+                                                    disabled={flexWeeks >= 8}
+                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Increase weeks"
+                                                >
+                                                    <Plus size={13} />
+                                                </button>
+                                            </div>
                                         </label>
                                         <label className="space-y-1.5 text-sm">
                                             <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.rangeLabel')}</span>
@@ -1607,18 +1673,29 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     </section>
                 </main>
 
-                <div className="fixed inset-x-0 bottom-0 z-40 border-t border-indigo-300/20 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 p-3 text-slate-100 backdrop-blur lg:hidden">
+                <div
+                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-3 pt-3.5 text-slate-100 backdrop-blur lg:hidden"
+                    style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
+                >
                     <div className="mx-auto max-w-[1260px]">
                         <div className="flex items-center gap-3">
                             <div className="min-w-0 flex-1">
-                                <div className="text-[11px] uppercase tracking-[0.12em] text-indigo-200">{t('snapshot.title')}</div>
-                                <div className="truncate text-sm font-semibold text-white">{routeHeadline}</div>
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
+                                <div className="truncate text-[15px] font-semibold leading-tight text-white">{routeHeadline}</div>
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {mobileDateRangeLabel}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {t('snapshot.days', { days: dayCount })}
+                                    </span>
+                                </div>
                             </div>
                             <button
                                 type="button"
                                 onClick={handleGenerateTrip}
                                 disabled={isSubmitting || !destinationComplete}
-                                className="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-indigo-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,
@@ -1631,27 +1708,27 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         <button
                             type="button"
                             onClick={() => setMobileSnapshotExpanded((previous) => !previous)}
-                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-100"
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-100/95"
                         >
                             {mobileSnapshotExpanded ? <CaretDown size={12} /> : <CaretUp size={12} />}
                             {mobileSnapshotExpanded ? t('mobileSnapshot.hideDetails') : t('mobileSnapshot.showDetails')}
                         </button>
                         {mobileSnapshotExpanded && (
-                            <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-white/15 bg-white/5 p-2.5 text-xs text-indigo-100">
+                            <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-white/15 bg-white/5 p-3 text-xs text-indigo-100">
                                 <div>
-                                    <div className="font-semibold text-indigo-100">{t('mobileSnapshot.days')}</div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.days')}</div>
                                     <div>{dayCount}</div>
                                 </div>
                                 <div>
-                                    <div className="font-semibold text-indigo-100">{t('mobileSnapshot.traveler')}</div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>
                                     <div>{travelerSummary}</div>
                                 </div>
                                 <div>
-                                    <div className="font-semibold text-indigo-100">{t('mobileSnapshot.style')}</div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.style')}</div>
                                     <div className="truncate">{styleSummary || t('style.empty')}</div>
                                 </div>
                                 <div>
-                                    <div className="font-semibold text-indigo-100">{t('mobileSnapshot.transport')}</div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.transport')}</div>
                                     <div>{transportSummary}</div>
                                 </div>
                             </div>

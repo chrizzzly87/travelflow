@@ -17,7 +17,9 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Fixed] 🔁 Restored `prefill` URL handling for Classic Card so inspiration links populate destinations/dates/options on first load again.
 - [x] [Fixed] 🧭 Restored the Travel Snapshot route-path arrows/loop visualization and aligned the mobile sticky snapshot to the same visual style as desktop.
 - [x] [Fixed] 👥 Restored per-traveler settings modal controls and transport behavior (`Automatic` vs multi-select), with camper visible but disabled for now.
+- [x] [Fixed] 🏳️‍🌈 Restored same-sex couple traveler-modal rainbow mode styling and fixed traveler settings interpolation rendering in localized copy.
 - [x] [Improved] 📱 Added a mobile/tablet sticky trip snapshot footer with primary create action and expandable details, including safe bottom spacing to avoid content overlap.
+- [x] [Improved] 📅 Refined mobile snapshot readability with visible travel dates and restored +/- week steppers for flexible trip duration input.
 - [x] [Improved] 🤖 Switched the default Classic Card flow to in-page AI generation (`aiService`) and aligned admin benchmark input masking to the same UI shape without changing prompt contract semantics.
 - [x] [Improved] 🌍 Added a dedicated `createTrip` i18n namespace across all supported locales, wired tool-route language preloading, and fixed locale state sync so create-trip navigation, country names, and date labels stay in the active app language.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
