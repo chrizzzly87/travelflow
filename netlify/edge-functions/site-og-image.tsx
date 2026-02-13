@@ -6,14 +6,22 @@ const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
-const LOCAL_HEADLINE_FONT_PATHS = [
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext.woff2",
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin.woff2",
-];
-const LOCAL_SPACE_FONT_PATHS = [
-  "/fonts/space-grotesk/space-grotesk-latin-ext.woff2",
-  "/fonts/space-grotesk/space-grotesk-latin.woff2",
-];
+const LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-700-normal.woff";
+const LOCAL_HEADLINE_FONT_700_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-700-normal.woff";
+const CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-700-normal.woff";
+const CDN_HEADLINE_FONT_700_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-700-normal.woff";
+const LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-800-normal.woff";
+const LOCAL_HEADLINE_FONT_800_WOFF_PATH =
+  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-800-normal.woff";
+const CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-800-normal.woff";
+const CDN_HEADLINE_FONT_800_WOFF_URL =
+  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-800-normal.woff";
 const LEGACY_HEADLINE_FONT_URL =
   "https://unpkg.com/@fontsource/space-grotesk@5.0.18/files/space-grotesk-latin-700-normal.woff";
 
@@ -26,7 +34,16 @@ const ACCENT_500 = "#6366f1";
 const ACCENT_600 = "#4f46e5";
 const ACCENT_700 = "#4338ca";
 
-const headingFontPromiseByOrigin = new Map<string, Promise<ArrayBuffer | null>>();
+type LoadedHeadingFont = {
+  data: ArrayBuffer;
+  weight: 700 | 800;
+};
+
+const headingFontPromiseByOrigin = new Map<string, Promise<LoadedHeadingFont[]>>();
+const WOFF_SIGNATURE = "wOFF";
+const WOFF2_SIGNATURE = "wOF2";
+const OTF_SIGNATURE = "OTTO";
+const TTC_SIGNATURE = "ttcf";
 
 const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null> => {
   try {
@@ -38,23 +55,68 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
   }
 };
 
-const buildHeadingFontUrls = (requestUrl: URL): string[] => [
-  ...LOCAL_HEADLINE_FONT_PATHS.map((path) => new URL(path, requestUrl.origin).toString()),
-  ...LOCAL_SPACE_FONT_PATHS.map((path) => new URL(path, requestUrl.origin).toString()),
-  LEGACY_HEADLINE_FONT_URL,
-];
+const buildHeadingFontUrls = (requestUrl: URL, weight: 700 | 800): string[] => {
+  const local700LatinExt = new URL(LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
+  const local700 = new URL(LOCAL_HEADLINE_FONT_700_WOFF_PATH, requestUrl.origin).toString();
+  const cdn700LatinExt = CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL;
+  const local800 = new URL(LOCAL_HEADLINE_FONT_800_WOFF_PATH, requestUrl.origin).toString();
+  const local800LatinExt = new URL(LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
+  const cdn700 = CDN_HEADLINE_FONT_700_WOFF_URL;
+  const cdn800LatinExt = CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL;
+  const cdn800 = CDN_HEADLINE_FONT_800_WOFF_URL;
 
-const loadHeadingFont = async (requestUrl: URL): Promise<ArrayBuffer | null> => {
+  if (weight === 800) {
+    return [
+      local800LatinExt,
+      local800,
+      cdn800LatinExt,
+      cdn800,
+      local700LatinExt,
+      local700,
+      cdn700LatinExt,
+      cdn700,
+      LEGACY_HEADLINE_FONT_URL,
+    ];
+  }
+
+  return [local700LatinExt, local700, cdn700LatinExt, cdn700, LEGACY_HEADLINE_FONT_URL];
+};
+
+const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
+  if (fontData.byteLength < 4) return false;
+  const bytes = new Uint8Array(fontData, 0, 4);
+  const signature = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+  if (signature === WOFF2_SIGNATURE) return false;
+  if (signature === WOFF_SIGNATURE || signature === OTF_SIGNATURE || signature === TTC_SIGNATURE) {
+    return true;
+  }
+  return bytes[0] === 0x00 && bytes[1] === 0x01 && bytes[2] === 0x00 && bytes[3] === 0x00;
+};
+
+const loadHeadingFontByWeight = async (
+  requestUrl: URL,
+  weight: 700 | 800,
+): Promise<ArrayBuffer | null> => {
+  for (const fontUrl of buildHeadingFontUrls(requestUrl, weight)) {
+    const fontData = await fetchFontArrayBuffer(fontUrl);
+    if (fontData && isSupportedOgFont(fontData)) return fontData;
+  }
+  return null;
+};
+
+const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> => {
   const cacheKey = requestUrl.origin;
   let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
 
   if (!fontPromise) {
     fontPromise = (async () => {
-      for (const fontUrl of buildHeadingFontUrls(requestUrl)) {
-        const fontData = await fetchFontArrayBuffer(fontUrl);
-        if (fontData) return fontData;
-      }
-      return null;
+      const font700 = await loadHeadingFontByWeight(requestUrl, 700);
+      const font800 = await loadHeadingFontByWeight(requestUrl, 800);
+
+      const fonts: LoadedHeadingFont[] = [];
+      if (font700) fonts.push({ data: font700, weight: 700 });
+      if (font800) fonts.push({ data: font800, weight: 800 });
+      return fonts;
     })();
     headingFontPromiseByOrigin.set(cacheKey, fontPromise);
   }
@@ -246,7 +308,7 @@ const TOPO_CONTOUR_OVERLAY_URI = svgToDataUri(
 export default async (request: Request): Promise<Response> => {
   try {
     const url = new URL(request.url);
-    const headingFontData = await loadHeadingFont(url);
+    const headingFonts = await loadHeadingFonts(url);
 
     const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
@@ -482,16 +544,14 @@ export default async (request: Request): Promise<Response> => {
         headers: {
           "Cache-Control": "public, max-age=0, s-maxage=43200, stale-while-revalidate=604800",
         },
-        ...(headingFontData
+        ...(headingFonts.length
           ? {
-              fonts: [
-                {
+              fonts: headingFonts.map((font) => ({
                   name: HEADLINE_FONT_FAMILY,
-                  data: headingFontData,
+                  data: font.data,
                   style: "normal",
-                  weight: 700,
-                },
-              ],
+                  weight: font.weight,
+                })),
             }
           : {}),
       },
