@@ -33,5 +33,6 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Improved] 🧪 Added a bottom info banner on the default create-trip form with direct links to Classic Legacy, Classic Card, Split Workspace, and Journey Architect lab routes for quick regression testing.
 - [x] [Improved] 💾 Added URL-backed create-trip draft persistence (via `prefill`) so form state survives hard reloads and remains shareable, while canonical metadata stays path-based.
 - [x] [Fixed] ⏱️ Raised create-trip AI edge timeout floor to prevent 5-second provider timeouts from aborting generation before trips can be created.
+- [x] [Improved] 🚀 Restored legacy-style generation transition on Classic Card: clicking create now opens the trip route immediately with the same trip ID and a loading itinerary shell that hydrates in place when AI generation completes.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
 - [ ] [Internal] 📄 Added prompt-mapping and DB-tracking strategy docs to define no-effect fields, effective defaults, and phased post-auth telemetry design.

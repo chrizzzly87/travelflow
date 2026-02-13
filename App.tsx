@@ -1213,6 +1213,37 @@ const AppContent: React.FC = () => {
 
     const handleTripGenerated = (newTrip: ITrip) => {
         const create = async () => {
+            const existingTrip = getTripById(newTrip.id);
+            if (existingTrip) {
+                const now = Date.now();
+                const updatedTrip: ITrip = {
+                    ...existingTrip,
+                    ...newTrip,
+                    createdAt: typeof existingTrip.createdAt === 'number'
+                        ? existingTrip.createdAt
+                        : (typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now),
+                    updatedAt: now,
+                    isFavorite: existingTrip.isFavorite ?? newTrip.isFavorite ?? false,
+                    status: newTrip.status || existingTrip.status || 'active',
+                    tripExpiresAt: newTrip.tripExpiresAt || existingTrip.tripExpiresAt || buildTripExpiryIso(now),
+                    sourceKind: newTrip.sourceKind || existingTrip.sourceKind || 'created',
+                };
+
+                setTrip(updatedTrip);
+                saveTrip(updatedTrip);
+                const commitTs = Date.now();
+                createLocalHistoryEntry(navigate, updatedTrip, undefined, 'Data: Updated generated trip', { replace: true }, commitTs);
+
+                if (DB_ENABLED) {
+                    const sessionId = await ensureDbSession();
+                    if (!sessionId) return;
+                    const upserted = await dbUpsertTrip(updatedTrip, undefined);
+                    const versionId = await dbCreateTripVersion(updatedTrip, undefined, 'Data: Updated generated trip');
+                    if (!upserted || !versionId) return;
+                }
+                return;
+            }
+
             if (DB_ENABLED) {
                 const limit = await dbCanCreateTrip();
                 if (!limit.allowCreate) {

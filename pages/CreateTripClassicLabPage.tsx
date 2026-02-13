@@ -60,6 +60,7 @@ import {
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getDestinationSeasonCountryName,
+    generateTripId,
     resolveDestinationName,
     searchDestinationOptions,
 } from '../utils';
@@ -169,6 +170,51 @@ const formatDestinationList = (destinations: string[]): string => {
     if (destinations.length === 1) return destinations[0];
     if (destinations.length === 2) return `${destinations[0]} & ${destinations[1]}`;
     return `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
+};
+
+const buildLoadingTripPreview = (params: {
+    tripId: string;
+    destinationLabel: string;
+    startDate: string;
+    totalDays: number;
+    requestedStops: number;
+    roundTrip: boolean;
+}): ITrip => {
+    const now = Date.now();
+    const totalDays = Math.max(1, Math.round(params.totalDays));
+    const stops = Math.max(1, Math.min(params.requestedStops, totalDays));
+    const baseDuration = Math.floor(totalDays / stops);
+    const remainder = totalDays % stops;
+
+    let offset = 0;
+    const items = Array.from({ length: stops }).map((_, index) => {
+        const cityDuration = baseDuration + (index < remainder ? 1 : 0);
+        const item = {
+            id: `loading-city-${index}-${now}`,
+            type: 'city' as const,
+            title: `Loading stop ${index + 1}`,
+            startDateOffset: offset,
+            duration: cityDuration,
+            color: 'bg-slate-100 border-slate-200 text-slate-400',
+            description: 'AI is generating this part of your itinerary.',
+            location: params.destinationLabel,
+            loading: true,
+        };
+        offset += cityDuration;
+        return item;
+    });
+
+    return {
+        id: params.tripId,
+        title: `Planning ${params.destinationLabel || 'Trip'}...`,
+        startDate: params.startDate,
+        items,
+        createdAt: now,
+        updatedAt: now,
+        isFavorite: false,
+        roundTrip: params.roundTrip,
+        sourceKind: 'created',
+    };
 };
 
 const getInitialDateRange = (): { startDate: string; endDate: string } => {
@@ -1250,10 +1296,22 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             round_trip: roundTrip,
         });
 
+        const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
+        const destinationLabel = formatDestinationList(orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination)));
+        const optimisticTripId = generateTripId();
+        const optimisticTrip = buildLoadingTripPreview({
+            tripId: optimisticTripId,
+            destinationLabel,
+            startDate,
+            totalDays: dayCount,
+            requestedStops: Math.max(orderedDestinations.length, 2),
+            roundTrip,
+        });
+        const optimisticCreatedAt = optimisticTrip.createdAt;
+        onTripGenerated(optimisticTrip);
+
         try {
-            const destinationPrompt = orderedDestinations
-                .map((destination) => getDestinationPromptLabel(destination))
-                .join(', ');
+            const destinationPrompt = destinationPromptLabels.join(', ');
             const notesInterests = notes
                 .split(',')
                 .map((token) => token.trim())
@@ -1267,9 +1325,34 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 totalDays: dayCount,
             });
 
-            onTripGenerated(generatedTrip);
+            onTripGenerated({
+                ...generatedTrip,
+                id: optimisticTripId,
+                createdAt: optimisticCreatedAt,
+                updatedAt: Date.now(),
+                roundTrip: generatedTrip.roundTrip ?? roundTrip,
+                sourceKind: generatedTrip.sourceKind || 'created',
+            });
         } catch (error) {
-            showSubmitError(getErrorMessage(error, t('errors.genericGenerate')));
+            const message = getErrorMessage(error, t('errors.genericGenerate'));
+            const errorTitle = t('errors.genericGenerate');
+            onTripGenerated({
+                ...optimisticTrip,
+                title: errorTitle,
+                updatedAt: Date.now(),
+                items: [
+                    {
+                        id: `loading-error-${optimisticTripId}`,
+                        type: 'city',
+                        title: errorTitle,
+                        startDateOffset: 0,
+                        duration: Math.max(1, dayCount),
+                        color: 'bg-rose-100 border-rose-300 text-rose-700',
+                        description: message,
+                        location: destinationLabel,
+                    },
+                ],
+            });
         } finally {
             setIsSubmitting(false);
         }
