@@ -12,42 +12,7 @@
   },
   "examples": {
     "title": "Trips built with TravelFlow",
-    "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips.",
-    "moreInspirationsCta": "Discover more inspirations",
-    "cards": {
-      "labels": {
-        "days": "{count} days",
-        "cities": "{count} cities",
-        "roundTrip": "Round-trip",
-        "routeMapAlt": "Route map for {title}",
-        "routeLegTitle": "Route leg: {days} days"
-      },
-      "titles": {
-        "portugal-coast": "Atlantic Coast Road Trip",
-        "italy-classic": "Italian Grand Tour",
-        "thailand-islands": "Temples & Beaches",
-        "japan-spring": "Cherry Blossom Trail",
-        "peru-adventure": "Andes & Amazon Explorer",
-        "new-zealand-wild": "South Island Wilderness",
-        "morocco-medina": "Medinas & Sahara Nights",
-        "iceland-ring": "Ring Road Circuit"
-      },
-      "tags": {
-        "surf": "Surf",
-        "culture": "Culture",
-        "wine": "Wine",
-        "food": "Food",
-        "art": "Art",
-        "history": "History",
-        "beach": "Beach",
-        "adventure": "Adventure",
-        "nature": "Nature",
-        "hiking": "Hiking",
-        "road_trip": "Road Trip",
-        "desert": "Desert",
-        "photography": "Photography"
-      }
-    }
+    "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips."
   },
   "featureShowcase": {
     "title": "Everything you need to plan, share, and go",

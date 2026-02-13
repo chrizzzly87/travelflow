@@ -14,6 +14,6 @@ summary: "Added full Polish localization across marketing/app namespaces, aligne
 - [x] [New feature] 🇵🇱 Added Polish (`pl`) as a fully supported app and marketing language with translated copy across all active namespaces.
 - [x] [Improved] 🧭 Updated language selectors so Polish appears as the final option in dropdown order across header/mobile/settings UI.
 - [x] [Improved] 🔤 Ensured Polish diacritics render correctly by loading Latin Extended font subsets for app and OG image generation paths.
-- [x] [Improved] 🌍 Localized the home example carousel CTA and card content (titles, tags, labels, and destination names), including Polish marketing copy.
+- [x] [Improved] 🌍 Localized the home example carousel CTA and card content (titles, tags, day/city labels, and destination names) with dedicated example-card locale maps.
 - [ ] [Internal] 🗂️ Added an extendible locale-index in `countryTravelData.json` for translated country and island destination names keyed by destination code.
 - [ ] [Internal] 🗺️ Extended locale-aware sitemap, blog validation, and edge metadata locale lists to include Polish routing and SEO coverage.

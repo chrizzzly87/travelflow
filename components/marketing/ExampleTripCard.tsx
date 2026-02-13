@@ -1,7 +1,13 @@
 import React from 'react';
 import { Clock, MapPin, Repeat } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import type { ExampleTripCard as ExampleTripCardType } from '../../data/exampleTripCards';
+import {
+    formatExampleTripCountLabel,
+    formatExampleTripUiText,
+    getExampleTripUiCopy,
+    getLocalizedExampleTripCard,
+    type ExampleTripCard as ExampleTripCardType,
+} from '../../data/exampleTripCards';
 import type { ExampleTemplateMiniCalendar } from '../../data/exampleTripTemplates';
 import { getDestinationDisplayName } from '../../utils';
 import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
@@ -51,22 +57,14 @@ const buildLaneOutlineColor = (color: string): string => {
     return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`;
 };
 
-const normalizeTagTranslationKey = (value: string): string =>
-    value
-        .trim()
-        .toLocaleLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '');
-
 export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     card,
     mapPreviewUrl,
     miniCalendar = null,
     enableSharedTransition = false,
 }) => {
-    const { t, i18n } = useTranslation('home');
+    const { i18n } = useTranslation();
     const currentLocale = i18n.resolvedLanguage || i18n.language;
-    const localizedTitle = t(`examples.cards.titles.${card.id}`, { defaultValue: card.title });
     const staticFallbackSrc = card.mapImagePath
         ? `${card.mapImagePath}?v=palette-20260210d`
         : null;
@@ -76,6 +74,13 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(enableSharedTransition);
     const cityLanes = miniCalendar?.cityLanes || [];
     const routeLanes = miniCalendar?.routeLanes || [];
+    const uiCopy = getExampleTripUiCopy(currentLocale);
+    const localizedCard = getLocalizedExampleTripCard(
+        card,
+        currentLocale,
+        cityLanes.map((lane) => lane.title)
+    );
+    const localizedTitle = localizedCard.title;
 
     React.useEffect(() => {
         setMapImageSrc(mapPreviewUrl || staticFallbackSrc);
@@ -124,10 +129,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 {mapImageSrc ? (
                     <ProgressiveImage
                         src={mapImageSrc}
-                        alt={t('examples.cards.labels.routeMapAlt', {
-                            title: localizedTitle,
-                            defaultValue: `Route map for ${localizedTitle}`,
-                        })}
+                        alt={formatExampleTripUiText(uiCopy.routeMapAlt, { title: localizedTitle })}
                         width={680}
                         height={288}
                         sizes="(min-width: 768px) 340px, 300px"
@@ -179,33 +181,27 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
                     <span className="inline-flex items-center gap-1">
                         <Clock size={14} weight="duotone" className="text-accent-500" />
-                        {t('examples.cards.labels.days', {
-                            count: card.durationDays,
-                            defaultValue: `${card.durationDays} days`,
-                        })}
+                        {formatExampleTripCountLabel(currentLocale, uiCopy.days, card.durationDays)}
                     </span>
                     <span className="inline-flex items-center gap-1">
                         <MapPin size={14} weight="duotone" className="text-accent-500" />
-                        {t('examples.cards.labels.cities', {
-                            count: card.cityCount,
-                            defaultValue: `${card.cityCount} cities`,
-                        })}
+                        {formatExampleTripCountLabel(currentLocale, uiCopy.cities, card.cityCount)}
                     </span>
                     {card.isRoundTrip ? (
                         <span className="inline-flex items-center gap-1">
                             <Repeat size={14} weight="duotone" className="text-accent-500" />
-                            {t('examples.cards.labels.roundTrip', { defaultValue: 'Round-trip' })}
+                            {uiCopy.roundTrip}
                         </span>
                     ) : null}
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                    {card.tags.map((tag) => (
+                    {localizedCard.tags.map((tag) => (
                         <span
                             key={tag}
                             className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
                         >
-                            {t(`examples.cards.tags.${normalizeTagTranslationKey(tag)}`, { defaultValue: tag })}
+                            {tag}
                         </span>
                     ))}
                 </div>
@@ -221,7 +217,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                 <React.Fragment key={cityLane.id}>
                                     <span
                                         className="example-city-lane-hitbox block cursor-pointer"
-                                        data-tooltip={cityLane.title}
+                                        data-tooltip={localizedCard.cities[index] || cityLane.title}
                                         style={{
                                             flexGrow: cityLane.nights,
                                             flexBasis: 0,
@@ -239,9 +235,8 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                                     {routeLane && (
                                         <span
                                             className="block h-[3px] self-center rounded-[1px]"
-                                            title={t('examples.cards.labels.routeLegTitle', {
+                                            title={formatExampleTripUiText(uiCopy.routeLegTitle, {
                                                 days: routeLane.durationDays.toFixed(2),
-                                                defaultValue: `Route leg: ${routeLane.durationDays.toFixed(2)} days`,
                                             })}
                                             style={{
                                                 flexGrow: routeLane.durationDays,

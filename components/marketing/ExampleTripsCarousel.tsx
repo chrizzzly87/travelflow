@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ITrip, IViewSettings } from '../../types';
-import { exampleTripCards } from '../../data/exampleTripCards';
+import { exampleTripCards, getExampleTripUiCopy } from '../../data/exampleTripCards';
 import { getExampleTemplateMiniCalendar, TRIP_FACTORIES } from '../../data/exampleTripTemplates';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { ExampleTripCard } from './ExampleTripCard';
@@ -48,7 +48,8 @@ const normalizeLoopOffset = (offset: number, loopWidth: number): number => {
 
 export const ExampleTripsCarousel: React.FC = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation('home');
+    const { t, i18n } = useTranslation('home');
+    const uiCopy = getExampleTripUiCopy(i18n.resolvedLanguage || i18n.language);
     const tripViewPrefetchRef = useRef<Promise<unknown> | null>(null);
     const [isMobileViewport, setIsMobileViewport] = useState(() => (
         typeof window !== 'undefined' ? window.matchMedia(MOBILE_QUERY).matches : false
@@ -565,7 +566,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                     className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
-                    {t('examples.moreInspirationsCta', { defaultValue: 'Discover more inspirations' })}
+                    {uiCopy.moreInspirationsCta}
                     <ArrowRight size={14} weight="bold" />
                 </Link>
             </div>
