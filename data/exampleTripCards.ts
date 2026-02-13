@@ -380,6 +380,40 @@ const CARD_LOCALIZATIONS: Record<string, Partial<Record<AppLanguage, ExampleTrip
       cities: ['Bangkok', 'Chiang Mai', 'Pai', 'Phuket', 'Ko Phi Phi', 'Krabi (Ao Nang)', 'Bangkok'],
     },
   },
+  'southeast-asia-backpacking': {
+    en: {
+      title: 'Backpacking South East Asia',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Ho Chi Minh City', 'Hoi An', 'Hanoi', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+    es: {
+      title: 'Mochileo por el Sudeste Asiático',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Ciudad Ho Chi Minh', 'Hoi An', 'Hanói', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+    de: {
+      title: 'Backpacking in Südostasien',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Ho-Chi-Minh-Stadt', 'Hoi An', 'Hanoi', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+    fr: {
+      title: 'Backpack en Asie du Sud-Est',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Hô Chi Minh-Ville', 'Hoi An', 'Hanoï', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+    it: {
+      title: 'Backpacking nel Sud-est asiatico',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Città di Ho Chi Minh', 'Hoi An', 'Hanoi', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+    pt: {
+      title: 'Mochilão pelo Sudeste Asiático',
+      cities: ['Banguecoque', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Cidade de Ho Chi Minh', 'Hoi An', 'Hanói', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Banguecoque'],
+    },
+    ru: {
+      title: 'Бэкпэкинг по Юго-Восточной Азии',
+      cities: ['Бангкок', 'Сиемреап', 'Пномпень', 'Кампот', 'Хошимин', 'Хойан', 'Ханой', 'Ниньбинь', 'Сапа', 'Вангвьенг', 'Луангпхабанг', 'Чиангмай', 'Бангкок'],
+    },
+    pl: {
+      title: 'Backpacking po Azji Południowo-Wschodniej',
+      cities: ['Bangkok', 'Siem Reap', 'Phnom Penh', 'Kampot', 'Ho Chi Minh', 'Hoi An', 'Hanoi', 'Ninh Binh', 'Sapa', 'Vang Vieng', 'Luang Prabang', 'Chiang Mai', 'Bangkok'],
+    },
+  },
   'japan-spring': {
     es: {
       title: 'Ruta de los cerezos en flor',
@@ -642,6 +676,27 @@ export const exampleTripCards: ExampleTripCard[] = [
     templateId: 'thailand-islands',
     isRoundTrip: true,
     localized: CARD_LOCALIZATIONS['thailand-islands'],
+  },
+  {
+    id: 'southeast-asia-backpacking',
+    title: 'Backpacking South East Asia',
+    countries: [
+      { name: 'Thailand', flag: '🇹🇭' },
+      { name: 'Cambodia', flag: '🇰🇭' },
+      { name: 'Vietnam', flag: '🇻🇳' },
+      { name: 'Laos', flag: '🇱🇦' },
+    ],
+    durationDays: 37,
+    cityCount: 13,
+    mapColor: 'bg-indigo-100',
+    mapAccent: 'bg-indigo-400',
+    username: 'hostel_hopper',
+    avatarColor: 'bg-indigo-600',
+    tags: ['Culture', 'Food', 'Adventure'],
+    mapImagePath: '/images/trip-maps/southeast-asia-backpacking.png',
+    templateId: 'southeast-asia-backpacking',
+    isRoundTrip: true,
+    localized: CARD_LOCALIZATIONS['southeast-asia-backpacking'],
   },
   {
     id: 'japan-spring',
