@@ -186,6 +186,12 @@ export const buildLocalizedMarketingPath = <K extends RouteKey>(
     return path === '/' ? `/${locale}` : `/${locale}${path}`;
 };
 
+export const buildLocalizedCreateTripPath = (locale: AppLanguage): string => {
+    const path = buildPath('createTrip');
+    if (locale === DEFAULT_LOCALE) return path;
+    return `/${locale}${path}`;
+};
+
 export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length === 0) return null;

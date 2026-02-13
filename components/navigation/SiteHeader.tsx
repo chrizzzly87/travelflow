@@ -6,7 +6,7 @@ import { MobileMenu } from './MobileMenu';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -147,7 +147,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             )
                         ) : (
                             <NavLink
-                                to={buildPath('createTrip')}
+                                to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...navDebugAttributes('create_trip')}

@@ -1674,15 +1674,15 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 </main>
 
                 <div
-                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-3 pt-3.5 text-slate-100 backdrop-blur lg:hidden"
+                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden"
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
-                        <div className="flex items-center gap-3">
-                            <div className="min-w-0 flex-1">
+                        <div className="flex items-start gap-3.5">
+                            <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
-                                <div className="truncate text-[15px] font-semibold leading-tight text-white">{routeHeadline}</div>
-                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                <div className="truncate text-[16px] font-semibold leading-snug text-white">{routeHeadline}</div>
+                                <div className="flex flex-wrap items-center gap-2">
                                     <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
                                         {mobileDateRangeLabel}
                                     </span>
@@ -1695,7 +1695,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 type="button"
                                 onClick={handleGenerateTrip}
                                 disabled={isSubmitting || !destinationComplete}
-                                className="rounded-xl bg-white px-3.5 py-2 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,
@@ -1708,13 +1708,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         <button
                             type="button"
                             onClick={() => setMobileSnapshotExpanded((previous) => !previous)}
-                            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-100/95"
+                            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-100/95"
                         >
                             {mobileSnapshotExpanded ? <CaretDown size={12} /> : <CaretUp size={12} />}
                             {mobileSnapshotExpanded ? t('mobileSnapshot.hideDetails') : t('mobileSnapshot.showDetails')}
                         </button>
                         {mobileSnapshotExpanded && (
-                            <div className="mt-2 grid grid-cols-2 gap-2 rounded-xl border border-white/15 bg-white/5 p-3 text-xs text-indigo-100">
+                            <div className="mt-2.5 grid grid-cols-2 gap-3 rounded-xl border border-white/15 bg-white/5 p-3.5 text-xs text-indigo-100">
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.days')}</div>
                                     <div>{dayCount}</div>

@@ -1024,11 +1024,12 @@ const AppContent: React.FC = () => {
     const debugStubRef = useRef<((command?: AppDebugCommand) => unknown) | null>(null);
 
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
+        const localeFromPath = extractLocaleFromPath(location.pathname);
         if (isToolRoute(location.pathname)) {
+            if (localeFromPath) return localeFromPath;
             return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? appLanguage);
         }
 
-        const localeFromPath = extractLocaleFromPath(location.pathname);
         if (localeFromPath) return localeFromPath;
         return DEFAULT_LOCALE;
     }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
@@ -1055,9 +1056,10 @@ const AppContent: React.FC = () => {
 
     useEffect(() => {
         if (!isToolRoute(location.pathname)) return;
-        const currentI18nLanguage = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
-        if (currentI18nLanguage === appLanguage) return;
-        setAppLanguage(currentI18nLanguage);
+        const localeFromPath = extractLocaleFromPath(location.pathname);
+        const resolvedToolLocale = localeFromPath ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
+        if (resolvedToolLocale === appLanguage) return;
+        setAppLanguage(resolvedToolLocale);
     }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     const isInitialLanguageRef = useRef(true);
@@ -1297,6 +1299,19 @@ const AppContent: React.FC = () => {
                         />)
                     } 
                 />
+                {LOCALIZED_MARKETING_LOCALES.map((locale) => (
+                    <Route
+                        key={`tool:${locale}:create-trip`}
+                        path={`/${locale}/create-trip`}
+                        element={
+                            renderWithSuspense(<CreateTripClassicRoute
+                                onTripGenerated={handleTripGenerated}
+                                onOpenManager={() => setIsManagerOpen(true)}
+                                onLanguageLoaded={setAppLanguage}
+                            />)
+                        }
+                    />
+                ))}
                 <Route
                     path="/create-trip/labs/classic-card"
                     element={
