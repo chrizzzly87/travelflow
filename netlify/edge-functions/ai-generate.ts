@@ -19,7 +19,9 @@ const JSON_HEADERS = {
   "Cache-Control": "no-store",
 };
 
-const EDGE_REQUEST_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATE_PROVIDER_TIMEOUT_MS", 35_000, 5_000, 60_000);
+// Keep create-trip interactive generation tolerant enough for real model latency.
+// This clamps overly aggressive env values (for example 5000ms) to a safer floor.
+const EDGE_REQUEST_PROVIDER_TIMEOUT_MS = resolveTimeoutMs("AI_GENERATE_PROVIDER_TIMEOUT_MS", 45_000, 20_000, 120_000);
 
 const json = (status: number, payload: unknown): Response =>
   new Response(JSON.stringify(payload), {

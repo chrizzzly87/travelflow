@@ -192,7 +192,7 @@ export const CreateTripJourneyArchitectLabPage: React.FC<CreateTripJourneyArchit
             </div>
 
             <div className="relative z-10">
-                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
+                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
                 <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8">
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                         <div>

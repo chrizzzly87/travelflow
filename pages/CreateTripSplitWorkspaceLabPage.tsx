@@ -143,7 +143,7 @@ export const CreateTripSplitWorkspaceLabPage: React.FC<CreateTripSplitWorkspaceL
             </div>
 
             <div className="relative z-10">
-                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
+                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
                 <main className="mx-auto flex w-full max-w-[1480px] flex-1 flex-col px-4 pb-12 pt-6 sm:px-6 lg:px-8">
                     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
                         <div>

@@ -25,6 +25,7 @@ export type RouteKey =
     | 'cookies'
     | 'createTrip'
     | 'createTripClassicLab'
+    | 'createTripClassicLegacyLab'
     | 'createTripSplitWorkspaceLab'
     | 'createTripJourneyArchitectLab'
     | 'tripDetail'
@@ -150,6 +151,8 @@ export const buildPath = <K extends RouteKey>(
             return '/create-trip';
         case 'createTripClassicLab':
             return '/create-trip/labs/classic-card';
+        case 'createTripClassicLegacyLab':
+            return '/create-trip/labs/classic-legacy';
         case 'createTripSplitWorkspaceLab':
             return '/create-trip/labs/split-workspace';
         case 'createTripJourneyArchitectLab':
@@ -181,6 +184,12 @@ export const buildLocalizedMarketingPath = <K extends RouteKey>(
         return path;
     }
     return path === '/' ? `/${locale}` : `/${locale}${path}`;
+};
+
+export const buildLocalizedCreateTripPath = (locale: AppLanguage): string => {
+    const path = buildPath('createTrip');
+    if (locale === DEFAULT_LOCALE) return path;
+    return `/${locale}${path}`;
 };
 
 export const extractLocaleFromPath = (pathname: string): AppLanguage | null => {
@@ -240,4 +249,10 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
     if (['/faq', '/login'].includes(stripped)) return ['common', 'wip'];
     return ['common', 'pages'];
+};
+
+export const getNamespacesForToolPath = (pathname: string): string[] => {
+    const stripped = stripLocalePrefix(pathname);
+    if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    return ['common'];
 };

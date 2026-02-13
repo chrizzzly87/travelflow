@@ -5,6 +5,7 @@ import { APP_DEFAULT_DESCRIPTION, APP_NAME, applyAppNameTemplate } from "../../c
 const SITE_NAME = APP_NAME;
 const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
+const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
 const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
@@ -70,6 +71,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
 ];
 
 const TOOL_PATH_PREFIXES = ["/create-trip", "/trip", "/s", "/example", "/admin", "/api"];
+const STRICT_TOOL_HTML_PREFIXES = ["/create-trip", "/admin", "/example"];
 
 const PAGE_META: Record<string, PageDefinition> = {
   "/": {
@@ -189,6 +191,43 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     },
     pl: {
       description: "Planuj podróże sprytniej dzięki osi czasu i mapie, a potem łatwo je udostępniaj.",
+    },
+  },
+  "/create-trip": {
+    es: {
+      title: "Crear viaje",
+      description: "Crea tu itinerario con paradas flexibles, rutas y planificación por línea de tiempo.",
+      pill: "PLANIFICADOR DE VIAJES",
+    },
+    de: {
+      title: "Reise erstellen",
+      description: "Erstelle deine Reiseroute mit flexiblen Stopps, Routen und Planung auf der Timeline.",
+      pill: "REISEPLANER",
+    },
+    fr: {
+      title: "Créer un voyage",
+      description: "Créez votre itinéraire avec des étapes flexibles, des routes et une planification sur la timeline.",
+      pill: "PLANIFICATEUR DE VOYAGE",
+    },
+    it: {
+      title: "Crea viaggio",
+      description: "Crea il tuo itinerario con tappe flessibili, percorsi e pianificazione su timeline.",
+      pill: "PIANIFICATORE VIAGGI",
+    },
+    ru: {
+      title: "Создать поездку",
+      description: "Соберите маршрут с гибкими остановками, продуманными путями и планированием по таймлайну.",
+      pill: "ПЛАНИРОВЩИК ПУТЕШЕСТВИЙ",
+    },
+    pt: {
+      title: "Criar viagem",
+      description: "Crie o seu itinerário com paragens flexíveis, rotas e planeamento em linha do tempo.",
+      pill: "PLANEADOR DE VIAGENS",
+    },
+    pl: {
+      title: "Utwórz podróż",
+      description: "Zbuduj plan podróży z elastycznymi przystankami, trasami i planowaniem na osi czasu.",
+      pill: "PLANER PODRÓŻY",
     },
   },
   "/features": {
@@ -448,6 +487,10 @@ const matchesPrefix = (pathname: string, prefix: string): boolean => {
 
 const isToolBasePath = (pathname: string): boolean => {
   return TOOL_PATH_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+};
+
+const shouldUseStrictToolHtmlCache = (pathname: string): boolean => {
+  return STRICT_TOOL_HTML_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 };
 
 const isLocalizedMarketingBasePath = (pathname: string): boolean => {
@@ -789,7 +832,13 @@ const buildMetadata = (url: URL): Metadata => {
       );
     }
   } else if (pathInfo.localeFromPath && isToolBasePath(pathInfo.basePath)) {
-    canonicalPath = pathInfo.basePath;
+    if (pathInfo.basePath === "/create-trip") {
+      effectiveLocale = pathInfo.localeFromPath;
+      canonicalPath = buildLocalizedPath(pathInfo.basePath, effectiveLocale);
+      alternateLinks = buildAlternateLinks(url.origin, pathInfo.basePath, SUPPORTED_LOCALES.slice());
+    } else {
+      canonicalPath = pathInfo.basePath;
+    }
   }
 
   const page = getPageDefinition(basePathForMeta, effectiveLocale);
@@ -853,7 +902,10 @@ export default async (request: Request, context: { next: () => Promise<Response>
     const rewrittenHtml = injectMetaTags(html, metadata);
     const headers = new Headers(baseResponse.headers);
     headers.set("content-type", "text/html; charset=utf-8");
-    headers.set("cache-control", SITE_CACHE_CONTROL);
+    headers.set(
+      "cache-control",
+      shouldUseStrictToolHtmlCache(url.pathname) ? TOOL_APP_CACHE_CONTROL : SITE_CACHE_CONTROL,
+    );
     headers.delete("content-length");
     headers.delete("etag");
 

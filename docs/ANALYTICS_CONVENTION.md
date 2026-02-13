@@ -131,6 +131,15 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 |-------|--------|---------|------|
 | `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `App.tsx` |
 | `app__trip_history--open` | — | `{ source }` | `TripView.tsx` |
+| `app__chunk_recovery--reload` | — | `{ module_key, reason }` | `services/lazyImportRecovery.ts` |
+
+### Create Trip
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `create_trip__cta--generate` | — | `{ destination_count, date_mode, route_lock, round_trip }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
 
 ## Adding new events
 
