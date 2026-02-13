@@ -21,7 +21,6 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
     const { t } = useTranslation('blog');
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
-    const postLocale = post.language === DEFAULT_LOCALE ? DEFAULT_LOCALE : post.language;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
         month: 'short',
@@ -32,7 +31,7 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
 
     return (
         <Link
-            to={buildLocalizedMarketingPath('blogPost', postLocale, { slug: post.slug })}
+            to={buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })}
             lang={cardLang}
             data-blog-card-lang={cardLang}
             className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}

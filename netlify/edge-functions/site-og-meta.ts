@@ -776,9 +776,10 @@ const buildMetadata = (url: URL): Metadata => {
     );
 
     if (missingLocalizedBlogVariant) {
-      basePathForMeta = "/";
-      canonicalPath = buildLocalizedPath(basePathForMeta, effectiveLocale);
-      alternateLinks = buildAlternateLinks(url.origin, basePathForMeta, SUPPORTED_LOCALES.slice());
+      // Keep locale-specific UI on the current path, but canonicalize
+      // to the source article locale to avoid duplicate-indexing fallback URLs.
+      canonicalPath = buildLocalizedPath(pathInfo.basePath, DEFAULT_LOCALE);
+      alternateLinks = buildAlternateLinks(url.origin, pathInfo.basePath, blogLocales ?? [DEFAULT_LOCALE]);
     } else {
       canonicalPath = buildLocalizedPath(pathInfo.basePath, effectiveLocale);
       alternateLinks = buildAlternateLinks(

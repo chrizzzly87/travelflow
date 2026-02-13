@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-on-page-debug-toolbar
-version: v0.45.0
+version: v0.35.0
 title: "On-page debugger toolbar"
 date: 2026-02-11
 published_at: 2026-02-11T11:29:38Z
