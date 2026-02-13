@@ -1,169 +1,169 @@
 {
   "destination": {
     "title": "Destination",
-    "searchPlaceholder": "Search country or island",
-    "noMatches": "No matching destination",
-    "islandOf": "Island of {country}",
-    "pinAsStart": "Set {destination} as your starting point",
-    "removeDestination": "Remove {destination}",
-    "idealTravelTime": "Ideal travel time",
+    "searchPlaceholder": "Rechercher un pays ou une île",
+    "noMatches": "Aucune destination correspondante",
+    "islandOf": "Île de {country}",
+    "pinAsStart": "Définir {destination} comme point de départ",
+    "removeDestination": "Retirer {destination}",
+    "idealTravelTime": "Période idéale",
     "roundTrip": {
-      "title": "Return to start",
-      "description": "Finish the route where you begin."
+      "title": "Retour au point de départ",
+      "description": "Terminer l'itinéraire là où vous commencez."
     },
     "routeLock": {
-      "title": "Fixed route",
-      "description": "Keep destination order and enable drag-and-drop sorting."
+      "title": "Itinéraire fixe",
+      "description": "Conserver l'ordre des destinations et activer le tri par glisser-déposer."
     }
   },
   "dates": {
     "title": "Dates",
     "mode": {
-      "exact": "Exact dates",
-      "flex": "Flexible window"
+      "exact": "Dates précises",
+      "flex": "Fenêtre flexible"
     },
-    "summary": "Draft timeframe: {days} days total.",
+    "summary": "Période provisoire : {days} jours au total.",
     "labels": {
-      "start": "Start",
-      "end": "End",
-      "selectDate": "Select date",
-      "selectStartDate": "Select start date",
-      "selectEndDate": "Select end date",
-      "previousMonth": "Previous month",
-      "nextMonth": "Next month"
+      "start": "Début",
+      "end": "Fin",
+      "selectDate": "Sélectionner une date",
+      "selectStartDate": "Sélectionner la date de début",
+      "selectEndDate": "Sélectionner la date de fin",
+      "previousMonth": "Mois précédent",
+      "nextMonth": "Mois suivant"
     },
     "flexWindow": {
-      "weeksLabel": "Trip length (weeks)",
-      "rangeLabel": "Preferred time range",
+      "weeksLabel": "Durée du voyage (semaines)",
+      "rangeLabel": "Plage temporelle préférée",
       "options": {
-        "spring": "Spring window",
-        "summer": "Summer window",
-        "autumn": "Autumn window",
-        "winter": "Winter window",
-        "shoulder": "Shoulder season"
+        "spring": "Fenêtre de printemps",
+        "summer": "Fenêtre d'été",
+        "autumn": "Fenêtre d'automne",
+        "winter": "Fenêtre d'hiver",
+        "shoulder": "Inter-saison"
       }
     }
   },
   "traveler": {
-    "title": "Traveler setup",
+    "title": "Configuration des voyageurs",
     "options": {
       "solo": "Solo",
       "couple": "Couple",
-      "friends": "Friends",
-      "family": "Family"
+      "friends": "Amis",
+      "family": "Famille"
     },
     "settings": {
-      "optionalDetails": "Optional details",
-      "helper": "These inputs are optional and only improve how trip suggestions are tailored.",
-      "gender": "Gender (optional)",
-      "notSpecified": "Not specified",
-      "genderFemale": "Female",
-      "genderMale": "Male",
-      "genderNonBinary": "Non-binary",
-      "genderPreferNot": "Prefer not to say",
-      "age": "Age (optional)",
-      "agePlaceholder": "e.g. 31",
-      "comfortMode": "Comfort mode",
+      "optionalDetails": "Détails optionnels",
+      "helper": "Ces champs sont optionnels et servent uniquement à affiner les suggestions de voyage.",
+      "gender": "Genre (optionnel)",
+      "notSpecified": "Non précisé",
+      "genderFemale": "Femme",
+      "genderMale": "Homme",
+      "genderNonBinary": "Non binaire",
+      "genderPreferNot": "Préfère ne pas répondre",
+      "age": "Âge (optionnel)",
+      "agePlaceholder": "ex. 31",
+      "comfortMode": "Mode de confort",
       "comfortOptions": {
         "social": "Social",
-        "balanced": "Balanced",
-        "private": "Private"
+        "balanced": "Équilibré",
+        "private": "Privé"
       },
-      "travelerA": "Traveler A (optional)",
-      "travelerB": "Traveler B (optional)",
-      "occasion": "Occasion (optional)",
+      "travelerA": "Voyageur A (optionnel)",
+      "travelerB": "Voyageur B (optionnel)",
+      "occasion": "Occasion (optionnel)",
       "occasionOptions": {
-        "none": "No special occasion",
-        "honeymoon": "Honeymoon",
-        "anniversary": "Anniversary",
-        "cityBreak": "City break"
+        "none": "Aucune occasion spéciale",
+        "honeymoon": "Lune de miel",
+        "anniversary": "Anniversaire",
+        "cityBreak": "Escapade urbaine"
       },
-      "groupSize": "Group size",
-      "groupEnergy": "Group energy",
+      "groupSize": "Taille du groupe",
+      "groupEnergy": "Dynamique du groupe",
       "energyOptions": {
-        "chill": "Chill",
-        "mixed": "Mixed",
-        "full-send": "Full send"
+        "chill": "Détente",
+        "mixed": "Mixte",
+        "full-send": "À fond"
       },
-      "adults": "Adults",
-      "children": "Children",
-      "babies": "Babies",
-      "summaryHint": "Optional details",
-      "open": "Edit {traveler} settings",
-      "title": "Customize {traveler} preferences",
-      "description": "Add optional details to refine generated suggestions for this traveler setup.",
-      "mobileDescription": "Optional details to improve planning relevance.",
-      "done": "Done"
+      "adults": "Adultes",
+      "children": "Enfants",
+      "babies": "Bébés",
+      "summaryHint": "Détails optionnels",
+      "open": "Modifier les paramètres de {traveler}",
+      "title": "Personnaliser les préférences de {traveler}",
+      "description": "Ajoutez des détails optionnels pour affiner les suggestions générées pour ce type de voyageurs.",
+      "mobileDescription": "Détails optionnels pour améliorer la pertinence de la planification.",
+      "done": "Terminé"
     }
   },
   "style": {
-    "title": "Trip style",
-    "empty": "No style selected",
+    "title": "Style de voyage",
+    "empty": "Aucun style sélectionné",
     "options": {
       "culture": "Culture",
-      "food": "Food",
+      "food": "Gastronomie",
       "nature": "Nature",
-      "beaches": "Beaches",
-      "nightlife": "Nightlife",
-      "remoteWork": "Remote work"
+      "beaches": "Plages",
+      "nightlife": "Vie nocturne",
+      "remoteWork": "Télétravail"
     }
   },
   "transport": {
-    "title": "Transport preferences",
+    "title": "Préférences de transport",
     "options": {
-      "auto": "Automatic",
-      "plane": "Plane",
-      "car": "Car",
+      "auto": "Automatique",
+      "plane": "Avion",
+      "car": "Voiture",
       "train": "Train",
       "bus": "Bus",
-      "cycle": "Cycle",
-      "walk": "Walk",
-      "camper": "Camper"
+      "cycle": "Vélo",
+      "walk": "Marche",
+      "camper": "Camping-car"
     },
-    "camperDisabled": "Camper is visible for preview but currently disabled in this version.",
-    "overrideHint": "Custom transport choices differ from the automatic default shown in generation."
+    "camperDisabled": "Le camping-car est visible en aperçu, mais il est actuellement désactivé dans cette version.",
+    "overrideHint": "Les choix de transport personnalisés diffèrent du réglage automatique utilisé pour la génération."
   },
   "previewOnly": {
-    "title": "Preview-only",
-    "global": "These controls are visible for preview only. Generation currently uses fixed defaults: Solo traveler, style = everything except remote work, transport = Automatic.",
-    "traveler": "Preview only for now: traveler setup is shown, but generation uses the fixed Solo traveler default.",
-    "style": "Preview only for now: style choices are shown, but generation uses the fixed “everything except remote work” default.",
-    "transport": "Preview only for now: transport choices are shown, but generation uses the fixed Automatic default."
+    "title": "Aperçu uniquement",
+    "global": "Ces contrôles sont affichés à titre d'aperçu uniquement. La génération utilise actuellement des valeurs fixes : voyageur solo, style = tout sauf télétravail, transport = Automatique.",
+    "traveler": "Aperçu uniquement pour le moment : la configuration des voyageurs est visible, mais la génération utilise la valeur fixe Voyageur solo.",
+    "style": "Aperçu uniquement pour le moment : les styles sont visibles, mais la génération utilise la valeur fixe « tout sauf télétravail ».",
+    "transport": "Aperçu uniquement pour le moment : les préférences de transport sont visibles, mais la génération utilise la valeur fixe Automatique."
   },
   "notes": {
-    "title": "Special notes",
-    "hint": "Keep it short: mention must-haves like mobility, food focus, or comfort level.",
-    "placeholder": "Optional notes for the planner"
+    "title": "Notes spéciales",
+    "hint": "Restez bref : indiquez les incontournables comme mobilité, priorité cuisine, ou niveau de confort.",
+    "placeholder": "Notes optionnelles pour le planificateur"
   },
   "snapshot": {
-    "title": "Trip snapshot",
+    "title": "Aperçu du voyage",
     "destinations": "Destinations",
-    "emptyDestinations": "Add destinations to preview your route.",
-    "days": "{days} days",
-    "avgPerStop": "Avg {days} per stop",
-    "addDestinations": "Add destinations to calculate averages",
-    "previewOnly": "Preview only",
+    "emptyDestinations": "Ajoutez des destinations pour prévisualiser votre itinéraire.",
+    "days": "{days} jours",
+    "avgPerStop": "Moy. {days} par étape",
+    "addDestinations": "Ajoutez des destinations pour calculer les moyennes",
+    "previewOnly": "Aperçu uniquement",
     "style": "Style",
     "transport": "Transport",
-    "start": "Start",
-    "startEnd": "Start & End"
+    "start": "Début",
+    "startEnd": "Début et fin"
   },
   "mobileSnapshot": {
-    "title": "Trip snapshot",
-    "showDetails": "Show details",
-    "hideDetails": "Hide details",
-    "days": "Days",
-    "traveler": "Traveler",
+    "title": "Aperçu du voyage",
+    "showDetails": "Afficher les détails",
+    "hideDetails": "Masquer les détails",
+    "days": "Jours",
+    "traveler": "Voyageur",
     "style": "Style",
     "transport": "Transport"
   },
   "cta": {
-    "label": "Create my trip",
-    "loading": "Creating..."
+    "label": "Créer mon voyage",
+    "loading": "Création..."
   },
   "errors": {
-    "destinationRequired": "Add at least one destination before creating your trip.",
-    "genericGenerate": "Trip generation failed. Please try again."
+    "destinationRequired": "Ajoutez au moins une destination avant de créer votre voyage.",
+    "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer."
   },
-  "prefillBadge": "Pre-filled from: {{label}}"
+  "prefillBadge": "Prérempli depuis : {{label}}"
 }

@@ -26,5 +26,6 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Improved] 🌍 Added localized create-trip route support (`/:locale/create-trip`) and locale-aware switching for planner entry links while keeping trip/share URLs unchanged.
 - [x] [Improved] 🏷️ Added localized OG/meta output for localized create-trip URLs so shared planner links use language-matching title/description.
 - [x] [Improved] 📱 Increased vertical spacing and readability in the mobile trip snapshot footer (headline, pills, and expanded details).
+- [x] [Fixed] 🌐 Completed create-trip namespace localization coverage for all supported locales (`en,de,es,fr,it,pt,ru,pl`), including a new Polish locale file and fully translated French planner strings.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
 - [ ] [Internal] 📄 Added prompt-mapping and DB-tracking strategy docs to define no-effect fields, effective defaults, and phased post-auth telemetry design.

@@ -1,169 +1,169 @@
 {
   "destination": {
-    "title": "Destination",
-    "searchPlaceholder": "Search country or island",
-    "noMatches": "No matching destination",
-    "islandOf": "Island of {country}",
-    "pinAsStart": "Set {destination} as your starting point",
-    "removeDestination": "Remove {destination}",
-    "idealTravelTime": "Ideal travel time",
+    "title": "Направление",
+    "searchPlaceholder": "Найти страну или остров",
+    "noMatches": "Подходящих направлений не найдено",
+    "islandOf": "Остров {country}",
+    "pinAsStart": "Сделать {destination} точкой старта",
+    "removeDestination": "Удалить {destination}",
+    "idealTravelTime": "Лучшее время для поездки",
     "roundTrip": {
-      "title": "Return to start",
-      "description": "Finish the route where you begin."
+      "title": "Возврат к точке старта",
+      "description": "Завершите маршрут там, где начали."
     },
     "routeLock": {
-      "title": "Fixed route",
-      "description": "Keep destination order and enable drag-and-drop sorting."
+      "title": "Фиксированный маршрут",
+      "description": "Сохраняет порядок направлений и включает сортировку перетаскиванием."
     }
   },
   "dates": {
-    "title": "Dates",
+    "title": "Даты",
     "mode": {
-      "exact": "Exact dates",
-      "flex": "Flexible window"
+      "exact": "Точные даты",
+      "flex": "Гибкое окно"
     },
-    "summary": "Draft timeframe: {days} days total.",
+    "summary": "Черновой период: всего {days} дней.",
     "labels": {
-      "start": "Start",
-      "end": "End",
-      "selectDate": "Select date",
-      "selectStartDate": "Select start date",
-      "selectEndDate": "Select end date",
-      "previousMonth": "Previous month",
-      "nextMonth": "Next month"
+      "start": "Начало",
+      "end": "Конец",
+      "selectDate": "Выбрать дату",
+      "selectStartDate": "Выбрать дату начала",
+      "selectEndDate": "Выбрать дату окончания",
+      "previousMonth": "Предыдущий месяц",
+      "nextMonth": "Следующий месяц"
     },
     "flexWindow": {
-      "weeksLabel": "Trip length (weeks)",
-      "rangeLabel": "Preferred time range",
+      "weeksLabel": "Длительность поездки (недели)",
+      "rangeLabel": "Предпочтительный период",
       "options": {
-        "spring": "Spring window",
-        "summer": "Summer window",
-        "autumn": "Autumn window",
-        "winter": "Winter window",
-        "shoulder": "Shoulder season"
+        "spring": "Весеннее окно",
+        "summer": "Летнее окно",
+        "autumn": "Осеннее окно",
+        "winter": "Зимнее окно",
+        "shoulder": "Межсезонье"
       }
     }
   },
   "traveler": {
-    "title": "Traveler setup",
+    "title": "Состав путешественников",
     "options": {
-      "solo": "Solo",
-      "couple": "Couple",
-      "friends": "Friends",
-      "family": "Family"
+      "solo": "Соло",
+      "couple": "Пара",
+      "friends": "Друзья",
+      "family": "Семья"
     },
     "settings": {
-      "optionalDetails": "Optional details",
-      "helper": "These inputs are optional and only improve how trip suggestions are tailored.",
-      "gender": "Gender (optional)",
-      "notSpecified": "Not specified",
-      "genderFemale": "Female",
-      "genderMale": "Male",
-      "genderNonBinary": "Non-binary",
-      "genderPreferNot": "Prefer not to say",
-      "age": "Age (optional)",
-      "agePlaceholder": "e.g. 31",
-      "comfortMode": "Comfort mode",
+      "optionalDetails": "Необязательные детали",
+      "helper": "Эти поля необязательны и только улучшают персонализацию предложений поездки.",
+      "gender": "Пол (необязательно)",
+      "notSpecified": "Не указано",
+      "genderFemale": "Женский",
+      "genderMale": "Мужской",
+      "genderNonBinary": "Небинарный",
+      "genderPreferNot": "Предпочитаю не указывать",
+      "age": "Возраст (необязательно)",
+      "agePlaceholder": "например, 31",
+      "comfortMode": "Режим комфорта",
       "comfortOptions": {
-        "social": "Social",
-        "balanced": "Balanced",
-        "private": "Private"
+        "social": "Общительный",
+        "balanced": "Сбалансированный",
+        "private": "Приватный"
       },
-      "travelerA": "Traveler A (optional)",
-      "travelerB": "Traveler B (optional)",
-      "occasion": "Occasion (optional)",
+      "travelerA": "Путешественник A (необязательно)",
+      "travelerB": "Путешественник B (необязательно)",
+      "occasion": "Повод (необязательно)",
       "occasionOptions": {
-        "none": "No special occasion",
-        "honeymoon": "Honeymoon",
-        "anniversary": "Anniversary",
-        "cityBreak": "City break"
+        "none": "Без особого повода",
+        "honeymoon": "Медовый месяц",
+        "anniversary": "Годовщина",
+        "cityBreak": "Поездка в город"
       },
-      "groupSize": "Group size",
-      "groupEnergy": "Group energy",
+      "groupSize": "Размер группы",
+      "groupEnergy": "Энергия группы",
       "energyOptions": {
-        "chill": "Chill",
-        "mixed": "Mixed",
-        "full-send": "Full send"
+        "chill": "Спокойно",
+        "mixed": "Смешанно",
+        "full-send": "На максимум"
       },
-      "adults": "Adults",
-      "children": "Children",
-      "babies": "Babies",
-      "summaryHint": "Optional details",
-      "open": "Edit {traveler} settings",
-      "title": "Customize {traveler} preferences",
-      "description": "Add optional details to refine generated suggestions for this traveler setup.",
-      "mobileDescription": "Optional details to improve planning relevance.",
-      "done": "Done"
+      "adults": "Взрослые",
+      "children": "Дети",
+      "babies": "Младенцы",
+      "summaryHint": "Необязательные детали",
+      "open": "Изменить настройки: {traveler}",
+      "title": "Настроить предпочтения: {traveler}",
+      "description": "Добавьте необязательные детали, чтобы уточнить рекомендации для этого состава путешественников.",
+      "mobileDescription": "Необязательные детали для более релевантного планирования.",
+      "done": "Готово"
     }
   },
   "style": {
-    "title": "Trip style",
-    "empty": "No style selected",
+    "title": "Стиль поездки",
+    "empty": "Стиль не выбран",
     "options": {
-      "culture": "Culture",
-      "food": "Food",
-      "nature": "Nature",
-      "beaches": "Beaches",
-      "nightlife": "Nightlife",
-      "remoteWork": "Remote work"
+      "culture": "Культура",
+      "food": "Еда",
+      "nature": "Природа",
+      "beaches": "Пляжи",
+      "nightlife": "Ночная жизнь",
+      "remoteWork": "Удаленная работа"
     }
   },
   "transport": {
-    "title": "Transport preferences",
+    "title": "Предпочтения транспорта",
     "options": {
-      "auto": "Automatic",
-      "plane": "Plane",
-      "car": "Car",
-      "train": "Train",
-      "bus": "Bus",
-      "cycle": "Cycle",
-      "walk": "Walk",
-      "camper": "Camper"
+      "auto": "Автоматически",
+      "plane": "Самолет",
+      "car": "Авто",
+      "train": "Поезд",
+      "bus": "Автобус",
+      "cycle": "Велосипед",
+      "walk": "Пешком",
+      "camper": "Кемпер"
     },
-    "camperDisabled": "Camper is visible for preview but currently disabled in this version.",
-    "overrideHint": "Custom transport choices differ from the automatic default shown in generation."
+    "camperDisabled": "Кемпер отображается для предпросмотра, но сейчас отключен в этой версии.",
+    "overrideHint": "Пользовательский выбор транспорта отличается от автоматического значения по умолчанию в генерации."
   },
   "previewOnly": {
-    "title": "Preview-only",
-    "global": "These controls are visible for preview only. Generation currently uses fixed defaults: Solo traveler, style = everything except remote work, transport = Automatic.",
-    "traveler": "Preview only for now: traveler setup is shown, but generation uses the fixed Solo traveler default.",
-    "style": "Preview only for now: style choices are shown, but generation uses the fixed “everything except remote work” default.",
-    "transport": "Preview only for now: transport choices are shown, but generation uses the fixed Automatic default."
+    "title": "Только предпросмотр",
+    "global": "Эти элементы отображаются только для предпросмотра. Генерация сейчас использует фиксированные значения: путешественник соло, стиль = всё кроме удаленной работы, транспорт = Автоматически.",
+    "traveler": "Пока только предпросмотр: выбор состава путешественников виден, но генерация использует фиксированное значение Соло.",
+    "style": "Пока только предпросмотр: выбор стиля виден, но генерация использует фиксированное значение «всё кроме удаленной работы».",
+    "transport": "Пока только предпросмотр: выбор транспорта виден, но генерация использует фиксированное значение Автоматически."
   },
   "notes": {
-    "title": "Special notes",
-    "hint": "Keep it short: mention must-haves like mobility, food focus, or comfort level.",
-    "placeholder": "Optional notes for the planner"
+    "title": "Особые заметки",
+    "hint": "Кратко: укажите важные требования, например мобильность, фокус на еде или уровень комфорта.",
+    "placeholder": "Необязательные заметки для планировщика"
   },
   "snapshot": {
-    "title": "Trip snapshot",
-    "destinations": "Destinations",
-    "emptyDestinations": "Add destinations to preview your route.",
-    "days": "{days} days",
-    "avgPerStop": "Avg {days} per stop",
-    "addDestinations": "Add destinations to calculate averages",
-    "previewOnly": "Preview only",
-    "style": "Style",
-    "transport": "Transport",
-    "start": "Start",
-    "startEnd": "Start & End"
+    "title": "Снимок поездки",
+    "destinations": "Направления",
+    "emptyDestinations": "Добавьте направления, чтобы увидеть предварительный маршрут.",
+    "days": "{days} дней",
+    "avgPerStop": "В среднем {days} на остановку",
+    "addDestinations": "Добавьте направления, чтобы рассчитать средние значения",
+    "previewOnly": "Только предпросмотр",
+    "style": "Стиль",
+    "transport": "Транспорт",
+    "start": "Начало",
+    "startEnd": "Начало и конец"
   },
   "mobileSnapshot": {
-    "title": "Trip snapshot",
-    "showDetails": "Show details",
-    "hideDetails": "Hide details",
-    "days": "Days",
-    "traveler": "Traveler",
-    "style": "Style",
-    "transport": "Transport"
+    "title": "Снимок поездки",
+    "showDetails": "Показать детали",
+    "hideDetails": "Скрыть детали",
+    "days": "Дни",
+    "traveler": "Путешественник",
+    "style": "Стиль",
+    "transport": "Транспорт"
   },
   "cta": {
-    "label": "Create my trip",
-    "loading": "Creating..."
+    "label": "Создать мою поездку",
+    "loading": "Создание..."
   },
   "errors": {
-    "destinationRequired": "Add at least one destination before creating your trip.",
-    "genericGenerate": "Trip generation failed. Please try again."
+    "destinationRequired": "Добавьте хотя бы одно направление перед созданием поездки.",
+    "genericGenerate": "Не удалось сгенерировать поездку. Попробуйте еще раз."
   },
-  "prefillBadge": "Pre-filled from: {{label}}"
+  "prefillBadge": "Предзаполнено из: {{label}}"
 }

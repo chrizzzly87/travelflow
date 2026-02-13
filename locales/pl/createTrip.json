@@ -1,0 +1,169 @@
+{
+  "destination": {
+    "title": "Cel podróży",
+    "searchPlaceholder": "Wyszukaj kraj lub wyspę",
+    "noMatches": "Brak pasujących kierunków",
+    "islandOf": "Wyspa należąca do {country}",
+    "pinAsStart": "Ustaw {destination} jako punkt startowy",
+    "removeDestination": "Usuń {destination}",
+    "idealTravelTime": "Najlepszy czas podróży",
+    "roundTrip": {
+      "title": "Powrót do startu",
+      "description": "Zakończ trasę tam, gdzie ją zaczynasz."
+    },
+    "routeLock": {
+      "title": "Stała trasa",
+      "description": "Zachowaj kolejność miejsc i włącz sortowanie metodą przeciągnij i upuść."
+    }
+  },
+  "dates": {
+    "title": "Daty",
+    "mode": {
+      "exact": "Dokładne daty",
+      "flex": "Elastyczne okno"
+    },
+    "summary": "Wstępny zakres: łącznie {days} dni.",
+    "labels": {
+      "start": "Start",
+      "end": "Koniec",
+      "selectDate": "Wybierz datę",
+      "selectStartDate": "Wybierz datę rozpoczęcia",
+      "selectEndDate": "Wybierz datę zakończenia",
+      "previousMonth": "Poprzedni miesiąc",
+      "nextMonth": "Następny miesiąc"
+    },
+    "flexWindow": {
+      "weeksLabel": "Długość podróży (tygodnie)",
+      "rangeLabel": "Preferowany zakres czasu",
+      "options": {
+        "spring": "Okno wiosenne",
+        "summer": "Okno letnie",
+        "autumn": "Okno jesienne",
+        "winter": "Okno zimowe",
+        "shoulder": "Sezon przejściowy"
+      }
+    }
+  },
+  "traveler": {
+    "title": "Ustawienia podróżnych",
+    "options": {
+      "solo": "Solo",
+      "couple": "Para",
+      "friends": "Znajomi",
+      "family": "Rodzina"
+    },
+    "settings": {
+      "optionalDetails": "Dodatkowe szczegóły",
+      "helper": "Te pola są opcjonalne i służą tylko do lepszego dopasowania sugestii podróży.",
+      "gender": "Płeć (opcjonalnie)",
+      "notSpecified": "Nie podano",
+      "genderFemale": "Kobieta",
+      "genderMale": "Mężczyzna",
+      "genderNonBinary": "Niebinarna",
+      "genderPreferNot": "Wolę nie podawać",
+      "age": "Wiek (opcjonalnie)",
+      "agePlaceholder": "np. 31",
+      "comfortMode": "Tryb komfortu",
+      "comfortOptions": {
+        "social": "Towarzysko",
+        "balanced": "Zrównoważenie",
+        "private": "Prywatnie"
+      },
+      "travelerA": "Podróżny A (opcjonalnie)",
+      "travelerB": "Podróżny B (opcjonalnie)",
+      "occasion": "Okazja (opcjonalnie)",
+      "occasionOptions": {
+        "none": "Brak specjalnej okazji",
+        "honeymoon": "Podróż poślubna",
+        "anniversary": "Rocznica",
+        "cityBreak": "Wypad do miasta"
+      },
+      "groupSize": "Wielkość grupy",
+      "groupEnergy": "Energia grupy",
+      "energyOptions": {
+        "chill": "Spokojnie",
+        "mixed": "Mieszanie",
+        "full-send": "Na pełnym gazie"
+      },
+      "adults": "Dorośli",
+      "children": "Dzieci",
+      "babies": "Niemowlęta",
+      "summaryHint": "Dodatkowe szczegóły",
+      "open": "Edytuj ustawienia: {traveler}",
+      "title": "Dostosuj preferencje: {traveler}",
+      "description": "Dodaj opcjonalne szczegóły, aby lepiej dopasować wygenerowane sugestie dla tego układu podróżnych.",
+      "mobileDescription": "Dodatkowe szczegóły poprawiają trafność planowania.",
+      "done": "Gotowe"
+    }
+  },
+  "style": {
+    "title": "Styl podróży",
+    "empty": "Nie wybrano stylu",
+    "options": {
+      "culture": "Kultura",
+      "food": "Jedzenie",
+      "nature": "Natura",
+      "beaches": "Plaże",
+      "nightlife": "Życie nocne",
+      "remoteWork": "Praca zdalna"
+    }
+  },
+  "transport": {
+    "title": "Preferencje transportu",
+    "options": {
+      "auto": "Automatycznie",
+      "plane": "Samolot",
+      "car": "Samochód",
+      "train": "Pociąg",
+      "bus": "Autobus",
+      "cycle": "Rower",
+      "walk": "Pieszo",
+      "camper": "Kamper"
+    },
+    "camperDisabled": "Kamper jest widoczny w podglądzie, ale obecnie wyłączony w tej wersji.",
+    "overrideHint": "Własne wybory transportu różnią się od domyślnego trybu automatycznego."
+  },
+  "previewOnly": {
+    "title": "Tylko podgląd",
+    "global": "Te elementy są widoczne tylko w podglądzie. Generowanie używa obecnie stałych wartości: podróżny solo, styl = wszystko poza pracą zdalną, transport = Automatycznie.",
+    "traveler": "Na razie tylko podgląd: ustawienia podróżnych są widoczne, ale generowanie używa stałej wartości Podróżny solo.",
+    "style": "Na razie tylko podgląd: wybór stylu jest widoczny, ale generowanie używa stałej wartości „wszystko poza pracą zdalną”.",
+    "transport": "Na razie tylko podgląd: wybór transportu jest widoczny, ale generowanie używa stałej wartości Automatycznie."
+  },
+  "notes": {
+    "title": "Specjalne uwagi",
+    "hint": "Krótko: wskaż priorytety, np. mobilność, nacisk na jedzenie lub poziom komfortu.",
+    "placeholder": "Opcjonalne uwagi dla planera"
+  },
+  "snapshot": {
+    "title": "Migawka podróży",
+    "destinations": "Kierunki",
+    "emptyDestinations": "Dodaj kierunki, aby podejrzeć trasę.",
+    "days": "{days} dni",
+    "avgPerStop": "Śr. {days} na przystanek",
+    "addDestinations": "Dodaj kierunki, aby obliczyć średnie",
+    "previewOnly": "Tylko podgląd",
+    "style": "Styl",
+    "transport": "Transport",
+    "start": "Start",
+    "startEnd": "Start i koniec"
+  },
+  "mobileSnapshot": {
+    "title": "Migawka podróży",
+    "showDetails": "Pokaż szczegóły",
+    "hideDetails": "Ukryj szczegóły",
+    "days": "Dni",
+    "traveler": "Podróżny",
+    "style": "Styl",
+    "transport": "Transport"
+  },
+  "cta": {
+    "label": "Utwórz moją podróż",
+    "loading": "Tworzenie..."
+  },
+  "errors": {
+    "destinationRequired": "Dodaj co najmniej jeden kierunek przed utworzeniem podróży.",
+    "genericGenerate": "Nie udało się wygenerować podróży. Spróbuj ponownie."
+  },
+  "prefillBadge": "Wstępnie wypełniono z: {{label}}"
+}
