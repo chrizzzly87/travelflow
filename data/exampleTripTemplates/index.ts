@@ -13,6 +13,10 @@ export { PERU_TEMPLATE, createPeruTrip } from './peru';
 export { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 export { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 export { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
+export {
+    SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
+    createSoutheastAsiaBackpackingTrip,
+} from './southeastAsiaBackpacking';
 
 // Import templates and factories for the maps
 import { THAILAND_TEMPLATE, createThailandTrip } from './thailand';
@@ -23,6 +27,10 @@ import { PERU_TEMPLATE, createPeruTrip } from './peru';
 import { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 import { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 import { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
+import {
+    SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
+    createSoutheastAsiaBackpackingTrip,
+} from './southeastAsiaBackpacking';
 
 interface ExampleTripTemplateConfig {
     paletteId: CityColorPaletteId;
@@ -30,6 +38,13 @@ interface ExampleTripTemplateConfig {
     routeMode: RouteMode;
     mapColorMode: MapColorMode;
     roundTrip?: boolean;
+    layoutMode?: 'vertical' | 'horizontal';
+    timelineView?: 'vertical' | 'horizontal';
+    zoomLevel?: number;
+    showCityNames?: boolean;
+    sidebarWidth?: number;
+    timelineHeight?: number;
+    timelineHeightViewportRatio?: number;
 }
 
 const DEFAULT_EXAMPLE_TEMPLATE_CONFIG: ExampleTripTemplateConfig = {
@@ -91,20 +106,43 @@ export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateCo
         mapColorMode: 'trip',
         roundTrip: true,
     },
+    'southeast-asia-backpacking': {
+        paletteId: 'classic',
+        mapStyle: 'minimal',
+        routeMode: 'realistic',
+        mapColorMode: 'trip',
+        roundTrip: true,
+        layoutMode: 'horizontal',
+        timelineView: 'vertical',
+        zoomLevel: 0.3,
+        timelineHeight: 440,
+        timelineHeightViewportRatio: 0.5,
+    },
 };
 
 export const getExampleTripTemplateConfig = (templateId: string): ExampleTripTemplateConfig => {
     return EXAMPLE_TRIP_TEMPLATE_CONFIGS[templateId] || DEFAULT_EXAMPLE_TEMPLATE_CONFIG;
 };
 
-const buildDefaultView = (config: ExampleTripTemplateConfig) => ({
-    layoutMode: 'horizontal' as const,
-    timelineView: 'horizontal' as const,
-    mapStyle: config.mapStyle,
-    routeMode: config.routeMode,
-    showCityNames: true,
-    zoomLevel: 1,
-});
+const buildDefaultView = (config: ExampleTripTemplateConfig) => {
+    const resolvedTimelineHeight = (() => {
+        if (typeof window !== 'undefined' && typeof config.timelineHeightViewportRatio === 'number') {
+            return Math.max(200, Math.round(window.innerHeight * config.timelineHeightViewportRatio));
+        }
+        return config.timelineHeight;
+    })();
+
+    return {
+        layoutMode: config.layoutMode ?? 'horizontal',
+        timelineView: config.timelineView ?? 'horizontal',
+        mapStyle: config.mapStyle,
+        routeMode: config.routeMode,
+        showCityNames: config.showCityNames ?? true,
+        zoomLevel: config.zoomLevel ?? 1,
+        sidebarWidth: config.sidebarWidth,
+        timelineHeight: resolvedTimelineHeight,
+    };
+};
 
 const applyTemplateConfigToPartial = (templateId: string, template: Partial<ITrip>): Partial<ITrip> => {
     const config = getExampleTripTemplateConfig(templateId);
@@ -144,6 +182,10 @@ export const TRIP_TEMPLATES: Record<string, Partial<ITrip>> = {
     'new-zealand-wild': applyTemplateConfigToPartial('new-zealand-wild', NEW_ZEALAND_TEMPLATE),
     'morocco-medina': applyTemplateConfigToPartial('morocco-medina', MOROCCO_TEMPLATE),
     'iceland-ring': applyTemplateConfigToPartial('iceland-ring', ICELAND_TEMPLATE),
+    'southeast-asia-backpacking': applyTemplateConfigToPartial(
+        'southeast-asia-backpacking',
+        SOUTHEAST_ASIA_BACKPACKING_TEMPLATE
+    ),
 };
 
 /** Map keyed by exampleTripCards id → factory function that creates a full ITrip */
@@ -156,6 +198,8 @@ export const TRIP_FACTORIES: Record<string, (startDate: string) => ITrip> = {
     'new-zealand-wild': (startDate) => applyTemplateConfigToTrip('new-zealand-wild', createNewZealandTrip(startDate)),
     'morocco-medina': (startDate) => applyTemplateConfigToTrip('morocco-medina', createMoroccoTrip(startDate)),
     'iceland-ring': (startDate) => applyTemplateConfigToTrip('iceland-ring', createIcelandTrip(startDate)),
+    'southeast-asia-backpacking': (startDate) =>
+        applyTemplateConfigToTrip('southeast-asia-backpacking', createSoutheastAsiaBackpackingTrip(startDate)),
 };
 
 export interface ExampleTemplateMiniCalendarCityLane {
