@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-example-trip-playground-and-anonymous-limits
-version: v0.44.0
+version: v0.34.0
 title: "Example trip playground improvements"
 date: 2026-02-10
 published_at: 2026-02-10T18:50:00Z

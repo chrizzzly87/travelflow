@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-inspirations-photo-cards
-version: v0.41.0
+version: v0.31.0
 title: "Travel photography now powers inspiration and blog previews"
 date: 2026-02-10
 published_at: 2026-02-10T10:24:25Z

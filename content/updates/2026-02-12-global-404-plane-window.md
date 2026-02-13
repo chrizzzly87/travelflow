@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-12-global-404-plane-window
-version: v0.50.0
+version: v0.38.0
 title: "Global 404 page with animated plane-window motif"
 date: 2026-02-13
 published_at: 2026-02-13T06:34:45Z

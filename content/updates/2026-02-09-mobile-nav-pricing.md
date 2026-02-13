@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-mobile-nav-pricing
-version: v0.24.0
+version: v0.22.0
 title: "Unified navigation, mobile menu, pricing page & My Trips"
 date: 2026-02-09
 published_at: 2026-02-09T18:00:00Z

@@ -71,6 +71,8 @@ const compareVersionCore = (a, b) => {
   return a.patch - b.patch;
 };
 
+const canonicalPublishedVersionForIndex = (index) => `v0.${index}.0`;
+
 const validateFile = async (filePath) => {
   const raw = await fs.readFile(filePath, 'utf8');
   const parsed = parseFrontmatter(raw);
@@ -224,6 +226,18 @@ const main = async () => {
       console.error(`  - Older: ${path.relative(process.cwd(), prev.file)} (${prev.version} @ ${prev.publishedAt})`);
       console.error(`  - Newer: ${path.relative(process.cwd(), curr.file)} (${curr.version} @ ${curr.publishedAt})`);
     }
+  }
+
+  for (let i = 0; i < publishedReleases.length; i += 1) {
+    const release = publishedReleases[i];
+    const expectedVersion = canonicalPublishedVersionForIndex(i + 1);
+    if (release.version === expectedVersion) continue;
+
+    hasErrors = true;
+    console.error('\n[updates:validate] published versions must be canonical and gapless by published_at timestamp');
+    console.error(`  - File: ${path.relative(process.cwd(), release.file)} (${release.publishedAt})`);
+    console.error(`  - Found: ${release.version}`);
+    console.error(`  - Expected: ${expectedVersion}`);
   }
 
   if (hasErrors) {

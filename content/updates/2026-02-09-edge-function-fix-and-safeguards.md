@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-edge-function-fix-and-safeguards
-version: v0.31.0
+version: v0.28.0
 title: "Edge function stability fix"
 date: 2026-02-09
 published_at: 2026-02-09T22:35:00Z

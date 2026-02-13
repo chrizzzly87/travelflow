@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-13-og-font-compat-and-share-sync-guards
-version: v0.51.0
+version: v0.39.0
 title: "OG image rendering restored and share-sync guard tightened"
 date: 2026-02-13
 published_at: 2026-02-13T15:36:57Z
