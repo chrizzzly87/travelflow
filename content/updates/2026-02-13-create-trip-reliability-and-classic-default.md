@@ -22,5 +22,6 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Improved] 📅 Refined mobile snapshot readability with visible travel dates and restored +/- week steppers for flexible trip duration input.
 - [x] [Improved] 🤖 Switched the default Classic Card flow to in-page AI generation (`aiService`) and aligned admin benchmark input masking to the same UI shape without changing prompt contract semantics.
 - [x] [Improved] 🌍 Added a dedicated `createTrip` i18n namespace across all supported locales, wired tool-route language preloading, and fixed locale state sync so create-trip navigation, country names, and date labels stay in the active app language.
+- [x] [Fixed] 🌐 Fixed tool-route language switching state sync so changing language directly on `/create-trip` now persists and updates immediately.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
 - [ ] [Internal] 📄 Added prompt-mapping and DB-tracking strategy docs to define no-effect fields, effective defaults, and phased post-auth telemetry design.

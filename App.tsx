@@ -1025,13 +1025,13 @@ const AppContent: React.FC = () => {
 
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
         if (isToolRoute(location.pathname)) {
-            return normalizeLocale(appLanguage);
+            return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? appLanguage);
         }
 
         const localeFromPath = extractLocaleFromPath(location.pathname);
         if (localeFromPath) return localeFromPath;
         return DEFAULT_LOCALE;
-    }, [appLanguage, location.pathname]);
+    }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
@@ -1052,6 +1052,13 @@ const AppContent: React.FC = () => {
         if (localeFromPath === appLanguage) return;
         setAppLanguage(localeFromPath);
     }, [appLanguage, location.pathname]);
+
+    useEffect(() => {
+        if (!isToolRoute(location.pathname)) return;
+        const currentI18nLanguage = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
+        if (currentI18nLanguage === appLanguage) return;
+        setAppLanguage(currentI18nLanguage);
+    }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     const isInitialLanguageRef = useRef(true);
     useEffect(() => {
