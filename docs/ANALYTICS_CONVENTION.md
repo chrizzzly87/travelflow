@@ -130,6 +130,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
 | `app__trip--create` | — | `{ city_count, activity_count, travel_segment_count, total_item_count }` | `App.tsx` |
+| `app__trip_history--open` | — | `{ source }` | `TripView.tsx` |
 
 ## Adding new events
 

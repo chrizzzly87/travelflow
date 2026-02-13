@@ -31,6 +31,7 @@ Before finalizing, ensure all applicable code changes are represented in release
 
 ## Copy Approval Requirement
 - For user-facing copy changes, ask for style approval in English and German before finalizing unless the user explicitly says to skip approval.
+- Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not ask for bilingual approval for release notes unless explicitly requested.
 
 ## Analytics Requirement
 - For clickable marketing/planner UI changes, instrument events using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` per `docs/ANALYTICS_CONVENTION.md`.

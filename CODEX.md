@@ -34,6 +34,7 @@ Run `npm run updates:validate` (or `npm run build`, which includes validation) b
 
 ## Copy Approval Requirement
 - For new or rewritten user-facing copy, request style sign-off from the user in English and German before finalizing, unless the user explicitly opts out.
+- Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless explicitly requested.
 
 ## Analytics Requirement
 - When adding or changing clickable UI in marketing/planner flows, add tracking with `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` following `docs/ANALYTICS_CONVENTION.md`.
