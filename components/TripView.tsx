@@ -915,22 +915,6 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [trip.items, selectedCityIds, selectedItemId]);
 
-    const showGenerationOverlay = isTripDetailRoute && isLoadingPreview;
-
-    useEffect(() => {
-        if (!showGenerationOverlay) {
-            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
-            return;
-        }
-        let index = 0;
-        setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
-        const timer = window.setInterval(() => {
-            index = (index + 1) % GENERATION_PROGRESS_MESSAGES.length;
-            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[index]);
-        }, 2200);
-        return () => window.clearInterval(timer);
-    }, [showGenerationOverlay]);
-
     const tripMeta = useMemo(() => {
         const cityItems = trip.items
             .filter(i => i.type === 'city')
@@ -983,6 +967,21 @@ export const TripView: React.FC<TripViewProps> = ({
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
     const [generationProgressMessage, setGenerationProgressMessage] = useState(GENERATION_PROGRESS_MESSAGES[0]);
+    const showGenerationOverlay = isTripDetailRoute && isLoadingPreview;
+
+    useEffect(() => {
+        if (!showGenerationOverlay) {
+            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
+            return;
+        }
+        let index = 0;
+        setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
+        const timer = window.setInterval(() => {
+            index = (index + 1) % GENERATION_PROGRESS_MESSAGES.length;
+            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[index]);
+        }, 2200);
+        return () => window.clearInterval(timer);
+    }, [showGenerationOverlay]);
 
     const forkMeta = useMemo(() => {
         if (trip.forkedFromShareToken) {
