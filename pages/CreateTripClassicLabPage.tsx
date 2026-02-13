@@ -54,6 +54,7 @@ import {
     addDays,
     DESTINATION_OPTIONS,
     decodeTripPrefill,
+    encodeTripPrefill,
     getDaysDifference,
     getDestinationMetaLabel,
     getDestinationOptionByName,
@@ -77,6 +78,9 @@ type TravelerType = 'solo' | 'couple' | 'friends' | 'family';
 type TransportMode = 'auto' | 'plane' | 'car' | 'train' | 'bus' | 'cycle' | 'walk' | 'camper';
 type TravelerGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
 type CollapsibleSection = 'traveler' | 'style' | 'transport';
+type TravelerComfort = 'social' | 'balanced' | 'private';
+type FriendsEnergy = 'chill' | 'mixed' | 'full-send';
+type CoupleOccasion = 'none' | 'honeymoon' | 'anniversary' | 'city-break';
 type SnapshotRouteGeometry = {
     axisX: number;
     firstY: number;
@@ -89,6 +93,29 @@ type ChoiceOption<TId extends string> = {
     id: TId;
     labelKey: string;
     icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
+};
+
+type CreateTripDraftMeta = {
+    version: 1;
+    dateInputMode: DateInputMode;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    startDestination: string;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
 };
 
 const STYLE_CHOICES: Array<ChoiceOption<string>> = [
@@ -227,12 +254,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const [soloGender, setSoloGender] = useState<TravelerGender>('');
     const [soloAge, setSoloAge] = useState('');
-    const [soloComfort, setSoloComfort] = useState<'social' | 'balanced' | 'private'>('balanced');
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>('balanced');
     const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>('');
     const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>('');
-    const [coupleOccasion, setCoupleOccasion] = useState<'none' | 'honeymoon' | 'anniversary' | 'city-break'>('none');
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>('none');
     const [friendsCount, setFriendsCount] = useState(4);
-    const [friendsEnergy, setFriendsEnergy] = useState<'chill' | 'mixed' | 'full-send'>('mixed');
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>('mixed');
     const [familyAdults, setFamilyAdults] = useState(2);
     const [familyChildren, setFamilyChildren] = useState(1);
     const [familyBabies, setFamilyBabies] = useState(0);
@@ -245,6 +272,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const [notes, setNotes] = useState('');
     const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
+    const [prefillHydrated, setPrefillHydrated] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -262,6 +290,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [searchPosition, setSearchPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const snapshotRouteRef = useRef<HTMLDivElement | null>(null);
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
 
     const regionDisplayNames = useMemo(() => {
@@ -438,6 +467,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         setSearchOpen(true);
     }, [updateSearchPosition]);
 
+    const showSubmitError = useCallback((message: string) => {
+        setSubmitError(message);
+        if (typeof window === 'undefined') return;
+        window.requestAnimationFrame(() => {
+            submitErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, []);
+
     const updateSnapshotRouteGeometry = useCallback(() => {
         const container = snapshotRouteRef.current;
         if (!container) {
@@ -538,9 +575,16 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     useEffect(() => {
         const raw = searchParams.get('prefill');
-        if (!raw) return;
+        if (!raw) {
+            setPrefillHydrated(true);
+            return;
+        }
+
         const data = decodeTripPrefill(raw);
-        if (!data) return;
+        if (!data) {
+            setPrefillHydrated(true);
+            return;
+        }
 
         if (data.countries && data.countries.length > 0) {
             setDestinations(data.countries);
@@ -551,11 +595,261 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (data.budget) setBudget(data.budget as BudgetType);
         if (data.pace) setPace(data.pace as PaceType);
         if (typeof data.roundTrip === 'boolean') setRoundTrip(data.roundTrip);
-        if (data.notes) setNotes(data.notes);
-        if (Array.isArray(data.styles) && data.styles.length > 0) setSelectedStyles(data.styles);
-        if (data.meta) setPrefillMeta(data.meta);
+        if (typeof data.notes === 'string') setNotes(data.notes);
+        if (Array.isArray(data.styles) && data.styles.length > 0) {
+            const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+            const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));
+            if (filteredStyles.length > 0) setSelectedStyles(filteredStyles);
+        }
+
+        const rawMeta = data.meta;
+        const safeMeta = rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)
+            ? rawMeta as Record<string, unknown>
+            : null;
+
+        if (safeMeta) {
+            const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+            const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+            const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+            if (label || source || author) {
+                setPrefillMeta({ label, source, author });
+            }
+
+            const rawDraft = safeMeta.draft;
+            const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+                ? rawDraft as Partial<CreateTripDraftMeta>
+                : null;
+
+            if (draft) {
+                if (draft.dateInputMode === 'exact' || draft.dateInputMode === 'flex') {
+                    setDateInputMode(draft.dateInputMode);
+                }
+                if (typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+                    setFlexWeeks(clampNumber(Math.round(draft.flexWeeks), 1, 12));
+                }
+                if (draft.flexWindow && FLEX_WINDOW_OPTIONS.some((entry) => entry.id === draft.flexWindow)) {
+                    setFlexWindow(draft.flexWindow);
+                }
+                if (typeof draft.startDestination === 'string') {
+                    setStartDestination(draft.startDestination);
+                }
+                if (typeof draft.routeLock === 'boolean') {
+                    setRouteLock(draft.routeLock);
+                }
+                if (draft.travelerType && TRAVELER_OPTIONS.some((entry) => entry.id === draft.travelerType)) {
+                    setTravelerType(draft.travelerType);
+                }
+                if (Array.isArray(draft.transportModes)) {
+                    const allowedTransportModes = new Set<TransportMode>(TRANSPORT_OPTIONS.map((entry) => entry.id));
+                    const validModes = draft.transportModes.filter(
+                        (mode): mode is TransportMode => typeof mode === 'string' && allowedTransportModes.has(mode as TransportMode)
+                    );
+                    if (validModes.length > 0) setTransportModes(validModes);
+                }
+                if (typeof draft.hasTransportOverride === 'boolean') {
+                    setHasTransportOverride(draft.hasTransportOverride);
+                }
+                if (draft.soloGender === '' || draft.soloGender === 'female' || draft.soloGender === 'male' || draft.soloGender === 'non-binary' || draft.soloGender === 'prefer-not') {
+                    setSoloGender(draft.soloGender);
+                }
+                if (typeof draft.soloAge === 'string') setSoloAge(draft.soloAge);
+                if (draft.soloComfort === 'social' || draft.soloComfort === 'balanced' || draft.soloComfort === 'private') {
+                    setSoloComfort(draft.soloComfort);
+                }
+                if (draft.coupleTravelerA === '' || draft.coupleTravelerA === 'female' || draft.coupleTravelerA === 'male' || draft.coupleTravelerA === 'non-binary' || draft.coupleTravelerA === 'prefer-not') {
+                    setCoupleTravelerA(draft.coupleTravelerA);
+                }
+                if (draft.coupleTravelerB === '' || draft.coupleTravelerB === 'female' || draft.coupleTravelerB === 'male' || draft.coupleTravelerB === 'non-binary' || draft.coupleTravelerB === 'prefer-not') {
+                    setCoupleTravelerB(draft.coupleTravelerB);
+                }
+                if (draft.coupleOccasion === 'none' || draft.coupleOccasion === 'honeymoon' || draft.coupleOccasion === 'anniversary' || draft.coupleOccasion === 'city-break') {
+                    setCoupleOccasion(draft.coupleOccasion);
+                }
+                if (typeof draft.friendsCount === 'number' && Number.isFinite(draft.friendsCount)) {
+                    setFriendsCount(clampNumber(Math.round(draft.friendsCount), 2, 12));
+                }
+                if (draft.friendsEnergy === 'chill' || draft.friendsEnergy === 'mixed' || draft.friendsEnergy === 'full-send') {
+                    setFriendsEnergy(draft.friendsEnergy);
+                }
+                if (typeof draft.familyAdults === 'number' && Number.isFinite(draft.familyAdults)) {
+                    setFamilyAdults(clampNumber(Math.round(draft.familyAdults), 1, 8));
+                }
+                if (typeof draft.familyChildren === 'number' && Number.isFinite(draft.familyChildren)) {
+                    setFamilyChildren(clampNumber(Math.round(draft.familyChildren), 0, 8));
+                }
+                if (typeof draft.familyBabies === 'number' && Number.isFinite(draft.familyBabies)) {
+                    setFamilyBabies(clampNumber(Math.round(draft.familyBabies), 0, 4));
+                }
+            }
+        }
+
+        setPrefillHydrated(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const draftMeta = useMemo<CreateTripDraftMeta>(() => ({
+        version: 1,
+        dateInputMode,
+        flexWeeks,
+        flexWindow,
+        startDestination,
+        routeLock,
+        travelerType,
+        transportModes,
+        hasTransportOverride,
+        soloGender,
+        soloAge,
+        soloComfort,
+        coupleTravelerA,
+        coupleTravelerB,
+        coupleOccasion,
+        friendsCount,
+        friendsEnergy,
+        familyAdults,
+        familyChildren,
+        familyBabies,
+    }), [
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        hasTransportOverride,
+        routeLock,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDestination,
+        transportModes,
+        travelerType,
+    ]);
+
+    const hasPersistableState = useMemo(() => {
+        const hasTravelerOverrides = soloGender !== ''
+            || soloAge.trim() !== ''
+            || soloComfort !== 'balanced'
+            || coupleTravelerA !== ''
+            || coupleTravelerB !== ''
+            || coupleOccasion !== 'none'
+            || friendsCount !== 4
+            || friendsEnergy !== 'mixed'
+            || familyAdults !== 2
+            || familyChildren !== 1
+            || familyBabies !== 0;
+
+        const hasTransportOverrides = hasTransportOverride
+            || transportModes.length !== 1
+            || transportModes[0] !== DEFAULT_EFFECTIVE_TRANSPORT;
+
+        return destinations.length > 0
+            || startDate !== initialRange.startDate
+            || endDate !== initialRange.endDate
+            || budget !== 'Medium'
+            || pace !== 'Balanced'
+            || roundTrip !== true
+            || routeLock !== false
+            || dateInputMode !== 'exact'
+            || flexWeeks !== 2
+            || flexWindow !== 'shoulder'
+            || notes.trim().length > 0
+            || travelerType !== DEFAULT_EFFECTIVE_TRAVELER
+            || selectedStyles.join('|') !== DEFAULT_EFFECTIVE_STYLE_IDS.join('|')
+            || hasTransportOverrides
+            || hasTravelerOverrides;
+    }, [
+        budget,
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        destinations.length,
+        endDate,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        hasTransportOverride,
+        initialRange.endDate,
+        initialRange.startDate,
+        notes,
+        pace,
+        roundTrip,
+        routeLock,
+        selectedStyles,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDate,
+        transportModes,
+        travelerType,
+    ]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!prefillHydrated) return;
+
+        const currentParams = new URLSearchParams(window.location.search);
+
+        if (!hasPersistableState) {
+            if (!currentParams.has('prefill')) return;
+            currentParams.delete('prefill');
+            const nextSearch = currentParams.toString();
+            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', nextUrl);
+            return;
+        }
+
+        const persistedMeta: TripPrefillData['meta'] = {
+            ...(typeof prefillMeta?.source === 'string' ? { source: prefillMeta.source } : {}),
+            ...(typeof prefillMeta?.author === 'string' ? { author: prefillMeta.author } : {}),
+            ...(typeof prefillMeta?.label === 'string' ? { label: prefillMeta.label } : {}),
+            draft: draftMeta,
+        };
+
+        const prefillPayload: TripPrefillData = {
+            countries: destinations.length > 0 ? destinations : undefined,
+            startDate,
+            endDate,
+            budget,
+            pace,
+            notes: notes.trim() || undefined,
+            roundTrip,
+            styles: selectedStyles.length > 0 ? selectedStyles : undefined,
+            meta: persistedMeta,
+        };
+
+        const encoded = encodeTripPrefill(prefillPayload);
+        if (currentParams.get('prefill') === encoded) return;
+
+        currentParams.set('prefill', encoded);
+        const nextSearch = currentParams.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState(window.history.state, '', nextUrl);
+    }, [
+        budget,
+        destinations,
+        draftMeta,
+        endDate,
+        hasPersistableState,
+        notes,
+        pace,
+        prefillHydrated,
+        prefillMeta?.author,
+        prefillMeta?.label,
+        prefillMeta?.source,
+        roundTrip,
+        selectedStyles,
+        startDate,
+    ]);
 
     useLayoutEffect(() => {
         if (!searchOpen) return;
@@ -942,7 +1236,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
         if (orderedDestinations.length === 0) {
-            setSubmitError(t('errors.destinationRequired'));
+            showSubmitError(t('errors.destinationRequired'));
             return;
         }
 
@@ -975,7 +1269,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             onTripGenerated(generatedTrip);
         } catch (error) {
-            setSubmitError(getErrorMessage(error, t('errors.genericGenerate')));
+            showSubmitError(getErrorMessage(error, t('errors.genericGenerate')));
         } finally {
             setIsSubmitting(false);
         }
@@ -999,7 +1293,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         </div>
                     )}
                     {submitError && (
-                        <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                        <div ref={submitErrorRef} className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                             {submitError}
                         </div>
                     )}
