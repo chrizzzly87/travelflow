@@ -11,5 +11,5 @@ summary: "Fixed Open Graph image rendering crashes and prevented share-link gene
 ---
 
 ## Changes
-- [x] [Fixed] 🖼️ Restored `/api/og/site` and `/api/og/trip` rendering by loading Bricolage Grotesque in Satori-compatible `.woff` (local with CDN fallback) and rejecting unsupported WOFF2/invalid font responses.
+- [x] [Fixed] 🖼️ Restored `/api/og/site` and `/api/og/trip` rendering with consistent Bricolage Grotesque typography by loading matching Satori-compatible `.woff` files per weight (`400/700/800`) and falling back to Google Fonts/CDN sources when needed.
 - [x] [Improved] 🔗 Added a pre-share persistence check so share-link creation stops early when a trip is not synced to the database yet, avoiding backend `P0001` failures.
