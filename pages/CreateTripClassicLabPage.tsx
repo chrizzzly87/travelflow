@@ -721,6 +721,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             && coupleTravelerA === coupleTravelerB
         )
     );
+    const lgbtqModalStyle: React.CSSProperties | undefined = isLgbtqCoupleMode
+        ? {
+            pointerEvents: 'auto',
+            border: '8px solid transparent',
+            background:
+                'linear-gradient(rgb(255, 255, 255), rgb(255, 255, 255)) padding-box, repeating-linear-gradient(rgb(228, 3, 3) 0px, rgb(228, 3, 3) 16%, rgb(255, 140, 0) 16%, rgb(255, 140, 0) 32%, rgb(255, 237, 0) 32%, rgb(255, 237, 0) 48%, rgb(0, 128, 38) 48%, rgb(0, 128, 38) 64%, rgb(36, 64, 142) 64%, rgb(36, 64, 142) 80%, rgb(115, 41, 130) 80%, rgb(115, 41, 130) 100%) border-box',
+        }
+        : undefined;
 
     const settingsContent = (
         <div className="space-y-4">
@@ -784,12 +792,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             {settingsTraveler === 'couple' && (
                 <div className="space-y-3">
-                    {isLgbtqCoupleMode && (
-                        <div
-                            aria-hidden="true"
-                            className="h-1.5 rounded-full bg-[linear-gradient(90deg,#e11d48_0%,#f97316_18%,#eab308_36%,#22c55e_54%,#3b82f6_72%,#6366f1_86%,#a855f7_100%)]"
-                        />
-                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
@@ -874,7 +876,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const settingsDialog = isDesktopSettings ? (
         <Dialog open={travelerSettingsOpen} onOpenChange={setTravelerSettingsOpen}>
-            <DialogContent className="max-w-xl rounded-2xl p-5">
+            <DialogContent className="max-w-xl rounded-2xl p-5" style={lgbtqModalStyle}>
                 <DialogHeader className="p-0">
                     <DialogTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DialogTitle>
                     <DialogDescription>{t('traveler.settings.description')}</DialogDescription>
