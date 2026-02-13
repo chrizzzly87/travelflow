@@ -565,7 +565,7 @@ export const ExampleTripsCarousel: React.FC = () => {
                     className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
                     {...getAnalyticsDebugAttributes('home__carousel_cta--inspirations')}
                 >
-                    Discover more inspirations
+                    {t('examples.moreInspirationsCta', { defaultValue: 'Discover more inspirations' })}
                     <ArrowRight size={14} weight="bold" />
                 </Link>
             </div>

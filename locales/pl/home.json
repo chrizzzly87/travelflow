@@ -12,7 +12,42 @@
   },
   "examples": {
     "title": "Podróże zbudowane w TravelFlow",
-    "subtitle": "Przeglądaj prawdziwe plany tworzone przez naszą społeczność — od tygodniowych wypadów na wyspy po road tripy przez cały kraj."
+    "subtitle": "Przeglądaj prawdziwe plany tworzone przez naszą społeczność — od tygodniowych wypadów na wyspy po road tripy przez cały kraj.",
+    "moreInspirationsCta": "Odkryj więcej inspiracji",
+    "cards": {
+      "labels": {
+        "days": "{count} dni",
+        "cities": "{count} miast",
+        "roundTrip": "Podróż w obie strony",
+        "routeMapAlt": "Mapa trasy: {title}",
+        "routeLegTitle": "Odcinek trasy: {days} dni"
+      },
+      "titles": {
+        "portugal-coast": "Road trip po atlantyckim wybrzeżu",
+        "italy-classic": "Wielka podróż po Włoszech",
+        "thailand-islands": "Świątynie i plaże",
+        "japan-spring": "Szlak kwitnących wiśni",
+        "peru-adventure": "Andy i Amazonia",
+        "new-zealand-wild": "Dzika przyroda Wyspy Południowej",
+        "morocco-medina": "Medyny i noce na Saharze",
+        "iceland-ring": "Pętla Ring Road"
+      },
+      "tags": {
+        "surf": "Surfing",
+        "culture": "Kultura",
+        "wine": "Wino",
+        "food": "Jedzenie",
+        "art": "Sztuka",
+        "history": "Historia",
+        "beach": "Plaża",
+        "adventure": "Przygoda",
+        "nature": "Natura",
+        "hiking": "Trekking",
+        "road_trip": "Road trip",
+        "desert": "Pustynia",
+        "photography": "Fotografia"
+      }
+    }
   },
   "featureShowcase": {
     "title": "Wszystko, czego potrzebujesz, by planować, udostępniać i ruszać w drogę",

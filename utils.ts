@@ -1,8 +1,9 @@
 import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
 import popularIslandDestinationsJson from './data/popularIslandDestinations.json';
+import { getLocalizedCountryNameFromData, getLocalizedIslandNameFromData } from './data/countryTravelData';
 import { normalizeTransportMode } from './shared/transportModes';
-import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, localeToIntlLocale, normalizeLocale } from './config/locales';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -1290,6 +1291,7 @@ export interface DestinationOption {
     parentCountryName?: string;
     parentCountryCode?: string;
     aliases?: string[];
+    localizedNames?: Record<string, string>;
 }
 
 interface IslandDestinationSeed {
@@ -1297,12 +1299,63 @@ interface IslandDestinationSeed {
     countryCode: string;
     code?: string;
     aliases?: string[];
+    localizedNames?: Record<string, string>;
 }
 
 const COUNTRY_BY_CODE = new Map(COUNTRIES.map((country) => [country.code.toLocaleLowerCase(), country]));
 
 const buildIslandCode = (parentCode: string, name: string): string =>
     `${parentCode}-${name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
+
+const normalizeDestinationLocale = (locale?: string): string => {
+    if (!locale) return DEFAULT_LOCALE;
+    const trimmed = locale.trim().toLocaleLowerCase();
+    if (!trimmed) return DEFAULT_LOCALE;
+    const [base] = trimmed.split('-');
+    return base || DEFAULT_LOCALE;
+};
+
+const normalizeLocalizedNames = (
+    localizedNames?: Record<string, string>
+): Record<string, string> => {
+    if (!localizedNames) return {};
+
+    return Object.entries(localizedNames).reduce<Record<string, string>>((acc, [locale, value]) => {
+        if (typeof value !== 'string') return acc;
+        const normalizedLocale = normalizeDestinationLocale(locale);
+        const normalizedValue = value.trim();
+        if (!normalizedValue) return acc;
+        acc[normalizedLocale] = normalizedValue;
+        return acc;
+    }, {});
+};
+
+const buildLocalizedNamesFromDataset = (
+    kind: DestinationKind,
+    code: string,
+    fallbackName: string
+): Record<string, string> => {
+    const localizedNames: Record<string, string> = {};
+
+    SUPPORTED_LOCALES.forEach((locale) => {
+        const translatedName = kind === 'country'
+            ? getLocalizedCountryNameFromData(code, locale)
+            : getLocalizedIslandNameFromData(code, locale);
+        localizedNames[locale] = translatedName || fallbackName;
+    });
+
+    return localizedNames;
+};
+
+const getLocalizedDestinationName = (
+    destination: DestinationOption,
+    locale?: string
+): string => {
+    const localeKey = normalizeDestinationLocale(locale);
+    return destination.localizedNames?.[localeKey]
+        || destination.localizedNames?.[DEFAULT_LOCALE]
+        || destination.name;
+};
 
 const buildIslandDestination = (
     seed: IslandDestinationSeed
@@ -1311,14 +1364,21 @@ const buildIslandDestination = (
     if (!parent) {
         throw new Error(`Island destination parent not found for ${seed.name}: ${seed.countryCode}`);
     }
+    const code = seed.code || buildIslandCode(parent.code, seed.name);
+    const localizedNames = {
+        ...buildLocalizedNamesFromDataset('island', code, seed.name),
+        ...normalizeLocalizedNames(seed.localizedNames),
+    };
+
     return {
         name: seed.name,
-        code: seed.code || buildIslandCode(parent.code, seed.name),
+        code,
         flag: parent.flag,
         kind: 'island',
         parentCountryName: parent.name,
         parentCountryCode: parent.code,
         aliases: seed.aliases || [],
+        localizedNames,
     };
 };
 
@@ -1329,24 +1389,59 @@ export const ISLAND_DESTINATIONS: DestinationOption[] = ISLAND_DESTINATION_SEEDS
     .sort((a, b) => a.name.localeCompare(b.name));
 
 export const DESTINATION_OPTIONS: DestinationOption[] = [
-    ...COUNTRIES.map((country) => ({ ...country, kind: 'country' as const })),
+    ...COUNTRIES.map((country) => ({
+        ...country,
+        kind: 'country' as const,
+        localizedNames: buildLocalizedNamesFromDataset('country', country.code, country.name),
+    })),
     ...ISLAND_DESTINATIONS,
 ];
 
-const DESTINATION_BY_NAME = new Map(DESTINATION_OPTIONS.map((destination) => [destination.name.toLocaleLowerCase(), destination]));
-const DESTINATION_BY_ALIAS = new Map(
-    ISLAND_DESTINATIONS.flatMap((destination) => (destination.aliases || []).map((alias) => [alias.toLocaleLowerCase(), destination] as const))
-);
 const DESTINATION_BY_CODE = new Map(
     DESTINATION_OPTIONS.map((d) => [d.code.toLowerCase(), d])
 );
 
 const normalizeDestinationKey = (value: string): string => value.trim().toLocaleLowerCase();
 
+const DESTINATION_BY_LOOKUP = new Map<string, DestinationOption>();
+
+const addDestinationLookup = (destination: DestinationOption, candidate?: string): void => {
+    if (!candidate) return;
+    const normalized = normalizeDestinationKey(candidate);
+    if (!normalized || DESTINATION_BY_LOOKUP.has(normalized)) return;
+    DESTINATION_BY_LOOKUP.set(normalized, destination);
+};
+
+DESTINATION_OPTIONS.forEach((destination) => {
+    addDestinationLookup(destination, destination.name);
+    (destination.aliases || []).forEach((alias) => addDestinationLookup(destination, alias));
+    Object.values(destination.localizedNames || {}).forEach((localizedName) => addDestinationLookup(destination, localizedName));
+});
+
+const getDestinationSearchTokens = (destination: DestinationOption): string[] => {
+    const tokens = new Set<string>();
+    tokens.add(destination.name);
+    (destination.aliases || []).forEach((alias) => tokens.add(alias));
+    Object.values(destination.localizedNames || {}).forEach((localizedName) => tokens.add(localizedName));
+
+    if (destination.parentCountryName) tokens.add(destination.parentCountryName);
+    if (destination.parentCountryCode) {
+        const parent = DESTINATION_BY_CODE.get(destination.parentCountryCode.toLowerCase());
+        if (parent) {
+            tokens.add(parent.name);
+            Object.values(parent.localizedNames || {}).forEach((localizedName) => tokens.add(localizedName));
+        }
+    }
+
+    return Array.from(tokens)
+        .map((token) => token.trim())
+        .filter(Boolean);
+};
+
 export const getDestinationOptionByName = (value: string): DestinationOption | undefined => {
     const normalized = normalizeDestinationKey(value);
     if (!normalized) return undefined;
-    return DESTINATION_BY_NAME.get(normalized) || DESTINATION_BY_ALIAS.get(normalized);
+    return DESTINATION_BY_LOOKUP.get(normalized);
 };
 
 export const getDestinationOptionByCode = (code: string): DestinationOption | undefined => {
@@ -1365,13 +1460,30 @@ export const resolveDestinationName = (value: string): string => {
     return match?.name || value.trim();
 };
 
-export const getDestinationPromptLabel = (value: string): string => {
+export const getDestinationDisplayName = (value: string, locale?: string): string => {
+    const destination = getDestinationOptionByName(value);
+    if (!destination) return value.trim();
+    return getLocalizedDestinationName(destination, locale);
+};
+
+export const getDestinationDisplayNameByCode = (code: string, locale?: string): string | undefined => {
+    const destination = getDestinationOptionByCode(code);
+    if (!destination) return undefined;
+    return getLocalizedDestinationName(destination, locale);
+};
+
+export const getDestinationPromptLabel = (value: string, locale?: string): string => {
     const destination = getDestinationOptionByName(value);
     if (!destination) return value;
+
+    const destinationName = getLocalizedDestinationName(destination, locale);
     if (destination.kind === 'island' && destination.parentCountryName) {
-        return `${destination.name}, ${destination.parentCountryName}`;
+        const parentCountryName = destination.parentCountryCode
+            ? getDestinationDisplayNameByCode(destination.parentCountryCode, locale) || destination.parentCountryName
+            : destination.parentCountryName;
+        return `${destinationName}, ${parentCountryName}`;
     }
-    return destination.name;
+    return destinationName;
 };
 
 export const getDestinationSeasonCountryName = (value: string): string => {
@@ -1380,10 +1492,13 @@ export const getDestinationSeasonCountryName = (value: string): string => {
     return destination.parentCountryName || destination.name;
 };
 
-export const getDestinationMetaLabel = (value: string): string | undefined => {
+export const getDestinationMetaLabel = (value: string, locale?: string): string | undefined => {
     const destination = getDestinationOptionByName(value);
     if (!destination || destination.kind !== 'island' || !destination.parentCountryName) return undefined;
-    return `Island of ${destination.parentCountryName}`;
+    const parentCountryName = destination.parentCountryCode
+        ? getDestinationDisplayNameByCode(destination.parentCountryCode, locale) || destination.parentCountryName
+        : destination.parentCountryName;
+    return `Island of ${parentCountryName}`;
 };
 
 export const isIslandDestination = (value: string): boolean => {
@@ -1404,14 +1519,13 @@ export const searchDestinationOptions = (
     }
 
     const startsWithMatches = source.filter((destination) => {
-        const nameMatch = destination.name.toLocaleLowerCase().startsWith(normalizedQuery);
-        const aliasMatch = (destination.aliases || []).some((alias) => alias.toLocaleLowerCase().startsWith(normalizedQuery));
-        return nameMatch || aliasMatch;
+        const tokens = getDestinationSearchTokens(destination);
+        return tokens.some((token) => token.toLocaleLowerCase().startsWith(normalizedQuery));
     });
 
     const includesMatches = source.filter((destination) => {
         if (startsWithMatches.includes(destination)) return false;
-        const haystack = [destination.name, destination.parentCountryName, ...(destination.aliases || [])]
+        const haystack = getDestinationSearchTokens(destination)
             .filter(Boolean)
             .join(' ')
             .toLocaleLowerCase();
@@ -1484,9 +1598,22 @@ export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
         const result: TripPrefillData = {};
 
         if (Array.isArray(parsed.countries)) {
-            const destinationNames = new Set(DESTINATION_OPTIONS.map((d) => d.name));
-            result.countries = parsed.countries.filter((c: unknown) => typeof c === 'string' && destinationNames.has(c));
-            if (result.countries!.length === 0) delete result.countries;
+            const seen = new Set<string>();
+            const resolvedCountries = parsed.countries
+                .map((candidate: unknown) => {
+                    if (typeof candidate !== 'string') return null;
+                    const destination = getDestinationOptionByName(candidate);
+                    if (!destination) return null;
+                    const key = destination.name.toLocaleLowerCase();
+                    if (seen.has(key)) return null;
+                    seen.add(key);
+                    return destination.name;
+                })
+                .filter((name): name is string => Boolean(name));
+
+            if (resolvedCountries.length > 0) {
+                result.countries = resolvedCountries;
+            }
         }
         if (typeof parsed.startDate === 'string' && ISO_DATE_RE.test(parsed.startDate) && !isNaN(Date.parse(parsed.startDate))) {
             result.startDate = parsed.startDate;
