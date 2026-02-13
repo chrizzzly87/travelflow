@@ -165,5 +165,15 @@
     "destinationRequired": "Füge mindestens ein Reiseziel hinzu, bevor du die Reise erstellst.",
     "genericGenerate": "Die Reise konnte nicht erstellt werden. Bitte versuche es erneut."
   },
-  "prefillBadge": "Vorausgefüllt aus: {label}"
+  "prefillBadge": "Vorausgefüllt aus: {label}",
+  "labsBanner": {
+    "title": "Moechtest du andere Create-Trip-Konzepte testen?",
+    "description": "Direkte Lab-Routen fuer Regressionstests und Konzeptvergleiche.",
+    "links": {
+      "legacy": "Classic-Legacy-Formular",
+      "classicCard": "Classic-Card-Route",
+      "splitWorkspace": "Split-Workspace-Experiment",
+      "journeyArchitect": "Journey-Architect-Experiment"
+    }
+  }
 }

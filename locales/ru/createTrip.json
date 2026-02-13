@@ -165,5 +165,15 @@
     "destinationRequired": "Добавьте хотя бы одно направление перед созданием поездки.",
     "genericGenerate": "Не удалось сгенерировать поездку. Попробуйте еще раз."
   },
-  "prefillBadge": "Предзаполнено из: {label}"
+  "prefillBadge": "Предзаполнено из: {label}",
+  "labsBanner": {
+    "title": "Nuzhno protestirovat drugie koncepty create-trip?",
+    "description": "Pryamye laboratornye marshruty dlya regressii i sravneniya eksperimentov.",
+    "links": {
+      "legacy": "Forma Classic Legacy",
+      "classicCard": "Marshrut Classic Card",
+      "splitWorkspace": "Eksperiment Split Workspace",
+      "journeyArchitect": "Eksperiment Journey Architect"
+    }
+  }
 }

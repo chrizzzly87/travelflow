@@ -165,5 +165,15 @@
     "destinationRequired": "Add at least one destination before creating your trip.",
     "genericGenerate": "Trip generation failed. Please try again."
   },
-  "prefillBadge": "Pre-filled from: {label}"
+  "prefillBadge": "Pre-filled from: {label}",
+  "labsBanner": {
+    "title": "Need to test other create-trip concepts?",
+    "description": "Direct lab routes for regression checks and side-by-side experiments.",
+    "links": {
+      "legacy": "Classic Legacy form",
+      "classicCard": "Classic Card route",
+      "splitWorkspace": "Split Workspace experiment",
+      "journeyArchitect": "Journey Architect experiment"
+    }
+  }
 }

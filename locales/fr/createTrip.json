@@ -165,5 +165,15 @@
     "destinationRequired": "Ajoutez au moins une destination avant de créer votre voyage.",
     "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer."
   },
-  "prefillBadge": "Prérempli depuis : {label}"
+  "prefillBadge": "Prérempli depuis : {label}",
+  "labsBanner": {
+    "title": "Besoin de tester d'autres concepts create-trip ?",
+    "description": "Routes labo directes pour les verifications de regression et les comparaisons.",
+    "links": {
+      "legacy": "Formulaire Classic Legacy",
+      "classicCard": "Route Classic Card",
+      "splitWorkspace": "Experience Split Workspace",
+      "journeyArchitect": "Experience Journey Architect"
+    }
+  }
 }

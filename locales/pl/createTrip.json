@@ -165,5 +165,15 @@
     "destinationRequired": "Dodaj co najmniej jeden kierunek przed utworzeniem podróży.",
     "genericGenerate": "Nie udało się wygenerować podróży. Spróbuj ponownie."
   },
-  "prefillBadge": "Wstępnie wypełniono z: {label}"
+  "prefillBadge": "Wstępnie wypełniono z: {label}",
+  "labsBanner": {
+    "title": "Chcesz przetestowac inne koncepcje create-trip?",
+    "description": "Bezposrednie trasy laboratoryjne do testow regresji i porownan eksperymentow.",
+    "links": {
+      "legacy": "Formularz Classic Legacy",
+      "classicCard": "Trasa Classic Card",
+      "splitWorkspace": "Eksperyment Split Workspace",
+      "journeyArchitect": "Eksperyment Journey Architect"
+    }
+  }
 }

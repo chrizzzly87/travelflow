@@ -165,5 +165,15 @@
     "destinationRequired": "Añade al menos un destino antes de crear tu viaje.",
     "genericGenerate": "Falló la generación del viaje. Inténtalo de nuevo."
   },
-  "prefillBadge": "Precargado desde: {label}"
+  "prefillBadge": "Precargado desde: {label}",
+  "labsBanner": {
+    "title": "Quieres probar otros conceptos de crear viaje?",
+    "description": "Rutas directas de laboratorio para regresiones y comparacion de experimentos.",
+    "links": {
+      "legacy": "Formulario Classic Legacy",
+      "classicCard": "Ruta Classic Card",
+      "splitWorkspace": "Experimento Split Workspace",
+      "journeyArchitect": "Experimento Journey Architect"
+    }
+  }
 }

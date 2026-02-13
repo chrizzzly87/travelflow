@@ -30,5 +30,6 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Fixed] 🧾 Corrected create-trip interpolation placeholders from double-curly to ICU format (`{label}`), so prefill badges render translated labels correctly in every locale.
 - [x] [Fixed] 🗓️ Localized ideal-travel tooltip month initials using `Intl.DateTimeFormat`, so month letters follow the active language instead of English-only abbreviations.
 - [x] [Fixed] 🏳️‍🌈 Restored the original same-sex couple “gay mode” modal treatment with the full rainbow border gradient around traveler settings, matching the classic-overhaul behavior.
+- [x] [Improved] 🧪 Added a bottom info banner on the default create-trip form with direct links to Classic Legacy, Classic Card, Split Workspace, and Journey Architect lab routes for quick regression testing.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
 - [ ] [Internal] 📄 Added prompt-mapping and DB-tracking strategy docs to define no-effect fields, effective defaults, and phased post-auth telemetry design.
