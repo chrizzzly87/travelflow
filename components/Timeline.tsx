@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ITrip, ITimelineItem, IDragState } from '../types';
+import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
 import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
@@ -17,6 +17,7 @@ interface TimelineProps {
   onForceFill?: (id: string) => void;
   onSwapSelectedCities?: () => void;
   onAddCity: () => void;
+  routeStatusById?: Record<string, RouteStatus>;
   pixelsPerDay: number;
   readOnly?: boolean;
   enableExampleSharedTransition?: boolean;
@@ -40,6 +41,34 @@ const parseLocalTripDate = (value: string): Date | null => {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 };
 
+const buildTransferConnectorPath = (
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  forceStraight: boolean
+): string => {
+  const horizontalGap = Math.abs(toX - fromX);
+  const verticalGap = Math.max(0, toY - fromY);
+  if (forceStraight || horizontalGap < 14 || verticalGap < 8) {
+    return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+  }
+
+  const direction = toX >= fromX ? 1 : -1;
+  const elbowY = fromY + Math.max(8, verticalGap * 0.6);
+  const cornerRadius = Math.min(7, Math.max(3, horizontalGap * 0.2), Math.max(3, verticalGap * 0.2));
+
+  const horizontalStartX = fromX + (direction * cornerRadius);
+  const horizontalEndX = toX - (direction * cornerRadius);
+  const verticalUpStartY = elbowY + cornerRadius;
+  return `M ${fromX} ${fromY}
+    V ${elbowY - cornerRadius}
+    Q ${fromX} ${elbowY} ${horizontalStartX} ${elbowY}
+    H ${horizontalEndX}
+    Q ${toX} ${elbowY} ${toX} ${verticalUpStartY}
+    V ${toY}`;
+};
+
 export const Timeline: React.FC<TimelineProps> = ({
   trip,
   selectedCityIds = [],
@@ -50,6 +79,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onForceFill,
   onSwapSelectedCities,
   onAddCity,
+  routeStatusById,
   pixelsPerDay,
   readOnly = false,
   enableExampleSharedTransition = false
@@ -76,6 +106,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   });
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
+  const [travelLaneHeight, setTravelLaneHeight] = useState<number>(40);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
   const visualStartOffset = timelineBounds.startOffset;
@@ -198,7 +229,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       const newItem: ITimelineItem = {
           id: `travel-new-${Date.now()}`,
           type: 'travel-empty',
-          title: `Travel to ${toCity.title}`,
+          title: `Transfer to ${toCity.title}`,
           startDateOffset: startOffset,
           duration: 0.2,
           color: TRAVEL_EMPTY_COLOR,
@@ -214,11 +245,11 @@ export const Timeline: React.FC<TimelineProps> = ({
     const newTravel: ITimelineItem = {
         id,
         type: 'travel',
-        title: 'New Travel',
+        title: 'New Transfer',
         startDateOffset: startOffset,
         duration: duration,
         color: TRAVEL_COLOR,
-        description: 'Travel segment',
+        description: 'Transfer segment',
         transportMode: 'car'
     };
     onUpdateItems([...trip.items, newTravel]);
@@ -513,6 +544,23 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [parsedTripStartDate, trip.startDate, tripLength, isZoomedOut, todayColumnIndex]);
 
   useEffect(() => {
+    const lane = travelLaneRef.current;
+    if (!lane) return;
+
+    const updateHeight = () => {
+      const measured = lane.clientHeight;
+      if (measured > 0) setTravelLaneHeight(measured);
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(lane);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!selectedItemId) return;
     if (lastAutoScrollSelectionRef.current === selectedItemId) return;
 
@@ -641,12 +689,12 @@ export const Timeline: React.FC<TimelineProps> = ({
             </div>
 
             {/* Content Area with PADDING */}
-            <div className="pt-8 pb-32 pl-8 pr-8 space-y-8 relative z-10">
+            <div className="pt-3 pb-16 pl-8 pr-8 space-y-2 md:space-y-3 relative z-10">
                 
                 {/* Cities Lane */}
-                <div className="relative h-32 w-full group/cities">
+                <div className="relative h-20 md:h-[5.5rem] w-full group/cities">
                     {/* Lane Label */}
-                    <div className="sticky left-0 mb-2 flex items-center justify-between z-20 w-64 pointer-events-auto">
+                    <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Cities & Stays
                          </span>
@@ -659,7 +707,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <Plus size={14} />
                         </button>
                     </div>
-                    <div className="relative h-28 w-full">
+                    <div className="relative h-16 md:h-[4.5rem] w-full">
                         {cities.map((city, index) => {
                             // Calculate Neighbors
                             const prev = index > 0 ? cities[index - 1] : null;
@@ -714,79 +762,104 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Travel Lane */}
-                 <div className="relative h-24 w-full group/travel">
+                 <div className="relative h-12 md:h-14 w-full group/travel">
                     <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
-                             Travel
+                             Transfer
                          </span>
                          <button 
                             onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                             disabled={!canEdit}
                             className={`opacity-0 group-hover/travel:opacity-100 transition-opacity bg-stone-100 text-stone-700 rounded-full p-1 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
-                            aria-label="Add travel"
+                            aria-label="Add transfer"
+                            title="Add transfer"
                         >
                              <Plus size={14} />
                         </button>
                     </div>
                     
-                    <div className="relative h-20 w-full overflow-visible" ref={travelLaneRef}>
+                    <div className="relative h-9 md:h-10 w-full overflow-visible" ref={travelLaneRef}>
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
                             const left = (fromEnd - visualStartOffset) * pixelsPerDay;
                             const right = (toStart - visualStartOffset) * pixelsPerDay;
-                            const width = Math.max(16, right - left);
-                            const mid = left + width / 2;
-                            const chipWidth = 140;
-                            const chipLeft = Math.max(0, mid - chipWidth / 2);
+                            const gapWidth = Math.max(10, right - left);
+                            const preferredChipWidth = 122;
+                            const chipWidth = gapWidth >= 100
+                                ? Math.min(136, Math.max(preferredChipWidth, gapWidth - 24))
+                                : Math.max(88, gapWidth - 6);
+                            const chipLeft = left + ((gapWidth - chipWidth) / 2);
                             const chipRight = chipLeft + chipWidth;
+                            const chipCenterY = Math.max(16, travelLaneHeight / 2);
+                            const chipTop = chipCenterY - 16;
+                            const cityAttachY = chipTop - (travelLaneHeight >= 38 ? 27 : 23);
+                            const cityAnchorInset = Math.min(10, Math.max(4, gapWidth * 0.16));
+                            const leftCityAnchorX = left - cityAnchorInset;
+                            const rightCityAnchorX = right + cityAnchorInset;
+                            const pillAnchorInset = Math.min(14, Math.max(8, chipWidth * 0.16));
+                            const leftPillAnchorX = chipLeft + pillAnchorInset;
+                            const rightPillAnchorX = chipRight - pillAnchorInset;
                             const travel = link.travelItem;
                             const mode = normalizeTransportMode(travel?.transportMode);
                             const isUnsetTransport = mode === 'na';
                             const isSelected = travel && selectedItemId === travel.id;
+                            const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
+                            const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
-                            const connectorHeight = 10;
-                            const connectorGap = 6;
-                            const lineY = 8;
-                            const lineAStart = left + connectorGap;
-                            const lineAEnd = chipLeft - connectorGap;
-                            const lineBStart = chipRight + connectorGap;
-                            const lineBEnd = right - connectorGap;
-                            const showLineA = lineAEnd > lineAStart;
-                            const showLineB = lineBEnd > lineBStart;
+                            const leftPath = buildTransferConnectorPath(
+                                leftCityAnchorX,
+                                cityAttachY,
+                                leftPillAnchorX,
+                                chipTop + 1,
+                                Math.abs(leftPillAnchorX - leftCityAnchorX) < 18
+                            );
+                            const rightPath = buildTransferConnectorPath(
+                                rightCityAnchorX,
+                                cityAttachY,
+                                rightPillAnchorX,
+                                chipTop + 1,
+                                Math.abs(rightCityAnchorX - rightPillAnchorX) < 18
+                            );
 
                             return (
-                                <div key={link.id} className="absolute top-2 bottom-2">
-                                    {/* Vertical ticks down from city end/start */}
-                                    <div className="absolute w-px bg-stone-200" style={{ left, top: 0, height: connectorHeight }} />
-                                    <div className="absolute w-px bg-stone-200" style={{ left: right, top: 0, height: connectorHeight }} />
-
-                                    {/* Connection lines from city -> transport chip */}
-                                    {showLineA && (
-                                        <div className="absolute h-0.5 bg-stone-200" style={{ left: lineAStart, width: lineAEnd - lineAStart, top: lineY }} />
-                                    )}
-                                    {showLineB && (
-                                        <div className="absolute h-0.5 bg-stone-200" style={{ left: lineBStart, width: lineBEnd - lineBStart, top: lineY }} />
-                                    )}
-
-                                    {/* Main connection line between cities */}
-                                    <div className="absolute top-1/2 -translate-y-1/2 h-0.5 bg-stone-100" style={{ left, width }} />
+                                <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
+                                    <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                        <path
+                                            d={leftPath}
+                                            fill="none"
+                                            stroke="rgb(107 114 128)"
+                                            strokeWidth={1.7}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                        />
+                                        <path
+                                            d={rightPath}
+                                            fill="none"
+                                            stroke="rgb(107 114 128)"
+                                            strokeWidth={1.7}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                        />
+                                    </svg>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                        className={`absolute top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors
+                                        className={`absolute -translate-y-1/2 px-2 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
-                                        style={{ left: chipLeft, width: chipWidth }}
+                                        style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: 32 }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                         disabled={!travel && !canEdit}
                                     >
                                         {!isUnsetTransport && (
                                             <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                         )}
-                                        <span className="uppercase tracking-wider">{mode === 'na' ? 'N/A' : mode}</span>
-                                        {durationHours !== null && (
-                                            <span className="text-[10px] font-normal text-gray-400 ml-auto">{durationHours}h</span>
+                                        <span className="uppercase tracking-wider truncate min-w-0">{mode === 'na' ? 'N/A' : mode}</span>
+                                        {durationHours !== null && chipWidth >= 92 && (
+                                            <span className="text-[10px] font-normal text-gray-400 ml-auto shrink-0">{durationHours}h</span>
                                         )}
                                     </button>
                                 </div>

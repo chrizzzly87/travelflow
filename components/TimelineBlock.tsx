@@ -81,6 +81,28 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
+  const cityDayCount = isCity ? Math.max(1, Math.ceil(item.duration - 0.01)) : 0;
+  const cityNightCount = isCity ? Math.max(0, cityDayCount - 1) : 0;
+  const cityDurationFullLabel = `${cityDayCount} ${cityDayCount === 1 ? 'Day' : 'Days'} / ${cityNightCount} ${cityNightCount === 1 ? 'Night' : 'Nights'}`;
+  const cityDurationShortLabel = `${cityDayCount}D / ${cityNightCount}N`;
+  const showDetailedCityDuration = pixelsPerDay <= 90;
+  const showShortCityDuration = pixelsPerDay > 90 && pixelsPerDay <= 130;
+  const cityDurationLabel = isCity
+    ? (showDetailedCityDuration ? cityDurationFullLabel : (showShortCityDuration ? cityDurationShortLabel : ''))
+    : '';
+  const fallbackCountryFromLocation = item.location
+    ? (() => {
+        const parts = item.location.split(',').map(part => part.trim()).filter(Boolean);
+        return parts.length > 0 ? parts[parts.length - 1] : undefined;
+      })()
+    : undefined;
+  const cityCountry = item.countryName || fallbackCountryFromLocation;
+  const cityTooltipTitle = isCity && cityCountry && !item.title.toLowerCase().includes(cityCountry.toLowerCase())
+    ? `${item.title}, ${cityCountry}`
+    : item.title;
+  const cityTooltipText = isCity && !vertical && !isLoadingItem
+    ? `${cityTooltipTitle} • ${cityDurationFullLabel}`
+    : undefined;
 
   const handlePointerDown = (e: React.PointerEvent) => {
       if (!canEdit) return;
@@ -132,13 +154,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isCity ? 'opacity-80 rounded-sm border cursor-pointer' : 'rounded-lg border shadow-sm'} 
         ${!vertical && isCity ? 'top-0 bottom-0' : ''}
         ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
-        ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
+        ${(isTravel || isEmptyTravel) ? 'z-20' : (isCity ? 'overflow-visible' : 'overflow-hidden')}
+        ${isCity ? 'group-hover:z-40' : ''}
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
       style={finalStyle}
       onPointerDown={handlePointerDown}
       onClick={handleClick}
+      data-tooltip={cityTooltipText}
     >
       {/* Visual Buffers (Travel Only) */}
       {isTravel && (
@@ -169,14 +193,14 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       )}
 
       {/* Main Content Container */}
-      <div className={`flex items-center px-1 relative h-full w-full pointer-events-none overflow-hidden
+      <div className={`flex items-center px-1.5 relative h-full w-full pointer-events-none overflow-hidden
           ${vertical 
              ? (
                 isCompactVerticalActivity
                   ? 'justify-center text-center'
                   : (size < 40 ? 'hidden' : size < 60 ? 'flex-row justify-center gap-1.5' : 'flex-col justify-center text-center py-1')
                )
-             : 'justify-center flex-col text-center'}
+             : (isCity ? 'justify-center flex-col text-center py-0.5' : 'justify-center flex-col text-center')}
       `}>
         
         {isTravel && (
@@ -200,7 +224,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                 className={`font-semibold select-none leading-tight 
                     ${isCompactVerticalActivity
                         ? 'w-full truncate whitespace-nowrap text-center'
-                        : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal'}
+                        : `${isTravel ? 'text-xs w-full whitespace-normal line-clamp-2' : (isCity ? 'text-[13px] md:text-[15px] w-full whitespace-normal line-clamp-2' : 'text-sm whitespace-normal')}
                            ${!isTravel && 'line-clamp-2'}
                            ${vertical 
                                ? (item.duration * pixelsPerDay < 60 ? 'truncate whitespace-nowrap' : 'w-full break-words') 
@@ -231,13 +255,13 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                     : 'hidden sm:block'}
             `}>
                 {isCity 
-                    ? `${Number(item.duration.toFixed(1))} Nights` 
+                    ? cityDurationLabel
                     : (item.duration * pixelsPerDay > 30 ? (item.duration === 1 ? '1D' : `${Number(item.duration.toFixed(1))}D`) : '') 
                 }
             </span>
         )}
       </div>
-      
+
       {/* Duration Display (Activities - Horizontal Backup) */}
       {!vertical && !isTravel && !isEmptyTravel && !isCity && item.duration * pixelsPerDay > 50 && (
         <span className="sm:hidden text-[10px] opacity-70 truncate select-none px-3 pb-1 w-full text-center">

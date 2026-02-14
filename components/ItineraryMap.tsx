@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { ITimelineItem, MapColorMode, MapStyle, RouteMode } from '../types';
+import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
@@ -22,7 +22,7 @@ interface ItineraryMapProps {
     focusLocationQuery?: string;
     fitToRouteKey?: string;
     onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
-    onRouteStatus?: (travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => void;
+    onRouteStatus?: (travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string }) => void;
     mapColorMode?: MapColorMode;
     onMapColorModeChange?: (mode: MapColorMode) => void;
     isPaywalled?: boolean;

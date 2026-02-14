@@ -189,11 +189,11 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
     const newTravel: ITimelineItem = {
         id,
         type: 'travel',
-        title: 'New Travel',
+        title: 'New Transfer',
         startDateOffset: startOffset,
         duration: duration,
         color: TRAVEL_COLOR,
-        description: 'Travel segment',
+        description: 'Transfer segment',
         transportMode: 'car'
     };
     onUpdateItems([...trip.items, newTravel]);
@@ -210,7 +210,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
       const newItem: ITimelineItem = {
           id: `travel-new-${Date.now()}`,
           type: 'travel-empty',
-          title: `Travel to ${toCity.title}`,
+          title: `Transfer to ${toCity.title}`,
           startDateOffset: startOffset,
           duration: 0.2,
           color: TRAVEL_EMPTY_COLOR,
@@ -631,14 +631,16 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 {/* Travel Column */}
                 <div className="relative w-16 border-r border-gray-100 group/travel overflow-visible">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
-                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Travel</span>
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
                          <button 
                              onClick={(e) => { e.stopPropagation(); if (!canEdit) return; handleAddTravel(); }}
                              disabled={!canEdit}
                              className={`opacity-0 group-hover/travel:opacity-100 transition-opacity ml-1 bg-stone-100 text-stone-600 rounded-full p-0.5 ${canEdit ? 'hover:bg-stone-200' : 'opacity-50 cursor-not-allowed'}`}
+                             aria-label="Add transfer"
+                             title="Add transfer"
                          >
-                             <Plus size={12} />
-                         </button>
+                              <Plus size={12} />
+                          </button>
                      </div>
 
                     <div className="relative w-full h-full overflow-visible" ref={travelLaneRef}>
