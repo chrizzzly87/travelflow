@@ -14,5 +14,6 @@ summary: "Trip timeline now uses denser transfer lanes, clearer transfer copy, a
 - [x] [Improved] 🧭 The horizontal timeline now uses a denser city/transfer layout to free vertical space and keep routes easier to scan.
 - [x] [Improved] 🔁 Planner timeline labels and helper copy now use "Transfer" where travel-between-cities actions are shown.
 - [x] [Improved] 🔗 Transfer pills now use dedicated city-to-pill connector lines, with dashed styling when transfer routing is missing or failed.
-- [x] [Improved] 🏙️ City stay cards now show correct day/night formatting (for example, “3 Days / 2 Nights”) and expose full city + country + stay length in a desktop hover tooltip.
+- [x] [Improved] 🏙️ City stay cards now use a cleaner compact layout and show full city/country + stay details via the delayed desktop tooltip.
+- [x] [Improved] 🔎 Transfer pills now adapt by zoom level (compact icon-only/N-A at very small zoom, readable icon+label at regular zoom, and duration metadata when space allows).
 - [ ] [Internal] 🧱 Added shared route-status typing and timeline prop plumbing so connector styling can react to map routing outcomes.

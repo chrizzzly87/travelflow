@@ -28,7 +28,7 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
 // Small negative offset into the city edge so connectors visually "touch" without a seam.
 const TRANSFER_CONNECTOR_CITY_OVERLAP_PX = 2;
-const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'straight';
+const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'rounded';
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -59,7 +59,7 @@ const buildTransferConnectorPath = (
   const horizontalGap = Math.abs(toX - fromX);
   const verticalGap = Math.max(0, toY - fromY);
   if (forceStraight || horizontalGap < 14 || verticalGap < 8) {
-    return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+    return `M ${fromX} ${fromY} V ${toY} H ${toX}`;
   }
 
   const direction = toX >= fromX ? 1 : -1;
@@ -711,7 +711,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             </div>
 
             {/* Content Area with PADDING */}
-            <div className="pt-3 pb-16 pl-8 pr-8 space-y-2 md:space-y-3 relative z-10">
+            <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
                 
                 {/* Cities Lane */}
                 <div className="relative h-[4.5rem] md:h-20 w-full group/cities z-20">
@@ -784,8 +784,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Travel Lane */}
-                 <div className="relative h-12 md:h-14 w-full group/travel z-10">
-                    <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
+                 <div className="relative h-11 md:h-12 w-full group/travel z-10">
+                    <div className="sticky left-0 mb-0.5 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
                          </span>
@@ -800,24 +800,37 @@ export const Timeline: React.FC<TimelineProps> = ({
                         </button>
                     </div>
                     
-                    <div className="relative h-9 md:h-10 w-full overflow-visible" ref={travelLaneRef}>
+                    <div className="relative h-8 md:h-9 w-full overflow-visible" ref={travelLaneRef}>
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
                             const left = (fromEnd - visualStartOffset) * pixelsPerDay;
                             const right = (toStart - visualStartOffset) * pixelsPerDay;
                             const gapWidth = Math.max(10, right - left);
-                            const preferredChipWidth = 122;
-                            const chipWidth = gapWidth >= 100
-                                ? Math.min(136, Math.max(preferredChipWidth, gapWidth - 24))
-                                : Math.max(88, gapWidth - 6);
+                            const travel = link.travelItem;
+                            const mode = normalizeTransportMode(travel?.transportMode);
+                            const isUnsetTransport = mode === 'na';
+                            const isTinyTransferPill = pixelsPerDay <= 52;
+                            const showIconOnly = isTinyTransferPill && !isUnsetTransport;
+                            let chipWidth: number;
+                            if (isTinyTransferPill) {
+                                const compactMinWidth = isUnsetTransport ? 54 : 44;
+                                const compactMaxWidth = isUnsetTransport ? 72 : 56;
+                                chipWidth = Math.max(compactMinWidth, Math.min(compactMaxWidth, gapWidth - 8));
+                            } else {
+                                const baseReadableWidth = pixelsPerDay >= 120 ? 130 : (pixelsPerDay >= 90 ? 116 : 102);
+                                const maxReadableWidth = pixelsPerDay >= 120 ? 148 : (pixelsPerDay >= 90 ? 134 : 122);
+                                chipWidth = Math.max(baseReadableWidth, gapWidth - 6);
+                                chipWidth = Math.min(maxReadableWidth, chipWidth);
+                            }
+                            chipWidth = Math.max(24, chipWidth);
                             const chipLeft = left + ((gapWidth - chipWidth) / 2);
                             const chipRight = chipLeft + chipWidth;
-                            const chipCenterY = Math.max(16, travelLaneHeight / 2);
+                            const chipCenterY = Math.max(14, (travelLaneHeight / 2) - 2);
                             const chipTop = chipCenterY - 16;
-                            const cityAttachY = cityBottomAnchorY ?? (chipTop - 24);
-                            const cityAnchorInset = Math.min(10, Math.max(4, gapWidth * 0.16));
+                            const cityAttachY = cityBottomAnchorY ?? (chipTop - 14);
                             const pillAnchorInset = Math.min(14, Math.max(8, chipWidth * 0.16));
+                            const cityAnchorInset = Math.min(16, Math.max(10, pillAnchorInset + 1));
                             const leftPillAnchorX = chipLeft + pillAnchorInset;
                             const rightPillAnchorX = chipRight - pillAnchorInset;
                             const leftCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
@@ -826,12 +839,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const rightCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
                                 ? rightPillAnchorX
                                 : right + cityAnchorInset;
-                            const travel = link.travelItem;
-                            const mode = normalizeTransportMode(travel?.transportMode);
-                            const isUnsetTransport = mode === 'na';
                             const isSelected = travel && selectedItemId === travel.id;
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
+                            const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
+                            const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                             const leftPath = buildTransferConnectorPath(
                                 leftCityAnchorX,
@@ -859,6 +871,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                            strokeOpacity={connectorOpacity}
                                         />
                                         <path
                                             d={rightPath}
@@ -868,12 +881,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                            strokeOpacity={connectorOpacity}
                                         />
                                     </svg>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                        className={`absolute z-10 -translate-y-1/2 px-2 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
+                                        className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
+                                            ${showIconOnly ? 'justify-center gap-0 px-2' : 'gap-1.5 px-2'}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: 32 }}
@@ -883,8 +898,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         {!isUnsetTransport && (
                                             <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                         )}
-                                        <span className="uppercase tracking-wider truncate min-w-0">{mode === 'na' ? 'N/A' : mode}</span>
-                                        {durationHours !== null && chipWidth >= 92 && (
+                                        {!showIconOnly && (
+                                            <span className={`uppercase tracking-wider min-w-0 ${isUnsetTransport ? 'w-full text-center truncate' : 'truncate'}`}>{mode === 'na' ? 'N/A' : mode}</span>
+                                        )}
+                                        {!showIconOnly && !isUndefinedTransfer && durationHours !== null && chipWidth >= 100 && pixelsPerDay >= 95 && (
                                             <span className="text-[10px] font-normal text-gray-400 ml-auto shrink-0">{durationHours}h</span>
                                         )}
                                     </button>
