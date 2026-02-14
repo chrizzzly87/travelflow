@@ -24,6 +24,11 @@ interface TimelineProps {
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+// Set to >0 if you want a visible gap below city cards before connectors start.
+const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
+// Small negative offset into the city edge so connectors visually "touch" without a seam.
+const TRANSFER_CONNECTOR_CITY_OVERLAP_PX = 2;
+const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'straight';
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -48,6 +53,9 @@ const buildTransferConnectorPath = (
   toY: number,
   forceStraight: boolean
 ): string => {
+  if (TRANSFER_CONNECTOR_STYLE === 'straight') {
+    return `M ${fromX} ${fromY} V ${toY}`;
+  }
   const horizontalGap = Math.abs(toX - fromX);
   const verticalGap = Math.max(0, toY - fromY);
   if (forceStraight || horizontalGap < 14 || verticalGap < 8) {
@@ -86,6 +94,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 }) => {
   const canEdit = !readOnly;
   const containerRef = useRef<HTMLDivElement>(null);
+  const cityCardsRowRef = useRef<HTMLDivElement>(null);
   const travelLaneRef = useRef<HTMLDivElement>(null);
   const ignoreClickRef = useRef<boolean>(false);
   const dragStartItemsRef = useRef<ITimelineItem[] | null>(null);
@@ -107,6 +116,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
   const [travelLaneHeight, setTravelLaneHeight] = useState<number>(40);
+  const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
   const visualStartOffset = timelineBounds.startOffset;
@@ -544,19 +554,31 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [parsedTripStartDate, trip.startDate, tripLength, isZoomedOut, todayColumnIndex]);
 
   useEffect(() => {
-    const lane = travelLaneRef.current;
-    if (!lane) return;
+    const travelLane = travelLaneRef.current;
+    const cityCardsRow = cityCardsRowRef.current;
+    if (!travelLane) return;
 
-    const updateHeight = () => {
-      const measured = lane.clientHeight;
+    const updateMetrics = () => {
+      const measured = travelLane.clientHeight;
       if (measured > 0) setTravelLaneHeight(measured);
+
+      if (cityCardsRow) {
+        const cityRect = cityCardsRow.getBoundingClientRect();
+        const travelRect = travelLane.getBoundingClientRect();
+        const anchorY =
+          (cityRect.bottom - travelRect.top)
+          - TRANSFER_CONNECTOR_TOP_GAP_PX
+          - TRANSFER_CONNECTOR_CITY_OVERLAP_PX;
+        if (Number.isFinite(anchorY)) setCityBottomAnchorY(anchorY);
+      }
     };
 
-    updateHeight();
+    updateMetrics();
 
     if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(lane);
+    const observer = new ResizeObserver(updateMetrics);
+    observer.observe(travelLane);
+    if (cityCardsRow) observer.observe(cityCardsRow);
     return () => observer.disconnect();
   }, []);
 
@@ -692,7 +714,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <div className="pt-3 pb-16 pl-8 pr-8 space-y-2 md:space-y-3 relative z-10">
                 
                 {/* Cities Lane */}
-                <div className="relative h-20 md:h-[5.5rem] w-full group/cities">
+                <div className="relative h-[4.5rem] md:h-20 w-full group/cities z-20">
                     {/* Lane Label */}
                     <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
@@ -707,7 +729,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <Plus size={14} />
                         </button>
                     </div>
-                    <div className="relative h-16 md:h-[4.5rem] w-full">
+                    <div ref={cityCardsRowRef} className="relative h-[3.5rem] md:h-16 w-full">
                         {cities.map((city, index) => {
                             // Calculate Neighbors
                             const prev = index > 0 ? cities[index - 1] : null;
@@ -762,7 +784,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Travel Lane */}
-                 <div className="relative h-12 md:h-14 w-full group/travel">
+                 <div className="relative h-12 md:h-14 w-full group/travel z-10">
                     <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
@@ -793,13 +815,17 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const chipRight = chipLeft + chipWidth;
                             const chipCenterY = Math.max(16, travelLaneHeight / 2);
                             const chipTop = chipCenterY - 16;
-                            const cityAttachY = chipTop - (travelLaneHeight >= 38 ? 27 : 23);
+                            const cityAttachY = cityBottomAnchorY ?? (chipTop - 24);
                             const cityAnchorInset = Math.min(10, Math.max(4, gapWidth * 0.16));
-                            const leftCityAnchorX = left - cityAnchorInset;
-                            const rightCityAnchorX = right + cityAnchorInset;
                             const pillAnchorInset = Math.min(14, Math.max(8, chipWidth * 0.16));
                             const leftPillAnchorX = chipLeft + pillAnchorInset;
                             const rightPillAnchorX = chipRight - pillAnchorInset;
+                            const leftCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? leftPillAnchorX
+                                : left - cityAnchorInset;
+                            const rightCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? rightPillAnchorX
+                                : right + cityAnchorInset;
                             const travel = link.travelItem;
                             const mode = normalizeTransportMode(travel?.transportMode);
                             const isUnsetTransport = mode === 'na';
@@ -823,12 +849,12 @@ export const Timeline: React.FC<TimelineProps> = ({
                             );
 
                             return (
-                                <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
+                                <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none z-0">
                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
                                         <path
                                             d={leftPath}
                                             fill="none"
-                                            stroke="rgb(107 114 128)"
+                                            stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -837,7 +863,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         <path
                                             d={rightPath}
                                             fill="none"
-                                            stroke="rgb(107 114 128)"
+                                            stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
@@ -846,7 +872,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     </svg>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                        className={`absolute -translate-y-1/2 px-2 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors pointer-events-auto
+                                        className={`absolute z-10 -translate-y-1/2 px-2 rounded-full border text-[11px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
