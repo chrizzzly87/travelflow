@@ -16,4 +16,5 @@ summary: "Trip timeline now uses denser transfer lanes, clearer transfer copy, a
 - [x] [Improved] 🔗 Transfer pills now use dedicated city-to-pill connector lines, with dashed styling when transfer routing is missing or failed.
 - [x] [Improved] 🏙️ City stay cards now use a cleaner compact layout and show full city/country + stay details via the delayed desktop tooltip.
 - [x] [Improved] 🔎 Transfer pills now adapt by zoom level (compact icon-only/N-A at very small zoom, readable icon+label at regular zoom, and duration metadata when space allows).
+- [x] [Fixed] 🛡️ Example and preview routes now fail gracefully when Supabase environment settings are missing or malformed instead of throwing an app-blocking error.
 - [ ] [Internal] 🧱 Added shared route-status typing and timeline prop plumbing so connector styling can react to map routing outcomes.
