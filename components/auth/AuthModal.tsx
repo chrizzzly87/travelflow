@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { OAuthProviderId } from '../../services/authService';
 import { trackEvent } from '../../services/analyticsService';
+import { getLastUsedOAuthProvider, setLastUsedOAuthProvider } from '../../services/authUiPreferencesService';
 
 type AuthMode = 'login' | 'register';
 
@@ -54,6 +55,10 @@ const OAUTH_BUTTONS: Array<{
         buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
     },
 ];
+
+const getOauthButtonConfig = (provider: OAuthProviderId) => {
+    return OAUTH_BUTTONS.find((item) => item.provider === provider) || null;
+};
 
 const normalizeErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -99,6 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
+    const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const hasHandledSuccessRef = useRef(false);
 
     const oauthRedirectTo = useMemo(() => {
@@ -127,6 +133,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             document.body.style.overflow = previousOverflow;
         };
     }, [isOpen]);
+
+    useEffect(() => {
+        const handleStorageUpdate = () => {
+            setLastUsedProviderState(getLastUsedOAuthProvider());
+        };
+        window.addEventListener('storage', handleStorageUpdate);
+        return () => window.removeEventListener('storage', handleStorageUpdate);
+    }, []);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -210,6 +224,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
+        setLastUsedOAuthProvider(provider);
+        setLastUsedProviderState(provider);
         trackEvent('auth__method--select', { method: provider, source: 'modal' });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
         if (response.error) {
@@ -219,6 +235,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
         setInfoMessage(t('actions.submitting'));
     };
+
+    const lastUsedProviderLabelKey = lastUsedProvider
+        ? getOauthButtonConfig(lastUsedProvider)?.labelKey || null
+        : null;
 
     return (
         <div className="fixed inset-0 z-[21000] flex items-center justify-center p-4 sm:p-6">
@@ -314,19 +334,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <span className="h-px flex-1 bg-slate-200" />
                     </div>
 
+                    {lastUsedProviderLabelKey && (
+                        <div className="mb-3 rounded-xl border border-accent-200 bg-gradient-to-r from-accent-50 via-white to-accent-50 px-3 py-2 text-xs text-slate-700">
+                            <span className="rounded-full bg-accent-100 px-2 py-0.5 font-semibold text-accent-800">
+                                {t('copy.lastUsedTag')}
+                            </span>
+                            <span className="ml-2 font-semibold">
+                                {t('copy.lastUsedProvider', { provider: t(lastUsedProviderLabelKey) })}
+                            </span>
+                        </div>
+                    )}
+
                     <div className="space-y-2">
                         {OAUTH_BUTTONS.map((item) => {
                             const Icon = item.icon;
+                            const isLastUsed = lastUsedProvider === item.provider;
                             return (
                                 <button
                                     key={item.provider}
                                     type="button"
                                     onClick={() => void handleOAuthLogin(item.provider)}
                                     disabled={isSubmitting}
-                                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${item.buttonClassName}`}
+                                    className={`inline-flex w-full items-center justify-between rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                        isLastUsed
+                                            ? 'border-accent-300 bg-accent-50'
+                                            : 'border-slate-300 bg-white'
+                                    } ${item.buttonClassName}`}
                                 >
-                                    <Icon size={18} className={item.iconClassName} />
-                                    {t(item.labelKey)}
+                                    <span className="inline-flex items-center gap-2">
+                                        <Icon size={18} className={item.iconClassName} />
+                                        {t(item.labelKey)}
+                                    </span>
+                                    {isLastUsed && (
+                                        <span className="rounded-full border border-accent-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
+                                            {t('copy.lastUsedTag')}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}

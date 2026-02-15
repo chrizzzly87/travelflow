@@ -21,6 +21,7 @@ summary: "Added production auth with tier-based access, synced pricing tiers, an
 - [x] [Improved] 🧭 Added a dedicated admin navigation shell with direct links to Dashboard, AI Benchmark, Access Control, and a quick "Back to Platform" action.
 - [x] [Improved] 🔁 Hardened OAuth return flow so post-login resumes reliably redirect users to the page where authentication started.
 - [x] [Improved] 🛂 Added login/logout controls in trip and example views so auth actions are accessible directly inside the planner workspace.
+- [x] [Improved] 🏷️ Added a lightweight "Last used" social provider badge on both login page and login modal using local storage preferences.
 - [ ] [Internal] 🗃️ Added Supabase RPC and schema extensions for roles, tier overrides, queued generation requests, and auth flow logs.
 - [ ] [Internal] 📈 Added auth observability with structured analytics events and local redacted `tf_auth_trace_v1` debugging buffer.
 - [ ] [Internal] 🛡️ Migrated AI benchmark edge auth to admin bearer-token verification with optional emergency key fallback flag.
