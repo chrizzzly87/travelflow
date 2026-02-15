@@ -10,6 +10,7 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
 
 const SESSION_DISMISS_KEY = 'tf_locale_suggestion_dismissed_session';
+const SWITCH_ACK_KEY = 'tf_locale_suggestion_switched';
 
 const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; actionShort: string; dismiss: string }> = {
     en: {
@@ -54,20 +55,12 @@ const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; 
         actionShort: '🇮🇹 Italiano',
         dismiss: 'Chiudi suggerimento lingua',
     },
-};
-
-const appendLanguageBannerTrackingParams = (target: string, from: AppLanguage, to: AppLanguage): string => {
-    if (typeof window === 'undefined') return target;
-    try {
-        const url = new URL(target, window.location.origin);
-        url.searchParams.set('utm_source', 'language_banner');
-        url.searchParams.set('utm_medium', 'locale_switch');
-        url.searchParams.set('utm_campaign', 'language_suggestion');
-        url.searchParams.set('utm_content', `${from}_to_${to}`);
-        return `${url.pathname}${url.search}${url.hash}`;
-    } catch {
-        return target;
-    }
+    pl: {
+        message: 'Ta strona jest również dostępna po polsku.',
+        action: `Wypróbuj ${APP_NAME} po polsku`,
+        actionShort: '🇵🇱 Polski',
+        dismiss: 'Zamknij podpowiedź języka',
+    },
 };
 
 const getBrowserPreferredLocale = (currentLocale: AppLanguage): AppLanguage | null => {
@@ -99,6 +92,15 @@ const isDismissedForSession = (): boolean => {
     }
 };
 
+const isSwitchAcknowledged = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    try {
+        return window.localStorage.getItem(SWITCH_ACK_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+
 export const LanguageSuggestionBanner: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -112,7 +114,9 @@ export const LanguageSuggestionBanner: React.FC = () => {
         return getBrowserPreferredLocale(activeLocale);
     }, [activeLocale, location.pathname]);
 
-    const [dismissed, setDismissed] = useState<boolean>(() => isDismissedForSession());
+    const [dismissed, setDismissed] = useState<boolean>(() => (
+        isDismissedForSession() || isSwitchAcknowledged()
+    ));
 
     if (!suggestedLocale || dismissed) return null;
 
@@ -133,20 +137,30 @@ export const LanguageSuggestionBanner: React.FC = () => {
     };
 
     const handleSwitch = () => {
+        setDismissed(true);
+        if (typeof window !== 'undefined') {
+            try {
+                window.sessionStorage.setItem(SESSION_DISMISS_KEY, '1');
+                window.localStorage.setItem(SWITCH_ACK_KEY, '1');
+            } catch {
+                // ignore
+            }
+        }
+
         void preloadLocaleNamespaces(suggestedLocale, getNamespacesForMarketingPath(location.pathname));
         applyDocumentLocale(suggestedLocale);
         void i18n.changeLanguage(suggestedLocale);
 
-        const baseTarget = buildLocalizedLocation({
+        const target = buildLocalizedLocation({
             pathname: location.pathname,
             search: location.search,
             hash: location.hash,
             targetLocale: suggestedLocale,
         });
-        const target = appendLanguageBannerTrackingParams(baseTarget, activeLocale, suggestedLocale);
         trackEvent('navigation__language_suggestion--switch', {
             from: activeLocale,
             to: suggestedLocale,
+            source: 'language_banner',
             target,
         });
         navigate(target);
@@ -165,7 +179,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
                     className="shrink-0 rounded-lg border border-cyan-300 bg-white px-2 py-1 text-xs font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 sm:px-2.5"
                     {...getAnalyticsDebugAttributes('navigation__language_suggestion--switch', {
                         to: suggestedLocale,
-                        utm_source: 'language_banner',
+                        source: 'language_banner',
                     })}
                 >
                     <span className="sm:hidden">{copy.actionShort}</span>

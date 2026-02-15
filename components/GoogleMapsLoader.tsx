@@ -19,6 +19,7 @@ const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
     pt: 'pt',
     ru: 'ru',
     it: 'it',
+    pl: 'pl',
 };
 
 interface GoogleMapsLoaderProps {

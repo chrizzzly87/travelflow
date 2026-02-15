@@ -1,0 +1,99 @@
+{
+  "hero": {
+    "pill": "Możliwości produktu",
+    "title": "Planuj mądrzej, podróżuj lepiej",
+    "description": "TravelFlow łączy generowanie AI, wizualną edycję i współpracę w jednym miejscu. Oto wszystko, co platforma potrafi zrobić dla Twojej kolejnej podróży."
+  },
+  "heroCards": {
+    "ai": {
+      "title": "Generowanie planu przez AI",
+      "description": "Opisz, dokąd chcesz jechać, a TravelFlow utworzy cały plan — zoptymalizowane trasy, dobrane atrakcje i realistyczny timing — w mniej niż 30 sekund. Tryby Classic, Wizard i Surprise Me dopasowują się do Twojego stylu planowania."
+    },
+    "map": {
+      "title": "Interaktywna mapa i oś czasu",
+      "description": "Twoja podróż żyje na prawdziwej mapie z animowanymi liniami tras, markerami miast i dynamicznym przybliżeniem. Pod mapą wizualna oś czasu pokazuje każdy dzień na pierwszy rzut oka. Przełączaj style: satelita, teren i minimal."
+    },
+    "editing": {
+      "title": "Edycja metodą przeciągnij i upuść",
+      "description": "Zmieniaj kolejność miast, wydłużaj pobyty i dodawaj spontaniczne przystanki — wszystko przez przeciąganie na osi czasu. Daty, połączenia i mapa aktualizują się automatycznie, więc wszystko pozostaje spójne."
+    }
+  },
+  "workflow": {
+    "title": "Jak to działa",
+    "subtitle": "Od pomysłu do planu podróży w trzech krokach.",
+    "step1Title": "Wybierz kierunek",
+    "step1Description": "Wskaż kraje, wyspy albo pozwól trybowi Surprise Me zaproponować idealne miejsce na Twój termin.",
+    "step2Title": "Wygeneruj z AI",
+    "step2Description": "Nasz model szkicuje pełną trasę z rozkładem miast, atrakcjami i logistyką. Efekt dopracujesz w kilka sekund.",
+    "step3Title": "Dopracuj i udostępnij",
+    "step3Description": "Przeciągaj miasta, zmieniaj czas pobytu, dodawaj notatki. Potem udostępnij link — Twoja ekipa zobaczy mapę i oś czasu na żywo."
+  },
+  "more": {
+    "title": "I znacznie więcej",
+    "subtitle": "Każdy detal zaprojektowano tak, by usunąć tarcie z planowania podróży."
+  },
+  "secondary": {
+    "sharing": {
+      "title": "Udostępnianie jednym kliknięciem",
+      "description": "Wygeneruj link i wyślij go ekipie. Zobaczą pełną mapę, oś czasu i atrakcje — bez zakładania konta."
+    },
+    "community": {
+      "title": "Inspiracje społeczności",
+      "description": "Przeglądaj wyselekcjonowane podróże z całego świata. Skopiuj dowolny plan jako punkt startowy i dopasuj go do siebie."
+    },
+    "booking": {
+      "title": "Linki do rezerwacji",
+      "description": "Każda atrakcja sugerowana przez AI ma link do platform rezerwacyjnych — wycieczki, restauracje, transport — więc zarezerwujesz wszystko bez wychodzenia z TravelFlow."
+    },
+    "duration": {
+      "title": "Sprytne podpowiedzi czasu pobytu",
+      "description": "TravelFlow analizuje sezonowość i dystanse, by podpowiedzieć, ile czasu spędzić w każdym mieście, żeby podróż nie była zbyt napięta."
+    },
+    "mobile": {
+      "title": "Zoptymalizowane pod mobile",
+      "description": "Planuj w ruchu dzięki responsywnemu układowi dopracowanemu pod telefony i tablety. Mapa, oś czasu i edycja dopasowują się do mniejszych ekranów."
+    },
+    "print": {
+      "title": "Plany gotowe do druku",
+      "description": "Przełącz się na widok wydruku, by otrzymać czytelny plan podróży z nagłówkami dni, listą atrakcji i kluczową logistyką."
+    },
+    "routing": {
+      "title": "Trasy przez wiele krajów",
+      "description": "Wybierz kilka krajów lub wysp, a TravelFlow ułoży trasę między regionami z realistycznym czasem przejazdów."
+    },
+    "history": {
+      "title": "Historia wersji",
+      "description": "Każda istotna zmiana tworzy migawkę. Jednym kliknięciem wrócisz do wcześniejszej wersji podróży."
+    },
+    "privacy": {
+      "title": "Prywatność przede wszystkim",
+      "description": "Twoje podróże domyślnie zostają lokalnie. Opcjonalna synchronizacja w chmurze działa po zgodzie, a analityka uruchamia się dopiero po wyraźnym opt-in."
+    }
+  },
+  "comparison": {
+    "title": "Jak TravelFlow wypada na tle innych",
+    "subtitle": "Porównanie obok arkuszy kalkulacyjnych i innych narzędzi podróżniczych.",
+    "featureHeader": "Funkcja",
+    "travelflowHeader": "TravelFlow",
+    "spreadsheetHeader": "Arkusz",
+    "otherHeader": "Inne narzędzia",
+    "yes": "Tak",
+    "partial": "Częściowo",
+    "manual": "Ręcznie",
+    "freemium": "Freemium",
+    "rows": {
+      "ai": "Plan wygenerowany przez AI",
+      "interactiveMap": "Interaktywna mapa",
+      "dragDrop": "Oś czasu drag-and-drop",
+      "oneClickSharing": "Udostępnianie jednym kliknięciem",
+      "bookingLinks": "Linki do rezerwacji",
+      "offlineFirst": "Offline-first / dane lokalne",
+      "freeToUse": "Darmowe w użyciu"
+    }
+  },
+  "cta": {
+    "title": "Zobacz to w praktyce",
+    "subtitle": "Utwórz swój pierwszy plan podróży z AI w mniej niż minutę.",
+    "button": "Zacznij planować — za darmo"
+  }
+}

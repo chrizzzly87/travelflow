@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
     AirplaneTilt,
     Bicycle,
@@ -8,6 +8,9 @@ import {
     Bus,
     CalendarBlank,
     CarProfile,
+    CaretDown,
+    CaretUp,
+    CheckCircle,
     Compass,
     DotsSixVertical,
     ForkKnife,
@@ -16,6 +19,7 @@ import {
     Laptop,
     MagicWand,
     MapPin,
+    MagnifyingGlass,
     Minus,
     MoonStars,
     Mountains,
@@ -26,42 +30,58 @@ import {
     Train,
     User,
     Users,
-    UsersFour,
     UsersThree,
+    UsersFour,
     Van,
     WarningCircle,
     X,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
+import { Switch } from '../components/ui/switch';
 import { useDbSync } from '../hooks/useDbSync';
-import { AppLanguage } from '../types';
+import { generateItinerary } from '../services/aiService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { getCountrySeasonByName } from '../data/countryTravelData';
+import { buildPath } from '../config/routes';
+import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
-    buildCreateTripUrl,
+    addDays,
+    DESTINATION_OPTIONS,
+    decodeTripPrefill,
+    encodeTripPrefill,
+    getDaysDifference,
     getDestinationMetaLabel,
     getDestinationOptionByName,
+    getDestinationPromptLabel,
     getDestinationSeasonCountryName,
+    generateTripId,
     resolveDestinationName,
     searchDestinationOptions,
 } from '../utils';
-import { getCountrySeasonByName } from '../data/countryTravelData';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;
+    onTripGenerated: (trip: ITrip) => void;
     onLanguageLoaded?: (lang: AppLanguage) => void;
 }
 
-type TravelerType = 'solo' | 'couple' | 'friends' | 'family';
 type BudgetType = 'Low' | 'Medium' | 'High' | 'Luxury';
 type PaceType = 'Relaxed' | 'Balanced' | 'Fast';
 type DateInputMode = 'exact' | 'flex';
 type FlexWindow = 'spring' | 'summer' | 'autumn' | 'winter' | 'shoulder';
+type TravelerType = 'solo' | 'couple' | 'friends' | 'family';
 type TransportMode = 'auto' | 'plane' | 'car' | 'train' | 'bus' | 'cycle' | 'walk' | 'camper';
 type TravelerGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
+type CollapsibleSection = 'traveler' | 'style' | 'transport';
+type TravelerComfort = 'social' | 'balanced' | 'private';
+type FriendsEnergy = 'chill' | 'mixed' | 'full-send';
+type CoupleOccasion = 'none' | 'honeymoon' | 'anniversary' | 'city-break';
 type SnapshotRouteGeometry = {
     axisX: number;
     firstY: number;
@@ -70,55 +90,73 @@ type SnapshotRouteGeometry = {
     segmentMidpoints: number[];
 };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-const STYLE_CHOICES: Array<{ id: string; label: string; icon: React.ComponentType<any> }> = [
-    { id: 'culture', label: 'Culture', icon: Buildings },
-    { id: 'food', label: 'Food', icon: ForkKnife },
-    { id: 'nature', label: 'Nature', icon: Mountains },
-    { id: 'beaches', label: 'Beaches', icon: SunHorizon },
-    { id: 'nightlife', label: 'Nightlife', icon: MoonStars },
-    { id: 'remote-work', label: 'Remote work', icon: Laptop },
-];
-
-const TRANSPORT_OPTIONS: Array<{ id: TransportMode; label: string; icon: React.ComponentType<any> }> = [
-    { id: 'auto', label: 'Automatic', icon: MagicWand },
-    { id: 'plane', label: 'Plane', icon: AirplaneTilt },
-    { id: 'car', label: 'Car', icon: CarProfile },
-    { id: 'train', label: 'Train', icon: Train },
-    { id: 'bus', label: 'Bus', icon: Bus },
-    { id: 'cycle', label: 'Cycle', icon: Bicycle },
-    { id: 'walk', label: 'Walk', icon: PersonSimpleWalk },
-    { id: 'camper', label: 'Camper', icon: Van },
-];
-
-const TRAVELER_OPTIONS: Array<{
-    id: TravelerType;
-    label: string;
-    subtitle: string;
-    icon: React.ComponentType<any>;
-}> = [
-    { id: 'solo', label: 'Solo', subtitle: 'One traveler', icon: User },
-    { id: 'couple', label: 'Couple', subtitle: 'Two travelers', icon: Users },
-    { id: 'friends', label: 'Friends', subtitle: 'Group trip', icon: UsersThree },
-    { id: 'family', label: 'Family', subtitle: 'Mixed ages', icon: UsersFour },
-];
-
-const FLEX_WINDOW_LABELS: Record<FlexWindow, string> = {
-    spring: 'Spring window',
-    summer: 'Summer window',
-    autumn: 'Autumn window',
-    winter: 'Winter window',
-    shoulder: 'Shoulder season',
+type ChoiceOption<TId extends string> = {
+    id: TId;
+    labelKey: string;
+    icon: React.ComponentType<{ size?: number; weight?: 'duotone' | 'fill' | 'regular' | 'bold' | 'thin' | 'light' }>;
 };
 
-const DID_YOU_KNOW_FACTS = [
-    'Trips with 2-4 nights per stop usually feel less rushed while still giving variety.',
-    'Choosing traveler profile early helps itinerary suggestions better match daily energy.',
-    'Transport preferences are easiest to tune after pace and budget are defined together.',
-    'You can still edit transport, cities, and timing after generation, so start with a strong brief.',
-    'Locking route order can improve first-draft itinerary consistency for multi-country trips.',
+type CreateTripDraftMeta = {
+    version: 1;
+    dateInputMode: DateInputMode;
+    flexWeeks: number;
+    flexWindow: FlexWindow;
+    startDestination: string;
+    routeLock: boolean;
+    travelerType: TravelerType;
+    transportModes: TransportMode[];
+    hasTransportOverride: boolean;
+    soloGender: TravelerGender;
+    soloAge: string;
+    soloComfort: TravelerComfort;
+    coupleTravelerA: TravelerGender;
+    coupleTravelerB: TravelerGender;
+    coupleOccasion: CoupleOccasion;
+    friendsCount: number;
+    friendsEnergy: FriendsEnergy;
+    familyAdults: number;
+    familyChildren: number;
+    familyBabies: number;
+};
+
+const STYLE_CHOICES: Array<ChoiceOption<string>> = [
+    { id: 'culture', labelKey: 'style.options.culture', icon: Buildings },
+    { id: 'food', labelKey: 'style.options.food', icon: ForkKnife },
+    { id: 'nature', labelKey: 'style.options.nature', icon: Mountains },
+    { id: 'beaches', labelKey: 'style.options.beaches', icon: SunHorizon },
+    { id: 'nightlife', labelKey: 'style.options.nightlife', icon: MoonStars },
+    { id: 'remote-work', labelKey: 'style.options.remoteWork', icon: Laptop },
 ];
+
+const TRANSPORT_OPTIONS: Array<ChoiceOption<TransportMode>> = [
+    { id: 'auto', labelKey: 'transport.options.auto', icon: MagicWand },
+    { id: 'plane', labelKey: 'transport.options.plane', icon: AirplaneTilt },
+    { id: 'car', labelKey: 'transport.options.car', icon: CarProfile },
+    { id: 'train', labelKey: 'transport.options.train', icon: Train },
+    { id: 'bus', labelKey: 'transport.options.bus', icon: Bus },
+    { id: 'cycle', labelKey: 'transport.options.cycle', icon: Bicycle },
+    { id: 'walk', labelKey: 'transport.options.walk', icon: PersonSimpleWalk },
+    { id: 'camper', labelKey: 'transport.options.camper', icon: Van },
+];
+
+const TRAVELER_OPTIONS: Array<ChoiceOption<TravelerType>> = [
+    { id: 'solo', labelKey: 'traveler.options.solo', icon: User },
+    { id: 'couple', labelKey: 'traveler.options.couple', icon: Users },
+    { id: 'friends', labelKey: 'traveler.options.friends', icon: UsersThree },
+    { id: 'family', labelKey: 'traveler.options.family', icon: UsersFour },
+];
+
+const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
+    { id: 'spring', labelKey: 'dates.flexWindow.options.spring' },
+    { id: 'summer', labelKey: 'dates.flexWindow.options.summer' },
+    { id: 'autumn', labelKey: 'dates.flexWindow.options.autumn' },
+    { id: 'winter', labelKey: 'dates.flexWindow.options.winter' },
+    { id: 'shoulder', labelKey: 'dates.flexWindow.options.shoulder' },
+];
+
+const DEFAULT_EFFECTIVE_STYLE_IDS = ['culture', 'food', 'nature', 'beaches', 'nightlife'];
+const DEFAULT_EFFECTIVE_TRAVELER: TravelerType = 'solo';
+const DEFAULT_EFFECTIVE_TRANSPORT: TransportMode = 'auto';
 
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -127,10 +165,68 @@ const toIsoDate = (date: Date): string => {
     return `${year}-${month}-${day}`;
 };
 
-const addDays = (date: Date, days: number): Date => {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
+const formatDestinationList = (destinations: string[]): string => {
+    if (destinations.length === 0) return '—';
+    if (destinations.length === 1) return destinations[0];
+    if (destinations.length === 2) return `${destinations[0]} & ${destinations[1]}`;
+    return `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
+};
+
+const buildLoadingTripPreview = (params: {
+    tripId: string;
+    destinationLabel: string;
+    focusLocations: string[];
+    startDate: string;
+    totalDays: number;
+    requestedStops: number;
+    roundTrip: boolean;
+}): ITrip => {
+    const now = Date.now();
+    const totalDays = Math.max(1, Math.round(params.totalDays));
+    const stops = Math.max(1, Math.min(params.requestedStops, totalDays));
+    const baseDuration = Math.floor(totalDays / stops);
+    const remainder = totalDays % stops;
+
+    let offset = 0;
+    const normalizedFocusLocations = Array.from(
+        new Set(
+            params.focusLocations
+                .map((location) => location.trim())
+                .filter((location) => location.length > 0)
+        )
+    );
+    const fallbackLocation = params.destinationLabel.trim() || 'Destination';
+    const items = Array.from({ length: stops }).map((_, index) => {
+        const cityDuration = baseDuration + (index < remainder ? 1 : 0);
+        const location = normalizedFocusLocations.length > 0
+            ? normalizedFocusLocations[index % normalizedFocusLocations.length]
+            : fallbackLocation;
+        const item = {
+            id: `loading-city-${index}-${now}`,
+            type: 'city' as const,
+            title: `Loading stop ${index + 1}`,
+            startDateOffset: offset,
+            duration: cityDuration,
+            color: 'bg-slate-100 border-slate-200 text-slate-400',
+            description: 'AI is generating this part of your itinerary.',
+            location,
+            loading: true,
+        };
+        offset += cityDuration;
+        return item;
+    });
+
+    return {
+        id: params.tripId,
+        title: `Planning ${params.destinationLabel || 'Trip'}...`,
+        startDate: params.startDate,
+        items,
+        createdAt: now,
+        updatedAt: now,
+        isFavorite: false,
+        roundTrip: params.roundTrip,
+        sourceKind: 'created',
+    };
 };
 
 const getInitialDateRange = (): { startDate: string; endDate: string } => {
@@ -142,45 +238,12 @@ const getInitialDateRange = (): { startDate: string; endDate: string } => {
     };
 };
 
-const getSuggestedTransportModes = (pace: PaceType, budget: BudgetType): TransportMode[] => {
-    if (budget === 'Low') {
-        if (pace === 'Relaxed') return ['bus', 'train', 'walk'];
-        if (pace === 'Balanced') return ['bus', 'train'];
-        return ['train', 'bus'];
-    }
-
-    if (budget === 'Medium') {
-        if (pace === 'Relaxed') return ['train', 'bus', 'cycle'];
-        if (pace === 'Balanced') return ['train', 'car'];
-        return ['train', 'plane'];
-    }
-
-    if (budget === 'High') {
-        if (pace === 'Relaxed') return ['train', 'car'];
-        if (pace === 'Balanced') return ['train', 'car', 'plane'];
-        return ['plane', 'train'];
-    }
-
-    if (pace === 'Relaxed') return ['car', 'plane'];
-    if (pace === 'Balanced') return ['plane', 'train', 'car'];
-    return ['plane', 'train'];
-};
-
-const areTransportModesEqual = (left: TransportMode[], right: TransportMode[]): boolean => {
-    if (left.length !== right.length) return false;
-    const leftSorted = [...left].sort();
-    const rightSorted = [...right].sort();
-    return leftSorted.every((mode, index) => mode === rightSorted[index]);
+const getErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message) return error.message;
+    return fallback;
 };
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
-
-const formatDestinationList = (destinations: string[]): string => {
-    if (destinations.length === 0) return 'Choose destinations';
-    if (destinations.length === 1) return destinations[0];
-    if (destinations.length === 2) return `${destinations[0]} & ${destinations[1]}`;
-    return `${destinations.slice(0, -1).join(', ')} & ${destinations[destinations.length - 1]}`;
-};
 
 const NumberStepper: React.FC<{
     label: string;
@@ -188,41 +251,46 @@ const NumberStepper: React.FC<{
     min: number;
     max: number;
     onChange: (next: number) => void;
-}> = ({ label, value, min, max, onChange }) => {
-    return (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</div>
-            <div className="mt-2 flex items-center justify-between gap-2">
-                <button
-                    type="button"
-                    onClick={() => onChange(clampNumber(value - 1, min, max))}
-                    disabled={value <= min}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    <Minus size={14} />
-                </button>
-                <span className="min-w-[2ch] text-center text-sm font-semibold text-slate-800">{value}</span>
-                <button
-                    type="button"
-                    onClick={() => onChange(clampNumber(value + 1, min, max))}
-                    disabled={value >= max}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    <Plus size={14} />
-                </button>
-            </div>
+}> = ({ label, value, min, max, onChange }) => (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+            <button
+                type="button"
+                onClick={() => onChange(clampNumber(value - 1, min, max))}
+                disabled={value <= min}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <Minus size={14} />
+            </button>
+            <span className="min-w-[2ch] text-center text-sm font-semibold text-slate-800">{value}</span>
+            <button
+                type="button"
+                onClick={() => onChange(clampNumber(value + 1, min, max))}
+                disabled={value >= max}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:border-accent-300 hover:text-accent-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+                <Plus size={14} />
+            </button>
         </div>
-    );
-};
+    </div>
+);
 
-export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> = ({ onOpenManager, onLanguageLoaded }) => {
+export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> = ({
+    onOpenManager,
+    onTripGenerated,
+    onLanguageLoaded,
+}) => {
+    const { t, i18n } = useTranslation('createTrip');
+    const [searchParams] = useSearchParams();
+
     useDbSync(onLanguageLoaded);
 
     const initialRange = useMemo(() => getInitialDateRange(), []);
 
     const [query, setQuery] = useState('');
-    const [destinations, setDestinations] = useState<string[]>(['Madeira', 'Portugal']);
-    const [startDestination, setStartDestination] = useState<string>('Madeira');
+    const [destinations, setDestinations] = useState<string[]>([]);
+    const [startDestination, setStartDestination] = useState<string>('');
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -232,41 +300,47 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [flexWeeks, setFlexWeeks] = useState(2);
     const [flexWindow, setFlexWindow] = useState<FlexWindow>('shoulder');
 
-    const [travelerType, setTravelerType] = useState<TravelerType>('couple');
-    const [pace, setPace] = useState<PaceType>('Balanced');
     const [budget, setBudget] = useState<BudgetType>('Medium');
+    const [pace, setPace] = useState<PaceType>('Balanced');
     const [roundTrip, setRoundTrip] = useState(true);
     const [routeLock, setRouteLock] = useState(false);
 
-    const [selectedStyles, setSelectedStyles] = useState<string[]>(['culture', 'food']);
-    const [notes, setNotes] = useState('Boutique stays, easy hikes, sunset viewpoints, and local seafood.');
+    const [travelerType, setTravelerType] = useState<TravelerType>(DEFAULT_EFFECTIVE_TRAVELER);
+    const [selectedStyles, setSelectedStyles] = useState<string[]>(DEFAULT_EFFECTIVE_STYLE_IDS);
+    const [transportModes, setTransportModes] = useState<TransportMode[]>([DEFAULT_EFFECTIVE_TRANSPORT]);
+    const [hasTransportOverride, setHasTransportOverride] = useState(false);
 
     const [soloGender, setSoloGender] = useState<TravelerGender>('');
     const [soloAge, setSoloAge] = useState('');
-    const [soloComfort, setSoloComfort] = useState<'social' | 'balanced' | 'private'>('balanced');
-
+    const [soloComfort, setSoloComfort] = useState<TravelerComfort>('balanced');
     const [coupleTravelerA, setCoupleTravelerA] = useState<TravelerGender>('');
     const [coupleTravelerB, setCoupleTravelerB] = useState<TravelerGender>('');
-    const [coupleOccasion, setCoupleOccasion] = useState<'none' | 'honeymoon' | 'anniversary' | 'city-break'>('none');
-
+    const [coupleOccasion, setCoupleOccasion] = useState<CoupleOccasion>('none');
     const [friendsCount, setFriendsCount] = useState(4);
-    const [friendsEnergy, setFriendsEnergy] = useState<'chill' | 'mixed' | 'full-send'>('mixed');
-
+    const [friendsEnergy, setFriendsEnergy] = useState<FriendsEnergy>('mixed');
     const [familyAdults, setFamilyAdults] = useState(2);
     const [familyChildren, setFamilyChildren] = useState(1);
     const [familyBabies, setFamilyBabies] = useState(0);
-
     const [travelerSettingsOpen, setTravelerSettingsOpen] = useState(false);
-    const [settingsTraveler, setSettingsTraveler] = useState<TravelerType>('couple');
+    const [settingsTraveler, setSettingsTraveler] = useState<TravelerType>(DEFAULT_EFFECTIVE_TRAVELER);
     const [isDesktopSettings, setIsDesktopSettings] = useState(() => {
         if (typeof window === 'undefined') return true;
         return window.matchMedia('(min-width: 768px)').matches;
     });
 
-    const [transportModes, setTransportModes] = useState<TransportMode[]>(['auto']);
-    const [hasTransportOverride, setHasTransportOverride] = useState(false);
-    const [camperWeight, setCamperWeight] = useState('3.5');
-    const [camperWeightUnit, setCamperWeightUnit] = useState<'t' | 'kg'>('t');
+    const [notes, setNotes] = useState('');
+    const [prefillMeta, setPrefillMeta] = useState<TripPrefillData['meta'] | null>(null);
+    const [prefillHydrated, setPrefillHydrated] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    const [sectionExpanded, setSectionExpanded] = useState<Record<CollapsibleSection, boolean>>({
+        traveler: false,
+        style: false,
+        transport: false,
+    });
+    const [mobileSnapshotExpanded, setMobileSnapshotExpanded] = useState(false);
+    const [mobileSnapshotFooterOffset, setMobileSnapshotFooterOffset] = useState(0);
 
     const searchWrapperRef = useRef<HTMLDivElement | null>(null);
     const searchDropdownRef = useRef<HTMLDivElement | null>(null);
@@ -274,17 +348,196 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [searchPosition, setSearchPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const snapshotRouteRef = useRef<HTMLDivElement | null>(null);
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
+    const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
 
-    const suggestions = useMemo(
-        () => searchDestinationOptions(query, { excludeNames: destinations, limit: 30 }),
-        [query, destinations]
-    );
+    const regionDisplayNames = useMemo(() => {
+        try {
+            return new Intl.DisplayNames([i18n.language], { type: 'region' });
+        } catch {
+            return null;
+        }
+    }, [i18n.language]);
+
+    const getLocalizedCountryName = useCallback((countryCode: string | undefined, fallback: string): string => {
+        if (!countryCode || countryCode.length !== 2 || !regionDisplayNames) return fallback;
+        return regionDisplayNames.of(countryCode.toUpperCase()) || fallback;
+    }, [regionDisplayNames]);
+
+    const getLocalizedDestinationLabel = useCallback((destinationName: string): string => {
+        const destination = getDestinationOptionByName(destinationName);
+        if (!destination) return destinationName;
+        if (destination.kind === 'country') return getLocalizedCountryName(destination.code, destination.name);
+        return destination.name;
+    }, [getLocalizedCountryName]);
+
+    const getLocalizedIslandMeta = useCallback((destinationName: string): string | undefined => {
+        const destination = getDestinationOptionByName(destinationName);
+        if (!destination || destination.kind !== 'island' || !destination.parentCountryName) return undefined;
+        const parentName = getLocalizedCountryName(destination.parentCountryCode, destination.parentCountryName);
+        return t('destination.islandOf', { country: parentName });
+    }, [getLocalizedCountryName, t]);
+
+    const suggestions = useMemo(() => {
+        const source = searchDestinationOptions('', {
+            excludeNames: destinations,
+            limit: DESTINATION_OPTIONS.length,
+        });
+        const normalizedQuery = query.trim().toLocaleLowerCase();
+        if (!normalizedQuery) return source.slice(0, 30);
+
+        const startsWithMatches: typeof source = [];
+        const includesMatches: typeof source = [];
+
+        source.forEach((option) => {
+            const localizedName = option.kind === 'country'
+                ? getLocalizedCountryName(option.code, option.name)
+                : option.name;
+            const localizedParent = option.parentCountryCode
+                ? getLocalizedCountryName(option.parentCountryCode, option.parentCountryName || '')
+                : option.parentCountryName || '';
+            const startsWith = [option.name, localizedName, ...(option.aliases || [])]
+                .filter(Boolean)
+                .some((value) => value.toLocaleLowerCase().startsWith(normalizedQuery));
+
+            if (startsWith) {
+                startsWithMatches.push(option);
+                return;
+            }
+
+            const haystack = [
+                option.name,
+                localizedName,
+                option.parentCountryName,
+                localizedParent,
+                ...(option.aliases || []),
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLocaleLowerCase();
+
+            if (haystack.includes(normalizedQuery)) {
+                includesMatches.push(option);
+            }
+        });
+
+        return [...startsWithMatches, ...includesMatches].slice(0, 30);
+    }, [destinations, getLocalizedCountryName, query]);
+
+    const orderedDestinations = useMemo(() => {
+        if (destinations.length === 0) return [];
+        const effectiveStart = startDestination && destinations.includes(startDestination) ? startDestination : destinations[0];
+        const startIndex = destinations.indexOf(effectiveStart);
+        if (startIndex <= 0) return destinations;
+        return [...destinations.slice(startIndex), ...destinations.slice(0, startIndex)];
+    }, [destinations, startDestination]);
+
+    const routeHeadline = useMemo(() => {
+        const labels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
+        if (!routeLock) return formatDestinationList(labels);
+        if (!roundTrip || labels.length === 0) return labels.join(' → ');
+        return [...labels, labels[0]].join(' → ');
+    }, [getLocalizedDestinationLabel, orderedDestinations, routeLock, roundTrip]);
+
+    const dayCount = useMemo(() => {
+        if (dateInputMode === 'flex') return Math.max(7, flexWeeks * 7);
+        return getDaysDifference(startDate, endDate);
+    }, [dateInputMode, endDate, flexWeeks, startDate]);
+
+    const mobileDateRangeLabel = useMemo(() => {
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+            return t('dates.summary', { days: dayCount });
+        }
+        const formatter = new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric' });
+        return `${formatter.format(start)} - ${formatter.format(end)}`;
+    }, [dayCount, endDate, i18n.language, startDate, t]);
+
+    const averageDaysPerStop = useMemo(() => {
+        if (orderedDestinations.length === 0) return 0;
+        return dayCount / orderedDestinations.length;
+    }, [dayCount, orderedDestinations.length]);
+
+    const destinationComplete = orderedDestinations.length > 0;
+    const datesComplete = Boolean(startDate && endDate);
+    const canLockRoute = destinations.length > 1;
+
+    const travelerSummary = t(`traveler.options.${travelerType}`);
+    const styleSummary = selectedStyles
+        .map((styleId) => STYLE_CHOICES.find((entry) => entry.id === styleId))
+        .filter((entry): entry is ChoiceOption<string> => Boolean(entry))
+        .map((entry) => t(entry.labelKey))
+        .join(', ');
+    const transportSummary = transportModes
+        .map((mode) => TRANSPORT_OPTIONS.find((entry) => entry.id === mode))
+        .filter((entry): entry is ChoiceOption<TransportMode> => Boolean(entry))
+        .map((entry) => t(entry.labelKey))
+        .join(', ');
+
+    const travelerDetailSummary = useMemo(() => {
+        const getGenderLabel = (gender: TravelerGender): string => {
+            if (gender === 'female') return t('traveler.settings.genderFemale');
+            if (gender === 'male') return t('traveler.settings.genderMale');
+            if (gender === 'non-binary') return t('traveler.settings.genderNonBinary');
+            if (gender === 'prefer-not') return t('traveler.settings.genderPreferNot');
+            return '';
+        };
+
+        if (travelerType === 'solo') {
+            const chunks: string[] = [];
+            const soloGenderLabel = getGenderLabel(soloGender);
+            if (soloGenderLabel) chunks.push(soloGenderLabel);
+            if (soloAge) chunks.push(`${soloAge}`);
+            chunks.push(t(`traveler.settings.comfortOptions.${soloComfort}`));
+            return chunks.join(', ');
+        }
+
+        if (travelerType === 'couple') {
+            const chunks: string[] = [];
+            const travelerALabel = getGenderLabel(coupleTravelerA);
+            const travelerBLabel = getGenderLabel(coupleTravelerB);
+            if (travelerALabel && travelerBLabel) {
+                chunks.push(`${travelerALabel} + ${travelerBLabel}`);
+            }
+            if (coupleOccasion !== 'none') {
+                const occasionKey = coupleOccasion === 'city-break' ? 'cityBreak' : coupleOccasion;
+                chunks.push(t(`traveler.settings.occasionOptions.${occasionKey}`));
+            }
+            return chunks.length > 0 ? chunks.join(', ') : t('traveler.settings.summaryHint');
+        }
+
+        if (travelerType === 'friends') {
+            return `${friendsCount}, ${t(`traveler.settings.energyOptions.${friendsEnergy}`)}`;
+        }
+
+        return [
+            `${familyAdults} ${t('traveler.settings.adults')}`,
+            `${familyChildren} ${t('traveler.settings.children')}`,
+            `${familyBabies} ${t('traveler.settings.babies')}`,
+        ].join(', ');
+    }, [coupleOccasion, coupleTravelerA, coupleTravelerB, familyAdults, familyBabies, familyChildren, friendsCount, friendsEnergy, soloAge, soloComfort, soloGender, t, travelerType]);
+
+    const travelerPreviewSummary = useMemo(() => {
+        const trimmedDetail = travelerDetailSummary.trim();
+        if (!trimmedDetail || trimmedDetail === t('traveler.settings.summaryHint')) {
+            return travelerSummary;
+        }
+        return `${travelerSummary} (${trimmedDetail})`;
+    }, [travelerDetailSummary, travelerSummary, t]);
+
+    const transportMismatch = hasTransportOverride && !(transportModes.length === 1 && transportModes[0] === 'auto');
+
+    const routeTimelineDestinations = orderedDestinations;
+    const routeHasMultipleStops = routeTimelineDestinations.length > 1;
+    const routeLoopSegmentWidth = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.axisX - snapshotRouteGeometry.loopLeft, 12) : 0;
+    const routeLoopSegmentHeight = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.lastY - snapshotRouteGeometry.firstY, 10) : 0;
+    const showLockedRouteLines = Boolean(snapshotRouteGeometry && routeLock && routeHasMultipleStops);
 
     const updateSearchPosition = useCallback(() => {
         if (!searchWrapperRef.current) return;
         const rect = searchWrapperRef.current.getBoundingClientRect();
-        const width = Math.max(260, Math.min(rect.width, window.innerWidth - 16));
+        const width = Math.max(280, Math.min(rect.width, window.innerWidth - 16));
         const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
         setSearchPosition({
             top: rect.bottom + 8,
@@ -297,6 +550,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         updateSearchPosition();
         setSearchOpen(true);
     }, [updateSearchPosition]);
+
+    const showSubmitError = useCallback((message: string) => {
+        setSubmitError(message);
+        if (typeof window === 'undefined') return;
+        window.requestAnimationFrame(() => {
+            submitErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, []);
 
     const updateSnapshotRouteGeometry = useCallback(() => {
         const container = snapshotRouteRef.current;
@@ -341,15 +602,6 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         });
     }, []);
 
-    const dayCount = useMemo(() => {
-        const start = new Date(`${startDate}T00:00:00`);
-        const end = new Date(`${endDate}T00:00:00`);
-        const diff = Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1;
-        return Number.isFinite(diff) ? Math.max(diff, 1) : 1;
-    }, [startDate, endDate]);
-
-    const canLockRoute = destinations.length > 1;
-
     useEffect(() => {
         if (!canLockRoute) {
             setRouteLock(false);
@@ -357,6 +609,27 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             setDragOverIndex(null);
         }
     }, [canLockRoute]);
+
+    useEffect(() => {
+        const updateMobileSnapshotOffset = () => {
+            const footer = document.querySelector('footer');
+            if (!footer) {
+                setMobileSnapshotFooterOffset(0);
+                return;
+            }
+            const rect = footer.getBoundingClientRect();
+            const overlap = Math.max(0, window.innerHeight - rect.top);
+            setMobileSnapshotFooterOffset((previous) => (Math.abs(previous - overlap) < 0.5 ? previous : overlap));
+        };
+
+        updateMobileSnapshotOffset();
+        window.addEventListener('resize', updateMobileSnapshotOffset);
+        window.addEventListener('scroll', updateMobileSnapshotOffset, true);
+        return () => {
+            window.removeEventListener('resize', updateMobileSnapshotOffset);
+            window.removeEventListener('scroll', updateMobileSnapshotOffset, true);
+        };
+    }, []);
 
     useEffect(() => {
         if (destinations.length === 0) {
@@ -371,20 +644,296 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-
         const mediaQuery = window.matchMedia('(min-width: 768px)');
-        const handleChange = () => setIsDesktopSettings(mediaQuery.matches);
-
-        handleChange();
+        const onChange = () => setIsDesktopSettings(mediaQuery.matches);
+        onChange();
 
         if (mediaQuery.addEventListener) {
-            mediaQuery.addEventListener('change', handleChange);
-            return () => mediaQuery.removeEventListener('change', handleChange);
+            mediaQuery.addEventListener('change', onChange);
+            return () => mediaQuery.removeEventListener('change', onChange);
         }
 
-        mediaQuery.addListener(handleChange);
-        return () => mediaQuery.removeListener(handleChange);
+        mediaQuery.addListener(onChange);
+        return () => mediaQuery.removeListener(onChange);
     }, []);
+
+    useEffect(() => {
+        const raw = searchParams.get('prefill');
+        if (!raw) {
+            setPrefillHydrated(true);
+            return;
+        }
+
+        const data = decodeTripPrefill(raw);
+        if (!data) {
+            setPrefillHydrated(true);
+            return;
+        }
+
+        if (data.countries && data.countries.length > 0) {
+            setDestinations(data.countries);
+            setStartDestination(data.countries[0]);
+        }
+        if (data.startDate) setStartDate(data.startDate);
+        if (data.endDate) setEndDate(data.endDate);
+        if (data.budget) setBudget(data.budget as BudgetType);
+        if (data.pace) setPace(data.pace as PaceType);
+        if (typeof data.roundTrip === 'boolean') setRoundTrip(data.roundTrip);
+        if (typeof data.notes === 'string') setNotes(data.notes);
+        if (Array.isArray(data.styles) && data.styles.length > 0) {
+            const knownStyleIds = new Set(STYLE_CHOICES.map((entry) => entry.id));
+            const filteredStyles = data.styles.filter((styleId) => knownStyleIds.has(styleId));
+            if (filteredStyles.length > 0) setSelectedStyles(filteredStyles);
+        }
+
+        const rawMeta = data.meta;
+        const safeMeta = rawMeta && typeof rawMeta === 'object' && !Array.isArray(rawMeta)
+            ? rawMeta as Record<string, unknown>
+            : null;
+
+        if (safeMeta) {
+            const label = typeof safeMeta.label === 'string' ? safeMeta.label : undefined;
+            const source = typeof safeMeta.source === 'string' ? safeMeta.source : undefined;
+            const author = typeof safeMeta.author === 'string' ? safeMeta.author : undefined;
+            if (label || source || author) {
+                setPrefillMeta({ label, source, author });
+            }
+
+            const rawDraft = safeMeta.draft;
+            const draft = rawDraft && typeof rawDraft === 'object' && !Array.isArray(rawDraft)
+                ? rawDraft as Partial<CreateTripDraftMeta>
+                : null;
+
+            if (draft) {
+                if (draft.dateInputMode === 'exact' || draft.dateInputMode === 'flex') {
+                    setDateInputMode(draft.dateInputMode);
+                }
+                if (typeof draft.flexWeeks === 'number' && Number.isFinite(draft.flexWeeks)) {
+                    setFlexWeeks(clampNumber(Math.round(draft.flexWeeks), 1, 12));
+                }
+                if (draft.flexWindow && FLEX_WINDOW_OPTIONS.some((entry) => entry.id === draft.flexWindow)) {
+                    setFlexWindow(draft.flexWindow);
+                }
+                if (typeof draft.startDestination === 'string') {
+                    setStartDestination(draft.startDestination);
+                }
+                if (typeof draft.routeLock === 'boolean') {
+                    setRouteLock(draft.routeLock);
+                }
+                if (draft.travelerType && TRAVELER_OPTIONS.some((entry) => entry.id === draft.travelerType)) {
+                    setTravelerType(draft.travelerType);
+                }
+                if (Array.isArray(draft.transportModes)) {
+                    const allowedTransportModes = new Set<TransportMode>(TRANSPORT_OPTIONS.map((entry) => entry.id));
+                    const validModes = draft.transportModes.filter(
+                        (mode): mode is TransportMode => typeof mode === 'string' && allowedTransportModes.has(mode as TransportMode)
+                    );
+                    if (validModes.length > 0) setTransportModes(validModes);
+                }
+                if (typeof draft.hasTransportOverride === 'boolean') {
+                    setHasTransportOverride(draft.hasTransportOverride);
+                }
+                if (draft.soloGender === '' || draft.soloGender === 'female' || draft.soloGender === 'male' || draft.soloGender === 'non-binary' || draft.soloGender === 'prefer-not') {
+                    setSoloGender(draft.soloGender);
+                }
+                if (typeof draft.soloAge === 'string') setSoloAge(draft.soloAge);
+                if (draft.soloComfort === 'social' || draft.soloComfort === 'balanced' || draft.soloComfort === 'private') {
+                    setSoloComfort(draft.soloComfort);
+                }
+                if (draft.coupleTravelerA === '' || draft.coupleTravelerA === 'female' || draft.coupleTravelerA === 'male' || draft.coupleTravelerA === 'non-binary' || draft.coupleTravelerA === 'prefer-not') {
+                    setCoupleTravelerA(draft.coupleTravelerA);
+                }
+                if (draft.coupleTravelerB === '' || draft.coupleTravelerB === 'female' || draft.coupleTravelerB === 'male' || draft.coupleTravelerB === 'non-binary' || draft.coupleTravelerB === 'prefer-not') {
+                    setCoupleTravelerB(draft.coupleTravelerB);
+                }
+                if (draft.coupleOccasion === 'none' || draft.coupleOccasion === 'honeymoon' || draft.coupleOccasion === 'anniversary' || draft.coupleOccasion === 'city-break') {
+                    setCoupleOccasion(draft.coupleOccasion);
+                }
+                if (typeof draft.friendsCount === 'number' && Number.isFinite(draft.friendsCount)) {
+                    setFriendsCount(clampNumber(Math.round(draft.friendsCount), 2, 12));
+                }
+                if (draft.friendsEnergy === 'chill' || draft.friendsEnergy === 'mixed' || draft.friendsEnergy === 'full-send') {
+                    setFriendsEnergy(draft.friendsEnergy);
+                }
+                if (typeof draft.familyAdults === 'number' && Number.isFinite(draft.familyAdults)) {
+                    setFamilyAdults(clampNumber(Math.round(draft.familyAdults), 1, 8));
+                }
+                if (typeof draft.familyChildren === 'number' && Number.isFinite(draft.familyChildren)) {
+                    setFamilyChildren(clampNumber(Math.round(draft.familyChildren), 0, 8));
+                }
+                if (typeof draft.familyBabies === 'number' && Number.isFinite(draft.familyBabies)) {
+                    setFamilyBabies(clampNumber(Math.round(draft.familyBabies), 0, 4));
+                }
+            }
+        }
+
+        setPrefillHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const draftMeta = useMemo<CreateTripDraftMeta>(() => ({
+        version: 1,
+        dateInputMode,
+        flexWeeks,
+        flexWindow,
+        startDestination,
+        routeLock,
+        travelerType,
+        transportModes,
+        hasTransportOverride,
+        soloGender,
+        soloAge,
+        soloComfort,
+        coupleTravelerA,
+        coupleTravelerB,
+        coupleOccasion,
+        friendsCount,
+        friendsEnergy,
+        familyAdults,
+        familyChildren,
+        familyBabies,
+    }), [
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        hasTransportOverride,
+        routeLock,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDestination,
+        transportModes,
+        travelerType,
+    ]);
+
+    const hasPersistableState = useMemo(() => {
+        const hasTravelerOverrides = soloGender !== ''
+            || soloAge.trim() !== ''
+            || soloComfort !== 'balanced'
+            || coupleTravelerA !== ''
+            || coupleTravelerB !== ''
+            || coupleOccasion !== 'none'
+            || friendsCount !== 4
+            || friendsEnergy !== 'mixed'
+            || familyAdults !== 2
+            || familyChildren !== 1
+            || familyBabies !== 0;
+
+        const hasTransportOverrides = hasTransportOverride
+            || transportModes.length !== 1
+            || transportModes[0] !== DEFAULT_EFFECTIVE_TRANSPORT;
+
+        return destinations.length > 0
+            || startDate !== initialRange.startDate
+            || endDate !== initialRange.endDate
+            || budget !== 'Medium'
+            || pace !== 'Balanced'
+            || roundTrip !== true
+            || routeLock !== false
+            || dateInputMode !== 'exact'
+            || flexWeeks !== 2
+            || flexWindow !== 'shoulder'
+            || notes.trim().length > 0
+            || travelerType !== DEFAULT_EFFECTIVE_TRAVELER
+            || selectedStyles.join('|') !== DEFAULT_EFFECTIVE_STYLE_IDS.join('|')
+            || hasTransportOverrides
+            || hasTravelerOverrides;
+    }, [
+        budget,
+        coupleOccasion,
+        coupleTravelerA,
+        coupleTravelerB,
+        dateInputMode,
+        destinations.length,
+        endDate,
+        familyAdults,
+        familyBabies,
+        familyChildren,
+        flexWeeks,
+        flexWindow,
+        friendsCount,
+        friendsEnergy,
+        hasTransportOverride,
+        initialRange.endDate,
+        initialRange.startDate,
+        notes,
+        pace,
+        roundTrip,
+        routeLock,
+        selectedStyles,
+        soloAge,
+        soloComfort,
+        soloGender,
+        startDate,
+        transportModes,
+        travelerType,
+    ]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (!prefillHydrated) return;
+
+        const currentParams = new URLSearchParams(window.location.search);
+
+        if (!hasPersistableState) {
+            if (!currentParams.has('prefill')) return;
+            currentParams.delete('prefill');
+            const nextSearch = currentParams.toString();
+            const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            window.history.replaceState(window.history.state, '', nextUrl);
+            return;
+        }
+
+        const persistedMeta: TripPrefillData['meta'] = {
+            ...(typeof prefillMeta?.source === 'string' ? { source: prefillMeta.source } : {}),
+            ...(typeof prefillMeta?.author === 'string' ? { author: prefillMeta.author } : {}),
+            ...(typeof prefillMeta?.label === 'string' ? { label: prefillMeta.label } : {}),
+            draft: draftMeta,
+        };
+
+        const prefillPayload: TripPrefillData = {
+            countries: destinations.length > 0 ? destinations : undefined,
+            startDate,
+            endDate,
+            budget,
+            pace,
+            notes: notes.trim() || undefined,
+            roundTrip,
+            styles: selectedStyles.length > 0 ? selectedStyles : undefined,
+            meta: persistedMeta,
+        };
+
+        const encoded = encodeTripPrefill(prefillPayload);
+        if (currentParams.get('prefill') === encoded) return;
+
+        currentParams.set('prefill', encoded);
+        const nextSearch = currentParams.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState(window.history.state, '', nextUrl);
+    }, [
+        budget,
+        destinations,
+        draftMeta,
+        endDate,
+        hasPersistableState,
+        notes,
+        pace,
+        prefillHydrated,
+        prefillMeta?.author,
+        prefillMeta?.label,
+        prefillMeta?.source,
+        roundTrip,
+        selectedStyles,
+        startDate,
+    ]);
 
     useLayoutEffect(() => {
         if (!searchOpen) return;
@@ -393,161 +942,28 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     useEffect(() => {
         if (!searchOpen) return;
-        const handlePositionChange = () => updateSearchPosition();
-        window.addEventListener('resize', handlePositionChange);
-        window.addEventListener('scroll', handlePositionChange, true);
+        const onPositionChange = () => updateSearchPosition();
+        window.addEventListener('resize', onPositionChange);
+        window.addEventListener('scroll', onPositionChange, true);
         return () => {
-            window.removeEventListener('resize', handlePositionChange);
-            window.removeEventListener('scroll', handlePositionChange, true);
+            window.removeEventListener('resize', onPositionChange);
+            window.removeEventListener('scroll', onPositionChange, true);
         };
     }, [searchOpen, updateSearchPosition]);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
+        const handleOutsideClick = (event: MouseEvent) => {
             const target = event.target as Node;
-            const insideWrapper = searchWrapperRef.current?.contains(target);
-            const insideDropdown = searchDropdownRef.current?.contains(target);
-            if (!insideWrapper && !insideDropdown) {
+            const inWrapper = searchWrapperRef.current?.contains(target);
+            const inDropdown = searchDropdownRef.current?.contains(target);
+            if (!inWrapper && !inDropdown) {
                 setSearchOpen(false);
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
     }, []);
-
-    const profileIsDefault = pace === 'Balanced' && budget === 'Medium';
-    const suggestedTransportModes = useMemo(() => getSuggestedTransportModes(pace, budget), [pace, budget]);
-
-    useEffect(() => {
-        if (profileIsDefault) {
-            setTransportModes(['auto']);
-            setHasTransportOverride(false);
-            return;
-        }
-
-        setTransportModes(suggestedTransportModes);
-        setHasTransportOverride(false);
-    }, [profileIsDefault, suggestedTransportModes]);
-
-    const baselineTransportModes = profileIsDefault ? (['auto'] as TransportMode[]) : suggestedTransportModes;
-    const transportMismatch = hasTransportOverride && !areTransportModesEqual(transportModes, baselineTransportModes);
-    const isVanlifeOnly = transportModes.length === 1 && transportModes[0] === 'camper';
-
-    const transportSummary = transportModes
-        .map((mode) => TRANSPORT_OPTIONS.find((entry) => entry.id === mode)?.label || mode)
-        .join(', ');
-
-    const travelerLabel = TRAVELER_OPTIONS.find((entry) => entry.id === travelerType)?.label || 'Traveler';
-
-    const travelerDetailSummary = useMemo(() => {
-        if (travelerType === 'solo') {
-            const chunks: string[] = [];
-            if (soloGender) chunks.push(soloGender.replace('-', ' '));
-            if (soloAge) chunks.push(`${soloAge} years`);
-            chunks.push(`${soloComfort} comfort`);
-            return chunks.join(' • ');
-        }
-
-        if (travelerType === 'couple') {
-            const chunks: string[] = [];
-            if (coupleTravelerA && coupleTravelerB) {
-                chunks.push(`${coupleTravelerA.replace('-', ' ')} + ${coupleTravelerB.replace('-', ' ')}`);
-            }
-            if (coupleOccasion !== 'none') chunks.push(coupleOccasion.replace('-', ' '));
-            return chunks.length > 0 ? chunks.join(' • ') : 'Pair settings optional';
-        }
-
-        if (travelerType === 'friends') {
-            return `${friendsCount} friends • ${friendsEnergy.replace('-', ' ')}`;
-        }
-
-        return `${familyAdults} adults • ${familyChildren} children • ${familyBabies} babies`;
-    }, [coupleOccasion, coupleTravelerA, coupleTravelerB, familyAdults, familyBabies, familyChildren, friendsCount, friendsEnergy, soloAge, soloComfort, soloGender, travelerType]);
-
-    const compiledNotes = useMemo(() => {
-        const styleLabels = STYLE_CHOICES
-            .filter((style) => selectedStyles.includes(style.id))
-            .map((style) => style.label)
-            .join(', ');
-
-        const chunks = [notes.trim()];
-
-        if (styleLabels) chunks.push(`Trip style: ${styleLabels}.`);
-        if (travelerDetailSummary) chunks.push(`Traveler setup: ${travelerLabel} (${travelerDetailSummary}).`);
-        if (transportSummary) chunks.push(`Transport preferences: ${transportSummary}.`);
-        if (transportModes.includes('camper')) {
-            chunks.push(`Camper weight: ${camperWeight || 'n/a'} ${camperWeightUnit}.`);
-        }
-        if (dateInputMode === 'flex') {
-            chunks.push(`Date mode: flexible (${flexWeeks} week${flexWeeks === 1 ? '' : 's'}, ${FLEX_WINDOW_LABELS[flexWindow]}).`);
-        }
-        if (routeLock) chunks.push('Route lock enabled: keep destination order.');
-
-        return chunks.filter(Boolean).join(' ');
-    }, [camperWeight, camperWeightUnit, dateInputMode, flexWeeks, flexWindow, notes, routeLock, selectedStyles, transportModes, transportSummary, travelerDetailSummary, travelerLabel]);
-
-    const daysUntilStart = useMemo(() => {
-        const today = new Date();
-        const start = new Date(`${startDate}T00:00:00`);
-        return Math.max(0, Math.ceil((start.getTime() - today.getTime()) / DAY_MS));
-    }, [startDate]);
-
-    const averageDaysPerStop = useMemo(() => {
-        if (destinations.length === 0) return 0;
-        return dayCount / destinations.length;
-    }, [dayCount, destinations.length]);
-
-    const orderedDestinations = useMemo(() => {
-        if (destinations.length === 0) return destinations;
-        const effectiveStart = startDestination && destinations.includes(startDestination) ? startDestination : destinations[0];
-        const startIndex = destinations.indexOf(effectiveStart);
-        if (startIndex <= 0) return destinations;
-        return [...destinations.slice(startIndex), ...destinations.slice(0, startIndex)];
-    }, [destinations, startDestination]);
-
-    const routeTimelineDestinations = orderedDestinations;
-    const routeHeadlineDestinations = useMemo(() => {
-        if (!routeLock) return orderedDestinations;
-        if (!roundTrip || orderedDestinations.length === 0) return orderedDestinations;
-        return [...orderedDestinations, orderedDestinations[0]];
-    }, [orderedDestinations, routeLock, roundTrip]);
-
-    const routeHeadline = useMemo(() => {
-        if (routeLock) {
-            return routeHeadlineDestinations.length > 0 ? routeHeadlineDestinations.join(' → ') : 'Choose destinations';
-        }
-        return formatDestinationList(orderedDestinations);
-    }, [orderedDestinations, routeHeadlineDestinations, routeLock]);
-
-    const routeHasMultipleStops = routeTimelineDestinations.length > 1;
-    const routeLoopSegmentWidth = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.axisX - snapshotRouteGeometry.loopLeft, 12) : 0;
-    const routeLoopSegmentHeight = snapshotRouteGeometry ? Math.max(snapshotRouteGeometry.lastY - snapshotRouteGeometry.firstY, 10) : 0;
-    const showLockedRouteLines = Boolean(snapshotRouteGeometry && routeLock && routeHasMultipleStops);
-
-    const prefillUrl = useMemo(
-        () =>
-            buildCreateTripUrl({
-                mode: 'classic',
-                countries: orderedDestinations,
-                startDate,
-                endDate,
-                budget,
-                pace,
-                roundTrip,
-                notes: compiledNotes,
-                meta: {
-                    source: 'create-trip-labs',
-                    label: 'Classic Card Overhaul',
-                },
-            }),
-        [budget, compiledNotes, endDate, orderedDestinations, pace, roundTrip, startDate]
-    );
-
-    const dynamicFact = useMemo(() => {
-        const seed = new Date().getUTCDate() + destinations.length * 3 + selectedStyles.length * 5 + dayCount;
-        return DID_YOU_KNOW_FACTS[seed % DID_YOU_KNOW_FACTS.length];
-    }, [dayCount, destinations.length, selectedStyles.length]);
 
     useEffect(() => {
         snapshotNodeRefs.current = snapshotNodeRefs.current.slice(0, routeTimelineDestinations.length);
@@ -570,19 +986,32 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         snapshotNodeRefs.current.forEach((node) => {
             if (node) observer.observe(node);
         });
+
         return () => observer.disconnect();
     }, [routeTimelineDestinations, updateSnapshotRouteGeometry]);
 
-    const setSnapshotNodeRef = useCallback((index: number, node: HTMLDivElement | null) => {
-        snapshotNodeRefs.current[index] = node;
-    }, []);
+    const toggleSection = (section: CollapsibleSection) => {
+        setSectionExpanded((previous) => {
+            const nextExpanded = !previous[section];
+            trackEvent('create_trip__section--expand', {
+                section_id: section,
+                expanded: nextExpanded,
+            });
+            return {
+                ...previous,
+                [section]: nextExpanded,
+            };
+        });
+    };
 
     const addDestination = (rawValue: string) => {
         const normalized = resolveDestinationName(rawValue);
         if (!normalized) return;
-        const alreadySelected = destinations.some((name) => name.toLocaleLowerCase() === normalized.toLocaleLowerCase());
+        const alreadySelected = destinations.some((entry) => entry.toLocaleLowerCase() === normalized.toLocaleLowerCase());
         if (alreadySelected) return;
+
         setDestinations((previous) => [...previous, normalized]);
+        setQuery('');
         setSearchOpen(false);
     };
 
@@ -630,11 +1059,14 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const toggleStyle = (styleId: string) => {
         setSelectedStyles((previous) =>
-            previous.includes(styleId) ? previous.filter((entry) => entry !== styleId) : [...previous, styleId]
+            previous.includes(styleId)
+                ? previous.filter((entry) => entry !== styleId)
+                : [...previous, styleId]
         );
     };
 
     const toggleTransportMode = (mode: TransportMode) => {
+        if (mode === 'camper') return;
         setHasTransportOverride(true);
         setTransportModes((previous) => {
             if (mode === 'auto') return ['auto'];
@@ -655,61 +1087,79 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         setTravelerSettingsOpen(true);
     };
 
-    const settingsTravelerLabel = TRAVELER_OPTIONS.find((entry) => entry.id === settingsTraveler)?.label || 'Traveler';
+    const setSnapshotNodeRef = useCallback((index: number, node: HTMLDivElement | null) => {
+        snapshotNodeRefs.current[index] = node;
+    }, []);
 
-    const prideBorderEnabled =
-        settingsTraveler === 'couple' &&
-        ((coupleTravelerA === 'female' && coupleTravelerB === 'female') || (coupleTravelerA === 'male' && coupleTravelerB === 'male'));
-
-    const settingsModalStyle: React.CSSProperties | undefined = prideBorderEnabled
+    const settingsTravelerLabel = t(`traveler.options.${settingsTraveler}`);
+    const labRouteLinks = useMemo(
+        () => [
+            { key: 'legacy', path: buildPath('createTripClassicLegacyLab') },
+            { key: 'classicCard', path: buildPath('createTripClassicLab') },
+            { key: 'splitWorkspace', path: buildPath('createTripSplitWorkspaceLab') },
+            { key: 'journeyArchitect', path: buildPath('createTripJourneyArchitectLab') },
+            { key: 'designV1', path: buildPath('createTripDesignV1Lab') },
+            { key: 'designV2', path: buildPath('createTripDesignV2Lab') },
+            { key: 'designV3', path: buildPath('createTripDesignV3Lab') },
+        ] as const,
+        []
+    );
+    const isLgbtqCoupleMode = settingsTraveler === 'couple' && coupleTravelerA !== '' && coupleTravelerB !== '' && (
+        coupleTravelerA === 'non-binary'
+        || coupleTravelerB === 'non-binary'
+        || (
+            (coupleTravelerA === 'female' || coupleTravelerA === 'male')
+            && coupleTravelerA === coupleTravelerB
+        )
+    );
+    const lgbtqModalStyle: React.CSSProperties | undefined = isLgbtqCoupleMode
         ? {
-              border: '8px solid transparent',
-              background:
-                  'linear-gradient(#ffffff,#ffffff) padding-box, repeating-linear-gradient(180deg, #e40303 0 16%, #ff8c00 16% 32%, #ffed00 32% 48%, #008026 48% 64%, #24408e 64% 80%, #732982 80% 100%) border-box',
-          }
+            pointerEvents: 'auto',
+            border: '8px solid transparent',
+            background:
+                'linear-gradient(rgb(255, 255, 255), rgb(255, 255, 255)) padding-box, repeating-linear-gradient(rgb(228, 3, 3) 0px, rgb(228, 3, 3) 16%, rgb(255, 140, 0) 16%, rgb(255, 140, 0) 32%, rgb(255, 237, 0) 32%, rgb(255, 237, 0) 48%, rgb(0, 128, 38) 48%, rgb(0, 128, 38) 64%, rgb(36, 64, 142) 64%, rgb(36, 64, 142) 80%, rgb(115, 41, 130) 80%, rgb(115, 41, 130) 100%) border-box',
+        }
         : undefined;
 
     const settingsContent = (
         <div className="space-y-4">
             <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">Optional details</div>
-                <p className="mt-1 text-sm text-slate-600">
-                    These inputs are optional and only improve how trip suggestions are tailored.
-                </p>
+                <div className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">{t('traveler.settings.optionalDetails')}</div>
+                <p className="mt-1 text-sm text-slate-600">{t('traveler.settings.helper')}</p>
             </div>
 
             {settingsTraveler === 'solo' && (
                 <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Gender (optional)</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.gender')}</label>
                             <select
                                 value={soloGender}
                                 onChange={(event) => setSoloGender(event.target.value as TravelerGender)}
                                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
                             >
-                                <option value="">Prefer not to say</option>
-                                <option value="female">Female</option>
-                                <option value="male">Male</option>
-                                <option value="non-binary">Non-binary</option>
-                                <option value="prefer-not">Prefer not to say</option>
+                                <option value="">{t('traveler.settings.notSpecified')}</option>
+                                <option value="female">{t('traveler.settings.genderFemale')}</option>
+                                <option value="male">{t('traveler.settings.genderMale')}</option>
+                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
+                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Age (optional)</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.age')}</label>
                             <input
                                 type="number"
                                 min={18}
                                 max={100}
                                 value={soloAge}
                                 onChange={(event) => setSoloAge(event.target.value)}
-                                placeholder="e.g. 31"
+                                placeholder={t('traveler.settings.agePlaceholder')}
                                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
                             />
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Comfort mode</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.comfortMode')}</label>
                         <div className="mt-1 grid gap-2 sm:grid-cols-3">
                             {(['social', 'balanced', 'private'] as const).map((value) => (
                                 <button
@@ -723,7 +1173,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
                                     ].join(' ')}
                                 >
-                                    {value}
+                                    {t(`traveler.settings.comfortOptions.${value}`)}
                                 </button>
                             ))}
                         </div>
@@ -735,45 +1185,45 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Traveler A (optional)</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
                             <select
                                 value={coupleTravelerA}
                                 onChange={(event) => setCoupleTravelerA(event.target.value as TravelerGender)}
                                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
                             >
-                                <option value="">Not specified</option>
-                                <option value="female">Female</option>
-                                <option value="male">Male</option>
-                                <option value="non-binary">Non-binary</option>
-                                <option value="prefer-not">Prefer not to say</option>
+                                <option value="">{t('traveler.settings.notSpecified')}</option>
+                                <option value="female">{t('traveler.settings.genderFemale')}</option>
+                                <option value="male">{t('traveler.settings.genderMale')}</option>
+                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
+                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Traveler B (optional)</label>
+                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerB')}</label>
                             <select
                                 value={coupleTravelerB}
                                 onChange={(event) => setCoupleTravelerB(event.target.value as TravelerGender)}
                                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
                             >
-                                <option value="">Not specified</option>
-                                <option value="female">Female</option>
-                                <option value="male">Male</option>
-                                <option value="non-binary">Non-binary</option>
-                                <option value="prefer-not">Prefer not to say</option>
+                                <option value="">{t('traveler.settings.notSpecified')}</option>
+                                <option value="female">{t('traveler.settings.genderFemale')}</option>
+                                <option value="male">{t('traveler.settings.genderMale')}</option>
+                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
+                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Occasion (optional)</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.occasion')}</label>
                         <select
                             value={coupleOccasion}
                             onChange={(event) => setCoupleOccasion(event.target.value as 'none' | 'honeymoon' | 'anniversary' | 'city-break')}
                             className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
                         >
-                            <option value="none">No special occasion</option>
-                            <option value="honeymoon">Honeymoon</option>
-                            <option value="anniversary">Anniversary</option>
-                            <option value="city-break">City break</option>
+                            <option value="none">{t('traveler.settings.occasionOptions.none')}</option>
+                            <option value="honeymoon">{t('traveler.settings.occasionOptions.honeymoon')}</option>
+                            <option value="anniversary">{t('traveler.settings.occasionOptions.anniversary')}</option>
+                            <option value="city-break">{t('traveler.settings.occasionOptions.cityBreak')}</option>
                         </select>
                     </div>
                 </div>
@@ -781,9 +1231,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             {settingsTraveler === 'friends' && (
                 <div className="space-y-3">
-                    <NumberStepper label="Group size" value={friendsCount} min={2} max={12} onChange={setFriendsCount} />
+                    <NumberStepper label={t('traveler.settings.groupSize')} value={friendsCount} min={2} max={12} onChange={setFriendsCount} />
                     <div>
-                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Group energy</label>
+                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.groupEnergy')}</label>
                         <div className="mt-1 grid gap-2 sm:grid-cols-3">
                             {(['chill', 'mixed', 'full-send'] as const).map((value) => (
                                 <button
@@ -797,7 +1247,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
                                     ].join(' ')}
                                 >
-                                    {value}
+                                    {t(`traveler.settings.energyOptions.${value}`)}
                                 </button>
                             ))}
                         </div>
@@ -807,9 +1257,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             {settingsTraveler === 'family' && (
                 <div className="grid gap-3 sm:grid-cols-3">
-                    <NumberStepper label="Adults" value={familyAdults} min={1} max={8} onChange={setFamilyAdults} />
-                    <NumberStepper label="Children" value={familyChildren} min={0} max={8} onChange={setFamilyChildren} />
-                    <NumberStepper label="Babies" value={familyBabies} min={0} max={4} onChange={setFamilyBabies} />
+                    <NumberStepper label={t('traveler.settings.adults')} value={familyAdults} min={1} max={8} onChange={setFamilyAdults} />
+                    <NumberStepper label={t('traveler.settings.children')} value={familyChildren} min={0} max={8} onChange={setFamilyChildren} />
+                    <NumberStepper label={t('traveler.settings.babies')} value={familyBabies} min={0} max={4} onChange={setFamilyBabies} />
                 </div>
             )}
         </div>
@@ -817,12 +1267,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const settingsDialog = isDesktopSettings ? (
         <Dialog open={travelerSettingsOpen} onOpenChange={setTravelerSettingsOpen}>
-            <DialogContent className="max-w-xl rounded-2xl p-5" style={settingsModalStyle}>
+            <DialogContent className="max-w-xl rounded-2xl p-5" style={lgbtqModalStyle}>
                 <DialogHeader className="p-0">
-                    <DialogTitle>Customize {settingsTravelerLabel} preferences</DialogTitle>
-                    <DialogDescription>
-                        Add optional details to refine generated suggestions for this traveler setup.
-                    </DialogDescription>
+                    <DialogTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DialogTitle>
+                    <DialogDescription>{t('traveler.settings.description')}</DialogDescription>
                 </DialogHeader>
                 <div className="mt-4">{settingsContent}</div>
                 <DialogFooter className="p-0 pt-4">
@@ -831,7 +1279,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         onClick={() => setTravelerSettingsOpen(false)}
                         className="rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
                     >
-                        Done
+                        {t('traveler.settings.done')}
                     </button>
                 </DialogFooter>
             </DialogContent>
@@ -840,15 +1288,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         <Drawer open={travelerSettingsOpen} onOpenChange={setTravelerSettingsOpen}>
             <DrawerContent
                 className="max-h-[90vh] rounded-t-2xl p-4"
-                accessibleTitle={`Customize ${settingsTravelerLabel} preferences`}
-                accessibleDescription="Optional traveler details"
-                style={settingsModalStyle}
+                accessibleTitle={t('traveler.settings.title', { traveler: settingsTravelerLabel })}
+                accessibleDescription={t('traveler.settings.optionalDetails')}
             >
                 <DrawerHeader className="p-0">
-                    <DrawerTitle>Customize {settingsTravelerLabel} preferences</DrawerTitle>
-                    <DrawerDescription>
-                        Optional details to improve planning relevance.
-                    </DrawerDescription>
+                    <DrawerTitle>{t('traveler.settings.title', { traveler: settingsTravelerLabel })}</DrawerTitle>
+                    <DrawerDescription>{t('traveler.settings.mobileDescription')}</DrawerDescription>
                 </DrawerHeader>
                 <div className="mt-4 max-h-[56vh] overflow-y-auto pr-1">{settingsContent}</div>
                 <DrawerFooter className="p-0 pt-4">
@@ -857,12 +1302,104 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                         onClick={() => setTravelerSettingsOpen(false)}
                         className="rounded-xl bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
                     >
-                        Done
+                        {t('traveler.settings.done')}
                     </button>
                 </DrawerFooter>
             </DrawerContent>
         </Drawer>
     );
+
+    const handleRoundTripChange = (checked: boolean) => {
+        setRoundTrip(checked);
+        trackEvent('create_trip__toggle--roundtrip', { enabled: checked });
+    };
+
+    const handleRouteLockChange = (checked: boolean) => {
+        if (!canLockRoute) return;
+        setRouteLock(checked);
+        trackEvent('create_trip__toggle--route_lock', { enabled: checked });
+    };
+
+    const handleGenerateTrip = async () => {
+        if (isSubmitting) return;
+        if (orderedDestinations.length === 0) {
+            showSubmitError(t('errors.destinationRequired'));
+            return;
+        }
+
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        trackEvent('create_trip__cta--generate', {
+            destination_count: orderedDestinations.length,
+            date_mode: dateInputMode,
+            route_lock: routeLock,
+            round_trip: roundTrip,
+        });
+
+        const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
+        const localizedDestinationLabels = orderedDestinations.map((destination) => getLocalizedDestinationLabel(destination));
+        const destinationLabel = formatDestinationList(localizedDestinationLabels);
+        const optimisticTripId = generateTripId();
+        const optimisticTrip = buildLoadingTripPreview({
+            tripId: optimisticTripId,
+            destinationLabel,
+            focusLocations: localizedDestinationLabels,
+            startDate,
+            totalDays: dayCount,
+            requestedStops: Math.max(orderedDestinations.length, 2),
+            roundTrip,
+        });
+        const optimisticCreatedAt = optimisticTrip.createdAt;
+        onTripGenerated(optimisticTrip);
+
+        try {
+            const destinationPrompt = destinationPromptLabels.join(', ');
+            const notesInterests = notes
+                .split(',')
+                .map((token) => token.trim())
+                .filter(Boolean);
+
+            const generatedTrip = await generateItinerary(destinationPrompt, startDate, {
+                budget,
+                pace,
+                interests: notesInterests.length > 0 ? notesInterests : undefined,
+                roundTrip,
+                totalDays: dayCount,
+            });
+
+            onTripGenerated({
+                ...generatedTrip,
+                id: optimisticTripId,
+                createdAt: optimisticCreatedAt,
+                updatedAt: Date.now(),
+                roundTrip: generatedTrip.roundTrip ?? roundTrip,
+                sourceKind: generatedTrip.sourceKind || 'created',
+            });
+        } catch (error) {
+            const message = getErrorMessage(error, t('errors.genericGenerate'));
+            const errorTitle = t('errors.genericGenerate');
+            onTripGenerated({
+                ...optimisticTrip,
+                title: errorTitle,
+                updatedAt: Date.now(),
+                items: [
+                    {
+                        id: `loading-error-${optimisticTripId}`,
+                        type: 'city',
+                        title: errorTitle,
+                        startDateOffset: 0,
+                        duration: Math.max(1, dayCount),
+                        color: 'bg-rose-100 border-rose-300 text-rose-700',
+                        description: message,
+                        location: destinationLabel,
+                    },
+                ],
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,#eef2ff_0%,#f8fafc_50%,#ffffff_100%)] text-slate-900">
@@ -872,144 +1409,65 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             </div>
 
             <div className="relative z-10">
-                <SiteHeader variant="glass" hideCreateTrip onMyTripsClick={onOpenManager} />
+                <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
 
-                <main className="mx-auto w-full max-w-[1380px] px-4 pb-16 pt-8 sm:px-6 lg:px-8">
-                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-accent-700">
-                                <Sparkle size={14} weight="duotone" />
-                                Lab Concept 1
-                            </div>
-                            <h1 className="mt-3 text-3xl font-black leading-tight text-slate-900 sm:text-4xl">Classic Card Overhaul</h1>
-                            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
-                                More open layout with tighter sections, smarter setup controls, and a sticky snapshot for quick orientation.
-                            </p>
+                <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
+                    {prefillMeta?.label && (
+                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-1 text-xs font-medium text-accent-800">
+                            <Sparkle size={13} weight="duotone" />
+                            <span>{t('prefillBadge', { label: prefillMeta.label })}</span>
                         </div>
-                        <Link
-                            to="/create-trip"
-                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-accent-300 hover:text-accent-700"
-                        >
-                            Back to current create-trip
-                        </Link>
-                    </div>
+                    )}
+                    {submitError && (
+                        <div ref={submitErrorRef} className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                            {submitError}
+                        </div>
+                    )}
 
-                    <section className="animate-content-fade-in grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+                    <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
                         <div className="space-y-5">
-                            <section className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:p-5">
-                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                    <Compass size={17} weight="duotone" className="text-accent-600" />
-                                    Destinations
-                                </div>
-
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                    {destinations.map((destination, index) => {
-                                        const option = getDestinationOptionByName(destination);
-                                        const dragActive = routeLock && dragOverIndex === index && dragIndex !== null;
-                                        const isStartStop = destination === startDestination;
-                                        const setStartTooltip = roundTrip
-                                            ? `Set ${destination} as start and end location`
-                                            : `Set ${destination} as start location`;
-                                        const season = getCountrySeasonByName(getDestinationSeasonCountryName(destination));
-                                        const metaLabel = getDestinationMetaLabel(destination);
-
-                                        return (
-                                            <span key={destination} className="group relative">
-                                                <div
-                                                    draggable={routeLock}
-                                                    onDragStart={() => handleDestinationDragStart(index)}
-                                                    onDragOver={(event) => handleDestinationDragOver(event, index)}
-                                                    onDrop={() => handleDestinationDrop(index)}
-                                                    onDragEnd={handleDestinationDragEnd}
-                                                    className={[
-                                                        'inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-sm font-medium',
-                                                        isStartStop
-                                                            ? 'border-accent-500 bg-accent-50 text-accent-900 shadow-[0_0_0_1px_rgba(37,99,235,0.08)]'
-                                                            : 'border-accent-200 text-slate-700',
-                                                        routeLock ? 'cursor-grab active:cursor-grabbing' : '',
-                                                        dragActive ? 'ring-2 ring-accent-200' : '',
-                                                    ].join(' ')}
-                                                >
-                                                    {routeLock && (
-                                                        <span className="text-slate-400" aria-hidden="true">
-                                                            <DotsSixVertical size={12} weight="duotone" />
-                                                        </span>
-                                                    )}
-                                                    <span>{option?.flag || '🌍'}</span>
-                                                    <span>{destination}</span>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(event) => event.stopPropagation()}
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            setStartDestination(destination);
-                                                        }}
-                                                        className={[
-                                                            'rounded-full transition-colors',
-                                                            isStartStop ? 'text-accent-700' : 'text-slate-400 hover:text-accent-600',
-                                                        ].join(' ')}
-                                                        aria-label={setStartTooltip}
-                                                        title={setStartTooltip}
-                                                    >
-                                                        <MapPin size={12} weight={isStartStop ? 'fill' : 'duotone'} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onMouseDown={(event) => event.stopPropagation()}
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            removeDestination(destination);
-                                                        }}
-                                                        className="rounded-full text-slate-400 transition-colors hover:text-slate-700"
-                                                        aria-label={`Remove ${destination}`}
-                                                    >
-                                                        <X size={12} weight="bold" />
-                                                    </button>
-                                                </div>
-
-                                                {season && (
-                                                    <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
-                                                        <div className="text-xs font-semibold text-gray-900">Ideal travel time</div>
-                                                        {metaLabel && <div className="mt-0.5 text-[11px] text-gray-500">{metaLabel}</div>}
-                                                        <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} />
-                                                    </div>
-                                                )}
-                                            </span>
-                                        );
-                                    })}
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                        <Compass size={18} weight="duotone" className="text-accent-600" />
+                                        {t('destination.title')}
+                                    </div>
+                                    <CheckCircle
+                                        size={20}
+                                        weight="fill"
+                                        className={destinationComplete ? 'text-emerald-500' : 'text-slate-300'}
+                                        aria-hidden="true"
+                                    />
                                 </div>
 
                                 <div className="relative" ref={searchWrapperRef}>
-                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-inner">
-                                        <div className="flex items-center gap-2">
-                                            <Compass size={16} className="text-accent-500" />
-                                            <input
-                                                value={query}
-                                                onChange={(event) => {
-                                                    setQuery(event.target.value);
-                                                    openSearch();
-                                                }}
-                                                onFocus={openSearch}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter') {
-                                                        event.preventDefault();
-                                                        if (suggestions[0]) {
-                                                            addDestination(suggestions[0].name);
-                                                            setQuery('');
-                                                        }
-                                                    }
-                                                }}
-                                                placeholder="Search country or island"
-                                                className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                                            />
-                                        </div>
-                                    </div>
+                                    <MagnifyingGlass
+                                        size={18}
+                                        weight="duotone"
+                                        className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                                    />
+                                    <input
+                                        value={query}
+                                        onChange={(event) => {
+                                            setQuery(event.target.value);
+                                            openSearch();
+                                        }}
+                                        onFocus={openSearch}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Enter') {
+                                                event.preventDefault();
+                                                if (suggestions[0]) addDestination(suggestions[0].name);
+                                            }
+                                        }}
+                                        placeholder={t('destination.searchPlaceholder')}
+                                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-800 shadow-sm transition-shadow placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200"
+                                    />
                                 </div>
 
                                 {searchOpen && searchPosition && (query.trim() || suggestions.length > 0) && typeof document !== 'undefined' && createPortal(
                                     <div
                                         ref={searchDropdownRef}
-                                        className="fixed z-[9999] max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
+                                        className="fixed z-[9999] max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl"
                                         style={{
                                             top: searchPosition.top,
                                             left: searchPosition.left,
@@ -1017,79 +1475,160 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         }}
                                     >
                                         {suggestions.length > 0 ? (
-                                            suggestions.map((option) => (
-                                                <button
-                                                    key={option.code}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        addDestination(option.name);
-                                                        setQuery('');
-                                                    }}
-                                                    className="w-full px-4 py-3 text-left hover:bg-slate-50"
-                                                >
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="min-w-0">
-                                                            <div className="truncate text-sm font-medium text-slate-800">
-                                                                {option.flag} {option.name}
-                                                            </div>
-                                                            {option.kind === 'island' && option.parentCountryName && (
-                                                                <div className="mt-0.5 text-xs text-slate-500">
-                                                                    Island of {option.parentCountryName}
+                                            suggestions.map((option) => {
+                                                const optionLabel = option.kind === 'country'
+                                                    ? getLocalizedCountryName(option.code, option.name)
+                                                    : option.name;
+                                                const islandMeta = option.kind === 'island' && option.parentCountryName
+                                                    ? t('destination.islandOf', { country: getLocalizedCountryName(option.parentCountryCode, option.parentCountryName) })
+                                                    : undefined;
+                                                return (
+                                                    <button
+                                                        key={option.code}
+                                                        type="button"
+                                                        onClick={() => addDestination(option.name)}
+                                                        className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-3">
+                                                            <div className="min-w-0">
+                                                                <div className="truncate text-sm font-medium text-slate-800">
+                                                                    {option.flag} {optionLabel}
                                                                 </div>
-                                                            )}
+                                                                {islandMeta && (
+                                                                    <div className="mt-0.5 text-xs text-slate-500">
+                                                                        {islandMeta}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <Plus size={14} className="mt-0.5 text-accent-500" />
                                                         </div>
-                                                        <Plus size={14} className="mt-0.5 text-accent-500" />
-                                                    </div>
-                                                </button>
-                                            ))
+                                                    </button>
+                                                );
+                                            })
                                         ) : (
-                                            <div className="px-4 py-6 text-center text-sm text-slate-400">No matching destination</div>
+                                            <div className="px-4 py-6 text-center text-sm text-slate-400">{t('destination.noMatches')}</div>
                                         )}
                                     </div>,
                                     document.body
                                 )}
 
-                                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                                    <label className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
-                                        <input
-                                            type="checkbox"
+                                {destinations.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        {destinations.map((destination, index) => {
+                                            const option = getDestinationOptionByName(destination);
+                                            const dragActive = routeLock && dragOverIndex === index && dragIndex !== null;
+                                            const isStartStop = destination === startDestination;
+                                            const season = getCountrySeasonByName(getDestinationSeasonCountryName(destination));
+                                            const metaLabel = getLocalizedIslandMeta(destination) || getDestinationMetaLabel(destination);
+                                            const destinationLabel = getLocalizedDestinationLabel(destination);
+
+                                            return (
+                                                <span key={destination} className="group relative">
+                                                    <div
+                                                        draggable={routeLock}
+                                                        onDragStart={() => handleDestinationDragStart(index)}
+                                                        onDragOver={(event) => handleDestinationDragOver(event, index)}
+                                                        onDrop={() => handleDestinationDrop(index)}
+                                                        onDragEnd={handleDestinationDragEnd}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-lg border bg-white px-2.5 py-1 text-sm font-medium text-slate-800 shadow-sm',
+                                                            isStartStop
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200',
+                                                            routeLock ? 'cursor-grab active:cursor-grabbing' : '',
+                                                            dragActive ? 'ring-2 ring-accent-200' : '',
+                                                        ].join(' ')}
+                                                    >
+                                                        {routeLock && (
+                                                            <span className="text-slate-400" aria-hidden="true">
+                                                                <DotsSixVertical size={12} weight="duotone" />
+                                                            </span>
+                                                        )}
+                                                        <span>{option?.flag || '🌍'}</span>
+                                                        <span>{destinationLabel}</span>
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(event) => event.stopPropagation()}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                setStartDestination(destination);
+                                                            }}
+                                                            className={[
+                                                                'rounded-full transition-colors',
+                                                                isStartStop ? 'text-accent-700' : 'text-slate-400 hover:text-accent-600',
+                                                            ].join(' ')}
+                                                            aria-label={t('destination.pinAsStart', { destination: destinationLabel })}
+                                                            title={t('destination.pinAsStart', { destination: destinationLabel })}
+                                                        >
+                                                            <MapPin size={12} weight={isStartStop ? 'fill' : 'duotone'} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onMouseDown={(event) => event.stopPropagation()}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                removeDestination(destination);
+                                                            }}
+                                                            className="rounded-full text-slate-400 transition-colors hover:text-slate-700"
+                                                            aria-label={t('destination.removeDestination', { destination: destinationLabel })}
+                                                        >
+                                                            <X size={12} weight="bold" />
+                                                        </button>
+                                                    </div>
+
+                                                    {season && (
+                                                        <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[80] hidden w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl group-hover:block">
+                                                            <div className="text-xs font-semibold text-gray-900">{t('destination.idealTravelTime')}</div>
+                                                            {metaLabel && <div className="mt-0.5 text-[11px] text-gray-500">{metaLabel}</div>}
+                                                            <IdealTravelTimeline idealMonths={season.bestMonths} shoulderMonths={season.shoulderMonths} locale={i18n.language} />
+                                                        </div>
+                                                    )}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    <label className="inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm">
+                                        <Switch
                                             checked={roundTrip}
-                                            onChange={(event) => setRoundTrip(event.target.checked)}
-                                            className="h-4 w-4 rounded"
+                                            onCheckedChange={handleRoundTripChange}
+                                            {...getAnalyticsDebugAttributes('create_trip__toggle--roundtrip', { enabled: roundTrip })}
                                         />
-                                        Roundtrip route
+                                        <span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.roundTrip.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.roundTrip.description')}</span>
+                                        </span>
                                     </label>
 
-                                    <div className={canLockRoute ? '' : 'opacity-50'}>
-                                        <div className="inline-flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700">
-                                            <label className="inline-flex items-center gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={routeLock}
-                                                    onChange={(event) => setRouteLock(event.target.checked)}
-                                                    disabled={!canLockRoute}
-                                                    className="h-4 w-4 rounded"
-                                                />
-                                                Route Lock
-                                            </label>
-                                            <button
-                                                type="button"
-                                                title="Route Lock keeps destination order exactly as selected and unlocks drag-and-drop ordering."
-                                                aria-label="Route Lock keeps destination order exactly as selected and unlocks drag-and-drop ordering."
-                                                className="rounded-full text-slate-400 transition-colors hover:text-slate-700"
-                                            >
-                                                <Info size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
+                                    <label className={['inline-flex items-start gap-2 rounded-xl bg-transparent px-1.5 py-1.5 text-xs text-slate-700 sm:items-center sm:text-sm', canLockRoute ? '' : 'opacity-50'].join(' ')}>
+                                        <Switch
+                                            checked={routeLock}
+                                            onCheckedChange={handleRouteLockChange}
+                                            disabled={!canLockRoute}
+                                            {...getAnalyticsDebugAttributes('create_trip__toggle--route_lock', { enabled: routeLock })}
+                                        />
+                                        <span>
+                                            <span className="block text-[13px] font-semibold leading-tight text-slate-800 sm:text-sm">{t('destination.routeLock.title')}</span>
+                                            <span className="block text-[11px] leading-tight text-slate-500 sm:text-xs">{t('destination.routeLock.description')}</span>
+                                        </span>
+                                    </label>
                                 </div>
-                                <p className="mt-2 text-xs text-slate-500">Pin a destination to define your start and return location.</p>
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:p-5">
-                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                    <CalendarBlank size={17} weight="duotone" className="text-accent-600" />
-                                    Dates
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-4 flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                        <CalendarBlank size={18} weight="duotone" className="text-accent-600" />
+                                        {t('dates.title')}
+                                    </div>
+                                    <CheckCircle
+                                        size={20}
+                                        weight="fill"
+                                        className={datesComplete ? 'text-emerald-500' : 'text-slate-300'}
+                                        aria-hidden="true"
+                                    />
                                 </div>
 
                                 <div className="mb-3 inline-flex rounded-xl border border-slate-200 bg-white p-1">
@@ -1101,7 +1640,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             dateInputMode === 'exact' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-800',
                                         ].join(' ')}
                                     >
-                                        Exact dates
+                                        {t('dates.mode.exact')}
                                     </button>
                                     <button
                                         type="button"
@@ -1111,7 +1650,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             dateInputMode === 'flex' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-800',
                                         ].join(' ')}
                                     >
-                                        Flexible window
+                                        {t('dates.mode.flex')}
                                     </button>
                                 </div>
 
@@ -1119,246 +1658,290 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <DateRangePicker
                                         startDate={startDate}
                                         endDate={endDate}
-                                        onChange={(newStartDate, newEndDate) => {
-                                            setStartDate(newStartDate);
-                                            setEndDate(newEndDate);
+                                        onChange={(nextStartDate, nextEndDate) => {
+                                            setStartDate(nextStartDate);
+                                            setEndDate(nextEndDate);
+                                        }}
+                                        showLabel={false}
+                                        monthLabelFormat="long"
+                                        locale={i18n.language}
+                                        labels={{
+                                            start: t('dates.labels.start'),
+                                            end: t('dates.labels.end'),
+                                            selectDate: t('dates.labels.selectDate'),
+                                            selectStartDate: t('dates.labels.selectStartDate'),
+                                            selectEndDate: t('dates.labels.selectEndDate'),
+                                            previousMonth: t('dates.labels.previousMonth'),
+                                            nextMonth: t('dates.labels.nextMonth'),
                                         }}
                                     />
                                 ) : (
                                     <div className="grid gap-3 sm:grid-cols-2">
-                                        <NumberStepper label="Trip length (weeks)" value={flexWeeks} min={1} max={8} onChange={setFlexWeeks} />
-                                        <div>
-                                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Preferred time range</label>
+                                        <label className="space-y-1.5 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.weeksLabel')}</span>
+                                            <div className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous - 1, 1, 8))}
+                                                    disabled={flexWeeks <= 1}
+                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Decrease weeks"
+                                                >
+                                                    <Minus size={13} />
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    max={8}
+                                                    value={flexWeeks}
+                                                    onChange={(event) => {
+                                                        const value = Number(event.target.value);
+                                                        const normalized = Number.isFinite(value) ? Math.min(8, Math.max(1, value)) : 1;
+                                                        setFlexWeeks(normalized);
+                                                    }}
+                                                    className="h-7 w-10 rounded-md border-0 bg-transparent text-center text-sm font-semibold text-slate-800 outline-none"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFlexWeeks((previous) => clampNumber(previous + 1, 1, 8))}
+                                                    disabled={flexWeeks >= 8}
+                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                                                    aria-label="Increase weeks"
+                                                >
+                                                    <Plus size={13} />
+                                                </button>
+                                            </div>
+                                        </label>
+                                        <label className="space-y-1.5 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.rangeLabel')}</span>
                                             <select
                                                 value={flexWindow}
                                                 onChange={(event) => setFlexWindow(event.target.value as FlexWindow)}
-                                                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                             >
-                                                <option value="spring">Spring window</option>
-                                                <option value="summer">Summer window</option>
-                                                <option value="autumn">Autumn window</option>
-                                                <option value="winter">Winter window</option>
-                                                <option value="shoulder">Shoulder season</option>
+                                                {FLEX_WINDOW_OPTIONS.map((entry) => (
+                                                    <option key={entry.id} value={entry.id}>{t(entry.labelKey)}</option>
+                                                ))}
                                             </select>
-                                        </div>
+                                        </label>
                                     </div>
                                 )}
 
                                 <div className="mt-3 border-t border-slate-200 pt-2 text-xs text-slate-500">
-                                    Draft timeframe: {dayCount} days total • departure in {daysUntilStart} day{daysUntilStart === 1 ? '' : 's'}.
+                                    {t('dates.summary', { days: dayCount })}
                                 </div>
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:p-5">
-                                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                    <UsersThree size={17} weight="duotone" className="text-accent-600" />
-                                    Traveler setup
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                    {TRAVELER_OPTIONS.map((choice) => {
-                                        const isActive = travelerType === choice.id;
-                                        const Icon = choice.icon;
-                                        const summary = choice.id === travelerType ? travelerDetailSummary : choice.subtitle;
-
-                                        return (
-                                            <div
-                                                key={choice.id}
-                                                onClick={() => setTravelerType(choice.id)}
-                                                onKeyDown={(event) => {
-                                                    if (event.key === 'Enter' || event.key === ' ') {
-                                                        event.preventDefault();
-                                                        setTravelerType(choice.id);
-                                                    }
-                                                }}
-                                                role="button"
-                                                tabIndex={0}
-                                                className={[
-                                                    'group relative rounded-xl border px-3 py-3 text-left transition-colors',
-                                                    isActive
-                                                        ? 'border-accent-400 bg-accent-50 text-accent-900'
-                                                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300',
-                                                ].join(' ')}
-                                            >
-                                                <button
-                                                    type="button"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        openTravelerSettings(choice.id);
-                                                    }}
-                                                    aria-label={`Edit ${choice.label} settings`}
-                                                    title={`Edit ${choice.label} settings`}
-                                                    className={[
-                                                        'absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg border transition-all',
-                                                        isActive
-                                                            ? 'border-accent-300 bg-white text-accent-700 opacity-100'
-                                                            : 'border-slate-200 bg-white text-slate-500 opacity-0 group-hover:opacity-100',
-                                                    ].join(' ')}
-                                                >
-                                                    <GearSix size={14} />
-                                                </button>
-                                                <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                                                    <Icon size={17} weight="duotone" />
-                                                    {choice.label}
-                                                </span>
-                                                <div className="mt-1 text-xs text-slate-500">{summary}</div>
-                                            </div>
-                                        );
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('traveler')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'traveler',
+                                        expanded: sectionExpanded.traveler,
                                     })}
-                                </div>
-
-                                <div className="mt-4">
-                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                        <Sparkle size={16} weight="duotone" className="text-accent-600" />
-                                        Trip style
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                                        {STYLE_CHOICES.map((style) => {
-                                            const active = selectedStyles.includes(style.id);
-                                            const Icon = style.icon;
-
-                                            return (
-                                                <button
-                                                    key={style.id}
-                                                    type="button"
-                                                    onClick={() => toggleStyle(style.id)}
-                                                    className={[
-                                                        'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
-                                                        active
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-800'
-                                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
-                                                    ].join(' ')}
-                                                >
-                                                    <Icon size={15} weight="duotone" />
-                                                    {style.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <div>
-                                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Pace</label>
-                                        <select
-                                            value={pace}
-                                            onChange={(event) => setPace(event.target.value as PaceType)}
-                                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
-                                        >
-                                            <option>Relaxed</option>
-                                            <option>Balanced</option>
-                                            <option>Fast</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Budget</label>
-                                        <select
-                                            value={budget}
-                                            onChange={(event) => setBudget(event.target.value as BudgetType)}
-                                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
-                                        >
-                                            <option>Low</option>
-                                            <option>Medium</option>
-                                            <option>High</option>
-                                            <option>Luxury</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="mt-4">
-                                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                        <Train size={16} weight="duotone" className="text-accent-600" />
-                                        Transport preferences
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                                        {TRANSPORT_OPTIONS.map((option) => {
-                                            const active = transportModes.includes(option.id);
-                                            const Icon = option.icon;
-
-                                            return (
-                                                <button
-                                                    key={option.id}
-                                                    type="button"
-                                                    onClick={() => toggleTransportMode(option.id)}
-                                                    className={[
-                                                        'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
-                                                        active
-                                                            ? 'border-accent-300 bg-accent-50 text-accent-800'
-                                                            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
-                                                    ].join(' ')}
-                                                >
-                                                    <Icon size={15} weight="duotone" />
-                                                    {option.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-
-                                    {transportModes.includes('camper') && (
-                                        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                            <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                <Van size={16} weight="duotone" className="text-accent-600" />
-                                                Camper profile
-                                            </div>
-                                            <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
-                                                <input
-                                                    type="number"
-                                                    min={0}
-                                                    step="0.1"
-                                                    value={camperWeight}
-                                                    onChange={(event) => setCamperWeight(event.target.value)}
-                                                    placeholder="Vehicle weight"
-                                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none"
-                                                />
-                                                <select
-                                                    value={camperWeightUnit}
-                                                    onChange={(event) => setCamperWeightUnit(event.target.value as 't' | 'kg')}
-                                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none"
-                                                >
-                                                    <option value="t">t (tons)</option>
-                                                    <option value="kg">kg</option>
-                                                </select>
-                                            </div>
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <UsersThree size={18} weight="duotone" className="text-accent-600" />
+                                            {t('traveler.title')}
                                         </div>
-                                    )}
-
-                                    {isVanlifeOnly && (
-                                        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">
-                                            Vanlife activated 🤙
+                                        <div className="truncate text-xs text-slate-500">{travelerPreviewSummary}</div>
+                                    </div>
+                                    {sectionExpanded.traveler ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.traveler && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {TRAVELER_OPTIONS.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = travelerType === entry.id;
+                                                const summary = entry.id === travelerType ? travelerDetailSummary : t('traveler.settings.summaryHint');
+                                                return (
+                                                    <div
+                                                        key={entry.id}
+                                                        onClick={() => setTravelerType(entry.id)}
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === 'Enter' || event.key === ' ') {
+                                                                event.preventDefault();
+                                                                setTravelerType(entry.id);
+                                                            }
+                                                        }}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        className={[
+                                                            'group relative rounded-xl border px-3 py-3 text-left transition-colors',
+                                                            active
+                                                                ? 'border-accent-400 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                openTravelerSettings(entry.id);
+                                                            }}
+                                                            aria-label={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
+                                                            title={t('traveler.settings.open', { traveler: t(entry.labelKey) })}
+                                                            className={[
+                                                                'absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-lg border transition-all',
+                                                                active
+                                                                    ? 'border-accent-300 bg-white text-accent-700 opacity-100'
+                                                                    : 'border-slate-200 bg-white text-slate-500 opacity-0 group-hover:opacity-100',
+                                                            ].join(' ')}
+                                                        >
+                                                            <GearSix size={14} />
+                                                        </button>
+                                                        <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                                                            <Icon size={17} weight="duotone" />
+                                                            {t(entry.labelKey)}
+                                                        </span>
+                                                        <div className="mt-1 text-xs text-slate-500">{summary}</div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
-
-                                    {transportMismatch && (
-                                        <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                                            <WarningCircle size={14} className="mt-0.5 shrink-0" />
-                                            Custom transport choices differ from profile suggestions. This may reduce pace/budget alignment.
-                                        </div>
-                                    )}
-                                </div>
+                                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                            {t('previewOnly.traveler')}
+                                        </p>
+                                    </div>
+                                )}
                             </section>
 
-                            <section className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:p-5">
-                                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('style')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'style',
+                                        expanded: sectionExpanded.style,
+                                    })}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <Sparkle size={18} weight="duotone" className="text-accent-600" />
+                                            {t('style.title')}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{styleSummary || t('style.empty')}</div>
+                                    </div>
+                                    {sectionExpanded.style ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.style && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                            {STYLE_CHOICES.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = selectedStyles.includes(entry.id);
+                                                return (
+                                                    <button
+                                                        key={entry.id}
+                                                        type="button"
+                                                        onClick={() => toggleStyle(entry.id)}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                                                            active
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <Icon size={15} weight="duotone" />
+                                                        {t(entry.labelKey)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                            {t('previewOnly.style')}
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSection('transport')}
+                                    className="flex w-full items-center justify-between gap-3 text-left"
+                                    {...getAnalyticsDebugAttributes('create_trip__section--expand', {
+                                        section_id: 'transport',
+                                        expanded: sectionExpanded.transport,
+                                    })}
+                                >
+                                    <div className="min-w-0">
+                                        <div className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                            <Train size={18} weight="duotone" className="text-accent-600" />
+                                            {t('transport.title')}
+                                        </div>
+                                        <div className="truncate text-xs text-slate-500">{transportSummary}</div>
+                                    </div>
+                                    {sectionExpanded.transport ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
+                                </button>
+                                {sectionExpanded.transport && (
+                                    <div className="mt-4">
+                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                                            {TRANSPORT_OPTIONS.map((entry) => {
+                                                const Icon = entry.icon;
+                                                const active = transportModes.includes(entry.id);
+                                                const disabled = entry.id === 'camper';
+                                                return (
+                                                    <button
+                                                        key={entry.id}
+                                                        type="button"
+                                                        onClick={() => toggleTransportMode(entry.id)}
+                                                        disabled={disabled}
+                                                        className={[
+                                                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                                                            disabled ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400' : '',
+                                                            active
+                                                                ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                                                        ].join(' ')}
+                                                    >
+                                                        <Icon size={15} weight="duotone" />
+                                                        {t(entry.labelKey)}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        <p className="mt-2 text-xs text-slate-500">{t('transport.camperDisabled')}</p>
+                                        {transportMismatch && (
+                                            <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                                <WarningCircle size={14} className="mt-0.5 shrink-0" />
+                                                {t('transport.overrideHint')}
+                                            </div>
+                                        )}
+                                        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                            {t('previewOnly.transport')}
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm sm:p-5">
+                                <div className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
                                     <Info size={16} weight="duotone" className="text-accent-600" />
-                                    Special notes
+                                    {t('notes.title')}
                                 </div>
+                                <p className="mb-2 text-xs text-slate-500">{t('notes.hint')}</p>
                                 <textarea
                                     value={notes}
                                     onChange={(event) => setNotes(event.target.value)}
                                     rows={4}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none"
-                                    placeholder="Tell the planner what matters most for this trip."
+                                    placeholder={t('notes.placeholder')}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                 />
                             </section>
                         </div>
 
-                        <aside className="lg:sticky lg:top-24 lg:self-start">
+                        <aside className="hidden lg:sticky lg:top-24 lg:block lg:self-start">
                             <div className="space-y-4 rounded-2xl border border-indigo-300/20 bg-gradient-to-b from-[#0d1330] via-[#090f26] to-[#060915] p-4 text-slate-100 shadow-2xl sm:p-5">
                                 <div>
                                     <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-300/30 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-indigo-100">
                                         <Compass size={13} weight="duotone" />
-                                        Trip snapshot
+                                        {t('snapshot.title')}
                                     </div>
                                     <h2 className="text-xl font-bold leading-tight text-white">{routeHeadline}</h2>
                                 </div>
@@ -1432,13 +2015,12 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="relative">
                                         {routeTimelineDestinations.length === 0 ? (
                                             <div className="rounded-lg border border-dashed border-white/20 px-3 py-4 text-sm text-indigo-100/80">
-                                                Add destinations to preview your route.
+                                                {t('snapshot.emptyDestinations')}
                                             </div>
                                         ) : (
                                             routeTimelineDestinations.map((destination, index) => {
                                                 const option = getDestinationOptionByName(destination);
                                                 const isFirst = index === 0;
-
                                                 return (
                                                     <div key={`${destination}-${index}`} className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-3 pb-4 last:pb-0">
                                                         <div
@@ -1448,11 +2030,11 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             {option?.flag || '🌍'}
                                                         </div>
                                                         <div className="min-w-0 pt-0.5">
-                                                            <div className="text-sm font-semibold text-indigo-50">{destination}</div>
+                                                            <div className="text-sm font-semibold text-indigo-50">{getLocalizedDestinationLabel(destination)}</div>
                                                             {isFirst && (
                                                                 <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-indigo-300/40 bg-indigo-300/10 px-2 py-0.5 text-[11px] font-semibold text-indigo-100">
                                                                     <MapPin size={12} weight="fill" />
-                                                                    {roundTrip ? 'Start & End' : 'Start'}
+                                                                    {roundTrip ? t('snapshot.startEnd') : t('snapshot.start')}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1463,65 +2045,153 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     </div>
                                 </div>
 
-                                {isVanlifeOnly && (
-                                    <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-200">
-                                        Vanlife activated 🤙
-                                    </div>
-                                )}
-
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <CalendarBlank size={15} weight="duotone" className="text-indigo-200" />
-                                            {dayCount} days
+                                            {t('snapshot.days', { days: dayCount })}
                                         </div>
-                                        <div className="mt-1 text-xs text-indigo-100/80">Avg {averageDaysPerStop.toFixed(1)} per stop</div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">
+                                            {orderedDestinations.length > 0
+                                                ? t('snapshot.avgPerStop', { days: averageDaysPerStop.toFixed(1) })
+                                                : t('snapshot.addDestinations')}
+                                        </div>
                                     </div>
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <UsersThree size={15} weight="duotone" className="text-indigo-200" />
-                                            {travelerLabel}
+                                            {travelerSummary}
                                         </div>
                                         <div className="mt-1 text-xs text-indigo-100/80">{travelerDetailSummary}</div>
                                     </div>
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <Train size={15} weight="duotone" className="text-indigo-200" />
-                                            Transport
+                                            {t('snapshot.transport')}
                                         </div>
                                         <div className="mt-1 text-xs text-indigo-100/80">{transportSummary}</div>
                                     </div>
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <Sparkle size={15} weight="duotone" className="text-indigo-200" />
-                                            Style
+                                            {t('snapshot.style')}
                                         </div>
-                                        <div className="mt-1 text-xs text-indigo-100/80">{selectedStyles.length} selected</div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">{styleSummary || t('style.empty')}</div>
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-white/15 bg-white/5 p-3">
-                                    <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-indigo-100">
-                                        <Info size={13} weight="duotone" />
-                                        Did you know
+                                <div className="rounded-xl border border-amber-300/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                                    <div className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-[0.11em]">
+                                        <WarningCircle size={12} weight="fill" />
+                                        {t('previewOnly.title')}
                                     </div>
-                                    <p className="mt-2 text-sm text-indigo-50/95">{dynamicFact}</p>
+                                    <div className="mt-1 text-[11px] text-amber-100/90">{t('previewOnly.global')}</div>
                                 </div>
 
-                                <Link
-                                    to={prefillUrl}
-                                    className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50"
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateTrip}
+                                    disabled={isSubmitting || !destinationComplete}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
+                                        destination_count: orderedDestinations.length,
+                                        date_mode: dateInputMode,
+                                    })}
                                 >
-                                    Create my trip
-                                </Link>
+                                    {isSubmitting ? t('cta.loading') : t('cta.label')}
+                                </button>
                             </div>
                         </aside>
                     </section>
+
+                    <section className="mt-6 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-4 text-slate-700 shadow-sm sm:px-5">
+                        <div className="flex items-start gap-2">
+                            <Info size={16} weight="duotone" className="mt-0.5 shrink-0 text-sky-700" />
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">{t('labsBanner.title')}</p>
+                                <p className="mt-1 text-xs text-slate-600">{t('labsBanner.description')}</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {labRouteLinks.map((entry) => (
+                                        <Link
+                                            key={entry.key}
+                                            to={entry.path}
+                                            className="inline-flex items-center rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:border-sky-300 hover:bg-sky-100"
+                                        >
+                                            {t(`labsBanner.links.${entry.key}`)}
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </main>
+
+                <div
+                    className="fixed inset-x-0 z-40 border-t border-indigo-300/25 bg-gradient-to-b from-[#0d1330]/95 via-[#090f26]/95 to-[#060915]/95 px-3 pb-4 pt-4 text-slate-100 backdrop-blur lg:hidden"
+                    style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
+                >
+                    <div className="mx-auto max-w-[1260px]">
+                        <div className="flex items-start gap-3.5">
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                                <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
+                                <div className="truncate text-[16px] font-semibold leading-snug text-white">{routeHeadline}</div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {mobileDateRangeLabel}
+                                    </span>
+                                    <span className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-indigo-100">
+                                        {t('snapshot.days', { days: dayCount })}
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleGenerateTrip}
+                                disabled={isSubmitting || !destinationComplete}
+                                className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                                {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
+                                    destination_count: orderedDestinations.length,
+                                    date_mode: dateInputMode,
+                                    source: 'mobile_footer',
+                                })}
+                            >
+                                {isSubmitting ? t('cta.loading') : t('cta.label')}
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setMobileSnapshotExpanded((previous) => !previous)}
+                            className="mt-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-100/95"
+                        >
+                            {mobileSnapshotExpanded ? <CaretDown size={12} /> : <CaretUp size={12} />}
+                            {mobileSnapshotExpanded ? t('mobileSnapshot.hideDetails') : t('mobileSnapshot.showDetails')}
+                        </button>
+                        {mobileSnapshotExpanded && (
+                            <div className="mt-2.5 grid grid-cols-2 gap-3 rounded-xl border border-white/15 bg-white/5 p-3.5 text-xs text-indigo-100">
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.days')}</div>
+                                    <div>{dayCount}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>
+                                    <div>{travelerSummary}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.style')}</div>
+                                    <div className="truncate">{styleSummary || t('style.empty')}</div>
+                                </div>
+                                <div>
+                                    <div className="font-semibold text-indigo-200">{t('mobileSnapshot.transport')}</div>
+                                    <div>{transportSummary}</div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
                 {settingsDialog}
 
-                <SiteFooter className="relative z-10 mt-8" />
+                <SiteFooter className="relative z-10 mt-6" />
             </div>
         </div>
     );

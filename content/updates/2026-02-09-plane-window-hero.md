@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-plane-window-hero
-version: v0.32.0
+version: v0.29.0
 title: "Plane window hero animation"
 date: 2026-02-09
 published_at: 2026-02-09T22:40:00Z

@@ -126,6 +126,11 @@ const DEFAULT_BENCHMARK_MODEL_IDS = [
     'anthropic:claude-sonnet-4.5',
 ];
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
+const BENCHMARK_EFFECTIVE_DEFAULTS = {
+    travelerSetup: 'solo',
+    tripStyle: 'everything_except_remote_work',
+    transportPreference: 'automatic',
+};
 
 const SATISFACTION_SCORE: Record<SatisfactionRating, number> = {
     good: 3,
@@ -399,12 +404,19 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [destinations, setDestinations] = useState('Japan');
     const [startDate, setStartDate] = useState(defaultDates.startDate);
     const [endDate, setEndDate] = useState(defaultDates.endDate);
+    const [dateInputMode, setDateInputMode] = useState<'exact' | 'flex'>('exact');
+    const [flexWeeks, setFlexWeeks] = useState(2);
+    const [flexWindow, setFlexWindow] = useState<'spring' | 'summer' | 'autumn' | 'winter' | 'shoulder'>('shoulder');
     const [budget, setBudget] = useState('Medium');
     const [pace, setPace] = useState('Balanced');
     const [specificCities, setSpecificCities] = useState('');
     const [notes, setNotes] = useState('');
     const [numCities, setNumCities] = useState<number | ''>('');
     const [roundTrip, setRoundTrip] = useState(true);
+    const [routeLock, setRouteLock] = useState(false);
+    const [travelerSetup, setTravelerSetup] = useState<'solo' | 'couple' | 'friends' | 'family'>('solo');
+    const [tripStyleMask, setTripStyleMask] = useState<'everything_except_remote_work' | 'culture_focused' | 'food_focused'>('everything_except_remote_work');
+    const [transportMask, setTransportMask] = useState<'automatic' | 'plane' | 'train' | 'camper'>('automatic');
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
 
     const [modelFilter, setModelFilter] = useState('');
@@ -771,7 +783,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }
 
         const destinationPrompt = selectedDestinations.map((entry) => getDestinationPromptLabel(entry)).join(', ');
-        const totalDays = getDaysDifference(startDate, endDate);
+        const totalDays = dateInputMode === 'flex'
+            ? Math.max(7, Math.round(flexWeeks) * 7)
+            : getDaysDifference(startDate, endDate);
 
         const options: GenerateOptions = {
             budget,
@@ -790,6 +804,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             roundTrip,
             input: {
                 destinations: selectedDestinations,
+                dateInputMode,
+                flexWeeks: dateInputMode === 'flex' ? flexWeeks : null,
+                flexWindow: dateInputMode === 'flex' ? flexWindow : null,
                 budget,
                 pace,
                 notes,
@@ -797,9 +814,41 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 numCities: typeof numCities === 'number' ? numCities : null,
                 totalDays,
                 roundTrip,
+                routeLock,
+                previewControls: {
+                    travelerSetup,
+                    tripStyle: tripStyleMask,
+                    transportPreference: transportMask,
+                },
+            },
+            metadata: {
+                ignored_inputs: {
+                    travelerSetup,
+                    tripStyle: tripStyleMask,
+                    transportPreference: transportMask,
+                    routeLock,
+                },
+                effective_defaults: BENCHMARK_EFFECTIVE_DEFAULTS,
             },
         };
-    }, [budget, destinations, endDate, notes, numCities, pace, roundTrip, specificCities, startDate]);
+    }, [
+        budget,
+        dateInputMode,
+        destinations,
+        endDate,
+        flexWeeks,
+        flexWindow,
+        notes,
+        numCities,
+        pace,
+        routeLock,
+        roundTrip,
+        specificCities,
+        startDate,
+        travelerSetup,
+        tripStyleMask,
+        transportMask,
+    ]);
 
     const runBenchmark = useCallback(async (targetsOverride?: Array<{ provider: string; model: string; label?: string }>) => {
         if (!accessToken) {
@@ -1170,7 +1219,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Internal admin workspace</p>
                             <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">AI Benchmark</h1>
                             <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                                Classic-form benchmark workspace. Use the left-side trip input and compare selected provider/model targets on the right.
+                                Default create-trip mask benchmark workspace. Use the left-side input and compare selected provider/model targets on the right.
                                 Results persist by session token in the URL.
                             </p>
                         </div>
@@ -1202,8 +1251,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="grid gap-4 lg:grid-cols-[minmax(320px,0.95fr)_minmax(480px,1.05fr)]">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex items-center justify-between gap-2">
-                            <h2 className="text-lg font-bold text-slate-900">Classic benchmark input</h2>
+                            <h2 className="text-lg font-bold text-slate-900">Create-trip benchmark mask</h2>
                         </div>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Mirrors the new default create-trip form while preserving the current classic prompt contract.
+                        </p>
 
                         <div className="mt-4 grid grid-cols-1 gap-3">
                             <label className="space-y-1 text-sm">
@@ -1220,31 +1272,112 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <input
                                     value={destinations}
                                     onChange={(event) => setDestinations(event.target.value)}
-                                    placeholder="Japan, Okinawa"
+                                    placeholder="Portugal, Madeira"
                                     className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
                                 />
                             </label>
 
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
+                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Route controls</div>
+                                <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-700">
                                     <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(event) => setStartDate(event.target.value)}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        type="checkbox"
+                                        checked={roundTrip}
+                                        onChange={(event) => setRoundTrip(event.target.checked)}
                                     />
+                                    Return to start (round trip)
                                 </label>
+                                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                                    <input
+                                        type="checkbox"
+                                        checked={routeLock}
+                                        onChange={(event) => setRouteLock(event.target.checked)}
+                                    />
+                                    Route lock (UI-only, ignored in prompt)
+                                </label>
+                            </div>
 
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(event) => setEndDate(event.target.value)}
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                    />
-                                </label>
+                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</div>
+                                <div className="mb-3 inline-flex rounded-md border border-slate-300 bg-white p-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDateInputMode('exact')}
+                                        className={[
+                                            'rounded px-2 py-1 text-xs font-semibold transition-colors',
+                                            dateInputMode === 'exact' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-900',
+                                        ].join(' ')}
+                                    >
+                                        Exact dates
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDateInputMode('flex')}
+                                        className={[
+                                            'rounded px-2 py-1 text-xs font-semibold transition-colors',
+                                            dateInputMode === 'flex' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-900',
+                                        ].join(' ')}
+                                    >
+                                        Flexible window
+                                    </button>
+                                </div>
+
+                                {dateInputMode === 'exact' ? (
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <label className="space-y-1 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
+                                            <input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(event) => setStartDate(event.target.value)}
+                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            />
+                                        </label>
+
+                                        <label className="space-y-1 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
+                                            <input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(event) => setEndDate(event.target.value)}
+                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            />
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                        <label className="space-y-1 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip length (weeks)</span>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                max={8}
+                                                value={flexWeeks}
+                                                onChange={(event) => {
+                                                    const next = Number(event.target.value);
+                                                    const normalized = Number.isFinite(next) ? Math.min(8, Math.max(1, next)) : 1;
+                                                    setFlexWeeks(normalized);
+                                                }}
+                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                            />
+                                        </label>
+                                        <label className="space-y-1 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred time range</span>
+                                            <Select value={flexWindow} onValueChange={(value) => setFlexWindow(value as typeof flexWindow)}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select time range" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="spring">Spring window</SelectItem>
+                                                    <SelectItem value="summer">Summer window</SelectItem>
+                                                    <SelectItem value="autumn">Autumn window</SelectItem>
+                                                    <SelectItem value="winter">Winter window</SelectItem>
+                                                    <SelectItem value="shoulder">Shoulder season</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </label>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1278,9 +1411,62 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </label>
                             </div>
 
+                            <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-amber-800">Preview-only controls (ignored in prompt)</div>
+                                <p className="mt-1 text-xs text-amber-700">
+                                    These fields mirror the new default create-trip UI but do not affect generation output yet.
+                                </p>
+                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
+                                        <Select value={travelerSetup} onValueChange={(value) => setTravelerSetup(value as typeof travelerSetup)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select traveler setup" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="solo">Solo</SelectItem>
+                                                <SelectItem value="couple">Couple</SelectItem>
+                                                <SelectItem value="friends">Friends</SelectItem>
+                                                <SelectItem value="family">Family</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
+                                        <Select value={tripStyleMask} onValueChange={(value) => setTripStyleMask(value as typeof tripStyleMask)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select trip style" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="everything_except_remote_work">Everything except remote work</SelectItem>
+                                                <SelectItem value="culture_focused">Culture focused</SelectItem>
+                                                <SelectItem value="food_focused">Food focused</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport preference</span>
+                                        <Select value={transportMask} onValueChange={(value) => setTransportMask(value as typeof transportMask)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select transport preference" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="automatic">Automatic</SelectItem>
+                                                <SelectItem value="plane">Plane</SelectItem>
+                                                <SelectItem value="train">Train</SelectItem>
+                                                <SelectItem value="camper">Camper</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                </div>
+                                <div className="mt-2 text-[11px] text-amber-800">
+                                    Effective defaults: traveler = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.travelerSetup}</span>, style = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.tripStyle}</span>, transport = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.transportPreference}</span>.
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities (classic contract)</span>
                                     <input
                                         value={specificCities}
                                         onChange={(event) => setSpecificCities(event.target.value)}
@@ -1290,7 +1476,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </label>
 
                                 <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops (classic contract)</span>
                                     <input
                                         type="number"
                                         min={1}
@@ -1313,17 +1499,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 />
                             </label>
 
-                            <label className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                                <input
-                                    type="checkbox"
-                                    checked={roundTrip}
-                                    onChange={(event) => setRoundTrip(event.target.checked)}
-                                />
-                                Round trip (return to first city)
-                            </label>
-
                             <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                                Total days: <span className="font-semibold text-slate-800">{getDaysDifference(startDate, endDate)}</span>
+                                Total days sent to prompt: <span className="font-semibold text-slate-800">{dateInputMode === 'flex' ? Math.max(7, Math.round(flexWeeks) * 7) : getDaysDifference(startDate, endDate)}</span>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
@@ -1942,7 +2119,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
                     <div className="font-semibold">Important implementation note</div>
                     <div className="mt-1">
-                        This benchmark page currently mirrors classic create-trip inputs. When the main create form evolves, this benchmark input panel must be aligned to the new canonical form structure.
+                        This benchmark page now mirrors the default create-trip mask while preserving the existing classic prompt contract for comparable results across runs.
                     </div>
                 </section>
             </div>

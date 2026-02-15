@@ -32,7 +32,7 @@ Why this matters:
 ### 2. Run schema + RPC SQL
 
 1. Open Supabase SQL Editor.
-2. Run `/Users/chrizzzly/.codex/worktrees/308f/travelflow-codex/docs/supabase.sql`.
+2. Run `docs/supabase.sql`.
 
 Notes:
 - The file is idempotent for policies (`drop policy if exists ...` then create).
@@ -336,4 +336,4 @@ where id = '<request-id>';
 
 Authoritative SQL source:
 
-- `/Users/chrizzzly/.codex/worktrees/308f/travelflow-codex/docs/supabase.sql`
+- `docs/supabase.sql`

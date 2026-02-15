@@ -10,7 +10,7 @@ This document defines how to add or change localized pages in TravelFlow.
 ## Locale Contract
 - Locale source of truth: `config/locales.ts`.
 - Route building/parsing source of truth: `config/routes.ts`.
-- Current phase locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`.
+- Current phase locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`.
 - Direction map currently remains `ltr` for all active locales.
 - Keep `document.documentElement.lang` and `document.documentElement.dir` in sync via runtime locale updates in `App.tsx`.
 
@@ -90,7 +90,7 @@ When adding a new key:
    - `MARKETING_ROUTE_CONFIGS`
    - preload rule (if route-level preloading is needed)
 4. Add prefetch rule in `config/prefetchTargets.ts`.
-5. Add localized strings in required namespaces for `en/es/de/fr/pt/ru/it`.
+5. Add localized strings in required namespaces for `en/es/de/fr/pt/ru/it/pl`.
 6. Add SEO metadata in `netlify/edge-functions/site-og-meta.ts`:
    - `MARKETING_PATH_PATTERNS`
    - `PAGE_META`
@@ -108,6 +108,12 @@ When adding a new key:
 - Localized marketing pages show translation disclaimer banner via `components/marketing/TranslationNoticeBanner.tsx`.
 - Banner is injected by `components/marketing/MarketingLayout.tsx`.
 - Banner links to localized `/contact` route for reporting translation issues.
+- Banner can be dismissed for the current browser session (session storage).
+
+## Language Suggestion Banner Behavior
+- Banner is shown only on marketing pages when browser-preferred locale differs from current locale.
+- Dismissing the banner hides it for the current browser session.
+- Switching via banner CTA permanently acknowledges the hint (stored locally), so it is not shown again on future visits unless storage is cleared.
 
 ## Logical Properties Requirement (Direction Safety)
 - For every new or updated component, evaluate if CSS logical properties should be used for direction safety:

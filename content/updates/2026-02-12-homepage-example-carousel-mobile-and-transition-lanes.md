@@ -26,6 +26,7 @@ summary: "Stabilized the homepage example carousel on mobile and upgraded exampl
 - [x] [Fixed] ⚙️ Removed global click-based View Transition wrapping for route changes to avoid slow back navigation from trip pages.
 - [x] [Fixed] 🔤 Restored system sans-serif body text and stabilized local Space Grotesk subset loading to avoid visual jumps on resize.
 - [x] [Improved] 🪶 Applied global headline `text-wrap: pretty` for cleaner line breaks across pages.
+- [x] [Improved] 🌏 Added a new multi-country “Backpacking South East Asia” example card with an openable 37-day roundtrip route template, richer city/activity coverage, localized card titles/city labels across all supported languages, and template defaults tuned for vertical timeline + minimal map.
 - [ ] [Internal] 🧩 Added shared transition-name helpers and example-template mini-calendar data utilities to keep card and trip visual mapping consistent.
 - [ ] [Internal] 🧪 Added View Transition diagnostics to the on-page debugger, including lifecycle events and live anchor audits.
 - [ ] [Internal] 🧱 Optimized debugger transition-anchor scanning and added duplicate-name detection to reduce debug overhead on large trip pages.

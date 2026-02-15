@@ -1,0 +1,107 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "Inspiracje podróżnicze",
+      "title": "Dokąd wybierzesz się następnym razem?",
+      "description": "Nie wiesz, od czego zacząć? Przeglądaj wyselekcjonowane pomysły na podróże według motywu, miesiąca, kraju lub nadchodzących festiwali. Kliknij dowolny plan, aby użyć go jako punktu startowego."
+    },
+    "searchPlaceholder": "Szukaj kierunków, festiwali, krajów...",
+    "searchResultLabel": "{count} wyników",
+    "noResults": "Brak wyników dla „{query}”. Spróbuj innego słowa kluczowego.",
+    "searchSections": {
+      "destinations": "Kierunki",
+      "eventsFestivals": "Wydarzenia i festiwale",
+      "weekendGetaways": "Weekendowe wypady"
+    },
+    "jumpTo": "Przejdź do",
+    "quickStart": "Szybki start",
+    "sections": {
+      "byTheme": "Według motywu",
+      "byMonth": "Według miesiąca",
+      "byCountry": "Według kraju",
+      "eventsFestivals": "Wydarzenia i festiwale",
+      "weekendGetaways": "Weekendowe wypady",
+      "bestTimeTitle": "Najlepszy czas na podróż",
+      "browseCountryTitle": "Przeglądaj według kraju",
+      "upcomingFestivalsTitle": "Nadchodzące wydarzenia i festiwale",
+      "weekendTitle": "Spontaniczne weekendowe wypady"
+    },
+    "links": {
+      "allThemes": "Wszystkie motywy",
+      "monthGuide": "Przewodnik po miesiącach",
+      "allCountries": "Wszystkie kraje",
+      "allEvents": "Wszystkie wydarzenia",
+      "viewAllEvents": "Zobacz wszystkie wydarzenia ({count})",
+      "allGetaways": "Wszystkie wypady"
+    },
+    "stats": {
+      "curatedDestinations": "Wyselekcjonowane kierunki",
+      "countriesCovered": "Liczba krajów",
+      "festivalsEvents": "Festiwale i wydarzenia",
+      "weekendGetaways": "Weekendowe wypady"
+    },
+    "bottomCta": {
+      "title": "Masz już inspirację?",
+      "description": "Wybierz kierunek, a nasze AI zamieni go w plan dzień po dniu w kilka sekund.",
+      "button": "Zacznij planować teraz"
+    },
+    "subpages": {
+      "backToInspirations": "Powrót do inspiracji",
+      "comingSoon": "Wkrótce",
+      "themes": {
+        "pill": "Motywy podróży",
+        "title": "Podróże według motywu",
+        "description": "Niezależnie od tego, czy szukasz adrenaliny, kulinarnych tras czy spokojnych wyjazdów fotograficznych, znajdziesz tu inspiracje dopasowane do swojego stylu podróżowania.",
+        "comingSoonDescription": "Pełne strony tematyczne z gotowymi planami, listami pakowania i wskazówkami insiderów już w drodze."
+      },
+      "bestTime": {
+        "pill": "Najlepszy czas na podróż",
+        "title": "Kiedy jechać i dokąd",
+        "description": "Każdy kierunek ma swój najlepszy moment — miesiąc, w którym pogoda, tłumy i ceny układają się najkorzystniej. Skorzystaj z przewodnika miesiąc po miesiącu, aby wybrać idealny termin.",
+        "comingSoonDescription": "Szczegółowe przewodniki sezonowe z danymi pogodowymi, alertami szczytu sezonu i wskazówkami budżetowymi już wkrótce."
+      },
+      "countries": {
+        "pill": "Przeglądaj według kraju",
+        "title": "Odkrywaj kierunki według kraju",
+        "description": "Od kwitnącej wiśni w Japonii po wybrzeża Portugalii — poznaj przewodniki krajowe z rekomendacjami najlepszych miesięcy i lokalnymi wskazówkami.",
+        "comingSoonDescription": "Rozbudowane profile krajów z informacjami wizowymi, podziałem budżetu i wyselekcjonowanymi trasami wielomiejskimi pojawią się wkrótce."
+      },
+      "festivals": {
+        "pill": "Wydarzenia i festiwale",
+        "title": "Zaplanuj podróż wokół festiwalu",
+        "description": "Największe święta świata zasługują na coś więcej niż lot na ostatnią chwilę. Odkrywaj nadchodzące festiwale według dat i buduj wokół nich swój plan podróży.",
+        "comingSoonDescription": "Szczegółowe przewodniki festiwalowe z harmonogramami, poradami noclegowymi i propozycjami planu dzień po dniu już wkrótce."
+      },
+      "weekendGetaways": {
+        "pill": "Weekendowe wypady",
+        "title": "Szybkie wypady dla zapracowanych",
+        "description": "Nie potrzebujesz dwóch tygodni wolnego, żeby przeżyć niezapomnianą podróż. Te krótkie pomysły są stworzone pod spontaniczne wyjazdy.",
+        "comingSoonDescription": "Szablony weekendowych planów z opcjami pociągu lub lotu, szacunkowym budżetem i checklistami pakowania już wkrótce."
+      },
+      "country": {
+        "notFoundTitle": "Nie znaleziono kraju",
+        "notFoundDescription": "Nie mamy jeszcze danych inspiracyjnych dla „{country}”.",
+        "pill": "Przewodnik po kraju",
+        "title": "Podróż do {country}",
+        "description": "Wszystko, czego potrzebujesz, aby zaplanować podróż do {country} — najlepsze miesiące, popularne trasy i porady podróżnicze.",
+        "comingSoonDescription": "Szczegółowe przewodniki dla {country} — w tym podział na miasta, wskazówki kulturowe, informacje wizowe i gotowe plany wielodniowe — już wkrótce.",
+        "cta": "Zaplanuj podróż do {country}"
+      }
+    }
+  },
+  "updates": {
+    "title": "Aktualności"
+  },
+  "shareUnavailable": {
+    "title": "Ta udostępniona podróż nie jest już dostępna",
+    "description": "Link mógł wygasnąć albo został dezaktywowany przez właściciela podróży. Poproś o nowy link lub utwórz własną podróż, aby kontynuować planowanie.",
+    "backToHomepage": "Wróć do strony głównej",
+    "createNewTrip": "Utwórz nową podróż"
+  },
+  "notFound": {
+    "headline": "Wygląda na to, że ta strona już wyjechała na wakacje!",
+    "planCta": "Zaplanuj swoją",
+    "missingPrompt": "Uważasz, że ta strona powinna istnieć i coś pominęliśmy?",
+    "contactCta": "Skontaktuj się z nami"
+  }
+}

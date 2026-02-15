@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-10-trip-info-modal-unification
-version: v0.43.0
+version: v0.33.0
 title: "Unified trip information modal across desktop and mobile"
 date: 2026-02-10
 published_at: 2026-02-10T18:16:28Z

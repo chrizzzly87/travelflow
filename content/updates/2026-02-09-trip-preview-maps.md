@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-09-trip-preview-maps
-version: v0.28.0
+version: v0.25.0
 title: "Real trip routes on homepage cards"
 date: 2026-02-09
 published_at: 2026-02-09T22:20:00Z

@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ProgressiveImage } from '../components/ProgressiveImage';
-import { getBlogPostBySlug, getPublishedBlogPosts } from '../services/blogService';
+import { getBlogPostBySlugWithFallback, getPublishedBlogPostsForLocales } from '../services/blogService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import type { Components } from 'react-markdown';
@@ -153,12 +153,15 @@ export const BlogPostPage: React.FC = () => {
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const { t } = useTranslation('blog');
 
-    const post = useMemo(() => (slug ? getBlogPostBySlug(slug, locale) : undefined), [locale, slug]);
+    const post = useMemo(() => (slug ? getBlogPostBySlugWithFallback(slug, locale) : undefined), [locale, slug]);
     const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
     const relatedPosts = useMemo(() => {
         if (!post) return [];
-        const allPosts = getPublishedBlogPosts(locale);
+        const relatedLocales = post.language === DEFAULT_LOCALE && locale !== DEFAULT_LOCALE
+            ? [locale, DEFAULT_LOCALE]
+            : [locale];
+        const allPosts = getPublishedBlogPostsForLocales(relatedLocales);
         const postTags = new Set(post.tags);
         return allPosts
             .filter((entry) => entry.slug !== post.slug && entry.tags.some((tag) => postTags.has(tag)))
@@ -183,12 +186,28 @@ export const BlogPostPage: React.FC = () => {
         year: 'numeric',
     });
     const contentLang = post.language;
+    const showEnglishContentNotice = locale !== DEFAULT_LOCALE && contentLang === DEFAULT_LOCALE;
+    const canonicalPath = showEnglishContentNotice
+        ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
+        : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const canonicalHref = new URL(canonicalPath, window.location.origin).toString();
+        let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+        if (!canonicalLink) {
+            canonicalLink = document.createElement('link');
+            canonicalLink.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonicalLink);
+        }
+        canonicalLink.setAttribute('href', canonicalHref);
+    }, [canonicalPath]);
 
     return (
         <MarketingLayout>
             <div className="reading-progress-bar" />
 
-            <article className="pb-16 md:pb-24" data-blog-page-locale={locale}>
+            <div className="pb-16 md:pb-24">
                 <div className="pt-6 pb-4">
                     <Link
                         to={buildLocalizedMarketingPath('blog', locale)}
@@ -198,6 +217,14 @@ export const BlogPostPage: React.FC = () => {
                         {t('common:buttons.backToBlog')}
                     </Link>
                 </div>
+                {showEnglishContentNotice && (
+                    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                        <span className="inline-flex items-center gap-1.5">
+                            <span aria-hidden="true">🇬🇧</span>
+                            {t('index.englishArticleNotice')}
+                        </span>
+                    </div>
+                )}
 
                 <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
                     {!hasHeaderImageError && (
@@ -222,48 +249,54 @@ export const BlogPostPage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-10 lg:gap-14">
-                    <div className="min-w-0 flex-1 max-w-3xl" lang={contentLang} data-blog-content-lang={contentLang}>
-                        <h1
-                            className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                            style={{ fontFamily: 'var(--tf-font-heading)' }}
+                    <div className="min-w-0 flex-1 max-w-3xl">
+                        <article
+                            lang={contentLang}
+                            data-blog-content-lang={contentLang}
+                            translate={showEnglishContentNotice ? 'no' : undefined}
                         >
-                            {post.title}
-                        </h1>
+                            <h1
+                                className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
+                                style={{ fontFamily: 'var(--tf-font-heading)' }}
+                            >
+                                {post.title}
+                            </h1>
 
-                        <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                            <span className="inline-flex items-center gap-1.5">
-                                <User size={14} weight="duotone" className="text-accent-400" />
-                                {post.author}
-                            </span>
-                            <span>{formattedDate}</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <Clock size={14} weight="duotone" className="text-accent-400" />
-                                {t('index.readTime', { minutes: post.readingTimeMin })}
-                            </span>
-                        </div>
+                            <div lang={locale} className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <User size={14} weight="duotone" className="text-accent-400" />
+                                    {post.author}
+                                </span>
+                                <span>{formattedDate}</span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Clock size={14} weight="duotone" className="text-accent-400" />
+                                    {t('index.readTime', { minutes: post.readingTimeMin })}
+                                </span>
+                            </div>
 
-                        <div className="mt-4 flex flex-wrap gap-1.5">
-                            {post.tags.map((tag) => (
-                                <Link
-                                    key={tag}
-                                    to={buildLocalizedMarketingPath('blog', locale)}
-                                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
-                                >
-                                    <Tag size={10} weight="duotone" />
-                                    {tag}
-                                </Link>
-                            ))}
-                        </div>
+                            <div className="mt-4 flex flex-wrap gap-1.5">
+                                {post.tags.map((tag) => (
+                                    <Link
+                                        key={tag}
+                                        to={buildLocalizedMarketingPath('blog', locale)}
+                                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
+                                    >
+                                        <Tag size={10} weight="duotone" />
+                                        {tag}
+                                    </Link>
+                                ))}
+                            </div>
 
-                        <p className="mt-6 text-lg leading-relaxed text-slate-600 border-l-4 border-accent-200 pl-4">
-                            {post.summary}
-                        </p>
+                            <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
+                                {post.summary}
+                            </p>
 
-                        <div className="mt-10">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                                {post.content}
-                            </ReactMarkdown>
-                        </div>
+                            <div className="mt-10">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                    {post.content}
+                                </ReactMarkdown>
+                            </div>
+                        </article>
                     </div>
 
                     <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
@@ -305,7 +338,7 @@ export const BlogPostPage: React.FC = () => {
                                         {relatedPosts.map((related) => (
                                             <li key={`${related.language}:${related.slug}`}>
                                                 <Link
-                                                    to={buildLocalizedMarketingPath('blogPost', related.language, { slug: related.slug })}
+                                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
                                                     lang={related.language}
                                                     data-blog-related-lang={related.language}
                                                     className="group flex items-start gap-2"
@@ -372,7 +405,7 @@ export const BlogPostPage: React.FC = () => {
                             {relatedPosts.map((related) => (
                                 <Link
                                     key={`${related.language}:${related.slug}`}
-                                    to={buildLocalizedMarketingPath('blogPost', related.language, { slug: related.slug })}
+                                    to={buildLocalizedMarketingPath('blogPost', locale, { slug: related.slug })}
                                     lang={related.language}
                                     data-blog-related-lang={related.language}
                                     className="group flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
@@ -393,7 +426,7 @@ export const BlogPostPage: React.FC = () => {
                         </div>
                     </div>
                 )}
-            </article>
+            </div>
         </MarketingLayout>
     );
 };

@@ -1,0 +1,36 @@
+{
+  "index": {
+    "pill": "Blog",
+    "title": "Wskazówki do planowania podróży",
+    "description": "Poradniki, tipy i głębsze analizy, które pomagają planować mądrzej — od weekendowych wypadów po wielomiejskie przygody.",
+    "searchPlaceholder": "Szukaj artykułów…",
+    "result": "{count} wynik",
+    "results": "{count} wyników",
+    "noSearch": "Nie znaleziono artykułów dla „{query}”. Spróbuj innego słowa kluczowego.",
+    "noTag": "Nie znaleziono wpisów dla tego tagu.",
+    "readTime": "{minutes} min czytania",
+    "languageFilterAriaLabel": "Filtr języków bloga",
+    "languageFilter": {
+      "nativeOnly": "Tylko język lokalny",
+      "nativeAndEnglish": "Lokalny + angielski",
+      "englishOnly": "Tylko angielski"
+    },
+    "mixedLanguageNotice": "Część wpisów poniżej jest po angielsku, aby łatwiej odkrywać więcej historii.",
+    "englishArticleNotice": "Ten artykuł jest napisany po angielsku.",
+    "communityCtaTitle": "Pisz dla społeczności TravelFlow",
+    "communityCtaDescription": "Jesteś blogerem albo twórcą i chcesz dzielić się historiami z podróży? Odezwij się — opublikujmy Twoje pomysły razem.",
+    "communityCtaButton": "Podziel się swoją historią"
+  },
+  "post": {
+    "notFoundTitle": "Nie znaleziono wpisu",
+    "notFoundDescription": "Szukany wpis na blogu nie istnieje.",
+    "inThisArticle": "W tym artykule",
+    "related": "Powiązane",
+    "planTripTitle": "Zaplanuj swoją podróż",
+    "planTripDescription": "Zamień to, co przeczytałeś, w realny plan — z AI, dzień po dniu.",
+    "explore": "Odkrywaj",
+    "allArticles": "Wszystkie artykuły",
+    "tripInspirations": "Inspiracje podróżnicze",
+    "relatedArticles": "Powiązane artykuły"
+  }
+}

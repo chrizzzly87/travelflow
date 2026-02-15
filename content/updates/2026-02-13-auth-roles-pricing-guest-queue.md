@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-13-auth-roles-pricing-guest-queue
-version: v0.51.0
+version: v0.39.0
 title: "Auth, Tiers, and Guest Trip Queue Foundation"
 date: 2026-02-13
 published_at: 2026-02-13T14:06:09Z

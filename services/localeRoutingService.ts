@@ -1,6 +1,6 @@
-import { buildLocalizedMarketingPath, getBlogSlugFromPath, isLocalizedMarketingPath, isToolRoute, localizeMarketingPath } from '../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, getBlogSlugFromPath, isLocalizedMarketingPath, isToolRoute, localizeMarketingPath, stripLocalePrefix } from '../config/routes';
 import { AppLanguage } from '../types';
-import { getBlogPostBySlug } from './blogService';
+import { getBlogPostBySlugWithFallback } from './blogService';
 
 interface BuildLocalizedLocationInput {
     pathname: string;
@@ -11,6 +11,11 @@ interface BuildLocalizedLocationInput {
 
 export const buildLocalizedLocation = ({ pathname, search = '', hash = '', targetLocale }: BuildLocalizedLocationInput): string => {
     if (isToolRoute(pathname)) {
+        const stripped = stripLocalePrefix(pathname);
+        if (stripped === '/create-trip') {
+            const localizedCreateTripPath = buildLocalizedCreateTripPath(targetLocale);
+            return `${localizedCreateTripPath}${search}${hash}`;
+        }
         return `${pathname}${search}${hash}`;
     }
 
@@ -20,7 +25,7 @@ export const buildLocalizedLocation = ({ pathname, search = '', hash = '', targe
 
     const blogSlug = getBlogSlugFromPath(pathname);
     if (blogSlug) {
-        const blogPost = getBlogPostBySlug(blogSlug, targetLocale);
+        const blogPost = getBlogPostBySlugWithFallback(blogSlug, targetLocale);
         if (!blogPost) {
             return `${buildLocalizedMarketingPath('home', targetLocale)}${hash}`;
         }

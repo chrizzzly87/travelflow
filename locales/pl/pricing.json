@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "Prosty i przejrzysty cennik",
+    "description": "Wybierz poziom dopasowany do stylu podróżowania. Limity i funkcje są zsynchronizowane z planem konta."
+  },
+  "shared": {
+    "perMonth": "/mies.",
+    "unlimited": "Bez limitu",
+    "noExpiry": "Brak wygaśnięcia",
+    "enabled": "Wliczone",
+    "disabled": "Niewliczone",
+    "days": "{count} dni"
+  },
+  "tiers": {
+    "backpacker": {
+      "name": "Backpacker",
+      "badge": "Obecny plan",
+      "description": "Solidny darmowy poziom na start planowania.",
+      "cta": "Zacznij z Backpacker",
+      "features": [
+        "{maxActiveTripsLabel} aktywnych podróży",
+        "{maxTotalTripsLabel} podróży łącznie",
+        "Retencja podróży: {tripExpirationLabel}",
+        "Linki udostępniania: {sharingLabel}",
+        "Edycja współdzielonych planów: {editableSharesLabel}",
+        "Tworzenie tras Pro: {proCreationLabel}"
+      ]
+    },
+    "explorer": {
+      "name": "Explorer",
+      "badge": "Plan płatny",
+      "description": "Wyższe limity, dłuższa retencja i współpraca z edycją.",
+      "cta": "Wkrótce",
+      "features": [
+        "{maxActiveTripsLabel} aktywnych podróży",
+        "{maxTotalTripsLabel} podróży łącznie",
+        "Retencja podróży: {tripExpirationLabel}",
+        "Linki udostępniania: {sharingLabel}",
+        "Edycja współdzielonych planów: {editableSharesLabel}",
+        "Tworzenie tras Pro: {proCreationLabel}"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "Plan płatny",
+      "description": "Najwyższy poziom ze skalą bez limitów i bez wygaśnięcia podróży.",
+      "cta": "Wkrótce",
+      "features": [
+        "{maxActiveTripsLabel} aktywnych podróży",
+        "{maxTotalTripsLabel} podróży łącznie",
+        "Retencja podróży: {tripExpirationLabel}",
+        "Linki udostępniania: {sharingLabel}",
+        "Edycja współdzielonych planów: {editableSharesLabel}",
+        "Tworzenie tras Pro: {proCreationLabel}"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "Limity dostępu anonimowego",
+    "description": "Użytkownicy anonimowi mogą mieć jednocześnie do <strong>{limit}</strong> aktywnych podróży. Każda anonimowa podróż pozostaje edytowalna przez <strong>{days} dni</strong>, potem zostaje zablokowana do czasu aktywacji konta.",
+    "footer": "Załóż darmowe konto, aby zachować historię planowania i później odblokować wyższe poziomy."
+  }
+}

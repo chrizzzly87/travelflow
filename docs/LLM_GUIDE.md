@@ -8,6 +8,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Locale routing + translation workflow: `docs/I18N_PAGE_WORKFLOW.md`.
 - UX writing and CTA/planner copy rules: `docs/UX_COPY_GUIDELINES.md`.
 - Analytics naming and instrumentation format: `docs/ANALYTICS_CONVENTION.md`.
+- Netlify PR preview and feature-branch deploy workflow: `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
