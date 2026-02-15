@@ -1744,7 +1744,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                             <UsersThree size={18} weight="duotone" className="text-accent-600" />
                                             {t('traveler.title')}
                                         </div>
-                                        <div className="truncate text-xs text-slate-500">{travelerSummary}</div>
+                                        <div className="truncate text-xs text-slate-500">{travelerPreviewSummary}</div>
                                     </div>
                                     {sectionExpanded.traveler ? <CaretUp size={16} className="text-slate-500" /> : <CaretDown size={16} className="text-slate-500" />}
                                 </button>
@@ -2057,8 +2057,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <UsersThree size={15} weight="duotone" className="text-indigo-200" />
-                                            {travelerPreviewSummary}
+                                            {travelerSummary}
                                         </div>
+                                        <div className="mt-1 text-xs text-indigo-100/80">{travelerDetailSummary}</div>
                                     </div>
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
@@ -2170,7 +2171,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </div>
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>
-                                    <div>{travelerPreviewSummary}</div>
+                                    <div>{travelerSummary}</div>
                                 </div>
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.style')}</div>
