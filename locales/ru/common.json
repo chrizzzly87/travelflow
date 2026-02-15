@@ -8,7 +8,9 @@
     "login": "Войти",
     "createTrip": "Создать поездку",
     "myTrips": "Мои поездки",
-    "openMenu": "Открыть меню"
+    "openMenu": "Открыть меню",
+    "admin": "Админ",
+    "logout": "Выйти"
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. Все права защищены.",

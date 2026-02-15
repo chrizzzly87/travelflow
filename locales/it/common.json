@@ -8,7 +8,9 @@
     "login": "Accedi",
     "createTrip": "Crea viaggio",
     "myTrips": "I miei viaggi",
-    "openMenu": "Apri menu"
+    "openMenu": "Apri menu",
+    "admin": "Admin",
+    "logout": "Esci"
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. Tutti i diritti riservati.",

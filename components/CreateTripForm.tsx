@@ -21,7 +21,7 @@ import {
     X,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CountrySelect } from './CountrySelect';
 import { DateRangePicker } from './DateRangePicker';
 import { CountryTag } from './CountryTag';
@@ -37,7 +37,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from './ui/select';
-import { generateItinerary, generateSurpriseItinerary, generateWizardItinerary } from '../services/aiService';
+import {
+    generateItinerary,
+    generateSurpriseItinerary,
+    generateWizardItinerary,
+    type GenerateOptions,
+    type SurpriseGenerateOptions,
+    type WizardGenerateOptions,
+} from '../services/aiService';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
@@ -76,6 +83,9 @@ import {
     groupAiModelsByProvider,
 } from '../config/aiModelCatalog';
 import { isSimulatedLoggedIn } from '../services/simulatedLoginService';
+import { useAuth } from '../hooks/useAuth';
+import { createTripGenerationRequest, type QueuedTripGenerationPayload } from '../services/tripGenerationQueueService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 
 interface CreateTripFormProps {
     onTripGenerated: (trip: ITrip) => void;
@@ -219,6 +229,8 @@ const WIZARD_LOGISTIC_CARDS: SelectionCardConfig[] = [
 
 const NOOP = () => {};
 const SIM_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
+const GUEST_AUTH_MODAL_DELAY_MS = 5000;
+const GUEST_QUEUE_TTL_DAYS = 14;
 
 interface SimulatedLoginDebugDetail {
     available: boolean;
@@ -337,6 +349,8 @@ const SeasonAwareCountryTag: React.FC<{
 };
 
 export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated, onOpenManager }) => {
+    const navigate = useNavigate();
+    const { isAuthenticated, isAdmin } = useAuth();
     const defaultDates = getDefaultTripDates();
     const [searchParams] = useSearchParams();
 
@@ -356,6 +370,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         startDate: defaultDates.startDate,
         endDate: defaultDates.endDate,
     });
+    const [queuedRequestId, setQueuedRequestId] = useState<string | null>(null);
+    const [isGuestAuthModalVisible, setIsGuestAuthModalVisible] = useState(false);
+    const [isQueuePersisting, setIsQueuePersisting] = useState(false);
+    const guestAuthTimerRef = useRef<number | null>(null);
 
     // Classic state.
     const [startDate, setStartDate] = useState(defaultDates.startDate);
@@ -368,7 +386,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const [numCities, setNumCities] = useState<number | ''>('');
     const [notes, setNotes] = useState('');
     const [enforceIslandOnly, setEnforceIslandOnly] = useState(true);
-    const [isInternalAiSelectorVisible, setIsInternalAiSelectorVisible] = useState(() => isSimulatedLoggedIn());
+    const [isSimulatedDebugLogin, setIsSimulatedDebugLogin] = useState(() => isSimulatedLoggedIn());
     const [selectedAiModelId, setSelectedAiModelId] = useState(() => getDefaultCreateTripModel().id);
 
     // Wizard state.
@@ -498,6 +516,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     );
 
     const currentRuntimeModel = useMemo(() => getCurrentRuntimeModel(), []);
+    const isInternalAiSelectorVisible = isAdmin || isSimulatedDebugLogin;
 
     useEffect(() => {
         if (!surpriseRecommendations.length) {
@@ -532,12 +551,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         const handleSimulatedLoginEvent = (event: Event) => {
             const detail = (event as CustomEvent<SimulatedLoginDebugDetail>).detail;
             if (!detail || typeof detail.loggedIn !== 'boolean') return;
-            setIsInternalAiSelectorVisible(detail.loggedIn);
+            setIsSimulatedDebugLogin(detail.loggedIn);
         };
 
         const handleStorageChange = (event: StorageEvent) => {
             if (event.key !== 'tf_debug_simulated_login') return;
-            setIsInternalAiSelectorVisible(event.newValue === '1');
+            setIsSimulatedDebugLogin(event.newValue === '1');
         };
 
         window.addEventListener(SIM_LOGIN_DEBUG_EVENT, handleSimulatedLoginEvent as EventListener);
@@ -674,6 +693,116 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
         }
     };
 
+    const clearGuestAuthTimer = useCallback(() => {
+        if (guestAuthTimerRef.current !== null) {
+            window.clearTimeout(guestAuthTimerRef.current);
+            guestAuthTimerRef.current = null;
+        }
+    }, []);
+
+    const scheduleGuestAuthModal = useCallback((requestId: string) => {
+        clearGuestAuthTimer();
+        guestAuthTimerRef.current = window.setTimeout(() => {
+            trackEvent('create_trip__guest_queue--modal_open', { request_id: requestId });
+            setIsGuestAuthModalVisible(true);
+        }, GUEST_AUTH_MODAL_DELAY_MS);
+    }, [clearGuestAuthTimer]);
+
+    useEffect(() => {
+        return () => {
+            clearGuestAuthTimer();
+        };
+    }, [clearGuestAuthTimer]);
+
+    const buildClassicGenerationOptions = (): GenerateOptions => ({
+        budget,
+        pace,
+        interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
+        specificCities,
+        roundTrip: isRoundTrip,
+        totalDays: duration,
+        numCities: typeof numCities === 'number' ? numCities : undefined,
+        selectedIslandNames,
+        enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+        aiTarget: selectedAiModel.availability === 'active'
+            ? {
+                provider: selectedAiModel.provider,
+                model: selectedAiModel.model,
+            }
+            : undefined,
+    });
+
+    const buildWizardGenerationOptions = (): WizardGenerateOptions => ({
+        countries: selectedCountries.map((country) => getDestinationPromptLabel(country)),
+        startDate: wizardStartDate,
+        endDate: wizardEndDate,
+        roundTrip: wizardRoundTrip,
+        totalDays: wizardDuration,
+        notes: wizardNotes,
+        travelStyles: wizardStyles,
+        travelVibes: wizardVibes,
+        travelLogistics: wizardLogistics,
+        idealMonths: monthLabelsFromNumbers(wizardCommonMonths.ideal),
+        shoulderMonths: monthLabelsFromNumbers(wizardCommonMonths.shoulder),
+        recommendedDurationDays: wizardDurationRecommendation.recommended,
+        selectedIslandNames,
+        enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+    });
+
+    const buildSurpriseGenerationOptions = (): SurpriseGenerateOptions | null => {
+        if (!selectedSurpriseOption) return null;
+        return {
+            country: selectedSurpriseOption.countryName,
+            startDate: surpriseRange.startDate,
+            endDate: surpriseRange.endDate,
+            totalDays: surpriseDuration,
+            monthLabels: monthLabelsFromNumbers(surpriseMonths),
+            durationWeeks: surpriseInputMode === 'month-duration' ? surpriseWeeks : undefined,
+            seasonalEvents: selectedSurpriseOption.events.slice(0, 2).map((event) => `${event.name} (${event.monthLabel})`),
+        };
+    };
+
+    const queueAnonymousGeneration = async (
+        flow: 'classic' | 'wizard' | 'surprise',
+        payload: QueuedTripGenerationPayload
+    ) => {
+        setIsQueuePersisting(true);
+        setIsGuestAuthModalVisible(false);
+        setQueuedRequestId(null);
+        try {
+            const queued = await createTripGenerationRequest(flow, payload, GUEST_QUEUE_TTL_DAYS);
+            setQueuedRequestId(queued.requestId);
+            trackEvent('create_trip__guest_queue--queued', {
+                flow,
+                request_id: queued.requestId,
+            });
+            scheduleGuestAuthModal(queued.requestId);
+        } catch (error) {
+            trackEvent('create_trip__guest_queue--queue_failed', { flow });
+            setGenerationFailure(error);
+            setIsGenerating(false);
+        } finally {
+            setIsQueuePersisting(false);
+        }
+    };
+
+    const continueWithAuthForQueuedRequest = () => {
+        if (!queuedRequestId) return;
+        trackEvent('create_trip__guest_queue--continue_auth', { request_id: queuedRequestId });
+        const params = new URLSearchParams();
+        params.set('claim', queuedRequestId);
+        params.set('next', '/create-trip');
+        navigate(`/login?${params.toString()}`);
+    };
+
+    const dismissGuestAuthModal = () => {
+        clearGuestAuthTimer();
+        trackEvent('create_trip__guest_queue--dismiss', { request_id: queuedRequestId });
+        setIsGuestAuthModalVisible(false);
+        setIsGenerating(false);
+        setPreviewTrip(null);
+    };
+
     const setCountriesFromString = (value: string) => {
         setSelectedCountries(parseCountries(value));
     };
@@ -703,6 +832,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const handleClassicGenerate = async (event: React.FormEvent) => {
         event.preventDefault();
         const primaryDestination = selectedCountries[0] || destination;
+        const classicOptions = buildClassicGenerationOptions();
+        clearGuestAuthTimer();
+        setQueuedRequestId(null);
+        setIsGuestAuthModalVisible(false);
 
         setGenerationStart({
             destination: primaryDestination,
@@ -711,24 +844,21 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             requestedStops: typeof numCities === 'number' ? numCities : undefined,
         });
 
-        try {
-            const trip = await generateItinerary(destinationPrompt, startDate, {
-                budget,
-                pace,
-                interests: notes.split(',').map((token) => token.trim()).filter(Boolean),
-                specificCities,
-                roundTrip: isRoundTrip,
-                totalDays: duration,
-                numCities: typeof numCities === 'number' ? numCities : undefined,
-                selectedIslandNames,
-                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
-                aiTarget: selectedAiModel.availability === 'active'
-                    ? {
-                        provider: selectedAiModel.provider,
-                        model: selectedAiModel.model,
-                    }
-                    : undefined,
+        if (!isAuthenticated) {
+            await queueAnonymousGeneration('classic', {
+                version: 1,
+                flow: 'classic',
+                destinationLabel: primaryDestination,
+                startDate,
+                endDate,
+                destinationPrompt,
+                options: classicOptions,
             });
+            return;
+        }
+
+        try {
+            const trip = await generateItinerary(destinationPrompt, startDate, classicOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
         } catch (error) {
@@ -741,6 +871,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
     const handleWizardGenerate = async () => {
         if (!wizardCanGenerate) return;
+        const wizardOptions = buildWizardGenerationOptions();
+        clearGuestAuthTimer();
+        setQueuedRequestId(null);
+        setIsGuestAuthModalVisible(false);
 
         setGenerationStart({
             destination: selectedCountries[0] || destination,
@@ -748,23 +882,20 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             endDate: wizardEndDate,
         });
 
-        try {
-            const trip = await generateWizardItinerary({
-                countries: selectedCountries.map((country) => getDestinationPromptLabel(country)),
+        if (!isAuthenticated) {
+            await queueAnonymousGeneration('wizard', {
+                version: 1,
+                flow: 'wizard',
+                destinationLabel: selectedCountries[0] || destination,
                 startDate: wizardStartDate,
                 endDate: wizardEndDate,
-                roundTrip: wizardRoundTrip,
-                totalDays: wizardDuration,
-                notes: wizardNotes,
-                travelStyles: wizardStyles,
-                travelVibes: wizardVibes,
-                travelLogistics: wizardLogistics,
-                idealMonths: monthLabelsFromNumbers(wizardCommonMonths.ideal),
-                shoulderMonths: monthLabelsFromNumbers(wizardCommonMonths.shoulder),
-                recommendedDurationDays: wizardDurationRecommendation.recommended,
-                selectedIslandNames,
-                enforceIslandOnly: hasIslandSelection ? enforceIslandOnly : undefined,
+                options: wizardOptions,
             });
+            return;
+        }
+
+        try {
+            const trip = await generateWizardItinerary(wizardOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
         } catch (error) {
@@ -780,6 +911,14 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             setGenerationError('No recommendations are available for this timeframe.');
             return;
         }
+        const surpriseOptions = buildSurpriseGenerationOptions();
+        if (!surpriseOptions) {
+            setGenerationError('No recommendations are available for this timeframe.');
+            return;
+        }
+        clearGuestAuthTimer();
+        setQueuedRequestId(null);
+        setIsGuestAuthModalVisible(false);
 
         setSelectedCountries([selectedSurpriseOption.countryName]);
 
@@ -789,16 +928,20 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
             endDate: surpriseRange.endDate,
         });
 
-        try {
-            const trip = await generateSurpriseItinerary({
-                country: selectedSurpriseOption.countryName,
+        if (!isAuthenticated) {
+            await queueAnonymousGeneration('surprise', {
+                version: 1,
+                flow: 'surprise',
+                destinationLabel: selectedSurpriseOption.countryName,
                 startDate: surpriseRange.startDate,
                 endDate: surpriseRange.endDate,
-                totalDays: surpriseDuration,
-                monthLabels: monthLabelsFromNumbers(surpriseMonths),
-                durationWeeks: surpriseInputMode === 'month-duration' ? surpriseWeeks : undefined,
-                seasonalEvents: selectedSurpriseOption.events.slice(0, 2).map((event) => `${event.name} (${event.monthLabel})`),
+                options: surpriseOptions,
             });
+            return;
+        }
+
+        try {
+            const trip = await generateSurpriseItinerary(surpriseOptions);
             setPreviewTrip(null);
             onTripGenerated(trip);
         } catch (error) {
@@ -852,8 +995,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                             <div className="min-w-0">
-                                <div className="text-sm font-semibold text-accent-900 truncate">Planning Your Trip</div>
-                                <div className="text-xs text-gray-600 truncate">{loadingMessage}</div>
+                                <div className="text-sm font-semibold text-accent-900 truncate">
+                                    {queuedRequestId ? 'Trip request saved' : 'Planning your trip'}
+                                </div>
+                                <div className="text-xs text-gray-600 truncate">
+                                    {isQueuePersisting ? 'Saving your request securely...' : loadingMessage}
+                                </div>
                             </div>
                         </div>
                         <div className="mt-3 text-xs text-gray-500">
@@ -864,6 +1011,45 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                         </div>
                     </div>
                 </div>
+                {isGuestAuthModalVisible && queuedRequestId && (
+                    <div className="absolute inset-0 z-[1900] flex items-center justify-center p-4 sm:p-6">
+                        <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]" />
+                        <div className="relative z-10 w-full max-w-md rounded-2xl border border-slate-100 bg-white shadow-2xl">
+                            <div className="border-b border-slate-100 px-5 py-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Continue with account</p>
+                                <h2 className="mt-1 text-lg font-bold text-slate-900">Unlock your generated trip</h2>
+                                <p className="mt-2 text-sm text-slate-600">
+                                    Your trip request is queued. Sign in or register to start real AI generation and open the final itinerary instantly.
+                                </p>
+                            </div>
+                            <div className="px-5 py-4">
+                                <ul className="space-y-2 text-sm text-slate-700">
+                                    <li>Save this trip and continue on any device</li>
+                                    <li>Keep your trip history with account-based limits</li>
+                                    <li>Unlock tier upgrades when paid plans launch</li>
+                                </ul>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
+                                <button
+                                    type="button"
+                                    onClick={dismissGuestAuthModal}
+                                    className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                                    {...getAnalyticsDebugAttributes('create_trip__guest_queue--dismiss')}
+                                >
+                                    Not now
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={continueWithAuthForQueuedRequest}
+                                    className="rounded-md bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
+                                    {...getAnalyticsDebugAttributes('create_trip__guest_queue--continue_auth')}
+                                >
+                                    Sign in to continue
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         );
     }
@@ -1126,7 +1312,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-accent-800">Internal model override</p>
-                                                <p className="mt-0.5 text-[11px] text-accent-700">Visible only in simulated login mode. Defaults to Gemini runtime model.</p>
+                                                <p className="mt-0.5 text-[11px] text-accent-700">Visible for admin accounts and simulated debug mode. Defaults to the runtime model.</p>
                                             </div>
                                         </div>
                                         <Select value={selectedAiModelId} onValueChange={setSelectedAiModelId}>

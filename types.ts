@@ -11,6 +11,28 @@ export type MapStyle = 'minimal' | 'standard' | 'dark' | 'satellite' | 'clean';
 export type RouteMode = 'simple' | 'realistic';
 export type AppLanguage = 'en' | 'es' | 'de' | 'fr' | 'pt' | 'ru' | 'it';
 export type MapColorMode = 'brand' | 'trip';
+export type SystemRole = 'admin' | 'user';
+export type PlanTierKey = 'tier_free' | 'tier_mid' | 'tier_premium';
+export type TripAccessClassKey = 'free' | 'pro';
+
+export interface Entitlements {
+    maxActiveTrips: number | null;
+    maxTotalTrips: number | null;
+    tripExpirationDays: number | null;
+    canShare: boolean;
+    canCreateEditableShares: boolean;
+    canViewProTrips: boolean;
+    canCreateProTrips: boolean;
+}
+
+export interface UserAccessContext {
+    userId: string | null;
+    email: string | null;
+    isAnonymous: boolean;
+    role: SystemRole;
+    tierKey: PlanTierKey;
+    entitlements: Entitlements;
+}
 
 export interface ICoordinates {
     lat: number;
@@ -100,6 +122,7 @@ export interface ITrip {
   tripExpiresAt?: string | null;
   sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
   sourceTemplateId?: string | null;
+  requiredTierKey?: TripAccessClassKey;
   isExample?: boolean;
   exampleTemplateId?: string;
   exampleTemplateCountries?: string[];

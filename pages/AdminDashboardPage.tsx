@@ -1,4 +1,5 @@
 import React from 'react';
+import { AdminMenu } from '../components/admin/AdminMenu';
 
 const metricTiles = [
     { label: 'Total users', value: 'Coming soon' },
@@ -21,6 +22,9 @@ export const AdminDashboardPage: React.FC = () => {
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                         Placeholder for the future authenticated admin area. This page will aggregate user, trip, and infrastructure/API usage metrics so operational risks can be monitored in one place.
                     </p>
+                    <div className="mt-5">
+                        <AdminMenu />
+                    </div>
                 </section>
 
                 <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -30,10 +34,6 @@ export const AdminDashboardPage: React.FC = () => {
                             <p className="mt-3 text-2xl font-black text-slate-900">{tile.value}</p>
                         </article>
                     ))}
-                </section>
-
-                <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-                    Access control is not wired yet. This page should be gated behind admin role checks once auth and permissions are live.
                 </section>
             </div>
         </div>

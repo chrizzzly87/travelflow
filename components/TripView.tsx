@@ -36,6 +36,8 @@ import {
 } from '../config/paywall';
 import { trackEvent } from '../services/analyticsService';
 import { APP_NAME } from '../config/appGlobals';
+import { useLoginModal } from '../hooks/useLoginModal';
+import { buildPathFromLocationParts } from '../services/authNavigationService';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -145,6 +147,15 @@ interface ViewTransitionDebugDetail {
 }
 
 const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
+
+const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.shiftKey
+);
 
 const readStoredShareLinks = (tripId: string): Partial<Record<ShareMode, string>> => {
     if (typeof window === 'undefined') return {};
@@ -267,6 +278,7 @@ export const TripView: React.FC<TripViewProps> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { openLoginModal } = useLoginModal();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -332,6 +344,26 @@ export const TripView: React.FC<TripViewProps> = ({
         if (diffDays === 0) return 'Expires today';
         return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
     }, [tripExpiresAtMs, nowMs]);
+
+    const handlePaywallLoginClick = useCallback((
+        event: React.MouseEvent<HTMLAnchorElement>,
+        analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',
+        source: 'trip_paywall_strip' | 'trip_paywall_overlay'
+    ) => {
+        trackEvent(analyticsEvent, { trip_id: trip.id });
+        if (!isPlainLeftClick(event)) return;
+
+        event.preventDefault();
+        openLoginModal({
+            source,
+            nextPath: buildPathFromLocationParts({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            }),
+            reloadOnSuccess: true,
+        });
+    }, [location.hash, location.pathname, location.search, openLoginModal, trip.id]);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !trip.isExample) return;
@@ -2195,7 +2227,7 @@ export const TripView: React.FC<TripViewProps> = ({
                         {isTripLockedByExpiry && (
                             <Link
                                 to="/login"
-                                onClick={() => trackEvent('trip_paywall__strip--activate', { trip_id: trip.id })}
+                                onClick={(event) => handlePaywallLoginClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
                                 className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                             >
                                 Reactivate trip
@@ -3182,7 +3214,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         </Link>
                                         <Link
                                             to="/login"
-                                            onClick={() => trackEvent('trip_paywall__overlay--activate', { trip_id: trip.id })}
+                                            onClick={(event) => handlePaywallLoginClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
                                             className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
                                         >
                                             <RocketLaunch size={14} weight="duotone" />

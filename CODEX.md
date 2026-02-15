@@ -6,6 +6,8 @@
 3. For any locale, translation, or page-routing change, read `docs/I18N_PAGE_WORKFLOW.md`.
 4. For any user-facing text changes (marketing, CTA, planner), read `docs/UX_COPY_GUIDELINES.md`.
 5. For analytics instrumentation, read `docs/ANALYTICS_CONVENTION.md`.
+6. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
+7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Required behavior for Codex
 At the end of every completed feature or fix, update `content/updates/*.md`.
@@ -27,6 +29,7 @@ Rules:
 
 ## Validation
 Run `npm run updates:validate` (or `npm run build`, which includes validation) before final handoff when possible.
+For locale changes, run `npm run i18n:validate` to enforce namespace parity and ICU placeholder syntax.
 
 ## Direction-Safety Requirement
 - For new or updated UI components, check whether CSS logical properties are appropriate for direction safety (`inline`, `block`, `start`, `end`).

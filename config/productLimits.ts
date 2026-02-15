@@ -1,5 +1,9 @@
-export const ANONYMOUS_TRIP_LIMIT = 3;
-export const ANONYMOUS_TRIP_EXPIRATION_DAYS = 7;
+import { getFreePlanEntitlements } from './planCatalog';
+
+const FREE_ENTITLEMENTS = getFreePlanEntitlements();
+
+export const ANONYMOUS_TRIP_LIMIT = FREE_ENTITLEMENTS.maxActiveTrips ?? 3;
+export const ANONYMOUS_TRIP_EXPIRATION_DAYS = FREE_ENTITLEMENTS.tripExpirationDays ?? 7;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -19,4 +23,3 @@ export const isTripExpiredByTimestamp = (tripExpiresAt?: string | null, nowMs = 
     if (expiresMs === null) return false;
     return expiresMs <= nowMs;
 };
-

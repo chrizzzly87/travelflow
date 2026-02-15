@@ -13,7 +13,8 @@ Implemented in this project:
 - Copy/fork flow from shared trip into a new owner trip.
 - User-scoped app settings persistence.
 - LocalStorage import to DB on startup.
-- Foundation tables for future auth monetization (`profiles`, `plans`, `subscriptions`).
+- Auth + access foundation (`profiles`, `plans`, `subscriptions`, `admin_allowlist`).
+- Auth flow observability (`auth_flow_logs`) and queue handoff (`trip_generation_requests`).
 
 ## Setup (Detailed)
 
@@ -31,7 +32,7 @@ Why this matters:
 ### 2. Run schema + RPC SQL
 
 1. Open Supabase SQL Editor.
-2. Run `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/docs/supabase.sql`.
+2. Run `/Users/chrizzzly/.codex/worktrees/308f/travelflow-codex/docs/supabase.sql`.
 
 Notes:
 - The file is idempotent for policies (`drop policy if exists ...` then create).
@@ -54,7 +55,16 @@ where proname in (
   'create_share_token',
   'get_shared_trip',
   'get_shared_trip_version',
-  'update_shared_trip'
+  'update_shared_trip',
+  'get_current_user_access',
+  'admin_list_users',
+  'admin_update_user_tier',
+  'admin_update_user_overrides',
+  'admin_update_plan_entitlements',
+  'create_trip_generation_request',
+  'claim_trip_generation_request',
+  'expire_stale_trip_generation_requests',
+  'log_auth_flow'
 )
 order by proname;
 ```
@@ -84,7 +94,7 @@ VITE_DEBUG_DB=true
 
 Important:
 - `DB_ENABLED` is true only when both vars are present.
-- `DB_ENABLED` comes from `isSupabaseEnabled` in `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/services/supabaseClient.ts`.
+- `DB_ENABLED` comes from `isSupabaseEnabled` in `services/supabaseClient.ts`.
 
 ### 5. Start app
 
@@ -109,6 +119,25 @@ Future monetization/auth tables already present:
 - `profiles`
 - `plans`
 - `subscriptions`
+- `admin_allowlist`
+- `auth_flow_logs`
+- `trip_generation_requests`
+
+## Auth + Roles V1
+
+1. Roles are stored in `public.profiles.system_role` (`admin` | `user`).
+2. Tier keys are stored in `public.profiles.tier_key` (`tier_free` | `tier_mid` | `tier_premium`).
+3. Effective entitlements are resolved by `get_effective_entitlements(uuid)`:
+   - plan defaults from `public.plans.entitlements`
+   - merged with per-user overrides in `profiles.entitlements_override`
+4. Access context RPC: `get_current_user_access()`.
+
+## Guest Queue Handoff
+
+1. Anonymous submit path writes to `trip_generation_requests` via `create_trip_generation_request(...)`.
+2. Post-login processing claims rows via `claim_trip_generation_request(...)`.
+3. Stale rows are expired via `expire_stale_trip_generation_requests()`.
+4. Default queue TTL is 14 days.
 
 ## Runtime Write Path
 
@@ -265,6 +294,33 @@ History debug helper (already wired in app):
 window.tfSetHistoryDebug(true);
 ```
 
+## Auth Trace Triage Workflow
+
+1. Capture client trace from localStorage key `tf_auth_trace_v1`.
+2. Match `flowId` and `attemptId` with server table `public.auth_flow_logs`.
+3. Query example:
+
+```sql
+select flow_id, attempt_id, step, result, provider, error_code, created_at
+from public.auth_flow_logs
+where flow_id = '<flow-id>'
+order by created_at asc;
+```
+
+4. Validate expected progression:
+   - `start` -> `success` for happy-path
+   - `start` -> `error` with deterministic `error_code` for failures
+5. For OAuth callbacks, confirm:
+   - client event `auth__callback--received`
+   - server row for subsequent sign-in/upgrade step
+6. If queue handoff is involved, inspect `trip_generation_requests` for the same user:
+
+```sql
+select id, status, owner_user_id, requested_by_anon_id, result_trip_id, error_message, created_at, updated_at, expires_at
+from public.trip_generation_requests
+where id = '<request-id>';
+```
+
 ## Minimal Smoke Test
 
 1. Create a new trip and edit one item.
@@ -280,4 +336,4 @@ window.tfSetHistoryDebug(true);
 
 Authoritative SQL source:
 
-- `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/docs/supabase.sql`
+- `/Users/chrizzzly/.codex/worktrees/308f/travelflow-codex/docs/supabase.sql`

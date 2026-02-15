@@ -1,57 +1,36 @@
-# Auth + Roles Implementation Notes (Critical Follow-up)
+# Auth + Roles Implementation Notes
 
-Status: Required follow-up before login/register launch  
-Last updated: 2026-02-11
+Status: Implemented (V1)  
+Last updated: 2026-02-13
 
-## Why this exists
+## V1 model
 
-The AI benchmark implementation will use a temporary static admin header for internal endpoints.
-This is acceptable short-term but must be replaced during auth/role rollout.
+1. Identity: Supabase Auth (anonymous + email/password + OAuth).
+2. Roles: `admin` and `user` in `public.profiles.system_role`.
+3. Tiers: `tier_free`, `tier_mid`, `tier_premium` in `public.profiles.tier_key`.
+4. Effective entitlements: plan defaults (`public.plans.entitlements`) merged with `profiles.entitlements_override`.
 
-## Temporary mechanism (v1 only)
+## Admin routing and UI
 
-1. Internal endpoints under `/api/internal/ai/*` accept `x-tf-admin-key`.
-2. Header value is compared against server-side env var `TF_ADMIN_API_KEY`.
-3. This should never be treated as final authorization design.
+1. `/admin/dashboard`, `/admin/ai-benchmark`, and `/admin/access` are guarded in app routing.
+2. Only users resolved as `system_role = 'admin'` can access `/admin/*`.
+3. Admin pages share an internal menu for dashboard, benchmark, and access-control views.
+4. `/admin/access` supports per-user tier assignment, per-user entitlement overrides, and plan-template entitlement updates (`admin_update_plan_entitlements`).
 
-## Required migration during login/register implementation
+## Internal benchmark authorization
 
-## 1) Data model
+1. Primary authorization is now bearer-token role validation (`get_current_user_access` => `system_role = 'admin'`).
+2. `x-tf-admin-key` is no longer required by the UI.
+3. Emergency fallback via static admin key exists only when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled.
 
-1. Extend `public.profiles` with role fields:
-   1. `role text not null default 'user'` (expected values: `user`, `tester`, `admin`)
-   2. optional audit fields (`role_updated_at`, `role_updated_by`)
-2. Add indexes needed for role checks.
+## Simulated login policy
 
-## 2) Authn/Authz flow
+1. Simulated login no longer controls protected admin routes.
+2. Simulated login can still be used for non-security debug UX paths.
+3. Security decisions (route access, admin RPC, benchmark API) are role-driven only.
 
-1. Keep Supabase auth for identity.
-2. Resolve role from `profiles` table (or JWT custom claims after setup).
-3. Protect admin routes (`/admin/*`) via role guard in app routing.
-4. Protect internal benchmark endpoints by authenticated admin role check.
+## Remaining hardening backlog
 
-## 3) Endpoint migration
-
-1. Replace static header guard with authenticated session + role check.
-2. Keep static header as emergency fallback only if explicitly enabled by env flag.
-3. Log rejection reasons without leaking secrets.
-
-## 4) UI gating migration
-
-1. Main create-trip provider selector is currently visible only in simulated-login mode.
-2. Replace simulated-login gating with role-based gating:
-   1. `tester` and `admin` can view/modify provider selector.
-   2. `user` cannot.
-3. Benchmark page should be admin-only by default.
-
-## 5) Cleanup and hardening
-
-1. Rotate and then remove static admin key from env when role guard is live.
-2. Add audit log entries for benchmark session creation, reruns, exports, and cleanup actions.
-3. Add rate-limit buckets by authenticated user id.
-
-## 6) Done criteria for this migration
-
-1. No internal endpoint relies on static header for primary authorization.
-2. Admin/tester-only UI is controlled by role checks, not debug toggles.
-3. Security review checklist passes for admin routes and benchmark APIs.
+1. Add dedicated admin audit rows for benchmark actions (run, rerun, export, cleanup, cancel).
+2. Add per-user benchmark rate limiting.
+3. Move benchmark admin authorization to a dedicated shared edge auth module.

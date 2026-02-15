@@ -1,0 +1,25 @@
+---
+id: rel-2026-02-13-auth-roles-pricing-guest-queue
+version: v0.51.0
+title: "Auth, Tiers, and Guest Trip Queue Foundation"
+date: 2026-02-13
+published_at: 2026-02-13T14:06:09Z
+status: published
+notify_in_app: true
+in_app_hours: 24
+summary: "Added production auth with tier-based access, synced pricing tiers, and queued guest trip handoff."
+---
+
+## Changes
+- [x] [New feature] 🔐 Added production login and registration with email/password plus Google, Apple, and Facebook sign-in.
+- [x] [New feature] 🎒 Introduced Backpacker, Explorer, and Globetrotter tiers with entitlement-driven limits in app and database.
+- [x] [Improved] 💳 Updated pricing page to render tier limits from the shared plan catalog without runtime database calls.
+- [x] [New feature] 🧪 Added protected admin routes and admin navigation for dashboard, AI benchmark, and access control.
+- [x] [New feature] ⏳ Added guest create-trip queue handoff: fake loading, delayed auth modal, then post-login generation resume.
+- [x] [Improved] 🪟 Added login modal interception for normal login taps so users can authenticate in-context and continue on the same page.
+- [x] [Improved] 🎨 Refined auth UI with branded social provider icons and stronger visual hierarchy for sign-in actions.
+- [ ] [Internal] 🗃️ Added Supabase RPC and schema extensions for roles, tier overrides, queued generation requests, and auth flow logs.
+- [ ] [Internal] 📈 Added auth observability with structured analytics events and local redacted `tf_auth_trace_v1` debugging buffer.
+- [ ] [Internal] 🛡️ Migrated AI benchmark edge auth to admin bearer-token verification with optional emergency key fallback flag.
+- [ ] [Internal] 🌐 Added i18n guardrails and validation for ICU placeholder syntax (`{name}`), locale parity checks, and namespace placement guidance for LLM agents.
+- [ ] [Internal] 🧭 Expanded Supabase OAuth setup documentation with field-level dashboard mapping, direct auth links, and `travelflowapp.netlify.app` + `localhost:5173` examples.

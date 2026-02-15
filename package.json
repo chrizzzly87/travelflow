@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "i18n:validate": "node scripts/validate-i18n.mjs",
     "updates:validate": "node scripts/validate-updates.mjs",
+    "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",
+    "plans:generate-seed": "tsx scripts/generate-plan-seed.mjs",
     "updates:next-version": "node scripts/next-release-version.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "edge:validate": "node scripts/validate-edge-functions.mjs",
@@ -18,7 +21,7 @@
     "blog:images:optimize": "tsx scripts/build-blog-images.ts --skip-generation",
     "build:image-placeholders": "tsx scripts/build-image-placeholders.ts",
     "release:prepare": "npm run build:blog-images && npm run build",
-    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run build:image-placeholders && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
+    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run build:image-placeholders && npm run i18n:validate && npm run plans:validate-sync && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },

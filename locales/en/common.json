@@ -8,7 +8,9 @@
     "login": "Login",
     "createTrip": "Create Trip",
     "myTrips": "My Trips",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "admin": "Admin",
+    "logout": "Logout"
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. All rights reserved.",

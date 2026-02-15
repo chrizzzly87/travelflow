@@ -5,7 +5,11 @@ This repository uses markdown release files as the source of truth for product u
 ## Agent requirements
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
+- Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
 - For user-facing copy changes, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
+- For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
+- When adding locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and validate namespace placement (`common/pages/legal` vs route-specific namespace).
+- Run `npm run i18n:validate` for locale-related changes before finalizing.
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
 - For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
 - After completing any feature/fix/change, update `content/updates/*.md`.
