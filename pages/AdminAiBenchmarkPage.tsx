@@ -1163,6 +1163,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto w-full max-w-[1600px] space-y-4">
+                <AdminMenu />
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -1172,9 +1173,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 Classic-form benchmark workspace. Use the left-side trip input and compare selected provider/model targets on the right.
                                 Results persist by session token in the URL.
                             </p>
-                            <div className="mt-4">
-                                <AdminMenu />
-                            </div>
                         </div>
 
                         <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">

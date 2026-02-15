@@ -105,6 +105,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `auth__modal--open` | — | `{ source }` | `AuthModal.tsx` |
 | `auth__modal--close` | — | `{ source, reason }` | `AuthModal.tsx` |
 | `auth__modal--success` | — | `{ source }` | `AuthModal.tsx` |
+| `auth__redirect--resume` | — | `{ source, next_path, current_path }` | `LoginModalContext.tsx` |
 | `auth__callback--received` | — | `{ has_claim }` | `LoginPage.tsx` |
 | `auth__callback--error` | — | `{ has_claim }` | `LoginPage.tsx` |
 | `auth__method--select` | `login`, `register`, `google`, `apple`, `facebook` | `{ source? }` | `LoginPage.tsx`, `AuthModal.tsx` |
@@ -118,6 +119,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
 | `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
+| `admin__menu--brand` | — | — | `AdminMenu.tsx` |
+| `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+
+### Trip View
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_view__auth--login` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__auth--logout` | — | `{ trip_id }` | `TripView.tsx` |
 
 ### Not Found
 | Event | Detail | Payload | File |

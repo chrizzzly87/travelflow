@@ -1,7 +1,17 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthModal } from '../components/auth/AuthModal';
-import { buildPathFromLocationParts, rememberAuthReturnPath, resolvePreferredNextPath } from '../services/authNavigationService';
+import { useAuth } from '../hooks/useAuth';
+import { trackEvent } from '../services/analyticsService';
+import {
+    buildPathFromLocationParts,
+    clearPendingAuthRedirect,
+    getPendingAuthRedirect,
+    isSafeAuthReturnPath,
+    rememberAuthReturnPath,
+    resolvePreferredNextPath,
+    setPendingAuthRedirect,
+} from '../services/authNavigationService';
 
 interface OpenLoginModalOptions {
     nextPath?: string;
@@ -32,11 +42,16 @@ const DEFAULT_MODAL_STATE: LoginModalState = {
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
 
 export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const navigate = useNavigate();
     const location = useLocation();
+    const { isAuthenticated, isAnonymous, isLoading } = useAuth();
     const [state, setState] = useState<LoginModalState>(DEFAULT_MODAL_STATE);
 
-    const closeLoginModal = useCallback(() => {
+    const closeLoginModal = useCallback((reason?: 'dismiss' | 'backdrop' | 'escape' | 'success') => {
         setState((previous) => ({ ...previous, isOpen: false }));
+        if (reason && reason !== 'success') {
+            clearPendingAuthRedirect();
+        }
     }, []);
 
     const openLoginModal = useCallback((options?: OpenLoginModalOptions) => {
@@ -47,6 +62,7 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
         const nextPath = resolvePreferredNextPath(options?.nextPath, currentPath);
         rememberAuthReturnPath(nextPath);
+        setPendingAuthRedirect(nextPath, options?.source || 'unknown');
         setState({
             isOpen: true,
             source: options?.source || 'unknown',
@@ -54,6 +70,33 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             reloadOnSuccess: options?.reloadOnSuccess ?? true,
         });
     }, [location.hash, location.pathname, location.search]);
+
+    useEffect(() => {
+        if (isLoading || !isAuthenticated || isAnonymous) return;
+        const pending = getPendingAuthRedirect();
+        if (!pending) return;
+
+        const currentPath = buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+        });
+
+        if (!isSafeAuthReturnPath(pending.nextPath)) {
+            clearPendingAuthRedirect();
+            return;
+        }
+
+        clearPendingAuthRedirect();
+        trackEvent('auth__redirect--resume', {
+            source: pending.source,
+            next_path: pending.nextPath,
+            current_path: currentPath,
+        });
+
+        if (pending.nextPath === currentPath) return;
+        navigate(pending.nextPath, { replace: true });
+    }, [isAnonymous, isAuthenticated, isLoading, location.hash, location.pathname, location.search, navigate]);
 
     const value = useMemo<LoginModalContextValue>(() => ({
         isLoginModalOpen: state.isOpen,
@@ -69,8 +112,8 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 source={state.source}
                 nextPath={state.nextPath}
                 reloadOnSuccess={state.reloadOnSuccess}
-                onClose={() => {
-                    closeLoginModal();
+                onClose={(reason) => {
+                    closeLoginModal(reason);
                 }}
             />
         </LoginModalContext.Provider>
@@ -84,4 +127,3 @@ export const useLoginModalContext = (): LoginModalContextValue => {
     }
     return context;
 };
-
