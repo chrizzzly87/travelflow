@@ -128,8 +128,26 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
 export const useLoginModalContext = (): LoginModalContextValue => {
     const context = useContext(LoginModalContext);
-    if (!context) {
-        throw new Error('useLoginModalContext must be used within LoginModalProvider.');
-    }
-    return context;
+    if (context) return context;
+
+    // Defensive fallback: keep auth usable even if a render path misses the provider.
+    return {
+        isLoginModalOpen: false,
+        openLoginModal: (options) => {
+            if (typeof window === 'undefined') return;
+            const currentPath = buildPathFromLocationParts({
+                pathname: window.location.pathname,
+                search: window.location.search,
+                hash: window.location.hash,
+            });
+            const nextPath = resolvePreferredNextPath(options?.nextPath, currentPath);
+            rememberAuthReturnPath(nextPath);
+            const loginUrl = new URL('/login', window.location.origin);
+            loginUrl.searchParams.set('next', nextPath);
+            window.location.assign(loginUrl.toString());
+        },
+        closeLoginModal: () => {
+            // no-op outside provider
+        },
+    };
 };
