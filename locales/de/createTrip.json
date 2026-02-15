@@ -173,7 +173,10 @@
       "legacy": "Classic-Legacy-Formular",
       "classicCard": "Classic-Card-Route",
       "splitWorkspace": "Split-Workspace-Experiment",
-      "journeyArchitect": "Journey-Architect-Experiment"
+      "journeyArchitect": "Journey-Architect-Experiment",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
     }
   }
 }

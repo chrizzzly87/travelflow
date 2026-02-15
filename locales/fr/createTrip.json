@@ -173,7 +173,10 @@
       "legacy": "Formulaire Classic Legacy",
       "classicCard": "Route Classic Card",
       "splitWorkspace": "Experience Split Workspace",
-      "journeyArchitect": "Experience Journey Architect"
+      "journeyArchitect": "Experience Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
     }
   }
 }

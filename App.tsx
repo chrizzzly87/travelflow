@@ -170,6 +170,9 @@ const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('./pages/NotF
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripSplitWorkspaceLabPage = lazyWithRecovery('CreateTripSplitWorkspaceLabPage', () => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazyWithRecovery('CreateTripJourneyArchitectLabPage', () => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
+const CreateTripV1Page = lazyWithRecovery('CreateTripV1Page', () => import('./pages/CreateTripV1Page').then((module) => ({ default: module.CreateTripV1Page })));
+const CreateTripV2Page = lazyWithRecovery('CreateTripV2Page', () => import('./pages/CreateTripV2Page').then((module) => ({ default: module.CreateTripV2Page })));
+const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('./pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
 
 type RoutePreloadRule = {
     key: string;
@@ -197,6 +200,9 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-legacy-lab', match: (pathname) => pathname === '/create-trip/labs/classic-legacy', preload: () => import('./components/CreateTripForm') },
+    { key: 'create-trip-design-v1', match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1', preload: () => import('./pages/CreateTripV1Page') },
+    { key: 'create-trip-design-v2', match: (pathname) => pathname === '/create-trip/labs/design-v2' || pathname === '/create-trip/v2', preload: () => import('./pages/CreateTripV2Page') },
+    { key: 'create-trip-design-v3', match: (pathname) => pathname === '/create-trip/labs/design-v3' || pathname === '/create-trip/v3', preload: () => import('./pages/CreateTripV3Page') },
 ];
 
 const warmedRouteKeys = new Set<string>();
@@ -1016,7 +1022,46 @@ const CreateTripLegacyRoute: React.FC<{
     useDbSync(onLanguageLoaded);
     return (
         <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
+        <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
+    </Suspense>
+);
+};
+
+const CreateTripDesignV1Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripV1Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
+        </Suspense>
+    );
+};
+
+const CreateTripDesignV2Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripV2Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
+        </Suspense>
+    );
+};
+
+const CreateTripDesignV3Route: React.FC<{
+    onTripGenerated: (t: ITrip) => void;
+    onOpenManager: () => void;
+    onLanguageLoaded?: (lang: AppLanguage) => void;
+}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
+    useDbSync(onLanguageLoaded);
+    return (
+        <Suspense fallback={<RouteLoadingFallback />}>
+            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
         </Suspense>
     );
 };
@@ -1387,6 +1432,66 @@ const AppContent: React.FC = () => {
                     path="/create-trip/labs/journey-architect"
                     element={
                         renderWithSuspense(<CreateTripJourneyArchitectLabPage
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/design-v1"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV1Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/design-v2"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV2Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/labs/design-v3"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV3Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/v1"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV1Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/v2"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV2Route
+                            onTripGenerated={handleTripGenerated}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onLanguageLoaded={setAppLanguage}
+                        />)
+                    }
+                />
+                <Route
+                    path="/create-trip/v3"
+                    element={
+                        renderWithSuspense(<CreateTripDesignV3Route
+                            onTripGenerated={handleTripGenerated}
                             onOpenManager={() => setIsManagerOpen(true)}
                             onLanguageLoaded={setAppLanguage}
                         />)

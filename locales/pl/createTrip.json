@@ -173,7 +173,10 @@
       "legacy": "Formularz Classic Legacy",
       "classicCard": "Trasa Classic Card",
       "splitWorkspace": "Eksperyment Split Workspace",
-      "journeyArchitect": "Eksperyment Journey Architect"
+      "journeyArchitect": "Eksperyment Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
     }
   }
 }

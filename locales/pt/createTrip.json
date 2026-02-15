@@ -173,7 +173,10 @@
       "legacy": "Formulario Classic Legacy",
       "classicCard": "Rota Classic Card",
       "splitWorkspace": "Experimento Split Workspace",
-      "journeyArchitect": "Experimento Journey Architect"
+      "journeyArchitect": "Experimento Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
     }
   }
 }

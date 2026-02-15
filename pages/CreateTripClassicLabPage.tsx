@@ -1098,6 +1098,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             { key: 'classicCard', path: buildPath('createTripClassicLab') },
             { key: 'splitWorkspace', path: buildPath('createTripSplitWorkspaceLab') },
             { key: 'journeyArchitect', path: buildPath('createTripJourneyArchitectLab') },
+            { key: 'designV1', path: buildPath('createTripDesignV1Lab') },
+            { key: 'designV2', path: buildPath('createTripDesignV2Lab') },
+            { key: 'designV3', path: buildPath('createTripDesignV3Lab') },
         ] as const,
         []
     );

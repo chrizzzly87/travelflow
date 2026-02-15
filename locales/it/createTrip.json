@@ -173,7 +173,10 @@
       "legacy": "Modulo Classic Legacy",
       "classicCard": "Percorso Classic Card",
       "splitWorkspace": "Esperimento Split Workspace",
-      "journeyArchitect": "Esperimento Journey Architect"
+      "journeyArchitect": "Esperimento Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
     }
   }
 }
