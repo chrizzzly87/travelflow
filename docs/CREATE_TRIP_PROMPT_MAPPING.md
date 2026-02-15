@@ -7,7 +7,7 @@ Keep the current `buildClassicItineraryPrompt` contract stable while the new `/c
 The default create-trip page calls:
 - `generateItinerary(prompt, startDate, options)`
 - prompt builder: `buildClassicItineraryPrompt(...)`
-- options type: `GenerateOptions` in `/Users/chrizzzly/.codex/worktrees/2aef/travelflow-codex/services/aiService.ts`
+- options type: `GenerateOptions` in `services/aiService.ts`
 
 ## Field Mapping (UI -> Prompt)
 | UI field | Prompt mapping | Notes |

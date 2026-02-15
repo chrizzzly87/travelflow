@@ -37,5 +37,8 @@ summary: "Create-trip now recovers automatically from stale lazy chunks on first
 - [x] [Improved] 🧭 Restored legacy loading experience on `/trip/:id` with centered fake-progress modal messaging and initial map focus on selected destination(s), including grouped multi-country focus.
 - [x] [Fixed] 🧯 Fixed a trip-view runtime initialization crash (`Cannot access '<minified>' before initialization`) by correcting loader-overlay state declaration order.
 - [x] [Improved] 🧪 Added three additional create-trip design-variant experiments as dedicated routes (`/create-trip/labs/design-v1`, `/create-trip/labs/design-v2`, `/create-trip/labs/design-v3`) with compatibility aliases (`/create-trip/v1..v3`) and linked them from the default labs banner.
+- [x] [Fixed] 🗓️ Corrected weekday-label alignment in the date-range picker by formatting weekday headers in UTC, preventing day-column shifts for negative UTC offsets.
+- [x] [Fixed] 🇷🇺 Replaced Russian create-trip labs banner transliteration with proper Cyrillic copy for consistent locale quality.
+- [ ] [Internal] 🧹 Removed local absolute filesystem path references from markdown docs in favor of repository-relative paths.
 - [ ] [Internal] 📈 Added create-trip interaction event instrumentation and chunk-recovery observability updates to the analytics convention catalog.
 - [ ] [Internal] 📄 Added prompt-mapping and DB-tracking strategy docs to define no-effect fields, effective defaults, and phased post-auth telemetry design.

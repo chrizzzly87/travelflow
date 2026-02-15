@@ -167,16 +167,16 @@
   },
   "prefillBadge": "Предзаполнено из: {label}",
   "labsBanner": {
-    "title": "Nuzhno protestirovat drugie koncepty create-trip?",
-    "description": "Pryamye laboratornye marshruty dlya regressii i sravneniya eksperimentov.",
+    "title": "Нужно протестировать другие концепты create-trip?",
+    "description": "Прямые лабораторные маршруты для регрессионных проверок и сравнения экспериментов.",
     "links": {
-      "legacy": "Forma Classic Legacy",
-      "classicCard": "Marshrut Classic Card",
-      "splitWorkspace": "Eksperiment Split Workspace",
-      "journeyArchitect": "Eksperiment Journey Architect",
-      "designV1": "Design Variant V1",
-      "designV2": "Design Variant V2",
-      "designV3": "Design Variant V3"
+      "legacy": "Форма Classic Legacy",
+      "classicCard": "Маршрут Classic Card",
+      "splitWorkspace": "Эксперимент Split Workspace",
+      "journeyArchitect": "Эксперимент Journey Architect",
+      "designV1": "Дизайн-вариант V1",
+      "designV2": "Дизайн-вариант V2",
+      "designV3": "Дизайн-вариант V3"
     }
   }
 }

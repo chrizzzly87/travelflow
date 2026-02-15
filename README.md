@@ -84,19 +84,19 @@ For marketing copy, CTA wording, planner microcopy, and localization/transcreati
 
 For UI styling, component behavior, and accessibility standards, use:
 
-- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/BRAND_CI_GUIDELINES.md`
+- `docs/BRAND_CI_GUIDELINES.md`
 
 ## Paywall Guidelines
 
 For trip lifecycle state handling, lock behavior, and paywall rules, use:
 
-- `/Users/chrizzzly/.codex/worktrees/6621/travelflow-codex/docs/PAYWALL_GUIDELINES.md`
+- `docs/PAYWALL_GUIDELINES.md`
 
 ## Supabase Setup And Troubleshooting
 
 For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
 
-- `/Users/chrizzzly/.codex/worktrees/7b0e/travelflow-codex/docs/SUPABASE_RUNBOOK.md`
+- `docs/SUPABASE_RUNBOOK.md`
 
 ## Build
 

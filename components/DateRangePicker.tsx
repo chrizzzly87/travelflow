@@ -36,7 +36,7 @@ const DEFAULT_LABELS: DateRangePickerLabels = {
 };
 
 const getWeekdayLabels = (locale: string): string[] => {
-    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
     const monday = new Date(Date.UTC(2024, 0, 1)); // 2024-01-01 is a Monday
     return Array.from({ length: 7 }, (_entry, index) => {
         const value = new Date(monday);
