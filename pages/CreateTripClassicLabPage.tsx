@@ -476,29 +476,55 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         .join(', ');
 
     const travelerDetailSummary = useMemo(() => {
+        const getGenderLabel = (gender: TravelerGender): string => {
+            if (gender === 'female') return t('traveler.settings.genderFemale');
+            if (gender === 'male') return t('traveler.settings.genderMale');
+            if (gender === 'non-binary') return t('traveler.settings.genderNonBinary');
+            if (gender === 'prefer-not') return t('traveler.settings.genderPreferNot');
+            return '';
+        };
+
         if (travelerType === 'solo') {
             const chunks: string[] = [];
-            if (soloGender) chunks.push(soloGender.replace('-', ' '));
-            if (soloAge) chunks.push(`${soloAge}y`);
-            chunks.push(soloComfort);
-            return chunks.join(' • ');
+            const soloGenderLabel = getGenderLabel(soloGender);
+            if (soloGenderLabel) chunks.push(soloGenderLabel);
+            if (soloAge) chunks.push(`${soloAge}`);
+            chunks.push(t(`traveler.settings.comfortOptions.${soloComfort}`));
+            return chunks.join(', ');
         }
 
         if (travelerType === 'couple') {
             const chunks: string[] = [];
-            if (coupleTravelerA && coupleTravelerB) {
-                chunks.push(`${coupleTravelerA.replace('-', ' ')} + ${coupleTravelerB.replace('-', ' ')}`);
+            const travelerALabel = getGenderLabel(coupleTravelerA);
+            const travelerBLabel = getGenderLabel(coupleTravelerB);
+            if (travelerALabel && travelerBLabel) {
+                chunks.push(`${travelerALabel} + ${travelerBLabel}`);
             }
-            if (coupleOccasion !== 'none') chunks.push(coupleOccasion.replace('-', ' '));
-            return chunks.length > 0 ? chunks.join(' • ') : t('traveler.settings.summaryHint');
+            if (coupleOccasion !== 'none') {
+                const occasionKey = coupleOccasion === 'city-break' ? 'cityBreak' : coupleOccasion;
+                chunks.push(t(`traveler.settings.occasionOptions.${occasionKey}`));
+            }
+            return chunks.length > 0 ? chunks.join(', ') : t('traveler.settings.summaryHint');
         }
 
         if (travelerType === 'friends') {
-            return `${friendsCount} • ${friendsEnergy.replace('-', ' ')}`;
+            return `${friendsCount}, ${t(`traveler.settings.energyOptions.${friendsEnergy}`)}`;
         }
 
-        return `${familyAdults}A • ${familyChildren}C • ${familyBabies}B`;
-    }, [coupleOccasion, coupleTravelerA, coupleTravelerB, familyAdults, familyBabies, familyChildren, friendsCount, friendsEnergy, soloAge, soloComfort, soloGender, travelerType]);
+        return [
+            `${familyAdults} ${t('traveler.settings.adults')}`,
+            `${familyChildren} ${t('traveler.settings.children')}`,
+            `${familyBabies} ${t('traveler.settings.babies')}`,
+        ].join(', ');
+    }, [coupleOccasion, coupleTravelerA, coupleTravelerB, familyAdults, familyBabies, familyChildren, friendsCount, friendsEnergy, soloAge, soloComfort, soloGender, t, travelerType]);
+
+    const travelerPreviewSummary = useMemo(() => {
+        const trimmedDetail = travelerDetailSummary.trim();
+        if (!trimmedDetail || trimmedDetail === t('traveler.settings.summaryHint')) {
+            return travelerSummary;
+        }
+        return `${travelerSummary} (${trimmedDetail})`;
+    }, [travelerDetailSummary, travelerSummary, t]);
 
     const transportMismatch = hasTransportOverride && !(transportModes.length === 1 && transportModes[0] === 'auto');
 
@@ -1724,7 +1750,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </button>
                                 {sectionExpanded.traveler && (
                                     <div className="mt-4">
-                                        <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="grid grid-cols-2 gap-3">
                                             {TRAVELER_OPTIONS.map((entry) => {
                                                 const Icon = entry.icon;
                                                 const active = travelerType === entry.id;
@@ -2031,9 +2057,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
                                             <UsersThree size={15} weight="duotone" className="text-indigo-200" />
-                                            {travelerSummary}
+                                            {travelerPreviewSummary}
                                         </div>
-                                        <div className="mt-1 text-xs text-indigo-100/80">{travelerDetailSummary}</div>
                                     </div>
                                     <div className="rounded-xl border border-white/15 bg-white/5 p-3">
                                         <div className="inline-flex items-center gap-2 text-sm font-semibold">
@@ -2145,7 +2170,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </div>
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.traveler')}</div>
-                                    <div>{travelerSummary}</div>
+                                    <div>{travelerPreviewSummary}</div>
                                 </div>
                                 <div>
                                     <div className="font-semibold text-indigo-200">{t('mobileSnapshot.style')}</div>

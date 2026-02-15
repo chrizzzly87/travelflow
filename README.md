@@ -188,6 +188,7 @@ This repo includes `vercel.json` for Vite + SPA routing.
 ## Deploy To Netlify
 
 This repo includes `netlify.toml` for build settings + SPA redirects.
+For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 
 1. Push this repo to GitHub.
 2. In Netlify, create a new site from Git.
