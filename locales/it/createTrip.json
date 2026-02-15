@@ -1,0 +1,182 @@
+{
+  "destination": {
+    "title": "Destinazione",
+    "searchPlaceholder": "Cerca paese o isola",
+    "noMatches": "Nessuna destinazione corrispondente",
+    "islandOf": "Isola di {country}",
+    "pinAsStart": "Imposta {destination} come punto di partenza",
+    "removeDestination": "Rimuovi {destination}",
+    "idealTravelTime": "Periodo ideale",
+    "roundTrip": {
+      "title": "Ritorno al punto di partenza",
+      "description": "Concludi il percorso dove inizi."
+    },
+    "routeLock": {
+      "title": "Percorso fisso",
+      "description": "Mantieni l'ordine delle destinazioni e abilita il riordino con trascinamento."
+    }
+  },
+  "dates": {
+    "title": "Date",
+    "mode": {
+      "exact": "Date precise",
+      "flex": "Finestra flessibile"
+    },
+    "summary": "Periodo provvisorio: {days} giorni totali.",
+    "labels": {
+      "start": "Inizio",
+      "end": "Fine",
+      "selectDate": "Seleziona data",
+      "selectStartDate": "Seleziona data di inizio",
+      "selectEndDate": "Seleziona data di fine",
+      "previousMonth": "Mese precedente",
+      "nextMonth": "Mese successivo"
+    },
+    "flexWindow": {
+      "weeksLabel": "Durata del viaggio (settimane)",
+      "rangeLabel": "Intervallo preferito",
+      "options": {
+        "spring": "Finestra primaverile",
+        "summer": "Finestra estiva",
+        "autumn": "Finestra autunnale",
+        "winter": "Finestra invernale",
+        "shoulder": "Mezza stagione"
+      }
+    }
+  },
+  "traveler": {
+    "title": "Configurazione viaggiatori",
+    "options": {
+      "solo": "Solo",
+      "couple": "Coppia",
+      "friends": "Amici",
+      "family": "Famiglia"
+    },
+    "settings": {
+      "optionalDetails": "Dettagli opzionali",
+      "helper": "Questi campi sono opzionali e migliorano solo come vengono personalizzati i suggerimenti di viaggio.",
+      "gender": "Genere (opzionale)",
+      "notSpecified": "Non specificato",
+      "genderFemale": "Donna",
+      "genderMale": "Uomo",
+      "genderNonBinary": "Non binario",
+      "genderPreferNot": "Preferisco non dirlo",
+      "age": "Età (opzionale)",
+      "agePlaceholder": "es. 31",
+      "comfortMode": "Modalità comfort",
+      "comfortOptions": {
+        "social": "Sociale",
+        "balanced": "Bilanciato",
+        "private": "Privato"
+      },
+      "travelerA": "Viaggiatore A (opzionale)",
+      "travelerB": "Viaggiatore B (opzionale)",
+      "occasion": "Occasione (opzionale)",
+      "occasionOptions": {
+        "none": "Nessuna occasione speciale",
+        "honeymoon": "Luna di miele",
+        "anniversary": "Anniversario",
+        "cityBreak": "Weekend in città"
+      },
+      "groupSize": "Dimensione del gruppo",
+      "groupEnergy": "Energia del gruppo",
+      "energyOptions": {
+        "chill": "Relax",
+        "mixed": "Misto",
+        "full-send": "Al massimo"
+      },
+      "adults": "Adulti",
+      "children": "Bambini",
+      "babies": "Neonati",
+      "summaryHint": "Dettagli opzionali",
+      "open": "Modifica impostazioni di {traveler}",
+      "title": "Personalizza preferenze di {traveler}",
+      "description": "Aggiungi dettagli opzionali per affinare i suggerimenti generati per questa configurazione di viaggiatori.",
+      "mobileDescription": "Dettagli opzionali per migliorare la pertinenza della pianificazione.",
+      "done": "Fatto"
+    }
+  },
+  "style": {
+    "title": "Stile di viaggio",
+    "empty": "Nessuno stile selezionato",
+    "options": {
+      "culture": "Cultura",
+      "food": "Cibo",
+      "nature": "Natura",
+      "beaches": "Spiagge",
+      "nightlife": "Vita notturna",
+      "remoteWork": "Lavoro da remoto"
+    }
+  },
+  "transport": {
+    "title": "Preferenze di trasporto",
+    "options": {
+      "auto": "Automatico",
+      "plane": "Aereo",
+      "car": "Auto",
+      "train": "Treno",
+      "bus": "Bus",
+      "cycle": "Bici",
+      "walk": "A piedi",
+      "camper": "Camper"
+    },
+    "camperDisabled": "Il camper è visibile in anteprima ma attualmente è disattivato in questa versione.",
+    "overrideHint": "Le scelte di trasporto personalizzate differiscono dal valore automatico usato in generazione."
+  },
+  "previewOnly": {
+    "title": "Solo anteprima",
+    "global": "Questi controlli sono visibili solo in anteprima. La generazione usa attualmente valori fissi: viaggiatore solo, stile = tutto tranne lavoro da remoto, trasporto = Automatico.",
+    "traveler": "Solo anteprima per ora: la configurazione viaggiatori è visibile, ma la generazione usa il valore fisso Viaggiatore solo.",
+    "style": "Solo anteprima per ora: le scelte di stile sono visibili, ma la generazione usa il valore fisso «tutto tranne lavoro da remoto».",
+    "transport": "Solo anteprima per ora: le preferenze di trasporto sono visibili, ma la generazione usa il valore fisso Automatico."
+  },
+  "notes": {
+    "title": "Note speciali",
+    "hint": "Sii breve: indica priorità come mobilità, focus sul cibo o livello di comfort.",
+    "placeholder": "Note opzionali per il pianificatore"
+  },
+  "snapshot": {
+    "title": "Riepilogo viaggio",
+    "destinations": "Destinazioni",
+    "emptyDestinations": "Aggiungi destinazioni per vedere l'anteprima del percorso.",
+    "days": "{days} giorni",
+    "avgPerStop": "Media {days} per tappa",
+    "addDestinations": "Aggiungi destinazioni per calcolare le medie",
+    "previewOnly": "Solo anteprima",
+    "style": "Stile",
+    "transport": "Trasporto",
+    "start": "Inizio",
+    "startEnd": "Inizio e fine"
+  },
+  "mobileSnapshot": {
+    "title": "Riepilogo viaggio",
+    "showDetails": "Mostra dettagli",
+    "hideDetails": "Nascondi dettagli",
+    "days": "Giorni",
+    "traveler": "Viaggiatore",
+    "style": "Stile",
+    "transport": "Trasporto"
+  },
+  "cta": {
+    "label": "Crea il mio viaggio",
+    "loading": "Creazione..."
+  },
+  "errors": {
+    "destinationRequired": "Aggiungi almeno una destinazione prima di creare il tuo viaggio.",
+    "genericGenerate": "Generazione viaggio non riuscita. Riprova."
+  },
+  "prefillBadge": "Precompilato da: {label}",
+  "labsBanner": {
+    "title": "Vuoi testare altri concetti di create-trip?",
+    "description": "Route laboratorio dirette per controlli di regressione e confronto esperimenti.",
+    "links": {
+      "legacy": "Modulo Classic Legacy",
+      "classicCard": "Percorso Classic Card",
+      "splitWorkspace": "Esperimento Split Workspace",
+      "journeyArchitect": "Esperimento Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
+    }
+  }
+}

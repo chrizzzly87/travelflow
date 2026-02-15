@@ -60,5 +60,6 @@ export const IMAGE_PLACEHOLDERS: Record<string, ImagePlaceholderEntry> = {
     "/images/trip-maps/new-zealand-wild.png": { blurhash: "L12%wvObK-xHTNtnIpxAT0RP?GNF", width: 1280, height: 576 },
     "/images/trip-maps/peru-adventure.png": { blurhash: "LPKD6nJ[1QOtT]$k-CJBX8bEnh$k", width: 1280, height: 576 },
     "/images/trip-maps/portugal-coast.png": { blurhash: "LIPQBF00s9~q~qRja}t7WBayj[WB", width: 1280, height: 576 },
+    "/images/trip-maps/southeast-asia-backpacking.png": { blurhash: "LVOp*|?bax-;~qxuRjt7xuWBRjjt", width: 1280, height: 576 },
     "/images/trip-maps/thailand-islands.png": { blurhash: "LSQ0,W-:t7-:~VxCozxaxVadRkj]", width: 1280, height: 576 },
 };

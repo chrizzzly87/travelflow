@@ -6,7 +6,7 @@ import { MobileMenu } from './MobileMenu';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { AppLanguage } from '../../types';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -41,8 +41,10 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const { t, i18n } = useTranslation('common');
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        const routeLocale = extractLocaleFromPath(location.pathname);
+        if (routeLocale) return routeLocale;
+        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
+    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
         const nextLocale = normalizeLocale(nextLocaleRaw);
@@ -51,7 +53,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
         if (!isToolRoute(location.pathname)) {
             void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, ['common']);
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
         }
 
         applyDocumentLocale(nextLocale);
@@ -115,7 +117,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                     <div className="flex items-center gap-2">
                         <div className="relative hidden md:block">
                             <LanguageSelect
-                                aria-label={t('language.label')}
+                                ariaLabel={t('language.label')}
                                 value={activeLocale}
                                 onChange={handleLocaleChange}
                                 triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
@@ -145,7 +147,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             )
                         ) : (
                             <NavLink
-                                to={buildPath('createTrip')}
+                                to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
                                 className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...navDebugAttributes('create_trip')}

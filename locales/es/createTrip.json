@@ -1,0 +1,182 @@
+{
+  "destination": {
+    "title": "Destino",
+    "searchPlaceholder": "Buscar país o isla",
+    "noMatches": "No hay destinos coincidentes",
+    "islandOf": "Isla de {country}",
+    "pinAsStart": "Establecer {destination} como punto de inicio",
+    "removeDestination": "Eliminar {destination}",
+    "idealTravelTime": "Mejor época para viajar",
+    "roundTrip": {
+      "title": "Volver al inicio",
+      "description": "Termina la ruta donde comienzas."
+    },
+    "routeLock": {
+      "title": "Ruta fija",
+      "description": "Mantén el orden de destinos y habilita el ordenado con arrastrar y soltar."
+    }
+  },
+  "dates": {
+    "title": "Fechas",
+    "mode": {
+      "exact": "Fechas exactas",
+      "flex": "Ventana flexible"
+    },
+    "summary": "Periodo provisional: {days} días en total.",
+    "labels": {
+      "start": "Inicio",
+      "end": "Fin",
+      "selectDate": "Seleccionar fecha",
+      "selectStartDate": "Seleccionar fecha de inicio",
+      "selectEndDate": "Seleccionar fecha de fin",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente"
+    },
+    "flexWindow": {
+      "weeksLabel": "Duración del viaje (semanas)",
+      "rangeLabel": "Rango de tiempo preferido",
+      "options": {
+        "spring": "Ventana de primavera",
+        "summer": "Ventana de verano",
+        "autumn": "Ventana de otoño",
+        "winter": "Ventana de invierno",
+        "shoulder": "Temporada intermedia"
+      }
+    }
+  },
+  "traveler": {
+    "title": "Configuración de viajeros",
+    "options": {
+      "solo": "Solo",
+      "couple": "Pareja",
+      "friends": "Amigos",
+      "family": "Familia"
+    },
+    "settings": {
+      "optionalDetails": "Detalles opcionales",
+      "helper": "Estos campos son opcionales y solo mejoran cómo se ajustan las sugerencias de viaje.",
+      "gender": "Género (opcional)",
+      "notSpecified": "No especificado",
+      "genderFemale": "Mujer",
+      "genderMale": "Hombre",
+      "genderNonBinary": "No binario",
+      "genderPreferNot": "Prefiero no decirlo",
+      "age": "Edad (opcional)",
+      "agePlaceholder": "p. ej. 31",
+      "comfortMode": "Modo de comodidad",
+      "comfortOptions": {
+        "social": "Social",
+        "balanced": "Equilibrado",
+        "private": "Privado"
+      },
+      "travelerA": "Viajero A (opcional)",
+      "travelerB": "Viajero B (opcional)",
+      "occasion": "Ocasión (opcional)",
+      "occasionOptions": {
+        "none": "Sin ocasión especial",
+        "honeymoon": "Luna de miel",
+        "anniversary": "Aniversario",
+        "cityBreak": "Escapada urbana"
+      },
+      "groupSize": "Tamaño del grupo",
+      "groupEnergy": "Energía del grupo",
+      "energyOptions": {
+        "chill": "Relajado",
+        "mixed": "Mixto",
+        "full-send": "A tope"
+      },
+      "adults": "Adultos",
+      "children": "Niños",
+      "babies": "Bebés",
+      "summaryHint": "Detalles opcionales",
+      "open": "Editar ajustes de {traveler}",
+      "title": "Personalizar preferencias de {traveler}",
+      "description": "Añade detalles opcionales para afinar las sugerencias generadas para esta configuración de viajeros.",
+      "mobileDescription": "Detalles opcionales para mejorar la relevancia de la planificación.",
+      "done": "Listo"
+    }
+  },
+  "style": {
+    "title": "Estilo de viaje",
+    "empty": "Ningún estilo seleccionado",
+    "options": {
+      "culture": "Cultura",
+      "food": "Gastronomía",
+      "nature": "Naturaleza",
+      "beaches": "Playas",
+      "nightlife": "Vida nocturna",
+      "remoteWork": "Trabajo remoto"
+    }
+  },
+  "transport": {
+    "title": "Preferencias de transporte",
+    "options": {
+      "auto": "Automático",
+      "plane": "Avión",
+      "car": "Coche",
+      "train": "Tren",
+      "bus": "Autobús",
+      "cycle": "Bicicleta",
+      "walk": "A pie",
+      "camper": "Camper"
+    },
+    "camperDisabled": "Camper se muestra en vista previa, pero está deshabilitado en esta versión.",
+    "overrideHint": "Las elecciones de transporte personalizadas difieren del valor automático usado en la generación."
+  },
+  "previewOnly": {
+    "title": "Solo vista previa",
+    "global": "Estos controles se muestran solo como vista previa. La generación usa actualmente valores fijos: viajero solo, estilo = todo excepto trabajo remoto, transporte = Automático.",
+    "traveler": "Solo vista previa por ahora: se muestra la configuración de viajeros, pero la generación usa el valor fijo Viajero solo.",
+    "style": "Solo vista previa por ahora: se muestran los estilos, pero la generación usa el valor fijo «todo excepto trabajo remoto».",
+    "transport": "Solo vista previa por ahora: se muestran las preferencias de transporte, pero la generación usa el valor fijo Automático."
+  },
+  "notes": {
+    "title": "Notas especiales",
+    "hint": "Sé breve: menciona imprescindibles como movilidad, enfoque gastronómico o nivel de comodidad.",
+    "placeholder": "Notas opcionales para el planificador"
+  },
+  "snapshot": {
+    "title": "Resumen del viaje",
+    "destinations": "Destinos",
+    "emptyDestinations": "Añade destinos para previsualizar tu ruta.",
+    "days": "{days} días",
+    "avgPerStop": "Prom. {days} por parada",
+    "addDestinations": "Añade destinos para calcular promedios",
+    "previewOnly": "Solo vista previa",
+    "style": "Estilo",
+    "transport": "Transporte",
+    "start": "Inicio",
+    "startEnd": "Inicio y fin"
+  },
+  "mobileSnapshot": {
+    "title": "Resumen del viaje",
+    "showDetails": "Mostrar detalles",
+    "hideDetails": "Ocultar detalles",
+    "days": "Días",
+    "traveler": "Viajero",
+    "style": "Estilo",
+    "transport": "Transporte"
+  },
+  "cta": {
+    "label": "Crear mi viaje",
+    "loading": "Creando..."
+  },
+  "errors": {
+    "destinationRequired": "Añade al menos un destino antes de crear tu viaje.",
+    "genericGenerate": "Falló la generación del viaje. Inténtalo de nuevo."
+  },
+  "prefillBadge": "Precargado desde: {label}",
+  "labsBanner": {
+    "title": "¿Quieres probar otros conceptos de crear viaje?",
+    "description": "Rutas directas de laboratorio para regresiones y comparación de experimentos.",
+    "links": {
+      "legacy": "Formulario Classic Legacy",
+      "classicCard": "Ruta Classic Card",
+      "splitWorkspace": "Experimento Split Workspace",
+      "journeyArchitect": "Experimento Journey Architect",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
+    }
+  }
+}
