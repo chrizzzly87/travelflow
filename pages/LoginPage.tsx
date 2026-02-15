@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppleLogo, ArrowRight, FacebookLogo, GoogleLogo, SpinnerGap as Loader2 } from '@phosphor-icons/react';
+import { ArrowRight, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
@@ -14,42 +14,31 @@ import {
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
 import { getLastUsedOAuthProvider, setLastUsedOAuthProvider } from '../services/authUiPreferencesService';
+import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
 
 const OAUTH_BUTTONS: Array<{
     provider: OAuthProviderId;
     labelKey: string;
-    icon: React.ComponentType<React.ComponentProps<typeof GoogleLogo>>;
-    iconClassName: string;
     buttonClassName: string;
 }> = [
     {
         provider: 'google',
         labelKey: 'actions.oauthGoogle',
-        icon: GoogleLogo,
-        iconClassName: 'text-[#ea4335]',
         buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7]',
     },
     {
         provider: 'apple',
         labelKey: 'actions.oauthApple',
-        icon: AppleLogo,
-        iconClassName: 'text-slate-900',
         buttonClassName: 'hover:border-slate-400 hover:bg-slate-50',
     },
     {
         provider: 'facebook',
         labelKey: 'actions.oauthFacebook',
-        icon: FacebookLogo,
-        iconClassName: 'text-[#1877f2]',
         buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
     },
 ];
-
-const getOauthButtonConfig = (provider: OAuthProviderId) => {
-    return OAUTH_BUTTONS.find((item) => item.provider === provider) || null;
-};
 
 const normalizeErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -251,10 +240,6 @@ export const LoginPage: React.FC = () => {
         setInfoMessage(t('actions.submitting'));
     };
 
-    const lastUsedProviderLabelKey = lastUsedProvider
-        ? getOauthButtonConfig(lastUsedProvider)?.labelKey || null
-        : null;
-
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
@@ -333,20 +318,8 @@ export const LoginPage: React.FC = () => {
                         <span className="h-px flex-1 bg-slate-200" />
                     </div>
 
-                    {lastUsedProviderLabelKey && (
-                        <div className="mb-3 rounded-xl border border-accent-200 bg-gradient-to-r from-accent-50 via-white to-accent-50 px-3 py-2 text-xs text-slate-700">
-                            <span className="rounded-full bg-accent-100 px-2 py-0.5 font-semibold text-accent-800">
-                                {t('copy.lastUsedTag')}
-                            </span>
-                            <span className="ml-2 font-semibold">
-                                {t('copy.lastUsedProvider', { provider: t(lastUsedProviderLabelKey) })}
-                            </span>
-                        </div>
-                    )}
-
                     <div className="space-y-2">
                         {OAUTH_BUTTONS.map((item) => {
-                            const Icon = item.icon;
                             const isLastUsed = lastUsedProvider === item.provider;
                             return (
                                 <button
@@ -354,19 +327,17 @@ export const LoginPage: React.FC = () => {
                                     type="button"
                                     onClick={() => void handleOAuthLogin(item.provider)}
                                     disabled={isSubmitting || isQueueProcessing}
-                                    className={`inline-flex w-full items-center justify-between rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                    className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                         isLastUsed
-                                            ? 'border-accent-300 bg-accent-50'
+                                            ? 'border-slate-400 bg-white'
                                             : 'border-slate-300 bg-white'
                                     } ${item.buttonClassName}`}
                                     {...getAnalyticsDebugAttributes(`auth__oauth--${item.provider}`)}
                                 >
-                                    <span className="inline-flex items-center gap-2">
-                                        <Icon size={18} className={item.iconClassName} />
-                                        {t(item.labelKey)}
-                                    </span>
+                                    <SocialProviderIcon provider={item.provider} size={18} />
+                                    <span>{t(item.labelKey)}</span>
                                     {isLastUsed && (
-                                        <span className="rounded-full border border-accent-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
+                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm">
                                             {t('copy.lastUsedTag')}
                                         </span>
                                     )}
