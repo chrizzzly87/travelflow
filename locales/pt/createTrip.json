@@ -168,9 +168,9 @@
   "prefillBadge": "Pré-preenchido de: {label}",
   "labsBanner": {
     "title": "Queres testar outros conceitos de create-trip?",
-    "description": "Rotas de laboratorio diretas para regressao e comparacao de experimentos.",
+    "description": "Rotas de laboratório diretas para regressão e comparação de experimentos.",
     "links": {
-      "legacy": "Formulario Classic Legacy",
+      "legacy": "Formulário Classic Legacy",
       "classicCard": "Rota Classic Card",
       "splitWorkspace": "Experimento Split Workspace",
       "journeyArchitect": "Experimento Journey Architect",

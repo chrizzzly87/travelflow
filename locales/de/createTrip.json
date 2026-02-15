@@ -167,8 +167,8 @@
   },
   "prefillBadge": "Vorausgefüllt aus: {label}",
   "labsBanner": {
-    "title": "Moechtest du andere Create-Trip-Konzepte testen?",
-    "description": "Direkte Lab-Routen fuer Regressionstests und Konzeptvergleiche.",
+    "title": "Möchtest du andere Create-Trip-Konzepte testen?",
+    "description": "Direkte Lab-Routen für Regressionstests und Konzeptvergleiche.",
     "links": {
       "legacy": "Classic-Legacy-Formular",
       "classicCard": "Classic-Card-Route",

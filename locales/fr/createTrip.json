@@ -168,12 +168,12 @@
   "prefillBadge": "Prérempli depuis : {label}",
   "labsBanner": {
     "title": "Besoin de tester d'autres concepts create-trip ?",
-    "description": "Routes labo directes pour les verifications de regression et les comparaisons.",
+    "description": "Routes labo directes pour les vérifications de régression et les comparaisons.",
     "links": {
       "legacy": "Formulaire Classic Legacy",
       "classicCard": "Route Classic Card",
-      "splitWorkspace": "Experience Split Workspace",
-      "journeyArchitect": "Experience Journey Architect",
+      "splitWorkspace": "Expérience Split Workspace",
+      "journeyArchitect": "Expérience Journey Architect",
       "designV1": "Design Variant V1",
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
