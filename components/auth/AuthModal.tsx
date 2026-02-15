@@ -9,7 +9,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { OAuthProviderId } from '../../services/authService';
 import { trackEvent } from '../../services/analyticsService';
-import { getLastUsedOAuthProvider, setLastUsedOAuthProvider } from '../../services/authUiPreferencesService';
+import {
+    clearPendingOAuthProvider,
+    getLastUsedOAuthProvider,
+    setPendingOAuthProvider,
+} from '../../services/authUiPreferencesService';
 import { SocialProviderIcon } from './SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
@@ -174,6 +178,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setErrorMessage(t('errors.default'));
             return;
         }
+        clearPendingOAuthProvider();
 
         setIsSubmitting(true);
         setErrorMessage(null);
@@ -210,11 +215,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
-        setLastUsedOAuthProvider(provider);
-        setLastUsedProviderState(provider);
+        setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider, source: 'modal' });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
         if (response.error) {
+            clearPendingOAuthProvider();
             const errorCode = normalizeErrorCode(response.error);
             setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             return;

@@ -12,6 +12,7 @@ import {
     resolvePreferredNextPath,
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
+import { consumePendingOAuthProvider, setLastUsedOAuthProvider } from '../services/authUiPreferencesService';
 
 interface OpenLoginModalOptions {
     nextPath?: string;
@@ -73,6 +74,11 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     useEffect(() => {
         if (isLoading || !isAuthenticated || isAnonymous) return;
+        const completedProvider = consumePendingOAuthProvider();
+        if (completedProvider) {
+            setLastUsedOAuthProvider(completedProvider);
+        }
+
         const pending = getPendingAuthRedirect();
         if (!pending) return;
 

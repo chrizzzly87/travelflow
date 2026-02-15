@@ -194,9 +194,9 @@ export const AdminAccessPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 px-6 py-10 md:px-10">
-            <div className="mx-auto w-full max-w-7xl space-y-6">
-                <AdminMenu />
+        <div className="min-h-screen bg-slate-50">
+            <AdminMenu />
+            <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-8 md:px-10 md:py-10">
                 <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Admin access control</p>
                     <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">Roles, Tiers, and User Overrides</h1>

@@ -1161,9 +1161,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [validationModalRun]);
 
     return (
-        <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto w-full max-w-[1600px] space-y-4">
-                <AdminMenu />
+        <div className="min-h-screen bg-slate-50">
+            <AdminMenu />
+            <div className="mx-auto w-full max-w-[1600px] space-y-4 px-4 py-6 md:px-8 md:py-8">
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>

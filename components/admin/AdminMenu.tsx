@@ -1,6 +1,8 @@
 import React from 'react';
 import { AirplaneTilt, ArrowSquareOut } from '@phosphor-icons/react';
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { APP_NAME } from '../../config/appGlobals';
+import { buildPath } from '../../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 
 const ADMIN_MENU_ITEMS = [
@@ -9,8 +11,14 @@ const ADMIN_MENU_ITEMS = [
     { id: 'access', label: 'Access Control', path: '/admin/access' },
 ];
 
-const menuLinkClass = ({ isActive }: { isActive: boolean }) => {
-    const base = 'inline-flex items-center rounded-xl border px-3 py-2 text-xs font-semibold transition-colors';
+const navLinkClass = ({ isActive }: { isActive: boolean }) => {
+    const baseClass = 'relative font-semibold text-slate-500 transition-colors hover:text-slate-900 after:pointer-events-none after:absolute after:-bottom-4 after:left-0 after:h-0.5 after:w-full after:origin-center after:scale-x-0 after:rounded-full after:bg-accent-600 after:transition-transform';
+    if (isActive) return `${baseClass} text-slate-900 after:scale-x-100`;
+    return baseClass;
+};
+
+const mobileMenuLinkClass = ({ isActive }: { isActive: boolean }) => {
+    const base = 'inline-flex items-center rounded-lg border px-3 py-2 text-xs font-semibold transition-colors';
     if (isActive) {
         return `${base} border-accent-300 bg-accent-50 text-accent-800`;
     }
@@ -19,39 +27,56 @@ const menuLinkClass = ({ isActive }: { isActive: boolean }) => {
 
 export const AdminMenu: React.FC = () => {
     return (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <Link
-                    to="/admin/dashboard"
+        <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur" style={{ viewTransitionName: 'admin-header' }}>
+            <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-4 lg:px-8">
+                <NavLink
+                    to={buildPath('adminDashboard')}
                     onClick={() => trackEvent('admin__menu--brand')}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 hover:border-accent-300 hover:bg-accent-50"
+                    className="flex items-center gap-2"
                     {...getAnalyticsDebugAttributes('admin__menu--brand')}
                 >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-accent-600 text-white">
-                        <AirplaneTilt size={14} weight="duotone" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-600 text-white shadow-lg shadow-accent-200">
+                        <AirplaneTilt size={16} weight="duotone" />
                     </span>
-                    <span className="text-sm font-bold text-slate-900">
-                        TravelFlow <span className="text-accent-700">Admin Dashboard</span>
+                    <span className="flex flex-col leading-tight">
+                        <span className="text-lg font-extrabold tracking-tight text-slate-900">{APP_NAME}</span>
+                        <span className="text-[11px] font-light uppercase tracking-[0.14em] text-slate-500">
+                            Admin Dashboard
+                        </span>
                     </span>
-                </Link>
+                </NavLink>
 
-                <Link
-                    to="/create-trip"
+                <nav className="hidden items-center gap-4 text-sm lg:flex xl:gap-6">
+                    {ADMIN_MENU_ITEMS.map((item) => (
+                        <NavLink
+                            key={item.id}
+                            to={item.path}
+                            className={navLinkClass}
+                            onClick={() => trackEvent(`admin__menu--${item.id}`)}
+                            {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
+                        >
+                            {item.label}
+                        </NavLink>
+                    ))}
+                </nav>
+
+                <NavLink
+                    to={buildPath('createTrip')}
                     onClick={() => trackEvent('admin__menu--back_to_platform')}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                     {...getAnalyticsDebugAttributes('admin__menu--back_to_platform')}
                 >
-                    <ArrowSquareOut size={14} />
                     Back to Platform
-                </Link>
+                    <ArrowSquareOut size={14} />
+                </NavLink>
             </div>
 
-            <nav className="mt-3 flex flex-wrap items-center gap-2">
+            <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-2 border-t border-slate-200/70 px-5 py-3 lg:hidden lg:px-8">
                 {ADMIN_MENU_ITEMS.map((item) => (
                     <NavLink
                         key={item.id}
                         to={item.path}
-                        className={menuLinkClass}
+                        className={mobileMenuLinkClass}
                         onClick={() => trackEvent(`admin__menu--${item.id}`)}
                         {...getAnalyticsDebugAttributes(`admin__menu--${item.id}`)}
                     >
@@ -59,6 +84,6 @@ export const AdminMenu: React.FC = () => {
                     </NavLink>
                 ))}
             </nav>
-        </section>
+        </header>
     );
 };

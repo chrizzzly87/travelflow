@@ -13,7 +13,11 @@ import {
     rememberAuthReturnPath,
     resolvePreferredNextPath,
 } from '../services/authNavigationService';
-import { getLastUsedOAuthProvider, setLastUsedOAuthProvider } from '../services/authUiPreferencesService';
+import {
+    clearPendingOAuthProvider,
+    getLastUsedOAuthProvider,
+    setPendingOAuthProvider,
+} from '../services/authUiPreferencesService';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
@@ -127,6 +131,7 @@ export const LoginPage: React.FC = () => {
     useEffect(() => {
         const callbackError = searchParams.get('error_description') || searchParams.get('error');
         if (callbackError) {
+            clearPendingOAuthProvider();
             trackEvent('auth__callback--error', { has_claim: Boolean(claimRequestId) });
             setErrorMessage(decodeURIComponent(callbackError));
             return;
@@ -192,6 +197,7 @@ export const LoginPage: React.FC = () => {
             setErrorMessage(t('errors.default'));
             return;
         }
+        clearPendingOAuthProvider();
 
         setIsSubmitting(true);
         setErrorMessage(null);
@@ -228,11 +234,11 @@ export const LoginPage: React.FC = () => {
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
         setErrorMessage(null);
         setInfoMessage(null);
-        setLastUsedOAuthProvider(provider);
-        setLastUsedProvider(provider);
+        setPendingOAuthProvider(provider);
         trackEvent('auth__method--select', { method: provider });
         const response = await loginWithOAuth(provider, oauthRedirectTo);
         if (response.error) {
+            clearPendingOAuthProvider();
             const errorCode = normalizeErrorCode(response.error);
             setErrorMessage(t(`errors.${errorCode}`, t('errors.default')));
             return;
