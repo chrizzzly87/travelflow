@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
-import { DEFAULT_LOCALE } from '../../config/locales';
+import { DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 
 interface SiteFooterProps {
     className?: string;
@@ -11,9 +11,10 @@ interface SiteFooterProps {
 
 export const SiteFooter: React.FC<SiteFooterProps> = ({ className }) => {
     const year = new Date().getFullYear();
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const location = useLocation();
-    const activeLocale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const activeLocale = extractLocaleFromPath(location.pathname)
+        ?? normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
 
     const handleFooterClick = (target: string) => {
         trackEvent(`footer__${target}`);

@@ -962,26 +962,62 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     }, [fitToRouteKey, mapInitialized, cities.length]);
 
     // If we don't have city coordinates yet, center the map on the selected country/location.
+    // Supports one or multiple focus queries separated by "||".
     useEffect(() => {
-        const query = focusLocationQuery?.trim();
-        if (!query || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
+        const queries = (focusLocationQuery ?? '')
+            .split(/\s*\|\|\s*/)
+            .map((query) => query.trim())
+            .filter((query) => query.length > 0);
+        if (queries.length === 0 || !mapInitialized || !googleMapRef.current || cities.length > 0) return;
         if (!window.google?.maps?.Geocoder) return;
-        if (lastFocusQueryRef.current === query) return;
+        const focusKey = queries.join('||');
+        if (lastFocusQueryRef.current === focusKey) return;
 
-        lastFocusQueryRef.current = query;
+        lastFocusQueryRef.current = focusKey;
+        let cancelled = false;
         const geocoder = new window.google.maps.Geocoder();
-        geocoder.geocode({ address: query }, (results, status) => {
-            if (status !== 'OK' || !results?.length) return;
-            const match = results[0];
-            if (match.geometry?.viewport) {
-                googleMapRef.current.fitBounds(match.geometry.viewport);
+        const bounds = new window.google.maps.LatLngBounds();
+        let pending = queries.length;
+        let successCount = 0;
+        let singleLocation: google.maps.LatLng | null = null;
+        let singleHasViewport = false;
+
+        const complete = () => {
+            pending -= 1;
+            if (pending > 0 || cancelled || !googleMapRef.current || successCount === 0) return;
+            if (successCount === 1 && singleLocation && !singleHasViewport) {
+                googleMapRef.current.setCenter(singleLocation);
+                googleMapRef.current.setZoom(5);
                 return;
             }
-            if (match.geometry?.location) {
-                googleMapRef.current.setCenter(match.geometry.location);
-                googleMapRef.current.setZoom(5);
-            }
+            googleMapRef.current.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+        };
+
+        queries.forEach((query) => {
+            geocoder.geocode({ address: query }, (results, status) => {
+                if (cancelled || !googleMapRef.current) return;
+                if (status === 'OK' && results?.length) {
+                    const match = results[0];
+                    if (match.geometry?.viewport) {
+                        singleHasViewport = true;
+                        const northEast = match.geometry.viewport.getNorthEast();
+                        const southWest = match.geometry.viewport.getSouthWest();
+                        bounds.extend(northEast);
+                        bounds.extend(southWest);
+                        successCount += 1;
+                    } else if (match.geometry?.location) {
+                        singleLocation = match.geometry.location;
+                        bounds.extend(match.geometry.location);
+                        successCount += 1;
+                    }
+                }
+                complete();
+            });
         });
+
+        return () => {
+            cancelled = true;
+        };
     }, [focusLocationQuery, mapInitialized, cities.length]);
 
     if (loadError) {

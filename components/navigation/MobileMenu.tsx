@@ -6,7 +6,7 @@ import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -33,8 +33,10 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const navigate = useNavigate();
 
     const activeLocale = useMemo<AppLanguage>(() => {
-        return extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    }, [location.pathname]);
+        const routeLocale = extractLocaleFromPath(location.pathname);
+        if (routeLocale) return routeLocale;
+        return normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? DEFAULT_LOCALE);
+    }, [i18n.language, i18n.resolvedLanguage, location.pathname]);
 
     useEffect(() => {
         if (isOpen) {
@@ -74,7 +76,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         if (!isToolRoute(location.pathname)) {
             void preloadLocaleNamespaces(nextLocale, getNamespacesForMarketingPath(location.pathname));
         } else {
-            void preloadLocaleNamespaces(nextLocale, ['common']);
+            void preloadLocaleNamespaces(nextLocale, getNamespacesForToolPath(location.pathname));
         }
 
         applyDocumentLocale(nextLocale);
@@ -170,7 +172,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             </button>
                         ) : (
                             <NavLink
-                                to={buildPath('createTrip')}
+                                to={buildLocalizedCreateTripPath(activeLocale)}
                                 onClick={() => handleNavClick('create_trip')}
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...mobileNavDebugAttributes('create_trip')}
