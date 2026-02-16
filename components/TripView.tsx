@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
-import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, IViewSettings, ShareMode } from '../types';
+import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
 import { DetailsPanel } from './DetailsPanel';
@@ -1629,7 +1629,7 @@ export const TripView: React.FC<TripViewProps> = ({
         currentViewSettings,
     ]);
 
-    const [routeStatusById, setRouteStatusById] = useState<Record<string, 'calculating' | 'ready' | 'failed' | 'idle'>>({});
+    const [routeStatusById, setRouteStatusById] = useState<Record<string, RouteStatus>>({});
 
     const handleRouteMetrics = useCallback((travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => {
         const currentTrip = tripRef.current;
@@ -1674,7 +1674,7 @@ export const TripView: React.FC<TripViewProps> = ({
         onUpdateTrip(updatedTrip);
     }, [onUpdateTrip]);
 
-    const handleRouteStatus = useCallback((travelItemId: string, status: 'calculating' | 'ready' | 'failed' | 'idle', meta?: { mode?: string; routeKey?: string }) => {
+    const handleRouteStatus = useCallback((travelItemId: string, status: RouteStatus, meta?: { mode?: string; routeKey?: string }) => {
         const currentTrip = tripRef.current;
         const item = currentTrip.items.find(i => i.id === travelItemId);
         if (!item) return;
@@ -2348,6 +2348,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             onAddActivity={handleOpenAddActivity}
                                             onForceFill={handleForceFill}
                                             onSwapSelectedCities={handleReverseSelectedCities}
+                                            routeStatusById={routeStatusById}
                                             pixelsPerDay={pixelsPerDay}
                                             enableExampleSharedTransition={useExampleSharedTransition}
                                         />
@@ -2423,6 +2424,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
+                                                            routeStatusById={routeStatusById}
                                                             pixelsPerDay={pixelsPerDay}
                                                             enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
@@ -2568,6 +2570,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             onAddActivity={handleOpenAddActivity}
                                                             onForceFill={handleForceFill}
                                                             onSwapSelectedCities={handleReverseSelectedCities}
+                                                            routeStatusById={routeStatusById}
                                                             pixelsPerDay={pixelsPerDay}
                                                             enableExampleSharedTransition={useExampleSharedTransition}
                                                         />
