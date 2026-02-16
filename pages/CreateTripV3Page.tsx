@@ -41,6 +41,7 @@ import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import {
     getCommonBestMonths,
     getCountrySeasonByName,
@@ -115,19 +116,19 @@ const VIBE_CARDS: SelectionCardConfig[] = [
 // Popular picks for step 1
 interface PopularPick {
     name: string;
-    flag: string;
+    flagCode: string;
     bestMonths: string;
 }
 
 const POPULAR_PICKS: PopularPick[] = [
-    { name: 'Japan', flag: '🇯🇵', bestMonths: 'Mar-May, Sep-Nov' },
-    { name: 'Italy', flag: '🇮🇹', bestMonths: 'Apr-Jun, Sep-Oct' },
-    { name: 'Thailand', flag: '🇹🇭', bestMonths: 'Nov-Feb' },
-    { name: 'Portugal', flag: '🇵🇹', bestMonths: 'Apr-Oct' },
-    { name: 'Greece', flag: '🇬🇷', bestMonths: 'May-Oct' },
-    { name: 'New Zealand', flag: '🇳🇿', bestMonths: 'Dec-Mar' },
-    { name: 'Morocco', flag: '🇲🇦', bestMonths: 'Mar-May, Sep-Nov' },
-    { name: 'South Korea', flag: '🇰🇷', bestMonths: 'Apr-Jun, Sep-Nov' },
+    { name: 'Japan', flagCode: 'JP', bestMonths: 'Mar-May, Sep-Nov' },
+    { name: 'Italy', flagCode: 'IT', bestMonths: 'Apr-Jun, Sep-Oct' },
+    { name: 'Thailand', flagCode: 'TH', bestMonths: 'Nov-Feb' },
+    { name: 'Portugal', flagCode: 'PT', bestMonths: 'Apr-Oct' },
+    { name: 'Greece', flagCode: 'GR', bestMonths: 'May-Oct' },
+    { name: 'New Zealand', flagCode: 'NZ', bestMonths: 'Dec-Mar' },
+    { name: 'Morocco', flagCode: 'MA', bestMonths: 'Mar-May, Sep-Nov' },
+    { name: 'South Korea', flagCode: 'KR', bestMonths: 'Apr-Jun, Sep-Nov' },
 ];
 
 const BUDGET_OPTIONS = ['Budget', 'Medium', 'Premium', 'Luxury'] as const;
@@ -512,7 +513,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                             onClick={() => removeCountry(c)}
                                             className="flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 transition-colors"
                                         >
-                                            <span>{dest?.flag || season?.flag || fb?.flag || '🌍'}</span>
+                                            <FlagIcon value={dest?.flag || season?.flag || fb?.flag || '🌍'} />
                                             <span>{c}</span>
                                             <span className="text-accent-400">×</span>
                                         </button>
@@ -538,7 +539,7 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
                                                     : 'border-gray-200 bg-white hover:border-accent-300 hover:bg-accent-50/40',
                                             ].join(' ')}
                                         >
-                                            <span className="text-3xl mb-1">{pick.flag}</span>
+                                            <FlagIcon code={pick.flagCode} size="2xl" className="mb-1" />
                                             <span className="text-sm font-semibold text-gray-900">{pick.name}</span>
                                             <span className="text-[10px] text-gray-500 mt-0.5">{pick.bestMonths}</span>
                                             {isSelected && (
@@ -913,8 +914,9 @@ export const CreateTripV3Page: React.FC<CreateTripV3PageProps> = ({ onTripGenera
 
                         {/* Quick examples */}
                         <div className="mt-5 flex flex-wrap justify-center gap-2 text-xs text-gray-500">
-                            <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}>
-                                🇹🇭 Thailand (Test Plan)
+                            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}>
+                                <FlagIcon code="TH" />
+                                Thailand (Test Plan)
                             </button>
                         </div>
                     </div>

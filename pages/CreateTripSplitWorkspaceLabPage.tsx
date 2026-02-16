@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import { useDbSync } from '../hooks/useDbSync';
 import { AppLanguage } from '../types';
 import { buildCreateTripUrl, getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../utils';
@@ -188,7 +189,7 @@ export const CreateTripSplitWorkspaceLabPage: React.FC<CreateTripSplitWorkspaceL
                                                         key={destination}
                                                         className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-sm"
                                                     >
-                                                        {option?.flag || '🌍'} {destination}
+                                                        <FlagIcon value={option?.flag || '🌍'} /> {destination}
                                                         <button
                                                             type="button"
                                                             onClick={() => removeDestination(destination)}
@@ -230,7 +231,10 @@ export const CreateTripSplitWorkspaceLabPage: React.FC<CreateTripSplitWorkspaceL
                                                         }}
                                                         className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left text-sm text-slate-200 transition-colors hover:border-cyan-300/60"
                                                     >
-                                                        <span>{option.flag} {option.name}</span>
+                                                        <span className="inline-flex items-center gap-1.5">
+                                                            <FlagIcon value={option.flag} />
+                                                            {option.name}
+                                                        </span>
                                                         <Plus size={14} className="text-cyan-200" />
                                                     </button>
                                                 ))}
@@ -433,7 +437,10 @@ export const CreateTripSplitWorkspaceLabPage: React.FC<CreateTripSplitWorkspaceL
                                         return (
                                             <div key={destination} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                                                 <div className="flex items-center justify-between text-sm">
-                                                    <span className="font-medium text-slate-100">{option?.flag || '🌍'} {destination}</span>
+                                                    <span className="font-medium text-slate-100 inline-flex items-center gap-1.5">
+                                                        <FlagIcon value={option?.flag || '🌍'} />
+                                                        {destination}
+                                                    </span>
                                                     <span className="text-cyan-200">{nights} night{nights === 1 ? '' : 's'}</span>
                                                 </div>
                                                 <div className="mt-1 text-xs text-slate-400">Stop {index + 1} of {destinations.length}</div>

@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ProgressiveImage } from '../components/ProgressiveImage';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import { getBlogPostBySlugWithFallback, getPublishedBlogPostsForLocales } from '../services/blogService';
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
@@ -220,7 +221,7 @@ export const BlogPostPage: React.FC = () => {
                 {showEnglishContentNotice && (
                     <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
                         <span className="inline-flex items-center gap-1.5">
-                            <span aria-hidden="true">🇬🇧</span>
+                            <FlagIcon code="GB" size="sm" />
                             {t('index.englishArticleNotice')}
                         </span>
                     </div>

@@ -44,6 +44,7 @@ import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { HeroWebGLBackground } from '../components/HeroWebGLBackground';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import {
     getCommonBestMonths,
     getCountrySeasonByName,
@@ -744,24 +745,27 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                             <button
                                 type="button"
-                                className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                 onClick={() => fillExample('Italy', 14, 'Rome, Florence, Venice. Art & Food.')}
                             >
-                                🇮🇹 2 Weeks in Italy
+                                <FlagIcon code="IT" />
+                                2 Weeks in Italy
                             </button>
                             <button
                                 type="button"
-                                className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                 onClick={() => fillExample('Japan', 7, 'Anime, Tech, and Sushi.')}
                             >
-                                🇯🇵 7 Days in Japan
+                                <FlagIcon code="JP" />
+                                7 Days in Japan
                             </button>
                             <button
                                 type="button"
-                                className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                 onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}
                             >
-                                🇹🇭 Thailand (Test Plan)
+                                <FlagIcon code="TH" />
+                                Thailand (Test Plan)
                             </button>
                         </div>
                     </div>

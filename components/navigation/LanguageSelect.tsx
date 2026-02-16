@@ -2,6 +2,7 @@ import React from 'react';
 import { AppLanguage } from '../../types';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../../config/locales';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/select';
+import { FlagIcon } from '../flags/FlagIcon';
 
 interface LanguageSelectProps {
     value: AppLanguage;
@@ -25,7 +26,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
         >
             <SelectTrigger aria-label={ariaLabel} className={triggerClassName}>
                 <span className="inline-flex items-center gap-2 truncate">
-                    <span aria-hidden="true">{LOCALE_FLAGS[value]}</span>
+                    <FlagIcon code={LOCALE_FLAGS[value]} size="sm" />
                     <span>{LOCALE_LABELS[value]}</span>
                 </span>
             </SelectTrigger>
@@ -36,9 +37,9 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
                 className="rounded-xl border-slate-200 bg-white p-1 shadow-xl"
             >
                 {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                    <SelectItem key={locale} value={locale} className="rounded-lg py-2.5">
+                    <SelectItem key={locale} value={locale} indicatorPosition="right" className="rounded-lg py-2.5">
                         <span className="inline-flex items-center gap-2 font-medium">
-                            <span aria-hidden="true">{LOCALE_FLAGS[locale]}</span>
+                            <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" />
                             <span>{LOCALE_LABELS[locale]}</span>
                         </span>
                     </SelectItem>

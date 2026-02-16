@@ -5,6 +5,7 @@ import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest }
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPostsForLocales } from '../services/blogService';
 import { ProgressiveImage } from '../components/ProgressiveImage';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import type { BlogPost } from '../services/blogService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
@@ -65,7 +66,7 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
                 </h3>
                 {showEnglishBadge && (
                     <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                        <span aria-hidden="true">🇬🇧</span>
+                        <FlagIcon code="GB" size="sm" />
                         {t('index.englishArticleNotice')}
                     </p>
                 )}

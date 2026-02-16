@@ -6,6 +6,7 @@ import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance,
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
+import { FlagIcon } from './flags/FlagIcon';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -39,7 +40,6 @@ interface TooltipPosition {
 interface CountryMatch {
   code: string;
   name: string;
-  flag: string;
 }
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
@@ -279,12 +279,12 @@ const getCountryFromToken = (token: string): CountryMatch | null => {
   const alias = COUNTRY_ALIASES.get(normalized) || normalized;
   const fromName = COUNTRY_BY_NAME.get(alias);
   if (fromName) {
-    return { code: fromName.code, name: fromName.name, flag: fromName.flag };
+    return { code: fromName.code, name: fromName.name };
   }
 
   const fromCode = COUNTRY_BY_CODE.get(alias);
   if (fromCode) {
-    return { code: fromCode.code, name: fromCode.name, flag: fromCode.flag };
+    return { code: fromCode.code, name: fromCode.name };
   }
 
   return null;
@@ -311,18 +311,18 @@ const parseCountryFromText = (item: ITimelineItem): CountryMatch | null => {
 const getCountryFromStoredFields = (item: ITimelineItem): CountryMatch | null => {
   if (item.countryCode) {
     const byCode = COUNTRY_BY_CODE.get(item.countryCode.toLowerCase());
-    if (byCode) return { code: byCode.code, name: byCode.name, flag: byCode.flag };
+    if (byCode) return { code: byCode.code, name: byCode.name };
   }
   if (item.countryName) {
     const byName = COUNTRY_BY_NAME.get(normalizeCountryToken(item.countryName));
-    if (byName) return { code: byName.code, name: byName.name, flag: byName.flag };
+    if (byName) return { code: byName.code, name: byName.name };
   }
   return null;
 };
 
-const getTripFlags = (trip: ITrip): string[] => {
+const getTripFlagCodes = (trip: ITrip): string[] => {
   const seen = new Set<string>();
-  const flags: string[] = [];
+  const codes: string[] = [];
 
   getTripCityItems(trip).forEach(item => {
     const parsed = parseCountryFromText(item);
@@ -331,10 +331,10 @@ const getTripFlags = (trip: ITrip): string[] => {
     if (!match) return;
     if (seen.has(match.code)) return;
     seen.add(match.code);
-    flags.push(match.flag);
+    codes.push(match.code);
   });
 
-  return flags.length > 0 ? flags : ['🌍'];
+  return codes;
 };
 
 const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
@@ -580,9 +580,9 @@ const TripRow: React.FC<TripRowProps> = ({
   secondaryInfo,
 }) => {
   const rowRef = React.useRef<HTMLDivElement | null>(null);
-  const flags = React.useMemo(() => getTripFlags(trip), [trip]);
-  const displayFlags = flags.slice(0, 3).join(' ');
-  const extraFlags = Math.max(0, flags.length - 3);
+  const flagCodes = React.useMemo(() => getTripFlagCodes(trip), [trip]);
+  const displayFlagCodes = flagCodes.slice(0, 3);
+  const extraFlags = Math.max(0, flagCodes.length - 3);
   const showFavoriteByDefault = Boolean(trip.isFavorite);
   const lifecycleStatus = getTripLifecycleStatus(trip);
 
@@ -607,7 +607,13 @@ const TripRow: React.FC<TripRowProps> = ({
         className="min-w-0 flex-1 text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm leading-none">{displayFlags}</span>
+          <span className="inline-flex items-center gap-1.5">
+            {displayFlagCodes.length > 0 ? (
+              displayFlagCodes.map((code) => <FlagIcon key={`${trip.id}-${code}`} code={code} size="sm" />)
+            ) : (
+              <FlagIcon value="🌍" size="sm" />
+            )}
+          </span>
           {extraFlags > 0 && <span className="text-[10px] text-gray-300">+{extraFlags}</span>}
           <span className={`truncate text-sm font-medium ${trip.id === currentTripId ? 'text-accent-700' : 'text-gray-700'}`}>
             {trip.title}
@@ -928,7 +934,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     const cached = countryCacheRef.current[key];
     if (cached) {
       const byCode = COUNTRY_BY_CODE.get(cached.countryCode.toLowerCase());
-      if (byCode) return { code: byCode.code, name: byCode.name, flag: byCode.flag };
+      if (byCode) return { code: byCode.code, name: byCode.name };
       return null;
     }
 
@@ -961,7 +967,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       };
       persistCountryCache();
 
-      return { code: byCode.code, name: byCode.name, flag: byCode.flag };
+      return { code: byCode.code, name: byCode.name };
     } catch {
       return null;
     }
