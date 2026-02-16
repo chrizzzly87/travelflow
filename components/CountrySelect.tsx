@@ -5,6 +5,7 @@ import { MapPin, Search, Plus } from 'lucide-react';
 import { CountryTag } from './CountryTag';
 import { IdealTravelTimeline } from './IdealTravelTimeline';
 import { getCountrySeasonByName } from '../data/countryTravelData';
+import { FlagIcon } from './flags/FlagIcon';
 
 interface CountrySelectProps {
     value: string;
@@ -155,7 +156,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                             onClick={() => addCountry(country.name)}
                         >
                             <div className="flex items-start gap-3 min-w-0">
-                                <span className="text-2xl">{country.flag}</span>
+                                <FlagIcon value={country.flag} size="xl" />
                                 <div className="min-w-0">
                                     <div className="font-medium text-gray-700 truncate">{country.name}</div>
                                     {country.kind === 'island' && country.parentCountryName && (

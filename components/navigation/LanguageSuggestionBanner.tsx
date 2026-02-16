@@ -3,11 +3,12 @@ import { X, Translate } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { extractLocaleFromPath, getNamespacesForMarketingPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
-import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../config/locales';
+import { applyDocumentLocale, DEFAULT_LOCALE, LOCALE_FLAGS, SUPPORTED_LOCALES } from '../../config/locales';
 import { APP_NAME } from '../../config/appGlobals';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
+import { FlagIcon } from '../flags/FlagIcon';
 
 const SESSION_DISMISS_KEY = 'tf_locale_suggestion_dismissed_session';
 const SWITCH_ACK_KEY = 'tf_locale_suggestion_switched';
@@ -16,49 +17,49 @@ const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; 
     en: {
         message: 'This page is also available in English.',
         action: `Try ${APP_NAME} in English`,
-        actionShort: '🇬🇧 English',
+        actionShort: 'English',
         dismiss: 'Dismiss language suggestion',
     },
     es: {
         message: 'Esta página también está disponible en español.',
         action: `Probar ${APP_NAME} en español`,
-        actionShort: '🇪🇸 Español',
+        actionShort: 'Español',
         dismiss: 'Cerrar sugerencia de idioma',
     },
     de: {
         message: 'Diese Seite ist auch auf Deutsch verfügbar.',
         action: `${APP_NAME} auf Deutsch testen`,
-        actionShort: '🇩🇪 Deutsch',
+        actionShort: 'Deutsch',
         dismiss: 'Sprachhinweis schließen',
     },
     fr: {
         message: 'Cette page est également disponible en français.',
         action: `Essayer ${APP_NAME} en français`,
-        actionShort: '🇫🇷 Français',
+        actionShort: 'Français',
         dismiss: 'Fermer la suggestion de langue',
     },
     ru: {
         message: 'Эта страница также доступна на русском языке.',
         action: `Попробовать ${APP_NAME} на русском`,
-        actionShort: '🇷🇺 Русский',
+        actionShort: 'Русский',
         dismiss: 'Закрыть подсказку языка',
     },
     pt: {
         message: 'Esta página também está disponível em português.',
         action: `Experimentar ${APP_NAME} em português`,
-        actionShort: '🇵🇹 Português',
+        actionShort: 'Português',
         dismiss: 'Fechar sugestão de idioma',
     },
     it: {
         message: 'Questa pagina è disponibile anche in italiano.',
         action: `Prova ${APP_NAME} in italiano`,
-        actionShort: '🇮🇹 Italiano',
+        actionShort: 'Italiano',
         dismiss: 'Chiudi suggerimento lingua',
     },
     pl: {
         message: 'Ta strona jest również dostępna po polsku.',
         action: `Wypróbuj ${APP_NAME} po polsku`,
-        actionShort: '🇵🇱 Polski',
+        actionShort: 'Polski',
         dismiss: 'Zamknij podpowiedź języka',
     },
 };
@@ -182,7 +183,10 @@ export const LanguageSuggestionBanner: React.FC = () => {
                         source: 'language_banner',
                     })}
                 >
-                    <span className="sm:hidden">{copy.actionShort}</span>
+                    <span className="inline-flex items-center gap-1 sm:hidden">
+                        <FlagIcon code={LOCALE_FLAGS[suggestedLocale]} size="sm" />
+                        {copy.actionShort}
+                    </span>
                     <span className="hidden sm:inline">{copy.action}</span>
                 </button>
                 <button

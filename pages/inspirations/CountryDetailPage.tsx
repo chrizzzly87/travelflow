@@ -3,6 +3,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Globe, ArrowRight } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
+import { FlagIcon } from '../../components/flags/FlagIcon';
 import { countryGroups } from '../../data/inspirationsData';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
@@ -63,7 +64,10 @@ export const CountryDetailPage: React.FC = () => {
                     className="mt-5 text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
                     style={{ fontFamily: "var(--tf-font-heading)" }}
                 >
-                    {country.flag} {t('inspirations.subpages.country.title', { country: country.country })}
+                    <span className="inline-flex items-center gap-2">
+                        <FlagIcon value={country.flag} size="2xl" />
+                        {t('inspirations.subpages.country.title', { country: country.country })}
+                    </span>
                 </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
                     {t('inspirations.subpages.country.description', { country: country.country })}

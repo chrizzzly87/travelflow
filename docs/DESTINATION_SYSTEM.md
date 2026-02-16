@@ -24,6 +24,15 @@ All lookup maps live in `utils.ts` and are built once at module load time.
 
 ---
 
+## Flag Rendering Standard
+
+- Do not render emoji flags directly in UI components.
+- Use `components/flags/FlagIcon.tsx` for any flag display.
+- `FlagIcon` is backed by `flagpack` and accepts ISO codes or legacy emoji values.
+- For new work, prefer ISO flag codes (`US`, `DE`, `GB-SCT`) over hardcoded emoji strings.
+
+---
+
 ## Data Sources
 
 ### 1. `COUNTRIES` array — `utils.ts:782`
@@ -31,7 +40,7 @@ All lookup maps live in `utils.ts` and are built once at module load time.
 Static array of ~195 sovereign countries. Each entry:
 
 ```ts
-{ name: "Japan", code: "JP", flag: "🇯🇵" }
+{ name: "Japan", code: "JP", flag: "JP" } // or legacy emoji, rendered via FlagIcon
 ```
 
 - `code` = **ISO 3166-1 alpha-2** (uppercase, 2 chars)

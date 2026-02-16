@@ -41,6 +41,7 @@ import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 import { Switch } from '../components/ui/switch';
@@ -1492,7 +1493,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div className="min-w-0">
                                                                 <div className="truncate text-sm font-medium text-slate-800">
-                                                                    {option.flag} {optionLabel}
+                                                                    <span className="inline-flex items-center gap-1.5">
+                                                                        <FlagIcon value={option.flag} />
+                                                                        {optionLabel}
+                                                                    </span>
                                                                 </div>
                                                                 {islandMeta && (
                                                                     <div className="mt-0.5 text-xs text-slate-500">
@@ -1544,7 +1548,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                                 <DotsSixVertical size={12} weight="duotone" />
                                                             </span>
                                                         )}
-                                                        <span>{option?.flag || '🌍'}</span>
+                                                        <FlagIcon value={option?.flag || '🌍'} />
                                                         <span>{destinationLabel}</span>
                                                         <button
                                                             type="button"
@@ -2027,7 +2031,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                             ref={(node) => setSnapshotNodeRef(index, node)}
                                                             className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-[#0f173b] text-sm shadow-lg shadow-black/20"
                                                         >
-                                                            {option?.flag || '🌍'}
+                                                            <FlagIcon value={option?.flag || '🌍'} size="xs" />
                                                         </div>
                                                         <div className="min-w-0 pt-0.5">
                                                             <div className="text-sm font-semibold text-indigo-50">{getLocalizedDestinationLabel(destination)}</div>

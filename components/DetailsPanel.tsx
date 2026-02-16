@@ -13,6 +13,7 @@ import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass }
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
+import { FlagIcon } from './flags/FlagIcon';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -80,16 +81,6 @@ const appendNotes = (existing: string, addition: string): string => {
     if (!trimmedAddition) return existing;
     if (!trimmedExisting) return trimmedAddition;
     return `${existing.trimEnd()}\n\n${trimmedAddition}`;
-};
-
-const toFlagEmoji = (countryCode?: string): string | null => {
-    if (!countryCode) return null;
-    const upper = countryCode.trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(upper)) return null;
-    return upper
-        .split('')
-        .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
-        .join('');
 };
 
 const getCountryFromText = (text?: string): { countryName?: string; countryCode?: string } => {
@@ -965,7 +956,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       displayItem.countryCode ||
       getCountryFromText(displayedCityLocation).countryCode
   );
-  const countryFlagForDisplay = toFlagEmoji(countryCodeForDisplay);
   
   const effectiveColor = isActivity ? getActivityColorByTypes(displayItem.activityType) : displayItem.color;
   const usesClassColor = (isActivity || isTransport) ? true : isTailwindCityColorValue(effectiveColor);
@@ -1214,8 +1204,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                         <MapPin size={18} className="mr-3 text-accent-500 mt-0.5" />
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                {countryFlagForDisplay && (
-                                    <span className="text-base leading-none" aria-hidden="true">{countryFlagForDisplay}</span>
+                                {countryCodeForDisplay && (
+                                    <FlagIcon code={countryCodeForDisplay} size="sm" fallback={null} />
                                 )}
                                 <span className="font-medium">{isCity ? (cityDisplayName || 'No city selected') : displayItem.location}</span>
                                 {isCity && (
