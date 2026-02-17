@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-12-homepage-example-carousel-mobile-and-transition-lanes
-version: v0.53.0
+version: v0.44.0
 title: "Homepage example carousel mobile fix and transition lanes"
 date: 2026-02-12
-published_at: 2026-02-12T05:41:01Z
-status: draft
+published_at: 2026-02-17T20:02:40Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Stabilized the homepage example carousel on mobile and upgraded example cards with timeline lane visuals plus smoother card-to-trip transitions."

@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-13-blog-locale-path-retention
-version: v0.40.0
+version: v0.46.0
 title: "Blog locale path retention for English fallback articles"
 date: 2026-02-13
-published_at: 2026-02-13T15:42:10Z
-status: draft
+published_at: 2026-02-17T20:03:40Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Non-English blog browsing now keeps locale URL context when opening English-only posts, with clearer article-language messaging."
