@@ -57,6 +57,38 @@ const hashEmail = (email?: string | null): string | null => {
     return simpleHash(normalized);
 };
 
+const clearSupabaseAuthStorage = (): void => {
+    if (typeof window === 'undefined') return;
+    const shouldClear = (key: string): boolean => (
+        key.startsWith('sb-') &&
+        (
+            key.includes('auth-token') ||
+            key.includes('refresh-token') ||
+            key.includes('code-verifier')
+        )
+    );
+    try {
+        const localKeys = Object.keys(window.localStorage);
+        for (const key of localKeys) {
+            if (shouldClear(key)) {
+                window.localStorage.removeItem(key);
+            }
+        }
+    } catch {
+        // best effort
+    }
+    try {
+        const sessionKeys = Object.keys(window.sessionStorage);
+        for (const key of sessionKeys) {
+            if (shouldClear(key)) {
+                window.sessionStorage.removeItem(key);
+            }
+        }
+    } catch {
+        // best effort
+    }
+};
+
 const buildAuthFlow = (): AuthFlowContext => ({
     flowId: buildFlowId(),
     attemptId: buildFlowId(),
@@ -88,6 +120,7 @@ const hasNonAnonymousIdentity = (session: Session | null): boolean => {
 };
 
 const getAnonymousFlag = (session: Session | null): boolean => {
+    if (session?.user?.email || session?.user?.phone) return false;
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
     if (hasNonAnonymousIdentity(session)) return false;
     return Boolean(metadata?.is_anonymous === true || getMetadataProviders(session).includes('anonymous'));
@@ -307,55 +340,16 @@ export const signInWithOAuth = async (
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'oauth_start', result: 'start', provider });
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const isAnonymousSession = getAnonymousFlag(sessionData?.session ?? null);
-    const authAny = supabase.auth as unknown as {
-        linkIdentity?: (params: { provider: OAuthProviderId; options?: { redirectTo?: string } }) => Promise<{
-            data: unknown;
-            error: { message?: string; code?: string; status?: number } | null;
-        }>;
-    };
-
     const startStandardOAuth = () => supabase.auth.signInWithOAuth({
         provider,
         options: { redirectTo: options?.redirectTo },
     });
 
-    let response:
-        | Awaited<ReturnType<typeof startStandardOAuth>>
-        | Awaited<ReturnType<NonNullable<typeof authAny.linkIdentity>>>;
-
-    if (isAnonymousSession && authAny.linkIdentity) {
-        const linkResponse = await authAny.linkIdentity({
-            provider,
-            options: { redirectTo: options?.redirectTo },
-        });
-
-        const error = linkResponse.error;
-        const normalizedCode = normalizeErrorCode(error).toLowerCase();
-        const normalizedMessage = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
-        const shouldRetryWithStandardOAuth = Boolean(
-            error && (
-                error.status === 401 ||
-                error.status === 403 ||
-                normalizedCode.includes('session') ||
-                normalizedCode.includes('jwt') ||
-                normalizedCode.includes('refresh') ||
-                normalizedMessage.includes('session') ||
-                normalizedMessage.includes('jwt') ||
-                normalizedMessage.includes('refresh')
-            )
-        );
-
-        if (shouldRetryWithStandardOAuth) {
-            await supabase.auth.signOut({ scope: 'local' });
-            response = await startStandardOAuth();
-        } else {
-            response = linkResponse;
-        }
-    } else {
-        response = await startStandardOAuth();
-    }
+    // NOTE: OAuth identity-linking from anonymous sessions has produced
+    // stale-session edge cases in this app (session_not_found after
+    // logout -> immediate re-login). Prefer a clean OAuth sign-in flow
+    // for reliability; queued work is resumed via request-claim flow.
+    const response = await startStandardOAuth();
 
     if (response.error) {
         await logAuthFlow({
@@ -375,6 +369,34 @@ export const signOut = async () => {
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'logout', result: 'start', provider: 'supabase' });
     const response = await supabase.auth.signOut({ scope: 'local' });
+
+    const normalizedErrorCode = normalizeErrorCode(response.error).toLowerCase();
+    const normalizedMessage = typeof response.error?.message === 'string'
+        ? response.error.message.toLowerCase()
+        : '';
+    const isSessionNotFound = Boolean(
+        response.error && (
+            response.error.status === 403 ||
+            normalizedErrorCode.includes('session_not_found') ||
+            normalizedMessage.includes('session from session_id claim in jwt does not exist')
+        )
+    );
+
+    // Supabase can return 403 session_not_found when local client state still
+    // has a stale session id. Clear local auth storage so the app can continue
+    // with a clean state instead of staying stuck until hard refresh.
+    if (isSessionNotFound) {
+        clearSupabaseAuthStorage();
+        await logAuthFlow({
+            ...flow,
+            step: 'logout',
+            result: 'success',
+            provider: 'supabase',
+            metadata: { recoveredFromSessionNotFound: true },
+        });
+        return { error: null };
+    }
+
     if (response.error) {
         await logAuthFlow({
             ...flow,
@@ -385,6 +407,8 @@ export const signOut = async () => {
         });
         return response;
     }
+
+    clearSupabaseAuthStorage();
     await logAuthFlow({ ...flow, step: 'logout', result: 'success', provider: 'supabase' });
     return response;
 };
