@@ -78,6 +78,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let cancelled = false;
 
+        const isAnonymousSession = (value: Session | null): boolean => {
+            const metadata = value?.user?.app_metadata as Record<string, unknown> | undefined;
+            return Boolean(metadata?.is_anonymous === true);
+        };
+
         const stripAuthHash = (): void => {
             if (typeof window === 'undefined') return;
             if (!window.location.hash.includes('access_token=')) return;
@@ -113,9 +118,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (cancelled) return;
             let activeSession = sessionData?.session ?? null;
 
-            // Fallback: if detectSessionInUrl didn't establish a session but
-            // we captured tokens from the hash, set the session explicitly.
-            if (!activeSession && savedHashTokens) {
+            // If callback hash tokens exist, prefer them over an anonymous
+            // session. Otherwise OAuth callback can be lost while the app
+            // remains on the pre-existing anonymous session.
+            const shouldApplyHashSession = Boolean(
+                savedHashTokens && (!activeSession || isAnonymousSession(activeSession))
+            );
+
+            if (shouldApplyHashSession && savedHashTokens) {
                 const { data, error } = await supabase.auth.setSession({
                     access_token: savedHashTokens.accessToken,
                     refresh_token: savedHashTokens.refreshToken,
