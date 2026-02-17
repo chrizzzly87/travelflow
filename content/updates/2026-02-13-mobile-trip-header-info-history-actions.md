@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-13-mobile-trip-header-info-history-actions
-version: v0.47.0
+version: v0.43.0
 title: "Mobile trip header action cleanup"
 date: 2026-02-13
-published_at: 2026-02-17T20:04:10Z
+published_at: 2026-02-13T19:12:03Z
 status: published
 notify_in_app: false
 in_app_hours: 24

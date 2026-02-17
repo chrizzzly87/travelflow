@@ -3,7 +3,7 @@ id: rel-2026-02-10-on-page-debug-toolbar
 version: v0.35.0
 title: "On-page debugger toolbar"
 date: 2026-02-11
-published_at: 2026-02-11T11:29:38Z
+published_at: 2026-02-11T05:28:17Z
 status: published
 notify_in_app: false
 in_app_hours: 24

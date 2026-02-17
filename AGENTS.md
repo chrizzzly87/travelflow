@@ -18,10 +18,11 @@ This repository uses markdown release files as the source of truth for product u
 - Update/finalize that single release note shortly before opening the PR, once final scope is clear.
 - Use `[x]` for website-visible user-facing items.
 - Use `[ ]` for hidden internal items.
+- Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).
 - Prefix every change line message with an emoji as defined in `docs/UPDATE_FORMAT.md`.
 - Bump the release `version` whenever a new release is published.
 - Keep versions strictly increasing; never reuse prior versions.
-- Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
+- Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 - Keep entries concise, prioritized, and accurate.
 - For new UI components and layout changes, explicitly check whether direction-aware styling is needed.
 - Prefer CSS logical properties (for example `margin-inline`, `padding-inline`, `inset-inline`) over left/right-specific properties when it makes sense.

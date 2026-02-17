@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-13-auth-roles-pricing-guest-queue
-version: v0.39.0
+version: v0.48.0
 title: "Auth, Tiers, and Guest Trip Queue Foundation"
 date: 2026-02-13
-published_at: 2026-02-13T14:06:09Z
+published_at: 2026-02-17T19:02:19Z
 status: published
 notify_in_app: true
 in_app_hours: 24
@@ -11,26 +11,15 @@ summary: "Established production authentication, tiered access, and guest-to-acc
 ---
 
 ## Changes
-- [x] [New feature] 🔐 Added production login and registration with email/password plus Google, Apple, and Facebook sign-in.
-- [x] [New feature] 🎒 Introduced Backpacker, Explorer, and Globetrotter tiers with entitlement-driven limits in app and database.
-- [x] [Improved] 💳 Updated pricing page to render tier limits from the shared plan catalog without runtime database calls.
-- [x] [New feature] 🧪 Added protected admin routes and admin navigation for dashboard, AI benchmark, and access control.
-- [x] [New feature] ⏳ Added guest create-trip queue handoff: fake loading, delayed auth modal, then post-login generation resume.
-- [x] [Improved] 🪟 Added login modal interception for normal login taps so users can authenticate in-context and continue on the same page.
-- [x] [Improved] 🎨 Refined auth UI with branded social provider icons and stronger visual hierarchy for sign-in actions.
-- [x] [Improved] 🧭 Added a dedicated admin navigation shell with direct links to Dashboard, AI Benchmark, Access Control, and a quick "Back to Platform" action.
-- [x] [Improved] 🔁 Hardened OAuth return flow so post-login resumes reliably redirect users to the page where authentication started.
-- [x] [Improved] 🛂 Added login/logout controls in trip and example views so auth actions are accessible directly inside the planner workspace.
-- [x] [Improved] 🏷️ Added a lightweight "Last used" social provider badge on both login page and login modal using local storage preferences.
-- [x] [Improved] ✅ Updated "Last used" provider behavior to persist only after a successful social login callback (not on click or failed attempts).
-- [x] [Improved] 🧭 Restyled the admin header to match the main site navigation language while keeping admin-only links and a top-right back-to-platform action.
-- [x] [Improved] 🔑 Added forgot-password and set-password-by-email actions on login page and auth modal, so social-login users can reliably enable password sign-in.
-- [x] [New feature] 🛠️ Added a dedicated password reset route (`/auth/reset-password`) with secure validation and post-success redirect to the intended app page.
-- [x] [Fixed] 🧯 Added a defensive login-modal fallback so example/trip flows no longer crash when context is missing and still preserve redirect intent to `/login`.
-- [x] [Fixed] 🧱 Added a second safety guard in `useLoginModal` to prevent stale-chunk context throws from breaking render during logout/navigation transitions.
-- [ ] [Internal] 🗃️ Added Supabase RPC and schema extensions for roles, tier overrides, queued generation requests, and auth flow logs.
-- [ ] [Internal] 📈 Added auth observability with structured analytics events and local redacted `tf_auth_trace_v1` debugging buffer.
-- [ ] [Internal] 🧭 Extended auth observability for password recovery (`password_reset_request`, `password_update`) with flow-level analytics and server trace logging.
-- [ ] [Internal] 🛡️ Migrated AI benchmark edge auth to admin bearer-token verification with optional emergency key fallback flag.
-- [ ] [Internal] 🌐 Added i18n guardrails and validation for ICU placeholder syntax (`{name}`), locale parity checks, and namespace placement guidance for LLM agents.
-- [ ] [Internal] 🧭 Expanded Supabase OAuth setup documentation with field-level dashboard mapping, direct auth links, and `travelflowapp.netlify.app` + `localhost:5173` examples.
+- [x] [New feature] 🔐 Launched production account authentication with email/password and major social sign-in providers.
+- [x] [New feature] 🎒 Introduced Backpacker, Explorer, and Globetrotter plans with account-based trip limits.
+- [x] [Improved] 💳 Updated pricing so plan limits are shown clearly and consistently.
+- [x] [New feature] ⏳ Guest create-trip requests now resume after sign-in instead of being lost.
+- [x] [Improved] 🛂 Added convenient sign-in and sign-out controls directly in planner and example trip views.
+- [x] [Improved] 🔑 Added password recovery and password-setup flows so users can regain account access more reliably.
+- [x] [Fixed] 🧯 Improved sign-in flow resilience so users return to the right place after authentication interruptions.
+- [ ] [Internal] 🧪 Added protected admin access sections and navigation structure for internal role and benchmark workflows.
+- [ ] [Internal] 📈 Added structured auth observability and recovery event tracing for login and password flows.
+- [ ] [Internal] 🛡️ Hardened admin benchmark authorization and fallback handling for edge runtime checks.
+- [ ] [Internal] 🌐 Added i18n guardrails and validation for ICU placeholder syntax, locale parity checks, and namespace placement guidance.
+- [ ] [Internal] 🧭 Expanded Supabase auth setup documentation with dashboard mappings and local/production callback examples.

@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-11-og-playground-stability-and-controls
-version: v0.43.0
+version: v0.36.0
 title: "Image delivery optimization and OG playground stability"
 date: 2026-02-11
-published_at: 2026-02-17T20:02:10Z
+published_at: 2026-02-11T10:28:13Z
 status: published
 notify_in_app: false
 in_app_hours: 24
@@ -11,8 +11,8 @@ summary: "Faster blog and inspiration image delivery plus internal OG playground
 ---
 
 ## Changes
-- [x] [Improved] ⚡ Blog cards and post headers now use build-time optimized responsive images (`480/768/1024/1536`) to reduce payload size and improve load speed.
-- [x] [Improved] 🖼️ Inspiration cards now use the same build-time responsive image pipeline (`480/768/1024/1536`) for faster loading on mobile and desktop.
+- [x] [Improved] ⚡ Blog cards and post headers now load faster with lighter responsive image delivery.
+- [x] [Improved] 🖼️ Inspiration cards now use the same optimized image delivery for faster loading on mobile and desktop.
 - [ ] [Internal] 🧠 Image build scripts are now incremental by default and skip generation when source files already exist, keeping repeated deploy builds fast.
 - [ ] [Internal] 📝 Added a full npm script reference to the README so all `npm run` commands are documented in one place.
 - [ ] [Internal] 🧯 Fixed a client-side initialization crash in `/api/og/playground` that blocked preview image rendering and sample URL output.
