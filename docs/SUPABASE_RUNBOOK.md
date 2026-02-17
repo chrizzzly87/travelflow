@@ -104,6 +104,22 @@ npm run dev
 
 Then hard refresh once after env changes.
 
+### 6. Auth redirect allowlist (required for password recovery)
+
+In Supabase Dashboard, configure:
+
+1. `Authentication -> URL Configuration -> Site URL`:
+   - `https://travelflowapp.netlify.app`
+2. `Authentication -> URL Configuration -> Redirect URLs`:
+   - `https://travelflowapp.netlify.app/login`
+   - `https://travelflowapp.netlify.app/auth/reset-password`
+   - `http://localhost:5173/login`
+   - `http://localhost:5173/auth/reset-password`
+
+Why this matters:
+- Forgot-password / set-password emails redirect users to `/auth/reset-password`.
+- If this path is missing in Redirect URLs, recovery links fail or land on an auth error page.
+
 ## Data Model (Current)
 
 Core tables:

@@ -3,6 +3,7 @@ import { stripLocalePrefix } from '../config/routes';
 const AUTH_RETURN_PATH_STORAGE_KEY = 'tf_auth_return_path_v1';
 const AUTH_PENDING_REDIRECT_STORAGE_KEY = 'tf_auth_pending_redirect_v1';
 const AUTH_PENDING_REDIRECT_TTL_MS = 1000 * 60 * 30;
+const AUTH_PATHNAMES = new Set(['/login', '/auth/reset-password']);
 
 const normalizePathOnly = (path: string): string => {
     const [pathname = '/'] = path.split(/[?#]/);
@@ -19,7 +20,7 @@ export const buildPathFromLocationParts = (parts: {
 };
 
 export const isLoginPathname = (pathname: string): boolean => {
-    return stripLocalePrefix(pathname || '/') === '/login';
+    return AUTH_PATHNAMES.has(stripLocalePrefix(pathname || '/'));
 };
 
 export const isSafeAuthReturnPath = (path: string | null | undefined): path is string => {
@@ -104,4 +105,17 @@ export const resolvePreferredNextPath = (
         if (isSafeAuthReturnPath(candidate)) return candidate;
     }
     return '/create-trip';
+};
+
+export const buildPasswordResetRedirectUrl = (nextPath?: string | null): string | undefined => {
+    if (typeof window === 'undefined') return undefined;
+    try {
+        const redirectUrl = new URL('/auth/reset-password', window.location.origin);
+        if (isSafeAuthReturnPath(nextPath)) {
+            redirectUrl.searchParams.set('next', nextPath);
+        }
+        return redirectUrl.toString();
+    } catch {
+        return undefined;
+    }
 };

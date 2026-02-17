@@ -120,6 +120,15 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `auth__callback--error` | — | `{ has_claim }` | `LoginPage.tsx` |
 | `auth__method--select` | `login`, `register`, `google`, `apple`, `facebook` | `{ source? }` | `LoginPage.tsx`, `AuthModal.tsx` |
 | `auth__password--{mode}` | `login`, `register` | — | `LoginPage.tsx` |
+| `auth__password_reset--request` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset--requested` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset--failed` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset_page--view` | — | `{ has_error, has_recovery_context }` | `ResetPasswordPage.tsx` |
+| `auth__password_reset--back_login` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--submit` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--blocked` | — | `{ reason }` | `ResetPasswordPage.tsx` |
+| `auth__password_update--failed` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--success` | — | — | `ResetPasswordPage.tsx` |
 | `auth__queue--fulfilled` | — | `{ request_id }` | `LoginPage.tsx` |
 | `auth__queue--failed` | — | `{ request_id }` | `LoginPage.tsx` |
 | `auth__state--change` | — | `{ flow_id, attempt_id, auth_event, has_session }` | `AuthContext.tsx` |

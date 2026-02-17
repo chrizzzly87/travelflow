@@ -332,9 +332,90 @@ export const signOut = async () => {
     return response;
 };
 
+export const requestPasswordResetEmail = async (
+    email: string,
+    options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
+) => {
+    if (!supabase) {
+        throw new Error('Supabase auth is not configured.');
+    }
+    const flow = buildAuthFlow();
+    const intent = options?.intent || 'forgot_password';
+    await logAuthFlow({
+        ...flow,
+        step: 'password_reset_request',
+        result: 'start',
+        provider: 'password',
+        email,
+        metadata: { intent },
+    });
+
+    const response = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: options?.redirectTo,
+    });
+
+    if (response.error) {
+        await logAuthFlow({
+            ...flow,
+            step: 'password_reset_request',
+            result: 'error',
+            provider: 'password',
+            errorCode: normalizeErrorCode(response.error),
+            email,
+            metadata: { intent },
+        });
+        return { ...response, ...flow };
+    }
+
+    await logAuthFlow({
+        ...flow,
+        step: 'password_reset_request',
+        result: 'success',
+        provider: 'password',
+        email,
+        metadata: { intent },
+    });
+    return { ...response, ...flow };
+};
+
+export const updateCurrentUserPassword = async (
+    password: string
+) => {
+    if (!supabase) {
+        throw new Error('Supabase auth is not configured.');
+    }
+    const flow = buildAuthFlow();
+    await logAuthFlow({
+        ...flow,
+        step: 'password_update',
+        result: 'start',
+        provider: 'password',
+    });
+
+    const response = await supabase.auth.updateUser({ password });
+
+    if (response.error) {
+        await logAuthFlow({
+            ...flow,
+            step: 'password_update',
+            result: 'error',
+            provider: 'password',
+            errorCode: normalizeErrorCode(response.error),
+        });
+        return { ...response, ...flow };
+    }
+
+    await logAuthFlow({
+        ...flow,
+        step: 'password_update',
+        result: 'success',
+        provider: 'password',
+    });
+    return { ...response, ...flow };
+};
+
 export const getCurrentUser = async (): Promise<User | null> => {
     if (!supabase) return null;
     const { data } = await supabase.auth.getUser();
     return data.user ?? null;
 };
-

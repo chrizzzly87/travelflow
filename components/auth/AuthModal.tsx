@@ -8,7 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { OAuthProviderId } from '../../services/authService';
-import { trackEvent } from '../../services/analyticsService';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import { buildPasswordResetRedirectUrl } from '../../services/authNavigationService';
 import {
     clearPendingOAuthProvider,
     getLastUsedOAuthProvider,
@@ -86,6 +87,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         loginWithPassword,
         registerWithPassword,
         loginWithOAuth,
+        sendPasswordResetEmail,
     } = useAuth();
 
     const [mode, setMode] = useState<AuthMode>('login');
@@ -101,6 +103,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (typeof window === 'undefined') return undefined;
         return window.location.href;
     }, []);
+    const passwordResetRedirectTo = useMemo(
+        () => buildPasswordResetRedirectUrl(nextPath),
+        [nextPath]
+    );
 
     useEffect(() => {
         if (!isOpen) return;
@@ -227,6 +233,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setInfoMessage(t('actions.submitting'));
     };
 
+    const handlePasswordResetRequest = async (intent: 'forgot_password' | 'set_password') => {
+        const normalizedEmail = email.trim();
+        if (!normalizedEmail) {
+            setErrorMessage(t('errors.email_required_for_reset'));
+            setInfoMessage(null);
+            return;
+        }
+
+        setIsSubmitting(true);
+        setErrorMessage(null);
+        setInfoMessage(null);
+        trackEvent('auth__password_reset--request', { source: 'modal', intent });
+
+        const response = await sendPasswordResetEmail(normalizedEmail, {
+            redirectTo: passwordResetRedirectTo,
+            intent,
+        });
+
+        if (response.error) {
+            setErrorMessage(t('errors.password_reset_failed'));
+            trackEvent('auth__password_reset--failed', { source: 'modal', intent });
+            setIsSubmitting(false);
+            return;
+        }
+
+        setInfoMessage(t(intent === 'set_password' ? 'states.setPasswordSent' : 'states.passwordResetSent'));
+        trackEvent('auth__password_reset--requested', { source: 'modal', intent });
+        setIsSubmitting(false);
+    };
+
     return (
         <div className="fixed inset-0 z-[21000] flex items-center justify-center p-4 sm:p-6">
             <button
@@ -304,6 +340,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                             />
                         </label>
+                        {mode === 'login' && (
+                            <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                                    <button
+                                        type="button"
+                                        onClick={() => void handlePasswordResetRequest('forgot_password')}
+                                        disabled={isSubmitting}
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
+                                    >
+                                        {t('actions.forgotPassword')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => void handlePasswordResetRequest('set_password')}
+                                        disabled={isSubmitting}
+                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
+                                    >
+                                        {t('actions.setPasswordSocial')}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
+                            </div>
+                        )}
 
                         <button
                             type="submit"

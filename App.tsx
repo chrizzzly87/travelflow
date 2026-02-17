@@ -160,6 +160,7 @@ const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('./pages/in
 const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
 const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
 const LoginPage = lazyWithRecovery('LoginPage', () => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
 const ContactPage = lazyWithRecovery('ContactPage', () => import('./pages/ContactPage').then((module) => ({ default: module.ContactPage })));
 const ImprintPage = lazyWithRecovery('ImprintPage', () => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
 const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
@@ -201,6 +202,7 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
     { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
     { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'reset-password', match: (pathname) => pathname === '/auth/reset-password', preload: () => import('./pages/ResetPasswordPage') },
     { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
@@ -269,6 +271,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/faq', element: <FaqPage /> },
     { path: '/share-unavailable', element: <ShareUnavailablePage /> },
     { path: '/login', element: <LoginPage /> },
+    { path: '/auth/reset-password', element: <ResetPasswordPage /> },
     { path: '/contact', element: <ContactPage /> },
     { path: '/imprint', element: <ImprintPage /> },
     { path: '/privacy', element: <PrivacyPage /> },

@@ -24,10 +24,13 @@ summary: "Added production auth with tier-based access, synced pricing tiers, an
 - [x] [Improved] 🏷️ Added a lightweight "Last used" social provider badge on both login page and login modal using local storage preferences.
 - [x] [Improved] ✅ Updated "Last used" provider behavior to persist only after a successful social login callback (not on click or failed attempts).
 - [x] [Improved] 🧭 Restyled the admin header to match the main site navigation language while keeping admin-only links and a top-right back-to-platform action.
+- [x] [Improved] 🔑 Added forgot-password and set-password-by-email actions on login page and auth modal, so social-login users can reliably enable password sign-in.
+- [x] [New feature] 🛠️ Added a dedicated password reset route (`/auth/reset-password`) with secure validation and post-success redirect to the intended app page.
 - [x] [Fixed] 🧯 Added a defensive login-modal fallback so example/trip flows no longer crash when context is missing and still preserve redirect intent to `/login`.
 - [x] [Fixed] 🧱 Added a second safety guard in `useLoginModal` to prevent stale-chunk context throws from breaking render during logout/navigation transitions.
 - [ ] [Internal] 🗃️ Added Supabase RPC and schema extensions for roles, tier overrides, queued generation requests, and auth flow logs.
 - [ ] [Internal] 📈 Added auth observability with structured analytics events and local redacted `tf_auth_trace_v1` debugging buffer.
+- [ ] [Internal] 🧭 Extended auth observability for password recovery (`password_reset_request`, `password_update`) with flow-level analytics and server trace logging.
 - [ ] [Internal] 🛡️ Migrated AI benchmark edge auth to admin bearer-token verification with optional emergency key fallback flag.
 - [ ] [Internal] 🌐 Added i18n guardrails and validation for ICU placeholder syntax (`{name}`), locale parity checks, and namespace placement guidance for LLM agents.
 - [ ] [Internal] 🧭 Expanded Supabase OAuth setup documentation with field-level dashboard mapping, direct auth links, and `travelflowapp.netlify.app` + `localhost:5173` examples.

@@ -3,11 +3,13 @@ import type { Session } from '@supabase/supabase-js';
 import type { OAuthProviderId } from '../services/authService';
 import {
     getCurrentAccessContext,
+    requestPasswordResetEmail,
     signInWithEmailPassword,
     signInWithOAuth,
     signOut,
     signUpWithEmailPassword,
     subscribeToAuthState,
+    updateCurrentUserPassword,
 } from '../services/authService';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
@@ -29,6 +31,11 @@ interface AuthContextValue {
         options?: { emailRedirectTo?: string }
     ) => Promise<Awaited<ReturnType<typeof signUpWithEmailPassword>>>;
     loginWithOAuth: (provider: OAuthProviderId, redirectTo?: string) => Promise<Awaited<ReturnType<typeof signInWithOAuth>>>;
+    sendPasswordResetEmail: (
+        email: string,
+        options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
+    ) => Promise<Awaited<ReturnType<typeof requestPasswordResetEmail>>>;
+    updatePassword: (password: string) => Promise<Awaited<ReturnType<typeof updateCurrentUserPassword>>>;
     logout: () => Promise<void>;
 }
 
@@ -136,6 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return signInWithOAuth(provider, { redirectTo });
     }, []);
 
+    const sendPasswordResetEmail = useCallback(async (
+        email: string,
+        options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
+    ) => {
+        return requestPasswordResetEmail(email, options);
+    }, []);
+
+    const updatePassword = useCallback(async (password: string) => {
+        return updateCurrentUserPassword(password);
+    }, []);
+
     const logout = useCallback(async () => {
         await signOut();
         setAccess(null);
@@ -157,9 +175,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             loginWithPassword,
             registerWithPassword,
             loginWithOAuth,
+            sendPasswordResetEmail,
+            updatePassword,
             logout,
         };
-    }, [access, isLoading, loginWithOAuth, loginWithPassword, logout, refreshAccess, registerWithPassword, session]);
+    }, [
+        access,
+        isLoading,
+        loginWithOAuth,
+        loginWithPassword,
+        logout,
+        refreshAccess,
+        registerWithPassword,
+        sendPasswordResetEmail,
+        session,
+        updatePassword,
+    ]);
 
     return (
         <AuthContext.Provider value={value}>
