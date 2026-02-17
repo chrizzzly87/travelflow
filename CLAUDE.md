@@ -19,10 +19,11 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 - Add internal/non-marketing items as `- [ ] [Internal] ...`.
 - Each change line must start with a **content-matching emoji** — pick an emoji that hints at what the specific change is about. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
 - Only mark items `[x]` (visible) when they describe a **clear user benefit**. Hide technical details, dependency changes, refactors, and implementation specifics as `[ ]`.
+- Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).
 - Write visible items from the user's perspective — focus on what changed for them, not how it was built.
 - Keep the most important user-facing items first, and fixes after primary highlights.
 - Bump the release `version` whenever publishing a new release entry.
-- Set `published_at` to the current time but **always before 23:00 UTC** — timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
+- Set `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise main merge timestamp), but **always before 23:00 UTC**. Timestamps at or after 23:00 UTC display as the next day in CET. Ensure the timestamp is strictly after the previous version's `published_at`.
 
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.

@@ -33,7 +33,7 @@ summary: "One concise summary sentence."
 - `id`: unique stable release id.
 - `version`: release label shown in update UI (for example `v0.7.0`).
 - `date`: release date (`YYYY-MM-DD`).
-- `published_at`: exact publish timestamp (used for in-app 24h notice window). **Must be < 23:00 UTC** — the site renders dates in CET (UTC+1), so timestamps at or after 23:00 UTC display as the next calendar day. Set this to the current time when finalizing, and verify it stays before 23:00 UTC.
+- `published_at`: exact timestamp when the release became live on `main` (merge/deploy time), used for in-app 24h notice windows and ordering. **Must be < 23:00 UTC** — the site renders dates in CET (UTC+1), so timestamps at or after 23:00 UTC display as the next calendar day. Do **not** use feature start time or first draft time.
 - `status`: `published` or `draft`.
 - `notify_in_app`: if `true`, latest published release can appear inside trip view.
 - `in_app_hours`: notice lifetime in hours (current default: `24`).
@@ -65,6 +65,7 @@ Mark as `[ ]` (hidden) when the item:
 - Is a technical implementation detail (e.g. dependency swaps, refactors, internal tooling).
 - Describes *how* something was built rather than *what changed* for the user.
 - Would require developer context to understand.
+- Includes technical identifiers users should not see (route paths, API endpoints, function/class names, environment keys, or code snippets).
 
 Write visible items from the user's perspective — focus on the benefit, not the implementation.
 
@@ -75,7 +76,7 @@ Write visible items from the user's perspective — focus on the benefit, not th
 4. When ready to publish, bump the version to the next release number and set:
    - You can get the next merged/published version with `npm run updates:next-version`.
    - `status: published`
-   - `published_at` to the publish time
+   - `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise use main PR merge timestamp)
    - `notify_in_app` as needed
 5. Commit and push. Deploy will render it on `/updates`.
 6. Start the next draft file only for the next distinct feature/release.

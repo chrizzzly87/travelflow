@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-17-seollal-auth-korean-launch
-version: v0.42.0
+version: v0.49.0
 title: "Seollal spotlight: Korean launch + production auth"
 date: 2026-02-17
-published_at: 2026-02-17T19:58:29Z
+published_at: 2026-02-17T20:00:01Z
 status: published
 notify_in_app: true
 in_app_hours: 24
