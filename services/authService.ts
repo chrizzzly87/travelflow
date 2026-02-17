@@ -62,9 +62,35 @@ const buildAuthFlow = (): AuthFlowContext => ({
     attemptId: buildFlowId(),
 });
 
+const getMetadataProviders = (session: Session | null): string[] => {
+    const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
+    const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
+    const providers = Array.isArray(metadata?.providers)
+        ? metadata.providers
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+        : [];
+    return [provider, ...providers].filter(Boolean);
+};
+
+const hasNonAnonymousIdentity = (session: Session | null): boolean => {
+    const metadataProviders = getMetadataProviders(session);
+    if (metadataProviders.some((provider) => provider !== 'anonymous')) {
+        return true;
+    }
+
+    const identities = (session?.user as { identities?: Array<{ provider?: string | null }> } | undefined)?.identities;
+    if (!Array.isArray(identities)) return false;
+    return identities.some((identity) => {
+        const provider = typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : '';
+        return Boolean(provider && provider !== 'anonymous');
+    });
+};
+
 const getAnonymousFlag = (session: Session | null): boolean => {
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
-    return Boolean(metadata?.is_anonymous === true);
+    if (hasNonAnonymousIdentity(session)) return false;
+    return Boolean(metadata?.is_anonymous === true || getMetadataProviders(session).includes('anonymous'));
 };
 
 const defaultAccessContext = (session: Session | null): UserAccessContext => ({
@@ -148,7 +174,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
         return {
             userId: row.user_id || session.user.id,
             email: row.email || session.user.email || null,
-            isAnonymous: Boolean(row.is_anonymous),
+            isAnonymous: getAnonymousFlag(session),
             role,
             tierKey,
             entitlements: (row.entitlements || FREE_ENTITLEMENTS) as UserAccessContext['entitlements'],
@@ -282,17 +308,7 @@ export const signInWithOAuth = async (
     await logAuthFlow({ ...flow, step: 'oauth_start', result: 'start', provider });
 
     const { data: sessionData } = await supabase.auth.getSession();
-    const session = sessionData?.session ?? null;
-    let canLinkAnonymousIdentity = false;
-    if (session && getAnonymousFlag(session)) {
-        const { error: userError } = await supabase.auth.getUser(session.access_token);
-        if (!userError) {
-            canLinkAnonymousIdentity = true;
-        } else {
-            // If the local session is stale/revoked, clear it before starting OAuth.
-            await supabase.auth.signOut({ scope: 'local' });
-        }
-    }
+    const isAnonymousSession = getAnonymousFlag(sessionData?.session ?? null);
     const authAny = supabase.auth as unknown as {
         linkIdentity?: (params: { provider: OAuthProviderId; options?: { redirectTo?: string } }) => Promise<{
             data: unknown;
@@ -300,15 +316,46 @@ export const signInWithOAuth = async (
         }>;
     };
 
-    const response = canLinkAnonymousIdentity && authAny.linkIdentity
-        ? await authAny.linkIdentity({
-            provider,
-            options: { redirectTo: options?.redirectTo },
-        })
-        : await supabase.auth.signInWithOAuth({
+    const startStandardOAuth = () => supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: options?.redirectTo },
+    });
+
+    let response:
+        | Awaited<ReturnType<typeof startStandardOAuth>>
+        | Awaited<ReturnType<NonNullable<typeof authAny.linkIdentity>>>;
+
+    if (isAnonymousSession && authAny.linkIdentity) {
+        const linkResponse = await authAny.linkIdentity({
             provider,
             options: { redirectTo: options?.redirectTo },
         });
+
+        const error = linkResponse.error;
+        const normalizedCode = normalizeErrorCode(error).toLowerCase();
+        const normalizedMessage = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+        const shouldRetryWithStandardOAuth = Boolean(
+            error && (
+                error.status === 401 ||
+                error.status === 403 ||
+                normalizedCode.includes('session') ||
+                normalizedCode.includes('jwt') ||
+                normalizedCode.includes('refresh') ||
+                normalizedMessage.includes('session') ||
+                normalizedMessage.includes('jwt') ||
+                normalizedMessage.includes('refresh')
+            )
+        );
+
+        if (shouldRetryWithStandardOAuth) {
+            await supabase.auth.signOut({ scope: 'local' });
+            response = await startStandardOAuth();
+        } else {
+            response = linkResponse;
+        }
+    } else {
+        response = await startStandardOAuth();
+    }
 
     if (response.error) {
         await logAuthFlow({

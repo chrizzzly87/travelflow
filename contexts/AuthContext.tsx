@@ -83,6 +83,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return Boolean(metadata?.is_anonymous === true);
         };
 
+        const isAuthDebugEnabled = (): boolean => {
+            if (typeof window === 'undefined') return false;
+            try {
+                return window.localStorage.getItem('tf_debug_auth') === '1';
+            } catch {
+                return false;
+            }
+        };
+
+        const authDebug = (...args: unknown[]): void => {
+            if (!isAuthDebugEnabled()) return;
+            console.log('[auth]', ...args);
+        };
+
         const stripAuthHash = (): void => {
             if (typeof window === 'undefined') return;
             if (!window.location.hash.includes('access_token=')) return;
@@ -110,6 +124,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
+            authDebug('bootstrap:start', {
+                pathname: typeof window !== 'undefined' ? window.location.pathname : null,
+                search: typeof window !== 'undefined' ? window.location.search : null,
+                hasHash: typeof window !== 'undefined' ? window.location.hash.length > 0 : false,
+            });
+
             // Capture hash tokens BEFORE getSession()/onAuthStateChange can
             // strip or consume them, so we have a reliable fallback.
             const savedHashTokens = captureHashTokens();
@@ -117,6 +137,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { data: sessionData } = await supabase.auth.getSession();
             if (cancelled) return;
             let activeSession = sessionData?.session ?? null;
+            authDebug('bootstrap:getSession', {
+                hasSession: Boolean(activeSession),
+                userId: activeSession?.user?.id ?? null,
+                isAnonymous: isAnonymousSession(activeSession),
+                hasSavedHashTokens: Boolean(savedHashTokens),
+            });
 
             // If callback hash tokens exist, prefer them over an anonymous
             // session. Otherwise OAuth callback can be lost while the app
@@ -133,6 +159,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (!error && data?.session) {
                     activeSession = data.session;
                 }
+                authDebug('bootstrap:setSessionFromHash', {
+                    success: !error && Boolean(data?.session),
+                    error: error?.message ?? null,
+                    userId: data?.session?.user?.id ?? null,
+                });
                 if (cancelled) return;
             }
 
@@ -152,6 +183,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const unsubscribe = subscribeToAuthState((_event, nextSession) => {
             logAuthStateEvent(_event, Boolean(nextSession));
+            authDebug('stateChange', {
+                event: _event,
+                hasSession: Boolean(nextSession),
+                userId: nextSession?.user?.id ?? null,
+                isAnonymous: isAnonymousSession(nextSession),
+                hasHash: typeof window !== 'undefined' ? window.location.hash.includes('access_token=') : false,
+            });
             setSession(nextSession);
             if (nextSession) {
                 // Only strip auth hash once a real session exists, so the
