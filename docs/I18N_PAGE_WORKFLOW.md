@@ -10,7 +10,7 @@ This document defines how to add or change localized pages in TravelFlow.
 ## Locale Contract
 - Locale source of truth: `config/locales.ts`.
 - Route building/parsing source of truth: `config/routes.ts`.
-- Current phase locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`.
+- Current phase locales: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`.
 - Direction map currently remains `ltr` for all active locales.
 - Keep `document.documentElement.lang` and `document.documentElement.dir` in sync via runtime locale updates in `App.tsx`.
 
@@ -20,6 +20,63 @@ This document defines how to add or change localized pages in TravelFlow.
 - Interpolation uses ICU-style placeholders: `{name}` (not `{{name}}`).
 - App name is provided through default interpolation variable `appName`.
 - For tone and copy quality, apply `docs/UX_COPY_GUIDELINES.md` before writing localized strings.
+
+## ICU Placeholder Rules (Mandatory)
+
+Because this project uses `i18next-icu`, interpolation must follow ICU syntax.
+
+- Correct: `{name}`, `{count}`, `{maxActiveTripsLabel}`
+- Wrong: `{{name}}`, `{{count}}`, `{{maxActiveTripsLabel}}`
+
+Examples:
+
+- Correct: `"days": "{count} days"`
+- Correct: `"Trip retention: {tripExpirationLabel}"`
+- Wrong: `"days": "{{count}} days"`
+- Wrong: `"Trip retention: {{tripExpirationLabel}}"`
+
+Validation:
+
+- Run `npm run i18n:validate` (also executed in `npm run build`).
+- The validator fails if any locale string still contains legacy `{{...}}` placeholders.
+
+## Namespace Placement Strategy
+
+When adding new text, decide namespace first to avoid copy drift and duplication.
+
+Global/shared namespaces:
+
+- `common.json`: navigation, shared UI labels, repeated cross-page CTA/microcopy.
+- `pages.json`: generic marketing page copy reused by multiple pages.
+- `legal.json`: legal and compliance pages.
+
+Route/feature-specific namespaces:
+
+- `home.json`, `features.json`, `pricing.json`, `blog.json`, `auth.json`, `settings.json`, `wip.json`.
+- Use these when copy is specific to one route/feature and unlikely to be reused globally.
+
+Local feature data files (not global locale namespaces):
+
+- For structured content tightly coupled to one feature, keep local data files (for example `data/exampleTripCards.ts`) if it is intentionally feature-scoped.
+- If that content becomes locale-sensitive, migrate it to locale namespaces and load by language.
+
+Namespace decision checklist:
+
+1. Is this text reused in multiple pages/components? Use `common.json` (or `pages.json`/`legal.json` by domain).
+2. Is this text only for one route/feature? Use that route namespace.
+3. Is this structured feature data rather than simple UI copy? Consider a local data file first; localize later only if needed.
+4. Document the chosen namespace in the PR summary when adding many keys.
+
+## Locale Coverage Rules
+
+Active locales must stay in sync: `en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`.
+
+When adding a new key:
+
+1. Add the key to `locales/en/<namespace>.json`.
+2. Add the same key to all active locale files under the same namespace.
+3. Run `npm run i18n:validate`.
+4. Run `npm run build` before handoff.
 
 ## New Marketing Page Checklist
 1. Add page component in `pages/` and wrap with `MarketingLayout` when applicable.
@@ -33,7 +90,7 @@ This document defines how to add or change localized pages in TravelFlow.
    - `MARKETING_ROUTE_CONFIGS`
    - preload rule (if route-level preloading is needed)
 4. Add prefetch rule in `config/prefetchTargets.ts`.
-5. Add localized strings in required namespaces for `en/es/de/fr/pt/ru/it/pl`.
+5. Add localized strings in required namespaces for `en/es/de/fr/pt/ru/it/pl/ko`.
 6. Add SEO metadata in `netlify/edge-functions/site-og-meta.ts`:
    - `MARKETING_PATH_PATTERNS`
    - `PAGE_META`

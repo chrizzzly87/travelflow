@@ -1,50 +1,63 @@
 {
   "hero": {
     "title": "Precios simples y transparentes",
-    "description": "Empieza gratis y mejora cuando lo necesites. Sin costes ocultos y con cancelación cuando quieras."
+    "description": "Elige el nivel que mejor encaje con tu forma de viajar. Límites y funciones siempre sincronizados con tu plan."
+  },
+  "shared": {
+    "perMonth": "/mes",
+    "unlimited": "Ilimitado",
+    "noExpiry": "Sin vencimiento",
+    "enabled": "Incluido",
+    "disabled": "No incluido",
+    "days": "{count} días"
   },
   "tiers": {
-    "free": {
-      "name": "Gratis",
+    "backpacker": {
+      "name": "Backpacker",
       "badge": "Plan actual",
-      "description": "Empieza rápido con todo lo necesario para planificar viajes con confianza.",
-      "cta": "Empezar",
+      "description": "Un nivel gratuito generoso para empezar a planificar sin fricción.",
+      "cta": "Empezar con Backpacker",
       "features": [
-        "Creador de viajes con IA, mapa y línea de tiempo",
-        "Arrastra, edita y comparte en segundos",
-        "Hasta 5 viajes guardados",
-        "Itinerarios limpios listos para imprimir",
-        "Compartir por enlace"
+        "{maxActiveTripsLabel} viajes activos",
+        "{maxTotalTripsLabel} viajes totales",
+        "Retención del viaje: {tripExpirationLabel}",
+        "Enlaces para compartir: {sharingLabel}",
+        "Colaboración editable: {editableSharesLabel}",
+        "Creación de viajes pro: {proCreationLabel}"
       ]
     },
-    "casual": {
-      "name": "Casual",
-      "badge": "Hoja de ruta",
-      "description": "Para quienes quieren flujos más rápidos y mayor control.",
+    "explorer": {
+      "name": "Explorer",
+      "badge": "Plan de pago",
+      "description": "Más capacidad, más tiempo de retención y colaboración avanzada.",
       "cta": "Próximamente",
       "features": [
-        "Todo lo incluido en Gratis",
-        "Viajes guardados ilimitados",
-        "Cola de generación prioritaria",
-        "Controles avanzados para compartir y exportar"
+        "{maxActiveTripsLabel} viajes activos",
+        "{maxTotalTripsLabel} viajes totales",
+        "Retención del viaje: {tripExpirationLabel}",
+        "Enlaces para compartir: {sharingLabel}",
+        "Colaboración editable: {editableSharesLabel}",
+        "Creación de viajes pro: {proCreationLabel}"
       ]
     },
     "globetrotter": {
       "name": "Globetrotter",
-      "badge": "Hoja de ruta",
-      "description": "Pensado para usuarios avanzados y equipos que viajan juntos.",
+      "badge": "Plan de pago",
+      "description": "Nivel superior con escalado ilimitado y sin caducidad.",
       "cta": "Próximamente",
       "features": [
-        "Todo lo incluido en Casual",
-        "Colaboración para planificación en equipo",
-        "Insights premium y soporte prioritario",
-        "Acceso anticipado a nuevas capacidades"
+        "{maxActiveTripsLabel} viajes activos",
+        "{maxTotalTripsLabel} viajes totales",
+        "Retención del viaje: {tripExpirationLabel}",
+        "Enlaces para compartir: {sharingLabel}",
+        "Colaboración editable: {editableSharesLabel}",
+        "Creación de viajes pro: {proCreationLabel}"
       ]
     }
   },
   "anonymousLimits": {
     "title": "Límites de acceso anónimo",
     "description": "Las personas sin cuenta pueden mantener hasta <strong>{limit}</strong> viajes activos al mismo tiempo. Cada viaje anónimo permanece editable durante <strong>{days} días</strong>, y después se bloquea hasta activar la cuenta.",
-    "footer": "Empieza gratis hoy. Los planes de pago llegarán con funciones avanzadas de cuenta y colaboración."
+    "footer": "Crea una cuenta gratuita para conservar tu historial y activar mejoras de plan más adelante."
   }
 }

@@ -25,8 +25,9 @@ import {
 } from '../config/aiModelCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
-import { isSimulatedLoggedIn } from '../services/simulatedLoginService';
 import { getDaysDifference, getDefaultTripDates, getDestinationPromptLabel, resolveDestinationName } from '../utils';
+import { useAuth } from '../hooks/useAuth';
+import { AdminMenu } from '../components/admin/AdminMenu';
 import {
     Select,
     SelectContent,
@@ -396,9 +397,8 @@ const downloadBlob = (blob: Blob, filename: string) => {
 export const AdminAiBenchmarkPage: React.FC = () => {
     const defaultDates = useMemo(() => getDefaultTripDates(), []);
     const [searchParams, setSearchParams] = useSearchParams();
+    const { isAuthenticated } = useAuth();
 
-    const [isInternalVisible, setIsInternalVisible] = useState(() => isSimulatedLoggedIn());
-    const [adminApiKey, setAdminApiKey] = useState(() => window.localStorage.getItem('tf_admin_api_key') || '');
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
     const [destinations, setDestinations] = useState('Japan');
@@ -594,31 +594,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === 'tf_debug_simulated_login') {
-                setIsInternalVisible(event.newValue === '1');
-            }
-        };
-
-        const handleSimulatedLoginEvent = (event: Event) => {
-            const detail = (event as CustomEvent<{ available: boolean; loggedIn: boolean }>).detail;
-            if (!detail || typeof detail.loggedIn !== 'boolean') return;
-            setIsInternalVisible(detail.loggedIn);
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener('tf:simulated-login-debug', handleSimulatedLoginEvent as EventListener);
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('tf:simulated-login-debug', handleSimulatedLoginEvent as EventListener);
-        };
-    }, []);
-
-    useEffect(() => {
-        window.localStorage.setItem('tf_admin_api_key', adminApiKey);
-    }, [adminApiKey]);
-
-    useEffect(() => {
         const modelIds = selectionRows.map((row) => row.modelId);
         window.localStorage.setItem(MODEL_ROWS_STORAGE_KEY, JSON.stringify(modelIds));
     }, [selectionRows]);
@@ -630,6 +605,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [hasPendingRuns]);
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setAccessToken(null);
+            return;
+        }
         let cancelled = false;
 
         const bootstrapAuth = async () => {
@@ -645,7 +624,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [isAuthenticated]);
 
     const fetchBenchmarkApi = useCallback(async (path: string, init?: RequestInit): Promise<BenchmarkApiResponse> => {
         if (!accessToken) {
@@ -655,9 +634,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         const headers = new Headers(init?.headers || {});
         headers.set('Content-Type', 'application/json');
         headers.set('Authorization', `Bearer ${accessToken}`);
-        if (adminApiKey.trim()) {
-            headers.set('x-tf-admin-key', adminApiKey.trim());
-        }
 
         const response = await fetch(path, {
             ...init,
@@ -679,7 +655,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }
 
         return payload;
-    }, [accessToken, adminApiKey]);
+    }, [accessToken]);
 
     const loadSession = useCallback(async (sessionLookup: string) => {
         if (!sessionLookup) return;
@@ -1122,7 +1098,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
             const headers = new Headers();
             headers.set('Authorization', `Bearer ${accessToken}`);
-            if (adminApiKey.trim()) headers.set('x-tf-admin-key', adminApiKey.trim());
 
             const exportUrl = includeLogs
                 ? `/api/internal/ai/benchmark/export?session=${encodeURIComponent(session.id)}&includeLogs=1`
@@ -1146,7 +1121,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [accessToken, adminApiKey, session]);
+    }, [accessToken, session]);
 
     const cleanupSession = useCallback(async () => {
         if (!session) {
@@ -1234,22 +1209,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         return getValidationWarnings(validationModalRun.validation_checks);
     }, [validationModalRun]);
 
-    if (!isInternalVisible) {
-        return (
-            <div className="min-h-screen bg-slate-50 px-6 py-10 md:px-10">
-                <div className="mx-auto w-full max-w-4xl rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-                    <h1 className="text-xl font-bold">AI Benchmark access is hidden</h1>
-                    <p className="mt-2 text-sm">
-                        Enable simulated login from the debug panel first. Role-based auth will replace this temporary gate during login/register implementation.
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen bg-slate-50 px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto w-full max-w-[1600px] space-y-4">
+        <div className="min-h-screen bg-slate-50">
+            <AdminMenu />
+            <div className="mx-auto w-full max-w-[1600px] space-y-4 px-4 py-6 md:px-8 md:py-8">
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
@@ -1263,17 +1226,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                         <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">
                             <div className="font-semibold text-slate-700">Internal API auth</div>
-                            <label className="block">
-                                <span className="mb-1 block text-[11px] uppercase tracking-wide text-slate-500">x-tf-admin-key</span>
-                                <input
-                                    type="password"
-                                    value={adminApiKey}
-                                    onChange={(event) => setAdminApiKey(event.target.value)}
-                                    placeholder="Leave empty only for localhost if TF_ADMIN_API_KEY is unset"
-                                    className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-accent-500"
-                                />
-                            </label>
-                            <div className="text-[11px] text-slate-500">Supabase bearer token is taken from your current session automatically.</div>
+                            <div className="text-[11px] text-slate-500">
+                                Requests use your current Supabase bearer token and admin role validation on the server.
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                                Access token state: <span className="font-semibold text-slate-700">{accessToken ? 'ready' : 'missing'}</span>
+                            </div>
                         </div>
                     </div>
                 </section>

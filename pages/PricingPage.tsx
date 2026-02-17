@@ -2,59 +2,52 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
-import { MarketingLayout } from '../components/marketing/MarketingLayout';
+import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, ANONYMOUS_TRIP_LIMIT } from '../config/productLimits';
 import { buildPath } from '../config/routes';
+import { MarketingLayout } from '../components/marketing/MarketingLayout';
 
-interface PricingTier {
-    id: 'free' | 'casual' | 'globetrotter';
-    price: string;
-    period: string;
+interface TierStyle {
     badgeClass: string;
     accentClass: string;
     ringClass: string;
-    ctaDisabled?: boolean;
     highlighted?: boolean;
 }
 
-const tierConfigs: PricingTier[] = [
-    {
-        id: 'free',
-        price: '$0',
-        period: '/mo',
+const TIER_STYLE: Record<'backpacker' | 'explorer' | 'globetrotter', TierStyle> = {
+    backpacker: {
         badgeClass: 'border-slate-300 bg-slate-100 text-slate-700',
         accentClass: 'from-slate-600 to-slate-800',
         ringClass: 'ring-slate-900/5',
     },
-    {
-        id: 'casual',
-        price: '$9',
-        period: '/mo',
+    explorer: {
         badgeClass: 'border-accent-300 bg-accent-100 text-accent-700',
         accentClass: 'from-accent-500 to-accent-700',
         ringClass: 'ring-accent-500/10',
-        ctaDisabled: true,
         highlighted: true,
     },
-    {
-        id: 'globetrotter',
-        price: '$19',
-        period: '/mo',
+    globetrotter: {
         badgeClass: 'border-amber-300 bg-amber-100 text-amber-700',
         accentClass: 'from-amber-500 to-amber-700',
         ringClass: 'ring-amber-500/10',
-        ctaDisabled: true,
     },
-];
+};
+
+const asDisplayCount = (value: number | null, unlimitedLabel: string): string =>
+    value === null ? unlimitedLabel : String(value);
 
 export const PricingPage: React.FC = () => {
     const { t } = useTranslation('pricing');
+    const unlimitedLabel = t('shared.unlimited');
+    const noExpiryLabel = t('shared.noExpiry');
+    const enabledLabel = t('shared.enabled');
+    const disabledLabel = t('shared.disabled');
 
     return (
         <MarketingLayout>
             <div className="py-8 md:py-16">
-                <div className="mx-auto max-w-3xl text-center mb-12 md:mb-16">
+                <div className="mx-auto mb-12 max-w-3xl text-center md:mb-16">
                     <h1
                         className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl"
                         style={{ fontFamily: 'var(--tf-font-heading)' }}
@@ -67,24 +60,38 @@ export const PricingPage: React.FC = () => {
                 </div>
 
                 <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-                    {tierConfigs.map((tier) => {
-                        const featureList = t(`tiers.${tier.id}.features`, { returnObjects: true }) as string[];
-                        const tierName = t(`tiers.${tier.id}.name`);
-                        const tierBadge = t(`tiers.${tier.id}.badge`);
-                        const tierDescription = t(`tiers.${tier.id}.description`);
-                        const tierCta = t(`tiers.${tier.id}.cta`);
+                    {PLAN_ORDER.map((tierKey) => {
+                        const tier = PLAN_CATALOG[tierKey];
+                        const style = TIER_STYLE[tier.publicSlug];
+                        const isPaidTier = tier.monthlyPriceUsd > 0;
+                        const interpolationValues = {
+                            maxActiveTripsLabel: asDisplayCount(tier.entitlements.maxActiveTrips, unlimitedLabel),
+                            maxTotalTripsLabel: asDisplayCount(tier.entitlements.maxTotalTrips, unlimitedLabel),
+                            tripExpirationLabel: tier.entitlements.tripExpirationDays === null
+                                ? noExpiryLabel
+                                : t('shared.days', { count: tier.entitlements.tripExpirationDays }),
+                            sharingLabel: tier.entitlements.canShare ? enabledLabel : disabledLabel,
+                            editableSharesLabel: tier.entitlements.canCreateEditableShares ? enabledLabel : disabledLabel,
+                            proCreationLabel: tier.entitlements.canCreateProTrips ? enabledLabel : disabledLabel,
+                        };
+                        const featureTemplates = t(`tiers.${tier.publicSlug}.features`, { returnObjects: true }) as unknown;
+                        const featureList = Array.isArray(featureTemplates)
+                            ? featureTemplates.map((_, index) => (
+                                t(`tiers.${tier.publicSlug}.features.${index}`, interpolationValues)
+                            ))
+                            : [];
 
                         return (
                             <div
-                                key={tier.id}
-                                className={`relative flex flex-col rounded-2xl bg-white p-8 shadow-lg ring-1 ${tier.ringClass} ${
-                                    tier.highlighted ? 'md:-mt-4 md:mb-0 md:pb-12 md:pt-10 scale-[1.02] md:scale-105 z-10' : ''
+                                key={tier.key}
+                                className={`relative flex flex-col rounded-2xl bg-white p-8 shadow-lg ring-1 ${style.ringClass} ${
+                                    style.highlighted ? 'z-10 scale-[1.02] pb-12 pt-10 md:-mt-4 md:mb-0 md:scale-105' : ''
                                 }`}
                             >
-                                <div className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r ${tier.accentClass}`} />
+                                <div className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r ${style.accentClass}`} />
 
-                                <span className={`inline-flex self-start rounded-full border px-3 py-1 text-xs font-semibold ${tier.badgeClass}`}>
-                                    {tierBadge}
+                                <span className={`inline-flex self-start rounded-full border px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
+                                    {t(`tiers.${tier.publicSlug}.badge`)}
                                 </span>
 
                                 <div className="mt-5 flex items-baseline gap-1">
@@ -92,13 +99,13 @@ export const PricingPage: React.FC = () => {
                                         className="text-4xl font-extrabold tracking-tight text-slate-900"
                                         style={{ fontFamily: 'var(--tf-font-heading)' }}
                                     >
-                                        {tier.price}
+                                        {`$${tier.monthlyPriceUsd}`}
                                     </span>
-                                    <span className="text-sm font-medium text-slate-500">{tier.period}</span>
+                                    <span className="text-sm font-medium text-slate-500">{t('shared.perMonth')}</span>
                                 </div>
 
-                                <h2 className="mt-3 text-lg font-bold text-slate-900">{tierName}</h2>
-                                <p className="mt-2 text-sm text-slate-500">{tierDescription}</p>
+                                <h2 className="mt-3 text-lg font-bold text-slate-900">{t(`tiers.${tier.publicSlug}.name`)}</h2>
+                                <p className="mt-2 text-sm text-slate-500">{t(`tiers.${tier.publicSlug}.description`)}</p>
 
                                 <ul className="mt-6 flex-1 space-y-3">
                                     {featureList.map((feature) => (
@@ -110,21 +117,21 @@ export const PricingPage: React.FC = () => {
                                 </ul>
 
                                 <div className="mt-8">
-                                    {tier.ctaDisabled ? (
+                                    {isPaidTier ? (
                                         <button
                                             disabled
-                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400 cursor-not-allowed"
+                                            className="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-400"
                                         >
-                                            {tierCta}
+                                            {t(`tiers.${tier.publicSlug}.cta`)}
                                         </button>
                                     ) : (
                                         <Link
-                                            to={buildPath('createTrip')}
-                                            onClick={() => trackEvent(`pricing__tier--${tier.id}`)}
+                                            to={buildPath('login')}
+                                            onClick={() => trackEvent(`pricing__tier--${tier.publicSlug}`)}
                                             className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
-                                            {...getAnalyticsDebugAttributes(`pricing__tier--${tier.id}`)}
+                                            {...getAnalyticsDebugAttributes(`pricing__tier--${tier.publicSlug}`)}
                                         >
-                                            {tierCta}
+                                            {t(`tiers.${tier.publicSlug}.cta`)}
                                         </Link>
                                     )}
                                 </div>

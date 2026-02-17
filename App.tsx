@@ -14,7 +14,7 @@ import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
-import { buildTripExpiryIso } from './config/productLimits';
+import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
 import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
@@ -22,6 +22,10 @@ import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
 import { SpeculationRulesManager } from './components/SpeculationRulesManager';
 import { isNavPrefetchEnabled } from './services/navigationPrefetch';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
+import { LoginModalProvider } from './contexts/LoginModalContext';
+import { buildPathFromLocationParts, isLoginPathname, rememberAuthReturnPath } from './services/authNavigationService';
 import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
 
 type AppDebugWindow = Window & typeof globalThis & {
@@ -156,6 +160,7 @@ const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('./pages/in
 const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
 const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
 const LoginPage = lazyWithRecovery('LoginPage', () => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
 const ContactPage = lazyWithRecovery('ContactPage', () => import('./pages/ContactPage').then((module) => ({ default: module.ContactPage })));
 const ImprintPage = lazyWithRecovery('ImprintPage', () => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
 const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
@@ -163,6 +168,7 @@ const TermsPage = lazyWithRecovery('TermsPage', () => import('./pages/TermsPage'
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('./pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const AdminDashboardPage = lazyWithRecovery('AdminDashboardPage', () => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const AdminAiBenchmarkPage = lazyWithRecovery('AdminAiBenchmarkPage', () => import('./pages/AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
+const AdminAccessPage = lazyWithRecovery('AdminAccessPage', () => import('./pages/AdminAccessPage').then((module) => ({ default: module.AdminAccessPage })));
 const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
 const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
@@ -196,6 +202,7 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
     { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
     { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
+    { key: 'reset-password', match: (pathname) => pathname === '/auth/reset-password', preload: () => import('./pages/ResetPasswordPage') },
     { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
@@ -264,6 +271,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/faq', element: <FaqPage /> },
     { path: '/share-unavailable', element: <ShareUnavailablePage /> },
     { path: '/login', element: <LoginPage /> },
+    { path: '/auth/reset-password', element: <ResetPasswordPage /> },
     { path: '/contact', element: <ContactPage /> },
     { path: '/imprint', element: <ImprintPage /> },
     { path: '/privacy', element: <PrivacyPage /> },
@@ -533,12 +541,23 @@ const SharedTripLoader = ({
     const { token } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { access } = useAuth();
     const lastLoadRef = useRef<string | null>(null);
     const [shareMode, setShareMode] = useState<'view' | 'edit'>('view');
     const [allowCopy, setAllowCopy] = useState(true);
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const [snapshotState, setSnapshotState] = useState<{ hasNewer: boolean; latestUrl: string } | null>(null);
     const [sourceShareVersionId, setSourceShareVersionId] = useState<string | null>(null);
+
+    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
+        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
+        const expirationDays = access?.entitlements.tripExpirationDays;
+        if (expirationDays === null) return null;
+        if (typeof expirationDays === 'number' && expirationDays > 0) {
+            return buildTripExpiryIso(createdAtMs, expirationDays);
+        }
+        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
+    };
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -671,7 +690,7 @@ const SharedTripLoader = ({
             updatedAt: now,
             isFavorite: false,
             status: 'active',
-            tripExpiresAt: buildTripExpiryIso(now),
+            tripExpiresAt: resolveTripExpiry(now),
             sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
@@ -746,6 +765,7 @@ const ExampleTripLoader = ({
     const { templateId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { access } = useAuth();
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const trackedTemplateRef = useRef<string | null>(null);
     const hydratedTemplateRef = useRef<string | null>(null);
@@ -774,6 +794,16 @@ const ExampleTripLoader = ({
     }, [prefetchedState, prefetchedTrip]);
     const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
     const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(prefetchedTemplateCard);
+
+    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
+        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
+        const expirationDays = access?.entitlements.tripExpirationDays;
+        if (expirationDays === null) return null;
+        if (typeof expirationDays === 'number' && expirationDays > 0) {
+            return buildTripExpiryIso(createdAtMs, expirationDays);
+        }
+        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
+    };
 
     useEffect(() => {
         if (prefetchedTemplateCard) {
@@ -911,7 +941,7 @@ const ExampleTripLoader = ({
             isFavorite: false,
             isExample: false,
             status: 'active',
-            tripExpiresAt: buildTripExpiryIso(now),
+            tripExpiresAt: resolveTripExpiry(now),
             sourceKind: 'duplicate_trip',
             sourceTemplateId: templateId,
             exampleTemplateId: undefined,
@@ -1066,8 +1096,27 @@ const CreateTripDesignV3Route: React.FC<{
     );
 };
 
+const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAdmin } = useAuth();
+    const location = useLocation();
+
+    if (isLoading) return <RouteLoadingFallback />;
+    if (!isAdmin) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{ from: `${location.pathname}${location.search}` }}
+            />
+        );
+    }
+
+    return children;
+};
+
 const AppContent: React.FC = () => {
     const { i18n } = useTranslation();
+    const { access } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1078,6 +1127,26 @@ const AppContent: React.FC = () => {
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const debugQueueRef = useRef<AppDebugCommand[]>([]);
     const debugStubRef = useRef<((command?: AppDebugCommand) => unknown) | null>(null);
+
+    useEffect(() => {
+        if (isLoginPathname(location.pathname)) return;
+        const currentPath = buildPathFromLocationParts({
+            pathname: location.pathname,
+            search: location.search,
+            hash: location.hash,
+        });
+        rememberAuthReturnPath(currentPath);
+    }, [location.hash, location.pathname, location.search]);
+
+    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
+        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
+        const expirationDays = access?.entitlements.tripExpirationDays;
+        if (expirationDays === null) return null;
+        if (typeof expirationDays === 'number' && expirationDays > 0) {
+            return buildTripExpiryIso(createdAtMs, expirationDays);
+        }
+        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
+    };
 
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
         const localeFromPath = extractLocaleFromPath(location.pathname);
@@ -1315,7 +1384,7 @@ const AppContent: React.FC = () => {
                 createdAt: typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now,
                 updatedAt: now,
                 status: 'active',
-                tripExpiresAt: newTrip.tripExpiresAt || buildTripExpiryIso(now),
+                tripExpiresAt: resolveTripExpiry(now, newTrip.tripExpiresAt),
                 sourceKind: newTrip.sourceKind || 'created',
             };
             const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
@@ -1497,8 +1566,30 @@ const AppContent: React.FC = () => {
                         />)
                     }
                 />
-                <Route path="/admin/dashboard" element={renderWithSuspense(<AdminDashboardPage />)} />
-                <Route path="/admin/ai-benchmark" element={renderWithSuspense(<AdminAiBenchmarkPage />)} />
+                <Route
+                    path="/admin/dashboard"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminDashboardPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/ai-benchmark"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminAiBenchmarkPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/access"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminAccessPage />
+                        </AdminRoute>
+                    )}
+                />
                 <Route 
                     path="/trip/:tripId" 
                     element={
@@ -1589,9 +1680,13 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
     return (
         <Router>
-            <AppDialogProvider>
-                <AppContent />
-            </AppDialogProvider>
+            <AuthProvider>
+                <AppDialogProvider>
+                    <LoginModalProvider>
+                        <AppContent />
+                    </LoginModalProvider>
+                </AppDialogProvider>
+            </AuthProvider>
         </Router>
     );
 };

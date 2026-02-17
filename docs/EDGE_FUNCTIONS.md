@@ -8,7 +8,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | Function file | Route(s) | Purpose | Type |
 |---|---|---|---|
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic allowlisted models) | API |
-| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings) with temporary admin-header guard. Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
+| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/login`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, `/pricing`, `/admin/*` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
@@ -56,7 +56,8 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `VITE_SUPABASE_ANON_KEY` | `trip-og-meta.ts` (via `trip-og-data.ts`) | Supabase anonymous auth key |
 | `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
 | `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
-| `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Temporary admin-header guard value for internal AI benchmark endpoints |
+| `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
+| `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
 | `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
 | `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
 | `OPENAI_API_KEY` | `ai-generate.ts` | Server-side key for OpenAI model execution in `/api/ai/generate` |

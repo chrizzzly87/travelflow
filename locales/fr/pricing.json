@@ -1,50 +1,63 @@
 {
   "hero": {
     "title": "Tarification simple et transparente",
-    "description": "Start for free and upgrade when you need more. No hidden fees, cancel anytime."
+    "description": "Choisissez le niveau adapté à votre style de voyage. Les limites et fonctionnalités restent synchronisées avec votre plan."
+  },
+  "shared": {
+    "perMonth": "/mois",
+    "unlimited": "Illimité",
+    "noExpiry": "Sans expiration",
+    "enabled": "Inclus",
+    "disabled": "Non inclus",
+    "days": "{count} jours"
   },
   "tiers": {
-    "free": {
-      "name": "Gratuit",
-      "badge": "Current plan",
-      "description": "Start fast with everything needed for confident trip planning.",
-      "cta": "Get Started",
+    "backpacker": {
+      "name": "Backpacker",
+      "badge": "Forfait actuel",
+      "description": "Un niveau gratuit généreux pour démarrer rapidement.",
+      "cta": "Commencer avec Backpacker",
       "features": [
-        "AI trip builder with map + timeline",
-        "Drag, edit, and share in seconds",
-        "Up to 5 saved trips",
-        "Clean print-ready itineraries",
-        "Share via link"
+        "{maxActiveTripsLabel} voyages actifs",
+        "{maxTotalTripsLabel} voyages au total",
+        "Rétention des voyages : {tripExpirationLabel}",
+        "Liens de partage : {sharingLabel}",
+        "Partage collaboratif éditable : {editableSharesLabel}",
+        "Création de voyages pro : {proCreationLabel}"
       ]
     },
-    "casual": {
-      "name": "Casual",
-      "badge": "Roadmap",
-      "description": "For travelers who want faster workflows and deeper control.",
-      "cta": "Launching Soon",
+    "explorer": {
+      "name": "Explorer",
+      "badge": "Forfait payant",
+      "description": "Plus de capacité, rétention prolongée et collaboration avancée.",
+      "cta": "Bientôt disponible",
       "features": [
-        "Everything in Free",
-        "Unlimited saved trips",
-        "Priority generation queue",
-        "Advanced sharing + export controls"
+        "{maxActiveTripsLabel} voyages actifs",
+        "{maxTotalTripsLabel} voyages au total",
+        "Rétention des voyages : {tripExpirationLabel}",
+        "Liens de partage : {sharingLabel}",
+        "Partage collaboratif éditable : {editableSharesLabel}",
+        "Création de voyages pro : {proCreationLabel}"
       ]
     },
     "globetrotter": {
       "name": "Globetrotter",
-      "badge": "Roadmap",
-      "description": "Built for power users and collaborative travel teams.",
-      "cta": "Launching Soon",
+      "badge": "Forfait payant",
+      "description": "Niveau premium sans expiration et avec limites étendues.",
+      "cta": "Bientôt disponible",
       "features": [
-        "Everything in Casual",
-        "Team-ready planning collaboration",
-        "Premium insights + priority support",
-        "Early access to new capabilities"
+        "{maxActiveTripsLabel} voyages actifs",
+        "{maxTotalTripsLabel} voyages au total",
+        "Rétention des voyages : {tripExpirationLabel}",
+        "Liens de partage : {sharingLabel}",
+        "Partage collaboratif éditable : {editableSharesLabel}",
+        "Création de voyages pro : {proCreationLabel}"
       ]
     }
   },
   "anonymousLimits": {
-    "title": "Limites en acces anonyme",
-    "description": "Anonymous users can keep up to <strong>{limit}</strong> active trips at a time. Each anonymous trip stays editable for <strong>{days} days</strong>, then becomes locked until account activation.",
-    "footer": "Start free today. Paid plans will roll out with advanced account and collaboration features."
+    "title": "Limites d'accès anonyme",
+    "description": "Les utilisateurs anonymes peuvent conserver jusqu'à <strong>{limit}</strong> voyages actifs à la fois. Chaque voyage anonyme reste modifiable pendant <strong>{days} jours</strong>, puis se bloque jusqu'à l'activation du compte.",
+    "footer": "Créez un compte gratuit pour conserver votre historique et débloquer les niveaux payants plus tard."
   }
 }

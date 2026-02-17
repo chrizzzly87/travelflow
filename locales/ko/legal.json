@@ -1,0 +1,57 @@
+{
+  "imprint": {
+    "title": "사업자 정보",
+    "intro": "이 페이지는 구조만 마련된 플레이스홀더입니다. 정식 출시 전에 실제 사업자 및 연락처 정보로 교체하세요.",
+    "company": "회사명:",
+    "companyValue": "TravelFlow (플레이스홀더)",
+    "address": "주소:",
+    "addressValue": "법적 사업장 주소로 교체하세요",
+    "email": "이메일:",
+    "emailValue": "legal@travelflow.example",
+    "responsible": "책임자:",
+    "responsibleValue": "법적 대표자 이름으로 교체하세요",
+    "vat": "사업자 등록번호:",
+    "vatValue": "필요한 등록 식별 정보로 교체하세요"
+  },
+  "privacy": {
+    "title": "개인정보 처리방침",
+    "intro": "이 정책 플레이스홀더는 법적 내비게이션을 완성하기 위해 존재합니다. 출시 전에 승인된 개인정보 처리방침으로 교체하세요.",
+    "items": [
+      "수집하는 개인 정보와 그 목적.",
+      "데이터 저장 기간 및 위치.",
+      "처리의 법적 근거 및 사용자 권리.",
+      "개인정보 요청 및 삭제를 위한 연락처."
+    ]
+  },
+  "terms": {
+    "title": "이용약관",
+    "intro": "이 이용약관 페이지는 구조적 플레이스홀더입니다. 계정, 결제, 이용 제한, 책임 한계에 관한 법적 약관으로 교체하세요.",
+    "items": [
+      "서비스 범위 및 계정 책임.",
+      "구독/유료 약관 및 결제 정책.",
+      "금지된 사용 및 중지 정책.",
+      "보증 면책 및 책임 한계."
+    ]
+  },
+  "cookies": {
+    "title": "쿠키 정책",
+    "intro": "TravelFlow는 동의 설정을 로컬에 저장하며, 선택적 동의를 한 경우에만 분석 도구를 활성화합니다.",
+    "essential": "필수 저장소 (항상 활성):",
+    "essentialValue": "배너 선택을 기억하기 위해 Local Storage에 tf_cookie_consent_choice_v1을 저장합니다.",
+    "optional": "선택적 분석:",
+    "optionalValue": "쿠키 배너에서 '모두 동의'를 선택한 경우에만 Umami가 활성화됩니다.",
+    "mapping": "동의 매핑:",
+    "mappingValue": "'필수 항목만'은 분석을 비활성화하고, '모두 동의'는 분석 추적을 활성화합니다.",
+    "notesTitle": "분석 설정 참고사항",
+    "notes": [
+      "추적 스크립트 URL은 VITE_UMAMI_SCRIPT_URL로 설정됩니다.",
+      "웹사이트 식별자는 VITE_UMAMI_WEBSITE_ID로 설정됩니다.",
+      "Umami에서 쿠키 기반 분석 기능을 활성화하면 해당 쿠키 이름과 기간을 여기에 기재하세요."
+    ],
+    "manageTitle": "분석 동의 관리",
+    "current": "현재 설정:",
+    "stateAll": "모두 동의",
+    "stateEssential": "필수 항목만",
+    "stateUnset": "미설정"
+  }
+}

@@ -8,7 +8,9 @@
     "login": "Accedi",
     "createTrip": "Crea viaggio",
     "myTrips": "I miei viaggi",
-    "openMenu": "Apri menu"
+    "openMenu": "Apri menu",
+    "admin": "Admin",
+    "logout": "Esci"
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. Tutti i diritti riservati.",
@@ -28,7 +30,8 @@
     "it": "Italiano",
     "ru": "Русский",
     "pt": "Português",
-    "pl": "Polski"
+    "pl": "Polski",
+    "ko": "한국어"
   },
   "buttons": {
     "startPlanning": "Inizia a pianificare",

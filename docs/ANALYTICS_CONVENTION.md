@@ -62,7 +62,7 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 ### Navigation
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
-| `navigation__{target}` | target = `brand`, `features`, `inspirations`, `updates`, `blog`, `pricing`, `login`, `create_trip`, `my_trips` | — | `SiteHeader.tsx` |
+| `navigation__{target}` | target = `brand`, `features`, `inspirations`, `updates`, `blog`, `pricing`, `login`, `logout`, `admin`, `create_trip`, `my_trips` | — | `SiteHeader.tsx` |
 | `mobile_nav__menu--open` | — | — | `MobileMenu.tsx` |
 | `mobile_nav__{target}` | same targets as above | — | `MobileMenu.tsx` |
 
@@ -106,7 +106,46 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
 | `features__bottom_cta` | — | — | `FeaturesPage.tsx` |
-| `pricing__tier--{name}` | `free` (others disabled) | — | `PricingPage.tsx` |
+| `pricing__tier--{name}` | `backpacker` (others disabled until billing launch) | — | `PricingPage.tsx` |
+
+### Auth
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `auth__page--view` | — | `{ has_claim }` | `LoginPage.tsx` |
+| `auth__modal--open` | — | `{ source }` | `AuthModal.tsx` |
+| `auth__modal--close` | — | `{ source, reason }` | `AuthModal.tsx` |
+| `auth__modal--success` | — | `{ source }` | `AuthModal.tsx` |
+| `auth__redirect--resume` | — | `{ source, next_path, current_path }` | `LoginModalContext.tsx` |
+| `auth__callback--received` | — | `{ has_claim }` | `LoginPage.tsx` |
+| `auth__callback--error` | — | `{ has_claim }` | `LoginPage.tsx` |
+| `auth__method--select` | `login`, `register`, `google`, `apple`, `facebook` | `{ source? }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password--{mode}` | `login`, `register` | — | `LoginPage.tsx` |
+| `auth__password_reset--request` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset--requested` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset--failed` | — | `{ source, intent }` | `LoginPage.tsx`, `AuthModal.tsx` |
+| `auth__password_reset_page--view` | — | `{ has_error, has_recovery_context }` | `ResetPasswordPage.tsx` |
+| `auth__password_reset--back_login` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--submit` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--blocked` | — | `{ reason }` | `ResetPasswordPage.tsx` |
+| `auth__password_update--failed` | — | — | `ResetPasswordPage.tsx` |
+| `auth__password_update--success` | — | — | `ResetPasswordPage.tsx` |
+| `auth__queue--fulfilled` | — | `{ request_id }` | `LoginPage.tsx` |
+| `auth__queue--failed` | — | `{ request_id }` | `LoginPage.tsx` |
+| `auth__state--change` | — | `{ flow_id, attempt_id, auth_event, has_session }` | `AuthContext.tsx` |
+| `auth__{step}--{result}` | runtime auth steps (password, oauth, upgrade, logout) | `{ flow_id, attempt_id, provider, error_code }` | `authService.ts` |
+
+### Admin
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
+| `admin__menu--brand` | — | — | `AdminMenu.tsx` |
+| `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+
+### Trip View
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_view__auth--login` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__auth--logout` | — | `{ trip_id }` | `TripView.tsx` |
 
 ### Not Found
 | Event | Detail | Payload | File |
@@ -140,6 +179,15 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+
+### Create Trip
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `create_trip__guest_queue--queued` | — | `{ flow, request_id }` | `CreateTripForm.tsx` |
+| `create_trip__guest_queue--queue_failed` | — | `{ flow }` | `CreateTripForm.tsx` |
+| `create_trip__guest_queue--modal_open` | — | `{ request_id }` | `CreateTripForm.tsx` |
+| `create_trip__guest_queue--continue_auth` | — | `{ request_id }` | `CreateTripForm.tsx` |
+| `create_trip__guest_queue--dismiss` | — | `{ request_id }` | `CreateTripForm.tsx` |
 
 ## Adding new events
 

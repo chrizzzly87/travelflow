@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-13-create-trip-reliability-and-classic-default
-version: v0.40.0
+version: v0.41.0
 title: "Create-trip reliability fix and Classic Card default rollout"
 date: 2026-02-13
 published_at: 2026-02-13T15:45:00Z

@@ -1,0 +1,31 @@
+{
+  "title": "설정",
+  "tabs": {
+    "layout": "레이아웃",
+    "appearance": "테마",
+    "language": "언어"
+  },
+  "layout": {
+    "timelineOrientation": "타임라인 방향",
+    "horizontal": "가로",
+    "horizontalDescription": "클래식 간트 차트 형식. 일정 겹침을 파악하기에 적합합니다.",
+    "vertical": "세로",
+    "verticalDescription": "모바일 친화적인 목록 형식. 작은 화면에서 읽기 편합니다."
+  },
+  "appearance": {
+    "mapTiles": "지도 스타일",
+    "minimal": "미니멀",
+    "minimalDescription": "깔끔하고 집중된 뷰",
+    "standard": "표준",
+    "standardDescription": "Google 기본 스타일",
+    "dark": "다크",
+    "darkDescription": "야간 모드",
+    "satellite": "위성",
+    "satelliteDescription": "항공 뷰"
+  },
+  "language": {
+    "noteTitle": "지도 언어",
+    "noteDescription": "지도 라벨은 이 설정에 따라 표시됩니다.",
+    "appLanguage": "앱 언어"
+  }
+}

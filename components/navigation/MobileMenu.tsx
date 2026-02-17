@@ -12,6 +12,9 @@ import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../conf
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
 import { preloadLocaleNamespaces } from '../../i18n';
+import { useAuth } from '../../hooks/useAuth';
+import { useLoginModal } from '../../hooks/useLoginModal';
+import { buildPathFromLocationParts } from '../../services/authNavigationService';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -26,11 +29,22 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
             : 'text-slate-700 hover:bg-slate-100'
     }`;
 
+const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.shiftKey
+);
+
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick }) => {
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAuthenticated, isAdmin, logout } = useAuth();
+    const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(location.pathname);
@@ -62,6 +76,38 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);
         onClose();
+    };
+
+    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        trackEvent('mobile_nav__login');
+        if (!isPlainLeftClick(event)) {
+            onClose();
+            return;
+        }
+
+        event.preventDefault();
+        onClose();
+        openLoginModal({
+            source: 'navigation_mobile',
+            nextPath: buildPathFromLocationParts({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            }),
+            reloadOnSuccess: true,
+        });
+    };
+
+    const handleLogout = async () => {
+        trackEvent('mobile_nav__logout');
+        await logout();
+        onClose();
+        const target = buildLocalizedMarketingPath('home', activeLocale);
+        if (typeof window !== 'undefined') {
+            window.location.assign(target);
+            return;
+        }
+        navigate(target);
     };
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
@@ -159,6 +205,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     </nav>
 
                     <div className="border-t border-slate-100 p-4 space-y-2">
+                        {isAdmin && (
+                            <NavLink
+                                to="/admin/dashboard"
+                                onClick={() => handleNavClick('admin')}
+                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                {...mobileNavDebugAttributes('admin')}
+                            >
+                                {t('nav.admin')}
+                            </NavLink>
+                        )}
                         {onMyTripsClick && hasTrips ? (
                             <button
                                 onClick={() => {
@@ -180,14 +236,27 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
-                        <NavLink
-                            to={buildLocalizedMarketingPath('login', activeLocale)}
-                            onClick={() => handleNavClick('login')}
-                            className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                            {...mobileNavDebugAttributes('login')}
-                        >
-                            {t('nav.login')}
-                        </NavLink>
+                        {isAuthenticated ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleLogout();
+                                }}
+                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                {...mobileNavDebugAttributes('logout')}
+                            >
+                                {t('nav.logout')}
+                            </button>
+                        ) : (
+                            <NavLink
+                                to={buildLocalizedMarketingPath('login', activeLocale)}
+                                onClick={handleLoginClick}
+                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                {...mobileNavDebugAttributes('login')}
+                            >
+                                {t('nav.login')}
+                            </NavLink>
+                        )}
                     </div>
                 </div>
             </div>

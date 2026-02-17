@@ -1,0 +1,107 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "여행 영감",
+      "title": "다음 여행, 어디로 떠나시나요?",
+      "description": "어디서부터 시작할지 모르겠다면 테마, 시기, 국가, 축제별로 엄선된 여행 아이디어를 둘러보세요. 마음에 드는 일정을 출발점으로 활용할 수 있습니다."
+    },
+    "searchPlaceholder": "여행지, 축제, 국가 검색...",
+    "searchResultLabel": "결과 {count}건",
+    "noResults": "\"{query}\"에 대한 결과를 찾을 수 없습니다. 다른 키워드로 검색해 보세요.",
+    "searchSections": {
+      "destinations": "여행지",
+      "eventsFestivals": "이벤트 & 축제",
+      "weekendGetaways": "주말 여행"
+    },
+    "jumpTo": "바로 가기",
+    "quickStart": "빠른 시작",
+    "sections": {
+      "byTheme": "테마별",
+      "byMonth": "월별",
+      "byCountry": "국가별",
+      "eventsFestivals": "이벤트 & 축제",
+      "weekendGetaways": "주말 여행",
+      "bestTimeTitle": "최적 여행 시기",
+      "browseCountryTitle": "국가별 둘러보기",
+      "upcomingFestivalsTitle": "다가오는 이벤트 & 축제",
+      "weekendTitle": "즉흥 주말 여행"
+    },
+    "links": {
+      "allThemes": "모든 테마",
+      "monthGuide": "월별 가이드",
+      "allCountries": "모든 국가",
+      "allEvents": "모든 이벤트",
+      "viewAllEvents": "이벤트 {count}개 모두 보기",
+      "allGetaways": "모든 주말 여행"
+    },
+    "stats": {
+      "curatedDestinations": "엄선된 여행지",
+      "countriesCovered": "여행 가능 국가",
+      "festivalsEvents": "축제 & 이벤트",
+      "weekendGetaways": "주말 여행"
+    },
+    "bottomCta": {
+      "title": "영감을 받으셨나요?",
+      "description": "여행지를 선택하면 AI가 몇 초 만에 일별 계획으로 만들어 드립니다.",
+      "button": "지금 계획 시작하기"
+    },
+    "subpages": {
+      "backToInspirations": "영감 페이지로 돌아가기",
+      "comingSoon": "준비 중",
+      "themes": {
+        "pill": "여행 테마",
+        "title": "테마별 여행",
+        "description": "스릴 넘치는 모험, 몰입감 있는 미식 투어, 평화로운 사진 여행 등 여행 스타일에 맞는 엄선된 아이디어를 찾아보세요.",
+        "comingSoonDescription": "상세 일정, 준비물 목록, 현지 팁이 포함된 테마 페이지가 준비 중입니다."
+      },
+      "bestTime": {
+        "pill": "최적 여행 시기",
+        "title": "언제 어디로 갈까",
+        "description": "모든 여행지에는 날씨, 인파, 가격이 딱 맞는 시기가 있습니다. 월별 가이드를 활용해 다음 여행의 최적 시기를 선택하세요.",
+        "comingSoonDescription": "날씨 데이터, 성수기 알림, 예산 팁이 포함된 상세 계절 가이드가 준비 중입니다."
+      },
+      "countries": {
+        "pill": "국가별 둘러보기",
+        "title": "국가별 여행지 탐색",
+        "description": "일본의 벚꽃부터 포르투갈의 해안 매력까지, 월별 추천과 현지 팁이 담긴 국가별 여행 가이드를 만나 보세요.",
+        "comingSoonDescription": "비자 정보, 예산 분석, 엄선된 다도시 경로가 포함된 심층 국가 프로필이 준비 중입니다."
+      },
+      "festivals": {
+        "pill": "이벤트 & 축제",
+        "title": "축제 중심으로 여행 계획하기",
+        "description": "세계 최고의 축제는 막바지 항공권 이상의 가치가 있습니다. 날짜별 축제를 찾아보고 이벤트를 중심으로 일정을 만들어 보세요.",
+        "comingSoonDescription": "일정표, 숙소 팁, 일별 일정 제안이 포함된 상세 축제 가이드가 준비 중입니다."
+      },
+      "weekendGetaways": {
+        "pill": "주말 여행",
+        "title": "바쁜 여행자를 위한 짧은 탈출",
+        "description": "잊지 못할 여행에 2주 휴가가 꼭 필요한 건 아닙니다. 즉흥적인 모험을 위한 짧은 여행 아이디어를 확인하세요.",
+        "comingSoonDescription": "기차/항공편 옵션, 예산 추정, 준비물 체크리스트가 포함된 주말 일정 템플릿이 준비 중입니다."
+      },
+      "country": {
+        "notFoundTitle": "국가를 찾을 수 없습니다",
+        "notFoundDescription": "\"{country}\"에 대한 여행 영감 데이터가 아직 없습니다.",
+        "pill": "국가 가이드",
+        "title": "{country} 여행",
+        "description": "{country} 여행 계획에 필요한 모든 것 — 최적 여행 시기, 인기 일정, 여행 팁.",
+        "comingSoonDescription": "{country}에 대한 도시별 분석, 문화 팁, 비자 정보, 엄선된 다일 일정을 포함한 상세 가이드가 준비 중입니다.",
+        "cta": "{country} 여행 계획하기"
+      }
+    }
+  },
+  "updates": {
+    "title": "소식 및 업데이트"
+  },
+  "shareUnavailable": {
+    "title": "이 공유 여행은 더 이상 이용할 수 없습니다",
+    "description": "링크가 만료되었거나 여행 소유자가 비활성화했을 수 있습니다. 새 링크를 요청하거나 직접 여행을 만들어 보세요.",
+    "backToHomepage": "홈페이지로 돌아가기",
+    "createNewTrip": "새 여행 만들기"
+  },
+  "notFound": {
+    "headline": "이 페이지는 이미 휴가를 떠난 것 같습니다!",
+    "planCta": "내 여행 계획하기",
+    "missingPrompt": "이 페이지가 존재해야 한다고 생각하시나요?",
+    "contactCta": "문의하기"
+  }
+}

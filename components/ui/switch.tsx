@@ -29,4 +29,3 @@ export const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.R
 );
 
 Switch.displayName = SwitchPrimitive.Root.displayName;
-

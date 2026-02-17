@@ -35,4 +35,3 @@ Optional compatibility keys:
   - `gh pr checks <PR_NUMBER>`
 - Live deploy status:
   - open the deploy URL shown in the Netlify check details.
-

@@ -173,37 +173,9 @@ const textResponse = (status: number, body: Uint8Array | string, headers: Record
     headers,
   });
 
-const isLocalDevHost = (requestUrl: string): boolean => {
-  try {
-    const { hostname } = new URL(requestUrl);
-    return hostname === "localhost" || hostname === "127.0.0.1";
-  } catch {
-    return false;
-  }
-};
-
-const authorizeInternalRequest = (request: Request): Response | null => {
-  const expected = readEnv("TF_ADMIN_API_KEY").trim();
-
-  if (!expected) {
-    if (isLocalDevHost(request.url)) {
-      return null;
-    }
-    return json(503, {
-      error: "Internal benchmark API is not configured. Set TF_ADMIN_API_KEY.",
-      code: "ADMIN_KEY_NOT_CONFIGURED",
-    });
-  }
-
-  const provided = request.headers.get(ADMIN_HEADER)?.trim() || "";
-  if (!provided || provided !== expected) {
-    return json(401, {
-      error: "Unauthorized internal benchmark request.",
-      code: "ADMIN_KEY_INVALID",
-    });
-  }
-
-  return null;
+const isEnabledFlag = (value: string): boolean => {
+  const normalized = value.trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 };
 
 const getAuthToken = (request: Request): string | null => {
@@ -253,6 +225,53 @@ const supabaseFetch = async (
       ...(init.headers || {}),
     },
   });
+};
+
+const authorizeInternalRequest = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response | null> => {
+  const emergencyFallbackEnabled = isEnabledFlag(readEnv("TF_ENABLE_ADMIN_KEY_FALLBACK"));
+  if (emergencyFallbackEnabled) {
+    const expected = readEnv("TF_ADMIN_API_KEY").trim();
+    const provided = request.headers.get(ADMIN_HEADER)?.trim() || "";
+    if (expected && provided && expected === provided) {
+      return null;
+    }
+  }
+
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    "/rest/v1/rpc/get_current_user_access",
+    {
+      method: "POST",
+      headers: {
+        Prefer: "params=single-object",
+      },
+      body: "{}",
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await safeJsonParse(response);
+    return json(403, {
+      error: payload?.message || payload?.error || "Admin role verification failed.",
+      code: "ADMIN_ROLE_CHECK_FAILED",
+    });
+  }
+
+  const payload = await safeJsonParse(response);
+  const row = Array.isArray(payload) ? payload[0] : payload;
+  if (!row || row.system_role !== "admin") {
+    return json(403, {
+      error: "Admin role required for benchmark endpoints.",
+      code: "ADMIN_ROLE_REQUIRED",
+    });
+  }
+
+  return null;
 };
 
 const isUuid = (value?: string | null): boolean => Boolean(value && UUID_REGEX.test(value));
@@ -2124,9 +2143,6 @@ export default async (request: Request, context?: EdgeContextLike) => {
     return new Response(null, { status: 204, headers: JSON_HEADERS });
   }
 
-  const authError = authorizeInternalRequest(request);
-  if (authError) return authError;
-
   const authToken = getAuthToken(request);
   if (!authToken) {
     return json(401, {
@@ -2142,6 +2158,9 @@ export default async (request: Request, context?: EdgeContextLike) => {
       code: "SUPABASE_CONFIG_MISSING",
     });
   }
+
+  const authError = await authorizeInternalRequest(request, config, authToken);
+  if (authError) return authError;
 
   const pathname = new URL(request.url).pathname;
 

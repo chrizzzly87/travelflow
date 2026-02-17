@@ -12,6 +12,9 @@ import { AppLanguage } from '../../types';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { APP_NAME } from '../../config/appGlobals';
 import { preloadLocaleNamespaces } from '../../i18n';
+import { useAuth } from '../../hooks/useAuth';
+import { useLoginModal } from '../../hooks/useLoginModal';
+import { buildPathFromLocationParts } from '../../services/authNavigationService';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -29,6 +32,15 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) => {
     return baseClass;
 };
 
+const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
+    !event.defaultPrevented &&
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.shiftKey
+);
+
 export const SiteHeader: React.FC<SiteHeaderProps> = ({
     variant = 'solid',
     onMyTripsClick,
@@ -39,6 +51,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
+    const { isAuthenticated, isAdmin, logout } = useAuth();
+    const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(location.pathname);
@@ -71,6 +85,33 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
     const handleNavClick = (target: string) => {
         trackEvent(`navigation__${target}`);
+    };
+
+    const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        handleNavClick('login');
+        if (!isPlainLeftClick(event)) return;
+
+        event.preventDefault();
+        openLoginModal({
+            source: 'navigation_header',
+            nextPath: buildPathFromLocationParts({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            }),
+            reloadOnSuccess: true,
+        });
+    };
+
+    const handleLogout = async () => {
+        trackEvent('navigation__logout');
+        await logout();
+        const target = buildLocalizedMarketingPath('home', activeLocale);
+        if (typeof window !== 'undefined') {
+            window.location.assign(target);
+            return;
+        }
+        navigate(target);
     };
 
     const navDebugAttributes = (target: string) =>
@@ -123,14 +164,37 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                             />
                         </div>
-                        <NavLink
-                            to={buildLocalizedMarketingPath('login', activeLocale)}
-                            onClick={() => handleNavClick('login')}
-                            className={loginClass}
-                            {...navDebugAttributes('login')}
-                        >
-                            {t('nav.login')}
-                        </NavLink>
+                        {isAdmin && (
+                            <NavLink
+                                to="/admin/dashboard"
+                                onClick={() => handleNavClick('admin')}
+                                className={loginClass}
+                                {...navDebugAttributes('admin')}
+                            >
+                                {t('nav.admin')}
+                            </NavLink>
+                        )}
+                        {isAuthenticated ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleLogout();
+                                }}
+                                className={loginClass}
+                                {...navDebugAttributes('logout')}
+                            >
+                                {t('nav.logout')}
+                            </button>
+                        ) : (
+                            <NavLink
+                                to={buildLocalizedMarketingPath('login', activeLocale)}
+                                onClick={handleLoginClick}
+                                className={loginClass}
+                                {...navDebugAttributes('login')}
+                            >
+                                {t('nav.login')}
+                            </NavLink>
+                        )}
                         {hideCreateTrip ? (
                             hasTrips && onMyTripsClick && (
                                 <button

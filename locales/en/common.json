@@ -8,7 +8,9 @@
     "login": "Login",
     "createTrip": "Create Trip",
     "myTrips": "My Trips",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "admin": "Admin",
+    "logout": "Logout"
   },
   "footer": {
     "rightsReserved": "© {year} {appName}. All rights reserved.",
@@ -28,7 +30,8 @@
     "it": "Italiano",
     "ru": "Русский",
     "pt": "Português",
-    "pl": "Polski"
+    "pl": "Polski",
+    "ko": "한국어"
   },
   "buttons": {
     "startPlanning": "Start Planning",

@@ -1,0 +1,182 @@
+{
+  "destination": {
+    "title": "여행지",
+    "searchPlaceholder": "국가 또는 섬 검색",
+    "noMatches": "일치하는 여행지가 없습니다",
+    "islandOf": "{country}의 섬",
+    "pinAsStart": "{destination}을(를) 출발지로 설정",
+    "removeDestination": "{destination} 제거",
+    "idealTravelTime": "최적 여행 시기",
+    "roundTrip": {
+      "title": "출발지로 돌아오기",
+      "description": "시작한 곳에서 여행을 마무리합니다."
+    },
+    "routeLock": {
+      "title": "경로 고정",
+      "description": "여행지 순서를 유지하고 드래그 앤 드롭 정렬을 활성화합니다."
+    }
+  },
+  "dates": {
+    "title": "날짜",
+    "mode": {
+      "exact": "정확한 날짜",
+      "flex": "유연한 일정"
+    },
+    "summary": "예상 일정: 총 {days}일",
+    "labels": {
+      "start": "시작",
+      "end": "종료",
+      "selectDate": "날짜 선택",
+      "selectStartDate": "시작 날짜 선택",
+      "selectEndDate": "종료 날짜 선택",
+      "previousMonth": "이전 달",
+      "nextMonth": "다음 달"
+    },
+    "flexWindow": {
+      "weeksLabel": "여행 기간 (주)",
+      "rangeLabel": "선호하는 시기",
+      "options": {
+        "spring": "봄",
+        "summer": "여름",
+        "autumn": "가을",
+        "winter": "겨울",
+        "shoulder": "비수기"
+      }
+    }
+  },
+  "traveler": {
+    "title": "여행자 설정",
+    "options": {
+      "solo": "혼자",
+      "couple": "커플",
+      "friends": "친구",
+      "family": "가족"
+    },
+    "settings": {
+      "optionalDetails": "선택 사항",
+      "helper": "이 항목은 선택 사항이며, 여행 추천의 정확도를 높이는 데 활용됩니다.",
+      "gender": "성별 (선택)",
+      "notSpecified": "지정 안 함",
+      "genderFemale": "여성",
+      "genderMale": "남성",
+      "genderNonBinary": "논바이너리",
+      "genderPreferNot": "밝히지 않겠습니다",
+      "age": "나이 (선택)",
+      "agePlaceholder": "예: 31",
+      "comfortMode": "편안함 수준",
+      "comfortOptions": {
+        "social": "사교적",
+        "balanced": "균형",
+        "private": "프라이빗"
+      },
+      "travelerA": "여행자 A (선택)",
+      "travelerB": "여행자 B (선택)",
+      "occasion": "특별한 계기 (선택)",
+      "occasionOptions": {
+        "none": "특별한 계기 없음",
+        "honeymoon": "허니문",
+        "anniversary": "기념일",
+        "cityBreak": "도시 여행"
+      },
+      "groupSize": "인원 수",
+      "groupEnergy": "그룹 에너지",
+      "energyOptions": {
+        "chill": "여유롭게",
+        "mixed": "균형",
+        "full-send": "풀가동"
+      },
+      "adults": "성인",
+      "children": "어린이",
+      "babies": "유아",
+      "summaryHint": "선택 사항",
+      "open": "{traveler} 설정 변경",
+      "title": "{traveler} 환경 설정",
+      "description": "선택 사항을 입력하여 이 여행자 설정에 맞는 추천을 개선하세요.",
+      "mobileDescription": "계획의 정확도를 높이기 위한 선택 사항입니다.",
+      "done": "완료"
+    }
+  },
+  "style": {
+    "title": "여행 스타일",
+    "empty": "스타일 미선택",
+    "options": {
+      "culture": "문화",
+      "food": "음식",
+      "nature": "자연",
+      "beaches": "해변",
+      "nightlife": "나이트라이프",
+      "remoteWork": "원격 근무"
+    }
+  },
+  "transport": {
+    "title": "이동 수단 선호",
+    "options": {
+      "auto": "자동",
+      "plane": "비행기",
+      "car": "자동차",
+      "train": "기차",
+      "bus": "버스",
+      "cycle": "자전거",
+      "walk": "도보",
+      "camper": "캠핑카"
+    },
+    "camperDisabled": "캠핑카는 미리보기 용도로만 표시되며, 현재 버전에서는 비활성화되어 있습니다.",
+    "overrideHint": "자동 기본값과 다른 이동 수단이 선택되어 있습니다."
+  },
+  "previewOnly": {
+    "title": "미리보기 전용",
+    "global": "이 설정은 미리보기 용도입니다. 현재 생성에는 고정 기본값이 적용됩니다: 혼자 여행, 스타일 = 원격 근무 제외 전체, 이동 수단 = 자동.",
+    "traveler": "미리보기 전용: 여행자 설정은 표시되지만, 생성에는 혼자 여행 기본값이 사용됩니다.",
+    "style": "미리보기 전용: 스타일 선택이 표시되지만, 생성에는 \"원격 근무 제외 전체\" 기본값이 사용됩니다.",
+    "transport": "미리보기 전용: 이동 수단 선택이 표시되지만, 생성에는 자동 기본값이 사용됩니다."
+  },
+  "notes": {
+    "title": "특별 요청",
+    "hint": "간결하게 작성하세요: 이동 제약, 음식 선호, 편안함 수준 등을 알려 주세요.",
+    "placeholder": "플래너를 위한 추가 메모 (선택)"
+  },
+  "snapshot": {
+    "title": "여행 요약",
+    "destinations": "여행지",
+    "emptyDestinations": "여행지를 추가하면 경로가 미리보기에 표시됩니다.",
+    "days": "{days}일",
+    "avgPerStop": "정류지당 평균 {days}일",
+    "addDestinations": "여행지를 추가하면 평균이 계산됩니다",
+    "previewOnly": "미리보기 전용",
+    "style": "스타일",
+    "transport": "이동 수단",
+    "start": "출발",
+    "startEnd": "출발 & 도착"
+  },
+  "mobileSnapshot": {
+    "title": "여행 요약",
+    "showDetails": "상세 보기",
+    "hideDetails": "상세 접기",
+    "days": "일수",
+    "traveler": "여행자",
+    "style": "스타일",
+    "transport": "이동 수단"
+  },
+  "cta": {
+    "label": "내 여행 만들기",
+    "loading": "만드는 중..."
+  },
+  "errors": {
+    "destinationRequired": "여행을 만들기 전에 여행지를 하나 이상 추가해 주세요.",
+    "genericGenerate": "여행 생성에 실패했습니다. 다시 시도해 주세요."
+  },
+  "prefillBadge": "자동 입력 출처: {label}",
+  "labsBanner": {
+    "title": "다른 여행 만들기 방식을 테스트하고 싶으신가요?",
+    "description": "회귀 확인 및 비교 실험을 위한 실험 경로입니다.",
+    "links": {
+      "legacy": "클래식 레거시 폼",
+      "classicCard": "클래식 카드",
+      "splitWorkspace": "분할 작업 공간",
+      "journeyArchitect": "여행 설계",
+      "designV1": "디자인 V1",
+      "designV2": "디자인 V2",
+      "designV3": "디자인 V3"
+    }
+  }
+}
