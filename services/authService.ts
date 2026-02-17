@@ -282,7 +282,17 @@ export const signInWithOAuth = async (
     await logAuthFlow({ ...flow, step: 'oauth_start', result: 'start', provider });
 
     const { data: sessionData } = await supabase.auth.getSession();
-    const isAnonymousSession = getAnonymousFlag(sessionData?.session ?? null);
+    const session = sessionData?.session ?? null;
+    let canLinkAnonymousIdentity = false;
+    if (session && getAnonymousFlag(session)) {
+        const { error: userError } = await supabase.auth.getUser(session.access_token);
+        if (!userError) {
+            canLinkAnonymousIdentity = true;
+        } else {
+            // If the local session is stale/revoked, clear it before starting OAuth.
+            await supabase.auth.signOut({ scope: 'local' });
+        }
+    }
     const authAny = supabase.auth as unknown as {
         linkIdentity?: (params: { provider: OAuthProviderId; options?: { redirectTo?: string } }) => Promise<{
             data: unknown;
@@ -290,7 +300,7 @@ export const signInWithOAuth = async (
         }>;
     };
 
-    const response = isAnonymousSession && authAny.linkIdentity
+    const response = canLinkAnonymousIdentity && authAny.linkIdentity
         ? await authAny.linkIdentity({
             provider,
             options: { redirectTo: options?.redirectTo },
@@ -317,7 +327,7 @@ export const signOut = async () => {
     if (!supabase) return { error: null };
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'logout', result: 'start', provider: 'supabase' });
-    const response = await supabase.auth.signOut();
+    const response = await supabase.auth.signOut({ scope: 'local' });
     if (response.error) {
         await logAuthFlow({
             ...flow,
