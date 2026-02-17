@@ -45,6 +45,7 @@ import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import {
     getCommonBestMonths,
     getCountrySeasonByName,
@@ -131,7 +132,7 @@ const CountryContextCard: React.FC<{ countryName: string }> = ({ countryName }) 
     return (
         <div className="rounded-2xl border border-gray-100 bg-white/80 backdrop-blur-sm p-4 shadow-sm">
             <div className="flex items-center gap-2.5 mb-3">
-                <span className="text-2xl">{flag}</span>
+                <FlagIcon value={flag} size="xl" />
                 <div>
                     <div className="text-sm font-semibold text-gray-900">{countryName}</div>
                     {season?.climate && <div className="text-xs text-gray-500">{season.climate}</div>}
@@ -684,14 +685,17 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
 
                         {/* Quick examples */}
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                            <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => fillExample('Italy', 14, 'Rome, Florence, Venice. Art & Food.')}>
-                                🇮🇹 2 Weeks in Italy
+                            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => fillExample('Italy', 14, 'Rome, Florence, Venice. Art & Food.')}>
+                                <FlagIcon code="IT" />
+                                2 Weeks in Italy
                             </button>
-                            <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => fillExample('Japan', 7, 'Anime, Tech, and Sushi.')}>
-                                🇯🇵 7 Days in Japan
+                            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => fillExample('Japan', 7, 'Anime, Tech, and Sushi.')}>
+                                <FlagIcon code="JP" />
+                                7 Days in Japan
                             </button>
-                            <button type="button" className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}>
-                                🇹🇭 Thailand (Test Plan)
+                            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm" onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}>
+                                <FlagIcon code="TH" />
+                                Thailand (Test Plan)
                             </button>
                         </div>
                     </form>

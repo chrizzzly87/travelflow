@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import { useDbSync } from '../hooks/useDbSync';
 import { AppLanguage } from '../types';
 import { buildCreateTripUrl, getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../utils';
@@ -292,7 +293,7 @@ export const CreateTripJourneyArchitectLabPage: React.FC<CreateTripJourneyArchit
                                                             key={destination}
                                                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700"
                                                         >
-                                                            {option?.flag || '🌍'} {destination}
+                                                            <FlagIcon value={option?.flag || '🌍'} /> {destination}
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeDestination(destination)}
@@ -334,7 +335,10 @@ export const CreateTripJourneyArchitectLabPage: React.FC<CreateTripJourneyArchit
                                                             }}
                                                             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:border-amber-300"
                                                         >
-                                                            {option.flag} {option.name}
+                                                            <span className="inline-flex items-center gap-1.5">
+                                                                <FlagIcon value={option.flag} />
+                                                                {option.name}
+                                                            </span>
                                                         </button>
                                                     ))}
                                                     {suggestions.length === 0 && (

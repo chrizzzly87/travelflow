@@ -13,6 +13,7 @@ import { getDestinationDisplayName } from '../../utils';
 import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
 import { ProgressiveImage } from '../ProgressiveImage';
 import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';
+import { FlagIcon } from '../flags/FlagIcon';
 
 interface ExampleTripCardProps {
     card: ExampleTripCardType;
@@ -172,7 +173,7 @@ export const ExampleTripCard: React.FC<ExampleTripCardProps> = ({
                 <div className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-600">
                     {card.countries.map((c) => (
                         <span key={c.name} className="inline-flex items-center gap-1">
-                            <span>{c.flag}</span>
+                            <FlagIcon value={c.flag} />
                             <span>{getDestinationDisplayName(c.name, currentLocale)}</span>
                         </span>
                     ))}

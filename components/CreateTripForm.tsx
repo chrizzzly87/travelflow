@@ -68,6 +68,7 @@ import { TripGenerationSkeleton } from './TripGenerationSkeleton';
 import { HeroWebGLBackground } from './HeroWebGLBackground';
 import { SiteFooter } from './marketing/SiteFooter';
 import { SiteHeader } from './navigation/SiteHeader';
+import { FlagIcon } from './flags/FlagIcon';
 import {
     CountrySeasonEntry,
     getCommonBestMonths,
@@ -1408,24 +1409,27 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                             <div className="mt-5 flex flex-wrap gap-2 text-xs text-gray-500">
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => fillExample('Italy', 14, 'Rome, Florence, Venice. Art & Food.')}
                                 >
-                                    🇮🇹 2 Weeks in Italy
+                                    <FlagIcon code="IT" />
+                                    2 Weeks in Italy
                                 </button>
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => fillExample('Japan', 7, 'Anime, Tech, and Sushi.')}
                                 >
-                                    🇯🇵 7 Days in Japan
+                                    <FlagIcon code="JP" />
+                                    7 Days in Japan
                                 </button>
                                 <button
                                     type="button"
-                                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-accent-300 hover:text-accent-600 transition-all shadow-sm"
                                     onClick={() => onTripGenerated(createThailandTrip(new Date().toISOString()))}
                                 >
-                                    🇹🇭 Thailand (Test Plan)
+                                    <FlagIcon code="TH" />
+                                    Thailand (Test Plan)
                                 </button>
                             </div>
                         </div>
@@ -1525,7 +1529,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                         >
                                                             <div className="min-w-0">
                                                                 <div className="text-sm font-medium text-gray-800 flex items-center gap-2">
-                                                                    <span>{country.flag}</span>
+                                                                    <FlagIcon value={country.flag} />
                                                                     <span>{country.name}</span>
                                                                 </div>
                                                                 {country.kind === 'island' && country.parentCountryName && (
@@ -1836,7 +1840,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                             >
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                                        <span>{entry.flag}</span>
+                                                        <FlagIcon value={entry.flag} />
                                                         <span>{entry.countryName}</span>
                                                     </div>
                                                     <div className="text-[11px] text-gray-500">Score {ranked?.score || 0}</div>
@@ -1850,7 +1854,10 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
 
                             {selectedSurpriseOption && (
                                 <div className="rounded-xl border border-gray-200 bg-white p-3 space-y-1.5">
-                                    <div className="text-sm font-semibold text-gray-900">{selectedSurpriseOption.flag} {selectedSurpriseOption.countryName}</div>
+                                    <div className="text-sm font-semibold text-gray-900 inline-flex items-center gap-2">
+                                        <FlagIcon value={selectedSurpriseOption.flag} />
+                                        {selectedSurpriseOption.countryName}
+                                    </div>
                                     <div className="text-xs text-gray-600">Suggested trip length: {selectedSurpriseOption.suggestedTripDays.recommended} days</div>
                                     <div className="text-xs text-gray-600">
                                         Seasonal highlights: {selectedSurpriseOption.events.slice(0, 2).map((event) => `${event.name} (${event.monthLabel})`).join(' • ')}

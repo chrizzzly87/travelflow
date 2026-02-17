@@ -68,19 +68,19 @@ export const LOCALE_LABELS: Record<AppLanguage, string> = {
 };
 
 export const LOCALE_FLAGS: Record<AppLanguage, string> = {
-    en: '🇬🇧',
-    es: '🇪🇸',
-    de: '🇩🇪',
-    fr: '🇫🇷',
-    pt: '🇵🇹',
-    ru: '🇷🇺',
-    it: '🇮🇹',
-    pl: '🇵🇱',
-    ko: '🇰🇷',
+    en: 'GB',
+    es: 'ES',
+    de: 'DE',
+    fr: 'FR',
+    pt: 'PT',
+    ru: 'RU',
+    it: 'IT',
+    pl: 'PL',
+    ko: 'KR',
 };
 
 export const formatLocaleOptionLabel = (locale: AppLanguage): string => {
-    return `${LOCALE_FLAGS[locale]} ${LOCALE_LABELS[locale]}`;
+    return LOCALE_LABELS[locale];
 };
 
 export const applyDocumentLocale = (locale: AppLanguage): void => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { FlagIcon } from './flags/FlagIcon';
 
 interface CountryTagProps {
     countryName: string;
@@ -30,7 +31,7 @@ export const CountryTag: React.FC<CountryTagProps> = ({
                 className,
             ].join(' ').trim()}
         >
-            <span>{flag}</span>
+            <FlagIcon value={flag} size={isSmall ? 'sm' : 'md'} />
             <span className={metaLabel && !isSmall ? 'flex flex-col leading-tight' : ''}>
                 <span>{countryName}</span>
                 {metaLabel && !isSmall && <span className="text-[10px] font-medium text-gray-500">{metaLabel}</span>}

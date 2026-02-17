@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { ProgressiveImage } from '../components/ProgressiveImage';
+import { FlagIcon } from '../components/flags/FlagIcon';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     categories,
@@ -30,6 +31,7 @@ import {
 import type { Destination, FestivalEvent as FestivalEventType, WeekendGetaway as WeekendGetawayType, CountryGroup, QuickIdea } from '../data/inspirationsData';
 import { getBlogPostsBySlugs } from '../services/blogService';
 import { buildCreateTripUrl, resolveDestinationCodes } from '../utils';
+import { stripLeadingFlagEmoji } from '../utils/flagUtils';
 import { destinationCardMedia, festivalCardMedia } from '../data/inspirationCardMedia';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE } from '../config/locales';
@@ -176,7 +178,8 @@ const DestinationCard: React.FC<{ destination: Destination }> = ({ destination }
                 <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 text-xs">
                     <span className="inline-flex items-center gap-1 font-semibold text-slate-600">
                         <MapPin size={13} weight="duotone" className="text-accent-400" />
-                        {destination.flag} {destination.country}
+                        <FlagIcon value={destination.flag} />
+                        {destination.country}
                     </span>
                     <div className="flex items-center gap-3 text-slate-400">
                         <span className="inline-flex items-center gap-1"><Clock size={13} weight="duotone" className="text-accent-400" />{destination.durationDays} days</span>
@@ -246,7 +249,10 @@ const FestivalCard: React.FC<{ event: FestivalEventType; nextDate: Date }> = ({ 
         </div>
         <div className="flex flex-1 flex-col p-4">
             <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{event.name}</h3>
-            <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-400">{event.flag} {locationLabel}</p>
+            <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-400 inline-flex items-center gap-1.5">
+                <FlagIcon value={event.flag} />
+                {locationLabel}
+            </p>
             <p className="mt-0.5 text-xs font-semibold text-fuchsia-600">Next: {formatFestivalDate(nextDate)}</p>
             <p className="mt-1.5 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-2">{event.description}</p>
             <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
@@ -290,7 +296,10 @@ const GetawayCard: React.FC<{ getaway: WeekendGetawayType }> = ({ getaway }) => 
         </div>
         <div className="min-w-0 flex-1">
             <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{getaway.title}</h3>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">{getaway.flag} {getaway.to} · {getaway.durationDays} days</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-400 inline-flex items-center gap-1.5">
+                <FlagIcon value={getaway.flag} />
+                {getaway.to} · {getaway.durationDays} days
+            </p>
             <p className="mt-1.5 text-sm leading-relaxed text-slate-500 line-clamp-2">{getaway.description}</p>
             {getaway.blogSlugs && getaway.blogSlugs.length > 0 && (
                 <div className="mt-2">
@@ -312,7 +321,7 @@ const CountryPill: React.FC<{ group: CountryGroup }> = ({ group }) => (
         className={`group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${CARD_HOVER_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
         {...getAnalyticsDebugAttributes('inspirations__country_pill', { country: group.country })}
     >
-        <span className="text-3xl">{group.flag}</span>
+        <FlagIcon value={group.flag} size="2xl" />
         <div className="min-w-0 flex-1">
             <h3 className="text-sm font-bold text-slate-900 group-hover:text-accent-700 transition-colors">{group.country}</h3>
             <p className="text-xs text-slate-400">{group.bestMonths}</p>
@@ -498,18 +507,22 @@ export const InspirationsPage: React.FC = () => {
                         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{t('inspirations.quickStart')}</h2>
                         <div className="flex flex-wrap gap-2">
                             {quickIdeas.map((idea) => {
+                                const ideaLabel = stripLeadingFlagEmoji(idea.label);
                                 const start = suggestedStartForDays(idea.days);
                                 const end = addDaysLocal(start, idea.days - 1);
                                 const countries = resolveDestinationCodes([idea.destinationCode]);
                                 return (
                                     <Link
                                         key={idea.label}
-                                        to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: idea.label } })}
-                                        onClick={() => trackEvent('inspirations__quick_pill', { label: idea.label })}
+                                        to={buildCreateTripUrl({ countries, startDate: toIso(start), endDate: toIso(end), meta: { source: 'inspirations', label: ideaLabel } })}
+                                        onClick={() => trackEvent('inspirations__quick_pill', { label: ideaLabel })}
                                         className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
-                                        {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: idea.label })}
+                                        {...getAnalyticsDebugAttributes('inspirations__quick_pill', { label: ideaLabel })}
                                     >
-                                        {idea.label}
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <FlagIcon code={idea.destinationCode} />
+                                            {ideaLabel}
+                                        </span>
                                     </Link>
                                 );
                             })}
