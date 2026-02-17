@@ -5,7 +5,7 @@ import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
 import { supabase } from './supabaseClient';
 
-export type OAuthProviderId = 'google' | 'apple' | 'facebook';
+export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
 export interface AuthFlowContext {
     flowId: string;

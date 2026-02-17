@@ -38,6 +38,21 @@ const AppleBrandIcon: React.FC<{ size: number; className?: string }> = ({ size, 
     </svg>
 );
 
+const KakaoBrandIcon: React.FC<{ size: number; className?: string }> = ({ size, className }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        aria-hidden="true"
+    >
+        <rect width="24" height="24" rx="4" fill="#FFE812" />
+        <path d="M12 5.5c-4.14 0-7.5 2.73-7.5 6.1 0 2.15 1.43 4.04 3.58 5.12l-.91 3.32c-.08.28.25.5.49.34l3.95-2.63c.13.01.26.01.39.01 4.14 0 7.5-2.73 7.5-6.1S16.14 5.5 12 5.5z" fill="#3C1E1E" />
+    </svg>
+);
+
 const FacebookBrandIcon: React.FC<{ size: number; className?: string }> = ({ size, className }) => (
     <svg
         width={size}
@@ -60,6 +75,7 @@ export const SocialProviderIcon: React.FC<SocialProviderIconProps> = ({
 }) => {
     if (provider === 'google') return <GoogleBrandIcon size={size} className={className} />;
     if (provider === 'facebook') return <FacebookBrandIcon size={size} className={className} />;
+    if (provider === 'kakao') return <KakaoBrandIcon size={size} className={className} />;
     return <AppleBrandIcon size={size} className={className} />;
 };
 

@@ -7,7 +7,7 @@
 4. For user-facing copy updates (marketing, CTA, planner), follow `docs/UX_COPY_GUIDELINES.md`.
 5. For analytics updates, follow `docs/ANALYTICS_CONVENTION.md`.
 6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Mandatory release note rule
 When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.

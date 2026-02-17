@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "간단하고 투명한 요금제",
+    "description": "여행 스타일에 맞는 등급을 선택하세요. 사용 한도와 기능이 계정 플랜에 맞춰 동기화됩니다."
+  },
+  "shared": {
+    "perMonth": "/월",
+    "unlimited": "무제한",
+    "noExpiry": "만료 없음",
+    "enabled": "포함",
+    "disabled": "미포함",
+    "days": "{count}일"
+  },
+  "tiers": {
+    "backpacker": {
+      "name": "Backpacker",
+      "badge": "현재 플랜",
+      "description": "자신 있게 계획을 시작할 수 있는 넉넉한 무료 등급입니다.",
+      "cta": "Backpacker로 시작하기",
+      "features": [
+        "활성 여행 {maxActiveTripsLabel}개",
+        "총 여행 {maxTotalTripsLabel}개",
+        "여행 보관 기간: {tripExpirationLabel}",
+        "공유 링크: {sharingLabel}",
+        "편집 가능 공유: {editableSharesLabel}",
+        "프로 여행 생성: {proCreationLabel}"
+      ]
+    },
+    "explorer": {
+      "name": "Explorer",
+      "badge": "유료 등급",
+      "description": "더 높은 한도, 긴 보관 기간, 협업 편집이 가능한 등급입니다.",
+      "cta": "출시 예정",
+      "features": [
+        "활성 여행 {maxActiveTripsLabel}개",
+        "총 여행 {maxTotalTripsLabel}개",
+        "여행 보관 기간: {tripExpirationLabel}",
+        "공유 링크: {sharingLabel}",
+        "편집 가능 공유: {editableSharesLabel}",
+        "프로 여행 생성: {proCreationLabel}"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "유료 등급",
+      "description": "무제한 규모와 만료 없는 최상위 등급입니다.",
+      "cta": "출시 예정",
+      "features": [
+        "활성 여행 {maxActiveTripsLabel}개",
+        "총 여행 {maxTotalTripsLabel}개",
+        "여행 보관 기간: {tripExpirationLabel}",
+        "공유 링크: {sharingLabel}",
+        "편집 가능 공유: {editableSharesLabel}",
+        "프로 여행 생성: {proCreationLabel}"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "비로그인 사용 한도",
+    "description": "비로그인 사용자는 최대 <strong>{limit}</strong>개의 활성 여행을 유지할 수 있습니다. 각 여행은 <strong>{days}일</strong> 동안 편집 가능하며, 이후 계정 활성화 전까지 잠금됩니다.",
+    "footer": "무료 계정을 만들어 계획 기록을 유지하고 향후 등급 업그레이드를 이용하세요."
+  }
+}

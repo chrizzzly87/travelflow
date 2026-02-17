@@ -7,7 +7,7 @@
 4. For any user-facing text changes (marketing, CTA, planner), read `docs/UX_COPY_GUIDELINES.md`.
 5. For analytics instrumentation, read `docs/ANALYTICS_CONVENTION.md`.
 6. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
-7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
+7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
 ## Required behavior for Codex
 At the end of every completed feature or fix, update `content/updates/*.md`.

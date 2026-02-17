@@ -1,4 +1,4 @@
-export type OAuthProviderPreference = 'google' | 'apple' | 'facebook';
+export type OAuthProviderPreference = 'google' | 'apple' | 'facebook' | 'kakao';
 
 interface StoredOAuthPreference {
     provider: OAuthProviderPreference;
@@ -10,7 +10,7 @@ const PENDING_OAUTH_PROVIDER_STORAGE_KEY = 'tf_auth_pending_oauth_provider_v1';
 const MAX_PENDING_OAUTH_AGE_MS = 1000 * 60 * 15;
 
 const isValidProvider = (value: unknown): value is OAuthProviderPreference => {
-    return value === 'google' || value === 'apple' || value === 'facebook';
+    return value === 'google' || value === 'apple' || value === 'facebook' || value === 'kakao';
 };
 
 export const getLastUsedOAuthProvider = (): OAuthProviderPreference | null => {

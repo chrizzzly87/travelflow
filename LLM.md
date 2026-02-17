@@ -8,7 +8,7 @@
 - Read `docs/UX_COPY_GUIDELINES.md` before editing marketing/planner copy or CTA text.
 - Read `docs/ANALYTICS_CONVENTION.md` before adding/updating analytics events.
 - Use ICU placeholder syntax in locale strings (`{name}`), never legacy `{{name}}` placeholders.
-- For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and explicitly decide namespace placement (`common/pages/legal` vs route/feature namespace).
+- For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and explicitly decide namespace placement (`common/pages/legal` vs route/feature namespace).
 - Keep code changes aligned with existing architecture and route stability.
 - Any completed feature/fix must be reflected in `content/updates/*.md`.
 - For new components, check whether logical CSS properties should be used for direction safety; if unclear, ask for clarification.

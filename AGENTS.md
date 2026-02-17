@@ -8,7 +8,7 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
 - For user-facing copy changes, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
-- When adding locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) and validate namespace placement (`common/pages/legal` vs route-specific namespace).
+- When adding locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace).
 - Run `npm run i18n:validate` for locale-related changes before finalizing.
 - Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless the user explicitly asks for it.
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.

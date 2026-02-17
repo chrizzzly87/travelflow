@@ -15,6 +15,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../../services/authUiPreferencesService';
+import { getStoredAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
@@ -29,11 +30,13 @@ interface AuthModalProps {
     onClose: (reason: CloseReason) => void;
 }
 
-const OAUTH_BUTTONS: Array<{
+interface OAuthButtonConfig {
     provider: OAuthProviderId;
     labelKey: string;
     buttonClassName: string;
-}> = [
+}
+
+const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
     {
         provider: 'google',
         labelKey: 'actions.oauthGoogle',
@@ -50,6 +53,20 @@ const OAUTH_BUTTONS: Array<{
         buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
     },
 ];
+
+const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
+    provider: 'kakao',
+    labelKey: 'actions.oauthKakao',
+    buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6]',
+};
+
+const getOAuthButtons = (): OAuthButtonConfig[] => {
+    const lang = getStoredAppLanguage();
+    if (lang === 'ko') {
+        return [KAKAO_OAUTH_BUTTON, ...BASE_OAUTH_BUTTONS];
+    }
+    return BASE_OAUTH_BUTTONS;
+};
 
 const normalizeErrorCode = (error: unknown): string => {
     if (!error || typeof error !== 'object') return 'default';
@@ -98,6 +115,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const hasHandledSuccessRef = useRef(false);
+
+    const oauthButtons = useMemo(() => getOAuthButtons(), []);
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;
@@ -383,7 +402,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        {OAUTH_BUTTONS.map((item) => {
+                        {oauthButtons.map((item) => {
                             const isLastUsed = lastUsedProvider === item.provider;
                             return (
                                 <button

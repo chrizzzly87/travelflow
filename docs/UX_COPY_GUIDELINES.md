@@ -45,7 +45,7 @@ This guide defines how to write copy for TravelFlow marketing pages, CTAs, and p
 - Avoid idioms that do not transfer well across languages.
 - For interpolation in locale files, use ICU placeholders (`{name}`), not legacy moustache placeholders (`{{name}}`).
 - Before adding keys, decide namespace placement (`common/pages/legal` vs route namespace) using `docs/I18N_PAGE_WORKFLOW.md`.
-- For new user-facing keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`) in the same change.
+- For new user-facing keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) in the same change.
 
 ## Mandatory Approval Step (EN/DE)
 - For any new or rewritten user-facing copy, ask for style approval before finalizing.
