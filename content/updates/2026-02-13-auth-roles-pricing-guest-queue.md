@@ -7,10 +7,12 @@ published_at: 2026-02-13T14:06:09Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Added production auth with tier-based access, synced pricing tiers, and queued guest trip handoff."
+summary: "Launched production auth and plan tiers, plus Korean localization and Kakao sign-in during the Seollal release window."
 ---
 
 ## Changes
+- [x] [New feature] 🇰🇷 Added full Korean language support across auth, pricing, planner, and core marketing pages for the Seollal launch.
+- [x] [New feature] 🧧 Added Kakao social login so Korean travelers can sign in with a familiar local provider.
 - [x] [New feature] 🔐 Added production login and registration with email/password plus Google, Apple, and Facebook sign-in.
 - [x] [New feature] 🎒 Introduced Backpacker, Explorer, and Globetrotter tiers with entitlement-driven limits in app and database.
 - [x] [Improved] 💳 Updated pricing page to render tier limits from the shared plan catalog without runtime database calls.
