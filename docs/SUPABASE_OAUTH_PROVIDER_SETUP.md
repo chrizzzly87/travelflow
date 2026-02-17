@@ -1,4 +1,4 @@
-# Supabase OAuth Provider Setup (Google, Apple, Facebook)
+# Supabase OAuth Provider Setup (Google, Facebook, optional Apple)
 
 This guide is a practical checklist for setting up social login in Supabase for this project, using your current deployment domain.
 
@@ -7,7 +7,11 @@ This guide is a practical checklist for setting up social login in Supabase for 
 This app currently supports:
 
 1. Email + password login
-2. OAuth login with Google, Apple, Facebook
+2. OAuth login with Google, Facebook, Kakao
+
+Apple note:
+- Apple OAuth remains documented here for future enablement.
+- Apple is currently hidden in the UI until provider setup is verified end-to-end.
 
 This app does not yet include a passwordless email (magic-link/OTP) UI flow.
 
@@ -192,17 +196,18 @@ On `Authentication` -> `Providers` make sure these are enabled:
 1. `Email`
 2. `Google`
 3. `Facebook`
-4. `Apple`
-5. `Anonymous` (keep enabled for your guest queue flow)
+4. `Anonymous` (keep enabled for your guest queue flow)
+5. `Apple` (optional; required only when re-enabling Apple button in UI)
 
 ## Step 6: Test checklist (exact order)
 
 1. Open `https://travelflowapp.netlify.app/login`.
 2. Test Google login.
 3. Test Facebook login.
-4. Test Apple login.
-5. Test local login flow at `http://localhost:5173/login`.
-6. Verify user appears in Supabase users page:
+4. Test Kakao login (only appears when active language is Korean).
+5. Test Apple login only if Apple provider/UI is enabled.
+6. Test local login flow at `http://localhost:5173/login`.
+7. Verify user appears in Supabase users page:
    - <https://supabase.com/dashboard/project/<project-ref>/auth/users>
 
 ## Step 7: Admin account + no-password clarification

@@ -201,6 +201,35 @@ Fix:
 - Clear local auth token in browser storage (`sb-<project-ref>-auth-token`) and reload once.
 - Wait for rate limit window to cool down.
 
+### `403 session_not_found` after `logout -> immediate OAuth login`
+
+Symptom:
+- First social login succeeds.
+- Logout appears to succeed.
+- Immediate social login attempt fails to establish session.
+- URL hash briefly shows OAuth tokens (`#access_token=...`) and then disappears.
+- Network shows `403` from `/auth/v1/user` with:
+  - `{"code":"session_not_found","message":"Session from session_id claim in JWT does not exist"}`
+- Hard refresh makes login work again.
+
+Root causes seen in this app:
+- Stale Supabase auth storage can keep a JWT whose `session_id` no longer exists server-side.
+- OAuth callback hash tokens can be dropped when an anonymous session is still active.
+- Anonymous `linkIdentity` OAuth upgrades are fragile under stale-session conditions.
+- SPA in-memory auth state can remain inconsistent until full reload.
+
+Current mitigation in app code:
+1. Logout path clears stale Supabase auth keys from browser storage (`sb-*auth-token*`, refresh/code-verifier keys), even when Supabase returns `403 session_not_found`.
+2. OAuth path uses standard `signInWithOAuth` (no anonymous `linkIdentity` path).
+3. Auth bootstrap applies callback hash tokens even when current session is anonymous.
+4. Logout UI actions perform hard navigation/reload to reset in-memory auth state immediately.
+
+Verification sequence:
+1. Login with Google/Facebook/Kakao.
+2. Logout.
+3. Login again immediately (no manual refresh).
+4. Confirm user session is restored and authenticated routes work.
+
 ### `42501 new row violates row-level security policy for table "trips"` or `"trip_versions"`
 
 Cause:
@@ -303,6 +332,24 @@ Disable:
 localStorage.removeItem('tf_debug_db');
 location.reload();
 ```
+
+Enable auth callback/session debug logs in browser:
+
+```js
+localStorage.setItem('tf_debug_auth', '1');
+location.reload();
+```
+
+Disable:
+
+```js
+localStorage.removeItem('tf_debug_auth');
+location.reload();
+```
+
+Note:
+- Console output may be hard to inspect in OAuth redirect flows because navigation/reload can clear visible logs.
+- Prefer the persisted auth trace (`tf_auth_trace_v1`) for post-redirect analysis.
 
 History debug helper (already wired in app):
 
