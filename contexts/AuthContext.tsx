@@ -78,6 +78,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let cancelled = false;
 
+        const hasAuthHashTokens = (): boolean =>
+            typeof window !== 'undefined' && window.location.hash.includes('access_token=');
+
+        const stripAuthHash = (): void => {
+            if (typeof window === 'undefined') return;
+            if (!window.location.hash.includes('access_token=')) return;
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        };
+
+        const trySessionFromHash = async (): Promise<Session | null> => {
+            if (!supabase || typeof window === 'undefined') return null;
+            const hash = window.location.hash.substring(1);
+            if (!hash) return null;
+            const params = new URLSearchParams(hash);
+            const accessToken = params.get('access_token');
+            const refreshToken = params.get('refresh_token');
+            if (!accessToken || !refreshToken) return null;
+            const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+            });
+            if (error || !data?.session) return null;
+            return data.session;
+        };
+
         const bootstrap = async () => {
             if (!supabase) {
                 if (!cancelled) {
@@ -90,7 +115,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const { data: sessionData } = await supabase.auth.getSession();
             if (cancelled) return;
-            const activeSession = sessionData?.session ?? null;
+            let activeSession = sessionData?.session ?? null;
+
+            if (!activeSession && hasAuthHashTokens()) {
+                activeSession = await trySessionFromHash();
+                if (cancelled) return;
+            }
+
+            stripAuthHash();
+
             setSession(activeSession);
             logAuthStateEvent('INITIAL_SESSION', Boolean(activeSession));
             if (activeSession) {
@@ -105,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const unsubscribe = subscribeToAuthState((_event, nextSession) => {
             logAuthStateEvent(_event, Boolean(nextSession));
+            stripAuthHash();
             setSession(nextSession);
             if (nextSession) {
                 void refreshAccess();

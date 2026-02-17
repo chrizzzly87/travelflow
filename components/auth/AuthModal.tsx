@@ -43,11 +43,6 @@ const BASE_OAUTH_BUTTONS: OAuthButtonConfig[] = [
         buttonClassName: 'hover:border-[#ea4335]/40 hover:bg-[#fff7f7]',
     },
     {
-        provider: 'apple',
-        labelKey: 'actions.oauthApple',
-        buttonClassName: 'hover:border-slate-400 hover:bg-slate-50',
-    },
-    {
         provider: 'facebook',
         labelKey: 'actions.oauthFacebook',
         buttonClassName: 'hover:border-[#1877f2]/40 hover:bg-[#f3f8ff]',
