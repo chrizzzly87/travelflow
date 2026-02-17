@@ -106,7 +106,12 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const handleLogout = async () => {
         trackEvent('navigation__logout');
         await logout();
-        navigate(buildLocalizedMarketingPath('home', activeLocale));
+        const target = buildLocalizedMarketingPath('home', activeLocale);
+        if (typeof window !== 'undefined') {
+            window.location.assign(target);
+            return;
+        }
+        navigate(target);
     };
 
     const navDebugAttributes = (target: string) =>

@@ -385,6 +385,10 @@ export const TripView: React.FC<TripViewProps> = ({
             trackEvent('trip_view__auth--logout', { trip_id: trip.id });
             try {
                 await logout();
+                if (typeof window !== 'undefined') {
+                    window.location.reload();
+                    return;
+                }
             } finally {
                 setIsHeaderAuthSubmitting(false);
             }

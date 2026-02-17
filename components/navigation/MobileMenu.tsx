@@ -102,7 +102,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         trackEvent('mobile_nav__logout');
         await logout();
         onClose();
-        navigate(buildLocalizedMarketingPath('home', activeLocale));
+        const target = buildLocalizedMarketingPath('home', activeLocale);
+        if (typeof window !== 'undefined') {
+            window.location.assign(target);
+            return;
+        }
+        navigate(target);
     };
 
     const handleLocaleChange = (nextLocaleRaw: string) => {
