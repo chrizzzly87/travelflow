@@ -15,7 +15,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../../services/authUiPreferencesService';
-import { getStoredAppLanguage } from '../../utils';
+import { normalizeAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
@@ -60,9 +60,8 @@ const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
     buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6]',
 };
 
-const getOAuthButtons = (): OAuthButtonConfig[] => {
-    const lang = getStoredAppLanguage();
-    if (lang === 'ko') {
+const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
+    if (normalizeAppLanguage(language) === 'ko') {
         return [KAKAO_OAUTH_BUTTON, ...BASE_OAUTH_BUTTONS];
     }
     return BASE_OAUTH_BUTTONS;
@@ -95,7 +94,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     reloadOnSuccess,
     onClose,
 }) => {
-    const { t } = useTranslation('auth');
+    const { t, i18n } = useTranslation('auth');
     const navigate = useNavigate();
     const {
         isLoading,
@@ -116,7 +115,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const hasHandledSuccessRef = useRef(false);
 
-    const oauthButtons = useMemo(() => getOAuthButtons(), []);
+    const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
 
     const oauthRedirectTo = useMemo(() => {
         if (typeof window === 'undefined') return undefined;

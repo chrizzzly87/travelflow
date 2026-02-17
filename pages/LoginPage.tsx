@@ -19,7 +19,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../services/authUiPreferencesService';
-import { getStoredAppLanguage } from '../utils';
+import { normalizeAppLanguage } from '../utils';
 import { SocialProviderIcon } from '../components/auth/SocialProviderIcon';
 
 type AuthMode = 'login' | 'register';
@@ -54,9 +54,8 @@ const KAKAO_OAUTH_BUTTON: OAuthButtonConfig = {
     buttonClassName: 'hover:border-[#FFE812]/60 hover:bg-[#fffde6]',
 };
 
-const getOAuthButtons = (): OAuthButtonConfig[] => {
-    const lang = getStoredAppLanguage();
-    if (lang === 'ko') {
+const getOAuthButtons = (language: string): OAuthButtonConfig[] => {
+    if (normalizeAppLanguage(language) === 'ko') {
         return [KAKAO_OAUTH_BUTTON, ...BASE_OAUTH_BUTTONS];
     }
     return BASE_OAUTH_BUTTONS;
@@ -91,7 +90,7 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
 };
 
 export const LoginPage: React.FC = () => {
-    const { t } = useTranslation('auth');
+    const { t, i18n } = useTranslation('auth');
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
@@ -115,7 +114,7 @@ export const LoginPage: React.FC = () => {
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
 
-    const oauthButtons = useMemo(() => getOAuthButtons(), []);
+    const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
     const stateFrom = (location.state as { from?: string } | null)?.from || '';
