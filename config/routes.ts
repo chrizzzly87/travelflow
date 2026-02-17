@@ -65,6 +65,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/faq$/,
     /^\/share-unavailable$/,
     /^\/login$/,
+    /^\/auth\/reset-password$/,
     /^\/contact$/,
     /^\/imprint$/,
     /^\/privacy$/,

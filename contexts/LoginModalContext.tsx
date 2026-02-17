@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthModal } from '../components/auth/AuthModal';
 import { useAuth } from '../hooks/useAuth';
@@ -113,15 +113,17 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return (
         <LoginModalContext.Provider value={value}>
             {children}
-            <AuthModal
-                isOpen={state.isOpen}
-                source={state.source}
-                nextPath={state.nextPath}
-                reloadOnSuccess={state.reloadOnSuccess}
-                onClose={(reason) => {
-                    closeLoginModal(reason);
-                }}
-            />
+            <Suspense fallback={null}>
+                <AuthModal
+                    isOpen={state.isOpen}
+                    source={state.source}
+                    nextPath={state.nextPath}
+                    reloadOnSuccess={state.reloadOnSuccess}
+                    onClose={(reason) => {
+                        closeLoginModal(reason);
+                    }}
+                />
+            </Suspense>
         </LoginModalContext.Provider>
     );
 };
