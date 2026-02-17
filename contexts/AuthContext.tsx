@@ -78,29 +78,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         let cancelled = false;
 
-        const hasAuthHashTokens = (): boolean =>
-            typeof window !== 'undefined' && window.location.hash.includes('access_token=');
-
         const stripAuthHash = (): void => {
             if (typeof window === 'undefined') return;
             if (!window.location.hash.includes('access_token=')) return;
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
         };
 
-        const trySessionFromHash = async (): Promise<Session | null> => {
-            if (!supabase || typeof window === 'undefined') return null;
+        const captureHashTokens = (): { accessToken: string; refreshToken: string } | null => {
+            if (typeof window === 'undefined') return null;
             const hash = window.location.hash.substring(1);
             if (!hash) return null;
             const params = new URLSearchParams(hash);
             const accessToken = params.get('access_token');
             const refreshToken = params.get('refresh_token');
             if (!accessToken || !refreshToken) return null;
-            const { data, error } = await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-            });
-            if (error || !data?.session) return null;
-            return data.session;
+            return { accessToken, refreshToken };
         };
 
         const bootstrap = async () => {
@@ -113,12 +105,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 return;
             }
 
+            // Capture hash tokens BEFORE getSession()/onAuthStateChange can
+            // strip or consume them, so we have a reliable fallback.
+            const savedHashTokens = captureHashTokens();
+
             const { data: sessionData } = await supabase.auth.getSession();
             if (cancelled) return;
             let activeSession = sessionData?.session ?? null;
 
-            if (!activeSession && hasAuthHashTokens()) {
-                activeSession = await trySessionFromHash();
+            // Fallback: if detectSessionInUrl didn't establish a session but
+            // we captured tokens from the hash, set the session explicitly.
+            if (!activeSession && savedHashTokens) {
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: savedHashTokens.accessToken,
+                    refresh_token: savedHashTokens.refreshToken,
+                });
+                if (!error && data?.session) {
+                    activeSession = data.session;
+                }
                 if (cancelled) return;
             }
 
@@ -138,9 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const unsubscribe = subscribeToAuthState((_event, nextSession) => {
             logAuthStateEvent(_event, Boolean(nextSession));
-            stripAuthHash();
             setSession(nextSession);
             if (nextSession) {
+                // Only strip auth hash once a real session exists, so the
+                // bootstrap fallback can still read the tokens if needed.
+                stripAuthHash();
                 void refreshAccess();
                 return;
             }
