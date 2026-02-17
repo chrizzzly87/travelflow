@@ -14,7 +14,7 @@ import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
+import { buildTripExpiryIso } from './config/productLimits';
 import { getTripLifecycleState } from './config/paywall';
 import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
@@ -129,6 +129,12 @@ const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsertTrip']>
     if (!DB_ENABLED) return null;
     const db = await loadDbService();
     return db.dbUpsertTrip(...args);
+};
+
+const dbGetSessionKind = async (): Promise<'authenticated' | 'anonymous' | 'unknown'> => {
+    if (!DB_ENABLED) return 'unknown';
+    const db = await loadDbService();
+    return db.dbGetSessionKind();
 };
 
 const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
@@ -372,6 +378,26 @@ const createLocalHistoryEntry = (
     return url;
 };
 
+const resolveTripExpiry = async (
+    createdAtMs: number,
+    ...candidates: Array<string | null | undefined>
+): Promise<string | null | undefined> => {
+    const explicitValue = candidates.find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+    if (explicitValue) return explicitValue;
+
+    if (!DB_ENABLED) {
+        return buildTripExpiryIso(createdAtMs);
+    }
+
+    const sessionKind = await dbGetSessionKind();
+    if (sessionKind === 'anonymous') {
+        return buildTripExpiryIso(createdAtMs);
+    }
+
+    // Authenticated/unknown session should defer to server-side entitlement rules.
+    return undefined;
+};
+
 const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     const locations = trip.items
         .filter((item) => item.type === 'city' && typeof item.location === 'string')
@@ -541,23 +567,12 @@ const SharedTripLoader = ({
     const { token } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { access } = useAuth();
     const lastLoadRef = useRef<string | null>(null);
     const [shareMode, setShareMode] = useState<'view' | 'edit'>('view');
     const [allowCopy, setAllowCopy] = useState(true);
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const [snapshotState, setSnapshotState] = useState<{ hasNewer: boolean; latestUrl: string } | null>(null);
     const [sourceShareVersionId, setSourceShareVersionId] = useState<string | null>(null);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -683,6 +698,7 @@ const SharedTripLoader = ({
             resolvedSourceShareVersionId = sharedNow?.latestVersionId ?? null;
         }
         const now = Date.now();
+        const resolvedTripExpiresAt = await resolveTripExpiry(now);
         const cloned: ITrip = {
             ...trip,
             id: generateTripId(),
@@ -690,7 +706,7 @@ const SharedTripLoader = ({
             updatedAt: now,
             isFavorite: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolvedTripExpiresAt,
             sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
@@ -713,9 +729,17 @@ const SharedTripLoader = ({
         saveTrip(cloned);
         if (DB_ENABLED) {
             await ensureDbSession();
-            await dbUpsertTrip(cloned, viewSettings);
-            const version = await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
-            createLocalHistoryEntry(navigate, cloned, viewSettings, 'Data: Copied trip', undefined, Date.now());
+            const upsertedTripId = await dbUpsertTrip(cloned, viewSettings);
+            const versionId = await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
+            let resolvedCloned = cloned;
+            if (upsertedTripId && versionId) {
+                const persistedTrip = await dbGetTrip(cloned.id);
+                if (persistedTrip?.trip) {
+                    resolvedCloned = persistedTrip.trip;
+                }
+            }
+            saveTrip(resolvedCloned);
+            createLocalHistoryEntry(navigate, resolvedCloned, viewSettings, 'Data: Copied trip', undefined, Date.now());
             return;
         }
         navigate(buildTripUrl(cloned.id));
@@ -765,7 +789,6 @@ const ExampleTripLoader = ({
     const { templateId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { access } = useAuth();
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
     const trackedTemplateRef = useRef<string | null>(null);
     const hydratedTemplateRef = useRef<string | null>(null);
@@ -794,16 +817,6 @@ const ExampleTripLoader = ({
     }, [prefetchedState, prefetchedTrip]);
     const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
     const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(prefetchedTemplateCard);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     useEffect(() => {
         if (prefetchedTemplateCard) {
@@ -933,6 +946,7 @@ const ExampleTripLoader = ({
             }
         }
         const now = Date.now();
+        const resolvedTripExpiresAt = await resolveTripExpiry(now);
         const cloned: ITrip = {
             ...activeTrip,
             id: generateTripId(),
@@ -941,7 +955,7 @@ const ExampleTripLoader = ({
             isFavorite: false,
             isExample: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolvedTripExpiresAt,
             sourceKind: 'duplicate_trip',
             sourceTemplateId: templateId,
             exampleTemplateId: undefined,
@@ -972,8 +986,14 @@ const ExampleTripLoader = ({
 
         if (DB_ENABLED) {
             await ensureDbSession();
-            await dbUpsertTrip(cloned, viewSettings);
-            await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
+            const upsertedTripId = await dbUpsertTrip(cloned, viewSettings);
+            const versionId = await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
+            if (upsertedTripId && versionId) {
+                const persistedTrip = await dbGetTrip(cloned.id);
+                if (persistedTrip?.trip) {
+                    saveTrip(persistedTrip.trip);
+                }
+            }
         }
 
         navigate(buildTripUrl(cloned.id));
@@ -1116,7 +1136,6 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
 
 const AppContent: React.FC = () => {
     const { i18n } = useTranslation();
-    const { access } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1137,16 +1156,6 @@ const AppContent: React.FC = () => {
         });
         rememberAuthReturnPath(currentPath);
     }, [location.hash, location.pathname, location.search]);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     const resolvedRouteLocale = useMemo<AppLanguage>(() => {
         const localeFromPath = extractLocaleFromPath(location.pathname);
@@ -1341,6 +1350,7 @@ const AppContent: React.FC = () => {
             const existingTrip = getTripById(newTrip.id);
             if (existingTrip) {
                 const now = Date.now();
+                const resolvedTripExpiresAt = await resolveTripExpiry(now, newTrip.tripExpiresAt, existingTrip.tripExpiresAt);
                 const updatedTrip: ITrip = {
                     ...existingTrip,
                     ...newTrip,
@@ -1350,7 +1360,7 @@ const AppContent: React.FC = () => {
                     updatedAt: now,
                     isFavorite: existingTrip.isFavorite ?? newTrip.isFavorite ?? false,
                     status: newTrip.status || existingTrip.status || 'active',
-                    tripExpiresAt: newTrip.tripExpiresAt || existingTrip.tripExpiresAt || buildTripExpiryIso(now),
+                    tripExpiresAt: resolvedTripExpiresAt,
                     sourceKind: newTrip.sourceKind || existingTrip.sourceKind || 'created',
                 };
 
@@ -1365,6 +1375,11 @@ const AppContent: React.FC = () => {
                     const upserted = await dbUpsertTrip(updatedTrip, undefined);
                     const versionId = await dbCreateTripVersion(updatedTrip, undefined, 'Data: Updated generated trip');
                     if (!upserted || !versionId) return;
+                    const persistedTrip = await dbGetTrip(updatedTrip.id);
+                    if (persistedTrip?.trip) {
+                        setTrip(persistedTrip.trip);
+                        saveTrip(persistedTrip.trip);
+                    }
                 }
                 return;
             }
@@ -1379,12 +1394,13 @@ const AppContent: React.FC = () => {
             }
 
             const now = Date.now();
+            const resolvedTripExpiresAt = await resolveTripExpiry(now, newTrip.tripExpiresAt);
             const preparedTrip: ITrip = {
                 ...newTrip,
                 createdAt: typeof newTrip.createdAt === 'number' ? newTrip.createdAt : now,
                 updatedAt: now,
                 status: 'active',
-                tripExpiresAt: resolveTripExpiry(now, newTrip.tripExpiresAt),
+                tripExpiresAt: resolvedTripExpiresAt,
                 sourceKind: newTrip.sourceKind || 'created',
             };
             const cityCount = newTrip.items.filter((item) => item.type === 'city').length;
@@ -1411,6 +1427,11 @@ const AppContent: React.FC = () => {
             const upserted = await dbUpsertTrip(preparedTrip, undefined);
             const versionId = await dbCreateTripVersion(preparedTrip, undefined, 'Data: Created trip');
             if (!upserted || !versionId) return;
+            const persistedTrip = await dbGetTrip(preparedTrip.id);
+            if (persistedTrip?.trip) {
+                setTrip(persistedTrip.trip);
+                saveTrip(persistedTrip.trip);
+            }
         };
 
         void create();

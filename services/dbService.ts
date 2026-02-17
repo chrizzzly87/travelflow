@@ -153,6 +153,22 @@ export const dbGetAccessToken = async (): Promise<string | null> => {
     return data?.session?.access_token ?? null;
 };
 
+export type DbSessionKind = 'authenticated' | 'anonymous' | 'unknown';
+
+export const dbGetSessionKind = async (): Promise<DbSessionKind> => {
+    if (!DB_ENABLED) return 'unknown';
+    const client = requireSupabase();
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+        console.error('Failed to determine Supabase session kind', error);
+        return 'unknown';
+    }
+    const user = data?.session?.user;
+    if (!user) return 'unknown';
+    const isAnonymous = Boolean((user as { is_anonymous?: unknown }).is_anonymous);
+    return isAnonymous ? 'anonymous' : 'authenticated';
+};
+
 const isRlsViolation = (error: { code?: string; message?: string } | null) => {
     if (!error) return false;
     if (error.code === '42501') return true;
