@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-11-og-playground-stability-and-controls
-version: v0.46.0
+version: v0.43.0
 title: "Image delivery optimization and OG playground stability"
 date: 2026-02-11
-published_at: 2026-02-11T06:33:16Z
-status: draft
+published_at: 2026-02-17T20:02:10Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Faster blog and inspiration image delivery plus internal OG playground reliability and usability improvements."

@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-13-polish-locale-rollout
-version: v0.54.0
+version: v0.45.0
 title: "Polish locale rollout and font coverage update"
 date: 2026-02-13
-published_at: 2026-02-13T14:13:17Z
-status: draft
+published_at: 2026-02-17T20:03:10Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Added full Polish localization across marketing/app namespaces, aligned language switching UX, and ensured Latin Extended font coverage for Polish characters."

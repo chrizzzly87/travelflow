@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-16-flagpack-real-flags
-version: v0.41.0
+version: v0.49.0
 title: "Flagpack rollout for consistent real flags"
 date: 2026-02-16
-published_at: 2026-02-16T06:51:35Z
-status: draft
+published_at: 2026-02-17T20:05:10Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Replaced emoji flag rendering with a shared Flagpack-based flag component across planner, inspiration, blog, and language UI."

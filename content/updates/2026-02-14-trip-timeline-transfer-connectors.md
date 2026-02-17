@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-14-trip-timeline-transfer-connectors
-version: v0.55.0
+version: v0.48.0
 title: "Timeline transfer lane compaction and connector upgrade"
 date: 2026-02-14
-published_at: 2026-02-14T13:20:45Z
-status: draft
+published_at: 2026-02-17T20:04:40Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip timeline now uses denser transfer lanes, clearer transfer copy, and cleaner connector links between cities."

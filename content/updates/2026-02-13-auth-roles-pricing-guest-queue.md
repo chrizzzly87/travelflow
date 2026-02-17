@@ -7,7 +7,7 @@ published_at: 2026-02-13T14:06:09Z
 status: published
 notify_in_app: true
 in_app_hours: 24
-summary: "Added production auth with tier-based access, synced pricing tiers, and queued guest trip handoff."
+summary: "Established production authentication, tiered access, and guest-to-account queue handoff so trip planning survives sign-in and account recovery."
 ---
 
 ## Changes
