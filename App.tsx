@@ -169,13 +169,7 @@ const CookiesPage = lazyWithRecovery('CookiesPage', () => import('./pages/Cookie
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('./pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('./pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
-const AdminDashboardPage = lazyWithRecovery('AdminDashboardPage', () => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
-const AdminAiBenchmarkPage = lazyWithRecovery('AdminAiBenchmarkPage', () => import('./pages/AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
-const AdminAccessPage = lazyWithRecovery('AdminAccessPage', () => import('./pages/AdminAccessPage').then((module) => ({ default: module.AdminAccessPage })));
-const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./pages/AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
-const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./pages/AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
-const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./pages/AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
-const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./pages/AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
+const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('./pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
 const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
 const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
@@ -215,11 +209,6 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'profile', match: (pathname) => pathname === '/profile', preload: () => import('./pages/ProfilePage') },
     { key: 'profile-settings', match: (pathname) => pathname === '/profile/settings', preload: () => import('./pages/ProfileSettingsPage') },
     { key: 'profile-onboarding', match: (pathname) => pathname === '/profile/onboarding', preload: () => import('./pages/ProfileOnboardingPage') },
-    { key: 'admin-dashboard', match: (pathname) => pathname === '/admin/dashboard', preload: () => import('./pages/AdminDashboardPage') },
-    { key: 'admin-users', match: (pathname) => pathname === '/admin/users', preload: () => import('./pages/AdminUsersPage') },
-    { key: 'admin-trips', match: (pathname) => pathname === '/admin/trips', preload: () => import('./pages/AdminTripsPage') },
-    { key: 'admin-tiers', match: (pathname) => pathname === '/admin/tiers', preload: () => import('./pages/AdminTiersPage') },
-    { key: 'admin-audit', match: (pathname) => pathname === '/admin/audit', preload: () => import('./pages/AdminAuditPage') },
     { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-legacy-lab', match: (pathname) => pathname === '/create-trip/labs/classic-legacy', preload: () => import('./components/CreateTripForm') },
     { key: 'create-trip-design-v1', match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1', preload: () => import('./pages/CreateTripV1Page') },
@@ -1645,58 +1634,10 @@ const AppContent: React.FC = () => {
                     )}
                 />
                 <Route
-                    path="/admin/dashboard"
+                    path="/admin/*"
                     element={renderWithSuspense(
                         <AdminRoute>
-                            <AdminDashboardPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/users"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminUsersPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/trips"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminTripsPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/tiers"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminTiersPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/audit"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminAuditPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/ai-benchmark"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminAiBenchmarkPage />
-                        </AdminRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/access"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminAccessPage />
+                            <AdminWorkspaceRouter />
                         </AdminRoute>
                     )}
                 />

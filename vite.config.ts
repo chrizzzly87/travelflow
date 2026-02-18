@@ -6,8 +6,18 @@ import tailwindcss from '@tailwindcss/vite';
 const normalizeModuleId = (id: string): string => id.split(path.sep).join('/');
 
 const getManualChunk = (id: string): string | undefined => {
-    if (!id.includes('node_modules')) return undefined;
     const normalized = normalizeModuleId(id);
+
+    if (!id.includes('node_modules')) {
+        if (
+            normalized.includes('/pages/Admin') ||
+            normalized.includes('/components/admin/') ||
+            normalized.includes('/services/adminService')
+        ) {
+            return 'admin-workspace';
+        }
+        return undefined;
+    }
 
     if (
         normalized.includes('/node_modules/@phosphor-icons/') ||

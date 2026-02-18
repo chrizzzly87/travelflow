@@ -13,6 +13,8 @@ interface AccountMenuProps {
     compact?: boolean;
 }
 
+type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
+
 const computeInitial = (email: string | null): string => {
     const normalized = (email || '').trim();
     if (!normalized) return 'U';
@@ -55,7 +57,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
         };
     }, [isOpen]);
 
-    const navigateTo = (path: string, eventName: string) => {
+    const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);
         setIsOpen(false);
         navigate(path);

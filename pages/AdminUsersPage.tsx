@@ -3,6 +3,7 @@ import { ArrowsDownUp, PlusCircle, UserCircle, SpinnerGap, Trash, UserPlus, Enve
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminCreateUserDirect,
     adminCreateUserInvite,
@@ -176,6 +177,7 @@ export const AdminUsersPage: React.FC = () => {
 
     const filteredUsers = useMemo(() => {
         const filtered = users.filter((user) => {
+            if (!isIsoDateInRange(user.created_at, dateRange)) return false;
             if (roleFilter !== 'all' && user.system_role !== roleFilter) return false;
             if (tierFilter !== 'all' && user.tier_key !== tierFilter) return false;
             if (statusFilter !== 'all' && (user.account_status || 'active') !== statusFilter) return false;
@@ -197,7 +199,7 @@ export const AdminUsersPage: React.FC = () => {
             return sortDirection === 'asc' ? base : -base;
         });
         return sorted;
-    }, [roleFilter, searchValue, sortDirection, sortKey, statusFilter, tierFilter, users]);
+    }, [dateRange, roleFilter, searchValue, sortDirection, sortKey, statusFilter, tierFilter, users]);
 
     const pageCount = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
     const pagedUsers = useMemo(() => {
@@ -304,10 +306,7 @@ export const AdminUsersPage: React.FC = () => {
         setErrorMessage(null);
         setMessage(null);
         try {
-            await adminUpdateTrip(trip.trip_id, {
-                status: patch.status ?? null,
-                tripExpiresAt: patch.tripExpiresAt ?? null,
-            });
+            await adminUpdateTrip(trip.trip_id, patch);
             setMessage('Trip updated.');
             if (selectedUser) {
                 const rows = await adminListUserTrips(selectedUser.user_id);
@@ -528,7 +527,9 @@ export const AdminUsersPage: React.FC = () => {
 
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                         <span>
-                            Showing {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filteredUsers.length)} of {filteredUsers.length}
+                            {filteredUsers.length === 0
+                                ? 'Showing 0 users'
+                                : `Showing ${(page - 1) * PAGE_SIZE + 1}-${Math.min(page * PAGE_SIZE, filteredUsers.length)} of ${filteredUsers.length}`}
                         </span>
                         <div className="flex items-center gap-1">
                             <button

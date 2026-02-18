@@ -3,6 +3,7 @@ import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import type { PlanTierKey } from '../types';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminListUsers,
     adminPreviewTierReapply,
@@ -61,10 +62,11 @@ export const AdminTiersPage: React.FC = () => {
     useEffect(() => {
         void adminListUsers({ limit: 500 })
             .then((users) => {
+                const rangeUsers = users.filter((user) => isIsoDateInRange(user.created_at, dateRange));
                 setTierCounts({
-                    tier_free: users.filter((user) => user.tier_key === 'tier_free').length,
-                    tier_mid: users.filter((user) => user.tier_key === 'tier_mid').length,
-                    tier_premium: users.filter((user) => user.tier_key === 'tier_premium').length,
+                    tier_free: rangeUsers.filter((user) => user.tier_key === 'tier_free').length,
+                    tier_mid: rangeUsers.filter((user) => user.tier_key === 'tier_mid').length,
+                    tier_premium: rangeUsers.filter((user) => user.tier_key === 'tier_premium').length,
                 });
             })
             .catch(() => {
@@ -110,6 +112,15 @@ export const AdminTiersPage: React.FC = () => {
         }
     };
 
+    const visibleTierKeys = PLAN_ORDER.filter((tierKey) => {
+        const token = searchValue.trim().toLowerCase();
+        if (!token) return true;
+        return (
+            tierKey.toLowerCase().includes(token)
+            || PLAN_CATALOG[tierKey].publicName.toLowerCase().includes(token)
+        );
+    });
+
     return (
         <AdminShell
             title="Tier and Entitlement Control"
@@ -131,18 +142,18 @@ export const AdminTiersPage: React.FC = () => {
             )}
 
             <section className="grid gap-3 md:grid-cols-3">
-                {PLAN_ORDER.map((tierKey) => (
+                {visibleTierKeys.map((tierKey) => (
                     <article key={`count-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
                         <p className="mt-1 text-sm font-semibold text-slate-800">{PLAN_CATALOG[tierKey].publicName}</p>
                         <p className="mt-2 text-2xl font-black text-slate-900">{tierCounts[tierKey]}</p>
-                        <p className="text-xs text-slate-500">Assigned users</p>
+                        <p className="text-xs text-slate-500">Users in selected date range</p>
                     </article>
                 ))}
             </section>
 
             <section className="mt-4 grid gap-3 xl:grid-cols-3">
-                {PLAN_ORDER.map((tierKey) => (
+                {visibleTierKeys.map((tierKey) => (
                     <article key={`tier-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-2">
                             <div>
@@ -215,6 +226,11 @@ export const AdminTiersPage: React.FC = () => {
                     </article>
                 ))}
             </section>
+            {visibleTierKeys.length === 0 && (
+                <section className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+                    No tiers match the current search filter.
+                </section>
+            )}
         </AdminShell>
     );
 };

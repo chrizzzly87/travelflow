@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListAuditLogs, type AdminAuditRecord } from '../services/adminService';
 
 export const AdminAuditPage: React.FC = () => {
@@ -21,18 +22,7 @@ export const AdminAuditPage: React.FC = () => {
                 action: actionFilter || undefined,
                 targetType: targetFilter || undefined,
             });
-            const filtered = searchValue.trim()
-                ? rows.filter((log) => {
-                    const token = searchValue.trim().toLowerCase();
-                    return (
-                        (log.action || '').toLowerCase().includes(token)
-                        || (log.target_type || '').toLowerCase().includes(token)
-                        || (log.target_id || '').toLowerCase().includes(token)
-                        || (log.actor_email || '').toLowerCase().includes(token)
-                    );
-                })
-                : rows;
-            setLogs(filtered);
+            setLogs(rows);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not load audit logs.');
             setLogs([]);
@@ -44,7 +34,21 @@ export const AdminAuditPage: React.FC = () => {
     useEffect(() => {
         void loadLogs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRange, actionFilter, targetFilter]);
+    }, [actionFilter, targetFilter]);
+
+    const visibleLogs = useMemo(() => {
+        const token = searchValue.trim().toLowerCase();
+        return logs.filter((log) => {
+            if (!isIsoDateInRange(log.created_at, dateRange)) return false;
+            if (!token) return true;
+            return (
+                (log.action || '').toLowerCase().includes(token)
+                || (log.target_type || '').toLowerCase().includes(token)
+                || (log.target_id || '').toLowerCase().includes(token)
+                || (log.actor_email || '').toLowerCase().includes(token)
+            );
+        });
+    }, [dateRange, logs, searchValue]);
 
     return (
         <AdminShell
@@ -99,7 +103,7 @@ export const AdminAuditPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {logs.map((log) => (
+                            {visibleLogs.map((log) => (
                                 <tr key={log.id} className="border-b border-slate-100 align-top">
                                     <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
                                     <td className="px-3 py-2 text-xs text-slate-700">{log.actor_email || log.actor_user_id || 'unknown'}</td>
@@ -115,7 +119,7 @@ export const AdminAuditPage: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {logs.length === 0 && !isLoading && (
+                            {visibleLogs.length === 0 && !isLoading && (
                                 <tr>
                                     <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
                                         No audit entries found for the current filters.

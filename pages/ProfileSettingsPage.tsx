@@ -88,7 +88,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return () => {
             active = false;
         };
-    }, [access?.email, isAuthenticated]);
+    }, [isAuthenticated]);
 
     const isMissingRequired = useMemo(() => hasMissingRequiredField(form), [form]);
 

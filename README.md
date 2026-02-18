@@ -73,6 +73,13 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/admin/audit` admin action audit timeline
 - `/admin/ai-benchmark` internal AI benchmark workspace (classic input + multi-model runs + persisted session table + persisted run ranking)
 
+## Admin security and isolation
+
+- Admin UI is route-isolated behind `/admin/*` and lazy-loaded as a separate workspace router, so public and normal-user routes do not preload admin page code.
+- Browser bundles are always publicly retrievable in any SPA deployment, so no database secrets or service-role credentials are shipped client-side.
+- Admin data access is enforced server-side via Supabase RLS + RPC permission checks (`has_admin_permission`) and edge authorization for privileged identity actions (`/api/internal/admin/iam`).
+- Compatibility note: current RBAC includes a temporary fail-open path for legacy admins without explicit role rows; strict role-only enforcement is tracked in `docs/AUTH_ROLES_IMPLEMENTATION_NOTES.md`.
+
 ## I18n And Locale Routing Workflow
 
 For adding new localized pages, route keys, SEO metadata, and translation resources, follow:

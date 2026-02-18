@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowClockwise } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';
 
 const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
@@ -38,15 +39,25 @@ export const AdminDashboardPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateRange, searchValue]);
 
+    const scopedUsers = useMemo(
+        () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
+        [dateRange, users]
+    );
+
+    const scopedTrips = useMemo(
+        () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
+        [dateRange, trips]
+    );
+
     const metrics = useMemo(() => {
-        const totalUsers = users.length;
-        const activeUsers = users.filter((user) => (user.account_status || 'active') === 'active').length;
-        const disabledUsers = users.filter((user) => user.account_status === 'disabled').length;
-        const adminUsers = users.filter((user) => user.system_role === 'admin').length;
-        const totalTrips = trips.length;
-        const activeTrips = trips.filter((trip) => trip.status === 'active').length;
-        const expiredTrips = trips.filter((trip) => trip.status === 'expired').length;
-        const archivedTrips = trips.filter((trip) => trip.status === 'archived').length;
+        const totalUsers = scopedUsers.length;
+        const activeUsers = scopedUsers.filter((user) => (user.account_status || 'active') === 'active').length;
+        const disabledUsers = scopedUsers.filter((user) => user.account_status === 'disabled').length;
+        const adminUsers = scopedUsers.filter((user) => user.system_role === 'admin').length;
+        const totalTrips = scopedTrips.length;
+        const activeTrips = scopedTrips.filter((trip) => trip.status === 'active').length;
+        const expiredTrips = scopedTrips.filter((trip) => trip.status === 'expired').length;
+        const archivedTrips = scopedTrips.filter((trip) => trip.status === 'archived').length;
         return {
             totalUsers,
             activeUsers,
@@ -57,17 +68,17 @@ export const AdminDashboardPage: React.FC = () => {
             expiredTrips,
             archivedTrips,
         };
-    }, [trips, users]);
+    }, [scopedTrips, scopedUsers]);
 
     const tripStatusBars = useMemo(() => {
-        const total = Math.max(trips.length, 1);
+        const total = Math.max(scopedTrips.length, 1);
         const toPct = (count: number): number => Math.round((count / total) * 100);
         return [
             { id: 'active', label: 'Active', count: metrics.activeTrips, pct: toPct(metrics.activeTrips), className: 'bg-emerald-500' },
             { id: 'expired', label: 'Expired', count: metrics.expiredTrips, pct: toPct(metrics.expiredTrips), className: 'bg-amber-500' },
             { id: 'archived', label: 'Archived', count: metrics.archivedTrips, pct: toPct(metrics.archivedTrips), className: 'bg-slate-500' },
         ];
-    }, [metrics.activeTrips, metrics.archivedTrips, metrics.expiredTrips, trips.length]);
+    }, [metrics.activeTrips, metrics.archivedTrips, metrics.expiredTrips, scopedTrips.length]);
 
     return (
         <AdminShell
@@ -143,7 +154,7 @@ export const AdminDashboardPage: React.FC = () => {
                     <h2 className="text-sm font-semibold text-slate-900">Recent users</h2>
                     <p className="mt-1 text-xs text-slate-500">Most recently created profiles.</p>
                     <div className="mt-4 space-y-2">
-                        {(users.slice(0, 6)).map((user) => (
+                        {(scopedUsers.slice(0, 6)).map((user) => (
                             <div key={user.user_id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                                 <div className="truncate text-sm font-semibold text-slate-800">{user.email || user.user_id}</div>
                                 <div className="text-[11px] text-slate-500">
@@ -151,7 +162,7 @@ export const AdminDashboardPage: React.FC = () => {
                                 </div>
                             </div>
                         ))}
-                        {users.length === 0 && !isLoading && (
+                        {scopedUsers.length === 0 && !isLoading && (
                             <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-500">
                                 No users found for this filter.
                             </div>

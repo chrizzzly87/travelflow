@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SpinnerGap, ArrowClockwise } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
+import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminUpdateTrip, type AdminTripRecord } from '../services/adminService';
 
 const toDateTimeInputValue = (value: string | null): string => {
@@ -38,7 +39,6 @@ export const AdminTripsPage: React.FC = () => {
         try {
             const rows = await adminListTrips({
                 limit: 600,
-                search: searchValue || undefined,
                 status: statusFilter,
             });
             setTrips(rows);
@@ -53,14 +53,28 @@ export const AdminTripsPage: React.FC = () => {
     useEffect(() => {
         void loadTrips();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateRange, statusFilter]);
+    }, [statusFilter]);
+
+    const visibleTrips = useMemo(() => {
+        const token = searchValue.trim().toLowerCase();
+        return trips.filter((trip) => {
+            if (!isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)) return false;
+            if (!token) return true;
+            return (
+                (trip.title || '').toLowerCase().includes(token)
+                || trip.trip_id.toLowerCase().includes(token)
+                || (trip.owner_email || '').toLowerCase().includes(token)
+                || trip.owner_id.toLowerCase().includes(token)
+            );
+        });
+    }, [dateRange, searchValue, trips]);
 
     const summary = useMemo(() => ({
-        total: trips.length,
-        active: trips.filter((trip) => trip.status === 'active').length,
-        expired: trips.filter((trip) => trip.status === 'expired').length,
-        archived: trips.filter((trip) => trip.status === 'archived').length,
-    }), [trips]);
+        total: visibleTrips.length,
+        active: visibleTrips.filter((trip) => trip.status === 'active').length,
+        expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
+        archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
+    }), [visibleTrips]);
 
     const updateTripStatus = async (
         trip: AdminTripRecord,
@@ -73,10 +87,7 @@ export const AdminTripsPage: React.FC = () => {
         setErrorMessage(null);
         setMessage(null);
         try {
-            await adminUpdateTrip(trip.trip_id, {
-                status: patch.status ?? null,
-                tripExpiresAt: patch.tripExpiresAt ?? null,
-            });
+            await adminUpdateTrip(trip.trip_id, patch);
             setMessage('Trip updated.');
             await loadTrips();
         } catch (error) {
@@ -162,7 +173,7 @@ export const AdminTripsPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {trips.map((trip) => (
+                            {visibleTrips.map((trip) => (
                                 <tr key={trip.trip_id} className="border-b border-slate-100 align-top">
                                     <td className="px-3 py-2">
                                         <div className="max-w-[320px] truncate text-sm font-semibold text-slate-800">{trip.title || trip.trip_id}</div>
@@ -200,7 +211,7 @@ export const AdminTripsPage: React.FC = () => {
                                     </td>
                                 </tr>
                             ))}
-                            {trips.length === 0 && !isLoading && (
+                            {visibleTrips.length === 0 && !isLoading && (
                                 <tr>
                                     <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
                                         No trips match the current filters.

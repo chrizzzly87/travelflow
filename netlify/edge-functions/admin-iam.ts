@@ -259,7 +259,11 @@ export default async (request: Request): Promise<Response> => {
   }
 
   const authResult = await authorizeAdminRequest(config, authToken);
-  if (!authResult.ok) return authResult.response;
+  if (!authResult.ok) {
+    return "response" in authResult
+      ? authResult.response
+      : json(403, { ok: false, error: "Admin authorization failed." });
+  }
 
   const body = await parseBody(request);
   if (!body || !body.action) {
