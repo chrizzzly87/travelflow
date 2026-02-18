@@ -5,7 +5,6 @@ import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, R
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
 import { ItineraryMap } from './ItineraryMap';
-import { CountryInfo } from './CountryInfo';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
@@ -84,6 +83,10 @@ const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
 
 const AddCityModal = lazyWithRecovery('AddCityModal', () =>
     import('./AddCityModal').then((module) => ({ default: module.AddCityModal }))
+);
+
+const CountryInfo = lazyWithRecovery('CountryInfo', () =>
+    import('./CountryInfo').then((module) => ({ default: module.CountryInfo }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -3235,7 +3238,9 @@ export const TripView: React.FC<TripViewProps> = ({
 
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         {displayTrip.countryInfo ? (
-                                            <CountryInfo info={displayTrip.countryInfo} />
+                                            <Suspense fallback={<div className="text-xs text-gray-500">Loading destination info...</div>}>
+                                                <CountryInfo info={displayTrip.countryInfo} />
+                                            </Suspense>
                                         ) : isPaywallLocked ? (
                                             <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
                                         ) : (
