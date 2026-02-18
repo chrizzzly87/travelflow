@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
@@ -8,7 +8,6 @@ import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry } from './services/historyService';
 import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './utils';
 import { DB_ENABLED } from './config/db';
-import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { trackEvent } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
@@ -18,9 +17,7 @@ import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
 import { SpeculationRulesManager } from './components/SpeculationRulesManager';
 import { isNavPrefetchEnabled } from './services/navigationPrefetch';
-import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
-import { LoginModalProvider } from './contexts/LoginModalContext';
 import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
@@ -34,6 +31,7 @@ import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
+import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { getPathnameFromHref, preloadRouteForPath } from './app/prefetch/fallbackRouteWarmup';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
@@ -404,15 +402,9 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <Router>
-            <AuthProvider>
-                <AppDialogProvider>
-                    <LoginModalProvider>
-                        <AppContent />
-                    </LoginModalProvider>
-                </AppDialogProvider>
-            </AuthProvider>
-        </Router>
+        <AppProviderShell>
+            <AppContent />
+        </AppProviderShell>
     );
 };
 

@@ -20,16 +20,17 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Initial CSS (raw) observed around 989 KB.
 - [x] `App.tsx` very large and centralizing many concerns.
 
-## Latest measured snapshot (after CSS flagpack removal pass)
-- [x] Build entry JS: `assets/index-BapA8BLz.js` at `~795.05 KB` raw (`~167.12 KB` gzip).
+## Latest measured snapshot (after admin deferral + provider-shell extraction pass)
+- [x] Build entry JS: `assets/index-CV-y_TAw.js` at `~795.10 KB` raw (`~167.40 KB` gzip).
 - [x] Build entry CSS: `assets/index-CT96qplL.css` at `~157.76 KB` raw (`~25.06 KB` gzip).
 - [x] `dist/index.html` now loads one module script and one stylesheet only (no modulepreload list).
 - [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 179`.
 - [x] Critical entry path (JS+CSS, unique) reduced further to `~930.48 KiB` (from prior baseline `~1762.42 KiB`).
 - [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
-- [x] `App.tsx` reduced from `1076` lines to `419` lines by extracting route/prefetch/bootstrap modules.
+- [x] `App.tsx` reduced from `1076` lines to `411` lines by extracting route/prefetch/bootstrap modules.
 - [x] `SiteHeader` now dynamically imports `MobileMenu` and `AccountMenu`; the heavy select implementation is no longer in the header initial-load graph.
 - [x] Removed global `flagpack` stylesheet import and switched `FlagIcon` rendering to emoji, eliminating the large flag SVG manifest from initial CSS output.
+- [x] `MobileMenu` now defers admin navigation config loading via dynamic import; admin metadata is no longer statically bundled into shared menu code.
 
 ## Route perf check snapshot (Lighthouse, local preview, mobile profile)
 - [x] `/` improved from `41` to `76-78` score after deferring eager carousel prewarm + desktop-only plane-window media.
@@ -56,8 +57,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Decouple `DB_ENABLED` from `supabaseClient` runtime import in `config/db.ts`.
 - [x] Lazy-load `AuthModal` from `LoginModalContext`.
 - [x] Lazy-load AuthContext service calls via dynamic auth/supabase imports.
-- [ ] Split remaining `App.tsx` responsibilities into focused modules:
-- [ ] `app/bootstrap/*` (providers + startup effects; startup hooks extracted, provider shell still in `App.tsx`)
+- [x] Split remaining `App.tsx` responsibilities into focused modules:
+- [x] `app/bootstrap/*` (providers + startup effects; provider shell extracted to `AppProviderShell`)
 - [x] `app/routes/*` (route table)
 - [x] `app/trip/*` (trip loaders/handlers)
 - [x] `app/prefetch/*` (route preload + warmup logic)
@@ -66,7 +67,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 ## Phase 3: Additional first-load wins (next)
 - [x] Reduce globally mounted heavy UI dependencies on marketing entry path.
 - [x] Audit language selector/header dependency graph for lightweight path.
-- [ ] Keep admin-specific dependencies loading only in admin routes.
+- [x] Keep admin-specific dependencies out of shared non-admin initial paths (admin nav config deferred behind admin-only runtime check).
 - [x] Disable build-time asset inlining to stop large flag SVG data URIs from inflating entry CSS.
 - [x] Re-check CSS payload and extract non-critical styles where safe.
 

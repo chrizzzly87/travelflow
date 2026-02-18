@@ -42,3 +42,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧪 Added route-level Lighthouse checks for `/`, `/create-trip`, and `/trip/:id` and used the results to remove eager home carousel `TripView` prewarm from first render.
 - [ ] [Internal] 🧭 Replaced header locale selection with a lightweight native control and lazy-loaded account/mobile header menus so they do not load on first paint.
 - [ ] [Internal] 🏳️ Replaced global flagpack CSS usage with emoji-based flag rendering to remove heavy flag stylesheet payload from initial page load.
+- [ ] [Internal] 🛡️ Deferred admin navigation metadata loading in the shared mobile menu so non-admin sessions no longer pay the admin-config parsing cost.
+- [ ] [Internal] 🧱 Extracted app-level provider composition into `app/bootstrap/AppProviderShell.tsx` to keep root bootstrap responsibilities isolated from app orchestration logic.
