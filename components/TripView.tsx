@@ -85,16 +85,16 @@ const AddCityModal = lazyWithRecovery('AddCityModal', () =>
     import('./AddCityModal').then((module) => ({ default: module.AddCityModal }))
 );
 
-const CountryInfo = lazyWithRecovery('CountryInfo', () =>
-    import('./CountryInfo').then((module) => ({ default: module.CountryInfo }))
-);
-
 const TripShareModal = lazyWithRecovery('TripShareModal', () =>
     import('./TripShareModal').then((module) => ({ default: module.TripShareModal }))
 );
 
 const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
+const TripInfoModal = lazyWithRecovery('TripInfoModal', () =>
+    import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -2197,6 +2197,15 @@ export const TripView: React.FC<TripViewProps> = ({
     const infoHistoryEntries = useMemo(() => {
         return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
     }, [displayHistoryEntries, showAllHistory]);
+    const tripInfoHistoryItems = useMemo(() => {
+        return infoHistoryEntries.map((entry) => ({
+            id: entry.id,
+            url: entry.url,
+            ts: entry.ts,
+            details: stripHistoryPrefix(entry.label),
+            isCurrent: entry.url === currentUrl,
+        }));
+    }, [infoHistoryEntries, currentUrl]);
 
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;
@@ -3042,237 +3051,46 @@ export const TripView: React.FC<TripViewProps> = ({
                         </Suspense>
                      )}
 
-                     {isTripInfoOpen && (
-                        <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>
-                            <div
-                                role="dialog"
-                                aria-modal="true"
-                                aria-labelledby="trip-info-title"
-                                className="bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                    <div>
-                                        <h3 id="trip-info-title" className="text-lg font-bold text-gray-900">Trip information</h3>
-                                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
-                                    </div>
-                                    <button onClick={() => setIsTripInfoOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                                        Close
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                    <section className="border border-gray-200 rounded-xl p-3 space-y-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0 flex-1">
-                                                {isEditingTitle ? (
-                                                    <input
-                                                        value={editTitleValue}
-                                                        onChange={(e) => setEditTitleValue(e.target.value)}
-                                                        onBlur={handleCommitTitleEdit}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleCommitTitleEdit();
-                                                        }}
-                                                        autoFocus
-                                                        className="w-full font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
-                                                    />
-                                                ) : (
-                                                    <h4 className="text-lg font-bold text-gray-900 break-words">{trip.title}</h4>
-                                                )}
-                                            </div>
-                                            {canManageTripMetadata && (
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleStartTitleEdit}
-                                                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Edit title"
-                                                    >
-                                                        <Pencil size={16} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleToggleFavorite}
-                                                        disabled={!canEdit}
-                                                        className={`p-2 rounded-lg transition-colors ${canEdit ? 'hover:bg-amber-50' : 'opacity-50 cursor-not-allowed'}`}
-                                                        title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                                        aria-label={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                                    >
-                                                        <Star
-                                                            size={16}
-                                                            className={trip.isFavorite ? 'text-amber-500 fill-amber-400' : 'text-gray-300 hover:text-amber-500'}
-                                                        />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {!canManageTripMetadata && (
-                                            <p className="text-xs text-gray-500">
-                                                {isExamplePreview
-                                                    ? 'Example trips cannot be renamed or favorited. Copy this trip first to make it your own.'
-                                                    : 'Edit and favorite actions are unavailable for shared trips.'}
-                                            </p>
-                                        )}
-                                    </section>
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Trip meta</h4>
-                                        <dl className="grid grid-cols-2 gap-2 text-xs">
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Duration</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.dateRange}</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Total days</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.totalDaysLabel} days</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Cities</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.cityCount}</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Total distance</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.distanceLabel || '—'}</dd>
-                                            </div>
-                                        </dl>
-                                    </section>
-
-                                    {displayTrip.aiMeta && (
-                                        <section className="border border-gray-200 rounded-xl p-3">
-                                            <h4 className="text-sm font-semibold text-gray-800 mb-2">AI generation</h4>
-                                            <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                    <dt className="text-gray-500">Provider</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900">{displayTrip.aiMeta.provider}</dd>
-                                                </div>
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                    <dt className="text-gray-500">Model</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900 break-all">{displayTrip.aiMeta.model}</dd>
-                                                </div>
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2 sm:col-span-2">
-                                                    <dt className="text-gray-500">Generated at</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900">
-                                                        {displayTrip.aiMeta.generatedAt
-                                                            ? new Date(displayTrip.aiMeta.generatedAt).toLocaleString()
-                                                            : '—'}
-                                                    </dd>
-                                                </div>
-                                            </dl>
-                                        </section>
-                                    )}
-
-                                    {forkMeta && (
-                                        <section className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">Trip source</p>
-                                            <p className="mt-1 text-sm font-semibold text-gray-900">{forkMeta.label}</p>
-                                            <p className="mt-1 text-xs text-gray-600">
-                                                {forkMeta.url
-                                                    ? 'This itinerary was copied from a shared trip snapshot.'
-                                                    : 'This itinerary was copied from another trip in your workspace.'}
-                                            </p>
-                                            {forkMeta.url && (
-                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-700 hover:underline">
-                                                    View source
-                                                </a>
-                                            )}
-                                        </section>
-                                    )}
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsTripInfoHistoryExpanded(v => !v)}
-                                            className="w-full flex items-center justify-between text-sm font-semibold text-gray-800"
-                                        >
-                                            <span>History</span>
-                                            {isTripInfoHistoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                        </button>
-                                        {isTripInfoHistoryExpanded && (
-                                            <div className="mt-3 space-y-3">
-                                                {isExamplePreview ? (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                                                        Example trips do not save history snapshots. Copy this trip first to keep edits and track changes.
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => navigateHistory('undo')}
-                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                Undo
-                                                            </button>
-                                                            <button
-                                                                onClick={() => navigateHistory('redo')}
-                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                Redo
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setShowAllHistory(v => !v)}
-                                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                {showAllHistory ? 'Show Recent' : 'Show All'}
-                                                            </button>
-                                                        </div>
-                                                        <div className="rounded-lg border border-gray-100 overflow-hidden">
-                                                            {infoHistoryEntries.length === 0 ? (
-                                                                <div className="p-4 text-xs text-gray-500">No history entries yet.</div>
-                                                            ) : (
-                                                                <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto">
-                                                                    {infoHistoryEntries.map(entry => {
-                                                                        const isCurrent = entry.url === currentUrl;
-                                                                        const details = stripHistoryPrefix(entry.label);
-                                                                        return (
-                                                                            <li key={entry.id} className={`p-3 flex items-start gap-2 ${isCurrent ? 'bg-accent-50/70' : 'bg-white'}`}>
-                                                                                <div className="min-w-0 flex-1">
-                                                                                    <div className="text-[11px] text-gray-500">{formatHistoryTime(entry.ts)}</div>
-                                                                                    <div className="text-xs font-semibold text-gray-900 leading-snug">{details}</div>
-                                                                                </div>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setIsTripInfoOpen(false);
-                                                                                        suppressCommitRef.current = true;
-                                                                                        navigate(entry.url);
-                                                                                    }}
-                                                                                    className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                                                >
-                                                                                    Go
-                                                                                </button>
-                                                                            </li>
-                                                                        );
-                                                                    })}
-                                                                </ul>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setIsTripInfoOpen(false);
-                                                                setIsHistoryOpen(true);
-                                                            }}
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                                                        >
-                                                            Open full history
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-                                    </section>
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        {displayTrip.countryInfo ? (
-                                            <Suspense fallback={<div className="text-xs text-gray-500">Loading destination info...</div>}>
-                                                <CountryInfo info={displayTrip.countryInfo} />
-                                            </Suspense>
-                                        ) : isPaywallLocked ? (
-                                            <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
-                                        ) : (
-                                            <div className="text-xs text-gray-500">No destination info available for this trip yet.</div>
-                                        )}
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
+                    {isTripInfoOpen && (
+                        <Suspense fallback={null}>
+                            <TripInfoModal
+                                isOpen={isTripInfoOpen}
+                                onClose={() => setIsTripInfoOpen(false)}
+                                tripTitle={trip.title}
+                                isEditingTitle={isEditingTitle}
+                                editTitleValue={editTitleValue}
+                                onEditTitleValueChange={setEditTitleValue}
+                                onCommitTitleEdit={handleCommitTitleEdit}
+                                onStartTitleEdit={handleStartTitleEdit}
+                                canManageTripMetadata={canManageTripMetadata}
+                                canEdit={canEdit}
+                                isFavorite={trip.isFavorite}
+                                onToggleFavorite={handleToggleFavorite}
+                                isExamplePreview={isExamplePreview}
+                                tripMeta={tripMeta}
+                                aiMeta={displayTrip.aiMeta}
+                                forkMeta={forkMeta}
+                                isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
+                                onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded(v => !v)}
+                                showAllHistory={showAllHistory}
+                                onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
+                                onHistoryUndo={() => navigateHistory('undo')}
+                                onHistoryRedo={() => navigateHistory('redo')}
+                                infoHistoryItems={tripInfoHistoryItems}
+                                onGoToHistoryEntry={(url) => {
+                                    setIsTripInfoOpen(false);
+                                    suppressCommitRef.current = true;
+                                    navigate(url);
+                                }}
+                                onOpenFullHistory={() => {
+                                    setIsTripInfoOpen(false);
+                                    setIsHistoryOpen(true);
+                                }}
+                                formatHistoryTime={formatHistoryTime}
+                                countryInfo={displayTrip.countryInfo}
+                                isPaywallLocked={isPaywallLocked}
+                            />
+                        </Suspense>
                      )}
 
                     {shouldEnableReleaseNotice && (
