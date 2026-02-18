@@ -55,6 +55,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After lazy-loading AI helpers inside trip-side panels, `/example/thailand-islands` no longer fetches `aiService` on first load and improved from `87` to `91` score with transfer dropping from `~504.2 KiB` to `~449.0 KiB`.
 - [x] Moved release-notice rendering (markdown + release-note parsing) out of static `TripView` imports into a lazy chunk gated by first interaction/idle; `/example/thailand-islands` transfer dropped further from `~449.0 KiB` to `~415.4 KiB` and no longer requests `ReleasePill`/`releaseNotesService` on initial load.
 - [x] Lazy-loaded `MarkdownEditor` (in details + print flows) and `PrintLayout` itself so markdown parsing/print UI are no longer in the trip static import path; `/example/thailand-islands` improved from `~410.3 KiB` to `~359.9 KiB` transfer (`36` to `35` requests) and trip static graph dropped from `~865.5 KiB` to `~691.6 KiB`.
+- [x] Deferred `DetailsPanel`/`SelectedCitiesPanel` behind lazy imports so trip details tooling loads only after selection; `/example/thailand-islands` improved from `~359.9 KiB` to `~345.0 KiB` transfer (`35` to `34` requests) and trip static graph dropped further from `~691.6 KiB` to `~640.5 KiB`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -95,6 +96,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load trip AI helper calls inside `DetailsPanel` and `AddActivityModal` so `aiService` only loads when a user triggers AI actions.
 - [x] Extract release notice UI/markdown logic from `TripView` into a lazy-loaded component and defer mounting behind interaction/idle gating.
 - [x] Lazy-load `MarkdownEditor` inside details/print flows and lazy-load `PrintLayout` in `TripView` so markdown/parser bundles do not block initial trip render.
+- [x] Lazy-load `DetailsPanel` and `SelectedCitiesPanel` in `TripView` so heavy detail-editing logic is loaded only when users select timeline items.
 
 ## Validation checklist
 - [x] `npx vite build`

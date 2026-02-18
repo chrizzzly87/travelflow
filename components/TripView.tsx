@@ -4,8 +4,6 @@ import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phos
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
 import { VerticalTimeline } from './VerticalTimeline';
-import { DetailsPanel } from './DetailsPanel';
-import { SelectedCitiesPanel } from './SelectedCitiesPanel';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
@@ -70,6 +68,14 @@ const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
     import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
+);
+
+const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
+    import('./DetailsPanel').then((module) => ({ default: module.DetailsPanel }))
+);
+
+const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
+    import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -2725,34 +2731,38 @@ export const TripView: React.FC<TripViewProps> = ({
                                         {detailsPanelVisible && (
                                             <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
                                                 {showSelectedCitiesPanel ? (
-                                                    <SelectedCitiesPanel
-                                                        selectedCities={selectedCitiesInTimeline}
-                                                        onClose={clearSelection}
-                                                        onApplyOrder={applySelectedCityOrder}
-                                                        onReverse={handleReverseSelectedCities}
-                                                        timelineView={timelineView}
-                                                        readOnly={!canEdit}
-                                                    />
+                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                                                        <SelectedCitiesPanel
+                                                            selectedCities={selectedCitiesInTimeline}
+                                                            onClose={clearSelection}
+                                                            onApplyOrder={applySelectedCityOrder}
+                                                            onReverse={handleReverseSelectedCities}
+                                                            timelineView={timelineView}
+                                                            readOnly={!canEdit}
+                                                        />
+                                                    </Suspense>
                                                 ) : (
-                                                    <DetailsPanel
-                                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                                        isOpen={!!selectedItemId}
-                                                        onClose={clearSelection}
-                                                        onUpdate={handleUpdateItem}
-                                                        onBatchUpdate={handleBatchItemUpdate}
-                                                        onDelete={handleDeleteItem}
-                                                        tripStartDate={trip.startDate}
-                                                        tripItems={displayTrip.items}
-                                                        routeMode={routeMode}
-                                                        routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                        onForceFill={handleForceFill}
-                                                        forceFillMode={selectedCityForceFill?.mode}
-                                                        forceFillLabel={selectedCityForceFill?.label}
-                                                        variant="sidebar"
-                                                        readOnly={!canEdit}
-                                                        cityColorPaletteId={cityColorPaletteId}
-                                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                                    />
+                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                                                        <DetailsPanel
+                                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
+                                                            isOpen={!!selectedItemId}
+                                                            onClose={clearSelection}
+                                                            onUpdate={handleUpdateItem}
+                                                            onBatchUpdate={handleBatchItemUpdate}
+                                                            onDelete={handleDeleteItem}
+                                                            tripStartDate={trip.startDate}
+                                                            tripItems={displayTrip.items}
+                                                            routeMode={routeMode}
+                                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                                            onForceFill={handleForceFill}
+                                                            forceFillMode={selectedCityForceFill?.mode}
+                                                            forceFillLabel={selectedCityForceFill?.label}
+                                                            variant="sidebar"
+                                                            readOnly={!canEdit}
+                                                            cityColorPaletteId={cityColorPaletteId}
+                                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+                                                        />
+                                                    </Suspense>
                                                 )}
                                                 <div
                                                     className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
@@ -2865,34 +2875,38 @@ export const TripView: React.FC<TripViewProps> = ({
                                             {detailsPanelVisible && (
                                                 <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
                                                     {showSelectedCitiesPanel ? (
-                                                        <SelectedCitiesPanel
-                                                            selectedCities={selectedCitiesInTimeline}
-                                                            onClose={clearSelection}
-                                                            onApplyOrder={applySelectedCityOrder}
-                                                            onReverse={handleReverseSelectedCities}
-                                                            timelineView={timelineView}
-                                                            readOnly={!canEdit}
-                                                        />
+                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                                                            <SelectedCitiesPanel
+                                                                selectedCities={selectedCitiesInTimeline}
+                                                                onClose={clearSelection}
+                                                                onApplyOrder={applySelectedCityOrder}
+                                                                onReverse={handleReverseSelectedCities}
+                                                                timelineView={timelineView}
+                                                                readOnly={!canEdit}
+                                                            />
+                                                        </Suspense>
                                                     ) : (
-                                                        <DetailsPanel
-                                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                                            isOpen={!!selectedItemId}
-                                                            onClose={clearSelection}
-                                                            onUpdate={handleUpdateItem}
-                                                            onBatchUpdate={handleBatchItemUpdate}
-                                                            onDelete={handleDeleteItem}
-                                                            tripStartDate={trip.startDate}
-                                                            tripItems={displayTrip.items}
-                                                            routeMode={routeMode}
-                                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                            onForceFill={handleForceFill}
-                                                            forceFillMode={selectedCityForceFill?.mode}
-                                                            forceFillLabel={selectedCityForceFill?.label}
-                                                            variant="sidebar"
-                                                            readOnly={!canEdit}
-                                                            cityColorPaletteId={cityColorPaletteId}
-                                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                                        />
+                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                                                            <DetailsPanel
+                                                                item={displayTrip.items.find(i => i.id === selectedItemId) || null}
+                                                                isOpen={!!selectedItemId}
+                                                                onClose={clearSelection}
+                                                                onUpdate={handleUpdateItem}
+                                                                onBatchUpdate={handleBatchItemUpdate}
+                                                                onDelete={handleDeleteItem}
+                                                                tripStartDate={trip.startDate}
+                                                                tripItems={displayTrip.items}
+                                                                routeMode={routeMode}
+                                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                                                onForceFill={handleForceFill}
+                                                                forceFillMode={selectedCityForceFill?.mode}
+                                                                forceFillLabel={selectedCityForceFill?.label}
+                                                                variant="sidebar"
+                                                                readOnly={!canEdit}
+                                                                cityColorPaletteId={cityColorPaletteId}
+                                                                onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+                                                            />
+                                                        </Suspense>
                                                     )}
                                                     <div
                                                         className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
@@ -2921,34 +2935,38 @@ export const TripView: React.FC<TripViewProps> = ({
                         >
                             <DrawerContent className="h-[82vh] p-0" accessibleTitle="Trip details" accessibleDescription="View and edit selected city, travel segment, or activity details.">
                                 {showSelectedCitiesPanel ? (
-                                    <SelectedCitiesPanel
-                                        selectedCities={selectedCitiesInTimeline}
-                                        onClose={clearSelection}
-                                        onApplyOrder={applySelectedCityOrder}
-                                        onReverse={handleReverseSelectedCities}
-                                        timelineView={timelineView}
-                                        readOnly={!canEdit}
-                                    />
+                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                                        <SelectedCitiesPanel
+                                            selectedCities={selectedCitiesInTimeline}
+                                            onClose={clearSelection}
+                                            onApplyOrder={applySelectedCityOrder}
+                                            onReverse={handleReverseSelectedCities}
+                                            timelineView={timelineView}
+                                            readOnly={!canEdit}
+                                        />
+                                    </Suspense>
                                 ) : (
-                                    <DetailsPanel
-                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                        isOpen={!!selectedItemId}
-                                        onClose={clearSelection}
-                                        onUpdate={handleUpdateItem}
-                                        onBatchUpdate={handleBatchItemUpdate}
-                                        onDelete={handleDeleteItem}
-                                        tripStartDate={trip.startDate}
-                                        tripItems={displayTrip.items}
-                                        routeMode={routeMode}
-                                        routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                        onForceFill={handleForceFill}
-                                        forceFillMode={selectedCityForceFill?.mode}
-                                        forceFillLabel={selectedCityForceFill?.label}
-                                        variant="sidebar"
-                                        readOnly={!canEdit}
-                                        cityColorPaletteId={cityColorPaletteId}
-                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                    />
+                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                                        <DetailsPanel
+                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
+                                            isOpen={!!selectedItemId}
+                                            onClose={clearSelection}
+                                            onUpdate={handleUpdateItem}
+                                            onBatchUpdate={handleBatchItemUpdate}
+                                            onDelete={handleDeleteItem}
+                                            tripStartDate={trip.startDate}
+                                            tripItems={displayTrip.items}
+                                            routeMode={routeMode}
+                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                            onForceFill={handleForceFill}
+                                            forceFillMode={selectedCityForceFill?.mode}
+                                            forceFillLabel={selectedCityForceFill?.label}
+                                            variant="sidebar"
+                                            readOnly={!canEdit}
+                                            cityColorPaletteId={cityColorPaletteId}
+                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+                                        />
+                                    </Suspense>
                                 )}
                             </DrawerContent>
                         </Drawer>
