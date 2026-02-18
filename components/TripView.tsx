@@ -25,7 +25,6 @@ import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import {
-    DB_ENABLED,
     dbCreateShareLink,
     dbGetTrip,
     dbListTripShares,
@@ -34,7 +33,8 @@ import {
     dbUpsertTrip,
     ensureDbSession,
     type DbTripAccessMetadata,
-} from '../services/dbService';
+} from '../services/dbApi';
+import { DB_ENABLED } from '../config/db';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
 import {

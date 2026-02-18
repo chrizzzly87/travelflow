@@ -3,6 +3,7 @@ import { DB_ENABLED } from '../config/db';
 type DbServiceModule = typeof import('./dbService');
 
 export type DbTripAccess = NonNullable<Awaited<ReturnType<DbServiceModule['dbGetTrip']>>>['access'];
+export type DbTripAccessMetadata = DbTripAccess;
 
 let dbServicePromise: Promise<DbServiceModule> | null = null;
 
@@ -83,4 +84,30 @@ export const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['
     if (!DB_ENABLED) return;
     const db = await loadDbService();
     await db.dbUpsertUserSettings(...args);
+};
+
+export const dbCreateShareLink = async (...args: Parameters<DbServiceModule['dbCreateShareLink']>) => {
+    if (!DB_ENABLED) {
+        return { error: 'db-disabled' };
+    }
+    const db = await loadDbService();
+    return db.dbCreateShareLink(...args);
+};
+
+export const dbListTripShares = async (...args: Parameters<DbServiceModule['dbListTripShares']>) => {
+    if (!DB_ENABLED) return [];
+    const db = await loadDbService();
+    return db.dbListTripShares(...args);
+};
+
+export const dbSetTripSharingEnabled = async (...args: Parameters<DbServiceModule['dbSetTripSharingEnabled']>) => {
+    if (!DB_ENABLED) return false;
+    const db = await loadDbService();
+    return db.dbSetTripSharingEnabled(...args);
+};
+
+export const dbRevokeTripShares = async (...args: Parameters<DbServiceModule['dbRevokeTripShares']>) => {
+    if (!DB_ENABLED) return 0;
+    const db = await loadDbService();
+    return db.dbRevokeTripShares(...args);
 };
