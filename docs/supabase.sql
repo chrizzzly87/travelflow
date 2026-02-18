@@ -1238,7 +1238,7 @@ begin
     raise exception 'Not authenticated';
   end if;
 
-  select u.email into v_email
+  select u.email::text into v_email
     from auth.users u
    where u.id = v_uid;
 
@@ -1287,7 +1287,7 @@ begin
   return query
   select
     p.id,
-    u.email,
+    u.email::text,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -2134,7 +2134,7 @@ begin
     raise exception 'Not authenticated';
   end if;
 
-  select u.email into v_email
+  select u.email::text into v_email
     from auth.users u
    where u.id = v_uid;
 
@@ -2209,7 +2209,7 @@ begin
   return query
   select
     p.id,
-    u.email,
+    u.email::text,
     p.display_name,
     p.first_name,
     p.last_name,
@@ -2281,7 +2281,7 @@ begin
   return query
   select
     p.id,
-    u.email,
+    u.email::text,
     p.display_name,
     p.first_name,
     p.last_name,
@@ -2409,7 +2409,7 @@ begin
   return query
   select
     p.id,
-    u.email,
+    u.email::text,
     p.system_role,
     p.tier_key,
     p.account_status,
@@ -2453,7 +2453,7 @@ begin
   select
     t.id,
     t.owner_id,
-    u.email,
+    u.email::text,
     t.title,
     coalesce(t.status, 'active'),
     t.trip_expires_at,
@@ -2514,7 +2514,7 @@ begin
   select
     t.id,
     t.owner_id,
-    u.email,
+    u.email::text,
     t.title,
     coalesce(t.status, 'active'),
     t.trip_expires_at,
@@ -2664,7 +2664,7 @@ begin
   select
     l.id,
     l.actor_user_id,
-    u.email,
+    u.email::text,
     l.action,
     l.target_type,
     l.target_id,

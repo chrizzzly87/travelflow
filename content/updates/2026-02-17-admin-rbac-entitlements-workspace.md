@@ -22,6 +22,7 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🧭 Unified AI benchmarking inside the main admin workspace and added an easy route back to the main planning experience.
 - [x] [Improved] 🪪 Polished the profile avatar dropdown with clearer grouping for profile, settings, planner, and admin destinations.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
+- [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.
 - [x] [Fixed] 🧑‍🔧 Fixed a profile-settings stability issue that could prevent authenticated users from loading the settings form.
 - [ ] [Internal] 🔐 Added admin identity edge API wiring for invite/direct creation and hard-delete operations using service-role authorization.
