@@ -7,6 +7,7 @@ export interface AdminUserRecord {
     email: string | null;
     is_anonymous?: boolean;
     auth_provider?: string | null;
+    auth_providers?: string[] | null;
     activation_status?: 'activated' | 'invited' | 'pending' | 'anonymous' | null;
     last_sign_in_at?: string | null;
     display_name?: string | null;
@@ -20,6 +21,8 @@ export interface AdminUserRecord {
     account_status?: 'active' | 'disabled' | 'deleted';
     disabled_at?: string | null;
     disabled_by?: string | null;
+    active_trips?: number | null;
+    total_trips?: number | null;
     system_role: 'admin' | 'user';
     tier_key: PlanTierKey;
     entitlements_override: Record<string, unknown> | null;
@@ -202,6 +205,14 @@ export const adminUpdateTrip = async (
         p_apply_owner_id: Object.prototype.hasOwnProperty.call(patch, 'ownerId'),
     });
     if (error) throw new Error(error.message || 'Could not update trip.');
+};
+
+export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_hard_delete_trip', {
+        p_trip_id: tripId,
+    });
+    if (error) throw new Error(error.message || 'Could not hard-delete trip.');
 };
 
 export const adminUpdatePlanEntitlements = async (

@@ -28,6 +28,7 @@ import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { getDaysDifference, getDefaultTripDates, getDestinationPromptLabel, resolveDestinationName } from '../utils';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
+import { useAppDialog } from '../components/AppDialogProvider';
 import {
     Select,
     SelectContent,
@@ -398,6 +399,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const defaultDates = useMemo(() => getDefaultTripDates(), []);
     const [searchParams, setSearchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
+    const { confirm: confirmDialog } = useAppDialog();
 
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
@@ -1129,7 +1131,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             return;
         }
 
-        const confirmed = window.confirm('Delete benchmark trips and benchmark rows for this session? This cannot be undone.');
+        const confirmed = await confirmDialog({
+            title: 'Delete benchmark session data',
+            message: 'Delete benchmark trips and benchmark rows for this session? This cannot be undone.',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
         if (!confirmed) return;
 
         setLoading(true);
@@ -1161,7 +1169,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [fetchBenchmarkApi, searchParams, session, setSearchParams]);
+    }, [confirmDialog, fetchBenchmarkApi, searchParams, session, setSearchParams]);
 
     const addSelectionRow = useCallback(() => {
         setSelectionRows((current) => [...current, createSelectionRow()]);

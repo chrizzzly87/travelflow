@@ -21,11 +21,6 @@ This note captures open admin/user-management items that are intentionally defer
 
 ## Open UX/Feature Follow-ups
 
-- [ ] Consider unifying user-edit access from Trips into the same full user editor drawer route state.
-  - Current behavior: Trips page opens an owner info drawer and provides a jump button to users page.
-  - Primary file: `pages/AdminTripsPage.tsx`
-  - Supporting file: `pages/AdminUsersPage.tsx`
-
 - [ ] Final polish pass for data-table filter UX parity once the shell layout refactor is done.
   - Current filter components are functional; final visual rhythm and spacing should be revisited after shell refactor.
   - Primary shared component: `components/admin/AdminFilterMenu.tsx`
@@ -59,6 +54,12 @@ This note captures open admin/user-management items that are intentionally defer
 - User details drawer:
   - Connected trip titles now open trip URLs directly.
   - Trip title area widened to avoid early ellipsis.
+  - File: `pages/AdminUsersPage.tsx`
+
+- Trip-owner deep links:
+  - Trips and trip-view admin fallback now deep-link directly into the Users drawer via URL state.
+  - File: `pages/AdminTripsPage.tsx`
+  - File: `components/TripView.tsx`
   - File: `pages/AdminUsersPage.tsx`
 
 ## Quick Resume Checklist (Next Admin Iteration)

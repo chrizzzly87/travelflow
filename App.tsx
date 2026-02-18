@@ -61,6 +61,7 @@ const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 type DbServiceModule = typeof import('./services/dbService');
+type TripLoaderAccess = NonNullable<Awaited<ReturnType<DbServiceModule['dbGetTrip']>>>['access'];
 
 let dbServicePromise: Promise<DbServiceModule> | null = null;
 
@@ -111,6 +112,12 @@ const dbGetTrip = async (...args: Parameters<DbServiceModule['dbGetTrip']>) => {
     if (!DB_ENABLED) return null;
     const db = await loadDbService();
     return db.dbGetTrip(...args);
+};
+
+const dbAdminOverrideTripCommit = async (...args: Parameters<DbServiceModule['dbAdminOverrideTripCommit']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbAdminOverrideTripCommit(...args);
 };
 
 const dbGetTripVersion = async (...args: Parameters<DbServiceModule['dbGetTripVersion']>) => {
@@ -403,7 +410,7 @@ const TripLoader = ({
     trip: ITrip | null,
     onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
     handleUpdateTrip: (t: ITrip, options?: { persist?: boolean }) => void,
-    handleCommitState: (t: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string }) => void,
+    handleCommitState: (t: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void,
     setIsManagerOpen: (o: boolean) => void,
     setIsSettingsOpen: (o: boolean) => void,
     appLanguage: AppLanguage,
@@ -420,6 +427,7 @@ const TripLoader = ({
     }, [location.search]);
 
     const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
+    const [tripAccess, setTripAccess] = useState<TripLoaderAccess | null>(null);
 
     useDbSync(onLanguageLoaded);
 
@@ -431,6 +439,7 @@ const TripLoader = ({
 
         const load = async () => {
             setViewSettings(undefined);
+            setTripAccess(null);
             // 1. Legacy compressed URLs
             const sharedState = decompressTrip(tripId);
             if (sharedState) {
@@ -473,6 +482,7 @@ const TripLoader = ({
                 if (dbTrip?.trip) {
                     saveTrip(dbTrip.trip);
                     const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
+                    setTripAccess(dbTrip.access);
                     setViewSettings(resolvedView);
                     onTripLoaded(dbTrip.trip, resolvedView);
                     return;
@@ -504,6 +514,7 @@ const TripLoader = ({
     }, [tripId, versionId, navigate, onTripLoaded]);
 
     if (!trip) return null;
+    const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
 
     return (
         <Suspense fallback={<RouteLoadingFallback />}>
@@ -520,6 +531,8 @@ const TripLoader = ({
                 onOpenManager={() => setIsManagerOpen(true)}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 appLanguage={appLanguage}
+                canShare={!adminFallbackAccess}
+                adminAccess={adminFallbackAccess}
             />
         </Suspense>
     );
@@ -656,7 +669,7 @@ const SharedTripLoader = ({
         void load();
     }, [token, versionId, location.search, navigate, onTripLoaded]);
 
-    const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string }) => {
+    const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         if (shareMode !== 'edit' || !token) return;
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
@@ -1357,7 +1370,7 @@ const AppContent: React.FC = () => {
         saveTrip(updatedTrip);
     };
 
-    const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string }) => {
+    const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
         const commitTs = Date.now();
 
@@ -1371,6 +1384,11 @@ const AppContent: React.FC = () => {
         const commit = async () => {
             const sessionId = await ensureDbSession();
             if (!sessionId) return;
+            if (options?.adminOverride) {
+                const overrideCommit = await dbAdminOverrideTripCommit(updatedTrip, view, label);
+                if (!overrideCommit?.tripId || !overrideCommit.versionId) return;
+                return;
+            }
             const upserted = await dbUpsertTrip(updatedTrip, view);
             const versionId = await dbCreateTripVersion(updatedTrip, view, label);
             if (!upserted || !versionId) return;

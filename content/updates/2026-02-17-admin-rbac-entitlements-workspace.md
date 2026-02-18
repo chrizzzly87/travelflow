@@ -7,7 +7,7 @@ published_at: 2026-02-17T20:40:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "Introduced a full admin operations workspace, role-aware account menu, and mandatory profile onboarding/settings flow for authenticated users."
+summary: "Introduced a full admin operations workspace with safer trip overrides, deep-linked owner drawers, and bulk admin actions across users and trips."
 ---
 
 ## Changes
@@ -41,6 +41,19 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🔗 Added direct trip-open links in admin trip listings and connected-trip sections so visual verification is one click away.
 - [x] [Improved] 🧭 Enabled admins to open any trip directly from admin tables, while keeping owner-only behavior unchanged for regular users.
 - [x] [Improved] 👤 Made trip owner cells open a user-information drawer for faster account context checks without leaving trip operations.
+- [x] [Improved] 🛡️ Added a default read-only safety mode for admin-opened trips, with an explicit edit override switch for authorized admins.
+- [x] [Improved] 🔎 Added direct owner-profile deep links from admin trip views so support can jump into the correct user drawer instantly.
+- [x] [Improved] ✅ Added multi-select checkboxes in Users and Trips tables with bulk soft-delete and permanent-delete actions.
+- [x] [Fixed] 🪟 Restored outside-click drawer close behavior for deep-linked user details so drawers no longer reopen unexpectedly.
+- [x] [Improved] 🧳 Reworked connected-trip controls in the user drawer so trip links keep full width while status/date controls stay compact.
+- [x] [Improved] 🔗 Added owner deep-link opening inside the Trips workspace so support can inspect owner drawers without switching screens.
+- [x] [Fixed] ⏱️ Suppressed release popups for admin trip sessions and during active loading overlays to avoid stacked modal/loading states.
+- [x] [Fixed] 🧭 Removed misleading loading overlays on expired admin-opened trips and added clearer unfinished-itinerary messaging.
+- [x] [Fixed] 📏 Fixed desktop admin sidebar sizing so the rail reliably fills the full viewport height.
+- [x] [Improved] 🔐 Added login-type filtering in User Provisioning with social/username-password/unknown modes plus provider-level social selection.
+- [x] [Improved] 🪪 Upgraded login badges in the user table with provider-specific icons/colors and better multi-provider visibility.
+- [x] [Improved] 📈 Added per-user trip counters in User Provisioning and surfaced active/total trip totals directly in the user details header.
+- [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
@@ -52,3 +65,9 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [ ] [Internal] 🧩 Isolated admin routes into a dedicated lazy-loaded workspace router so non-admin paths avoid admin chunk preload/bundle impact.
 - [ ] [Internal] 📘 Added explicit RBAC hardening TODOs documenting the migration from compatibility permissions to strict role-only checks.
 - [ ] [Internal] 🧯 Updated SQL migration order to drop/recreate legacy RPCs (`get_current_user_access`, `admin_list_users`, `admin_get_user_profile`) when return signatures evolve.
+- [ ] [Internal] 🧬 Switched admin user identity resolution to aggregate providers from auth identities so account-type classification is more reliable.
+- [ ] [Internal] 🗂️ Added a deferred open-issue playbook for identity linking/account merge policy, data migration, and admin safety checks.
+- [ ] [Internal] 🧾 Added a dedicated audited admin override commit path for non-owned trip edits with lifecycle lock enforcement.
+- [ ] [Internal] 🧱 Added a dedicated admin-only hard-delete trip RPC with audit logging so permanent removals are tracked server-side.
+- [ ] [Internal] 🧭 Updated agent copy/i18n rules so admin workspace text is English-only by default and exempt from EN/DE sign-off prompts.
+- [ ] [Internal] 🧩 Standardized admin destructive confirmations on the shared styled app dialog (`useAppDialog`) and documented prompt-component reuse in repo guidelines.
