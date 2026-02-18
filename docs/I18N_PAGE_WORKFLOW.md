@@ -95,7 +95,9 @@ When adding a new key:
    - `MARKETING_PATH_PATTERNS`
    - `PAGE_META`
    - `LOCALIZED_PAGE_META`
-7. Add route to sitemap list in `scripts/generate-sitemap.mjs` (`MARKETING_PATHS`).
+7. Confirm sitemap coverage in `scripts/generate-sitemap.mjs`:
+   - Indexable static marketing routes are auto-derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
+   - If a static route is utility/error-only and should not be indexed, add it to `NON_INDEXABLE_STATIC_PATHS`.
 8. Update navigation/footer links to use route helpers (`buildLocalizedMarketingPath`).
 9. Update release notes in `content/updates/*.md`.
 

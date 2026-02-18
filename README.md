@@ -220,6 +220,11 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
 
+Sitemap behavior:
+- `npm run build` regenerates `public/sitemap.xml` on every deploy.
+- Static marketing URLs are derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
+- Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
+
 `/admin/ai-benchmark` uses:
 - temporary simulated-login UI gate (debug mode)
 - `x-tf-admin-key` request header (from your entered `TF_ADMIN_API_KEY`)
