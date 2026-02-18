@@ -232,6 +232,25 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                         <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
                             {renderNavItems('desktop')}
                         </div>
+
+                        {isAdmin && (
+                            <div className="mt-3 border-t border-slate-200 pt-3">
+                                {!isSidebarCollapsed && (
+                                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        Account
+                                    </div>
+                                )}
+                                <AccountMenu
+                                    email={access?.email || null}
+                                    isAdmin
+                                    compact={isSidebarCollapsed}
+                                    showLabel={!isSidebarCollapsed}
+                                    fullWidth={!isSidebarCollapsed}
+                                    menuPlacement="right-end"
+                                    className={isSidebarCollapsed ? 'mx-auto' : 'w-full'}
+                                />
+                            </div>
+                        )}
                     </aside>
                     <button
                         type="button"
@@ -246,7 +265,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
                 <main className="min-w-0 flex-1">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-                        <div className="flex flex-wrap items-end justify-between gap-3 px-4 py-4 md:px-6">
+                        <div className="flex flex-col gap-3 px-4 py-4 md:px-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                     <button
@@ -264,7 +283,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}
                             </div>
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
                                 {showGlobalSearch && (
                                     <>
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
@@ -275,7 +294,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}
-                                            className="h-9 w-[min(44vw,280px)] rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                            className="h-9 min-w-[180px] flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px] lg:flex-none"
                                         />
                                     </>
                                 )}
@@ -307,9 +326,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     <ArrowSquareOut size={14} />
                                     Platform
                                 </NavLink>
-                                {isAdmin && (
-                                    <AccountMenu email={access?.email || null} isAdmin compact className="hidden lg:block" />
-                                )}
                             </div>
                         </div>
                     </header>

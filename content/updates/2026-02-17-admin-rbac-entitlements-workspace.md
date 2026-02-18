@@ -26,6 +26,8 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🪟 Moved user creation into a focused modal and refined user-detail editing into a clearer right-side drawer with prefilled fields.
 - [x] [Improved] 🎚️ Refreshed admin filters and status controls with modern select components and clearer selected labels across admin pages.
 - [x] [Improved] 🧍 Added account/profile access to the mobile admin sidebar footer so navigation controls stay reachable on small screens.
+- [x] [Improved] 🧭 Simplified admin navigation layout so top controls align cleanly in one row on larger screens while profile access is anchored in the sidebar.
+- [x] [Improved] 📐 Fixed collapsed-sidebar behavior by moving the collapse toggle outside the rail and reducing icon overflow edge cases.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.

@@ -634,7 +634,7 @@ export const AdminUsersPage: React.FC = () => {
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
                         <Select
                             value={identityFilter}
                             onValueChange={(value) => {

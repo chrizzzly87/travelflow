@@ -25,6 +25,12 @@ const computeInitial = (email: string | null): string => {
 };
 
 const labelFromPath = (pathname: string): string => {
+    if (pathname.startsWith('/admin/dashboard')) return 'Overview';
+    if (pathname.startsWith('/admin/users')) return 'Users';
+    if (pathname.startsWith('/admin/trips')) return 'Trips';
+    if (pathname.startsWith('/admin/tiers')) return 'Tiers';
+    if (pathname.startsWith('/admin/audit')) return 'Audit';
+    if (pathname.startsWith('/admin/ai-benchmark')) return 'AI Benchmark';
     if (pathname.startsWith('/profile/settings')) return 'Settings';
     if (pathname.startsWith('/profile')) return 'Profile';
     if (pathname.startsWith('/admin')) return 'Admin';
@@ -121,6 +127,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 >
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
+                        <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
                     </div>
 
                     <div className="mt-1.5 space-y-0.5">
