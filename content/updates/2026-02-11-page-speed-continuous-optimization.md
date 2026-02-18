@@ -50,3 +50,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 📦 Disabled Vite module-preload dependency fan-out to keep entry execution on-demand and reduce first-load JavaScript on entry routes.
 - [ ] [Internal] 🪟 Gated login-modal rendering to open-state only so auth modal code is not fetched during initial page render.
 - [ ] [Internal] 🔐 Switched auth bootstrap on non-critical marketing routes to interaction-triggered loading so auth bundles are not fetched during homepage first render.
+- [ ] [Internal] 🧱 Split destination catalog/search logic into a dedicated service and moved prefill decoding out of `utils` so the shared utility bundle is substantially smaller.
+- [ ] [Internal] 🧭 Suppressed passive (viewport/hover/focus) route prefetch on first-load-critical paths while keeping click/touch-triggered warmups.

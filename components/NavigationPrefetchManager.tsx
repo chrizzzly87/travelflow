@@ -25,6 +25,15 @@ interface NavigationPrefetchManagerProps {
 const INTERNAL_LINK_SELECTOR = 'a[href], [data-prefetch-href]';
 const PREFETCH_OPTOUT_VALUE = 'off';
 const MAX_VIEWPORT_WARMUPS_PER_VIEW = 4;
+const shouldSuppressPassivePrefetchForPath = (pathname: string): boolean => {
+    const normalizedPathname = stripLocalePrefix(pathname || '/');
+    return (
+        normalizedPathname === '/'
+        || normalizedPathname.startsWith('/create-trip')
+        || normalizedPathname.startsWith('/trip')
+        || normalizedPathname.startsWith('/example')
+    );
+};
 
 const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | null => {
     if (!target || !(target instanceof Element)) return null;
@@ -134,6 +143,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         const onPointerEnter = (event: Event) => {
+            if (shouldSuppressPassivePrefetchForPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -146,15 +156,6 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             clearHoverIntentTimer(intent.sourceElement);
-        };
-
-        const onFocusIn = (event: FocusEvent) => {
-            const intent = resolvePrefetchIntent(event.target);
-            if (!intent) return;
-            if (intent.path === window.location.pathname) return;
-            emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'focus');
-            void warmRouteAssets(intent.path, 'focus');
-            publishPrefetchStats();
         };
 
         const onPointerDown = (event: PointerEvent) => {
@@ -177,14 +178,12 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
         document.addEventListener('pointerenter', onPointerEnter, true);
         document.addEventListener('pointerleave', onPointerLeave, true);
-        document.addEventListener('focusin', onFocusIn, true);
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('touchstart', onTouchStart, true);
 
         return () => {
             document.removeEventListener('pointerenter', onPointerEnter, true);
             document.removeEventListener('pointerleave', onPointerLeave, true);
-            document.removeEventListener('focusin', onFocusIn, true);
             document.removeEventListener('pointerdown', onPointerDown, true);
             document.removeEventListener('touchstart', onTouchStart, true);
         };
@@ -192,8 +191,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const normalizedPathname = stripLocalePrefix(location.pathname);
-        if (normalizedPathname === '/' || normalizedPathname.startsWith('/create-trip')) {
+        if (shouldSuppressPassivePrefetchForPath(location.pathname)) {
             return;
         }
 

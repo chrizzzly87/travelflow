@@ -25,7 +25,8 @@ import {
 } from '../config/aiModelCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
-import { getDaysDifference, getDefaultTripDates, getDestinationPromptLabel, resolveDestinationName } from '../utils';
+import { getDaysDifference, getDefaultTripDates } from '../utils';
+import { getDestinationPromptLabel, resolveDestinationName } from '../services/destinationService';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
 import { useAppDialog } from '../components/AppDialogProvider';

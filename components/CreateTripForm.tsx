@@ -50,18 +50,20 @@ import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
     COUNTRIES,
-    decodeTripPrefill,
+    generateTripId,
+    getDefaultTripDates,
+    getDaysDifference,
+} from '../utils';
+import {
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getDestinationSeasonCountryName,
-    generateTripId,
-    getDefaultTripDates,
-    getDaysDifference,
     isIslandDestination,
     resolveDestinationName,
     searchDestinationOptions,
-} from '../utils';
+} from '../services/destinationService';
+import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from './TripView';
 import { TripGenerationSkeleton } from './TripGenerationSkeleton';

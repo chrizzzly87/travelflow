@@ -53,18 +53,20 @@ import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
-    DESTINATION_OPTIONS,
-    decodeTripPrefill,
     encodeTripPrefill,
     getDaysDifference,
+    generateTripId,
+} from '../utils';
+import {
+    DESTINATION_OPTIONS,
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getDestinationSeasonCountryName,
-    generateTripId,
     resolveDestinationName,
     searchDestinationOptions,
-} from '../utils';
+} from '../services/destinationService';
+import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;

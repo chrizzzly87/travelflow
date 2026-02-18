@@ -47,6 +47,9 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] With idle warmups removed on `/` and `/create-trip`, `/create-trip` transfer dropped from `~659.1 KiB` to `~485.3 KiB` while score stayed stable/improved (`82` to `83` in follow-up run).
 - [x] After gating login-modal rendering to open-state only, `/` improved from `85` to `90` in follow-up run with script transfer reduced from `~268.7 KiB` to `~204.5 KiB` and request count reduced from `39` to `33`.
 - [x] After changing auth bootstrap on non-critical marketing routes to interaction-triggered only, `/` stopped loading `supabase`/`authService` on initial render and improved from `~309.9 KiB` to `~263.0 KiB` transfer (`33` to `30` requests, score `90` to `92` in follow-up run).
+- [x] Split destination/catalog + prefill decode logic out of monolithic `utils.ts`; shared `utils` build chunk dropped from `~437.66 KB` raw to `~32.30 KB` raw (new `destinationService` chunk is now isolated to destination-heavy flows).
+- [x] After suppressing passive (viewport/hover/focus) prefetch on `/`, `/create-trip`, `/trip`, `/example`, homepage stayed lean (`~263.0 KiB` transfer) while keeping click/touch-triggered warmups.
+- [x] Trip entry still shows eager loading of create-trip destination assets in Lighthouse runs; this now appears to come from a non-viewport/non-hover path and remains the next investigation target.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -81,6 +84,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Disable `build.modulePreload` to avoid eager dependency preload fan-out from the entry chunk.
 - [x] Gate `AuthModal` lazy component rendering so the login modal bundle is fetched only when the modal is actually opened.
 - [x] Make auth bootstrap interaction-triggered on non-auth-critical marketing entries while keeping immediate bootstrap on auth-critical routes and callback payloads.
+- [x] Extract destination lookup/indexing logic into `services/destinationService.ts` and move prefill decoding into `services/tripPrefillDecoder.ts` to break `utils.ts` into smaller domain modules.
+- [x] Suppress passive navigation prefetch (viewport/hover/focus) on first-load-critical paths while preserving explicit interaction-triggered prefetch.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -105,4 +110,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: language selector/header dependency audit + keeping admin-only dependencies fully isolated from non-admin route paths.
+- Next highest-impact target: identify and remove the remaining non-interaction trigger that still loads create-trip destination assets on `/trip/*` first-load runs.
