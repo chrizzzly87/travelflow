@@ -1,14 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { SpinnerGap, X } from '@phosphor-icons/react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowSquareOut, SpinnerGap, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
-import { adminListTrips, adminUpdateTrip, type AdminTripRecord } from '../services/adminService';
+import {
+    adminGetUserProfile,
+    adminListTrips,
+    adminUpdateTrip,
+    type AdminTripRecord,
+    type AdminUserRecord,
+} from '../services/adminService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+import { Drawer, DrawerContent } from '../components/ui/drawer';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -51,7 +58,24 @@ const parseQueryMultiValue = <T extends string>(
     return allowedValues.filter((candidate) => unique.has(candidate));
 };
 
+const getUserDisplayName = (user: AdminUserRecord): string => {
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+    if (fullName) return fullName;
+    if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username?.trim()) return user.username.trim();
+    if (user.email?.trim()) return user.email.trim();
+    return user.user_id;
+};
+
+const formatAccountStatusLabel = (status: string | null | undefined): string => {
+    const normalized = (status || 'active').toLowerCase();
+    if (normalized === 'disabled') return 'Suspended';
+    if (normalized === 'deleted') return 'Deleted';
+    return 'Active';
+};
+
 export const AdminTripsPage: React.FC = () => {
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedTrips = useMemo(
         () => readAdminCache<AdminTripRecord[]>(TRIPS_CACHE_KEY, []),
@@ -71,6 +95,10 @@ export const AdminTripsPage: React.FC = () => {
     });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
+    const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
+    const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
+    const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -168,6 +196,33 @@ export const AdminTripsPage: React.FC = () => {
         setStatusFilters([]);
     };
 
+    const openOwnerDrawer = (ownerId: string) => {
+        setSelectedOwnerId(ownerId);
+        setIsOwnerDrawerOpen(true);
+    };
+
+    useEffect(() => {
+        if (!isOwnerDrawerOpen || !selectedOwnerId) return;
+        let active = true;
+        setIsLoadingOwnerProfile(true);
+        void adminGetUserProfile(selectedOwnerId)
+            .then((profile) => {
+                if (!active) return;
+                setSelectedOwnerProfile(profile);
+            })
+            .catch((error) => {
+                if (!active) return;
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load owner profile.');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsLoadingOwnerProfile(false);
+            });
+        return () => {
+            active = false;
+        };
+    }, [isOwnerDrawerOpen, selectedOwnerId]);
+
     return (
         <AdminShell
             title="Trip Lifecycle Controls"
@@ -250,10 +305,33 @@ export const AdminTripsPage: React.FC = () => {
                             {visibleTrips.map((trip) => (
                                 <tr key={trip.trip_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                     <td className="px-3 py-2">
-                                        <div className="max-w-[320px] truncate text-sm font-semibold text-slate-800">{trip.title || trip.trip_id}</div>
+                                        <a
+                                            href={`/trip/${encodeURIComponent(trip.trip_id)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            title="Open trip in a new tab"
+                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                        >
+                                            <span className="truncate">{trip.title || trip.trip_id}</span>
+                                            <ArrowSquareOut size={12} />
+                                        </a>
                                         <div className="text-xs text-slate-500">{trip.trip_id}</div>
                                     </td>
-                                    <td className="px-3 py-2 text-xs text-slate-600">{trip.owner_email || trip.owner_id}</td>
+                                    <td className="px-3 py-2 text-xs text-slate-600">
+                                        <button
+                                            type="button"
+                                            onClick={() => openOwnerDrawer(trip.owner_id)}
+                                            title="Open owner details"
+                                            className="group max-w-[320px] cursor-pointer text-left"
+                                        >
+                                            <span className="block truncate text-sm text-slate-700 group-hover:text-accent-700 group-hover:underline">
+                                                {trip.owner_email || trip.owner_id}
+                                            </span>
+                                            <span className="block truncate text-[11px] text-slate-500">
+                                                {trip.owner_id}
+                                            </span>
+                                        </button>
+                                    </td>
                                     <td className="px-3 py-2">
                                         <Select
                                             value={trip.status}
@@ -313,6 +391,63 @@ export const AdminTripsPage: React.FC = () => {
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
                 )}
             </section>
+
+            <Drawer
+                open={isOwnerDrawerOpen}
+                onOpenChange={(open) => {
+                    setIsOwnerDrawerOpen(open);
+                    if (!open) {
+                        setSelectedOwnerId(null);
+                        setSelectedOwnerProfile(null);
+                    }
+                }}
+                direction="right"
+            >
+                <DrawerContent
+                    side="right"
+                    className="w-[min(96vw,560px)] p-0"
+                    accessibleTitle="Owner details"
+                    accessibleDescription="View selected trip owner identity and account context."
+                >
+                    <div className="flex h-full flex-col">
+                        <div className="border-b border-slate-200 px-5 py-4">
+                            <h2 className="text-base font-black text-slate-900">Owner details</h2>
+                            <p className="truncate text-sm text-slate-600">{selectedOwnerId || 'No owner selected'}</p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {isLoadingOwnerProfile ? (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                    Loading owner profile...
+                                </div>
+                            ) : selectedOwnerProfile ? (
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity</h3>
+                                    <div className="space-y-1 text-sm text-slate-700">
+                                        <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedOwnerProfile)}</div>
+                                        <div><span className="font-semibold text-slate-800">Email:</span> {selectedOwnerProfile.email || 'No email'}</div>
+                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedOwnerProfile.user_id}</div>
+                                        <div><span className="font-semibold text-slate-800">Role:</span> {selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</div>
+                                        <div><span className="font-semibold text-slate-800">Tier:</span> {selectedOwnerProfile.tier_key}</div>
+                                        <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel(selectedOwnerProfile.account_status)}</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate(`/admin/users?q=${encodeURIComponent(selectedOwnerProfile.user_id)}`)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                    >
+                                        Open full user editor
+                                        <ArrowSquareOut size={12} />
+                                    </button>
+                                </section>
+                            ) : (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                    No owner profile found.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DrawerContent>
+            </Drawer>
         </AdminShell>
     );
 };

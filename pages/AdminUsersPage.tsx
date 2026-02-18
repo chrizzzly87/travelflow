@@ -1428,9 +1428,17 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="space-y-2">
                                         {userTrips.map((trip) => (
                                             <article key={trip.trip_id} className="rounded-lg border border-slate-200 p-3">
-                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                    <div className="min-w-0">
-                                                        <div className="truncate text-sm font-semibold text-slate-800">{trip.title || trip.trip_id}</div>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <a
+                                                            href={`/trip/${encodeURIComponent(trip.trip_id)}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            title="Open trip in a new tab"
+                                                            className="block text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                                        >
+                                                            {trip.title || trip.trip_id}
+                                                        </a>
                                                         <div className="text-[11px] text-slate-500">{trip.trip_id}</div>
                                                     </div>
                                                     <Select
