@@ -48,8 +48,13 @@ const ACCENT_700 = "#4338ca";
 
 type LoadedHeadingFont = {
   data: ArrayBuffer;
-  weight: 400 | 700 | 800;
+  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 };
+
+type BaseHeadingFontWeight = 400 | 700 | 800;
+type OgHeadingFontWeight = LoadedHeadingFont["weight"];
+const BASE_HEADING_FONT_WEIGHTS: readonly BaseHeadingFontWeight[] = [400, 700, 800];
+const OG_HEADING_FONT_WEIGHTS: readonly OgHeadingFontWeight[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
 
 const headingFontPromiseByOrigin = new Map<string, Promise<LoadedHeadingFont[]>>();
 const WOFF_SIGNATURE = "wOFF";
@@ -67,7 +72,9 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
   }
 };
 
-const buildHeadingFontUrls = (requestUrl: URL, weight: 400 | 700 | 800): string[] => {
+// og_edge picks the first matching font per weight and does not merge unicode-range subsets.
+// Keep full latin files first so ASCII headlines do not fall back to system fonts.
+const buildHeadingFontUrls = (requestUrl: URL, weight: BaseHeadingFontWeight): string[] => {
   const local400LatinExt = new URL(LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
   const local400 = new URL(LOCAL_HEADLINE_FONT_400_WOFF_PATH, requestUrl.origin).toString();
   const local700LatinExt = new URL(LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
@@ -83,30 +90,30 @@ const buildHeadingFontUrls = (requestUrl: URL, weight: 400 | 700 | 800): string[
 
   if (weight === 800) {
     return [
-      local800LatinExt,
       local800,
+      local800LatinExt,
       GOOGLE_HEADLINE_FONT_800_WOFF_URL,
-      cdn800LatinExt,
       cdn800,
+      cdn800LatinExt,
     ];
   }
 
   if (weight === 700) {
     return [
-      local700LatinExt,
       local700,
+      local700LatinExt,
       GOOGLE_HEADLINE_FONT_700_WOFF_URL,
-      cdn700LatinExt,
       cdn700,
+      cdn700LatinExt,
     ];
   }
 
   return [
-    local400LatinExt,
     local400,
+    local400LatinExt,
     GOOGLE_HEADLINE_FONT_400_WOFF_URL,
-    cdn400LatinExt,
     cdn400,
+    cdn400LatinExt,
   ];
 };
 
@@ -123,7 +130,7 @@ const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
 
 const loadHeadingFontByWeight = async (
   requestUrl: URL,
-  weight: 400 | 700 | 800,
+  weight: BaseHeadingFontWeight,
 ): Promise<ArrayBuffer | null> => {
   for (const fontUrl of buildHeadingFontUrls(requestUrl, weight)) {
     const fontData = await fetchFontArrayBuffer(fontUrl);
@@ -132,21 +139,61 @@ const loadHeadingFontByWeight = async (
   return null;
 };
 
+const toExpandedOgHeadingFonts = (
+  loadedByWeight: Map<BaseHeadingFontWeight, ArrayBuffer>,
+): LoadedHeadingFont[] => {
+  const availableEntries = BASE_HEADING_FONT_WEIGHTS
+    .map((weight) => {
+      const data = loadedByWeight.get(weight);
+      return data ? ({ weight, data }) : null;
+    })
+    .filter((entry): entry is { weight: BaseHeadingFontWeight; data: ArrayBuffer } => Boolean(entry));
+
+  if (availableEntries.length === 0) return [];
+
+  return OG_HEADING_FONT_WEIGHTS.map((targetWeight) => {
+    const exact = targetWeight === 400 || targetWeight === 700 || targetWeight === 800
+      ? loadedByWeight.get(targetWeight)
+      : null;
+    if (exact) {
+      return { weight: targetWeight, data: exact };
+    }
+
+    let closest = availableEntries[0];
+    for (const candidate of availableEntries.slice(1)) {
+      const currentDistance = Math.abs(candidate.weight - targetWeight);
+      const closestDistance = Math.abs(closest.weight - targetWeight);
+      if (currentDistance < closestDistance) {
+        closest = candidate;
+      }
+    }
+
+    return {
+      weight: targetWeight,
+      data: closest.data,
+    };
+  });
+};
+
 const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> => {
   const cacheKey = requestUrl.origin;
   let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
 
   if (!fontPromise) {
     fontPromise = (async () => {
-      const font400 = await loadHeadingFontByWeight(requestUrl, 400);
-      const font700 = await loadHeadingFontByWeight(requestUrl, 700);
-      const font800 = await loadHeadingFontByWeight(requestUrl, 800);
+      const fontResults = await Promise.all(
+        BASE_HEADING_FONT_WEIGHTS.map(async (weight) => ({
+          weight,
+          data: await loadHeadingFontByWeight(requestUrl, weight),
+        })),
+      );
 
-      const fonts: LoadedHeadingFont[] = [];
-      if (font400) fonts.push({ data: font400, weight: 400 });
-      if (font700) fonts.push({ data: font700, weight: 700 });
-      if (font800) fonts.push({ data: font800, weight: 800 });
-      return fonts;
+      const loadedByWeight = new Map<BaseHeadingFontWeight, ArrayBuffer>();
+      for (const result of fontResults) {
+        if (result.data) loadedByWeight.set(result.weight, result.data);
+      }
+
+      return toExpandedOgHeadingFonts(loadedByWeight);
     })();
     headingFontPromiseByOrigin.set(cacheKey, fontPromise);
   }
