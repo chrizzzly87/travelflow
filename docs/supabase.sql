@@ -2215,8 +2215,13 @@ begin
   select
     p.id,
     u.email::text,
-    coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)::boolean,
-    coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)::text,
+    (u.id is null or coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false))::boolean,
+    (
+      case
+        when u.id is null then 'placeholder'
+        else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+      end
+    )::text,
     u.last_sign_in_at::timestamptz,
     p.display_name,
     p.first_name,
@@ -2294,8 +2299,13 @@ begin
   select
     p.id,
     u.email::text,
-    coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)::boolean,
-    coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)::text,
+    (u.id is null or coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false))::boolean,
+    (
+      case
+        when u.id is null then 'placeholder'
+        else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+      end
+    )::text,
     u.last_sign_in_at::timestamptz,
     p.display_name,
     p.first_name,

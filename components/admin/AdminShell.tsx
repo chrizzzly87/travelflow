@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     AirplaneTilt,
-    ArrowSquareOut,
     CaretLeft,
     CaretRight,
     ChartPieSlice,
@@ -317,15 +316,6 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     </Select>
                                 )}
                                 {actions}
-                                <NavLink
-                                    to="/create-trip"
-                                    onClick={() => emitMenuEvent('back_to_platform')}
-                                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                                    {...getAnalyticsDebugAttributes('admin__menu--back_to_platform')}
-                                >
-                                    <ArrowSquareOut size={14} />
-                                    Platform
-                                </NavLink>
                             </div>
                         </div>
                     </header>

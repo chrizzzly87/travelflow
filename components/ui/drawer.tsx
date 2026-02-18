@@ -25,18 +25,27 @@ export const DrawerContent = React.forwardRef<
     hideOverlay?: boolean;
     accessibleTitle?: string;
     accessibleDescription?: string;
+    side?: 'bottom' | 'right';
   }
->(({ className, children, hideOverlay = false, accessibleTitle = 'Details panel', accessibleDescription = 'Panel content and controls.', ...props }, ref) => (
+>(({ className, children, hideOverlay = false, accessibleTitle = 'Details panel', accessibleDescription = 'Panel content and controls.', side = 'bottom', ...props }, ref) => (
   <DrawerPortal>
     {!hideOverlay && <DrawerOverlay />}
     <DrawerPrimitive.Content
       ref={ref}
-      className={`fixed inset-x-0 bottom-0 z-[1601] mt-24 rounded-t-[18px] border border-gray-200 bg-white shadow-2xl focus:outline-none ${className ?? ''}`.trim()}
+      className={[
+        'z-[1601] border border-gray-200 bg-white shadow-2xl focus:outline-none',
+        side === 'right'
+          ? 'fixed inset-y-0 right-0 h-screen w-[min(96vw,680px)] rounded-none border-l'
+          : 'fixed inset-x-0 bottom-0 mt-24 rounded-t-[18px]',
+        className ?? '',
+      ].join(' ')}
       {...props}
     >
       <DrawerPrimitive.Title className="sr-only">{accessibleTitle}</DrawerPrimitive.Title>
       <DrawerPrimitive.Description className="sr-only">{accessibleDescription}</DrawerPrimitive.Description>
-      <DrawerPrimitive.Handle className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300" />
+      {side === 'bottom' && (
+        <DrawerPrimitive.Handle className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-gray-300" />
+      )}
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

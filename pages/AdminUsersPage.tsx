@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+    ArrowsClockwise,
     ArrowsDownUp,
     DotsThreeVertical,
     EnvelopeSimple,
-    PlusCircle,
     SpinnerGap,
     Trash,
     UserPlus,
@@ -28,6 +28,7 @@ import {
 } from '../services/adminService';
 import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 type SortKey = 'name' | 'email' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
@@ -99,10 +100,20 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     return 'Unnamed user';
 };
 
+const isPlaceholderUser = (user: AdminUserRecord): boolean => {
+    return !user.email && !user.last_sign_in_at;
+};
+
+const isAnonymousLikeUser = (user: AdminUserRecord): boolean => {
+    return Boolean(user.is_anonymous) || isPlaceholderUser(user);
+};
+
 const getProviderLabel = (user: AdminUserRecord): string => {
+    if (isPlaceholderUser(user)) return 'Pending activation';
     if (user.is_anonymous) return 'Anonymous';
     const provider = (user.auth_provider || '').trim().toLowerCase();
     if (!provider || provider === 'email') return 'Email/password';
+    if (provider === 'placeholder') return 'Pending activation';
     if (provider === 'google') return 'Google';
     if (provider === 'apple') return 'Apple';
     if (provider === 'github') return 'GitHub';
@@ -397,8 +408,8 @@ export const AdminUsersPage: React.FC = () => {
             if (roleFilter !== 'all' && user.system_role !== roleFilter) return false;
             if (tierFilter !== 'all' && user.tier_key !== tierFilter) return false;
             if (statusFilter !== 'all' && (user.account_status || 'active') !== statusFilter) return false;
-            if (identityFilter === 'identified' && user.is_anonymous) return false;
-            if (identityFilter === 'anonymous' && !user.is_anonymous) return false;
+            if (identityFilter === 'identified' && isAnonymousLikeUser(user)) return false;
+            if (identityFilter === 'anonymous' && !isAnonymousLikeUser(user)) return false;
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
@@ -603,19 +614,19 @@ export const AdminUsersPage: React.FC = () => {
                 <>
                     <button
                         type="button"
-                        onClick={() => setIsCreateDialogOpen(true)}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700"
+                        onClick={() => void loadUsers()}
+                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
                     >
-                        <PlusCircle size={14} />
-                        Create user
+                        <ArrowsClockwise size={14} />
+                        Reload
                     </button>
                     <button
                         type="button"
-                        onClick={() => void loadUsers()}
-                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg bg-accent-600 px-3 text-sm font-semibold text-white hover:bg-accent-700"
                     >
-                        <ArrowsDownUp size={14} />
-                        Reload
+                        <UserPlus size={14} />
+                        Create user
                     </button>
                 </>
             )}
@@ -752,15 +763,17 @@ export const AdminUsersPage: React.FC = () => {
                             {pagedUsers.map((user) => {
                                 const userName = getUserDisplayName(user);
                                 const accountStatus = (user.account_status || 'active') as 'active' | 'disabled' | 'deleted';
+                                const isPlaceholder = isPlaceholderUser(user);
                                 return (
-                                    <tr key={user.user_id} className="border-b border-slate-100 align-top">
+                                    <tr key={user.user_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                         <td className="px-3 py-2">
                                             <button
                                                 type="button"
                                                 onClick={() => openUserDetail(user.user_id)}
-                                                className="max-w-[280px] text-left hover:text-accent-700"
+                                                title="Open details drawer"
+                                                className="group max-w-[280px] cursor-pointer text-left hover:text-accent-700"
                                             >
-                                                <div className="truncate text-sm font-semibold text-slate-800">{userName}</div>
+                                                <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                 <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
                                                 <div className="truncate text-[11px] text-slate-500">UUID: {user.user_id}</div>
                                             </button>
@@ -770,7 +783,12 @@ export const AdminUsersPage: React.FC = () => {
                                                 <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
                                                     {getProviderLabel(user)}
                                                 </span>
-                                                {user.is_anonymous && (
+                                                {isPlaceholder && (
+                                                    <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                                        Needs activation
+                                                    </span>
+                                                )}
+                                                {user.is_anonymous && !isPlaceholder && (
                                                     <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                                                         Temp
                                                     </span>
@@ -860,7 +878,7 @@ export const AdminUsersPage: React.FC = () => {
                 <DialogContent className="w-[min(96vw,760px)]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-base font-black">
-                            <PlusCircle size={16} className="text-accent-700" />
+                            <UserPlus size={16} className="text-accent-700" />
                             Create user
                         </DialogTitle>
                         <DialogDescription>
@@ -1019,33 +1037,26 @@ export const AdminUsersPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                <DialogContent className="left-auto right-0 top-0 h-screen w-[min(96vw,680px)] translate-x-0 translate-y-0 rounded-none border-l border-slate-200">
-                    <DialogHeader className="border-b border-slate-200">
-                        <DialogTitle className="text-base font-black">
-                            {selectedUser ? getUserDisplayName(selectedUser) : 'User details'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {selectedUser?.email || selectedUser?.user_id || 'Select a user to inspect and edit profile, access, and trips.'}
-                        </DialogDescription>
-                    </DialogHeader>
-
+            <Drawer open={isDetailOpen} onOpenChange={setIsDetailOpen} direction="right">
+                <DrawerContent
+                    side="right"
+                    className="w-[min(96vw,680px)] p-0"
+                    accessibleTitle={selectedUser ? `${getUserDisplayName(selectedUser)} details` : 'User details'}
+                    accessibleDescription="Inspect and edit profile, entitlement overrides, account state, and connected trips."
+                >
                     {!selectedUser ? (
                         <div className="p-4 text-sm text-slate-500">No user selected.</div>
                     ) : (
-                        <div className="h-[calc(100vh-98px)] overflow-y-auto p-4">
-                            <section className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity</h3>
-                                <div className="mt-2 space-y-1 text-sm text-slate-700">
-                                    <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
-                                    <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
-                                    <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
-                                    <div><span className="font-semibold text-slate-800">Login method:</span> {getProviderLabel(selectedUser)}</div>
-                                    <div><span className="font-semibold text-slate-800">Last visit:</span> {formatTimestamp(selectedUser.last_sign_in_at)}</div>
-                                </div>
-                            </section>
+                        <div className="flex h-full flex-col">
+                            <div className="border-b border-slate-200 px-5 py-4">
+                                <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
+                                <p className="truncate text-sm text-slate-600">
+                                    {selectedUser.email || selectedUser.user_id}
+                                </p>
+                            </div>
 
-                            <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                            <div className="flex-1 overflow-y-auto p-4">
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Profile and access</h3>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <label className="space-y-1">
@@ -1174,9 +1185,9 @@ export const AdminUsersPage: React.FC = () => {
                                         </Select>
                                     </label>
                                 </div>
-                            </section>
+                                </section>
 
-                            <section className="mt-4 space-y-2 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 space-y-2 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Entitlement overrides (advanced)</h3>
                                 <p className="text-xs text-slate-500">
                                     Optional JSON object. Leave this field empty to inherit all limits from the selected tier.
@@ -1190,9 +1201,9 @@ export const AdminUsersPage: React.FC = () => {
                                 {!overrideDraft.trim() && (
                                     <p className="text-xs text-slate-500">No override configured for this user.</p>
                                 )}
-                            </section>
+                                </section>
 
-                            <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 flex flex-wrap gap-2 rounded-xl border border-slate-200 p-3">
                                 <button
                                     type="button"
                                     onClick={() => void saveSelectedUser()}
@@ -1218,9 +1229,9 @@ export const AdminUsersPage: React.FC = () => {
                                     <Trash size={13} />
                                     Hard delete
                                 </button>
-                            </section>
+                                </section>
 
-                            <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
                                 <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Connected trips</h3>
                                 {isLoadingTrips ? (
                                     <div className="text-sm text-slate-500">Loading trips...</div>
@@ -1267,11 +1278,23 @@ export const AdminUsersPage: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
-                            </section>
+                                </section>
+
+                                <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity</h3>
+                                    <div className="mt-2 space-y-1 text-sm text-slate-700">
+                                        <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
+                                        <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
+                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
+                                        <div><span className="font-semibold text-slate-800">Login method:</span> {getProviderLabel(selectedUser)}</div>
+                                        <div><span className="font-semibold text-slate-800">Last visit:</span> {formatTimestamp(selectedUser.last_sign_in_at)}</div>
+                                    </div>
+                                </section>
+                            </div>
                         </div>
                     )}
-                </DialogContent>
-            </Dialog>
+                </DrawerContent>
+            </Drawer>
         </AdminShell>
     );
 };
