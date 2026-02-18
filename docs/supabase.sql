@@ -1261,6 +1261,7 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_list_users(integer, integer, text);
 create or replace function public.admin_list_users(
   p_limit integer default 100,
   p_offset integer default 0,
