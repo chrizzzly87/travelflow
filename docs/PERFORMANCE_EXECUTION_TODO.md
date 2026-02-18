@@ -60,6 +60,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Replaced the admin-override Radix `Switch` in trip view with a lightweight native toggle, removing remaining Radix switch primitives from the trip static graph; `/example/thailand-islands` improved from `~326.3 KiB` to `~322.9 KiB` transfer (`32` to `31` requests) and static graph dropped from `~584.3 KiB` to `~576.9 KiB`.
 - [x] Deferred `AddActivityModal` and `AddCityModal` behind open-state lazy loading so planner modals load on demand; `/example/thailand-islands` improved from `~322.9 KiB` to `~318.7 KiB` transfer (`31` to `29` requests) and trip static graph dropped from `~576.9 KiB` to `~565.5 KiB`.
 - [x] Deferred `CountryInfo` rendering behind lazy loading inside the trip-info overlay so destination metadata UI no longer ships in initial trip bundles; `/example/thailand-islands` improved from `~318.7 KiB` to `~316.7 KiB` transfer and trip static graph dropped from `~565.5 KiB` to `~559.2 KiB`.
+- [x] Deferred the share dialog (`TripShareModal`) behind lazy loading so sharing controls load only when opened; `/example/thailand-islands` improved slightly from `~316.7 KiB` to `~316.5 KiB` transfer and static graph dropped from `~559.2 KiB` to `~557.0 KiB`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -105,6 +106,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Replace the admin edit-override toggle with a lightweight native control so `TripView` no longer depends on Radix `Switch` at load time.
 - [x] Lazy-load `AddActivityModal` and `AddCityModal` in `TripView` so add-flow UI code is fetched only when modals are opened.
 - [x] Lazy-load `CountryInfo` in `TripView` so destination metadata UI is fetched only when the trip-info overlay is opened.
+- [x] Lazy-load `TripShareModal` in `TripView` so share UI code is fetched only when the share dialog is opened.
 
 ## Validation checklist
 - [x] `npx vite build`

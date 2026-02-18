@@ -62,3 +62,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🔧 Replaced the trip admin edit toggle with a native control to remove remaining Radix switch runtime from first-load trip bundles.
 - [ ] [Internal] ➕ Deferred add-city/add-activity modal bundles until users open those planners, reducing initial trip JS work.
 - [ ] [Internal] 🌍 Deferred destination info panel code until the trip-info overlay is opened, trimming initial trip bundle weight.
+- [ ] [Internal] 🔗 Deferred trip sharing dialog code until users open share controls, keeping initial planner bundles leaner.
