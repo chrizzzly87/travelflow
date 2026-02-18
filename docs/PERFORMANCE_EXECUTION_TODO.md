@@ -52,6 +52,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Consolidated first-load-critical path detection into `app/prefetch/isFirstLoadCriticalPath.ts` and applied it to both passive navigation prefetch and speculation-rules mounting.
 - [x] Verified Lighthouse runs against `/trip/test` end on final URL `/create-trip` due missing-trip redirect; create-trip chunk loading in that scenario is expected behavior for that test URL (not a passive prefetch regression).
 - [x] Routed `TripView` DB calls through `services/dbApi.ts` so `routes/TripRouteLoaders.tsx` no longer statically imports `dbService`/`supabaseClient`.
+- [x] After lazy-loading AI helpers inside trip-side panels, `/example/thailand-islands` no longer fetches `aiService` on first load and improved from `87` to `91` score with transfer dropping from `~504.2 KiB` to `~449.0 KiB`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -89,6 +90,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extract destination lookup/indexing logic into `services/destinationService.ts` and move prefill decoding into `services/tripPrefillDecoder.ts` to break `utils.ts` into smaller domain modules.
 - [x] Suppress passive navigation prefetch (viewport/hover/focus) on first-load-critical paths while preserving explicit interaction-triggered prefetch.
 - [x] Move `TripView` DB-side effects behind `dbApi` wrappers to keep Supabase runtime code out of static trip-route imports.
+- [x] Lazy-load trip AI helper calls inside `DetailsPanel` and `AddActivityModal` so `aiService` only loads when a user triggers AI actions.
 
 ## Validation checklist
 - [x] `npx vite build`

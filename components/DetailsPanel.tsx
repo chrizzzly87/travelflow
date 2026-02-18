@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
-import { suggestActivityDetails, generateCityNotesAddition } from '../services/aiService';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
@@ -73,6 +72,16 @@ const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
         description: 'Adds lightweight morning/afternoon/evening checklist ideas.'
     }
 ];
+
+type AiServiceModule = typeof import('../services/aiService');
+let aiServicePromise: Promise<AiServiceModule> | null = null;
+
+const loadAiService = async (): Promise<AiServiceModule> => {
+    if (!aiServicePromise) {
+        aiServicePromise = import('../services/aiService');
+    }
+    return aiServicePromise;
+};
 
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
@@ -685,7 +694,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (!displayItem) return;
       setLoading(true);
       try {
-          const details = await suggestActivityDetails(displayItem.title, displayItem.location || "");
+          const aiService = await loadAiService();
+          const details = await aiService.suggestActivityDetails(displayItem.title, displayItem.location || "");
           handleUpdate(displayItem.id, {
               aiInsights: { cost: details.cost, bestTime: details.bestTime, tips: details.tips },
           });
@@ -705,7 +715,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       setIsEnhancing(true);
 
       try {
-          const addition = await generateCityNotesAddition(
+          const aiService = await loadAiService();
+          const addition = await aiService.generateCityNotesAddition(
               displayItem.location || displayItem.title,
               displayItem.description || '',
               mode

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { X, Sparkles, Check } from 'lucide-react';
-import { generateActivityProposals } from '../services/aiService';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
 
@@ -14,6 +13,16 @@ interface AddActivityModalProps {
     trip?: ITrip | null;
     notes?: string;
 }
+
+type AiServiceModule = typeof import('../services/aiService');
+let aiServicePromise: Promise<AiServiceModule> | null = null;
+
+const loadAiService = async (): Promise<AiServiceModule> => {
+    if (!aiServicePromise) {
+        aiServicePromise = import('../services/aiService');
+    }
+    return aiServicePromise;
+};
 
 export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onClose, dayOffset, location, onAdd, trip, notes }) => {
     const [mode, setMode] = useState<'manual' | 'ai'>('manual');
@@ -76,9 +85,16 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             })) || []
         };
 
-        const results = await generateActivityProposals(prompt, location, context);
-        setProposals(results);
-        setIsGenerating(false);
+        try {
+            const aiService = await loadAiService();
+            const results = await aiService.generateActivityProposals(prompt, location, context);
+            setProposals(results);
+        } catch (error) {
+            console.error('Failed to generate activity proposals', error);
+            setProposals([]);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const handleSelectProposal = (proposal: any) => {
