@@ -208,6 +208,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - Build command: `npm run build`
    - Publish directory: `dist`
 4. In Netlify environment variables, add:
+   - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
    - `GEMINI_API_KEY` (preferred server-side key for `/api/ai/generate`)
    - `VITE_GEMINI_API_KEY` (optional browser fallback for local/dev compatibility)
    - `VITE_GOOGLE_MAPS_API_KEY`
@@ -222,6 +223,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
 
 Sitemap behavior:
 - `npm run build` regenerates `public/sitemap.xml` on every deploy.
+- The canonical sitemap host is read from `SITE_URL` (`VITE_SITE_URL` fallback) via `config/site-url.mjs`.
 - Static marketing URLs are derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
 - Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
 

@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { resolveSiteUrl } from '../config/site-url.mjs';
 
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
@@ -7,7 +8,7 @@ const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
 const APP_FILE = path.join(ROOT, 'App.tsx');
 const LOCALES_FILE = path.join(ROOT, 'config', 'locales.ts');
 
-const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://travelflow.app').replace(/\/$/, '');
+const SITE_URL = resolveSiteUrl();
 const NON_INDEXABLE_STATIC_PATHS = new Set(['/auth/reset-password', '/share-unavailable']);
 const MARKETING_ROUTE_CONFIG_REGEX = /const\s+MARKETING_ROUTE_CONFIGS[\s\S]*?=\s*\[([\s\S]*?)\];/;
 const SUPPORTED_LOCALES_REGEX = /export\s+const\s+SUPPORTED_LOCALES\s*:[^=]*=\s*\[([\s\S]*?)\];/;

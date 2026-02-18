@@ -13,3 +13,4 @@ summary: "Sitemap generation now reads live route and locale sources so each dep
 ## Changes
 - [x] [Improved] 🗺️ Search engines now get a refreshed sitemap on each deployment with the latest public pages.
 - [ ] [Internal] 🔄 Sitemap generation now reads route and locale sources directly and excludes utility/error routes from indexing.
+- [ ] [Internal] ⚙️ Added a shared canonical site URL config so sitemap host updates come from one global source.
