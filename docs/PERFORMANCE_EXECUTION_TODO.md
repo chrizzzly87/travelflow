@@ -63,6 +63,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Deferred the share dialog (`TripShareModal`) behind lazy loading so sharing controls load only when opened; `/example/thailand-islands` improved slightly from `~316.7 KiB` to `~316.5 KiB` transfer and static graph dropped from `~559.2 KiB` to `~557.0 KiB`.
 - [x] Deferred the full history dialog (`TripHistoryModal`) behind lazy loading so history UI is fetched only on demand; `/example/thailand-islands` improved slightly from `~316.5 KiB` to `~316.2 KiB` transfer and static graph dropped from `~557.0 KiB` to `~554.6 KiB`.
 - [x] Deferred the trip-info overlay shell (`TripInfoModal`) behind lazy loading so trip-info UI only loads on demand; `/example/thailand-islands` improved from `~316.2 KiB` to `~313.9 KiB` transfer (`29` to `27` requests) and trip static graph dropped from `~554.6 KiB` to `~536.8 KiB`.
+- [x] Deferred the non-default `VerticalTimeline` bundle so default horizontal trip render no longer ships both timeline variants upfront; `/example/thailand-islands` improved from `~313.9 KiB` to `~312.3 KiB` transfer (`27` requests stable) with score improvement (`88` to `90`) and trip static graph reduction from `~536.8 KiB` to `~522.4 KiB`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -111,6 +112,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load `TripShareModal` in `TripView` so share UI code is fetched only when the share dialog is opened.
 - [x] Lazy-load `TripHistoryModal` in `TripView` so history navigation UI is fetched only when the history dialog is opened.
 - [x] Lazy-load `TripInfoModal` in `TripView` so trip metadata/history overlay chrome is fetched only when users open trip info.
+- [x] Lazy-load `VerticalTimeline` in `TripView` so default horizontal timeline mode does not include both timeline variants in the initial bundle.
 
 ## Validation checklist
 - [x] `npx vite build`

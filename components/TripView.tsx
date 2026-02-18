@@ -3,12 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
-import { VerticalTimeline } from './VerticalTimeline';
 import { ItineraryMap } from './ItineraryMap';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight, Loader2
+    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, Loader2
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -63,6 +62,10 @@ const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
     import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
+);
+
+const VerticalTimeline = lazyWithRecovery('VerticalTimeline', () =>
+    import('./VerticalTimeline').then((module) => ({ default: module.VerticalTimeline }))
 );
 
 const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
@@ -2207,6 +2210,47 @@ export const TripView: React.FC<TripViewProps> = ({
         }));
     }, [infoHistoryEntries, currentUrl]);
 
+    const renderTimelineCanvas = () => {
+        if (timelineView === 'vertical') {
+            return (
+                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
+                    <VerticalTimeline
+                        trip={displayTrip}
+                        onUpdateItems={handleUpdateItems}
+                        onSelect={handleTimelineSelect}
+                        selectedItemId={selectedItemId}
+                        selectedCityIds={selectedCityIds}
+                        readOnly={!canEdit}
+                        onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                        onAddActivity={handleOpenAddActivity}
+                        onForceFill={handleForceFill}
+                        onSwapSelectedCities={handleReverseSelectedCities}
+                        pixelsPerDay={pixelsPerDay}
+                        enableExampleSharedTransition={useExampleSharedTransition}
+                    />
+                </Suspense>
+            );
+        }
+
+        return (
+            <Timeline
+                trip={displayTrip}
+                onUpdateItems={handleUpdateItems}
+                onSelect={handleTimelineSelect}
+                selectedItemId={selectedItemId}
+                selectedCityIds={selectedCityIds}
+                readOnly={!canEdit}
+                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                onAddActivity={handleOpenAddActivity}
+                onForceFill={handleForceFill}
+                onSwapSelectedCities={handleReverseSelectedCities}
+                routeStatusById={routeStatusById}
+                pixelsPerDay={pixelsPerDay}
+                enableExampleSharedTransition={useExampleSharedTransition}
+            />
+        );
+    };
+
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;
         if (!requireEdit()) return;
@@ -2658,38 +2702,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     onTouchEnd={handleTimelineTouchEnd}
                                     onTouchCancel={handleTimelineTouchEnd}
                                 >
-                                    {timelineView === 'vertical' ? (
-                                        <VerticalTimeline
-                                            trip={displayTrip}
-                                            onUpdateItems={handleUpdateItems}
-                                            onSelect={handleTimelineSelect}
-                                            selectedItemId={selectedItemId}
-                                            selectedCityIds={selectedCityIds}
-                                            readOnly={!canEdit}
-                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                            onAddActivity={handleOpenAddActivity}
-                                            onForceFill={handleForceFill}
-                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                            pixelsPerDay={pixelsPerDay}
-                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                        />
-                                    ) : (
-                                        <Timeline
-                                            trip={displayTrip}
-                                            onUpdateItems={handleUpdateItems}
-                                            onSelect={handleTimelineSelect}
-                                            selectedItemId={selectedItemId}
-                                            selectedCityIds={selectedCityIds}
-                                            readOnly={!canEdit}
-                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                            onAddActivity={handleOpenAddActivity}
-                                            onForceFill={handleForceFill}
-                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                            routeStatusById={routeStatusById}
-                                            pixelsPerDay={pixelsPerDay}
-                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                        />
-                                    )}
+                                    {renderTimelineCanvas()}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2734,38 +2747,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
-                                                    {timelineView === 'vertical' ? (
-                                                        <VerticalTimeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    ) : (
-                                                        <Timeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            routeStatusById={routeStatusById}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    )}
+                                                    {renderTimelineCanvas()}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2884,38 +2866,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                                 <div className="w-full h-full relative min-w-0">
-                                                    {timelineView === 'vertical' ? (
-                                                        <VerticalTimeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    ) : (
-                                                        <Timeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            routeStatusById={routeStatusById}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    )}
+                                                    {renderTimelineCanvas()}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>

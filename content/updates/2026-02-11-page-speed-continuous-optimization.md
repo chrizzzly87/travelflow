@@ -65,3 +65,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🔗 Deferred trip sharing dialog code until users open share controls, keeping initial planner bundles leaner.
 - [ ] [Internal] 🕘 Deferred trip history dialog code until users open history, reducing default planner bundle scope.
 - [ ] [Internal] 🧾 Deferred trip-info modal shell code until users open trip information, shrinking initial planner payload.
+- [ ] [Internal] 📉 Deferred the non-default vertical timeline bundle so default trip loads avoid shipping both timeline variants upfront.
