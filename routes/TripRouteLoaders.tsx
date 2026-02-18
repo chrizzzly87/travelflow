@@ -509,9 +509,10 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
 
         const loadTemplateResources = async () => {
             try {
-                const { TRIP_FACTORIES, getExampleTemplateSummary } = await import('../data/exampleTripTemplates');
+                const { getExampleTemplateSummary, loadExampleTemplateFactory } = await import('../data/exampleTripTemplates/runtimeFactory');
                 if (cancelled) return;
-                const nextFactory = (TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null;
+                const nextFactory = await loadExampleTemplateFactory(templateId);
+                if (cancelled) return;
                 const summary = getExampleTemplateSummary(templateId);
                 setTemplateFactory(() => nextFactory);
                 setTemplateCard((summary as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null);

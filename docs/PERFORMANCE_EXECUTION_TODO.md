@@ -64,7 +64,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Deferred the full history dialog (`TripHistoryModal`) behind lazy loading so history UI is fetched only on demand; `/example/thailand-islands` improved slightly from `~316.5 KiB` to `~316.2 KiB` transfer and static graph dropped from `~557.0 KiB` to `~554.6 KiB`.
 - [x] Deferred the trip-info overlay shell (`TripInfoModal`) behind lazy loading so trip-info UI only loads on demand; `/example/thailand-islands` improved from `~316.2 KiB` to `~313.9 KiB` transfer (`29` to `27` requests) and trip static graph dropped from `~554.6 KiB` to `~536.8 KiB`.
 - [x] Deferred the non-default `VerticalTimeline` bundle so default horizontal trip render no longer ships both timeline variants upfront; `/example/thailand-islands` improved from `~313.9 KiB` to `~312.3 KiB` transfer (`27` requests stable) with score improvement (`88` to `90`) and trip static graph reduction from `~536.8 KiB` to `~522.4 KiB`.
-- [x] Removed `/example/:templateId` dependency on heavy `exampleTripCards` data during initial loader hydration by sourcing lightweight title/country metadata from `exampleTripTemplates`; `/example/thailand-islands` transfer dropped from `~312.3 KiB` to `~306.9 KiB` (`27` to `26` requests) and no longer requests `exampleTripCards` on first load.
+- [x] Removed `/example/:templateId` dependency on heavy `exampleTripCards` data during initial loader hydration by sourcing lightweight title/country metadata from a dedicated loader-runtime module; `/example/thailand-islands` transfer dropped from `~312.3 KiB` to `~306.9 KiB` (`27` to `26` requests) and no longer requests `exampleTripCards` on first load.
+- [x] Replaced monolithic example-template index loading with per-template dynamic factory imports for `/example/:templateId`; `/example/thailand-islands` transfer dropped further from `~306.9 KiB` to `~286.9 KiB` (`26` to `27` requests) while keeping score stable/improved (`88` to `89`) and removing first-load requests for the large `exampleTripTemplates` index chunk.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -114,7 +115,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load `TripHistoryModal` in `TripView` so history navigation UI is fetched only when the history dialog is opened.
 - [x] Lazy-load `TripInfoModal` in `TripView` so trip metadata/history overlay chrome is fetched only when users open trip info.
 - [x] Lazy-load `VerticalTimeline` in `TripView` so default horizontal timeline mode does not include both timeline variants in the initial bundle.
-- [x] Read example-route banner metadata from `exampleTripTemplates` so `/example/:templateId` avoids loading the marketing card dataset during first-load trip hydration.
+- [x] Read example-route banner metadata from a lightweight loader-runtime module so `/example/:templateId` avoids loading the marketing card dataset during first-load trip hydration.
+- [x] Load `/example/:templateId` template factories via per-template dynamic imports so example entry routes avoid fetching the monolithic templates index on first render.
 
 ## Validation checklist
 - [x] `npx vite build`
