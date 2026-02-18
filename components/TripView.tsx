@@ -9,7 +9,6 @@ import { CountryInfo } from './CountryInfo';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
-import { Drawer, DrawerContent } from './ui/drawer';
 import { Switch } from './ui/switch';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
@@ -76,6 +75,10 @@ const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
 
 const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
     import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
+);
+
+const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
+    import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -2923,17 +2926,14 @@ export const TripView: React.FC<TripViewProps> = ({
                             </div>
                         )}
                     </div>
-                    {isMobile && (
-                        <Drawer
-                            open={detailsPanelVisible}
-                            onOpenChange={(open) => {
-                                if (!open) clearSelection();
-                            }}
-                            shouldScaleBackground={false}
-                            modal={true}
-                            dismissible={true}
-                        >
-                            <DrawerContent className="h-[82vh] p-0" accessibleTitle="Trip details" accessibleDescription="View and edit selected city, travel segment, or activity details.">
+                    {isMobile && detailsPanelVisible && (
+                        <Suspense fallback={null}>
+                            <TripDetailsDrawer
+                                open={detailsPanelVisible}
+                                onOpenChange={(open) => {
+                                    if (!open) clearSelection();
+                                }}
+                            >
                                 {showSelectedCitiesPanel ? (
                                     <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
                                         <SelectedCitiesPanel
@@ -2968,8 +2968,8 @@ export const TripView: React.FC<TripViewProps> = ({
                                         />
                                     </Suspense>
                                 )}
-                            </DrawerContent>
-                        </Drawer>
+                            </TripDetailsDrawer>
+                        </Suspense>
                     )}
 
                      {/* Modals */}

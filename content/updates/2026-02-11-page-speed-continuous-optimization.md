@@ -58,3 +58,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🗞️ Moved trip release-notice markdown rendering into a lazy chunk and deferred it until interaction/idle so initial trip loading stays lighter.
 - [ ] [Internal] 📝 Deferred markdown editor and print layout code so trip entry loads only planner essentials on first render.
 - [ ] [Internal] 🧩 Deferred trip detail panels so selection/editing bundles load only after users focus a timeline item.
+- [ ] [Internal] 📱 Deferred mobile details drawer code until panel open-state so mobile trip entry keeps less UI runtime upfront.
