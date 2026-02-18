@@ -1212,6 +1212,7 @@ create trigger sync_profile_from_auth_user
 after insert or update of email, raw_user_meta_data on auth.users
 for each row execute function public.sync_profile_from_auth_user();
 
+drop function if exists public.get_current_user_access();
 create or replace function public.get_current_user_access()
 returns table(
   user_id uuid,

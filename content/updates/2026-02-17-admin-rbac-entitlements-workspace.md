@@ -30,3 +30,4 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [ ] [Internal] 🛡️ Hardened profile update safety with privileged-field guardrails while preserving user self-service edits for profile data.
 - [ ] [Internal] 🧩 Isolated admin routes into a dedicated lazy-loaded workspace router so non-admin paths avoid admin chunk preload/bundle impact.
 - [ ] [Internal] 📘 Added explicit RBAC hardening TODOs documenting the migration from compatibility permissions to strict role-only checks.
+- [ ] [Internal] 🧯 Updated SQL migration order to drop/recreate `get_current_user_access` when return columns evolve.
