@@ -37,6 +37,7 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🧠 Reduced admin metric flicker by caching recent users/trips/tier snapshots locally before live refresh completes.
 - [x] [Fixed] 🪄 Fixed admin filter popovers to open and select reliably across table toolbars, including sticky/scrolling layouts.
 - [x] [Improved] 🔢 Standardized animated number transitions across compact dashboard metric cards for smoother data updates.
+- [x] [Fixed] 🧩 Fixed dropdown layering in side drawers/dialogs so account status, role, and tier selectors are fully usable again.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.
