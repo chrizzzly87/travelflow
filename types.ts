@@ -33,6 +33,8 @@ export interface UserAccessContext {
     role: SystemRole;
     tierKey: PlanTierKey;
     entitlements: Entitlements;
+    onboardingCompleted: boolean;
+    accountStatus: 'active' | 'disabled' | 'deleted';
 }
 
 export interface ICoordinates {

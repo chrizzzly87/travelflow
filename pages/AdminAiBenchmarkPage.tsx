@@ -27,7 +27,7 @@ import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiServ
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { getDaysDifference, getDefaultTripDates, getDestinationPromptLabel, resolveDestinationName } from '../utils';
 import { useAuth } from '../hooks/useAuth';
-import { AdminMenu } from '../components/admin/AdminMenu';
+import { AdminShell } from '../components/admin/AdminShell';
 import {
     Select,
     SelectContent,
@@ -1210,24 +1210,27 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     }, [validationModalRun]);
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <AdminMenu />
-            <div className="mx-auto w-full max-w-[1600px] space-y-4 px-4 py-6 md:px-8 md:py-8">
+        <AdminShell
+            title="AI Benchmark"
+            description="Compare model/provider outputs for the create-trip contract with persistent benchmark sessions."
+            showGlobalSearch={false}
+            showDateRange={false}
+        >
+            <div className="mx-auto w-full max-w-[1600px] space-y-4">
                 <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Internal admin workspace</p>
-                            <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">AI Benchmark</h1>
-                            <p className="mt-2 max-w-3xl text-sm text-slate-600">
-                                Default create-trip mask benchmark workspace. Use the left-side input and compare selected provider/model targets on the right.
-                                Results persist by session token in the URL.
+                            <h2 className="text-base font-bold text-slate-900">Benchmark execution context</h2>
+                            <p className="mt-1 max-w-3xl text-sm text-slate-600">
+                                Default create-trip benchmark workspace. Configure session input on the left and compare selected model targets on the right.
+                                Session identifiers and filters persist in the URL.
                             </p>
                         </div>
 
                         <div className="w-full max-w-sm space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 sm:p-3 sm:text-xs">
                             <div className="font-semibold text-slate-700">Internal API auth</div>
                             <div className="text-[11px] text-slate-500">
-                                Requests use your current Supabase bearer token and admin role validation on the server.
+                                Requests use your current Supabase bearer token with server-side admin validation.
                             </div>
                             <div className="text-[11px] text-slate-500">
                                 Access token state: <span className="font-semibold text-slate-700">{accessToken ? 'ready' : 'missing'}</span>
@@ -2123,6 +2126,6 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </div>
                 </section>
             </div>
-        </div>
+        </AdminShell>
     );
 };

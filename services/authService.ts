@@ -133,6 +133,8 @@ const defaultAccessContext = (session: Session | null): UserAccessContext => ({
     role: 'user',
     tierKey: 'tier_free',
     entitlements: FREE_ENTITLEMENTS,
+    onboardingCompleted: true,
+    accountStatus: 'active',
 });
 
 const logAuthFlow = async (options: LogAuthFlowOptions): Promise<void> => {
@@ -211,6 +213,14 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             role,
             tierKey,
             entitlements: (row.entitlements || FREE_ENTITLEMENTS) as UserAccessContext['entitlements'],
+            onboardingCompleted: Object.prototype.hasOwnProperty.call(row, 'onboarding_completed')
+                ? Boolean(row.onboarding_completed)
+                : true,
+            accountStatus: row.account_status === 'disabled'
+                ? 'disabled'
+                : row.account_status === 'deleted'
+                    ? 'deleted'
+                    : 'active',
         };
     } catch {
         return defaultAccessContext(session);

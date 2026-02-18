@@ -15,6 +15,7 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
+import { AccountMenu } from './AccountMenu';
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -51,7 +52,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
-    const { isAuthenticated, isAdmin, logout } = useAuth();
+    const { isAuthenticated, isAdmin, access } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
@@ -101,17 +102,6 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
             }),
             reloadOnSuccess: true,
         });
-    };
-
-    const handleLogout = async () => {
-        trackEvent('navigation__logout');
-        await logout();
-        const target = buildLocalizedMarketingPath('home', activeLocale);
-        if (typeof window !== 'undefined') {
-            window.location.assign(target);
-            return;
-        }
-        navigate(target);
     };
 
     const navDebugAttributes = (target: string) =>
@@ -164,27 +154,8 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                 triggerClassName="h-9 rounded-lg border-slate-200 bg-white py-2 pl-3 pr-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                             />
                         </div>
-                        {isAdmin && (
-                            <NavLink
-                                to="/admin/dashboard"
-                                onClick={() => handleNavClick('admin')}
-                                className={loginClass}
-                                {...navDebugAttributes('admin')}
-                            >
-                                {t('nav.admin')}
-                            </NavLink>
-                        )}
                         {isAuthenticated ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    void handleLogout();
-                                }}
-                                className={loginClass}
-                                {...navDebugAttributes('logout')}
-                            >
-                                {t('nav.logout')}
-                            </button>
+                            <AccountMenu email={access?.email || null} isAdmin={isAdmin} />
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}

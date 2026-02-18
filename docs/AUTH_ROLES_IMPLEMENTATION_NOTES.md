@@ -34,3 +34,5 @@ Last updated: 2026-02-13
 1. Add dedicated admin audit rows for benchmark actions (run, rerun, export, cleanup, cancel).
 2. Add per-user benchmark rate limiting.
 3. Move benchmark admin authorization to a dedicated shared edge auth module.
+4. Backfill explicit records in `public.admin_user_roles` for every active admin account, then switch `public.has_admin_permission(...)` from compatibility mode to strict role-only checks (remove legacy fail-open path).
+5. Add a migration checklist for strict-RBAC rollout (role backfill verification, staging smoke test, production cutover window, rollback SQL).

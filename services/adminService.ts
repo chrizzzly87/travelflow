@@ -1,0 +1,338 @@
+import type { PlanTierKey } from '../types';
+import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { supabase } from './supabaseClient';
+
+export interface AdminUserRecord {
+    user_id: string;
+    email: string | null;
+    is_anonymous?: boolean;
+    auth_provider?: string | null;
+    activation_status?: 'activated' | 'invited' | 'pending' | 'anonymous' | null;
+    last_sign_in_at?: string | null;
+    display_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    username?: string | null;
+    gender?: string | null;
+    country?: string | null;
+    city?: string | null;
+    preferred_language?: string | null;
+    account_status?: 'active' | 'disabled' | 'deleted';
+    disabled_at?: string | null;
+    disabled_by?: string | null;
+    system_role: 'admin' | 'user';
+    tier_key: PlanTierKey;
+    entitlements_override: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+    onboarding_completed_at?: string | null;
+}
+
+export interface AdminTripRecord {
+    trip_id: string;
+    owner_id: string;
+    owner_email: string | null;
+    title: string | null;
+    status: 'active' | 'archived' | 'expired';
+    trip_expires_at: string | null;
+    archived_at: string | null;
+    source_kind: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminAuditRecord {
+    id: string;
+    actor_user_id: string | null;
+    actor_email: string | null;
+    action: string;
+    target_type: string;
+    target_id: string | null;
+    before_data: Record<string, unknown> | null;
+    after_data: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface AdminTierReapplyPreview {
+    affected_users: number;
+    affected_trips: number;
+    active_trips: number;
+    expired_trips: number;
+    archived_trips: number;
+    users_with_overrides: number;
+}
+
+const requireSupabase = () => {
+    if (!supabase) {
+        throw new Error('Supabase is not configured.');
+    }
+    return supabase;
+};
+
+export const adminListUsers = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+    } = {}
+): Promise<AdminUserRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_users', {
+        p_limit: options.limit ?? 250,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load admin users.');
+    return (Array.isArray(data) ? data : []) as AdminUserRecord[];
+};
+
+export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_update_user_tier', {
+        p_user_id: userId,
+        p_tier_key: tierKey,
+    });
+    if (error) throw new Error(error.message || 'Could not update user tier.');
+};
+
+export const adminUpdateUserOverrides = async (userId: string, overrides: Record<string, unknown>): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_update_user_overrides', {
+        p_user_id: userId,
+        p_overrides: overrides,
+    });
+    if (error) throw new Error(error.message || 'Could not update user overrides.');
+};
+
+export const adminUpdateUserProfile = async (
+    userId: string,
+    payload: {
+        firstName?: string | null;
+        lastName?: string | null;
+        username?: string | null;
+        gender?: string | null;
+        country?: string | null;
+        city?: string | null;
+        preferredLanguage?: string | null;
+        accountStatus?: 'active' | 'disabled' | 'deleted' | null;
+        systemRole?: 'admin' | 'user' | null;
+        tierKey?: PlanTierKey | null;
+    }
+): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_update_user_profile', {
+        p_user_id: userId,
+        p_first_name: payload.firstName ?? null,
+        p_last_name: payload.lastName ?? null,
+        p_username: payload.username ?? null,
+        p_gender: payload.gender ?? null,
+        p_country: payload.country ?? null,
+        p_city: payload.city ?? null,
+        p_preferred_language: payload.preferredLanguage ?? null,
+        p_account_status: payload.accountStatus ?? null,
+        p_system_role: payload.systemRole ?? null,
+        p_tier_key: payload.tierKey ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not update user profile.');
+};
+
+export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_user_profile', {
+        p_user_id: userId,
+    });
+    if (error) throw new Error(error.message || 'Could not load user profile.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminUserRecord) : null;
+};
+
+export const adminListTrips = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        search?: string;
+        ownerId?: string | null;
+        status?: 'active' | 'archived' | 'expired' | 'all';
+    } = {}
+): Promise<AdminTripRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_trips', {
+        p_limit: options.limit ?? 300,
+        p_offset: options.offset ?? 0,
+        p_search: options.search ?? null,
+        p_owner_id: options.ownerId ?? null,
+        p_status: options.status && options.status !== 'all' ? options.status : null,
+    });
+    if (error) throw new Error(error.message || 'Could not load trips.');
+    return (Array.isArray(data) ? data : []) as AdminTripRecord[];
+};
+
+export const adminListUserTrips = async (
+    userId: string,
+    options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
+): Promise<AdminTripRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_user_trips', {
+        p_user_id: userId,
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_status: options.status && options.status !== 'all' ? options.status : null,
+    });
+    if (error) throw new Error(error.message || 'Could not load user trips.');
+    return (Array.isArray(data) ? data : []) as AdminTripRecord[];
+};
+
+export const adminUpdateTrip = async (
+    tripId: string,
+    patch: {
+        status?: 'active' | 'archived' | 'expired' | null;
+        tripExpiresAt?: string | null;
+        ownerId?: string | null;
+    }
+): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_update_trip', {
+        p_trip_id: tripId,
+        p_status: patch.status ?? null,
+        p_trip_expires_at: patch.tripExpiresAt ?? null,
+        p_owner_id: patch.ownerId ?? null,
+        p_apply_status: Object.prototype.hasOwnProperty.call(patch, 'status'),
+        p_apply_trip_expires_at: Object.prototype.hasOwnProperty.call(patch, 'tripExpiresAt'),
+        p_apply_owner_id: Object.prototype.hasOwnProperty.call(patch, 'ownerId'),
+    });
+    if (error) throw new Error(error.message || 'Could not update trip.');
+};
+
+export const adminUpdatePlanEntitlements = async (
+    tierKey: PlanTierKey,
+    entitlements: Record<string, unknown>
+): Promise<void> => {
+    const client = requireSupabase();
+    const { error } = await client.rpc('admin_update_plan_entitlements', {
+        p_tier_key: tierKey,
+        p_entitlements: entitlements,
+    });
+    if (error) throw new Error(error.message || 'Could not update plan entitlements.');
+};
+
+export const adminReapplyTierToUsers = async (
+    tierKey: PlanTierKey
+): Promise<{ affected_users: number; affected_trips: number }> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_reapply_tier_to_users', {
+        p_tier_key: tierKey,
+        p_apply_expiration_backfill: true,
+    });
+    if (error) throw new Error(error.message || 'Could not reapply tier changes.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row as { affected_users: number; affected_trips: number };
+};
+
+export const adminPreviewTierReapply = async (tierKey: PlanTierKey): Promise<AdminTierReapplyPreview> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_preview_tier_reapply', {
+        p_tier_key: tierKey,
+    });
+    if (error) throw new Error(error.message || 'Could not preview tier reapply.');
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+        return {
+            affected_users: 0,
+            affected_trips: 0,
+            active_trips: 0,
+            expired_trips: 0,
+            archived_trips: 0,
+            users_with_overrides: 0,
+        };
+    }
+    return row as AdminTierReapplyPreview;
+};
+
+export const adminListAuditLogs = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        targetType?: string;
+        actorUserId?: string;
+    } = {}
+): Promise<AdminAuditRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_audit_logs', {
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_action: options.action ?? null,
+        p_target_type: options.targetType ?? null,
+        p_actor_user_id: options.actorUserId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load audit logs.');
+    return (Array.isArray(data) ? data : []) as AdminAuditRecord[];
+};
+
+const callAdminIdentityApi = async (
+    body: Record<string, unknown>
+): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
+    await ensureDbSession();
+    const token = await dbGetAccessToken();
+    if (!token) {
+        throw new Error('No active access token found for admin operation.');
+    }
+
+    const response = await fetch('/api/internal/admin/iam', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload?.ok === false) {
+        const errorMessage = typeof payload?.error === 'string' ? payload.error : 'Admin identity API request failed.';
+        throw new Error(errorMessage);
+    }
+    return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
+};
+
+export const adminCreateUserInvite = async (payload: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    tierKey?: PlanTierKey;
+    redirectTo?: string;
+}): Promise<void> => {
+    await callAdminIdentityApi({
+        action: 'invite',
+        email: payload.email,
+        firstName: payload.firstName ?? null,
+        lastName: payload.lastName ?? null,
+        tierKey: payload.tierKey ?? 'tier_free',
+        redirectTo: payload.redirectTo ?? null,
+    });
+};
+
+export const adminCreateUserDirect = async (payload: {
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    tierKey?: PlanTierKey;
+}): Promise<void> => {
+    await callAdminIdentityApi({
+        action: 'create',
+        email: payload.email,
+        password: payload.password,
+        firstName: payload.firstName ?? null,
+        lastName: payload.lastName ?? null,
+        tierKey: payload.tierKey ?? 'tier_free',
+    });
+};
+
+export const adminHardDeleteUser = async (userId: string): Promise<void> => {
+    await callAdminIdentityApi({
+        action: 'delete',
+        userId,
+    });
+};

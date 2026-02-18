@@ -337,6 +337,7 @@ export const dbGetTrip = async (tripId: string) => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
     await ensureDbSession();
+    let loadedViaAdminBypass = false;
 
     let { data, error } = await client
         .from('trips')
@@ -360,12 +361,36 @@ export const dbGetTrip = async (tripId: string) => {
         return null;
     }
 
+    if (!data) {
+        // Admin-only fallback for viewing non-owned trips.
+        const { data: adminData, error: adminError } = await client.rpc('admin_get_trip_for_view', {
+            p_trip_id: tripId,
+        });
+        if (!adminError) {
+            const row = Array.isArray(adminData) ? adminData[0] : adminData;
+            if (row) {
+                data = {
+                    id: row.trip_id,
+                    data: row.data,
+                    view_settings: row.view_settings,
+                    status: row.status,
+                    trip_expires_at: row.trip_expires_at,
+                    source_kind: row.source_kind,
+                    source_template_id: row.source_template_id,
+                };
+                loadedViaAdminBypass = true;
+            }
+        } else if (!/not allowed/i.test(adminError.message || '')) {
+            console.error('Failed admin trip-view fallback', adminError);
+        }
+    }
+
     if (!data) return null;
     const trip = data.data as ITrip;
     const normalizedBase = trip && trip.id !== data.id ? { ...trip, id: data.id } : trip;
     if (!normalizedBase) return null;
     const normalized = applyTripAccessFields(normalizedBase, data as Record<string, unknown>);
-    if (normalized.status === 'archived') return null;
+    if (normalized.status === 'archived' && !loadedViaAdminBypass) return null;
     return { trip: normalized, view: normalizeViewSettingsPayload(data.view_settings) };
 };
 
