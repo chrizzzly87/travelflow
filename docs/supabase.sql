@@ -1788,3 +1788,1197 @@ grant execute on function public.create_trip_generation_request(text, jsonb, int
 grant execute on function public.claim_trip_generation_request(uuid) to authenticated;
 grant execute on function public.expire_stale_trip_generation_requests() to anon, authenticated;
 grant execute on function public.get_effective_entitlements(uuid) to anon, authenticated;
+
+-- =============================================================================
+-- Admin IAM + profile onboarding extensions
+-- =============================================================================
+
+alter table public.profiles add column if not exists first_name text;
+alter table public.profiles add column if not exists last_name text;
+alter table public.profiles add column if not exists username text;
+alter table public.profiles add column if not exists gender text;
+alter table public.profiles add column if not exists country text;
+alter table public.profiles add column if not exists city text;
+alter table public.profiles add column if not exists preferred_language text default 'en';
+alter table public.profiles add column if not exists account_status text not null default 'active';
+alter table public.profiles add column if not exists disabled_at timestamptz;
+alter table public.profiles add column if not exists disabled_by uuid references auth.users on delete set null;
+alter table public.profiles add column if not exists onboarding_completed_at timestamptz;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_account_status_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_account_status_check
+      check (account_status in ('active', 'disabled', 'deleted'));
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_gender_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_gender_check
+      check (gender is null or gender in ('female', 'male', 'non-binary', 'prefer-not'));
+  end if;
+end;
+$$;
+
+create unique index if not exists profiles_username_uidx
+  on public.profiles (lower(username))
+  where username is not null and btrim(username) <> '';
+create index if not exists profiles_account_status_idx on public.profiles(account_status);
+
+create table if not exists public.admin_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  actor_user_id uuid references auth.users on delete set null,
+  action text not null,
+  target_type text not null,
+  target_id text,
+  before_data jsonb not null default '{}'::jsonb,
+  after_data jsonb not null default '{}'::jsonb,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists admin_audit_logs_created_at_idx on public.admin_audit_logs(created_at desc);
+create index if not exists admin_audit_logs_actor_idx on public.admin_audit_logs(actor_user_id, created_at desc);
+create index if not exists admin_audit_logs_target_idx on public.admin_audit_logs(target_type, target_id, created_at desc);
+create index if not exists admin_audit_logs_action_idx on public.admin_audit_logs(action, created_at desc);
+
+create table if not exists public.admin_roles (
+  key text primary key,
+  label text not null,
+  description text not null default '',
+  is_system boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.admin_permissions (
+  key text primary key,
+  label text not null,
+  domain text not null,
+  description text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.admin_role_permissions (
+  role_key text not null references public.admin_roles(key) on delete cascade,
+  permission_key text not null references public.admin_permissions(key) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (role_key, permission_key)
+);
+
+create table if not exists public.admin_user_roles (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role_key text not null references public.admin_roles(key) on delete cascade,
+  assigned_at timestamptz not null default now(),
+  assigned_by uuid references auth.users(id) on delete set null,
+  primary key (user_id, role_key)
+);
+
+create index if not exists admin_user_roles_role_key_idx on public.admin_user_roles(role_key, user_id);
+create index if not exists admin_role_permissions_permission_idx on public.admin_role_permissions(permission_key, role_key);
+
+insert into public.admin_roles (key, label, description)
+values
+  ('super_admin', 'Super Admin', 'Full administrative control across all IAM and entitlement operations.'),
+  ('support_admin', 'Support Admin', 'Operational support access for user and trip lifecycle management.'),
+  ('read_only_admin', 'Read-only Admin', 'Read-only visibility into admin operational data.')
+on conflict (key) do update
+set
+  label = excluded.label,
+  description = excluded.description;
+
+insert into public.admin_permissions (key, label, domain, description)
+values
+  ('users.read', 'Read users', 'users', 'List and inspect user account/profile records.'),
+  ('users.write', 'Write users', 'users', 'Update user profile, role, tier, and entitlement overrides.'),
+  ('users.delete_soft', 'Soft-delete users', 'users', 'Set user account status to deleted/disabled and restore later.'),
+  ('users.delete_hard', 'Hard-delete users', 'users', 'Permanently delete user auth/profile records.'),
+  ('trips.read', 'Read trips', 'trips', 'List and inspect trip records across users.'),
+  ('trips.write', 'Write trips', 'trips', 'Update trip status, expiration, and ownership metadata.'),
+  ('tiers.read', 'Read tiers', 'tiers', 'Inspect tier templates and entitlement baselines.'),
+  ('tiers.write', 'Write tiers', 'tiers', 'Update tier entitlement templates and max-trip policies.'),
+  ('tiers.reapply', 'Reapply tiers', 'tiers', 'Run tier backfill/reapply operations against existing users/trips.'),
+  ('audit.read', 'Read audit log', 'audit', 'Read immutable admin audit trail entries.'),
+  ('audit.write', 'Write audit log', 'audit', 'Write immutable admin audit entries.'),
+  ('admin.identity.write', 'Manage admin identity actions', 'identity', 'Run invite/direct-create/hard-delete identity operations.')
+on conflict (key) do update
+set
+  label = excluded.label,
+  domain = excluded.domain,
+  description = excluded.description;
+
+insert into public.admin_role_permissions (role_key, permission_key)
+select 'super_admin', p.key
+from public.admin_permissions p
+on conflict (role_key, permission_key) do nothing;
+
+insert into public.admin_role_permissions (role_key, permission_key)
+values
+  ('support_admin', 'users.read'),
+  ('support_admin', 'users.write'),
+  ('support_admin', 'users.delete_soft'),
+  ('support_admin', 'trips.read'),
+  ('support_admin', 'trips.write'),
+  ('support_admin', 'tiers.read'),
+  ('support_admin', 'audit.read'),
+  ('support_admin', 'audit.write')
+on conflict (role_key, permission_key) do nothing;
+
+insert into public.admin_role_permissions (role_key, permission_key)
+values
+  ('read_only_admin', 'users.read'),
+  ('read_only_admin', 'trips.read'),
+  ('read_only_admin', 'tiers.read'),
+  ('read_only_admin', 'audit.read')
+on conflict (role_key, permission_key) do nothing;
+
+alter table public.admin_roles enable row level security;
+alter table public.admin_permissions enable row level security;
+alter table public.admin_role_permissions enable row level security;
+alter table public.admin_user_roles enable row level security;
+
+drop policy if exists "Admin roles admin read" on public.admin_roles;
+create policy "Admin roles admin read"
+on public.admin_roles for select
+using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admin permissions admin read" on public.admin_permissions;
+create policy "Admin permissions admin read"
+on public.admin_permissions for select
+using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admin role permissions admin read" on public.admin_role_permissions;
+create policy "Admin role permissions admin read"
+on public.admin_role_permissions for select
+using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admin user roles admin read" on public.admin_user_roles;
+create policy "Admin user roles admin read"
+on public.admin_user_roles for select
+using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admin user roles admin manage" on public.admin_user_roles;
+create policy "Admin user roles admin manage"
+on public.admin_user_roles for all
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
+
+create or replace function public.has_admin_permission(
+  p_permission text,
+  p_user_id uuid default auth.uid()
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_permission text;
+  v_has_assigned_role boolean;
+begin
+  v_uid := coalesce(p_user_id, auth.uid());
+  v_permission := nullif(btrim(p_permission), '');
+
+  if v_uid is null or v_permission is null then
+    return false;
+  end if;
+
+  if not public.is_admin(v_uid) then
+    return false;
+  end if;
+
+  select exists(
+    select 1
+    from public.admin_user_roles ur
+    where ur.user_id = v_uid
+  )
+  into v_has_assigned_role;
+
+  -- Backward compatibility: legacy admins without explicit role assignment keep full access.
+  if not v_has_assigned_role then
+    return true;
+  end if;
+
+  return exists(
+    select 1
+    from public.admin_user_roles ur
+    join public.admin_role_permissions rp
+      on rp.role_key = ur.role_key
+   where ur.user_id = v_uid
+     and rp.permission_key = v_permission
+  );
+end;
+$$;
+
+alter table public.admin_audit_logs enable row level security;
+
+drop policy if exists "Admin audit logs admin read" on public.admin_audit_logs;
+create policy "Admin audit logs admin read"
+on public.admin_audit_logs for select
+using (public.is_admin(auth.uid()));
+
+create or replace function public.guard_profile_privileged_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+begin
+  if auth.uid() = old.id and not public.is_admin(auth.uid()) then
+    new.system_role := old.system_role;
+    new.tier_key := old.tier_key;
+    new.entitlements_override := old.entitlements_override;
+    new.role_updated_at := old.role_updated_at;
+    new.role_updated_by := old.role_updated_by;
+    new.account_status := old.account_status;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_profile_privileged_fields on public.profiles;
+create trigger guard_profile_privileged_fields
+before update on public.profiles
+for each row execute function public.guard_profile_privileged_fields();
+
+create or replace function public.admin_write_audit(
+  p_action text,
+  p_target_type text,
+  p_target_id text default null,
+  p_before_data jsonb default '{}'::jsonb,
+  p_after_data jsonb default '{}'::jsonb,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_id uuid;
+begin
+  if not public.has_admin_permission('audit.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  insert into public.admin_audit_logs (
+    actor_user_id,
+    action,
+    target_type,
+    target_id,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    auth.uid(),
+    coalesce(nullif(btrim(p_action), ''), 'admin.unknown'),
+    coalesce(nullif(btrim(p_target_type), ''), 'unknown'),
+    p_target_id,
+    coalesce(p_before_data, '{}'::jsonb),
+    coalesce(p_after_data, '{}'::jsonb),
+    coalesce(p_metadata, '{}'::jsonb)
+  )
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+drop function if exists public.get_current_user_access();
+create or replace function public.get_current_user_access()
+returns table(
+  user_id uuid,
+  email text,
+  is_anonymous boolean,
+  system_role text,
+  tier_key text,
+  entitlements jsonb,
+  account_status text,
+  onboarding_completed boolean
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_email text;
+  v_role text;
+  v_tier text;
+  v_is_anonymous boolean;
+  v_account_status text;
+  v_onboarding_completed boolean;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select u.email into v_email
+    from auth.users u
+   where u.id = v_uid;
+
+  select
+    p.system_role,
+    p.tier_key,
+    p.account_status,
+    (
+      p.onboarding_completed_at is not null
+      and coalesce(btrim(p.first_name), '') <> ''
+      and coalesce(btrim(p.last_name), '') <> ''
+      and coalesce(btrim(p.country), '') <> ''
+      and coalesce(btrim(p.city), '') <> ''
+      and coalesce(btrim(p.preferred_language), '') <> ''
+    )
+    into v_role, v_tier, v_account_status, v_onboarding_completed
+    from public.profiles p
+   where p.id = v_uid;
+
+  v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false);
+
+  return query
+  select
+    v_uid,
+    v_email,
+    v_is_anonymous,
+    coalesce(v_role, 'user'),
+    coalesce(v_tier, 'tier_free'),
+    public.get_effective_entitlements(v_uid),
+    coalesce(v_account_status, 'active'),
+    coalesce(v_onboarding_completed, false);
+end;
+$$;
+
+drop function if exists public.admin_list_users(integer, integer, text);
+create or replace function public.admin_list_users(
+  p_limit integer default 100,
+  p_offset integer default 0,
+  p_search text default null
+)
+returns table(
+  user_id uuid,
+  email text,
+  display_name text,
+  first_name text,
+  last_name text,
+  username text,
+  gender text,
+  country text,
+  city text,
+  preferred_language text,
+  account_status text,
+  disabled_at timestamptz,
+  disabled_by uuid,
+  onboarding_completed_at timestamptz,
+  system_role text,
+  tier_key text,
+  entitlements_override jsonb,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('users.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    p.id,
+    u.email,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.gender,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.account_status,
+    p.disabled_at,
+    p.disabled_by,
+    p.onboarding_completed_at,
+    p.system_role,
+    p.tier_key,
+    p.entitlements_override,
+    p.created_at,
+    p.updated_at
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  where (
+    p_search is null
+    or p_search = ''
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+    or coalesce(p.first_name, '') ilike ('%' || p_search || '%')
+    or coalesce(p.last_name, '') ilike ('%' || p_search || '%')
+    or coalesce(p.username, '') ilike ('%' || p_search || '%')
+    or p.id::text ilike ('%' || p_search || '%')
+  )
+  order by p.created_at desc
+  limit greatest(coalesce(p_limit, 100), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_get_user_profile(
+  p_user_id uuid
+)
+returns table(
+  user_id uuid,
+  email text,
+  display_name text,
+  first_name text,
+  last_name text,
+  username text,
+  gender text,
+  country text,
+  city text,
+  preferred_language text,
+  account_status text,
+  disabled_at timestamptz,
+  disabled_by uuid,
+  onboarding_completed_at timestamptz,
+  system_role text,
+  tier_key text,
+  entitlements_override jsonb,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('users.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    p.id,
+    u.email,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.gender,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.account_status,
+    p.disabled_at,
+    p.disabled_by,
+    p.onboarding_completed_at,
+    p.system_role,
+    p.tier_key,
+    p.entitlements_override,
+    p.created_at,
+    p.updated_at
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  where p.id = p_user_id
+  limit 1;
+end;
+$$;
+
+create or replace function public.admin_update_user_profile(
+  p_user_id uuid,
+  p_first_name text default null,
+  p_last_name text default null,
+  p_username text default null,
+  p_gender text default null,
+  p_country text default null,
+  p_city text default null,
+  p_preferred_language text default null,
+  p_account_status text default null,
+  p_system_role text default null,
+  p_tier_key text default null
+)
+returns table(
+  user_id uuid,
+  email text,
+  system_role text,
+  tier_key text,
+  account_status text,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  if p_system_role is not null and p_system_role not in ('admin', 'user') then
+    raise exception 'Invalid system role';
+  end if;
+
+  if p_account_status is not null and p_account_status not in ('active', 'disabled', 'deleted') then
+    raise exception 'Invalid account status';
+  end if;
+
+  if p_tier_key is not null and not exists (
+    select 1 from public.plans pl where pl.key = p_tier_key
+  ) then
+    raise exception 'Unknown tier key';
+  end if;
+
+  select to_jsonb(p)
+    into v_before
+    from public.profiles p
+   where p.id = p_user_id;
+
+  if v_before is null then
+    raise exception 'User profile not found';
+  end if;
+
+  update public.profiles p
+     set first_name = coalesce(p_first_name, p.first_name),
+         last_name = coalesce(p_last_name, p.last_name),
+         username = coalesce(p_username, p.username),
+         gender = coalesce(p_gender, p.gender),
+         country = coalesce(p_country, p.country),
+         city = coalesce(p_city, p.city),
+         preferred_language = coalesce(p_preferred_language, p.preferred_language),
+         account_status = coalesce(p_account_status, p.account_status),
+         disabled_at = case
+           when coalesce(p_account_status, p.account_status) = 'disabled' then coalesce(p.disabled_at, now())
+           when p_account_status is not null and p_account_status <> 'disabled' then null
+           else p.disabled_at
+         end,
+         disabled_by = case
+           when coalesce(p_account_status, p.account_status) = 'disabled' then coalesce(p.disabled_by, auth.uid())
+           when p_account_status is not null and p_account_status <> 'disabled' then null
+           else p.disabled_by
+         end,
+         system_role = coalesce(p_system_role, p.system_role),
+         tier_key = coalesce(p_tier_key, p.tier_key),
+         display_name = coalesce(
+           nullif(btrim(concat_ws(' ', coalesce(p_first_name, p.first_name), coalesce(p_last_name, p.last_name))), ''),
+           p.display_name
+         ),
+         role_updated_at = now(),
+         role_updated_by = auth.uid()
+   where p.id = p_user_id;
+
+  select to_jsonb(p)
+    into v_after
+    from public.profiles p
+   where p.id = p_user_id;
+
+  perform public.admin_write_audit(
+    'admin.user.update_profile',
+    'user',
+    p_user_id::text,
+    v_before,
+    v_after,
+    jsonb_build_object('updated_by', auth.uid())
+  );
+
+  return query
+  select
+    p.id,
+    u.email,
+    p.system_role,
+    p.tier_key,
+    p.account_status,
+    p.updated_at
+  from public.profiles p
+  left join auth.users u on u.id = p.id
+  where p.id = p_user_id;
+end;
+$$;
+
+create or replace function public.admin_list_trips(
+  p_limit integer default 200,
+  p_offset integer default 0,
+  p_search text default null,
+  p_owner_id uuid default null,
+  p_status text default null
+)
+returns table(
+  trip_id text,
+  owner_id uuid,
+  owner_email text,
+  title text,
+  status text,
+  trip_expires_at timestamptz,
+  archived_at timestamptz,
+  source_kind text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('trips.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    t.id,
+    t.owner_id,
+    u.email,
+    t.title,
+    coalesce(t.status, 'active'),
+    t.trip_expires_at,
+    t.archived_at,
+    t.source_kind,
+    t.created_at,
+    t.updated_at
+  from public.trips t
+  left join auth.users u on u.id = t.owner_id
+  where (
+    p_owner_id is null or t.owner_id = p_owner_id
+  )
+  and (
+    p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status
+  )
+  and (
+    p_search is null
+    or p_search = ''
+    or coalesce(t.title, '') ilike ('%' || p_search || '%')
+    or t.id ilike ('%' || p_search || '%')
+    or coalesce(u.email, '') ilike ('%' || p_search || '%')
+  )
+  order by t.updated_at desc
+  limit greatest(coalesce(p_limit, 200), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_list_user_trips(
+  p_user_id uuid,
+  p_limit integer default 200,
+  p_offset integer default 0,
+  p_status text default null
+)
+returns table(
+  trip_id text,
+  owner_id uuid,
+  owner_email text,
+  title text,
+  status text,
+  trip_expires_at timestamptz,
+  archived_at timestamptz,
+  source_kind text,
+  created_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('trips.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    t.id,
+    t.owner_id,
+    u.email,
+    t.title,
+    coalesce(t.status, 'active'),
+    t.trip_expires_at,
+    t.archived_at,
+    t.source_kind,
+    t.created_at,
+    t.updated_at
+  from public.trips t
+  left join auth.users u on u.id = t.owner_id
+  where t.owner_id = p_user_id
+    and (p_status is null or p_status = '' or coalesce(t.status, 'active') = p_status)
+  order by t.updated_at desc
+  limit greatest(coalesce(p_limit, 200), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_update_trip(
+  p_trip_id text,
+  p_status text default null,
+  p_trip_expires_at timestamptz default null,
+  p_owner_id uuid default null,
+  p_apply_status boolean default false,
+  p_apply_trip_expires_at boolean default false,
+  p_apply_owner_id boolean default false
+)
+returns table(
+  trip_id text,
+  owner_id uuid,
+  status text,
+  trip_expires_at timestamptz,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('trips.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  if p_apply_status and p_status is not null and p_status not in ('active', 'archived', 'expired') then
+    raise exception 'Invalid trip status';
+  end if;
+
+  if p_apply_owner_id and p_owner_id is not null and not exists (
+    select 1 from auth.users u where u.id = p_owner_id
+  ) then
+    raise exception 'New owner does not exist';
+  end if;
+
+  select to_jsonb(t)
+    into v_before
+    from public.trips t
+   where t.id = p_trip_id;
+
+  if v_before is null then
+    raise exception 'Trip not found';
+  end if;
+
+  update public.trips t
+     set status = case
+           when p_apply_status then coalesce(p_status, t.status)
+           else t.status
+         end,
+         trip_expires_at = case
+           when p_apply_trip_expires_at then p_trip_expires_at
+           else t.trip_expires_at
+         end,
+         owner_id = case
+           when p_apply_owner_id and p_owner_id is not null then p_owner_id
+           else t.owner_id
+         end,
+         archived_at = case
+           when p_apply_status and p_status = 'archived' then coalesce(t.archived_at, now())
+           when p_apply_status and p_status <> 'archived' then null
+           else t.archived_at
+         end,
+         updated_at = now()
+   where t.id = p_trip_id;
+
+  select to_jsonb(t)
+    into v_after
+    from public.trips t
+   where t.id = p_trip_id;
+
+  perform public.admin_write_audit(
+    'admin.trip.update',
+    'trip',
+    p_trip_id,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'apply_status', p_apply_status,
+      'apply_trip_expires_at', p_apply_trip_expires_at,
+      'apply_owner_id', p_apply_owner_id
+    )
+  );
+
+  return query
+  select
+    t.id,
+    t.owner_id,
+    coalesce(t.status, 'active'),
+    t.trip_expires_at,
+    t.updated_at
+  from public.trips t
+  where t.id = p_trip_id;
+end;
+$$;
+
+create or replace function public.admin_list_audit_logs(
+  p_limit integer default 200,
+  p_offset integer default 0,
+  p_action text default null,
+  p_target_type text default null,
+  p_actor_user_id uuid default null
+)
+returns table(
+  id uuid,
+  actor_user_id uuid,
+  actor_email text,
+  action text,
+  target_type text,
+  target_id text,
+  before_data jsonb,
+  after_data jsonb,
+  metadata jsonb,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('audit.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    l.id,
+    l.actor_user_id,
+    u.email,
+    l.action,
+    l.target_type,
+    l.target_id,
+    l.before_data,
+    l.after_data,
+    l.metadata,
+    l.created_at
+  from public.admin_audit_logs l
+  left join auth.users u on u.id = l.actor_user_id
+  where (p_action is null or p_action = '' or l.action = p_action)
+    and (p_target_type is null or p_target_type = '' or l.target_type = p_target_type)
+    and (p_actor_user_id is null or l.actor_user_id = p_actor_user_id)
+  order by l.created_at desc
+  limit greatest(coalesce(p_limit, 200), 1)
+  offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_reapply_tier_to_users(
+  p_tier_key text,
+  p_apply_expiration_backfill boolean default true
+)
+returns table(
+  affected_users integer,
+  affected_trips integer
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_user_count integer;
+  v_trip_count integer := 0;
+begin
+  if not public.has_admin_permission('tiers.reapply') then
+    raise exception 'Not allowed';
+  end if;
+
+  if not exists (select 1 from public.plans pl where pl.key = p_tier_key) then
+    raise exception 'Unknown tier key';
+  end if;
+
+  select count(*)
+    into v_user_count
+    from public.profiles p
+   where p.tier_key = p_tier_key;
+
+  if p_apply_expiration_backfill then
+    update public.trips t
+       set trip_expires_at = case
+             when x.exp_days is null then null
+             else (coalesce(t.created_at, now()) + make_interval(days => x.exp_days))
+           end,
+           status = case
+             when coalesce(t.status, 'active') = 'archived' then 'archived'
+             when x.exp_days is not null and (coalesce(t.created_at, now()) + make_interval(days => x.exp_days)) <= now() then 'expired'
+             else 'active'
+           end,
+           updated_at = now()
+      from (
+        select
+          p.id as owner_id,
+          public.get_trip_expiration_days_for_user(p.id) as exp_days
+        from public.profiles p
+        where p.tier_key = p_tier_key
+      ) x
+     where t.owner_id = x.owner_id;
+
+    get diagnostics v_trip_count = row_count;
+  end if;
+
+  perform public.admin_write_audit(
+    'admin.tier.reapply',
+    'tier',
+    p_tier_key,
+    '{}'::jsonb,
+    jsonb_build_object('affected_users', coalesce(v_user_count, 0), 'affected_trips', coalesce(v_trip_count, 0)),
+    jsonb_build_object('apply_expiration_backfill', p_apply_expiration_backfill)
+  );
+
+  return query select coalesce(v_user_count, 0), coalesce(v_trip_count, 0);
+end;
+$$;
+
+create or replace function public.admin_preview_tier_reapply(
+  p_tier_key text
+)
+returns table(
+  affected_users integer,
+  affected_trips integer,
+  active_trips integer,
+  expired_trips integer,
+  archived_trips integer,
+  users_with_overrides integer
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('tiers.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  if not exists (select 1 from public.plans pl where pl.key = p_tier_key) then
+    raise exception 'Unknown tier key';
+  end if;
+
+  return query
+  with target_users as (
+    select p.id as user_id, p.entitlements_override
+    from public.profiles p
+    where p.tier_key = p_tier_key
+  ),
+  target_trips as (
+    select t.*
+    from public.trips t
+    join target_users u on u.user_id = t.owner_id
+  )
+  select
+    (select count(*)::integer from target_users),
+    (select count(*)::integer from target_trips),
+    (select count(*)::integer from target_trips where coalesce(status, 'active') = 'active'),
+    (select count(*)::integer from target_trips where coalesce(status, 'active') = 'expired'),
+    (select count(*)::integer from target_trips where coalesce(status, 'active') = 'archived'),
+    (
+      select count(*)::integer
+      from target_users
+      where entitlements_override is not null
+        and entitlements_override <> '{}'::jsonb
+    );
+end;
+$$;
+
+create or replace function public.admin_update_user_tier(
+  p_user_id uuid,
+  p_tier_key text
+)
+returns table(
+  user_id uuid,
+  tier_key text,
+  role_updated_at timestamptz,
+  role_updated_by uuid
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  if not exists (
+    select 1
+    from public.plans pl
+    where pl.key = p_tier_key
+  ) then
+    raise exception 'Unknown tier key';
+  end if;
+
+  select to_jsonb(p) into v_before from public.profiles p where p.id = p_user_id;
+
+  update public.profiles p
+     set tier_key = p_tier_key,
+         role_updated_at = now(),
+         role_updated_by = auth.uid()
+   where p.id = p_user_id;
+
+  select to_jsonb(p) into v_after from public.profiles p where p.id = p_user_id;
+  perform public.admin_write_audit('admin.user.update_tier', 'user', p_user_id::text, v_before, v_after, jsonb_build_object('tier_key', p_tier_key));
+
+  return query
+  select p.id, p.tier_key, p.role_updated_at, p.role_updated_by
+    from public.profiles p
+   where p.id = p_user_id;
+end;
+$$;
+
+create or replace function public.admin_update_user_overrides(
+  p_user_id uuid,
+  p_overrides jsonb
+)
+returns table(
+  user_id uuid,
+  entitlements_override jsonb,
+  role_updated_at timestamptz,
+  role_updated_by uuid
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_overrides jsonb;
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('users.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_overrides := coalesce(p_overrides, '{}'::jsonb);
+  if jsonb_typeof(v_overrides) <> 'object' then
+    raise exception 'Override payload must be a JSON object';
+  end if;
+
+  select to_jsonb(p) into v_before from public.profiles p where p.id = p_user_id;
+
+  update public.profiles p
+     set entitlements_override = v_overrides,
+         role_updated_at = now(),
+         role_updated_by = auth.uid()
+   where p.id = p_user_id;
+
+  select to_jsonb(p) into v_after from public.profiles p where p.id = p_user_id;
+  perform public.admin_write_audit(
+    'admin.user.update_overrides',
+    'user',
+    p_user_id::text,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'override_keys',
+      coalesce((select jsonb_agg(k) from jsonb_object_keys(v_overrides) as k), '[]'::jsonb)
+    )
+  );
+
+  return query
+  select p.id, p.entitlements_override, p.role_updated_at, p.role_updated_by
+    from public.profiles p
+   where p.id = p_user_id;
+end;
+$$;
+
+create or replace function public.admin_update_plan_entitlements(
+  p_tier_key text,
+  p_entitlements jsonb
+)
+returns table(
+  key text,
+  entitlements jsonb,
+  max_trips integer
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_entitlements jsonb;
+  v_max_trips integer;
+  v_before jsonb;
+  v_after jsonb;
+begin
+  if not public.has_admin_permission('tiers.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  if not exists (
+    select 1
+    from public.plans pl
+    where pl.key = p_tier_key
+  ) then
+    raise exception 'Unknown tier key';
+  end if;
+
+  v_entitlements := coalesce(p_entitlements, '{}'::jsonb);
+  if jsonb_typeof(v_entitlements) <> 'object' then
+    raise exception 'Entitlements payload must be a JSON object';
+  end if;
+
+  if v_entitlements ->> 'maxActiveTrips' is null then
+    v_max_trips := 2147483647;
+  else
+    v_max_trips := greatest((v_entitlements ->> 'maxActiveTrips')::integer, 0);
+  end if;
+
+  select to_jsonb(pl) into v_before from public.plans pl where pl.key = p_tier_key;
+
+  update public.plans pl
+     set entitlements = v_entitlements,
+         max_trips = v_max_trips
+   where pl.key = p_tier_key;
+
+  select to_jsonb(pl) into v_after from public.plans pl where pl.key = p_tier_key;
+  perform public.admin_write_audit('admin.tier.update_entitlements', 'tier', p_tier_key, v_before, v_after, jsonb_build_object('tier_key', p_tier_key));
+
+  return query
+  select pl.key, pl.entitlements, pl.max_trips
+    from public.plans pl
+   where pl.key = p_tier_key;
+end;
+$$;
+
+grant execute on function public.get_current_user_access() to anon, authenticated;
+grant execute on function public.has_admin_permission(text, uuid) to authenticated;
+grant execute on function public.admin_write_audit(text, text, text, jsonb, jsonb, jsonb) to authenticated;
+grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
+grant execute on function public.admin_get_user_profile(uuid) to authenticated;
+grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text) to authenticated;
+grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
+grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
+grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
+grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
+grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
+grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
+grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
+grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
+grant execute on function public.admin_preview_tier_reapply(text) to authenticated;

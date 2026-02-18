@@ -32,6 +32,7 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 # Optional provider request timeout tuning (ms)
 # /api/ai/generate default: 35000 (kept below typical edge response timeout window)
 AI_GENERATE_PROVIDER_TIMEOUT_MS=35000
@@ -65,7 +66,11 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
-- `/admin/dashboard` admin metrics placeholder (future role-gated)
+- `/admin/dashboard` admin operational overview
+- `/admin/users` admin user provisioning and profile management
+- `/admin/trips` admin trip lifecycle controls
+- `/admin/tiers` admin entitlement template controls
+- `/admin/audit` admin action audit timeline
 - `/admin/ai-benchmark` internal AI benchmark workspace (classic input + multi-model runs + persisted session table + persisted run ranking)
 
 ## I18n And Locale Routing Workflow
@@ -201,6 +206,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions)
    - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
    - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
    - `OPENROUTER_API_KEY` (reserved for upcoming OpenRouter adapter)

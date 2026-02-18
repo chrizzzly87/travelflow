@@ -58,7 +58,7 @@ type ExampleTripPrefetchState = {
 };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
-const IS_DEV = import.meta.env.DEV;
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 type DbServiceModule = typeof import('./services/dbService');
 
@@ -137,7 +137,7 @@ const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpser
     await db.dbUpsertUserSettings(...args);
 };
 
-const lazyWithRecovery = <TModule,>(
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
@@ -166,9 +166,16 @@ const ImprintPage = lazyWithRecovery('ImprintPage', () => import('./pages/Imprin
 const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
 const TermsPage = lazyWithRecovery('TermsPage', () => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('./pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
+const ProfilePage = lazyWithRecovery('ProfilePage', () => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('./pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
+const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('./pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
 const AdminDashboardPage = lazyWithRecovery('AdminDashboardPage', () => import('./pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const AdminAiBenchmarkPage = lazyWithRecovery('AdminAiBenchmarkPage', () => import('./pages/AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
 const AdminAccessPage = lazyWithRecovery('AdminAccessPage', () => import('./pages/AdminAccessPage').then((module) => ({ default: module.AdminAccessPage })));
+const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./pages/AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
+const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./pages/AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
+const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./pages/AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
+const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./pages/AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
 const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
 const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
@@ -205,6 +212,14 @@ const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
     { key: 'reset-password', match: (pathname) => pathname === '/auth/reset-password', preload: () => import('./pages/ResetPasswordPage') },
     { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
     { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./pages/CreateTripClassicLabPage') },
+    { key: 'profile', match: (pathname) => pathname === '/profile', preload: () => import('./pages/ProfilePage') },
+    { key: 'profile-settings', match: (pathname) => pathname === '/profile/settings', preload: () => import('./pages/ProfileSettingsPage') },
+    { key: 'profile-onboarding', match: (pathname) => pathname === '/profile/onboarding', preload: () => import('./pages/ProfileOnboardingPage') },
+    { key: 'admin-dashboard', match: (pathname) => pathname === '/admin/dashboard', preload: () => import('./pages/AdminDashboardPage') },
+    { key: 'admin-users', match: (pathname) => pathname === '/admin/users', preload: () => import('./pages/AdminUsersPage') },
+    { key: 'admin-trips', match: (pathname) => pathname === '/admin/trips', preload: () => import('./pages/AdminTripsPage') },
+    { key: 'admin-tiers', match: (pathname) => pathname === '/admin/tiers', preload: () => import('./pages/AdminTiersPage') },
+    { key: 'admin-audit', match: (pathname) => pathname === '/admin/audit', preload: () => import('./pages/AdminAuditPage') },
     { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
     { key: 'create-trip-legacy-lab', match: (pathname) => pathname === '/create-trip/labs/classic-legacy', preload: () => import('./components/CreateTripForm') },
     { key: 'create-trip-design-v1', match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1', preload: () => import('./pages/CreateTripV1Page') },
@@ -1096,12 +1111,30 @@ const CreateTripDesignV3Route: React.FC<{
     );
 };
 
-const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-    const { isLoading, isAdmin } = useAuth();
+const AuthenticatedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAuthenticated } = useAuth();
     const location = useLocation();
 
     if (isLoading) return <RouteLoadingFallback />;
-    if (!isAdmin) {
+    if (!isAuthenticated) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{ from: `${location.pathname}${location.search}` }}
+            />
+        );
+    }
+
+    return children;
+};
+
+const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAdmin, isAuthenticated } = useAuth();
+    const location = useLocation();
+
+    if (isLoading) return <RouteLoadingFallback />;
+    if (!isAuthenticated || !isAdmin) {
         return (
             <Navigate
                 to="/login"
@@ -1116,7 +1149,7 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
 
 const AppContent: React.FC = () => {
     const { i18n } = useTranslation();
-    const { access } = useAuth();
+    const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -1137,6 +1170,27 @@ const AppContent: React.FC = () => {
         });
         rememberAuthReturnPath(currentPath);
     }, [location.hash, location.pathname, location.search]);
+
+    useEffect(() => {
+        if (isAuthLoading) return;
+        const strippedPath = stripLocalePrefix(location.pathname);
+        const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
+        if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
+
+        if (access.accountStatus !== 'active') {
+            void logout();
+            navigate('/login', { replace: true });
+            return;
+        }
+
+        if (access.onboardingCompleted) return;
+        if (strippedPath === '/profile/onboarding') return;
+
+        navigate('/profile/onboarding', {
+            replace: true,
+            state: { from: `${location.pathname}${location.search}` },
+        });
+    }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
         if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
@@ -1567,10 +1621,66 @@ const AppContent: React.FC = () => {
                     }
                 />
                 <Route
+                    path="/profile/onboarding"
+                    element={renderWithSuspense(
+                        <AuthenticatedRoute>
+                            <ProfileOnboardingPage />
+                        </AuthenticatedRoute>
+                    )}
+                />
+                <Route
+                    path="/profile"
+                    element={renderWithSuspense(
+                        <AuthenticatedRoute>
+                            <ProfilePage />
+                        </AuthenticatedRoute>
+                    )}
+                />
+                <Route
+                    path="/profile/settings"
+                    element={renderWithSuspense(
+                        <AuthenticatedRoute>
+                            <ProfileSettingsPage />
+                        </AuthenticatedRoute>
+                    )}
+                />
+                <Route
                     path="/admin/dashboard"
                     element={renderWithSuspense(
                         <AdminRoute>
                             <AdminDashboardPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/users"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminUsersPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/trips"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminTripsPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/tiers"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminTiersPage />
+                        </AdminRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/audit"
+                    element={renderWithSuspense(
+                        <AdminRoute>
+                            <AdminAuditPage />
                         </AdminRoute>
                     )}
                 />

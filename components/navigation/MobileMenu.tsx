@@ -15,6 +15,7 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
+import { ADMIN_NAV_ITEMS } from '../admin/adminNavConfig';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -142,6 +143,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
     const visibleItems = NAV_ITEMS;
+    const adminLinks = ADMIN_NAV_ITEMS;
 
     return (
         <>
@@ -205,16 +207,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                     </nav>
 
                     <div className="border-t border-slate-100 p-4 space-y-2">
-                        {isAdmin && (
-                            <NavLink
-                                to="/admin/dashboard"
-                                onClick={() => handleNavClick('admin')}
-                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                {...mobileNavDebugAttributes('admin')}
-                            >
-                                {t('nav.admin')}
-                            </NavLink>
-                        )}
                         {onMyTripsClick && hasTrips ? (
                             <button
                                 onClick={() => {
@@ -237,16 +229,50 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             </NavLink>
                         )}
                         {isAuthenticated ? (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    void handleLogout();
-                                }}
-                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                {...mobileNavDebugAttributes('logout')}
-                            >
-                                {t('nav.logout')}
-                            </button>
+                            <>
+                                <NavLink
+                                    to="/profile"
+                                    onClick={() => handleNavClick('profile')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('profile')}
+                                >
+                                    Profile
+                                </NavLink>
+                                <NavLink
+                                    to="/profile/settings"
+                                    onClick={() => handleNavClick('settings')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('settings')}
+                                >
+                                    Settings
+                                </NavLink>
+                                {isAdmin && (
+                                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
+                                        <div className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Admin pages</div>
+                                        {adminLinks.map((item) => (
+                                            <NavLink
+                                                key={`mobile-admin-${item.id}`}
+                                                to={item.path}
+                                                onClick={() => handleNavClick(`admin_${item.id}`)}
+                                                className="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                                {...mobileNavDebugAttributes(`admin_${item.id}`)}
+                                            >
+                                                {item.label}
+                                            </NavLink>
+                                        ))}
+                                    </div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        void handleLogout();
+                                    }}
+                                    className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                                    {...mobileNavDebugAttributes('logout')}
+                                >
+                                    Logout
+                                </button>
+                            </>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}

@@ -9,6 +9,7 @@ Shared helpers live in `netlify/edge-lib/`.
 |---|---|---|---|
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
+| `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
 | `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/login`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, `/pricing`, `/admin/*` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
@@ -60,6 +61,9 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
 | `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
 | `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
+| `SUPABASE_SERVICE_ROLE_KEY` | `admin-iam.ts` | Supabase service-role key used to call Auth Admin endpoints (create/invite/delete users) |
+| `VITE_SUPABASE_URL` | `admin-iam.ts` | Supabase project URL used for Auth and REST calls |
+| `VITE_SUPABASE_ANON_KEY` | `admin-iam.ts` | Supabase anon key used with caller bearer token for admin-role verification RPC |
 | `OPENAI_API_KEY` | `ai-generate.ts` | Server-side key for OpenAI model execution in `/api/ai/generate` |
 | `ANTHROPIC_API_KEY` | `ai-generate.ts` | Server-side key for Anthropic model execution in `/api/ai/generate` |
 | `OPENROUTER_API_KEY` | future benchmark/provider adapter | Reserved for planned OpenRouter backend adapter |

@@ -36,7 +36,14 @@ export type RouteKey =
     | 'exampleTrip'
     | 'shareTrip'
     | 'adminDashboard'
-    | 'adminAiBenchmark';
+    | 'adminUsers'
+    | 'adminTrips'
+    | 'adminTiers'
+    | 'adminAudit'
+    | 'adminAiBenchmark'
+    | 'profile'
+    | 'profileSettings'
+    | 'profileOnboarding';
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
@@ -73,7 +80,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/cookies$/,
 ];
 
-const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/api'];
+const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/api'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'home',
@@ -177,8 +184,22 @@ export const buildPath = <K extends RouteKey>(
             return `/s/${encodeSegment((params as RouteParamsByKey['shareTrip']).token)}`;
         case 'adminDashboard':
             return '/admin/dashboard';
+        case 'adminUsers':
+            return '/admin/users';
+        case 'adminTrips':
+            return '/admin/trips';
+        case 'adminTiers':
+            return '/admin/tiers';
+        case 'adminAudit':
+            return '/admin/audit';
         case 'adminAiBenchmark':
             return '/admin/ai-benchmark';
+        case 'profile':
+            return '/profile';
+        case 'profileSettings':
+            return '/profile/settings';
+        case 'profileOnboarding':
+            return '/profile/onboarding';
         default:
             return '/';
     }

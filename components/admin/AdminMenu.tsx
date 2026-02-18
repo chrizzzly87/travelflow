@@ -7,8 +7,11 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 
 const ADMIN_MENU_ITEMS = [
     { id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard' },
+    { id: 'users', label: 'Users', path: '/admin/users' },
+    { id: 'trips', label: 'Trips', path: '/admin/trips' },
+    { id: 'tiers', label: 'Tiers', path: '/admin/tiers' },
+    { id: 'audit', label: 'Audit Log', path: '/admin/audit' },
     { id: 'ai_benchmark', label: 'AI Benchmark', path: '/admin/ai-benchmark' },
-    { id: 'access', label: 'Access Control', path: '/admin/access' },
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) => {
