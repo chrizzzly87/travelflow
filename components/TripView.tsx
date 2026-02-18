@@ -93,6 +93,10 @@ const TripShareModal = lazyWithRecovery('TripShareModal', () =>
     import('./TripShareModal').then((module) => ({ default: module.TripShareModal }))
 );
 
+const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
+    import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
 
 const resolveChangeTone = (label: string): ChangeTone => {
@@ -1318,6 +1322,21 @@ export const TripView: React.FC<TripViewProps> = ({
             return true;
         });
     }, [isExamplePreview, resolvedHistoryEntries, showAllHistory]);
+
+    const historyModalItems = useMemo(() => {
+        return displayHistoryEntries.map((entry) => {
+            const tone = resolveChangeTone(entry.label);
+            return {
+                id: entry.id,
+                url: entry.url,
+                ts: entry.ts,
+                isCurrent: entry.url === currentUrl,
+                details: stripHistoryPrefix(entry.label),
+                tone,
+                meta: getToneMeta(tone),
+            };
+        });
+    }, [displayHistoryEntries, currentUrl]);
 
     useEffect(() => {
         if (isHistoryOpen) refreshHistory();
@@ -3279,99 +3298,26 @@ export const TripView: React.FC<TripViewProps> = ({
 
                     {/* History Panel */}
                     {isHistoryOpen && (
-                        <div className="fixed inset-0 z-[1500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsHistoryOpen(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Change History</h3>
-                                        <p className="text-xs text-gray-500">
-                                            {isExamplePreview
-                                                ? 'Example trips are editable for exploration, but changes are not saved.'
-                                                : 'Undo/redo works with browser history and Cmd+Z / Cmd+Y.'}
-                                        </p>
-                                    </div>
-                                    <button onClick={() => setIsHistoryOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                                        Close
-                                    </button>
-                                </div>
-                                {isExamplePreview ? (
-                                    <div className="p-5 text-sm text-slate-600">
-                                        This example trip is a playground. History snapshots are intentionally disabled so no local or database state is created while exploring.
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    navigateHistory('undo');
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                Undo
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    navigateHistory('redo');
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                Redo
-                                            </button>
-                                            <button
-                                                onClick={() => setShowAllHistory(v => !v)}
-                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                {showAllHistory ? 'Show Recent' : 'Show All'}
-                                            </button>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto">
-                                            {displayHistoryEntries.length === 0 ? (
-                                                <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
-                                            ) : (
-                                                <ul className="divide-y divide-gray-100">
-                                                    {displayHistoryEntries.map(entry => {
-                                                        const isCurrent = entry.url === currentUrl;
-                                                        const tone = resolveChangeTone(entry.label);
-                                                        const details = stripHistoryPrefix(entry.label);
-                                                        const meta = getToneMeta(tone);
-                                                        const Icon = meta.Icon;
-                                                        return (
-                                                            <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
-                                                                <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
-                                                                    <Icon size={15} />
-                                                                </div>
-                                                                <div className="min-w-0 flex-1">
-                                                                    <div className="flex flex-wrap items-center gap-2">
-                                                                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
-                                                                        <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
-                                                                        {isCurrent && <span className="text-[10px] font-semibold text-accent-600 bg-accent-100 px-2 py-0.5 rounded-full">Current</span>}
-                                                                    </div>
-                                                                    <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
-                                                                </div>
-                                                                <div className="shrink-0">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setIsHistoryOpen(false);
-                                                                            lastNavActionRef.current = null;
-                                                                            suppressCommitRef.current = true;
-                                                                            navigate(entry.url);
-                                                                            showToast(details, { tone, title: 'Opened from history' });
-                                                                        }}
-                                                                        className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                                    >
-                                                                        Go
-                                                                    </button>
-                                                                </div>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                        <Suspense fallback={null}>
+                            <TripHistoryModal
+                                isOpen={isHistoryOpen}
+                                isExamplePreview={isExamplePreview}
+                                showAllHistory={showAllHistory}
+                                items={historyModalItems}
+                                onClose={() => setIsHistoryOpen(false)}
+                                onUndo={() => navigateHistory('undo')}
+                                onRedo={() => navigateHistory('redo')}
+                                onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
+                                onGo={(item) => {
+                                    setIsHistoryOpen(false);
+                                    lastNavActionRef.current = null;
+                                    suppressCommitRef.current = true;
+                                    navigate(item.url);
+                                    showToast(item.details, { tone: item.tone, title: 'Opened from history' });
+                                }}
+                                formatHistoryTime={formatHistoryTime}
+                            />
+                        </Suspense>
                     )}
 
                     {shareStatus === 'view' && onCopyTrip && (

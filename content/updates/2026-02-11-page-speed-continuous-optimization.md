@@ -63,3 +63,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] ➕ Deferred add-city/add-activity modal bundles until users open those planners, reducing initial trip JS work.
 - [ ] [Internal] 🌍 Deferred destination info panel code until the trip-info overlay is opened, trimming initial trip bundle weight.
 - [ ] [Internal] 🔗 Deferred trip sharing dialog code until users open share controls, keeping initial planner bundles leaner.
+- [ ] [Internal] 🕘 Deferred trip history dialog code until users open history, reducing default planner bundle scope.
