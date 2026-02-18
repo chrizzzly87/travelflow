@@ -20,12 +20,13 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Initial CSS (raw) observed around 989 KB.
 - [x] `App.tsx` very large and centralizing many concerns.
 
-## Latest measured snapshot (after Phase 2 extraction work)
-- [x] Build entry JS: `assets/index-_8INotW_.js` at `~793.14 KB` raw (`~166.72 KB` gzip).
-- [x] Build entry CSS: `assets/index-BXAyU8o6.css` at `~987.87 KB` raw (`~110.91 KB` gzip).
+## Latest measured snapshot (after CSS + route extraction pass)
+- [x] Build entry JS: `assets/index-4tAC3XL6.js` at `~795.45 KB` raw (`~166.95 KB` gzip).
+- [x] Build entry CSS: `assets/index-DmeIy-zA.css` at `~186.47 KB` raw (`~32.17 KB` gzip).
 - [x] `dist/index.html` now loads one module script and one stylesheet only (no modulepreload list).
-- [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 197`.
-- [x] Critical entry path (JS+CSS, unique) improved from `~1966.35 KiB` to `~1762.42 KiB`.
+- [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 179`.
+- [x] Critical entry path (JS+CSS, unique) reduced to `~958.90 KiB` (from prior `~1762.42 KiB`).
+- [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -43,15 +44,16 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load AuthContext service calls via dynamic auth/supabase imports.
 - [ ] Split remaining `App.tsx` responsibilities into focused modules:
 - [ ] `app/bootstrap/*` (providers + startup effects)
-- [ ] `app/routes/*` (route table)
+- [x] `app/routes/*` (route table)
 - [x] `app/trip/*` (trip loaders/handlers)
-- [ ] `app/prefetch/*` (route preload + warmup logic)
-- [ ] Eliminate duplicated route preload definitions by moving to one source of truth.
+- [x] `app/prefetch/*` (route preload + warmup logic)
+- [x] Eliminate duplicated route preload definitions by moving to one source of truth.
 
 ## Phase 3: Additional first-load wins (next)
 - [ ] Reduce globally mounted heavy UI dependencies on marketing entry path.
 - [ ] Audit language selector/header dependency graph for lightweight path.
 - [ ] Keep admin-specific dependencies loading only in admin routes.
+- [x] Disable build-time asset inlining to stop large flag SVG data URIs from inflating entry CSS.
 - [ ] Re-check CSS payload and extract non-critical styles where safe.
 
 ## Validation checklist
@@ -77,4 +79,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: reduce global CSS payload and split remaining `App.tsx` startup concerns (route tables, bootstrap side effects).
+- Next highest-impact target: extract `app/bootstrap/*` concerns and then run route-level perf checks for `/`, `/create-trip`, `/trip/:id`.

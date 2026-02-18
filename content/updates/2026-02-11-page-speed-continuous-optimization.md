@@ -35,3 +35,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Moved trip/share/example route loaders out of `App.tsx` into a lazy route-loader module to reduce entry-graph weight.
 - [ ] [Internal] 🔌 Split DB wrappers into a shared API layer and switched DB capability checks to env-only evaluation so Supabase runtime code is not pulled in eagerly.
 - [ ] [Internal] 🔐 Deferred auth modal and auth-service loading so authentication bundles are fetched only when the auth flow is actually needed.
+- [ ] [Internal] 🎛️ Disabled build-time asset inlining so flag assets emit as separate SVG files instead of inflating the entry CSS bundle.
+- [ ] [Internal] 🗂️ Extracted route-table and fallback route-warmup concerns into dedicated `app/routes/*` and `app/prefetch/*` modules to keep `App.tsx` smaller and preload logic single-sourced.

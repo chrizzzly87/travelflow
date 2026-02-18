@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, Suspense, lazy } from 'react';
-import { flushSync } from 'react-dom';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
+import { BrowserRouter as Router, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
@@ -10,12 +9,11 @@ import { appendHistoryEntry } from './services/historyService';
 import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './utils';
 import { DB_ENABLED } from './config/db';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from './services/simulatedLoginService';
-import { useDbSync } from './hooks/useDbSync';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
-import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
+import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
 import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
@@ -34,6 +32,8 @@ import {
     ensureDbSession,
 } from './services/dbApi';
 import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
+import { AppRoutes } from './app/routes/AppRoutes';
+import { getPathnameFromHref, preloadRouteForPath } from './app/prefetch/fallbackRouteWarmup';
 
 type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
@@ -59,153 +59,9 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const CreateTripForm = lazyWithRecovery('CreateTripForm', () => import('./components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
 const TripManager = lazyWithRecovery('TripManager', () => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
 const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
 const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('./pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
-const FeaturesPage = lazyWithRecovery('FeaturesPage', () => import('./pages/FeaturesPage').then((module) => ({ default: module.FeaturesPage })));
-const UpdatesPage = lazyWithRecovery('UpdatesPage', () => import('./pages/UpdatesPage').then((module) => ({ default: module.UpdatesPage })));
-const BlogPage = lazyWithRecovery('BlogPage', () => import('./pages/BlogPage').then((module) => ({ default: module.BlogPage })));
-const BlogPostPage = lazyWithRecovery('BlogPostPage', () => import('./pages/BlogPostPage').then((module) => ({ default: module.BlogPostPage })));
-const InspirationsPage = lazyWithRecovery('InspirationsPage', () => import('./pages/InspirationsPage').then((module) => ({ default: module.InspirationsPage })));
-const ThemesPage = lazyWithRecovery('ThemesPage', () => import('./pages/inspirations/ThemesPage').then((module) => ({ default: module.ThemesPage })));
-const BestTimeToTravelPage = lazyWithRecovery('BestTimeToTravelPage', () => import('./pages/inspirations/BestTimeToTravelPage').then((module) => ({ default: module.BestTimeToTravelPage })));
-const CountriesPage = lazyWithRecovery('CountriesPage', () => import('./pages/inspirations/CountriesPage').then((module) => ({ default: module.CountriesPage })));
-const FestivalsPage = lazyWithRecovery('FestivalsPage', () => import('./pages/inspirations/FestivalsPage').then((module) => ({ default: module.FestivalsPage })));
-const WeekendGetawaysPage = lazyWithRecovery('WeekendGetawaysPage', () => import('./pages/inspirations/WeekendGetawaysPage').then((module) => ({ default: module.WeekendGetawaysPage })));
-const CountryDetailPage = lazyWithRecovery('CountryDetailPage', () => import('./pages/inspirations/CountryDetailPage').then((module) => ({ default: module.CountryDetailPage })));
-const LoginPage = lazyWithRecovery('LoginPage', () => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
-const ResetPasswordPage = lazyWithRecovery('ResetPasswordPage', () => import('./pages/ResetPasswordPage').then((module) => ({ default: module.ResetPasswordPage })));
-const ContactPage = lazyWithRecovery('ContactPage', () => import('./pages/ContactPage').then((module) => ({ default: module.ContactPage })));
-const ImprintPage = lazyWithRecovery('ImprintPage', () => import('./pages/ImprintPage').then((module) => ({ default: module.ImprintPage })));
-const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('./pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })));
-const TermsPage = lazyWithRecovery('TermsPage', () => import('./pages/TermsPage').then((module) => ({ default: module.TermsPage })));
-const CookiesPage = lazyWithRecovery('CookiesPage', () => import('./pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
-const ProfilePage = lazyWithRecovery('ProfilePage', () => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
-const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('./pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
-const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('./pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
-const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('./pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
-const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
-const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
-const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
-const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
-const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.TripLoaderRoute })));
-const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.SharedTripLoaderRoute })));
-const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.ExampleTripLoaderRoute })));
-const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
-const CreateTripSplitWorkspaceLabPage = lazyWithRecovery('CreateTripSplitWorkspaceLabPage', () => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
-const CreateTripJourneyArchitectLabPage = lazyWithRecovery('CreateTripJourneyArchitectLabPage', () => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
-const CreateTripV1Page = lazyWithRecovery('CreateTripV1Page', () => import('./pages/CreateTripV1Page').then((module) => ({ default: module.CreateTripV1Page })));
-const CreateTripV2Page = lazyWithRecovery('CreateTripV2Page', () => import('./pages/CreateTripV2Page').then((module) => ({ default: module.CreateTripV2Page })));
-const CreateTripV3Page = lazyWithRecovery('CreateTripV3Page', () => import('./pages/CreateTripV3Page').then((module) => ({ default: module.CreateTripV3Page })));
-
-type RoutePreloadRule = {
-    key: string;
-    match: (pathname: string) => boolean;
-    preload: () => Promise<unknown>;
-};
-
-const ROUTE_PRELOAD_RULES: RoutePreloadRule[] = [
-    { key: 'home', match: (pathname) => pathname === '/', preload: () => import('./pages/MarketingHomePage') },
-    { key: 'features', match: (pathname) => pathname === '/features', preload: () => import('./pages/FeaturesPage') },
-    { key: 'inspirations', match: (pathname) => pathname === '/inspirations', preload: () => import('./pages/InspirationsPage') },
-    { key: 'themes', match: (pathname) => pathname === '/inspirations/themes', preload: () => import('./pages/inspirations/ThemesPage') },
-    { key: 'best-time', match: (pathname) => pathname === '/inspirations/best-time-to-travel', preload: () => import('./pages/inspirations/BestTimeToTravelPage') },
-    { key: 'countries', match: (pathname) => pathname === '/inspirations/countries', preload: () => import('./pages/inspirations/CountriesPage') },
-    { key: 'festivals', match: (pathname) => pathname === '/inspirations/events-and-festivals', preload: () => import('./pages/inspirations/FestivalsPage') },
-    { key: 'weekend-getaways', match: (pathname) => pathname === '/inspirations/weekend-getaways', preload: () => import('./pages/inspirations/WeekendGetawaysPage') },
-    { key: 'country-detail', match: (pathname) => pathname.startsWith('/inspirations/country/'), preload: () => import('./pages/inspirations/CountryDetailPage') },
-    { key: 'updates', match: (pathname) => pathname === '/updates', preload: () => import('./pages/UpdatesPage') },
-    { key: 'blog', match: (pathname) => pathname === '/blog', preload: () => import('./pages/BlogPage') },
-    { key: 'blog-post', match: (pathname) => pathname.startsWith('/blog/'), preload: () => import('./pages/BlogPostPage') },
-    { key: 'pricing', match: (pathname) => pathname === '/pricing', preload: () => import('./pages/PricingPage') },
-    { key: 'faq', match: (pathname) => pathname === '/faq', preload: () => import('./pages/FaqPage') },
-    { key: 'login', match: (pathname) => pathname === '/login', preload: () => import('./pages/LoginPage') },
-    { key: 'reset-password', match: (pathname) => pathname === '/auth/reset-password', preload: () => import('./pages/ResetPasswordPage') },
-    { key: 'contact', match: (pathname) => pathname === '/contact', preload: () => import('./pages/ContactPage') },
-    { key: 'create-trip', match: (pathname) => pathname === '/create-trip', preload: () => import('./pages/CreateTripClassicLabPage') },
-    { key: 'profile', match: (pathname) => pathname === '/profile', preload: () => import('./pages/ProfilePage') },
-    { key: 'profile-settings', match: (pathname) => pathname === '/profile/settings', preload: () => import('./pages/ProfileSettingsPage') },
-    { key: 'profile-onboarding', match: (pathname) => pathname === '/profile/onboarding', preload: () => import('./pages/ProfileOnboardingPage') },
-    { key: 'create-trip-classic-lab', match: (pathname) => pathname === '/create-trip/labs/classic-card', preload: () => import('./pages/CreateTripClassicLabPage') },
-    { key: 'create-trip-legacy-lab', match: (pathname) => pathname === '/create-trip/labs/classic-legacy', preload: () => import('./components/CreateTripForm') },
-    { key: 'create-trip-design-v1', match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1', preload: () => import('./pages/CreateTripV1Page') },
-    { key: 'create-trip-design-v2', match: (pathname) => pathname === '/create-trip/labs/design-v2' || pathname === '/create-trip/v2', preload: () => import('./pages/CreateTripV2Page') },
-    { key: 'create-trip-design-v3', match: (pathname) => pathname === '/create-trip/labs/design-v3' || pathname === '/create-trip/v3', preload: () => import('./pages/CreateTripV3Page') },
-];
-
-const warmedRouteKeys = new Set<string>();
-
-const getPathnameFromHref = (href: string): string => {
-    try {
-        return new URL(href, window.location.origin).pathname;
-    } catch {
-        return href.split(/[?#]/)[0] || href;
-    }
-};
-
-const findRoutePreloadRule = (pathname: string): RoutePreloadRule | null => {
-    for (const rule of ROUTE_PRELOAD_RULES) {
-        if (rule.match(pathname)) return rule;
-    }
-    return null;
-};
-
-const preloadRouteForPath = async (pathname: string): Promise<void> => {
-    const normalizedPathname = stripLocalePrefix(pathname || '/');
-    const rule = findRoutePreloadRule(normalizedPathname);
-    if (!rule) return;
-    if (warmedRouteKeys.has(rule.key)) return;
-    warmedRouteKeys.add(rule.key);
-    try {
-        await rule.preload();
-    } catch {
-        warmedRouteKeys.delete(rule.key);
-    }
-};
-
-const RouteLoadingFallback: React.FC = () => (
-    <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
-);
-
-const renderWithSuspense = (node: React.ReactElement) => (
-    <Suspense fallback={<RouteLoadingFallback />}>
-        {node}
-    </Suspense>
-);
-
-const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
-
-const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement }> = [
-    { path: '/', element: <MarketingHomePage /> },
-    { path: '/features', element: <FeaturesPage /> },
-    { path: '/inspirations', element: <InspirationsPage /> },
-    { path: '/inspirations/themes', element: <ThemesPage /> },
-    { path: '/inspirations/best-time-to-travel', element: <BestTimeToTravelPage /> },
-    { path: '/inspirations/countries', element: <CountriesPage /> },
-    { path: '/inspirations/events-and-festivals', element: <FestivalsPage /> },
-    { path: '/inspirations/weekend-getaways', element: <WeekendGetawaysPage /> },
-    { path: '/inspirations/country/:countryName', element: <CountryDetailPage /> },
-    { path: '/updates', element: <UpdatesPage /> },
-    { path: '/blog', element: <BlogPage /> },
-    { path: '/blog/:slug', element: <BlogPostPage /> },
-    { path: '/pricing', element: <PricingPage /> },
-    { path: '/faq', element: <FaqPage /> },
-    { path: '/share-unavailable', element: <ShareUnavailablePage /> },
-    { path: '/login', element: <LoginPage /> },
-    { path: '/auth/reset-password', element: <ResetPasswordPage /> },
-    { path: '/contact', element: <ContactPage /> },
-    { path: '/imprint', element: <ImprintPage /> },
-    { path: '/privacy', element: <PrivacyPage /> },
-    { path: '/terms', element: <TermsPage /> },
-    { path: '/cookies', element: <CookiesPage /> },
-];
-
-const getLocalizedMarketingRoutePath = (path: string, locale: AppLanguage): string => {
-    if (path === '/') return `/${locale}`;
-    return `/${locale}${path}`;
-};
 
 const shouldEnableDebuggerOnBoot = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -219,21 +75,6 @@ const shouldEnableDebuggerOnBoot = (): boolean => {
     }
 };
 
-/** Scroll to top on route change */
-const ScrollToTop: React.FC = () => {
-    const { pathname } = useLocation();
-    const prevPathRef = useRef(pathname);
-
-    useLayoutEffect(() => {
-        if (prevPathRef.current === pathname) return;
-        prevPathRef.current = pathname;
-        window.scrollTo(0, 0);
-    }, [pathname]);
-
-    return null;
-};
-
-/** Pre-warm internal routes on user intent (hover/focus/touch). */
 const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
     useEffect(() => {
         if (!enabled) return;
@@ -275,7 +116,7 @@ const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
             document.removeEventListener('touchstart', handleTouchStart, true);
             if (warmupTimerId !== null) window.clearTimeout(warmupTimerId);
         };
-    }, []);
+    }, [enabled]);
 
     return null;
 };
@@ -294,112 +135,6 @@ const createLocalHistoryEntry = (
     navigate(url, { replace: options?.replace ?? false });
     appendHistoryEntry(updatedTrip.id, url, label, { snapshot: { trip: updatedTrip, view }, ts });
     return url;
-};
-
-/** Thin wrapper that triggers DB sync when create-trip lab routes mount. */
-const CreateTripClassicRoute: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripClassicLabPage
-                onTripGenerated={onTripGenerated}
-                onOpenManager={onOpenManager}
-                onLanguageLoaded={onLanguageLoaded}
-            />
-        </Suspense>
-    );
-};
-
-const CreateTripLegacyRoute: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-        <CreateTripForm onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-    </Suspense>
-);
-};
-
-const CreateTripDesignV1Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV1Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV2Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV2Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const CreateTripDesignV3Route: React.FC<{
-    onTripGenerated: (t: ITrip) => void;
-    onOpenManager: () => void;
-    onLanguageLoaded?: (lang: AppLanguage) => void;
-}> = ({ onTripGenerated, onOpenManager, onLanguageLoaded }) => {
-    useDbSync(onLanguageLoaded);
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <CreateTripV3Page onTripGenerated={onTripGenerated} onOpenManager={onOpenManager} />
-        </Suspense>
-    );
-};
-
-const AuthenticatedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-    const { isLoading, isAuthenticated } = useAuth();
-    const location = useLocation();
-
-    if (isLoading) return <RouteLoadingFallback />;
-    if (!isAuthenticated) {
-        return (
-            <Navigate
-                to="/login"
-                replace
-                state={{ from: `${location.pathname}${location.search}` }}
-            />
-        );
-    }
-
-    return children;
-};
-
-const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
-    const { isLoading, isAdmin, isAuthenticated } = useAuth();
-    const location = useLocation();
-
-    if (isLoading) return <RouteLoadingFallback />;
-    if (!isAuthenticated || !isAdmin) {
-        return (
-            <Navigate
-                to="/login"
-                replace
-                state={{ from: `${location.pathname}${location.search}` }}
-            />
-        );
-    }
-
-    return children;
 };
 
 const AppContent: React.FC = () => {
@@ -676,7 +411,6 @@ const AppContent: React.FC = () => {
         }, 800);
     };
 
-    // Persist trip changes
     const handleUpdateTrip = (updatedTrip: ITrip, options?: { persist?: boolean }) => {
         setTrip(updatedTrip);
         if (options?.persist === false) return;
@@ -798,234 +532,27 @@ const AppContent: React.FC = () => {
 
     return (
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
-            <ScrollToTop />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             <NavigationPrefetchManager enabled={isWarmupEnabled} />
             <SpeculationRulesManager enabled={isWarmupEnabled} />
-            <Routes>
-                {MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
-                    <Route
-                        key={`marketing:${path}`}
-                        path={path}
-                        element={renderWithSuspense(element)}
-                    />
-                ))}
-                {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
-                    MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
-                        <Route
-                            key={`marketing:${locale}:${path}`}
-                            path={getLocalizedMarketingRoutePath(path, locale)}
-                            element={renderWithSuspense(element)}
-                        />
-                    ))
-                )}
-                <Route
-                    path="/create-trip"
-                    element={
-                        renderWithSuspense(<CreateTripClassicRoute
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    } 
-                />
-                {LOCALIZED_MARKETING_LOCALES.map((locale) => (
-                    <Route
-                        key={`tool:${locale}:create-trip`}
-                        path={`/${locale}/create-trip`}
-                        element={
-                            renderWithSuspense(<CreateTripClassicRoute
-                                onTripGenerated={handleTripGenerated}
-                                onOpenManager={() => setIsManagerOpen(true)}
-                                onLanguageLoaded={setAppLanguage}
-                            />)
-                        }
-                    />
-                ))}
-                <Route
-                    path="/create-trip/labs/classic-card"
-                    element={
-                        renderWithSuspense(<CreateTripClassicRoute
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/classic-legacy"
-                    element={
-                        renderWithSuspense(<CreateTripLegacyRoute
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/split-workspace"
-                    element={
-                        renderWithSuspense(<CreateTripSplitWorkspaceLabPage
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/journey-architect"
-                    element={
-                        renderWithSuspense(<CreateTripJourneyArchitectLabPage
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/design-v1"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV1Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/design-v2"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV2Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/labs/design-v3"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV3Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/v1"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV1Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/v2"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV2Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/create-trip/v3"
-                    element={
-                        renderWithSuspense(<CreateTripDesignV3Route
-                            onTripGenerated={handleTripGenerated}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onLanguageLoaded={setAppLanguage}
-                        />)
-                    }
-                />
-                <Route
-                    path="/profile/onboarding"
-                    element={renderWithSuspense(
-                        <AuthenticatedRoute>
-                            <ProfileOnboardingPage />
-                        </AuthenticatedRoute>
-                    )}
-                />
-                <Route
-                    path="/profile"
-                    element={renderWithSuspense(
-                        <AuthenticatedRoute>
-                            <ProfilePage />
-                        </AuthenticatedRoute>
-                    )}
-                />
-                <Route
-                    path="/profile/settings"
-                    element={renderWithSuspense(
-                        <AuthenticatedRoute>
-                            <ProfileSettingsPage />
-                        </AuthenticatedRoute>
-                    )}
-                />
-                <Route
-                    path="/admin/*"
-                    element={renderWithSuspense(
-                        <AdminRoute>
-                            <AdminWorkspaceRouter />
-                        </AdminRoute>
-                    )}
-                />
-                <Route 
-                    path="/trip/:tripId" 
-                    element={renderWithSuspense(
-                        <TripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={setTrip}
-                            onUpdateTrip={handleUpdateTrip}
-                            onCommitState={handleCommitState}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onOpenSettings={() => setIsSettingsOpen(true)}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={handleViewSettingsChange}
-                            onLanguageLoaded={setAppLanguage}
-                        />
-                    )} 
-                />
-                <Route
-                    path="/example/:templateId"
-                    element={renderWithSuspense(
-                        <ExampleTripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={setTrip}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onOpenSettings={() => setIsSettingsOpen(true)}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={handleViewSettingsChange}
-                        />
-                    )}
-                />
-                <Route
-                    path="/s/:token"
-                    element={renderWithSuspense(
-                        <SharedTripLoaderRoute
-                            trip={trip}
-                            onTripLoaded={setTrip}
-                            onOpenManager={() => setIsManagerOpen(true)}
-                            onOpenSettings={() => setIsSettingsOpen(true)}
-                            appLanguage={appLanguage}
-                            onViewSettingsChange={handleViewSettingsChange}
-                            onLanguageLoaded={setAppLanguage}
-                        />
-                    )}
-                />
-                 {/* Legacy Redirect */}
-                 <Route path="/trip" element={<Navigate to="/create-trip" replace />} />
-                 <Route path="*" element={renderWithSuspense(<NotFoundPage />)} />
-            </Routes>
+            <AppRoutes
+                trip={trip}
+                appLanguage={appLanguage}
+                onAppLanguageLoaded={setAppLanguage}
+                onTripGenerated={handleTripGenerated}
+                onTripLoaded={setTrip}
+                onUpdateTrip={handleUpdateTrip}
+                onCommitState={handleCommitState}
+                onViewSettingsChange={handleViewSettingsChange}
+                onOpenManager={() => setIsManagerOpen(true)}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+            />
 
-            {/* Global Modals */}
             {isManagerOpen && (
                 <Suspense fallback={null}>
-                    <TripManager 
-                        isOpen={isManagerOpen} 
-                        onClose={() => setIsManagerOpen(false)} 
+                    <TripManager
+                        isOpen={isManagerOpen}
+                        onClose={() => setIsManagerOpen(false)}
                         onSelectTrip={handleLoadTrip}
                         currentTripId={trip?.id}
                         onUpdateTrip={(updatedTrip) => {
@@ -1036,12 +563,12 @@ const AppContent: React.FC = () => {
                     />
                 </Suspense>
             )}
-            
+
             {isSettingsOpen && (
                 <Suspense fallback={null}>
-                    <SettingsModal 
-                        isOpen={isSettingsOpen} 
-                        onClose={() => setIsSettingsOpen(false)} 
+                    <SettingsModal
+                        isOpen={isSettingsOpen}
+                        onClose={() => setIsSettingsOpen(false)}
                         appLanguage={appLanguage}
                         onAppLanguageChange={setAppLanguage}
                     />

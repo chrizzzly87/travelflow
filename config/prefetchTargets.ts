@@ -24,17 +24,25 @@ const createTripFormTarget = target('route:create-trip', () => import('../compon
 const createTripClassicLabTarget = target('route:create-trip-lab-classic', () => import('../pages/CreateTripClassicLabPage'));
 const createTripSplitLabTarget = target('route:create-trip-lab-split', () => import('../pages/CreateTripSplitWorkspaceLabPage'));
 const createTripArchitectLabTarget = target('route:create-trip-lab-architect', () => import('../pages/CreateTripJourneyArchitectLabPage'));
+const createTripV1Target = target('route:create-trip-v1', () => import('../pages/CreateTripV1Page'));
+const createTripV2Target = target('route:create-trip-v2', () => import('../pages/CreateTripV2Page'));
+const createTripV3Target = target('route:create-trip-v3', () => import('../pages/CreateTripV3Page'));
 
 const featuresTarget = target('route:features', () => import('../pages/FeaturesPage'));
 const updatesTarget = target('route:updates', () => import('../pages/UpdatesPage'));
 const pricingTarget = target('route:pricing', () => import('../pages/PricingPage'));
 const faqTarget = target('route:faq', () => import('../pages/FaqPage'));
+const shareUnavailableTarget = target('route:share-unavailable', () => import('../pages/ShareUnavailablePage'));
 const loginTarget = target('route:login', () => import('../pages/LoginPage'));
+const resetPasswordTarget = target('route:reset-password', () => import('../pages/ResetPasswordPage'));
 const contactTarget = target('route:contact', () => import('../pages/ContactPage'));
 const imprintTarget = target('route:imprint', () => import('../pages/ImprintPage'));
 const privacyTarget = target('route:privacy', () => import('../pages/PrivacyPage'));
 const termsTarget = target('route:terms', () => import('../pages/TermsPage'));
 const cookiesTarget = target('route:cookies', () => import('../pages/CookiesPage'));
+const profileTarget = target('route:profile', () => import('../pages/ProfilePage'));
+const profileSettingsTarget = target('route:profile-settings', () => import('../pages/ProfileSettingsPage'));
+const profileOnboardingTarget = target('route:profile-onboarding', () => import('../pages/ProfileOnboardingPage'));
 
 const inspirationsTarget = target('route:inspirations', () => import('../pages/InspirationsPage'));
 const inspirationsThemesTarget = target('route:inspirations-themes', () => import('../pages/inspirations/ThemesPage'));
@@ -53,12 +61,16 @@ const rules: PrefetchRule[] = [
         targets: [homeTarget],
     },
     {
-        match: (pathname) => startsWithSegment(pathname, '/create-trip'),
-        targets: [createTripFormTarget, tripViewTarget],
+        match: (pathname) => pathname === '/create-trip',
+        targets: [createTripClassicLabTarget, tripViewTarget],
     },
     {
         match: (pathname) => pathname === '/create-trip/labs/classic-card',
         targets: [createTripClassicLabTarget, tripViewTarget],
+    },
+    {
+        match: (pathname) => pathname === '/create-trip/labs/classic-legacy',
+        targets: [createTripFormTarget, tripViewTarget],
     },
     {
         match: (pathname) => pathname === '/create-trip/labs/split-workspace',
@@ -67,6 +79,22 @@ const rules: PrefetchRule[] = [
     {
         match: (pathname) => pathname === '/create-trip/labs/journey-architect',
         targets: [createTripArchitectLabTarget, tripViewTarget],
+    },
+    {
+        match: (pathname) => pathname === '/create-trip/labs/design-v1' || pathname === '/create-trip/v1',
+        targets: [createTripV1Target, tripViewTarget],
+    },
+    {
+        match: (pathname) => pathname === '/create-trip/labs/design-v2' || pathname === '/create-trip/v2',
+        targets: [createTripV2Target, tripViewTarget],
+    },
+    {
+        match: (pathname) => pathname === '/create-trip/labs/design-v3' || pathname === '/create-trip/v3',
+        targets: [createTripV3Target, tripViewTarget],
+    },
+    {
+        match: (pathname) => startsWithSegment(pathname, '/create-trip'),
+        targets: [tripViewTarget],
     },
     {
         match: (pathname) => startsWithSegment(pathname, '/trip'),
@@ -93,8 +121,16 @@ const rules: PrefetchRule[] = [
         targets: [faqTarget],
     },
     {
+        match: (pathname) => pathname === '/share-unavailable',
+        targets: [shareUnavailableTarget],
+    },
+    {
         match: (pathname) => pathname === '/login',
         targets: [loginTarget],
+    },
+    {
+        match: (pathname) => pathname === '/auth/reset-password',
+        targets: [resetPasswordTarget],
     },
     {
         match: (pathname) => pathname === '/contact',
@@ -115,6 +151,18 @@ const rules: PrefetchRule[] = [
     {
         match: (pathname) => pathname === '/cookies',
         targets: [cookiesTarget],
+    },
+    {
+        match: (pathname) => pathname === '/profile',
+        targets: [profileTarget],
+    },
+    {
+        match: (pathname) => pathname === '/profile/settings',
+        targets: [profileSettingsTarget],
+    },
+    {
+        match: (pathname) => pathname === '/profile/onboarding',
+        targets: [profileOnboardingTarget],
     },
     {
         match: (pathname) => pathname === '/inspirations',
