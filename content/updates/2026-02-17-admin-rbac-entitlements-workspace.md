@@ -39,6 +39,7 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🔢 Standardized animated number transitions across compact dashboard metric cards for smoother data updates.
 - [x] [Fixed] 🧩 Fixed dropdown layering in side drawers/dialogs so account status, role, and tier selectors are fully usable again.
 - [x] [Improved] 🔗 Added direct trip-open links in admin trip listings and connected-trip sections so visual verification is one click away.
+- [x] [Improved] 🧭 Enabled admins to open any trip directly from admin tables, while keeping owner-only behavior unchanged for regular users.
 - [x] [Improved] 👤 Made trip owner cells open a user-information drawer for faster account context checks without leaving trip operations.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.

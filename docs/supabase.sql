@@ -2577,6 +2577,48 @@ begin
 end;
 $$;
 
+create or replace function public.admin_get_trip_for_view(
+  p_trip_id text
+)
+returns table(
+  trip_id text,
+  owner_id uuid,
+  owner_email text,
+  data jsonb,
+  view_settings jsonb,
+  status text,
+  trip_expires_at timestamptz,
+  source_kind text,
+  source_template_id text
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('trips.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  select
+    t.id,
+    t.owner_id,
+    u.email::text,
+    t.data,
+    t.view_settings,
+    coalesce(t.status, 'active'),
+    t.trip_expires_at,
+    t.source_kind,
+    t.source_template_id
+  from public.trips t
+  left join auth.users u on u.id = t.owner_id
+  where t.id = p_trip_id
+  limit 1;
+end;
+$$;
+
 create or replace function public.admin_update_trip(
   p_trip_id text,
   p_status text default null,
@@ -3023,6 +3065,7 @@ grant execute on function public.admin_update_user_overrides(uuid, jsonb) to aut
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
+grant execute on function public.admin_get_trip_for_view(text) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
 grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
 grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
