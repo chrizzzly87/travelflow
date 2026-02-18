@@ -13,7 +13,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Homepage (`/`) JS critical path reduced substantially vs current baseline.
 - [x] Admin code is no longer part of initial entry preload graph.
 - [x] Prefetch/speculation starts only after app is usable (idle/first interaction).
-- [ ] Route-level performance checks for `/`, `/create-trip`, `/trip/:id`.
+- [x] Route-level performance checks for `/`, `/create-trip`, `/trip/:id`.
 
 ## Current baseline snapshot (before this phase)
 - [x] Initial JS (raw) observed around 2.0 MB total from entry + static imports.
@@ -21,13 +21,20 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] `App.tsx` very large and centralizing many concerns.
 
 ## Latest measured snapshot (after CSS + route extraction pass)
-- [x] Build entry JS: `assets/index-RSxY5txD.js` at `~795.60 KB` raw (`~167.26 KB` gzip).
+- [x] Build entry JS: `assets/index-SNwqgVFJ.js` at `~795.60 KB` raw (`~167.27 KB` gzip).
 - [x] Build entry CSS: `assets/index-DmeIy-zA.css` at `~186.47 KB` raw (`~32.17 KB` gzip).
 - [x] `dist/index.html` now loads one module script and one stylesheet only (no modulepreload list).
 - [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 179`.
 - [x] Critical entry path (JS+CSS, unique) reduced to `~959.05 KiB` (from prior `~1762.42 KiB`).
 - [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
 - [x] `App.tsx` reduced from `1076` lines to `419` lines by extracting route/prefetch/bootstrap modules.
+
+## Route perf check snapshot (Lighthouse, local preview, mobile profile)
+- [x] `/` improved from `41` to `76-78` score after deferring eager carousel prewarm + desktop-only plane-window media.
+- [x] `/` transfer dropped from `~2420.9 KiB` to `~1266.4 KiB` (`-~1154.5 KiB`), with large TBT reduction (`~2470 ms` to single-/double-digit ms in repeat runs).
+- [x] `/create-trip` remained stable in the `80-83` score range across follow-up runs (normal Lighthouse variance observed).
+- [x] `/trip/:id` improved from `71` to `74-76` score in follow-up runs.
+- [x] Reports captured in `tmp/perf/*.json` during this session for before/after comparison.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -51,7 +58,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Eliminate duplicated route preload definitions by moving to one source of truth.
 
 ## Phase 3: Additional first-load wins (next)
-- [ ] Reduce globally mounted heavy UI dependencies on marketing entry path.
+- [x] Reduce globally mounted heavy UI dependencies on marketing entry path.
 - [ ] Audit language selector/header dependency graph for lightweight path.
 - [ ] Keep admin-specific dependencies loading only in admin routes.
 - [x] Disable build-time asset inlining to stop large flag SVG data URIs from inflating entry CSS.
@@ -61,7 +68,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] `npx vite build`
 - [x] Inspect `dist/index.html` modulepreload list.
 - [x] Inspect `dist/.vite/manifest.json` import graph for `index.html`.
-- [ ] Run route perf checks on `/`, `/create-trip`, `/trip/:id`.
+- [x] Run route perf checks on `/`, `/create-trip`, `/trip/:id`.
 - [ ] Deploy preview to Netlify and verify real environment behavior.
 
 ## Useful commands
@@ -80,4 +87,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: extract `app/bootstrap/*` concerns and then run route-level perf checks for `/`, `/create-trip`, `/trip/:id`.
+- Next highest-impact target: language selector/header dependency audit + keeping admin-only dependencies fully isolated from non-admin route paths.
