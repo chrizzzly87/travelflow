@@ -55,3 +55,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧭 Added a shared first-load-critical route matcher and used it to disable speculation-rules mounting on `/`, `/create-trip`, `/trip`, and `/example` during initial load.
 - [ ] [Internal] 🔌 Migrated `TripView` database operations to `dbApi` wrappers so Supabase runtime modules are no longer statically imported in trip-route chunks.
 - [ ] [Internal] 🤖 Deferred trip-side AI helper imports so the heavy AI runtime bundle loads only when AI enhancement actions are used.
+- [ ] [Internal] 🗞️ Moved trip release-notice markdown rendering into a lazy chunk and deferred it until interaction/idle so initial trip loading stays lighter.

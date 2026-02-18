@@ -1,7 +1,5 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
@@ -35,8 +33,6 @@ import {
     type DbTripAccessMetadata,
 } from '../services/dbApi';
 import { DB_ENABLED } from '../config/db';
-import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
-import { ReleasePill } from './marketing/ReleasePill';
 import {
     buildPaywalledTripDisplay,
     getDebugTripExpiredOverride,
@@ -50,6 +46,7 @@ import { APP_NAME } from '../config/appGlobals';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -62,6 +59,15 @@ interface ToastState {
 type TripDebugWindow = Window & typeof globalThis & {
     toggleExpired?: (force?: boolean) => boolean;
 };
+
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
+    import('./ReleaseNoticeDialog').then((module) => ({ default: module.ReleaseNoticeDialog }))
+);
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
 
@@ -142,7 +148,6 @@ const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
-const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
@@ -308,21 +313,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     tripRef.current = trip;
-    const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
-    const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
-        if (typeof window === 'undefined') return null;
-        try {
-            return window.localStorage.getItem(RELEASE_NOTICE_DISMISSED_KEY);
-        } catch (e) {
-            return null;
-        }
-    });
-    const latestReleaseItems = useMemo(() => {
-        if (!latestInAppRelease) return [];
-        return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
-    }, [latestInAppRelease]);
-    const latestReleaseGroups = useMemo(() => groupReleaseItemsByType(latestReleaseItems), [latestReleaseItems]);
-    const canShowReleaseNoticeByDismissal = !suppressReleaseNotice && !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
+    const [isReleaseNoticeReady, setIsReleaseNoticeReady] = useState(false);
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
     const tripExpiresAtMs = useMemo(() => {
@@ -1089,10 +1080,69 @@ export const TripView: React.FC<TripViewProps> = ({
         && !isTripLockedByExpiry
         && !isTripLockedByArchive
         && (trip.status || 'active') === 'active';
-    const showReleaseNotice = canShowReleaseNoticeByDismissal
+    const shouldEnableReleaseNotice = isReleaseNoticeReady
+        && !suppressReleaseNotice
         && !isAdmin
         && !isAdminFallbackView
         && !showGenerationOverlay;
+
+    useEffect(() => {
+        if (suppressReleaseNotice) return;
+        if (typeof window === 'undefined') return;
+
+        let resolved = false;
+        let timeoutId: number | null = null;
+        let idleId: number | null = null;
+
+        const removeInteractionListeners = () => {
+            window.removeEventListener('pointerdown', onTrigger, true);
+            window.removeEventListener('keydown', onTrigger, true);
+            window.removeEventListener('touchstart', onTrigger, true);
+        };
+
+        const clearTimers = () => {
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            if (idleId !== null && 'cancelIdleCallback' in window) {
+                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+                idleId = null;
+            }
+        };
+
+        const enableReleaseNotice = () => {
+            if (resolved) return;
+            resolved = true;
+            setIsReleaseNoticeReady(true);
+            removeInteractionListeners();
+            clearTimers();
+        };
+
+        const onTrigger = () => {
+            enableReleaseNotice();
+        };
+
+        window.addEventListener('pointerdown', onTrigger, true);
+        window.addEventListener('keydown', onTrigger, true);
+        window.addEventListener('touchstart', onTrigger, true);
+
+        timeoutId = window.setTimeout(enableReleaseNotice, 5000);
+
+        if ('requestIdleCallback' in window) {
+            idleId = (window as Window & {
+                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
+            }).requestIdleCallback(() => {
+                enableReleaseNotice();
+            }, { timeout: 4500 });
+        }
+
+        return () => {
+            resolved = true;
+            removeInteractionListeners();
+            clearTimers();
+        };
+    }, [suppressReleaseNotice]);
 
     useEffect(() => {
         if (!showGenerationOverlay) {
@@ -1136,17 +1186,6 @@ export const TripView: React.FC<TripViewProps> = ({
         document.execCommand('copy');
         document.body.removeChild(input);
     }, []);
-
-    const dismissReleaseNotice = useCallback(() => {
-        if (!latestInAppRelease) return;
-        setDismissedReleaseId(latestInAppRelease.id);
-        if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.setItem(RELEASE_NOTICE_DISMISSED_KEY, latestInAppRelease.id);
-        } catch (e) {
-            // ignore storage issues
-        }
-    }, [latestInAppRelease]);
 
     const activeShareUrl = shareUrlsByMode[shareMode] ?? null;
 
@@ -3158,93 +3197,11 @@ export const TripView: React.FC<TripViewProps> = ({
                         </div>
                      )}
 
-                     {showReleaseNotice && latestInAppRelease && (
-                        <div className="fixed inset-0 z-[1650] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="release-update-title">
-                            <button
-                                type="button"
-                                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-                                aria-label="Close release update"
-                                onClick={dismissReleaseNotice}
-                            />
-                            <div className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
-                                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
-                                        Latest release · {latestInAppRelease.version}
-                                    </p>
-                                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-slate-900">
-                                        {latestInAppRelease.title}
-                                    </h2>
-                                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        {new Date(latestInAppRelease.publishedAt).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <div className="px-6 py-5">
-                                    {latestInAppRelease.summary && (
-                                        <div className="text-sm leading-6 text-slate-700">
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={{
-                                                    p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                    a: ({ node, ...props }) => (
-                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
-                                                    ),
-                                                    code: ({ node, ...props }) => (
-                                                        <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
-                                                    ),
-                                                }}
-                                            >
-                                                {latestInAppRelease.summary}
-                                            </ReactMarkdown>
-                                        </div>
-                                    )}
-                                    {latestReleaseGroups.length > 0 && (
-                                        <div className="mt-3 space-y-3">
-                                            {latestReleaseGroups.map((group, groupIndex) => (
-                                                <div key={`${latestInAppRelease.id}-notice-group-${group.typeKey}-${group.typeLabel}-${groupIndex}`}>
-                                                    <ReleasePill item={group.items[0]} />
-                                                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
-                                                        {group.items.map((item, itemIndex) => (
-                                                            <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
-                                                                <ReactMarkdown
-                                                                    remarkPlugins={[remarkGfm]}
-                                                                    components={{
-                                                                        p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                                        a: ({ node, ...props }) => (
-                                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
-                                                                        ),
-                                                                        code: ({ node, ...props }) => (
-                                                                            <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
-                                                                        ),
-                                                                    }}
-                                                                >
-                                                                    {item.text}
-                                                                </ReactMarkdown>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-                                    <Link
-                                        to="/updates"
-                                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
-                                    >
-                                        View full changelog
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        onClick={dismissReleaseNotice}
-                                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                     )}
+                    {shouldEnableReleaseNotice && (
+                        <Suspense fallback={null}>
+                            <ReleaseNoticeDialog enabled={shouldEnableReleaseNotice} />
+                        </Suspense>
+                    )}
 
                      {isShareOpen && (
                         <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsShareOpen(false)}>
