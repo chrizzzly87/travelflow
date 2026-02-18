@@ -13,14 +13,17 @@ export const AdminCountUpNumber: React.FC<AdminCountUpNumberProps> = ({
     durationMs = 520,
     className,
 }) => {
-    const [displayValue, setDisplayValue] = useState<number>(value);
-    const lastStableValueRef = useRef<number>(value);
+    const [displayValue, setDisplayValue] = useState<number>(0);
+    const lastStableValueRef = useRef<number>(0);
+    const hasAnimatedOnceRef = useRef<boolean>(false);
 
     useEffect(() => {
-        const from = lastStableValueRef.current;
+        const from = hasAnimatedOnceRef.current ? lastStableValueRef.current : 0;
         const to = value;
         if (from === to) {
             setDisplayValue(to);
+            lastStableValueRef.current = to;
+            hasAnimatedOnceRef.current = true;
             return;
         }
 
@@ -36,6 +39,7 @@ export const AdminCountUpNumber: React.FC<AdminCountUpNumberProps> = ({
                 return;
             }
             lastStableValueRef.current = to;
+            hasAnimatedOnceRef.current = true;
         };
         frameId = window.requestAnimationFrame(step);
         return () => {

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowClockwise } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 
 const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
 
@@ -121,14 +122,11 @@ export const AdminDashboardPage: React.FC = () => {
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             actions={(
-                <button
-                    type="button"
+                <AdminReloadButton
                     onClick={() => void loadData()}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                >
-                    <ArrowClockwise size={14} />
-                    Refresh
-                </button>
+                    isLoading={isLoading}
+                    label="Reload"
+                />
             )}
         >
             {errorMessage && (
@@ -140,22 +138,22 @@ export const AdminDashboardPage: React.FC = () => {
             <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{isLoading ? '...' : formatValue(metrics.totalUsers)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Admins: {formatValue(metrics.adminUsers)}</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.totalUsers} /></p>
+                    <p className="mt-1 text-xs text-slate-500">Admins: <AdminCountUpNumber value={metrics.adminUsers} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">User health</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{isLoading ? '...' : formatValue(metrics.activeUsers)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Disabled: {formatValue(metrics.disabledUsers)}</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.activeUsers} /></p>
+                    <p className="mt-1 text-xs text-slate-500">Suspended: <AdminCountUpNumber value={metrics.disabledUsers} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total trips</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{isLoading ? '...' : formatValue(metrics.totalTrips)}</p>
-                    <p className="mt-1 text-xs text-slate-500">Active: {formatValue(metrics.activeTrips)}</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.totalTrips} /></p>
+                    <p className="mt-1 text-xs text-slate-500">Active: <AdminCountUpNumber value={metrics.activeTrips} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle pressure</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{isLoading ? '...' : formatValue(metrics.expiredTrips)}</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.expiredTrips} /></p>
                     <p className="mt-1 text-xs text-slate-500">Expired trips</p>
                 </article>
             </section>

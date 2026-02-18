@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CaretDown, CheckCircle, Circle, PlusCircle } from '@phosphor-icons/react';
+import { createPortal } from 'react-dom';
 
 export interface AdminFilterMenuOption {
     value: string;
@@ -25,7 +26,13 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     className,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement | null>(null);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number }>({
+        top: 0,
+        left: 0,
+        width: 280,
+    });
 
     const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
     const selectedCount = selectedValues.length;
@@ -36,24 +43,46 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
         [options, selectedSet]
     );
 
+    const updateMenuPosition = useCallback(() => {
+        const trigger = triggerRef.current;
+        if (!trigger) return;
+        const rect = trigger.getBoundingClientRect();
+        const viewportPadding = 10;
+        const preferredWidth = Math.max(280, rect.width + 70);
+        const maxLeft = window.innerWidth - preferredWidth - viewportPadding;
+        const nextLeft = Math.max(viewportPadding, Math.min(rect.left, maxLeft));
+        setMenuPosition({
+            top: rect.bottom + 8,
+            left: nextLeft,
+            width: preferredWidth,
+        });
+    }, []);
+
     useEffect(() => {
         if (!isOpen) return undefined;
+        updateMenuPosition();
         const onPointer = (event: PointerEvent) => {
-            if (!containerRef.current) return;
-            if (containerRef.current.contains(event.target as Node)) return;
+            const targetNode = event.target as Node;
+            if (triggerRef.current?.contains(targetNode)) return;
+            if (menuRef.current?.contains(targetNode)) return;
             setIsOpen(false);
         };
         const onEscape = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             setIsOpen(false);
         };
+        const onViewportChange = () => updateMenuPosition();
         window.addEventListener('pointerdown', onPointer);
         window.addEventListener('keydown', onEscape);
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('scroll', onViewportChange, true);
         return () => {
             window.removeEventListener('pointerdown', onPointer);
             window.removeEventListener('keydown', onEscape);
+            window.removeEventListener('resize', onViewportChange);
+            window.removeEventListener('scroll', onViewportChange, true);
         };
-    }, [isOpen]);
+    }, [isOpen, updateMenuPosition]);
 
     const emitNextValues = (nextSet: Set<string>) => {
         const ordered = options
@@ -86,10 +115,14 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     };
 
     return (
-        <div className={`relative ${className ?? ''}`.trim()} ref={containerRef}>
+        <div className={className}>
             <button
+                ref={triggerRef}
                 type="button"
-                onClick={() => setIsOpen((current) => !current)}
+                onClick={() => {
+                    updateMenuPosition();
+                    setIsOpen((current) => !current);
+                }}
                 className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400"
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
@@ -118,8 +151,16 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                 <CaretDown size={14} className={isOpen ? 'rotate-180 text-slate-500 transition-transform' : 'text-slate-500 transition-transform'} />
             </button>
 
-            {isOpen && (
-                <div className="absolute start-0 top-[calc(100%+8px)] z-30 w-[280px] rounded-xl border border-slate-200 bg-white shadow-2xl">
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div
+                    ref={menuRef}
+                    className="fixed z-[1700] rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    style={{
+                        top: `${menuPosition.top}px`,
+                        left: `${menuPosition.left}px`,
+                        width: `${menuPosition.width}px`,
+                    }}
+                >
                     <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                         {label}
                     </div>
@@ -160,7 +201,8 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                             Clear filters
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

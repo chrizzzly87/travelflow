@@ -1,36 +1,49 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowClockwise, SpinnerGap } from '@phosphor-icons/react';
+import { SpinnerGap, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListAuditLogs, type AdminAuditRecord } from '../services/adminService';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+
+const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
+
+const parseQueryMultiValue = (value: string | null): string[] => {
+    if (!value) return [];
+    return Array.from(new Set(
+        value
+            .split(',')
+            .map((part) => part.trim())
+            .filter(Boolean)
+    ));
+};
 
 export const AdminAuditPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const [logs, setLogs] = useState<AdminAuditRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [logs, setLogs] = useState<AdminAuditRecord[]>(() => readAdminCache<AdminAuditRecord[]>(AUDIT_CACHE_KEY, []));
+    const [isLoading, setIsLoading] = useState(() => logs.length === 0);
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
         const value = searchParams.get('range');
         if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
         return '30d';
     });
-    const [actionFilter, setActionFilter] = useState(() => searchParams.get('action') || '');
-    const [targetFilter, setTargetFilter] = useState(() => searchParams.get('target') || '');
+    const [actionFilters, setActionFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('action')));
+    const [targetFilters, setTargetFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('target')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
-        const trimmedAction = actionFilter.trim();
-        const trimmedTarget = targetFilter.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
         if (dateRange !== '30d') next.set('range', dateRange);
-        if (trimmedAction) next.set('action', trimmedAction);
-        if (trimmedTarget) next.set('target', trimmedTarget);
+        if (actionFilters.length > 0) next.set('action', actionFilters.join(','));
+        if (targetFilters.length > 0) next.set('target', targetFilters.join(','));
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [actionFilter, dateRange, searchParams, searchValue, setSearchParams, targetFilter]);
+    }, [actionFilters, dateRange, searchParams, searchValue, setSearchParams, targetFilters]);
 
     const loadLogs = async () => {
         setIsLoading(true);
@@ -38,13 +51,12 @@ export const AdminAuditPage: React.FC = () => {
         try {
             const rows = await adminListAuditLogs({
                 limit: 400,
-                action: actionFilter || undefined,
-                targetType: targetFilter || undefined,
             });
             setLogs(rows);
+            writeAdminCache(AUDIT_CACHE_KEY, rows);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not load audit logs.');
-            setLogs([]);
+            setLogs((current) => (current.length > 0 ? current : []));
         } finally {
             setIsLoading(false);
         }
@@ -53,12 +65,14 @@ export const AdminAuditPage: React.FC = () => {
     useEffect(() => {
         void loadLogs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [actionFilter, targetFilter]);
+    }, []);
 
     const visibleLogs = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return logs.filter((log) => {
             if (!isIsoDateInRange(log.created_at, dateRange)) return false;
+            if (actionFilters.length > 0 && !actionFilters.includes(log.action)) return false;
+            if (targetFilters.length > 0 && !targetFilters.includes(log.target_type)) return false;
             if (!token) return true;
             return (
                 (log.action || '').toLowerCase().includes(token)
@@ -67,7 +81,34 @@ export const AdminAuditPage: React.FC = () => {
                 || (log.actor_email || '').toLowerCase().includes(token)
             );
         });
-    }, [dateRange, logs, searchValue]);
+    }, [actionFilters, dateRange, logs, searchValue, targetFilters]);
+
+    const logsInDateRange = useMemo(
+        () => logs.filter((log) => isIsoDateInRange(log.created_at, dateRange)),
+        [dateRange, logs]
+    );
+
+    const actionFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
+        const counts = new Map<string, number>();
+        logsInDateRange.forEach((log) => {
+            const nextValue = (counts.get(log.action) || 0) + 1;
+            counts.set(log.action, nextValue);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, label: value, count }));
+    }, [logsInDateRange]);
+
+    const targetFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
+        const counts = new Map<string, number>();
+        logsInDateRange.forEach((log) => {
+            const nextValue = (counts.get(log.target_type) || 0) + 1;
+            counts.set(log.target_type, nextValue);
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({ value, label: value, count }));
+    }, [logsInDateRange]);
 
     return (
         <AdminShell
@@ -78,14 +119,11 @@ export const AdminAuditPage: React.FC = () => {
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             actions={(
-                <button
-                    type="button"
+                <AdminReloadButton
                     onClick={() => void loadLogs()}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                >
-                    <ArrowClockwise size={14} />
-                    Refresh
-                </button>
+                    isLoading={isLoading}
+                    label="Reload"
+                />
             )}
         >
             {errorMessage && (
@@ -95,18 +133,29 @@ export const AdminAuditPage: React.FC = () => {
             )}
 
             <section className="mb-3 flex flex-wrap items-center gap-2">
-                <input
-                    value={actionFilter}
-                    onChange={(event) => setActionFilter(event.target.value)}
-                    placeholder="Filter action"
-                    className="h-9 rounded-lg border border-slate-300 px-3 text-sm"
+                <AdminFilterMenu
+                    label="Action"
+                    options={actionFilterOptions}
+                    selectedValues={actionFilters}
+                    onSelectedValuesChange={setActionFilters}
                 />
-                <input
-                    value={targetFilter}
-                    onChange={(event) => setTargetFilter(event.target.value)}
-                    placeholder="Filter target type"
-                    className="h-9 rounded-lg border border-slate-300 px-3 text-sm"
+                <AdminFilterMenu
+                    label="Target"
+                    options={targetFilterOptions}
+                    selectedValues={targetFilters}
+                    onSelectedValuesChange={setTargetFilters}
                 />
+                <button
+                    type="button"
+                    onClick={() => {
+                        setActionFilters([]);
+                        setTargetFilters([]);
+                    }}
+                    className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                    <X size={14} />
+                    Reset
+                </button>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -123,7 +172,7 @@ export const AdminAuditPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {visibleLogs.map((log) => (
-                                <tr key={log.id} className="border-b border-slate-100 align-top">
+                                <tr key={log.id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                     <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
                                     <td className="px-3 py-2 text-xs text-slate-700">{log.actor_email || log.actor_user_id || 'unknown'}</td>
                                     <td className="px-3 py-2 text-xs font-semibold text-slate-800">{log.action}</td>

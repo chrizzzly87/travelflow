@@ -5,7 +5,6 @@ import {
     ChartBarHorizontal,
     DotsThreeVertical,
     EnvelopeSimple,
-    Percent,
     SpinnerGap,
     Trash,
     X,
@@ -799,9 +798,9 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Active account ratio</p>
-                    <p className="mt-2 inline-flex items-center gap-1 text-3xl font-black text-emerald-700">
-                        <Percent size={20} className="text-emerald-700" />
+                    <p className="mt-2 inline-flex items-baseline gap-0.5 text-3xl font-black text-emerald-700">
                         <AdminCountUpNumber value={usersSummary.activeRatioPct} />
+                        <span className="text-xl">%</span>
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                         <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
@@ -842,7 +841,7 @@ export const AdminUsersPage: React.FC = () => {
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
-                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         <AdminFilterMenu
                             label="Activation"
                             options={activationFilterOptions}

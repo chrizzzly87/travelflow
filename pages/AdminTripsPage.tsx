@@ -217,7 +217,7 @@ export const AdminTripsPage: React.FC = () => {
             <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
-                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         <AdminFilterMenu
                             label="Status"
                             options={statusFilterOptions}
