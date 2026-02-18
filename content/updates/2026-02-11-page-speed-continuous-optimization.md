@@ -41,3 +41,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🪟 Gated heavy plane-window hero media to desktop-only rendering so mobile home loads avoid large hidden-image downloads.
 - [ ] [Internal] 🧪 Added route-level Lighthouse checks for `/`, `/create-trip`, and `/trip/:id` and used the results to remove eager home carousel `TripView` prewarm from first render.
 - [ ] [Internal] 🧭 Replaced header locale selection with a lightweight native control and lazy-loaded account/mobile header menus so they do not load on first paint.
+- [ ] [Internal] 🏳️ Replaced global flagpack CSS usage with emoji-based flag rendering to remove heavy flag stylesheet payload from initial page load.
