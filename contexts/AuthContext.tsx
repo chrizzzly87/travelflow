@@ -1,20 +1,25 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import type { OAuthProviderId } from '../services/authService';
-import {
-    getCurrentAccessContext,
-    requestPasswordResetEmail,
-    signInWithEmailPassword,
-    signInWithOAuth,
-    signOut,
-    signUpWithEmailPassword,
-    subscribeToAuthState,
-    updateCurrentUserPassword,
-} from '../services/authService';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
-import { supabase } from '../services/supabaseClient';
 import type { UserAccessContext } from '../types';
+
+type AuthServiceModule = typeof import('../services/authService');
+type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
+
+let authServicePromise: Promise<AuthServiceModule> | null = null;
+
+const loadAuthService = async (): Promise<AuthServiceModule> => {
+    if (!authServicePromise) {
+        authServicePromise = import('../services/authService');
+    }
+    return authServicePromise;
+};
+
+const loadSupabaseClient = async () => {
+    const { supabase } = await import('../services/supabaseClient');
+    return supabase;
+};
 
 interface AuthContextValue {
     session: Session | null;
@@ -24,18 +29,18 @@ interface AuthContextValue {
     isAnonymous: boolean;
     isAdmin: boolean;
     refreshAccess: () => Promise<void>;
-    loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<typeof signInWithEmailPassword>>>;
+    loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>;
     registerWithPassword: (
         email: string,
         password: string,
         options?: { emailRedirectTo?: string }
-    ) => Promise<Awaited<ReturnType<typeof signUpWithEmailPassword>>>;
-    loginWithOAuth: (provider: OAuthProviderId, redirectTo?: string) => Promise<Awaited<ReturnType<typeof signInWithOAuth>>>;
+    ) => Promise<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>>>;
+    loginWithOAuth: (provider: OAuthProviderId, redirectTo?: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>>;
     sendPasswordResetEmail: (
         email: string,
         options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
-    ) => Promise<Awaited<ReturnType<typeof requestPasswordResetEmail>>>;
-    updatePassword: (password: string) => Promise<Awaited<ReturnType<typeof updateCurrentUserPassword>>>;
+    ) => Promise<Awaited<ReturnType<AuthServiceModule['requestPasswordResetEmail']>>>;
+    updatePassword: (password: string) => Promise<Awaited<ReturnType<AuthServiceModule['updateCurrentUserPassword']>>>;
     logout: () => Promise<void>;
 }
 
@@ -71,12 +76,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const refreshAccess = useCallback(async () => {
-        const nextAccess = await getCurrentAccessContext();
+        const authService = await loadAuthService();
+        const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
     }, []);
 
     useEffect(() => {
         let cancelled = false;
+        let unsubscribe: (() => void) = () => {};
 
         const isAnonymousSession = (value: Session | null): boolean => {
             const metadata = value?.user?.app_metadata as Record<string, unknown> | undefined;
@@ -115,6 +122,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         const bootstrap = async () => {
+            const [authService, supabase] = await Promise.all([
+                loadAuthService(),
+                loadSupabaseClient(),
+            ]);
+            if (cancelled) return;
+
             if (!supabase) {
                 if (!cancelled) {
                     setSession(null);
@@ -177,29 +190,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setAccess(null);
             }
             if (!cancelled) setIsLoading(false);
+            if (cancelled) return;
+
+            unsubscribe = authService.subscribeToAuthState((_event, nextSession) => {
+                logAuthStateEvent(_event, Boolean(nextSession));
+                authDebug('stateChange', {
+                    event: _event,
+                    hasSession: Boolean(nextSession),
+                    userId: nextSession?.user?.id ?? null,
+                    isAnonymous: isAnonymousSession(nextSession),
+                    hasHash: typeof window !== 'undefined' ? window.location.hash.includes('access_token=') : false,
+                });
+                setSession(nextSession);
+                if (nextSession) {
+                    // Only strip auth hash once a real session exists, so the
+                    // bootstrap fallback can still read the tokens if needed.
+                    stripAuthHash();
+                    void refreshAccess();
+                    return;
+                }
+                setAccess(null);
+            });
         };
 
         void bootstrap();
-
-        const unsubscribe = subscribeToAuthState((_event, nextSession) => {
-            logAuthStateEvent(_event, Boolean(nextSession));
-            authDebug('stateChange', {
-                event: _event,
-                hasSession: Boolean(nextSession),
-                userId: nextSession?.user?.id ?? null,
-                isAnonymous: isAnonymousSession(nextSession),
-                hasHash: typeof window !== 'undefined' ? window.location.hash.includes('access_token=') : false,
-            });
-            setSession(nextSession);
-            if (nextSession) {
-                // Only strip auth hash once a real session exists, so the
-                // bootstrap fallback can still read the tokens if needed.
-                stripAuthHash();
-                void refreshAccess();
-                return;
-            }
-            setAccess(null);
-        });
 
         return () => {
             cancelled = true;
@@ -208,7 +222,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [logAuthStateEvent, refreshAccess]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
-        const response = await signInWithEmailPassword(email, password);
+        const authService = await loadAuthService();
+        const response = await authService.signInWithEmailPassword(email, password);
         if (!response.error) {
             await refreshAccess();
         }
@@ -220,7 +235,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: string,
         options?: { emailRedirectTo?: string }
     ) => {
-        const response = await signUpWithEmailPassword(email, password, options);
+        const authService = await loadAuthService();
+        const response = await authService.signUpWithEmailPassword(email, password, options);
         if (!response.error) {
             await refreshAccess();
         }
@@ -228,22 +244,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [refreshAccess]);
 
     const loginWithOAuth = useCallback(async (provider: OAuthProviderId, redirectTo?: string) => {
-        return signInWithOAuth(provider, { redirectTo });
+        const authService = await loadAuthService();
+        return authService.signInWithOAuth(provider, { redirectTo });
     }, []);
 
     const sendPasswordResetEmail = useCallback(async (
         email: string,
         options?: { redirectTo?: string; intent?: 'forgot_password' | 'set_password' }
     ) => {
-        return requestPasswordResetEmail(email, options);
+        const authService = await loadAuthService();
+        return authService.requestPasswordResetEmail(email, options);
     }, []);
 
     const updatePassword = useCallback(async (password: string) => {
-        return updateCurrentUserPassword(password);
+        const authService = await loadAuthService();
+        return authService.updateCurrentUserPassword(password);
     }, []);
 
     const logout = useCallback(async () => {
-        await signOut();
+        const authService = await loadAuthService();
+        await authService.signOut();
         setAccess(null);
         setSession(null);
     }, []);

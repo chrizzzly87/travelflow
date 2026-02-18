@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useLayoutEffect, Suspense, lazy } from 'react';
 import { flushSync } from 'react-dom';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, IViewSettings } from './types';
 import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
-import { appendHistoryEntry, findHistoryEntryByUrl } from './services/historyService';
-import { buildCreateTripUrl, buildShareUrl, buildTripUrl, decompressTrip, generateTripId, generateVersionId, getStoredAppLanguage, isUuid, setStoredAppLanguage } from './utils';
+import { appendHistoryEntry } from './services/historyService';
+import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './utils';
 import { DB_ENABLED } from './config/db';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from './services/simulatedLoginService';
 import { useDbSync } from './hooks/useDbSync';
@@ -15,7 +15,6 @@ import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
-import { getTripLifecycleState } from './config/paywall';
 import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
@@ -26,6 +25,14 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { LoginModalProvider } from './contexts/LoginModalContext';
 import { buildPathFromLocationParts, isLoginPathname, rememberAuthReturnPath } from './services/authNavigationService';
+import {
+    dbAdminOverrideTripCommit,
+    dbCanCreateTrip,
+    dbCreateTripVersion,
+    dbUpsertTrip,
+    dbUpsertUserSettings,
+    ensureDbSession,
+} from './services/dbApi';
 import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
 
 type AppDebugWindow = Window & typeof globalThis & {
@@ -44,105 +51,8 @@ type AppDebugCommand =
         simulatedLogin?: boolean;
     };
 
-type ExampleTemplateFactory = (createdAtIso: string) => ITrip;
-type ExampleTripCardSummary = {
-    title: string;
-    countries: { name: string }[];
-};
-type ExampleTripPrefetchState = {
-    useExampleSharedTransition?: boolean;
-    prefetchedExampleTrip?: ITrip;
-    prefetchedExampleView?: IViewSettings;
-    prefetchedTemplateTitle?: string;
-    prefetchedTemplateCountries?: string[];
-};
-
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
-
-type DbServiceModule = typeof import('./services/dbService');
-type TripLoaderAccess = NonNullable<Awaited<ReturnType<DbServiceModule['dbGetTrip']>>>['access'];
-
-let dbServicePromise: Promise<DbServiceModule> | null = null;
-
-const loadDbService = async (): Promise<DbServiceModule> => {
-    if (!dbServicePromise) {
-        dbServicePromise = import('./services/dbService');
-    }
-    return dbServicePromise;
-};
-
-const ensureDbSession = async () => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.ensureDbSession();
-};
-
-const dbCanCreateTrip = async () => {
-    if (!DB_ENABLED) {
-        return {
-            allowCreate: true,
-            activeTripCount: 0,
-            maxTripCount: 0,
-        };
-    }
-    const db = await loadDbService();
-    return db.dbCanCreateTrip();
-};
-
-const dbCreateTripVersion = async (...args: Parameters<DbServiceModule['dbCreateTripVersion']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbCreateTripVersion(...args);
-};
-
-const dbGetSharedTrip = async (...args: Parameters<DbServiceModule['dbGetSharedTrip']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbGetSharedTrip(...args);
-};
-
-const dbGetSharedTripVersion = async (...args: Parameters<DbServiceModule['dbGetSharedTripVersion']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbGetSharedTripVersion(...args);
-};
-
-const dbGetTrip = async (...args: Parameters<DbServiceModule['dbGetTrip']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbGetTrip(...args);
-};
-
-const dbAdminOverrideTripCommit = async (...args: Parameters<DbServiceModule['dbAdminOverrideTripCommit']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbAdminOverrideTripCommit(...args);
-};
-
-const dbGetTripVersion = async (...args: Parameters<DbServiceModule['dbGetTripVersion']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbGetTripVersion(...args);
-};
-
-const dbUpdateSharedTrip = async (...args: Parameters<DbServiceModule['dbUpdateSharedTrip']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbUpdateSharedTrip(...args);
-};
-
-const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsertTrip']>) => {
-    if (!DB_ENABLED) return null;
-    const db = await loadDbService();
-    return db.dbUpsertTrip(...args);
-};
-
-const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
-    if (!DB_ENABLED) return;
-    const db = await loadDbService();
-    await db.dbUpsertUserSettings(...args);
-};
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -150,7 +60,6 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
 const CreateTripForm = lazyWithRecovery('CreateTripForm', () => import('./components/CreateTripForm').then((module) => ({ default: module.CreateTripForm })));
-const TripView = lazyWithRecovery('TripView', () => import('./components/TripView').then((module) => ({ default: module.TripView })));
 const TripManager = lazyWithRecovery('TripManager', () => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
 const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
 const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
@@ -181,6 +90,9 @@ const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/Pricin
 const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const ShareUnavailablePage = lazyWithRecovery('ShareUnavailablePage', () => import('./pages/ShareUnavailablePage').then((module) => ({ default: module.ShareUnavailablePage })));
 const NotFoundPage = lazyWithRecovery('NotFoundPage', () => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
+const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.TripLoaderRoute })));
+const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.SharedTripLoaderRoute })));
+const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('./routes/TripRouteLoaders').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('./pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const CreateTripSplitWorkspaceLabPage = lazyWithRecovery('CreateTripSplitWorkspaceLabPage', () => import('./pages/CreateTripSplitWorkspaceLabPage').then((module) => ({ default: module.CreateTripSplitWorkspaceLabPage })));
 const CreateTripJourneyArchitectLabPage = lazyWithRecovery('CreateTripJourneyArchitectLabPage', () => import('./pages/CreateTripJourneyArchitectLabPage').then((module) => ({ default: module.CreateTripJourneyArchitectLabPage })));
@@ -322,8 +234,9 @@ const ScrollToTop: React.FC = () => {
 };
 
 /** Pre-warm internal routes on user intent (hover/focus/touch). */
-const ViewTransitionHandler: React.FC = () => {
+const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
     useEffect(() => {
+        if (!enabled) return;
         // Keep legacy prewarm as a fallback path only when the new
         // navigation prefetch manager is disabled.
         if (isNavPrefetchEnabled()) return;
@@ -381,666 +294,6 @@ const createLocalHistoryEntry = (
     navigate(url, { replace: options?.replace ?? false });
     appendHistoryEntry(updatedTrip.id, url, label, { snapshot: { trip: updatedTrip, view }, ts });
     return url;
-};
-
-const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
-    const locations = trip.items
-        .filter((item) => item.type === 'city' && typeof item.location === 'string')
-        .map((item) => item.location?.trim() ?? '')
-        .filter((location) => location.length > 0);
-    const uniqueLocations = Array.from(new Set(locations));
-    if (uniqueLocations.length === 0) return undefined;
-    return uniqueLocations.join(' || ');
-};
-
-// Legacy compressed URLs still supported in TripLoader.
-
-// Component to handle trip loading from URL
-const TripLoader = ({
-    trip,
-    onTripLoaded,
-    handleUpdateTrip,
-    handleCommitState,
-    setIsManagerOpen,
-    setIsSettingsOpen,
-    appLanguage,
-    onViewSettingsChange,
-    onLanguageLoaded,
-}: {
-    trip: ITrip | null,
-    onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
-    handleUpdateTrip: (t: ITrip, options?: { persist?: boolean }) => void,
-    handleCommitState: (t: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void,
-    setIsManagerOpen: (o: boolean) => void,
-    setIsSettingsOpen: (o: boolean) => void,
-    appLanguage: AppLanguage,
-    onViewSettingsChange: (settings: IViewSettings) => void,
-    onLanguageLoaded?: (lang: AppLanguage) => void,
-}) => {
-    const { tripId } = useParams();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const lastLoadRef = useRef<string | null>(null);
-    const versionId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        return params.get('v');
-    }, [location.search]);
-
-    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
-    const [tripAccess, setTripAccess] = useState<TripLoaderAccess | null>(null);
-
-    useDbSync(onLanguageLoaded);
-
-    useEffect(() => {
-        if (!tripId) return;
-        const loadKey = `${tripId}:${versionId || ''}`;
-        if (lastLoadRef.current === loadKey) return;
-        lastLoadRef.current = loadKey;
-
-        const load = async () => {
-            setViewSettings(undefined);
-            setTripAccess(null);
-            // 1. Legacy compressed URLs
-            const sharedState = decompressTrip(tripId);
-            if (sharedState) {
-                const { trip: loadedTrip, view } = sharedState;
-                const localTrip = getTripById(loadedTrip.id);
-                const mergedTrip: ITrip = {
-                    ...loadedTrip,
-                    isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
-                };
-                const resolvedView = view ?? mergedTrip.defaultView;
-                setViewSettings(resolvedView);
-                onTripLoaded(mergedTrip, resolvedView);
-                return;
-            }
-
-            // 2. Supabase-backed load
-            if (DB_ENABLED) {
-                await ensureDbSession();
-                if (versionId && isUuid(versionId)) {
-                    const version = await dbGetTripVersion(tripId, versionId);
-                    if (version?.trip) {
-                        saveTrip(version.trip);
-                        const resolvedView = version.view ?? version.trip.defaultView;
-                        setViewSettings(resolvedView);
-                        onTripLoaded(version.trip, resolvedView);
-                        return;
-                    }
-                }
-                if (versionId) {
-                    const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
-                    if (localEntry?.snapshot?.trip) {
-                        saveTrip(localEntry.snapshot.trip);
-                        const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                        setViewSettings(resolvedView);
-                        onTripLoaded(localEntry.snapshot.trip, resolvedView);
-                        return;
-                    }
-                }
-                const dbTrip = await dbGetTrip(tripId);
-                if (dbTrip?.trip) {
-                    saveTrip(dbTrip.trip);
-                    const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
-                    setTripAccess(dbTrip.access);
-                    setViewSettings(resolvedView);
-                    onTripLoaded(dbTrip.trip, resolvedView);
-                    return;
-                }
-            }
-
-            // 3. Local fallback
-            if (versionId) {
-                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
-                if (localEntry?.snapshot?.trip) {
-                    saveTrip(localEntry.snapshot.trip);
-                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
-                    return;
-                }
-            }
-            const localTrip = getTripById(tripId);
-            if (localTrip) {
-                onTripLoaded(localTrip, localTrip.defaultView);
-                return;
-            }
-
-            console.error('Failed to load trip from URL');
-            navigate('/create-trip', { replace: true });
-        };
-
-        void load();
-    }, [tripId, versionId, navigate, onTripLoaded]);
-
-    if (!trip) return null;
-    const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
-
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <TripView
-                trip={trip}
-                initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
-                initialViewSettings={viewSettings ?? trip.defaultView}
-                onUpdateTrip={handleUpdateTrip}
-                onCommitState={handleCommitState}
-                onViewSettingsChange={(settings) => {
-                    setViewSettings(settings);
-                    onViewSettingsChange(settings);
-                }}
-                onOpenManager={() => setIsManagerOpen(true)}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                appLanguage={appLanguage}
-                canShare={!adminFallbackAccess}
-                adminAccess={adminFallbackAccess}
-            />
-        </Suspense>
-    );
-};
-
-const SharedTripLoader = ({
-    trip,
-    onTripLoaded,
-    setIsManagerOpen,
-    setIsSettingsOpen,
-    appLanguage,
-    onViewSettingsChange,
-    onLanguageLoaded,
-}: {
-    trip: ITrip | null,
-    onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
-    setIsManagerOpen: (o: boolean) => void,
-    setIsSettingsOpen: (o: boolean) => void,
-    appLanguage: AppLanguage,
-    onViewSettingsChange: (settings: IViewSettings) => void,
-    onLanguageLoaded?: (lang: AppLanguage) => void,
-}) => {
-    const { token } = useParams();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const { access } = useAuth();
-    const lastLoadRef = useRef<string | null>(null);
-    const [shareMode, setShareMode] = useState<'view' | 'edit'>('view');
-    const [allowCopy, setAllowCopy] = useState(true);
-    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
-    const [snapshotState, setSnapshotState] = useState<{ hasNewer: boolean; latestUrl: string } | null>(null);
-    const [sourceShareVersionId, setSourceShareVersionId] = useState<string | null>(null);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
-
-    const versionId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        return params.get('v');
-    }, [location.search]);
-
-    useDbSync(onLanguageLoaded);
-
-    useEffect(() => {
-        if (!token) return;
-        const loadKey = `${token}:${location.search}`;
-        if (lastLoadRef.current === loadKey) return;
-        lastLoadRef.current = loadKey;
-
-        const load = async () => {
-            if (!DB_ENABLED) {
-                navigate('/share-unavailable', { replace: true });
-                return;
-            }
-
-            setViewSettings(undefined);
-            setSnapshotState(null);
-            setSourceShareVersionId(null);
-            await ensureDbSession();
-            const shared = await dbGetSharedTrip(token);
-            if (!shared) {
-                navigate('/share-unavailable', { replace: true });
-                return;
-            }
-            if (getTripLifecycleState(shared.trip) !== 'active') {
-                navigate('/share-unavailable', { replace: true });
-                return;
-            }
-
-            setShareMode(shared.mode);
-            setAllowCopy(shared.allowCopy ?? true);
-
-            if (versionId && isUuid(versionId)) {
-                const sharedVersion = await dbGetSharedTripVersion(token, versionId);
-                if (sharedVersion?.trip) {
-                    const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(sharedVersion.trip, resolvedView);
-                    setSourceShareVersionId(sharedVersion.versionId);
-                    const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
-                    setSnapshotState({
-                        hasNewer: Boolean(latestVersionId && latestVersionId !== sharedVersion.versionId),
-                        latestUrl: buildShareUrl(token),
-                    });
-                    return;
-                }
-
-                const version = await dbGetTripVersion(shared.trip.id, versionId);
-                if (version?.trip) {
-                    const latestVersionMismatch = Boolean(shared.latestVersionId && shared.latestVersionId !== versionId);
-                    const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
-                    const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
-                    const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    const resolvedView = version.view ?? version.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(version.trip, resolvedView);
-                    setSourceShareVersionId(versionId);
-                    setSnapshotState({
-                        hasNewer: latestVersionMismatch || newerByTimestamp,
-                        latestUrl: buildShareUrl(token),
-                    });
-                    return;
-                }
-            }
-
-            if (versionId) {
-                const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
-                if (localEntry?.snapshot?.trip) {
-                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
-                    setSourceShareVersionId(isUuid(versionId) ? versionId : null);
-                    setSnapshotState({
-                        hasNewer: true,
-                        latestUrl: buildShareUrl(token),
-                    });
-                    return;
-                }
-            }
-
-            const resolvedView = shared.view ?? shared.trip.defaultView;
-            setViewSettings(resolvedView);
-            onTripLoaded(shared.trip, resolvedView);
-            setSourceShareVersionId(shared.latestVersionId ?? null);
-        };
-
-        void load();
-    }, [token, versionId, location.search, navigate, onTripLoaded]);
-
-    const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
-        if (shareMode !== 'edit' || !token) return;
-        const label = options?.label || 'Updated trip';
-        const commitTs = Date.now();
-        createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, buildShareUrl(token));
-
-        const commit = async () => {
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
-            const version = await dbUpdateSharedTrip(token, updatedTrip, view, label);
-            if (!version) return;
-        };
-        void commit();
-    };
-
-    const handleCopyTrip = async () => {
-        if (!trip) return;
-        if (DB_ENABLED) {
-            const limit = await dbCanCreateTrip();
-            if (!limit.allowCreate) {
-                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
-                navigate('/pricing');
-                return;
-            }
-        }
-        let resolvedSourceShareVersionId = sourceShareVersionId;
-        if (!resolvedSourceShareVersionId && token && DB_ENABLED) {
-            const sharedNow = await dbGetSharedTrip(token);
-            resolvedSourceShareVersionId = sharedNow?.latestVersionId ?? null;
-        }
-        const now = Date.now();
-        const cloned: ITrip = {
-            ...trip,
-            id: generateTripId(),
-            createdAt: now,
-            updatedAt: now,
-            isFavorite: false,
-            status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
-            sourceKind: 'duplicate_shared',
-            forkedFromTripId: trip.id,
-            forkedFromShareToken: token || undefined,
-            forkedFromShareVersionId: resolvedSourceShareVersionId || undefined,
-        };
-        if (typeof window !== 'undefined') {
-            try {
-                window.sessionStorage.setItem('tf_trip_copy_notice', JSON.stringify({
-                    tripId: cloned.id,
-                    sourceTripId: trip.id,
-                    sourceTitle: trip.title,
-                    sourceShareToken: token || null,
-                    sourceShareVersionId: resolvedSourceShareVersionId || null,
-                    createdAt: Date.now(),
-                }));
-            } catch (e) {
-                // ignore storage issues
-            }
-        }
-        saveTrip(cloned);
-        if (DB_ENABLED) {
-            await ensureDbSession();
-            await dbUpsertTrip(cloned, viewSettings);
-            const version = await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
-            createLocalHistoryEntry(navigate, cloned, viewSettings, 'Data: Copied trip', undefined, Date.now());
-            return;
-        }
-        navigate(buildTripUrl(cloned.id));
-    };
-
-    if (!trip) return null;
-
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <TripView
-                trip={trip}
-                initialViewSettings={viewSettings ?? trip.defaultView}
-                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-                onCommitState={handleCommitShared}
-                onViewSettingsChange={(settings) => {
-                    setViewSettings(settings);
-                    onViewSettingsChange(settings);
-                }}
-                onOpenManager={() => setIsManagerOpen(true)}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                appLanguage={appLanguage}
-                readOnly={shareMode === 'view'}
-                canShare={false}
-                shareStatus={shareMode}
-                shareSnapshotMeta={snapshotState ?? undefined}
-                onCopyTrip={allowCopy ? handleCopyTrip : undefined}
-            />
-        </Suspense>
-    );
-};
-
-const ExampleTripLoader = ({
-    trip,
-    onTripLoaded,
-    setIsManagerOpen,
-    setIsSettingsOpen,
-    appLanguage,
-    onViewSettingsChange,
-}: {
-    trip: ITrip | null,
-    onTripLoaded: (t: ITrip, view?: IViewSettings) => void,
-    setIsManagerOpen: (o: boolean) => void,
-    setIsSettingsOpen: (o: boolean) => void,
-    appLanguage: AppLanguage,
-    onViewSettingsChange: (settings: IViewSettings) => void,
-}) => {
-    const { templateId } = useParams();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { access } = useAuth();
-    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
-    const trackedTemplateRef = useRef<string | null>(null);
-    const hydratedTemplateRef = useRef<string | null>(null);
-    const prefetchedState = location.state as ExampleTripPrefetchState | null;
-    const prefetchedTrip = useMemo<ITrip | null>(() => {
-        if (!templateId) return null;
-        const candidate = prefetchedState?.prefetchedExampleTrip;
-        if (!candidate) return null;
-        if (!candidate.isExample) return null;
-        if (candidate.exampleTemplateId !== templateId) return null;
-        return candidate;
-    }, [prefetchedState, templateId]);
-    const prefetchedView = useMemo<IViewSettings | undefined>(() => {
-        if (!prefetchedTrip) return undefined;
-        return prefetchedState?.prefetchedExampleView ?? prefetchedTrip.defaultView;
-    }, [prefetchedState, prefetchedTrip]);
-    const prefetchedTemplateCard = useMemo<ExampleTripCardSummary | null>(() => {
-        if (!prefetchedTrip) return null;
-        const names = prefetchedState?.prefetchedTemplateCountries
-            || prefetchedTrip.exampleTemplateCountries
-            || [];
-        return {
-            title: prefetchedState?.prefetchedTemplateTitle || prefetchedTrip.title,
-            countries: names.map((name) => ({ name })),
-        };
-    }, [prefetchedState, prefetchedTrip]);
-    const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
-    const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(prefetchedTemplateCard);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
-
-    useEffect(() => {
-        if (prefetchedTemplateCard) {
-            setTemplateCard(prefetchedTemplateCard);
-        }
-    }, [prefetchedTemplateCard, templateId]);
-
-    useEffect(() => {
-        if (!templateId) {
-            setTemplateFactory(null);
-            setTemplateCard(prefetchedTemplateCard ?? null);
-            return;
-        }
-
-        let cancelled = false;
-        setTemplateFactory(undefined);
-
-        const loadTemplateResources = async () => {
-            try {
-                const [{ TRIP_FACTORIES }, { getExampleTripCardByTemplateId }] = await Promise.all([
-                    import('./data/exampleTripTemplates'),
-                    import('./data/exampleTripCards'),
-                ]);
-                if (cancelled) return;
-                const nextFactory = (TRIP_FACTORIES[templateId] as ExampleTemplateFactory | undefined) ?? null;
-                setTemplateFactory(() => nextFactory);
-                setTemplateCard((getExampleTripCardByTemplateId(templateId) as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null);
-            } catch {
-                if (cancelled) return;
-                setTemplateFactory(null);
-                setTemplateCard(prefetchedTemplateCard ?? null);
-            }
-        };
-
-        void loadTemplateResources();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [prefetchedTemplateCard, templateId]);
-
-    const templateCountries = useMemo(
-        () => templateCard?.countries?.map((country) => country.name).filter(Boolean)
-            || prefetchedTrip?.exampleTemplateCountries
-            || [],
-        [templateCard, prefetchedTrip]
-    );
-
-    useEffect(() => {
-        if (!templateId) {
-            navigate('/', { replace: true });
-            return;
-        }
-
-        const hasActiveExampleTrip =
-            !!trip &&
-            trip.isExample === true &&
-            trip.exampleTemplateId === templateId;
-        const hasHydratedTemplate = hydratedTemplateRef.current === templateId;
-        const shouldHydrateTrip = !hasHydratedTemplate || !hasActiveExampleTrip;
-
-        if (shouldHydrateTrip && prefetchedTrip) {
-            const resolvedView = prefetchedView ?? prefetchedTrip.defaultView;
-            setViewSettings(resolvedView);
-            onTripLoaded(prefetchedTrip, resolvedView);
-            hydratedTemplateRef.current = templateId;
-        } else if (shouldHydrateTrip) {
-            if (templateFactory === undefined) return;
-            if (typeof templateFactory !== 'function') {
-                navigate('/', { replace: true });
-                return;
-            }
-
-            const nowMs = Date.now();
-            const generated = templateFactory(new Date(nowMs).toISOString());
-            const resolvedView: IViewSettings = {
-                layoutMode: generated.defaultView?.layoutMode ?? 'horizontal',
-                timelineView: generated.defaultView?.timelineView ?? 'horizontal',
-                mapStyle: generated.defaultView?.mapStyle ?? 'standard',
-                zoomLevel: generated.defaultView?.zoomLevel ?? 1,
-                routeMode: generated.defaultView?.routeMode,
-                showCityNames: generated.defaultView?.showCityNames,
-                sidebarWidth: generated.defaultView?.sidebarWidth,
-                timelineHeight: generated.defaultView?.timelineHeight,
-            };
-            const prepared: ITrip = {
-                ...generated,
-                createdAt: nowMs,
-                updatedAt: nowMs,
-                isFavorite: false,
-                isExample: true,
-                exampleTemplateId: templateId,
-                exampleTemplateCountries: templateCountries,
-                sourceKind: 'example',
-                defaultView: resolvedView,
-            };
-
-            setViewSettings(resolvedView);
-            onTripLoaded(prepared, resolvedView);
-            hydratedTemplateRef.current = templateId;
-        }
-
-        if (trackedTemplateRef.current !== templateId) {
-            trackedTemplateRef.current = templateId;
-            trackEvent('example_trip__open', {
-                template: templateId,
-                country_count: templateCountries.length,
-            });
-        }
-    }, [templateCountries, templateFactory, templateId, trip, prefetchedTrip, prefetchedView, navigate, onTripLoaded]);
-
-    const activeTrip = useMemo(() => {
-        if (trip?.isExample && trip.exampleTemplateId === templateId) {
-            return trip;
-        }
-        return prefetchedTrip;
-    }, [templateId, trip, prefetchedTrip]);
-
-    const handleCopyExampleTrip = async () => {
-        if (!activeTrip || !templateId) return;
-        if (DB_ENABLED) {
-            const limit = await dbCanCreateTrip();
-            if (!limit.allowCreate) {
-                window.alert(`Trip limit reached (${limit.activeTripCount}/${limit.maxTripCount}). Archive a trip or upgrade to continue.`);
-                navigate('/pricing');
-                return;
-            }
-        }
-        const now = Date.now();
-        const cloned: ITrip = {
-            ...activeTrip,
-            id: generateTripId(),
-            createdAt: now,
-            updatedAt: now,
-            isFavorite: false,
-            isExample: false,
-            status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
-            sourceKind: 'duplicate_trip',
-            sourceTemplateId: templateId,
-            exampleTemplateId: undefined,
-            exampleTemplateCountries: undefined,
-            forkedFromExampleTemplateId: templateId,
-        };
-
-        if (typeof window !== 'undefined') {
-            try {
-                window.sessionStorage.setItem('tf_trip_copy_notice', JSON.stringify({
-                    tripId: cloned.id,
-                    sourceTripId: activeTrip.id,
-                    sourceTitle: activeTrip.title,
-                    sourceShareToken: null,
-                    sourceShareVersionId: null,
-                    createdAt: Date.now(),
-                }));
-            } catch {
-                // ignore storage issues
-            }
-        }
-
-        saveTrip(cloned);
-        trackEvent('example_trip__banner--copy_trip', {
-            template: templateId,
-            country_count: templateCountries.length,
-        });
-
-        if (DB_ENABLED) {
-            await ensureDbSession();
-            await dbUpsertTrip(cloned, viewSettings);
-            await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
-        }
-
-        navigate(buildTripUrl(cloned.id));
-    };
-
-    const handleCreateSimilarTrip = () => {
-        if (!templateId) return;
-        const url = buildCreateTripUrl({
-            countries: templateCountries,
-            meta: {
-                source: 'example_trip',
-                label: templateCard?.title || 'Example trip',
-                templateId,
-            },
-        });
-        trackEvent('example_trip__banner--create_similar', {
-            template: templateId,
-            country_count: templateCountries.length,
-        });
-        navigate(url);
-    };
-
-    if (!activeTrip || !activeTrip.isExample) return null;
-
-    return (
-        <Suspense fallback={<RouteLoadingFallback />}>
-            <TripView
-                trip={activeTrip}
-                initialViewSettings={viewSettings ?? activeTrip.defaultView}
-                onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
-                onViewSettingsChange={(settings) => {
-                    setViewSettings(settings);
-                    onViewSettingsChange(settings);
-                }}
-                onOpenManager={() => setIsManagerOpen(true)}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                appLanguage={appLanguage}
-                canShare={false}
-                onCopyTrip={handleCopyExampleTrip}
-                isExamplePreview
-                suppressToasts
-                suppressReleaseNotice
-                exampleTripBanner={{
-                    title: templateCard?.title || activeTrip.title,
-                    countries: templateCountries,
-                    onCreateSimilarTrip: handleCreateSimilarTrip,
-                }}
-            />
-        </Suspense>
-    );
 };
 
 /** Thin wrapper that triggers DB sync when create-trip lab routes mount. */
@@ -1157,6 +410,7 @@ const AppContent: React.FC = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
     const [shouldLoadDebugger, setShouldLoadDebugger] = useState<boolean>(() => shouldEnableDebuggerOnBoot());
+    const [isWarmupEnabled, setIsWarmupEnabled] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1260,6 +514,65 @@ const AppContent: React.FC = () => {
         const disposeAnalytics = initializeAnalytics();
         return () => {
             disposeAnalytics();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        let resolved = false;
+        let timeoutId: number | null = null;
+        let idleId: number | null = null;
+
+        const removeInteractionListeners = () => {
+            window.removeEventListener('pointerdown', onFirstInteraction, true);
+            window.removeEventListener('keydown', onFirstInteraction, true);
+            window.removeEventListener('touchstart', onFirstInteraction, true);
+            window.removeEventListener('scroll', onFirstInteraction, true);
+        };
+
+        const clearTimers = () => {
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            if (idleId !== null && 'cancelIdleCallback' in window) {
+                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+                idleId = null;
+            }
+        };
+
+        const enableWarmup = () => {
+            if (resolved) return;
+            resolved = true;
+            setIsWarmupEnabled(true);
+            removeInteractionListeners();
+            clearTimers();
+        };
+
+        const onFirstInteraction = () => {
+            enableWarmup();
+        };
+
+        window.addEventListener('pointerdown', onFirstInteraction, true);
+        window.addEventListener('keydown', onFirstInteraction, true);
+        window.addEventListener('touchstart', onFirstInteraction, true);
+        window.addEventListener('scroll', onFirstInteraction, true);
+
+        timeoutId = window.setTimeout(enableWarmup, 3200);
+
+        if ('requestIdleCallback' in window) {
+            idleId = (window as Window & {
+                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
+            }).requestIdleCallback(() => {
+                enableWarmup();
+            }, { timeout: 2600 });
+        }
+
+        return () => {
+            resolved = true;
+            removeInteractionListeners();
+            clearTimers();
         };
     }, []);
 
@@ -1486,9 +799,9 @@ const AppContent: React.FC = () => {
     return (
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ScrollToTop />
-            <ViewTransitionHandler />
-            <NavigationPrefetchManager />
-            <SpeculationRulesManager />
+            <ViewTransitionHandler enabled={isWarmupEnabled} />
+            <NavigationPrefetchManager enabled={isWarmupEnabled} />
+            <SpeculationRulesManager enabled={isWarmupEnabled} />
             <Routes>
                 {MARKETING_ROUTE_CONFIGS.map(({ path, element }) => (
                     <Route
@@ -1661,46 +974,46 @@ const AppContent: React.FC = () => {
                 />
                 <Route 
                     path="/trip/:tripId" 
-                    element={
-                        <TripLoader
+                    element={renderWithSuspense(
+                        <TripLoaderRoute
                             trip={trip}
                             onTripLoaded={setTrip}
-                            handleUpdateTrip={handleUpdateTrip}
-                            handleCommitState={handleCommitState}
-                            setIsManagerOpen={setIsManagerOpen}
-                            setIsSettingsOpen={setIsSettingsOpen}
+                            onUpdateTrip={handleUpdateTrip}
+                            onCommitState={handleCommitState}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onOpenSettings={() => setIsSettingsOpen(true)}
                             appLanguage={appLanguage}
                             onViewSettingsChange={handleViewSettingsChange}
                             onLanguageLoaded={setAppLanguage}
                         />
-                    } 
+                    )} 
                 />
                 <Route
                     path="/example/:templateId"
-                    element={
-                        <ExampleTripLoader
+                    element={renderWithSuspense(
+                        <ExampleTripLoaderRoute
                             trip={trip}
                             onTripLoaded={setTrip}
-                            setIsManagerOpen={setIsManagerOpen}
-                            setIsSettingsOpen={setIsSettingsOpen}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onOpenSettings={() => setIsSettingsOpen(true)}
                             appLanguage={appLanguage}
                             onViewSettingsChange={handleViewSettingsChange}
                         />
-                    }
+                    )}
                 />
                 <Route
                     path="/s/:token"
-                    element={
-                        <SharedTripLoader
+                    element={renderWithSuspense(
+                        <SharedTripLoaderRoute
                             trip={trip}
                             onTripLoaded={setTrip}
-                            setIsManagerOpen={setIsManagerOpen}
-                            setIsSettingsOpen={setIsSettingsOpen}
+                            onOpenManager={() => setIsManagerOpen(true)}
+                            onOpenSettings={() => setIsSettingsOpen(true)}
                             appLanguage={appLanguage}
                             onViewSettingsChange={handleViewSettingsChange}
                             onLanguageLoaded={setAppLanguage}
                         />
-                    }
+                    )}
                 />
                  {/* Legacy Redirect */}
                  <Route path="/trip" element={<Navigate to="/create-trip" replace />} />

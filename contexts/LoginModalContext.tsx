@@ -1,6 +1,5 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthModal } from '../components/auth/AuthModal';
 import { useAuth } from '../hooks/useAuth';
 import { trackEvent } from '../services/analyticsService';
 import {
@@ -41,6 +40,10 @@ const DEFAULT_MODAL_STATE: LoginModalState = {
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
+
+const AuthModal = React.lazy(() => import('../components/auth/AuthModal').then((module) => ({
+    default: module.AuthModal,
+})));
 
 export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();

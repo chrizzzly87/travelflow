@@ -17,6 +17,10 @@ interface PrefetchIntent {
     sourceElement: Element;
 }
 
+interface NavigationPrefetchManagerProps {
+    enabled?: boolean;
+}
+
 const INTERNAL_LINK_SELECTOR = 'a[href], [data-prefetch-href]';
 const PREFETCH_OPTOUT_VALUE = 'off';
 const MAX_VIEWPORT_WARMUPS_PER_VIEW = 4;
@@ -47,11 +51,11 @@ const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | nul
     }
 };
 
-export const NavigationPrefetchManager: React.FC = () => {
+export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps> = ({ enabled = true }) => {
     const location = useLocation();
     const prefetchEnabled = isNavPrefetchEnabled();
 
-    if (!prefetchEnabled) {
+    if (!prefetchEnabled || !enabled) {
         return null;
     }
 
