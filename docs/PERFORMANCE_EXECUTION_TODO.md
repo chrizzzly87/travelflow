@@ -42,6 +42,9 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After header split, `/create-trip` remained stable at `82` with no regression in TBT (`~25 ms`).
 - [x] After removing global flag CSS, `/` improved to `82` with transfer reduced to `~1227.5 KiB`.
 - [x] After removing global flag CSS, `/create-trip` stayed stable at `81` and transfer reduced to `~704.7 KiB`.
+- [x] After disabling module-preload graphing and tightening warmup/prefetch gating, build entry JS dropped to `~347.29 KB` raw (`~107.25 KB` gzip).
+- [x] With the new gating pass, `/` held at `85-86` score with transfer stable around `~374.2 KiB`.
+- [x] With idle warmups removed on `/` and `/create-trip`, `/create-trip` transfer dropped from `~659.1 KiB` to `~485.3 KiB` while score stayed stable/improved (`82` to `83` in follow-up run).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -70,6 +73,10 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Keep admin-specific dependencies out of shared non-admin initial paths (admin nav config deferred behind admin-only runtime check).
 - [x] Disable build-time asset inlining to stop large flag SVG data URIs from inflating entry CSS.
 - [x] Re-check CSS payload and extract non-critical styles where safe.
+- [x] Defer homepage example carousel code/data loading until the section intersects viewport.
+- [x] Move app runtime helpers out of `utils.ts` to avoid keeping `App.tsx` tied to the monolithic utility module.
+- [x] Remove idle warmup targets for `/` and `/create-trip`; keep warmup mostly interaction-driven with longer fallback delay.
+- [x] Disable `build.modulePreload` to avoid eager dependency preload fan-out from the entry chunk.
 
 ## Validation checklist
 - [x] `npx vite build`

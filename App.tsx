@@ -6,7 +6,7 @@ import { TripManagerProvider } from './contexts/TripManagerContext';
 import { CookieConsentBanner } from './components/marketing/CookieConsentBanner';
 import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry } from './services/historyService';
-import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './utils';
+import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './services/appRuntimeUtils';
 import { DB_ENABLED } from './config/db';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { trackEvent } from './services/analyticsService';

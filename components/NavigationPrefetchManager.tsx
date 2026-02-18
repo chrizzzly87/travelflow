@@ -11,6 +11,7 @@ import {
     type PrefetchReason,
     warmRouteAssets,
 } from '../services/navigationPrefetch';
+import { stripLocalePrefix } from '../config/routes';
 
 interface PrefetchIntent {
     path: string;
@@ -191,6 +192,11 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+        const normalizedPathname = stripLocalePrefix(location.pathname);
+        if (normalizedPathname === '/' || normalizedPathname.startsWith('/create-trip')) {
+            return;
+        }
+
         let viewportWarmups = 0;
 
         const observer = new IntersectionObserver((entries) => {

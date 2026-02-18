@@ -223,11 +223,11 @@ export const getIdleWarmupPaths = (pathname: string): string[] => {
     const normalizedPathname = stripLocalePrefix(pathname || '/');
 
     if (normalizedPathname === '/') {
-        return ['/create-trip', '/example/__prefetch__'];
+        return [];
     }
 
     if (startsWithSegment(normalizedPathname, '/create-trip')) {
-        return ['/trip/__prefetch__', '/example/__prefetch__'];
+        return [];
     }
 
     if (normalizedPathname === '/blog') {

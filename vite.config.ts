@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
         plugins: [react(), tailwindcss()],
         build: {
             sourcemap: mode !== 'production',
+            modulePreload: false,
             assetsInlineLimit: 0,
             minify: mode === 'production' ? 'terser' : 'esbuild',
             terserOptions: mode === 'production'

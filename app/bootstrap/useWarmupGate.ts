@@ -14,7 +14,6 @@ export const useWarmupGate = (): boolean => {
             window.removeEventListener('pointerdown', onFirstInteraction, true);
             window.removeEventListener('keydown', onFirstInteraction, true);
             window.removeEventListener('touchstart', onFirstInteraction, true);
-            window.removeEventListener('scroll', onFirstInteraction, true);
         };
 
         const clearTimers = () => {
@@ -43,16 +42,15 @@ export const useWarmupGate = (): boolean => {
         window.addEventListener('pointerdown', onFirstInteraction, true);
         window.addEventListener('keydown', onFirstInteraction, true);
         window.addEventListener('touchstart', onFirstInteraction, true);
-        window.addEventListener('scroll', onFirstInteraction, true);
 
-        timeoutId = window.setTimeout(enableWarmup, 3200);
+        timeoutId = window.setTimeout(enableWarmup, 5000);
 
         if ('requestIdleCallback' in window) {
             idleId = (window as Window & {
                 requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
             }).requestIdleCallback(() => {
                 enableWarmup();
-            }, { timeout: 2600 });
+            }, { timeout: 4500 });
         }
 
         return () => {
