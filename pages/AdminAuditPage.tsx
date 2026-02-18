@@ -1,17 +1,36 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListAuditLogs, type AdminAuditRecord } from '../services/adminService';
 
 export const AdminAuditPage: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [logs, setLogs] = useState<AdminAuditRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchValue, setSearchValue] = useState('');
-    const [dateRange, setDateRange] = useState<AdminDateRange>('30d');
-    const [actionFilter, setActionFilter] = useState('');
-    const [targetFilter, setTargetFilter] = useState('');
+    const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
+    const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
+        const value = searchParams.get('range');
+        if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
+        return '30d';
+    });
+    const [actionFilter, setActionFilter] = useState(() => searchParams.get('action') || '');
+    const [targetFilter, setTargetFilter] = useState(() => searchParams.get('target') || '');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        const trimmedAction = actionFilter.trim();
+        const trimmedTarget = targetFilter.trim();
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (dateRange !== '30d') next.set('range', dateRange);
+        if (trimmedAction) next.set('action', trimmedAction);
+        if (trimmedTarget) next.set('target', trimmedTarget);
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [actionFilter, dateRange, searchParams, searchValue, setSearchParams, targetFilter]);
 
     const loadLogs = async () => {
         setIsLoading(true);

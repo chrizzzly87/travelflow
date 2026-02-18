@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowsDownUp, PlusCircle, UserCircle, SpinnerGap, Trash, UserPlus, EnvelopeSimple } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
@@ -24,6 +25,27 @@ type SortKey = 'email' | 'created_at' | 'updated_at' | 'tier_key' | 'system_role
 type SortDirection = 'asc' | 'desc';
 
 const PAGE_SIZE = 25;
+
+const parseAdminDateRange = (value: string | null): AdminDateRange => {
+    if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
+    return '30d';
+};
+
+const parseSortKey = (value: string | null): SortKey => {
+    if (value === 'email' || value === 'created_at' || value === 'updated_at' || value === 'tier_key' || value === 'system_role') return value;
+    return 'created_at';
+};
+
+const parseSortDirection = (value: string | null): SortDirection => {
+    if (value === 'asc' || value === 'desc') return value;
+    return 'desc';
+};
+
+const parsePositivePage = (value: string | null): number => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return 1;
+    return Math.max(1, Math.floor(parsed));
+};
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -71,16 +93,29 @@ const INITIAL_DIRECT_DRAFT: CreateDirectDraft = {
 };
 
 export const AdminUsersPage: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [users, setUsers] = useState<AdminUserRecord[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
-    const [searchValue, setSearchValue] = useState('');
-    const [dateRange, setDateRange] = useState<AdminDateRange>('30d');
-    const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
-    const [tierFilter, setTierFilter] = useState<'all' | PlanTierKey>('all');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'deleted'>('all');
-    const [sortKey, setSortKey] = useState<SortKey>('created_at');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-    const [page, setPage] = useState(1);
+    const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
+    const [dateRange, setDateRange] = useState<AdminDateRange>(() => parseAdminDateRange(searchParams.get('range')));
+    const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>(() => {
+        const value = searchParams.get('role');
+        if (value === 'admin' || value === 'user') return value;
+        return 'all';
+    });
+    const [tierFilter, setTierFilter] = useState<'all' | PlanTierKey>(() => {
+        const value = searchParams.get('tier');
+        if (value && PLAN_ORDER.includes(value as PlanTierKey)) return value as PlanTierKey;
+        return 'all';
+    });
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'deleted'>(() => {
+        const value = searchParams.get('status');
+        if (value === 'active' || value === 'disabled' || value === 'deleted') return value;
+        return 'all';
+    });
+    const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
+    const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
+    const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -105,6 +140,32 @@ export const AdminUsersPage: React.FC = () => {
     const [inviteDraft, setInviteDraft] = useState<CreateInviteDraft>(INITIAL_INVITE_DRAFT);
     const [directDraft, setDirectDraft] = useState<CreateDirectDraft>(INITIAL_DIRECT_DRAFT);
 
+    useEffect(() => {
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (dateRange !== '30d') next.set('range', dateRange);
+        if (roleFilter !== 'all') next.set('role', roleFilter);
+        if (tierFilter !== 'all') next.set('tier', tierFilter);
+        if (statusFilter !== 'all') next.set('status', statusFilter);
+        if (sortKey !== 'created_at') next.set('sort', sortKey);
+        if (sortDirection !== 'desc') next.set('dir', sortDirection);
+        if (page > 1) next.set('page', String(page));
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [
+        dateRange,
+        page,
+        roleFilter,
+        searchParams,
+        searchValue,
+        setSearchParams,
+        sortDirection,
+        sortKey,
+        statusFilter,
+        tierFilter,
+    ]);
+
     const selectedUser = useMemo(
         () => users.find((user) => user.user_id === selectedUserId) || null,
         [selectedUserId, users]
@@ -115,7 +176,6 @@ export const AdminUsersPage: React.FC = () => {
         setErrorMessage(null);
         try {
             const rows = await adminListUsers({
-                search: searchValue || undefined,
                 limit: 500,
             });
             setUsers(rows);
@@ -368,7 +428,10 @@ export const AdminUsersPage: React.FC = () => {
                 setPage(1);
             }}
             dateRange={dateRange}
-            onDateRangeChange={setDateRange}
+            onDateRangeChange={(next) => {
+                setDateRange(next);
+                setPage(1);
+            }}
             actions={(
                 <button
                     type="button"

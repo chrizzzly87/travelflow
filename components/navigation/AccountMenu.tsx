@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { CaretDown, SignOut, UserCircleGear, ShieldCheck } from '@phosphor-icons/react';
+import { AirplaneTakeoff, CaretDown, GearSix, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -80,7 +80,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                     setIsOpen(next);
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
-                className={`inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900 ${compact ? 'h-9' : 'h-10'}`}
+                className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ${compact ? 'h-9 py-1.5' : 'h-10 py-2'}`}
                 {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}
                 aria-haspopup="menu"
                 aria-expanded={isOpen}
@@ -88,7 +88,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(email)}
                 </span>
-                <span className="hidden sm:inline">{accountLabel}</span>
+                {!compact && <span className="hidden sm:inline">{accountLabel}</span>}
                 <CaretDown size={14} />
             </button>
 
@@ -96,21 +96,28 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                 <div
                     role="menu"
                     aria-label="Account menu"
-                    className="absolute right-0 top-[calc(100%+8px)] z-[1800] w-[min(90vw,340px)] rounded-xl border border-slate-200 bg-white p-2 shadow-2xl"
+                    className="absolute right-0 top-[calc(100%+8px)] z-[1800] w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
                 >
-                    <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Signed in</div>
-                        <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                        <div className="flex items-center gap-2">
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
+                                {computeInitial(email)}
+                            </span>
+                            <div className="min-w-0">
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Signed in</div>
+                                <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="mt-2 space-y-1">
+                    <div className="mt-2 space-y-1 rounded-xl border border-slate-200 p-1">
                         <button
                             type="button"
                             onClick={() => navigateTo('/profile', 'navigation__account_menu--profile')}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}
                         >
-                            <UserCircleGear size={16} />
+                            <User size={16} />
                             Profile
                         </button>
                         <button
@@ -119,17 +126,26 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--settings')}
                         >
-                            <UserCircleGear size={16} />
+                            <GearSix size={16} />
                             Settings
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigateTo('/create-trip', 'navigation__account_menu--planner')}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            {...getAnalyticsDebugAttributes('navigation__account_menu--planner')}
+                        >
+                            <AirplaneTakeoff size={16} />
+                            Planner
                         </button>
                     </div>
 
                     {isAdmin && (
-                        <div className="mt-2 rounded-lg border border-slate-200">
+                        <div className="mt-2 rounded-xl border border-slate-200 p-1">
                             <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                                 Admin pages
                             </div>
-                            <div className="space-y-0.5 px-1 pb-2">
+                            <div className="space-y-0.5">
                                 {adminQuickLinks.map((item) => (
                                     <button
                                         key={`admin-link-${item.id}`}

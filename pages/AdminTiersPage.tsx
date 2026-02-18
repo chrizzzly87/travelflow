@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import type { PlanTierKey } from '../types';
@@ -22,8 +23,13 @@ const buildInitialDrafts = (): DraftMap => ({
 });
 
 export const AdminTiersPage: React.FC = () => {
-    const [searchValue, setSearchValue] = useState('');
-    const [dateRange, setDateRange] = useState<AdminDateRange>('30d');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
+    const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
+        const value = searchParams.get('range');
+        if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
+        return '30d';
+    });
     const [tierDrafts, setTierDrafts] = useState<DraftMap>(buildInitialDrafts);
     const [message, setMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,6 +46,15 @@ export const AdminTiersPage: React.FC = () => {
         tier_premium: null,
     });
     const [isLoadingPreview, setIsLoadingPreview] = useState<PlanTierKey | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (dateRange !== '30d') next.set('range', dateRange);
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [dateRange, searchParams, searchValue, setSearchParams]);
 
     const refreshTierSnapshot = async (tierKey: PlanTierKey) => {
         setIsLoadingPreview(tierKey);

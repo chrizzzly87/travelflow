@@ -16,6 +16,11 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [New feature] 🧳 Added admin trip lifecycle controls so status and expiration can be reviewed and updated from dedicated trip management views.
 - [x] [New feature] 👤 Replaced the simple auth action with a role-aware avatar account menu that gives users direct access to profile/settings and gives admins fast access to admin sections.
 - [x] [New feature] 📝 Added mandatory post-login profile onboarding plus a reusable profile settings page for editing personal details and language preference.
+- [x] [Improved] 🧱 Refined the admin sidebar with icon-based navigation, cleaner active highlighting, and a desktop collapse mode.
+- [x] [Improved] 📱 Added a dedicated mobile admin navigation drawer so the workspace remains usable on smaller screens.
+- [x] [Improved] 🔗 Made admin table/search/filter states bookmarkable by persisting page settings in the URL.
+- [x] [Improved] 🧭 Unified AI benchmarking inside the main admin workspace and added an easy route back to the main planning experience.
+- [x] [Improved] 🪪 Polished the profile avatar dropdown with clearer grouping for profile, settings, planner, and admin destinations.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.
 - [x] [Fixed] 🧑‍🔧 Fixed a profile-settings stability issue that could prevent authenticated users from loading the settings form.

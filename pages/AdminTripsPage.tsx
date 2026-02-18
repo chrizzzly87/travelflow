@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SpinnerGap, ArrowClockwise } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
@@ -24,14 +25,33 @@ const fromDateTimeInputValue = (value: string): string | null => {
 };
 
 export const AdminTripsPage: React.FC = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
     const [trips, setTrips] = useState<AdminTripRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'expired'>('all');
-    const [dateRange, setDateRange] = useState<AdminDateRange>('30d');
+    const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'expired'>(() => {
+        const value = searchParams.get('status');
+        if (value === 'active' || value === 'archived' || value === 'expired') return value;
+        return 'all';
+    });
+    const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
+        const value = searchParams.get('range');
+        if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
+        return '30d';
+    });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        const next = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+        if (trimmedSearch) next.set('q', trimmedSearch);
+        if (statusFilter !== 'all') next.set('status', statusFilter);
+        if (dateRange !== '30d') next.set('range', dateRange);
+        if (next.toString() === searchParams.toString()) return;
+        setSearchParams(next, { replace: true });
+    }, [dateRange, searchParams, searchValue, setSearchParams, statusFilter]);
 
     const loadTrips = async () => {
         setIsLoading(true);
