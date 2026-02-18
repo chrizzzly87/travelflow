@@ -57,6 +57,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-loaded `MarkdownEditor` (in details + print flows) and `PrintLayout` itself so markdown parsing/print UI are no longer in the trip static import path; `/example/thailand-islands` improved from `~410.3 KiB` to `~359.9 KiB` transfer (`36` to `35` requests) and trip static graph dropped from `~865.5 KiB` to `~691.6 KiB`.
 - [x] Deferred `DetailsPanel`/`SelectedCitiesPanel` behind lazy imports so trip details tooling loads only after selection; `/example/thailand-islands` improved from `~359.9 KiB` to `~345.0 KiB` transfer (`35` to `34` requests) and trip static graph dropped further from `~691.6 KiB` to `~640.5 KiB`.
 - [x] Deferred mobile drawer shell (`TripDetailsDrawer`) behind open-state lazy loading so Radix/scroll-lock code is excluded from initial trip render; `/example/thailand-islands` improved from `~345.0 KiB` to `~326.3 KiB` transfer (`34` to `32` requests) and trip static graph dropped from `~640.5 KiB` to `~584.3 KiB`.
+- [x] Replaced the admin-override Radix `Switch` in trip view with a lightweight native toggle, removing remaining Radix switch primitives from the trip static graph; `/example/thailand-islands` improved from `~326.3 KiB` to `~322.9 KiB` transfer (`32` to `31` requests) and static graph dropped from `~584.3 KiB` to `~576.9 KiB`.
+- [x] Deferred `AddActivityModal` and `AddCityModal` behind open-state lazy loading so planner modals load on demand; `/example/thailand-islands` improved from `~322.9 KiB` to `~318.7 KiB` transfer (`31` to `29` requests) and trip static graph dropped from `~576.9 KiB` to `~565.5 KiB`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -99,6 +101,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load `MarkdownEditor` inside details/print flows and lazy-load `PrintLayout` in `TripView` so markdown/parser bundles do not block initial trip render.
 - [x] Lazy-load `DetailsPanel` and `SelectedCitiesPanel` in `TripView` so heavy detail-editing logic is loaded only when users select timeline items.
 - [x] Extract mobile details drawer shell into a lazy chunk and mount it only when details are opened on mobile.
+- [x] Replace the admin edit-override toggle with a lightweight native control so `TripView` no longer depends on Radix `Switch` at load time.
+- [x] Lazy-load `AddActivityModal` and `AddCityModal` in `TripView` so add-flow UI code is fetched only when modals are opened.
 
 ## Validation checklist
 - [x] `npx vite build`

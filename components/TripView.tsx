@@ -7,9 +7,6 @@ import { VerticalTimeline } from './VerticalTimeline';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { AddActivityModal } from './AddActivityModal';
-import { AddCityModal } from './AddCityModal';
-import { Switch } from './ui/switch';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight, Loader2
@@ -79,6 +76,14 @@ const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
 
 const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
     import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
+);
+
+const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
+    import('./AddActivityModal').then((module) => ({ default: module.AddActivityModal }))
+);
+
+const AddCityModal = lazyWithRecovery('AddCityModal', () =>
+    import('./AddCityModal').then((module) => ({ default: module.AddCityModal }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -2479,22 +2484,36 @@ export const TripView: React.FC<TripViewProps> = ({
                                     <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800">
                                         Enable editing
                                     </span>
-                                    <Switch
-                                        checked={adminOverrideEnabled}
-                                        onCheckedChange={(checked) => {
-                                            if (!canEnableAdminOverride) return;
-                                            setAdminOverrideEnabled(checked);
-                                            trackEvent('trip_view__admin_override--toggle', {
-                                                trip_id: trip.id,
-                                                enabled: checked,
-                                            });
-                                        }}
-                                        disabled={!canEnableAdminOverride}
+                                    <label
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            adminOverrideEnabled ? 'bg-indigo-600' : 'bg-indigo-300'
+                                        } ${canEnableAdminOverride ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                         {...getAnalyticsDebugAttributes('trip_view__admin_override--toggle', {
                                             trip_id: trip.id,
                                             enabled: adminOverrideEnabled,
                                         })}
-                                    />
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={adminOverrideEnabled}
+                                            disabled={!canEnableAdminOverride}
+                                            onChange={(event) => {
+                                                if (!canEnableAdminOverride) return;
+                                                const checked = event.target.checked;
+                                                setAdminOverrideEnabled(checked);
+                                                trackEvent('trip_view__admin_override--toggle', {
+                                                    trip_id: trip.id,
+                                                    enabled: checked,
+                                                });
+                                            }}
+                                        />
+                                        <span
+                                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                                adminOverrideEnabled ? 'translate-x-5' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -2973,21 +2992,29 @@ export const TripView: React.FC<TripViewProps> = ({
                     )}
 
                      {/* Modals */}
-                     <AddActivityModal 
-                         isOpen={addActivityState.isOpen}
-                         onClose={() => setAddActivityState({ ...addActivityState, isOpen: false })}
-                         dayOffset={addActivityState.dayOffset}
-                         location={addActivityState.location}
-                         onAdd={handleAddActivityItem}
-                         trip={trip}
-                         notes="" // TODO
-                     />
-                     
-                     <AddCityModal
-                        isOpen={isAddCityModalOpen}
-                        onClose={() => setIsAddCityModalOpen(false)}
-                        onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
-                     />
+                     {addActivityState.isOpen && (
+                        <Suspense fallback={null}>
+                            <AddActivityModal
+                                isOpen={addActivityState.isOpen}
+                                onClose={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                                dayOffset={addActivityState.dayOffset}
+                                location={addActivityState.location}
+                                onAdd={handleAddActivityItem}
+                                trip={trip}
+                                notes="" // TODO
+                            />
+                        </Suspense>
+                     )}
+
+                     {isAddCityModalOpen && (
+                        <Suspense fallback={null}>
+                            <AddCityModal
+                                isOpen={isAddCityModalOpen}
+                                onClose={() => setIsAddCityModalOpen(false)}
+                                onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
+                            />
+                        </Suspense>
+                     )}
 
                      {isTripInfoOpen && (
                         <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>

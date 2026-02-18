@@ -59,3 +59,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 📝 Deferred markdown editor and print layout code so trip entry loads only planner essentials on first render.
 - [ ] [Internal] 🧩 Deferred trip detail panels so selection/editing bundles load only after users focus a timeline item.
 - [ ] [Internal] 📱 Deferred mobile details drawer code until panel open-state so mobile trip entry keeps less UI runtime upfront.
+- [ ] [Internal] 🔧 Replaced the trip admin edit toggle with a native control to remove remaining Radix switch runtime from first-load trip bundles.
+- [ ] [Internal] ➕ Deferred add-city/add-activity modal bundles until users open those planners, reducing initial trip JS work.
