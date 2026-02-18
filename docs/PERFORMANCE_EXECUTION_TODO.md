@@ -46,6 +46,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] With the new gating pass, `/` held at `85-86` score with transfer stable around `~374.2 KiB`.
 - [x] With idle warmups removed on `/` and `/create-trip`, `/create-trip` transfer dropped from `~659.1 KiB` to `~485.3 KiB` while score stayed stable/improved (`82` to `83` in follow-up run).
 - [x] After gating login-modal rendering to open-state only, `/` improved from `85` to `90` in follow-up run with script transfer reduced from `~268.7 KiB` to `~204.5 KiB` and request count reduced from `39` to `33`.
+- [x] After changing auth bootstrap on non-critical marketing routes to interaction-triggered only, `/` stopped loading `supabase`/`authService` on initial render and improved from `~309.9 KiB` to `~263.0 KiB` transfer (`33` to `30` requests, score `90` to `92` in follow-up run).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -79,6 +80,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Remove idle warmup targets for `/` and `/create-trip`; keep warmup mostly interaction-driven with longer fallback delay.
 - [x] Disable `build.modulePreload` to avoid eager dependency preload fan-out from the entry chunk.
 - [x] Gate `AuthModal` lazy component rendering so the login modal bundle is fetched only when the modal is actually opened.
+- [x] Make auth bootstrap interaction-triggered on non-auth-critical marketing entries while keeping immediate bootstrap on auth-critical routes and callback payloads.
 
 ## Validation checklist
 - [x] `npx vite build`
