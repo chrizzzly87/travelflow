@@ -37,3 +37,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🔐 Deferred auth modal and auth-service loading so authentication bundles are fetched only when the auth flow is actually needed.
 - [ ] [Internal] 🎛️ Disabled build-time asset inlining so flag assets emit as separate SVG files instead of inflating the entry CSS bundle.
 - [ ] [Internal] 🗂️ Extracted route-table and fallback route-warmup concerns into dedicated `app/routes/*` and `app/prefetch/*` modules to keep `App.tsx` smaller and preload logic single-sourced.
+- [ ] [Internal] 🧱 Extracted startup bootstrap hooks (`warmup`, debugger wiring, analytics init, auth return-path memory) into `app/bootstrap/*` to further simplify `App.tsx` orchestration.

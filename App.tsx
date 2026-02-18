@@ -8,10 +8,9 @@ import { saveTrip, getTripById } from './services/storageService';
 import { appendHistoryEntry } from './services/historyService';
 import { buildTripUrl, generateVersionId, getStoredAppLanguage, setStoredAppLanguage } from './utils';
 import { DB_ENABLED } from './config/db';
-import { isSimulatedLoggedIn, toggleSimulatedLogin } from './services/simulatedLoginService';
 import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
-import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
+import { trackEvent } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
@@ -22,7 +21,6 @@ import { isNavPrefetchEnabled } from './services/navigationPrefetch';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { LoginModalProvider } from './contexts/LoginModalContext';
-import { buildPathFromLocationParts, isLoginPathname, rememberAuthReturnPath } from './services/authNavigationService';
 import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
@@ -32,26 +30,12 @@ import {
     ensureDbSession,
 } from './services/dbApi';
 import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
+import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
+import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
+import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
+import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { getPathnameFromHref, preloadRouteForPath } from './app/prefetch/fallbackRouteWarmup';
-
-type AppDebugWindow = Window & typeof globalThis & {
-    debug?: (command?: AppDebugCommand) => unknown;
-    toggleSimulatedLogin?: (force?: boolean) => boolean;
-    getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
-};
-
-type AppDebugCommand =
-    | boolean
-    | {
-        open?: boolean;
-        tracking?: boolean;
-        seo?: boolean;
-        a11y?: boolean;
-        simulatedLogin?: boolean;
-    };
-
-const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -62,18 +46,6 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 const TripManager = lazyWithRecovery('TripManager', () => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
 const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
 const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
-
-const shouldEnableDebuggerOnBoot = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    try {
-        const params = new URLSearchParams(window.location.search);
-        const debugParam = params.get('debug');
-        if (debugParam === '1' || debugParam === 'true') return true;
-        return window.localStorage.getItem(DEBUG_AUTO_OPEN_STORAGE_KEY) === '1';
-    } catch {
-        return false;
-    }
-};
 
 const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
     useEffect(() => {
@@ -144,23 +116,14 @@ const AppContent: React.FC = () => {
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => getStoredAppLanguage());
-    const [shouldLoadDebugger, setShouldLoadDebugger] = useState<boolean>(() => shouldEnableDebuggerOnBoot());
-    const [isWarmupEnabled, setIsWarmupEnabled] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const debugQueueRef = useRef<AppDebugCommand[]>([]);
-    const debugStubRef = useRef<((command?: AppDebugCommand) => unknown) | null>(null);
+    const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
+    const isWarmupEnabled = useWarmupGate();
 
-    useEffect(() => {
-        if (isLoginPathname(location.pathname)) return;
-        const currentPath = buildPathFromLocationParts({
-            pathname: location.pathname,
-            search: location.search,
-            hash: location.hash,
-        });
-        rememberAuthReturnPath(currentPath);
-    }, [location.hash, location.pathname, location.search]);
+    useAuthNavigationBootstrap();
+    useAnalyticsBootstrap();
 
     useEffect(() => {
         if (isAuthLoading) return;
@@ -244,153 +207,6 @@ const AppContent: React.FC = () => {
             void dbUpsertUserSettings({ language: appLanguage });
         }
     }, [appLanguage]);
-
-    useEffect(() => {
-        const disposeAnalytics = initializeAnalytics();
-        return () => {
-            disposeAnalytics();
-        };
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-
-        let resolved = false;
-        let timeoutId: number | null = null;
-        let idleId: number | null = null;
-
-        const removeInteractionListeners = () => {
-            window.removeEventListener('pointerdown', onFirstInteraction, true);
-            window.removeEventListener('keydown', onFirstInteraction, true);
-            window.removeEventListener('touchstart', onFirstInteraction, true);
-            window.removeEventListener('scroll', onFirstInteraction, true);
-        };
-
-        const clearTimers = () => {
-            if (timeoutId !== null) {
-                window.clearTimeout(timeoutId);
-                timeoutId = null;
-            }
-            if (idleId !== null && 'cancelIdleCallback' in window) {
-                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-                idleId = null;
-            }
-        };
-
-        const enableWarmup = () => {
-            if (resolved) return;
-            resolved = true;
-            setIsWarmupEnabled(true);
-            removeInteractionListeners();
-            clearTimers();
-        };
-
-        const onFirstInteraction = () => {
-            enableWarmup();
-        };
-
-        window.addEventListener('pointerdown', onFirstInteraction, true);
-        window.addEventListener('keydown', onFirstInteraction, true);
-        window.addEventListener('touchstart', onFirstInteraction, true);
-        window.addEventListener('scroll', onFirstInteraction, true);
-
-        timeoutId = window.setTimeout(enableWarmup, 3200);
-
-        if ('requestIdleCallback' in window) {
-            idleId = (window as Window & {
-                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
-            }).requestIdleCallback(() => {
-                enableWarmup();
-            }, { timeout: 2600 });
-        }
-
-        return () => {
-            resolved = true;
-            removeInteractionListeners();
-            clearTimers();
-        };
-    }, []);
-
-    useEffect(() => {
-        trackPageView(`${location.pathname}${location.search}`);
-    }, [location.pathname, location.search]);
-
-    useEffect(() => {
-        if (shouldLoadDebugger) return;
-        const params = new URLSearchParams(location.search);
-        const debugParam = params.get('debug');
-        if (debugParam === '1' || debugParam === 'true') {
-            setShouldLoadDebugger(true);
-        }
-    }, [location.search, shouldLoadDebugger]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const host = window as AppDebugWindow;
-        if (shouldLoadDebugger) return;
-
-        const debugStub = (command?: AppDebugCommand) => {
-            debugQueueRef.current.push(command ?? true);
-            setShouldLoadDebugger(true);
-            return undefined;
-        };
-
-        debugStubRef.current = debugStub;
-        host.debug = debugStub;
-
-        return () => {
-            if (host.debug === debugStub) {
-                delete host.debug;
-            }
-        };
-    }, [shouldLoadDebugger]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (!shouldLoadDebugger) return;
-
-        let rafId: number | null = null;
-        const flushQueuedDebugCommands = () => {
-            const host = window as AppDebugWindow;
-            if (typeof host.debug !== 'function' || host.debug === debugStubRef.current) {
-                rafId = window.requestAnimationFrame(flushQueuedDebugCommands);
-                return;
-            }
-
-            const queued = [...debugQueueRef.current];
-            debugQueueRef.current = [];
-            queued.forEach((command) => {
-                host.debug?.(command);
-            });
-        };
-
-        flushQueuedDebugCommands();
-        return () => {
-            if (rafId !== null) {
-                window.cancelAnimationFrame(rafId);
-            }
-        };
-    }, [shouldLoadDebugger]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const host = window as AppDebugWindow;
-        host.toggleSimulatedLogin = (force?: boolean) => {
-            const next = toggleSimulatedLogin(force);
-            if (IS_DEV) {
-                console.info(
-                    `[${APP_NAME}] toggleSimulatedLogin(${typeof force === 'boolean' ? force : 'toggle'}) -> ${next ? 'SIMULATED LOGGED-IN' : 'ANONYMOUS'}`
-                );
-            }
-            return next;
-        };
-        host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');
-
-        return () => {
-            delete host.toggleSimulatedLogin;
-            delete host.getSimulatedLoginState;
-        };
-    }, []);
 
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;

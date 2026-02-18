@@ -21,12 +21,13 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] `App.tsx` very large and centralizing many concerns.
 
 ## Latest measured snapshot (after CSS + route extraction pass)
-- [x] Build entry JS: `assets/index-4tAC3XL6.js` at `~795.45 KB` raw (`~166.95 KB` gzip).
+- [x] Build entry JS: `assets/index-RSxY5txD.js` at `~795.60 KB` raw (`~167.26 KB` gzip).
 - [x] Build entry CSS: `assets/index-DmeIy-zA.css` at `~186.47 KB` raw (`~32.17 KB` gzip).
 - [x] `dist/index.html` now loads one module script and one stylesheet only (no modulepreload list).
 - [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 179`.
-- [x] Critical entry path (JS+CSS, unique) reduced to `~958.90 KiB` (from prior `~1762.42 KiB`).
+- [x] Critical entry path (JS+CSS, unique) reduced to `~959.05 KiB` (from prior `~1762.42 KiB`).
 - [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
+- [x] `App.tsx` reduced from `1076` lines to `419` lines by extracting route/prefetch/bootstrap modules.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -43,7 +44,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load `AuthModal` from `LoginModalContext`.
 - [x] Lazy-load AuthContext service calls via dynamic auth/supabase imports.
 - [ ] Split remaining `App.tsx` responsibilities into focused modules:
-- [ ] `app/bootstrap/*` (providers + startup effects)
+- [ ] `app/bootstrap/*` (providers + startup effects; startup hooks extracted, provider shell still in `App.tsx`)
 - [x] `app/routes/*` (route table)
 - [x] `app/trip/*` (trip loaders/handlers)
 - [x] `app/prefetch/*` (route preload + warmup logic)
