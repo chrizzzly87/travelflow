@@ -47,6 +47,11 @@ interface ExampleTripTemplateConfig {
     timelineHeightViewportRatio?: number;
 }
 
+export interface ExampleTripTemplateSummary {
+    title: string;
+    countries: { name: string }[];
+}
+
 const DEFAULT_EXAMPLE_TEMPLATE_CONFIG: ExampleTripTemplateConfig = {
     paletteId: 'classic',
     mapStyle: 'clean',
@@ -119,6 +124,53 @@ export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateCo
         timelineHeightViewportRatio: 0.5,
     },
 };
+
+export const EXAMPLE_TEMPLATE_SUMMARIES: Record<string, ExampleTripTemplateSummary> = {
+    'thailand-islands': {
+        title: 'Temples & Beaches',
+        countries: [{ name: 'Thailand' }],
+    },
+    'japan-spring': {
+        title: 'Cherry Blossom Trail',
+        countries: [{ name: 'Japan' }],
+    },
+    'italy-classic': {
+        title: 'Italian Grand Tour',
+        countries: [{ name: 'Italy' }],
+    },
+    'portugal-coast': {
+        title: 'Atlantic Coast Road Trip',
+        countries: [{ name: 'Portugal' }],
+    },
+    'peru-adventure': {
+        title: 'Andes & Amazon Explorer',
+        countries: [{ name: 'Peru' }],
+    },
+    'new-zealand-wild': {
+        title: 'South Island Wilderness',
+        countries: [{ name: 'New Zealand' }],
+    },
+    'morocco-medina': {
+        title: 'Medinas & Sahara Nights',
+        countries: [{ name: 'Morocco' }],
+    },
+    'iceland-ring': {
+        title: 'Ring Road Circuit',
+        countries: [{ name: 'Iceland' }],
+    },
+    'southeast-asia-backpacking': {
+        title: 'Backpacking South East Asia',
+        countries: [
+            { name: 'Thailand' },
+            { name: 'Cambodia' },
+            { name: 'Vietnam' },
+            { name: 'Laos' },
+        ],
+    },
+};
+
+export const getExampleTemplateSummary = (templateId: string): ExampleTripTemplateSummary | undefined =>
+    EXAMPLE_TEMPLATE_SUMMARIES[templateId];
 
 export const getExampleTripTemplateConfig = (templateId: string): ExampleTripTemplateConfig => {
     return EXAMPLE_TRIP_TEMPLATE_CONFIGS[templateId] || DEFAULT_EXAMPLE_TEMPLATE_CONFIG;
