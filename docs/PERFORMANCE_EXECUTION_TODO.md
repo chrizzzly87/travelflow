@@ -49,7 +49,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After changing auth bootstrap on non-critical marketing routes to interaction-triggered only, `/` stopped loading `supabase`/`authService` on initial render and improved from `~309.9 KiB` to `~263.0 KiB` transfer (`33` to `30` requests, score `90` to `92` in follow-up run).
 - [x] Split destination/catalog + prefill decode logic out of monolithic `utils.ts`; shared `utils` build chunk dropped from `~437.66 KB` raw to `~32.30 KB` raw (new `destinationService` chunk is now isolated to destination-heavy flows).
 - [x] After suppressing passive (viewport/hover/focus) prefetch on `/`, `/create-trip`, `/trip`, `/example`, homepage stayed lean (`~263.0 KiB` transfer) while keeping click/touch-triggered warmups.
-- [x] Trip entry still shows eager loading of create-trip destination assets in Lighthouse runs; this now appears to come from a non-viewport/non-hover path and remains the next investigation target.
+- [x] Consolidated first-load-critical path detection into `app/prefetch/isFirstLoadCriticalPath.ts` and applied it to both passive navigation prefetch and speculation-rules mounting.
+- [x] Verified Lighthouse runs against `/trip/test` end on final URL `/create-trip` due missing-trip redirect; create-trip chunk loading in that scenario is expected behavior for that test URL (not a passive prefetch regression).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -110,4 +111,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: identify and remove the remaining non-interaction trigger that still loads create-trip destination assets on `/trip/*` first-load runs.
+- Next highest-impact target: run trip-route checks against valid non-redirecting URLs and reduce real `/trip/:id` first-load payload (`TripView` + DB bootstrap path) from that baseline.

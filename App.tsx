@@ -34,6 +34,7 @@ import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { getPathnameFromHref, preloadRouteForPath } from './app/prefetch/fallbackRouteWarmup';
+import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -119,6 +120,10 @@ const AppContent: React.FC = () => {
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isWarmupEnabled = useWarmupGate();
+    const shouldSuppressSpeculationRules = useMemo(
+        () => isFirstLoadCriticalPath(location.pathname),
+        [location.pathname]
+    );
 
     useAuthNavigationBootstrap();
     useAnalyticsBootstrap();
@@ -348,7 +353,7 @@ const AppContent: React.FC = () => {
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             <NavigationPrefetchManager enabled={isWarmupEnabled} />
-            <SpeculationRulesManager enabled={isWarmupEnabled} />
+            <SpeculationRulesManager enabled={isWarmupEnabled && !shouldSuppressSpeculationRules} />
             <AppRoutes
                 trip={trip}
                 appLanguage={appLanguage}

@@ -11,7 +11,7 @@ import {
     type PrefetchReason,
     warmRouteAssets,
 } from '../services/navigationPrefetch';
-import { stripLocalePrefix } from '../config/routes';
+import { isFirstLoadCriticalPath } from '../app/prefetch/isFirstLoadCriticalPath';
 
 interface PrefetchIntent {
     path: string;
@@ -25,15 +25,6 @@ interface NavigationPrefetchManagerProps {
 const INTERNAL_LINK_SELECTOR = 'a[href], [data-prefetch-href]';
 const PREFETCH_OPTOUT_VALUE = 'off';
 const MAX_VIEWPORT_WARMUPS_PER_VIEW = 4;
-const shouldSuppressPassivePrefetchForPath = (pathname: string): boolean => {
-    const normalizedPathname = stripLocalePrefix(pathname || '/');
-    return (
-        normalizedPathname === '/'
-        || normalizedPathname.startsWith('/create-trip')
-        || normalizedPathname.startsWith('/trip')
-        || normalizedPathname.startsWith('/example')
-    );
-};
 
 const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | null => {
     if (!target || !(target instanceof Element)) return null;
@@ -143,7 +134,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         const onPointerEnter = (event: Event) => {
-            if (shouldSuppressPassivePrefetchForPath(window.location.pathname)) return;
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -159,6 +150,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
         };
 
         const onPointerDown = (event: PointerEvent) => {
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -168,6 +160,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
         };
 
         const onTouchStart = (event: TouchEvent) => {
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -191,7 +184,7 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        if (shouldSuppressPassivePrefetchForPath(location.pathname)) {
+        if (isFirstLoadCriticalPath(location.pathname)) {
             return;
         }
 
