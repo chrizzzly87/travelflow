@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-    ArrowsClockwise,
     ArrowsDownUp,
+    ChartBarHorizontal,
     DotsThreeVertical,
     EnvelopeSimple,
+    Percent,
     SpinnerGap,
     Trash,
+    X,
     UserPlus,
 } from '@phosphor-icons/react';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -30,13 +32,22 @@ import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 
-type SortKey = 'name' | 'email' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
+type SortKey = 'name' | 'email' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
 type SortDirection = 'asc' | 'desc';
-type IdentityFilter = 'identified' | 'anonymous' | 'all';
+type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
+type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 
 const PAGE_SIZE = 25;
 const GENDER_UNSET_VALUE = '__gender_unset__';
+const USERS_CACHE_KEY = 'admin.users.cache.v1';
+const USER_ROLE_VALUES = ['admin', 'user'] as const;
+const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
+const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
 
 const parseAdminDateRange = (value: string | null): AdminDateRange => {
     if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
@@ -44,7 +55,14 @@ const parseAdminDateRange = (value: string | null): AdminDateRange => {
 };
 
 const parseSortKey = (value: string | null): SortKey => {
-    if (value === 'name' || value === 'email' || value === 'last_sign_in_at' || value === 'created_at' || value === 'tier_key' || value === 'system_role' || value === 'account_status') {
+    if (value === 'name'
+        || value === 'email'
+        || value === 'activation_status'
+        || value === 'last_sign_in_at'
+        || value === 'created_at'
+        || value === 'tier_key'
+        || value === 'system_role'
+        || value === 'account_status') {
         return value;
     }
     return 'created_at';
@@ -55,9 +73,23 @@ const parseSortDirection = (value: string | null): SortDirection => {
     return 'desc';
 };
 
-const parseIdentityFilter = (value: string | null): IdentityFilter => {
-    if (value === 'all' || value === 'anonymous' || value === 'identified') return value;
-    return 'identified';
+const parseQueryMultiValue = <T extends string>(
+    value: string | null,
+    allowedValues: readonly T[]
+): T[] => {
+    if (!value) return [];
+    const allowSet = new Set<string>(allowedValues);
+    const unique = new Set<string>();
+    value
+        .split(',')
+        .map((chunk) => chunk.trim())
+        .filter(Boolean)
+        .forEach((chunk) => {
+            if (allowSet.has(chunk)) {
+                unique.add(chunk);
+            }
+        });
+    return allowedValues.filter((candidate) => unique.has(candidate));
 };
 
 const parsePositivePage = (value: string | null): number => {
@@ -100,20 +132,38 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     return 'Unnamed user';
 };
 
-const isPlaceholderUser = (user: AdminUserRecord): boolean => {
-    return !user.email && !user.last_sign_in_at;
+const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus => {
+    const explicit = (user.activation_status || '').trim().toLowerCase();
+    if (explicit === 'activated' || explicit === 'invited' || explicit === 'pending' || explicit === 'anonymous') {
+        return explicit;
+    }
+    if (explicit === 'pending_activation' || explicit === 'placeholder') return 'pending';
+    if (Boolean(user.is_anonymous)) return 'anonymous';
+    if (!user.email && !user.last_sign_in_at) return 'pending';
+    if (user.email && !user.last_sign_in_at) return 'invited';
+    return 'activated';
 };
 
-const isAnonymousLikeUser = (user: AdminUserRecord): boolean => {
-    return Boolean(user.is_anonymous) || isPlaceholderUser(user);
+const getActivationStatusLabel = (status: UserActivationStatus): string => {
+    if (status === 'activated') return 'Activated';
+    if (status === 'invited') return 'Invited';
+    if (status === 'pending') return 'Pending activation';
+    return 'Anonymous';
+};
+
+const activationPillClass = (status: UserActivationStatus): string => {
+    if (status === 'activated') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
+    if (status === 'invited') return 'border-sky-300 bg-sky-50 text-sky-800';
+    if (status === 'pending') return 'border-amber-300 bg-amber-50 text-amber-800';
+    return 'border-violet-300 bg-violet-50 text-violet-800';
 };
 
 const getProviderLabel = (user: AdminUserRecord): string => {
-    if (isPlaceholderUser(user)) return 'Pending activation';
-    if (user.is_anonymous) return 'Anonymous';
+    const activationStatus = resolveActivationStatus(user);
+    if (activationStatus === 'pending') return 'Pending activation';
+    if (activationStatus === 'anonymous') return 'Anonymous';
     const provider = (user.auth_provider || '').trim().toLowerCase();
     if (!provider || provider === 'email') return 'Email/password';
-    if (provider === 'placeholder') return 'Pending activation';
     if (provider === 'google') return 'Google';
     if (provider === 'apple') return 'Apple';
     if (provider === 'github') return 'GitHub';
@@ -141,10 +191,15 @@ const rolePillClass = (role: 'admin' | 'user') => (
         : 'border-slate-300 bg-slate-50 text-slate-700'
 );
 
-const statusPillClass = (status: 'active' | 'disabled' | 'deleted') => {
+const statusPillClass = (status: UserAccountStatus) => {
     if (status === 'active') return 'border-emerald-300 bg-emerald-50 text-emerald-800';
     if (status === 'disabled') return 'border-amber-300 bg-amber-50 text-amber-800';
     return 'border-rose-300 bg-rose-50 text-rose-800';
+};
+
+const formatAccountStatusLabel = (status: UserAccountStatus): string => {
+    if (status === 'disabled') return 'Suspended';
+    return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
 const tierPillClass = (tier: PlanTierKey) => {
@@ -248,26 +303,32 @@ const UserRowActionsMenu: React.FC<{
 
 export const AdminUsersPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const [users, setUsers] = useState<AdminUserRecord[]>([]);
-    const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+    const cachedUsers = useMemo(
+        () => readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []),
+        []
+    );
+    const [users, setUsers] = useState<AdminUserRecord[]>(cachedUsers);
+    const [isLoadingUsers, setIsLoadingUsers] = useState(() => cachedUsers.length === 0);
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => parseAdminDateRange(searchParams.get('range')));
-    const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>(() => {
-        const value = searchParams.get('role');
-        if (value === 'admin' || value === 'user') return value;
-        return 'all';
+    const [roleFilters, setRoleFilters] = useState<Array<'admin' | 'user'>>(
+        () => parseQueryMultiValue(searchParams.get('role'), USER_ROLE_VALUES)
+    );
+    const [tierFilters, setTierFilters] = useState<PlanTierKey[]>(
+        () => parseQueryMultiValue(searchParams.get('tier'), PLAN_ORDER)
+    );
+    const [statusFilters, setStatusFilters] = useState<UserAccountStatus[]>(
+        () => parseQueryMultiValue(searchParams.get('status'), USER_STATUS_VALUES)
+    );
+    const [activationFilters, setActivationFilters] = useState<UserActivationStatus[]>(() => {
+        const next = parseQueryMultiValue(searchParams.get('activation'), USER_ACTIVATION_VALUES);
+        if (next.length > 0) return next;
+        // Legacy URL support from prior identity filter.
+        const legacyIdentity = searchParams.get('identity');
+        if (legacyIdentity === 'identified') return ['activated', 'invited'];
+        if (legacyIdentity === 'anonymous') return ['pending', 'anonymous'];
+        return [];
     });
-    const [tierFilter, setTierFilter] = useState<'all' | PlanTierKey>(() => {
-        const value = searchParams.get('tier');
-        if (value && PLAN_ORDER.includes(value as PlanTierKey)) return value as PlanTierKey;
-        return 'all';
-    });
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'deleted'>(() => {
-        const value = searchParams.get('status');
-        if (value === 'active' || value === 'disabled' || value === 'deleted') return value;
-        return 'all';
-    });
-    const [identityFilter, setIdentityFilter] = useState<IdentityFilter>(() => parseIdentityFilter(searchParams.get('identity')));
     const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
@@ -303,27 +364,27 @@ export const AdminUsersPage: React.FC = () => {
         const trimmedSearch = searchValue.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
         if (dateRange !== '30d') next.set('range', dateRange);
-        if (roleFilter !== 'all') next.set('role', roleFilter);
-        if (tierFilter !== 'all') next.set('tier', tierFilter);
-        if (statusFilter !== 'all') next.set('status', statusFilter);
-        if (identityFilter !== 'identified') next.set('identity', identityFilter);
+        if (roleFilters.length > 0 && roleFilters.length < USER_ROLE_VALUES.length) next.set('role', roleFilters.join(','));
+        if (tierFilters.length > 0 && tierFilters.length < PLAN_ORDER.length) next.set('tier', tierFilters.join(','));
+        if (statusFilters.length > 0 && statusFilters.length < USER_STATUS_VALUES.length) next.set('status', statusFilters.join(','));
+        if (activationFilters.length > 0 && activationFilters.length < USER_ACTIVATION_VALUES.length) next.set('activation', activationFilters.join(','));
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
     }, [
+        activationFilters,
         dateRange,
-        identityFilter,
         page,
-        roleFilter,
+        roleFilters,
         searchParams,
         searchValue,
         setSearchParams,
         sortDirection,
         sortKey,
-        statusFilter,
-        tierFilter,
+        statusFilters,
+        tierFilters,
     ]);
 
     const selectedUser = useMemo(
@@ -337,9 +398,10 @@ export const AdminUsersPage: React.FC = () => {
         try {
             const rows = await adminListUsers({ limit: 500 });
             setUsers(rows);
+            writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
-            setUsers([]);
+            setUsers((current) => (current.length > 0 ? current : []));
         } finally {
             setIsLoadingUsers(false);
         }
@@ -404,12 +466,13 @@ export const AdminUsersPage: React.FC = () => {
     const filteredUsers = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         const filtered = users.filter((user) => {
+            const accountStatus = (user.account_status || 'active') as UserAccountStatus;
+            const activationStatus = resolveActivationStatus(user);
             if (!isIsoDateInRange(user.created_at, dateRange)) return false;
-            if (roleFilter !== 'all' && user.system_role !== roleFilter) return false;
-            if (tierFilter !== 'all' && user.tier_key !== tierFilter) return false;
-            if (statusFilter !== 'all' && (user.account_status || 'active') !== statusFilter) return false;
-            if (identityFilter === 'identified' && isAnonymousLikeUser(user)) return false;
-            if (identityFilter === 'anonymous' && !isAnonymousLikeUser(user)) return false;
+            if (roleFilters.length > 0 && !roleFilters.includes(user.system_role)) return false;
+            if (tierFilters.length > 0 && !tierFilters.includes(user.tier_key)) return false;
+            if (statusFilters.length > 0 && !statusFilters.includes(accountStatus)) return false;
+            if (activationFilters.length > 0 && !activationFilters.includes(activationStatus)) return false;
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
@@ -417,12 +480,14 @@ export const AdminUsersPage: React.FC = () => {
                 || user.user_id.toLowerCase().includes(token)
                 || getProviderLabel(user).toLowerCase().includes(token)
                 || (user.username || '').toLowerCase().includes(token)
+                || getActivationStatusLabel(activationStatus).toLowerCase().includes(token)
             );
         });
 
         const getSortValue = (user: AdminUserRecord): string | number => {
             if (sortKey === 'name') return getUserDisplayName(user).toLowerCase();
             if (sortKey === 'email') return (user.email || '').toLowerCase();
+            if (sortKey === 'activation_status') return resolveActivationStatus(user);
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
             if (sortKey === 'tier_key') return String(user.tier_key || '').toLowerCase();
@@ -444,7 +509,84 @@ export const AdminUsersPage: React.FC = () => {
             return sortDirection === 'asc' ? base : -base;
         });
         return sorted;
-    }, [dateRange, identityFilter, roleFilter, searchValue, sortDirection, sortKey, statusFilter, tierFilter, users]);
+    }, [
+        activationFilters,
+        dateRange,
+        roleFilters,
+        searchValue,
+        sortDirection,
+        sortKey,
+        statusFilters,
+        tierFilters,
+        users,
+    ]);
+
+    const usersInDateRange = useMemo(
+        () => users.filter((user) => isIsoDateInRange(user.created_at, dateRange)),
+        [dateRange, users]
+    );
+
+    const usersSummary = useMemo(() => {
+        const total = filteredUsers.length;
+        const activeAccounts = filteredUsers.filter((user) => (user.account_status || 'active') === 'active').length;
+        const pendingActivation = filteredUsers.filter((user) => {
+            const activationStatus = resolveActivationStatus(user);
+            return activationStatus === 'pending' || activationStatus === 'invited';
+        }).length;
+        const activationBuckets: Record<UserActivationStatus, number> = {
+            activated: 0,
+            invited: 0,
+            pending: 0,
+            anonymous: 0,
+        };
+        filteredUsers.forEach((user) => {
+            activationBuckets[resolveActivationStatus(user)] += 1;
+        });
+        return {
+            total,
+            activeAccounts,
+            pendingActivation,
+            activeRatioPct: total > 0 ? Math.round((activeAccounts / total) * 100) : 0,
+            pendingRatioPct: total > 0 ? Math.round((pendingActivation / total) * 100) : 0,
+            activationBuckets,
+        };
+    }, [filteredUsers]);
+
+    const statusFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_STATUS_VALUES.map((value) => ({
+            value,
+            label: value === 'disabled' ? 'Suspended' : value.charAt(0).toUpperCase() + value.slice(1),
+            count: usersInDateRange.filter((user) => (user.account_status || 'active') === value).length,
+        })),
+        [usersInDateRange]
+    );
+
+    const roleFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_ROLE_VALUES.map((value) => ({
+            value,
+            label: value === 'admin' ? 'Admin' : 'User',
+            count: usersInDateRange.filter((user) => user.system_role === value).length,
+        })),
+        [usersInDateRange]
+    );
+
+    const tierFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => PLAN_ORDER.map((value) => ({
+            value,
+            label: PLAN_CATALOG[value].publicName,
+            count: usersInDateRange.filter((user) => user.tier_key === value).length,
+        })),
+        [usersInDateRange]
+    );
+
+    const activationFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_ACTIVATION_VALUES.map((value) => ({
+            value,
+            label: getActivationStatusLabel(value),
+            count: usersInDateRange.filter((user) => resolveActivationStatus(user) === value).length,
+        })),
+        [usersInDateRange]
+    );
 
     const pageCount = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
     const pagedUsers = useMemo(() => {
@@ -596,6 +738,14 @@ export const AdminUsersPage: React.FC = () => {
         }
     };
 
+    const resetTableFilters = () => {
+        setRoleFilters([]);
+        setTierFilters([]);
+        setStatusFilters([]);
+        setActivationFilters([]);
+        setPage(1);
+    };
+
     return (
         <AdminShell
             title="User Provisioning"
@@ -612,14 +762,11 @@ export const AdminUsersPage: React.FC = () => {
             }}
             actions={(
                 <>
-                    <button
-                        type="button"
+                    <AdminReloadButton
                         onClick={() => void loadUsers()}
-                        className="inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                    >
-                        <ArrowsClockwise size={14} />
-                        Reload
-                    </button>
+                        isLoading={isLoadingUsers}
+                        label="Reload"
+                    />
                     <button
                         type="button"
                         onClick={() => setIsCreateDialogOpen(true)}
@@ -642,78 +789,104 @@ export const AdminUsersPage: React.FC = () => {
                 </section>
             )}
 
+            <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
+                    <p className="mt-2 text-3xl font-black text-slate-900">
+                        <AdminCountUpNumber value={usersSummary.total} />
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">Within active table scope</p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Active account ratio</p>
+                    <p className="mt-2 inline-flex items-center gap-1 text-3xl font-black text-emerald-700">
+                        <Percent size={20} className="text-emerald-700" />
+                        <AdminCountUpNumber value={usersSummary.activeRatioPct} />
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                        <AdminCountUpNumber value={usersSummary.activeAccounts} /> active accounts
+                    </p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Pending activation</p>
+                    <p className="mt-2 text-3xl font-black text-amber-700">
+                        <AdminCountUpNumber value={usersSummary.pendingActivation} />
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{usersSummary.pendingRatioPct}% of visible users</p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Activation mix</p>
+                        <ChartBarHorizontal size={16} className="text-slate-500" />
+                    </div>
+                    <div className="mt-3 space-y-2">
+                        {USER_ACTIVATION_VALUES.map((activation) => {
+                            const count = usersSummary.activationBuckets[activation];
+                            const pct = usersSummary.total > 0 ? Math.round((count / usersSummary.total) * 100) : 0;
+                            return (
+                                <div key={`activation-mix-${activation}`} className="space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-slate-600">
+                                        <span>{getActivationStatusLabel(activation)}</span>
+                                        <span>{count} ({pct}%)</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-slate-100">
+                                        <div className="h-1.5 rounded-full bg-slate-500 transition-[width] duration-500" style={{ width: `${pct}%` }} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </article>
+            </section>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
                     <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
-                        <Select
-                            value={identityFilter}
-                            onValueChange={(value) => {
-                                setIdentityFilter(value as IdentityFilter);
+                        <AdminFilterMenu
+                            label="Activation"
+                            options={activationFilterOptions}
+                            selectedValues={activationFilters}
+                            onSelectedValuesChange={(next) => {
+                                setActivationFilters(next as UserActivationStatus[]);
                                 setPage(1);
                             }}
-                        >
-                            <SelectTrigger className="h-9 w-[170px] text-xs">
-                                <SelectValue placeholder="Identity state" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="identified">Identified only</SelectItem>
-                                <SelectItem value="anonymous">Anonymous only</SelectItem>
-                                <SelectItem value="all">All identities</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={roleFilter}
-                            onValueChange={(value) => {
-                                setRoleFilter(value as 'all' | 'admin' | 'user');
+                        />
+                        <AdminFilterMenu
+                            label="Status"
+                            options={statusFilterOptions}
+                            selectedValues={statusFilters}
+                            onSelectedValuesChange={(next) => {
+                                setStatusFilters(next as UserAccountStatus[]);
                                 setPage(1);
                             }}
-                        >
-                            <SelectTrigger className="h-9 w-[130px] text-xs">
-                                <SelectValue placeholder="Role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All roles</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="user">User</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={tierFilter}
-                            onValueChange={(value) => {
-                                setTierFilter(value as 'all' | PlanTierKey);
+                        />
+                        <AdminFilterMenu
+                            label="Role"
+                            options={roleFilterOptions}
+                            selectedValues={roleFilters}
+                            onSelectedValuesChange={(next) => {
+                                setRoleFilters(next as Array<'admin' | 'user'>);
                                 setPage(1);
                             }}
-                        >
-                            <SelectTrigger className="h-9 w-[155px] text-xs">
-                                <SelectValue placeholder="Tier" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All tiers</SelectItem>
-                                {PLAN_ORDER.map((tierKey) => (
-                                    <SelectItem key={`filter-tier-${tierKey}`} value={tierKey}>
-                                        {PLAN_CATALOG[tierKey].publicName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            value={statusFilter}
-                            onValueChange={(value) => {
-                                setStatusFilter(value as 'all' | 'active' | 'disabled' | 'deleted');
+                        />
+                        <AdminFilterMenu
+                            label="Tier"
+                            options={tierFilterOptions}
+                            selectedValues={tierFilters}
+                            onSelectedValuesChange={(next) => {
+                                setTierFilters(next as PlanTierKey[]);
                                 setPage(1);
                             }}
+                        />
+                        <button
+                            type="button"
+                            onClick={resetTableFilters}
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                         >
-                            <SelectTrigger className="h-9 w-[150px] text-xs">
-                                <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All statuses</SelectItem>
-                                <SelectItem value="active">Active</SelectItem>
-                                <SelectItem value="disabled">Disabled</SelectItem>
-                                <SelectItem value="deleted">Deleted</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <X size={14} />
+                            Reset
+                        </button>
                     </div>
                 </div>
 
@@ -729,6 +902,11 @@ export const AdminUsersPage: React.FC = () => {
                                 <th className="px-3 py-2">
                                     <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('email')}>
                                         Login <ArrowsDownUp size={12} />
+                                    </button>
+                                </th>
+                                <th className="px-3 py-2">
+                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('activation_status')}>
+                                        Activation <ArrowsDownUp size={12} />
                                     </button>
                                 </th>
                                 <th className="px-3 py-2">
@@ -762,8 +940,8 @@ export const AdminUsersPage: React.FC = () => {
                         <tbody>
                             {pagedUsers.map((user) => {
                                 const userName = getUserDisplayName(user);
-                                const accountStatus = (user.account_status || 'active') as 'active' | 'disabled' | 'deleted';
-                                const isPlaceholder = isPlaceholderUser(user);
+                                const accountStatus = (user.account_status || 'active') as UserAccountStatus;
+                                const activationStatus = resolveActivationStatus(user);
                                 return (
                                     <tr key={user.user_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                         <td className="px-3 py-2">
@@ -783,17 +961,27 @@ export const AdminUsersPage: React.FC = () => {
                                                 <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
                                                     {getProviderLabel(user)}
                                                 </span>
-                                                {isPlaceholder && (
+                                                {activationStatus === 'pending' && (
                                                     <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                                                         Needs activation
                                                     </span>
                                                 )}
-                                                {user.is_anonymous && !isPlaceholder && (
+                                                {activationStatus === 'invited' && (
+                                                    <span className="rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
+                                                        Invite sent
+                                                    </span>
+                                                )}
+                                                {activationStatus === 'anonymous' && (
                                                     <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                                                         Temp
                                                     </span>
                                                 )}
                                             </div>
+                                        </td>
+                                        <td className="px-3 py-2">
+                                            <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
+                                                {getActivationStatusLabel(activationStatus)}
+                                            </span>
                                         </td>
                                         <td className="px-3 py-2">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
@@ -807,7 +995,7 @@ export const AdminUsersPage: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-2">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
-                                                {accountStatus}
+                                                {formatAccountStatusLabel(accountStatus)}
                                             </span>
                                         </td>
                                         <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(user.last_sign_in_at)}</td>
@@ -827,14 +1015,14 @@ export const AdminUsersPage: React.FC = () => {
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={8}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={9}>
                                         No users match your filters.
                                     </td>
                                 </tr>
                             )}
                             {isLoadingUsers && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={8}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={9}>
                                         <span className="inline-flex items-center gap-2">
                                             <SpinnerGap size={14} className="animate-spin" />
                                             Loading users...
@@ -1286,7 +1474,9 @@ export const AdminUsersPage: React.FC = () => {
                                         <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
                                         <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
+                                        <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
                                         <div><span className="font-semibold text-slate-800">Login method:</span> {getProviderLabel(selectedUser)}</div>
+                                        <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
                                         <div><span className="font-semibold text-slate-800">Last visit:</span> {formatTimestamp(selectedUser.last_sign_in_at)}</div>
                                     </div>
                                 </section>

@@ -2182,6 +2182,7 @@ returns table(
   email text,
   is_anonymous boolean,
   auth_provider text,
+  activation_status text,
   last_sign_in_at timestamptz,
   display_name text,
   first_name text,
@@ -2220,6 +2221,15 @@ begin
       case
         when u.id is null then 'placeholder'
         else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+      end
+    )::text,
+    (
+      case
+        when u.id is null then 'pending'
+        when coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false) then 'anonymous'
+        when u.last_sign_in_at is null and u.email is not null then 'invited'
+        when u.last_sign_in_at is null then 'pending'
+        else 'activated'
       end
     )::text,
     u.last_sign_in_at::timestamptz,
@@ -2266,6 +2276,7 @@ returns table(
   email text,
   is_anonymous boolean,
   auth_provider text,
+  activation_status text,
   last_sign_in_at timestamptz,
   display_name text,
   first_name text,
@@ -2304,6 +2315,15 @@ begin
       case
         when u.id is null then 'placeholder'
         else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+      end
+    )::text,
+    (
+      case
+        when u.id is null then 'pending'
+        when coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false) then 'anonymous'
+        when u.last_sign_in_at is null and u.email is not null then 'invited'
+        when u.last_sign_in_at is null then 'pending'
+        else 'activated'
       end
     )::text,
     u.last_sign_in_at::timestamptz,

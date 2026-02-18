@@ -1,10 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SpinnerGap, ArrowClockwise } from '@phosphor-icons/react';
+import { SpinnerGap, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminUpdateTrip, type AdminTripRecord } from '../services/adminService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
+import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -25,17 +29,41 @@ const fromDateTimeInputValue = (value: string): string | null => {
     return new Date(parsed).toISOString();
 };
 
+type TripStatus = 'active' | 'archived' | 'expired';
+
+const TRIPS_CACHE_KEY = 'admin.trips.cache.v1';
+const TRIP_STATUS_VALUES: readonly TripStatus[] = ['active', 'archived', 'expired'];
+
+const parseQueryMultiValue = <T extends string>(
+    value: string | null,
+    allowedValues: readonly T[]
+): T[] => {
+    if (!value) return [];
+    const allowSet = new Set<string>(allowedValues);
+    const unique = new Set<string>();
+    value
+        .split(',')
+        .map((chunk) => chunk.trim())
+        .filter(Boolean)
+        .forEach((chunk) => {
+            if (allowSet.has(chunk)) unique.add(chunk);
+        });
+    return allowedValues.filter((candidate) => unique.has(candidate));
+};
+
 export const AdminTripsPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const [trips, setTrips] = useState<AdminTripRecord[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const cachedTrips = useMemo(
+        () => readAdminCache<AdminTripRecord[]>(TRIPS_CACHE_KEY, []),
+        []
+    );
+    const [trips, setTrips] = useState<AdminTripRecord[]>(cachedTrips);
+    const [isLoading, setIsLoading] = useState(() => cachedTrips.length === 0);
     const [isSaving, setIsSaving] = useState(false);
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'archived' | 'expired'>(() => {
-        const value = searchParams.get('status');
-        if (value === 'active' || value === 'archived' || value === 'expired') return value;
-        return 'all';
-    });
+    const [statusFilters, setStatusFilters] = useState<TripStatus[]>(
+        () => parseQueryMultiValue(searchParams.get('status'), TRIP_STATUS_VALUES)
+    );
     const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
         const value = searchParams.get('range');
         if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
@@ -48,11 +76,13 @@ export const AdminTripsPage: React.FC = () => {
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
-        if (statusFilter !== 'all') next.set('status', statusFilter);
+        if (statusFilters.length > 0 && statusFilters.length < TRIP_STATUS_VALUES.length) {
+            next.set('status', statusFilters.join(','));
+        }
         if (dateRange !== '30d') next.set('range', dateRange);
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [dateRange, searchParams, searchValue, setSearchParams, statusFilter]);
+    }, [dateRange, searchParams, searchValue, setSearchParams, statusFilters]);
 
     const loadTrips = async () => {
         setIsLoading(true);
@@ -60,12 +90,13 @@ export const AdminTripsPage: React.FC = () => {
         try {
             const rows = await adminListTrips({
                 limit: 600,
-                status: statusFilter,
+                status: 'all',
             });
             setTrips(rows);
+            writeAdminCache(TRIPS_CACHE_KEY, rows);
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not load trips.');
-            setTrips([]);
+            setTrips((current) => (current.length > 0 ? current : []));
         } finally {
             setIsLoading(false);
         }
@@ -74,12 +105,13 @@ export const AdminTripsPage: React.FC = () => {
     useEffect(() => {
         void loadTrips();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [statusFilter]);
+    }, []);
 
     const visibleTrips = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return trips.filter((trip) => {
             if (!isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)) return false;
+            if (statusFilters.length > 0 && !statusFilters.includes(trip.status)) return false;
             if (!token) return true;
             return (
                 (trip.title || '').toLowerCase().includes(token)
@@ -88,7 +120,12 @@ export const AdminTripsPage: React.FC = () => {
                 || trip.owner_id.toLowerCase().includes(token)
             );
         });
-    }, [dateRange, searchValue, trips]);
+    }, [dateRange, searchValue, statusFilters, trips]);
+
+    const tripsInDateRange = useMemo(
+        () => trips.filter((trip) => isIsoDateInRange(trip.updated_at || trip.created_at, dateRange)),
+        [dateRange, trips]
+    );
 
     const summary = useMemo(() => ({
         total: visibleTrips.length,
@@ -96,6 +133,15 @@ export const AdminTripsPage: React.FC = () => {
         expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
         archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
     }), [visibleTrips]);
+
+    const statusFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => TRIP_STATUS_VALUES.map((value) => ({
+            value,
+            label: value.charAt(0).toUpperCase() + value.slice(1),
+            count: tripsInDateRange.filter((trip) => trip.status === value).length,
+        })),
+        [tripsInDateRange]
+    );
 
     const updateTripStatus = async (
         trip: AdminTripRecord,
@@ -118,6 +164,10 @@ export const AdminTripsPage: React.FC = () => {
         }
     };
 
+    const resetTripFilters = () => {
+        setStatusFilters([]);
+    };
+
     return (
         <AdminShell
             title="Trip Lifecycle Controls"
@@ -127,14 +177,11 @@ export const AdminTripsPage: React.FC = () => {
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             actions={(
-                <button
-                    type="button"
+                <AdminReloadButton
                     onClick={() => void loadTrips()}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                >
-                    <ArrowClockwise size={14} />
-                    Refresh
-                </button>
+                    isLoading={isLoading}
+                    label="Reload"
+                />
             )}
         >
             {errorMessage && (
@@ -151,39 +198,41 @@ export const AdminTripsPage: React.FC = () => {
             <section className="grid gap-3 md:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Total</p>
-                    <p className="mt-2 text-2xl font-black text-slate-900">{summary.total}</p>
+                    <p className="mt-2 text-2xl font-black text-slate-900"><AdminCountUpNumber value={summary.total} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Active</p>
-                    <p className="mt-2 text-2xl font-black text-emerald-700">{summary.active}</p>
+                    <p className="mt-2 text-2xl font-black text-emerald-700"><AdminCountUpNumber value={summary.active} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expired</p>
-                    <p className="mt-2 text-2xl font-black text-amber-700">{summary.expired}</p>
+                    <p className="mt-2 text-2xl font-black text-amber-700"><AdminCountUpNumber value={summary.expired} /></p>
                 </article>
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Archived</p>
-                    <p className="mt-2 text-2xl font-black text-slate-700">{summary.archived}</p>
+                    <p className="mt-2 text-2xl font-black text-slate-700"><AdminCountUpNumber value={summary.archived} /></p>
                 </article>
             </section>
 
             <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
-                    <Select
-                        value={statusFilter}
-                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'archived' | 'expired')}
-                    >
-                        <SelectTrigger className="h-8 w-[170px] text-xs">
-                            <SelectValue placeholder="Trip status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All statuses</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="expired">Expired</SelectItem>
-                            <SelectItem value="archived">Archived</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+                        <AdminFilterMenu
+                            label="Status"
+                            options={statusFilterOptions}
+                            selectedValues={statusFilters}
+                            onSelectedValuesChange={(next) => setStatusFilters(next as TripStatus[])}
+                        />
+                        <button
+                            type="button"
+                            onClick={resetTripFilters}
+                            className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                        >
+                            <X size={14} />
+                            Reset
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -199,7 +248,7 @@ export const AdminTripsPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {visibleTrips.map((trip) => (
-                                <tr key={trip.trip_id} className="border-b border-slate-100 align-top">
+                                <tr key={trip.trip_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                     <td className="px-3 py-2">
                                         <div className="max-w-[320px] truncate text-sm font-semibold text-slate-800">{trip.title || trip.trip_id}</div>
                                         <div className="text-xs text-slate-500">{trip.trip_id}</div>

@@ -10,6 +10,6 @@ export const PROFILE_GENDER_OPTIONS: Array<{ value: ProfileGenderOption; label: 
 
 export const PROFILE_ACCOUNT_STATUS_OPTIONS: Array<{ value: 'active' | 'disabled' | 'deleted'; label: string }> = [
     { value: 'active', label: 'Active' },
-    { value: 'disabled', label: 'Disabled' },
+    { value: 'disabled', label: 'Suspended' },
     { value: 'deleted', label: 'Deleted' },
 ];

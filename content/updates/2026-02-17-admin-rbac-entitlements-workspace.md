@@ -31,6 +31,10 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🧰 Refined toolbar behavior so primary actions stay on one line, with cleaner iconography and more stable control ordering.
 - [x] [Improved] 🗃️ Switched user details to a full-height right-side drawer with smoother slide-in behavior and clearer section ordering.
 - [x] [Fixed] 🧹 Improved identity filtering so placeholder/anonymous records are easier to separate from real activated accounts by default.
+- [x] [Improved] 🔄 Unified reload controls across admin data tables with a shared icon style and inline loading motion feedback.
+- [x] [Improved] 🧪 Upgraded user/trip table filters to chip-style multi-select menus with persistent URL state for bookmarkable filtered views.
+- [x] [Improved] 📊 Added richer user activation insights (including pending activation tracking and ratio cards) directly in the Users workspace.
+- [x] [Improved] 🧠 Reduced admin metric flicker by caching recent users/trips/tier snapshots locally before live refresh completes.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.

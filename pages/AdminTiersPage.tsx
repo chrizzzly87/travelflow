@@ -12,9 +12,27 @@ import {
     adminUpdatePlanEntitlements,
     type AdminTierReapplyPreview,
 } from '../services/adminService';
+import { AdminReloadButton } from '../components/admin/AdminReloadButton';
+import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 
 type DraftMap = Record<PlanTierKey, string>;
 type PreviewMap = Record<PlanTierKey, AdminTierReapplyPreview | null>;
+
+const TIERS_COUNT_CACHE_KEY = 'admin.tiers.counts.v1';
+const TIERS_PREVIEW_CACHE_KEY = 'admin.tiers.preview.v1';
+
+const buildInitialTierCounts = (): Record<PlanTierKey, number> => ({
+    tier_free: 0,
+    tier_mid: 0,
+    tier_premium: 0,
+});
+
+const buildInitialTierPreview = (): PreviewMap => ({
+    tier_free: null,
+    tier_mid: null,
+    tier_premium: null,
+});
 
 const buildInitialDrafts = (): DraftMap => ({
     tier_free: JSON.stringify(PLAN_CATALOG.tier_free.entitlements, null, 2),
@@ -35,16 +53,13 @@ export const AdminTiersPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState<PlanTierKey | null>(null);
     const [isReapplying, setIsReapplying] = useState<PlanTierKey | null>(null);
-    const [tierCounts, setTierCounts] = useState<Record<PlanTierKey, number>>({
-        tier_free: 0,
-        tier_mid: 0,
-        tier_premium: 0,
-    });
-    const [tierPreview, setTierPreview] = useState<PreviewMap>({
-        tier_free: null,
-        tier_mid: null,
-        tier_premium: null,
-    });
+    const [isReloading, setIsReloading] = useState(false);
+    const [tierCounts, setTierCounts] = useState<Record<PlanTierKey, number>>(
+        () => readAdminCache<Record<PlanTierKey, number>>(TIERS_COUNT_CACHE_KEY, buildInitialTierCounts())
+    );
+    const [tierPreview, setTierPreview] = useState<PreviewMap>(
+        () => readAdminCache<PreviewMap>(TIERS_PREVIEW_CACHE_KEY, buildInitialTierPreview())
+    );
     const [isLoadingPreview, setIsLoadingPreview] = useState<PlanTierKey | null>(null);
 
     useEffect(() => {
@@ -60,9 +75,29 @@ export const AdminTiersPage: React.FC = () => {
         setIsLoadingPreview(tierKey);
         try {
             const preview = await adminPreviewTierReapply(tierKey);
-            setTierPreview((current) => ({ ...current, [tierKey]: preview }));
+            setTierPreview((current) => {
+                const next = { ...current, [tierKey]: preview };
+                writeAdminCache(TIERS_PREVIEW_CACHE_KEY, next);
+                return next;
+            });
         } finally {
             setIsLoadingPreview((current) => (current === tierKey ? null : current));
+        }
+    };
+
+    const loadTierCounts = async () => {
+        try {
+            const users = await adminListUsers({ limit: 500 });
+            const rangeUsers = users.filter((user) => isIsoDateInRange(user.created_at, dateRange));
+            const nextCounts: Record<PlanTierKey, number> = {
+                tier_free: rangeUsers.filter((user) => user.tier_key === 'tier_free').length,
+                tier_mid: rangeUsers.filter((user) => user.tier_key === 'tier_mid').length,
+                tier_premium: rangeUsers.filter((user) => user.tier_key === 'tier_premium').length,
+            };
+            setTierCounts(nextCounts);
+            writeAdminCache(TIERS_COUNT_CACHE_KEY, nextCounts);
+        } catch {
+            // non-blocking count card
         }
     };
 
@@ -74,20 +109,20 @@ export const AdminTiersPage: React.FC = () => {
         }
     };
 
+    const refreshAllTierData = async () => {
+        setIsReloading(true);
+        try {
+            await Promise.all([
+                loadTierCounts(),
+                refreshAllTierSnapshots(),
+            ]);
+        } finally {
+            setIsReloading(false);
+        }
+    };
+
     useEffect(() => {
-        void adminListUsers({ limit: 500 })
-            .then((users) => {
-                const rangeUsers = users.filter((user) => isIsoDateInRange(user.created_at, dateRange));
-                setTierCounts({
-                    tier_free: rangeUsers.filter((user) => user.tier_key === 'tier_free').length,
-                    tier_mid: rangeUsers.filter((user) => user.tier_key === 'tier_mid').length,
-                    tier_premium: rangeUsers.filter((user) => user.tier_key === 'tier_premium').length,
-                });
-            })
-            .catch(() => {
-                // non-blocking count card
-            });
-        void refreshAllTierSnapshots();
+        void refreshAllTierData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateRange]);
 
@@ -144,6 +179,15 @@ export const AdminTiersPage: React.FC = () => {
             onSearchValueChange={setSearchValue}
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
+            actions={(
+                <AdminReloadButton
+                    onClick={() => {
+                        void refreshAllTierData();
+                    }}
+                    isLoading={isReloading}
+                    label="Reload"
+                />
+            )}
         >
             {errorMessage && (
                 <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
@@ -161,7 +205,9 @@ export const AdminTiersPage: React.FC = () => {
                     <article key={`count-${tierKey}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{tierKey}</p>
                         <p className="mt-1 text-sm font-semibold text-slate-800">{PLAN_CATALOG[tierKey].publicName}</p>
-                        <p className="mt-2 text-2xl font-black text-slate-900">{tierCounts[tierKey]}</p>
+                        <p className="mt-2 text-2xl font-black text-slate-900">
+                            <AdminCountUpNumber value={tierCounts[tierKey]} />
+                        </p>
                         <p className="text-xs text-slate-500">Users in selected date range</p>
                     </article>
                 ))}

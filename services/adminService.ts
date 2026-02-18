@@ -7,6 +7,7 @@ export interface AdminUserRecord {
     email: string | null;
     is_anonymous?: boolean;
     auth_provider?: string | null;
+    activation_status?: 'activated' | 'invited' | 'pending' | 'anonymous' | null;
     last_sign_in_at?: string | null;
     display_name?: string | null;
     first_name?: string | null;
