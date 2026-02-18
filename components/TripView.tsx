@@ -8,7 +8,6 @@ import { DetailsPanel } from './DetailsPanel';
 import { SelectedCitiesPanel } from './SelectedCitiesPanel';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
-import { PrintLayout } from './PrintLayout';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
@@ -67,6 +66,10 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 
 const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
     import('./ReleaseNoticeDialog').then((module) => ({ default: module.ReleaseNoticeDialog }))
+);
+
+const PrintLayout = lazyWithRecovery('PrintLayout', () =>
+    import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
 );
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
@@ -2221,12 +2224,14 @@ export const TripView: React.FC<TripViewProps> = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <PrintLayout
-                    trip={displayTrip}
-                    isPaywalled={isPaywallLocked}
-                    onClose={() => setViewMode('planner')}
-                    onUpdateTrip={handleUpdateItems}
-                />
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout...</div>}>
+                    <PrintLayout
+                        trip={displayTrip}
+                        isPaywalled={isPaywallLocked}
+                        onClose={() => setViewMode('planner')}
+                        onUpdateTrip={handleUpdateItems}
+                    />
+                </Suspense>
             </GoogleMapsLoader>
         );
     }

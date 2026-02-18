@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { ITrip, ITimelineItem } from '../types';
 import { addDays, DEFAULT_DISTANCE_UNIT, formatDate, formatDistance, getHexFromColorClass, getTripDistanceKm, getTripDuration } from '../utils';
 import { MapPin, Calendar, Clock, ArrowRight, Hotel, StickyNote } from 'lucide-react';
 import { ItineraryMap } from './ItineraryMap';
 import { CountryInfo } from './CountryInfo';
-import { MarkdownEditor } from './MarkdownEditor';
 import { TransportModeIcon } from './TransportModeIcon';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface PrintLayoutProps {
   trip: ITrip;
@@ -13,6 +13,12 @@ interface PrintLayoutProps {
   onUpdateTrip: (items: ITimelineItem[]) => void;
   isPaywalled?: boolean;
 }
+
+const LazyMarkdownEditor = lazy(() =>
+    loadLazyComponentWithRecovery('MarkdownEditor', () =>
+        import('./MarkdownEditor').then((module) => ({ default: module.MarkdownEditor }))
+    )
+);
 
 // Helper to safely parse YYYY-MM-DD to Local Date (avoiding UTC shifts)
 const parseLocalDate = (dateStr: string): Date => {
@@ -409,11 +415,13 @@ export const PrintLayout: React.FC<PrintLayoutProps> = ({ trip, onClose, onUpdat
                                         {/* Editable Notes Area */}
                                         <div className="border border-gray-200 rounded-lg p-4 bg-[linear-gradient(white_29px,#eee_30px)] bg-[length:100%_30px] pt-1">
                                             <div className="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center gap-1"><StickyNote size={12}/> Notes</div>
-                                            <MarkdownEditor 
-                                                value={city.description || ''} 
-                                                onChange={(val) => handleUpdateNotes(city.id, val)}
-                                                className="border-none shadow-none bg-transparent"
-                                            />
+                                            <Suspense fallback={<div className="rounded border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Loading notes...</div>}>
+                                                <LazyMarkdownEditor
+                                                    value={city.description || ''}
+                                                    onChange={(val) => handleUpdateNotes(city.id, val)}
+                                                    className="border-none shadow-none bg-transparent"
+                                                />
+                                            </Suspense>
                                         </div>
                                     </div>
 
