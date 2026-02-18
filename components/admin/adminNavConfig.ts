@@ -8,12 +8,10 @@ export interface AdminNavItem {
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'tools';
 export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'benchmark';
-export type AdminNavSectionIconKey = 'workspace' | 'operations' | 'tools';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
     label: string;
-    icon: AdminNavSectionIconKey;
 }
 
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
@@ -62,7 +60,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 ];
 
 export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
-    { id: 'workspace', label: 'Workspace', icon: 'workspace' },
-    { id: 'operations', label: 'Operations', icon: 'operations' },
-    { id: 'tools', label: 'Tools', icon: 'tools' },
+    { id: 'workspace', label: 'Workspace' },
+    { id: 'operations', label: 'Operations' },
+    { id: 'tools', label: 'Tools' },
 ];

@@ -2180,6 +2180,9 @@ create or replace function public.admin_list_users(
 returns table(
   user_id uuid,
   email text,
+  is_anonymous boolean,
+  auth_provider text,
+  last_sign_in_at timestamptz,
   display_name text,
   first_name text,
   last_name text,
@@ -2212,6 +2215,9 @@ begin
   select
     p.id,
     u.email::text,
+    coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)::boolean,
+    coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)::text,
+    u.last_sign_in_at::timestamptz,
     p.display_name,
     p.first_name,
     p.last_name,
@@ -2246,12 +2252,16 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_get_user_profile(uuid);
 create or replace function public.admin_get_user_profile(
   p_user_id uuid
 )
 returns table(
   user_id uuid,
   email text,
+  is_anonymous boolean,
+  auth_provider text,
+  last_sign_in_at timestamptz,
   display_name text,
   first_name text,
   last_name text,
@@ -2284,6 +2294,9 @@ begin
   select
     p.id,
     u.email::text,
+    coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)::boolean,
+    coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)::text,
+    u.last_sign_in_at::timestamptz,
     p.display_name,
     p.first_name,
     p.last_name,

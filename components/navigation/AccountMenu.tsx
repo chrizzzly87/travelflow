@@ -3,7 +3,6 @@ import { AirplaneTakeoff, CaretDown, GearSix, ShieldCheck, SignOut, User } from 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { ADMIN_NAV_ITEMS } from '../admin/adminNavConfig';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 
@@ -11,6 +10,10 @@ interface AccountMenuProps {
     email: string | null;
     isAdmin: boolean;
     compact?: boolean;
+    showLabel?: boolean;
+    fullWidth?: boolean;
+    menuPlacement?: 'bottom-end' | 'right-end';
+    className?: string;
 }
 
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
@@ -28,7 +31,15 @@ const labelFromPath = (pathname: string): string => {
     return 'Account';
 };
 
-export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compact = false }) => {
+export const AccountMenu: React.FC<AccountMenuProps> = ({
+    email,
+    isAdmin,
+    compact = false,
+    showLabel,
+    fullWidth = false,
+    menuPlacement = 'bottom-end',
+    className,
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { logout } = useAuth();
@@ -36,7 +47,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
-    const adminQuickLinks = useMemo(() => ADMIN_NAV_ITEMS, []);
+    const shouldShowLabel = showLabel ?? !compact;
 
     useEffect(() => {
         if (!isOpen) return;
@@ -72,7 +83,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
     };
 
     return (
-        <div className="relative" ref={containerRef}>
+        <div className={`relative ${className || ''}`.trim()} ref={containerRef}>
             <button
                 type="button"
                 onClick={() => {
@@ -80,7 +91,12 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                     setIsOpen(next);
                     trackEvent('navigation__account_menu--toggle', { open: next });
                 }}
-                className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-900 ${compact ? 'h-9 py-1.5' : 'h-10 py-2'}`}
+                className={[
+                    'inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-colors',
+                    'hover:border-slate-300 hover:text-slate-900',
+                    compact ? 'h-9 py-1.5' : 'h-10 py-2',
+                    fullWidth ? 'w-full justify-between' : '',
+                ].join(' ')}
                 {...getAnalyticsDebugAttributes('navigation__account_menu--toggle')}
                 aria-haspopup="menu"
                 aria-expanded={isOpen}
@@ -88,7 +104,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(email)}
                 </span>
-                {!compact && <span className="hidden sm:inline">{accountLabel}</span>}
+                {shouldShowLabel && <span className="truncate">{accountLabel}</span>}
                 <CaretDown size={14} />
             </button>
 
@@ -96,25 +112,22 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                 <div
                     role="menu"
                     aria-label="Account menu"
-                    className="absolute right-0 top-[calc(100%+8px)] z-[1800] w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl"
+                    className={[
+                        'absolute z-[1800] w-[min(92vw,320px)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl',
+                        menuPlacement === 'right-end'
+                            ? 'left-[calc(100%+10px)] bottom-0'
+                            : 'right-0 top-[calc(100%+8px)]',
+                    ].join(' ')}
                 >
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                        <div className="flex items-center gap-2">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
-                                {computeInitial(email)}
-                            </span>
-                            <div className="min-w-0">
-                                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">Signed in</div>
-                                <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
-                            </div>
-                        </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                        <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
                     </div>
 
-                    <div className="mt-2 space-y-1 rounded-xl border border-slate-200 p-1">
+                    <div className="mt-1.5 space-y-0.5">
                         <button
                             type="button"
                             onClick={() => navigateTo('/profile', 'navigation__account_menu--profile')}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--profile')}
                         >
                             <User size={16} />
@@ -123,7 +136,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                         <button
                             type="button"
                             onClick={() => navigateTo('/profile/settings', 'navigation__account_menu--settings')}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--settings')}
                         >
                             <GearSix size={16} />
@@ -132,7 +145,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                         <button
                             type="button"
                             onClick={() => navigateTo('/create-trip', 'navigation__account_menu--planner')}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--planner')}
                         >
                             <AirplaneTakeoff size={16} />
@@ -141,34 +154,26 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ email, isAdmin, compac
                     </div>
 
                     {isAdmin && (
-                        <div className="mt-2 rounded-xl border border-slate-200 p-1">
-                            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                Admin pages
-                            </div>
-                            <div className="space-y-0.5">
-                                {adminQuickLinks.map((item) => (
-                                    <button
-                                        key={`admin-link-${item.id}`}
-                                        type="button"
-                                        onClick={() => navigateTo(item.path, `navigation__account_menu--admin_${item.id}`)}
-                                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                                        {...getAnalyticsDebugAttributes(`navigation__account_menu--admin_${item.id}`)}
-                                    >
-                                        <ShieldCheck size={15} />
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="mt-1.5 space-y-0.5 border-t border-slate-200 pt-1.5">
+                            <button
+                                type="button"
+                                onClick={() => navigateTo('/admin/dashboard', 'navigation__account_menu--admin_workspace')}
+                                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                                {...getAnalyticsDebugAttributes('navigation__account_menu--admin_workspace')}
+                            >
+                                <ShieldCheck size={15} />
+                                Admin workspace
+                            </button>
                         </div>
                     )}
 
-                    <div className="mt-2 border-t border-slate-200 pt-2">
+                    <div className="mt-1.5 border-t border-slate-200 pt-1.5">
                         <button
                             type="button"
                             onClick={() => {
                                 void handleLogout();
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50"
                             {...getAnalyticsDebugAttributes('navigation__account_menu--logout')}
                         >
                             <SignOut size={16} />

@@ -7,6 +7,23 @@ import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRec
 
 const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
 
+const getUserName = (user: AdminUserRecord): string => {
+    const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+    if (fullName) return fullName;
+    if (user.display_name?.trim()) return user.display_name.trim();
+    return 'Unnamed user';
+};
+
+const getLoginLabel = (user: AdminUserRecord): string => {
+    if (user.is_anonymous) return 'Anonymous';
+    const provider = (user.auth_provider || '').toLowerCase();
+    if (!provider || provider === 'email') return 'Email/password';
+    if (provider === 'google') return 'Google';
+    if (provider === 'apple') return 'Apple';
+    if (provider === 'github') return 'GitHub';
+    return provider;
+};
+
 export const AdminDashboardPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [users, setUsers] = useState<AdminUserRecord[]>([]);
@@ -167,13 +184,14 @@ export const AdminDashboardPage: React.FC = () => {
 
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h2 className="text-sm font-semibold text-slate-900">Recent users</h2>
-                    <p className="mt-1 text-xs text-slate-500">Most recently created profiles.</p>
+                    <p className="mt-1 text-xs text-slate-500">Most recently created accounts with identity and sign-in context.</p>
                     <div className="mt-4 space-y-2">
                         {(scopedUsers.slice(0, 6)).map((user) => (
                             <div key={user.user_id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                <div className="truncate text-sm font-semibold text-slate-800">{user.email || user.user_id}</div>
+                                <div className="truncate text-sm font-semibold text-slate-800">{getUserName(user)}</div>
+                                <div className="truncate text-xs text-slate-600">{user.email || 'No email'}</div>
                                 <div className="text-[11px] text-slate-500">
-                                    {user.system_role} · {user.tier_key} · {(user.account_status || 'active')}
+                                    {getLoginLabel(user)} · {user.user_id} · {(user.last_sign_in_at ? `Last visit ${new Date(user.last_sign_in_at).toLocaleString()}` : 'No sign-in yet')}
                                 </div>
                             </div>
                         ))}

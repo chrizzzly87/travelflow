@@ -21,6 +21,11 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [x] [Improved] 🔗 Made admin table/search/filter states bookmarkable by persisting page settings in the URL.
 - [x] [Improved] 🧭 Unified AI benchmarking inside the main admin workspace and added an easy route back to the main planning experience.
 - [x] [Improved] 🪪 Polished the profile avatar dropdown with clearer grouping for profile, settings, planner, and admin destinations.
+- [x] [Improved] 🗂️ Reworked user management into a full-width table with richer account context, activity timestamps, and cleaner row action menus.
+- [x] [Improved] 🧪 Added default filtering to hide anonymous accounts while keeping quick access when you explicitly need to inspect them.
+- [x] [Improved] 🪟 Moved user creation into a focused modal and refined user-detail editing into a clearer right-side drawer with prefilled fields.
+- [x] [Improved] 🎚️ Refreshed admin filters and status controls with modern select components and clearer selected labels across admin pages.
+- [x] [Improved] 🧍 Added account/profile access to the mobile admin sidebar footer so navigation controls stay reachable on small screens.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.
@@ -30,4 +35,4 @@ summary: "Introduced a full admin operations workspace, role-aware account menu,
 - [ ] [Internal] 🛡️ Hardened profile update safety with privileged-field guardrails while preserving user self-service edits for profile data.
 - [ ] [Internal] 🧩 Isolated admin routes into a dedicated lazy-loaded workspace router so non-admin paths avoid admin chunk preload/bundle impact.
 - [ ] [Internal] 📘 Added explicit RBAC hardening TODOs documenting the migration from compatibility permissions to strict role-only checks.
-- [ ] [Internal] 🧯 Updated SQL migration order to drop/recreate legacy RPCs (`get_current_user_access`, `admin_list_users`) when return signatures evolve.
+- [ ] [Internal] 🧯 Updated SQL migration order to drop/recreate legacy RPCs (`get_current_user_access`, `admin_list_users`, `admin_get_user_profile`) when return signatures evolve.

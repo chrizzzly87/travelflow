@@ -4,6 +4,7 @@ import { SpinnerGap, ArrowClockwise } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminUpdateTrip, type AdminTripRecord } from '../services/adminService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -169,16 +170,20 @@ export const AdminTripsPage: React.FC = () => {
             <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
-                    <select
+                    <Select
                         value={statusFilter}
-                        onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'archived' | 'expired')}
-                        className="h-8 rounded-lg border border-slate-300 px-2 text-xs"
+                        onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'archived' | 'expired')}
                     >
-                        <option value="all">All statuses</option>
-                        <option value="active">Active</option>
-                        <option value="expired">Expired</option>
-                        <option value="archived">Archived</option>
-                    </select>
+                        <SelectTrigger className="h-8 w-[170px] text-xs">
+                            <SelectValue placeholder="Trip status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All statuses</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -201,17 +206,21 @@ export const AdminTripsPage: React.FC = () => {
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-600">{trip.owner_email || trip.owner_id}</td>
                                     <td className="px-3 py-2">
-                                        <select
+                                        <Select
                                             value={trip.status}
-                                            onChange={(event) => {
-                                                void updateTripStatus(trip, { status: event.target.value as 'active' | 'archived' | 'expired' });
+                                            onValueChange={(value) => {
+                                                void updateTripStatus(trip, { status: value as 'active' | 'archived' | 'expired' });
                                             }}
-                                            className="h-8 rounded border border-slate-300 px-2 text-xs"
                                         >
-                                            <option value="active">active</option>
-                                            <option value="expired">expired</option>
-                                            <option value="archived">archived</option>
-                                        </select>
+                                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active">Active</SelectItem>
+                                                <SelectItem value="expired">Expired</SelectItem>
+                                                <SelectItem value="archived">Archived</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </td>
                                     <td className="px-3 py-2">
                                         <input

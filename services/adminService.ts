@@ -5,6 +5,9 @@ import { supabase } from './supabaseClient';
 export interface AdminUserRecord {
     user_id: string;
     email: string | null;
+    is_anonymous?: boolean;
+    auth_provider?: string | null;
+    last_sign_in_at?: string | null;
     display_name?: string | null;
     first_name?: string | null;
     last_name?: string | null;

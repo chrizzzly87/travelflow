@@ -19,6 +19,7 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
 import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export type AdminDateRange = '7d' | '30d' | '90d' | 'all';
 
@@ -54,12 +55,6 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
     return <Flask size={16} weight="duotone" />;
-};
-
-const sectionIcon = (icon: (typeof ADMIN_NAV_SECTIONS)[number]['icon']) => {
-    if (icon === 'workspace') return <ChartPieSlice size={14} weight="duotone" />;
-    if (icon === 'operations') return <StackSimple size={14} weight="duotone" />;
-    return <Flask size={14} weight="duotone" />;
 };
 
 const buildDesktopNavClass = ({ isActive }: { isActive: boolean }, isCollapsed: boolean) => {
@@ -135,12 +130,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
     const renderNavItems = (mode: 'desktop' | 'mobile') => navSections.map((section) => (
         <section key={`section-${mode}-${section.id}`} className="space-y-1.5">
-            <div className="px-2">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                    {sectionIcon(section.icon)}
-                    {(mode === 'mobile' || !isSidebarCollapsed) && <span>{section.label}</span>}
+            {(mode === 'mobile' || !isSidebarCollapsed) && (
+                <div className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    {section.label}
                 </div>
-            </div>
+            )}
             <div className="space-y-1">
                 {section.items.map((item) => (
                     <NavLink
@@ -175,7 +169,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             )}
 
             <aside
-                className={`fixed inset-y-0 left-0 z-[60] w-72 border-r border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-200 lg:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed inset-y-0 left-0 z-[60] flex w-72 flex-col border-r border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-200 lg:hidden ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 aria-label="Admin navigation"
             >
                 <div className="flex items-center justify-between">
@@ -200,14 +194,27 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </button>
                 </div>
 
-                <div className="mt-4 space-y-4">
+                <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
                     {renderNavItems('mobile')}
                 </div>
+
+                {isAdmin && (
+                    <div className="mt-3 border-t border-slate-200 pt-3">
+                        <AccountMenu
+                            email={access?.email || null}
+                            isAdmin
+                            fullWidth
+                            showLabel
+                            menuPlacement="right-end"
+                            className="w-full"
+                        />
+                    </div>
+                )}
             </aside>
 
             <div className="flex min-h-screen w-full">
-                <aside className={`hidden shrink-0 border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 lg:flex lg:flex-col ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
-                    <div className="flex items-center justify-between">
+                <div className="relative hidden lg:block">
+                    <aside className={`flex h-screen shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
                             className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
@@ -221,21 +228,21 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 <span className="text-base font-black tracking-tight text-slate-900">{APP_NAME}</span>
                             )}
                         </NavLink>
-                        <button
-                            type="button"
-                            onClick={() => setIsSidebarCollapsed((current) => !current)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50"
-                            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                            {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
-                        >
-                            {isSidebarCollapsed ? <CaretRight size={14} /> : <CaretLeft size={14} />}
-                        </button>
-                    </div>
 
-                    <div className="mt-4 space-y-4">
-                        {renderNavItems('desktop')}
-                    </div>
-                </aside>
+                        <div className="mt-4 flex-1 space-y-4 overflow-y-auto pr-1">
+                            {renderNavItems('desktop')}
+                        </div>
+                    </aside>
+                    <button
+                        type="button"
+                        onClick={() => setIsSidebarCollapsed((current) => !current)}
+                        className="absolute -right-4 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
+                    >
+                        {isSidebarCollapsed ? <CaretRight size={13} /> : <CaretLeft size={13} />}
+                    </button>
+                </div>
 
                 <main className="min-w-0 flex-1">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -273,22 +280,22 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     </>
                                 )}
                                 {showDateRange && (
-                                    <>
-                                        <label className="sr-only" htmlFor="admin-date-range">Date range</label>
-                                        <select
-                                            id="admin-date-range"
-                                            value={dateRange}
-                                            onChange={(event) => onDateRangeChange?.(event.target.value as AdminDateRange)}
-                                            disabled={!onDateRangeChange}
-                                            className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100"
-                                        >
+                                    <Select
+                                        value={dateRange}
+                                        onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
+                                        disabled={!onDateRangeChange}
+                                    >
+                                        <SelectTrigger className="h-9 w-[170px]">
+                                            <SelectValue placeholder="Date range" />
+                                        </SelectTrigger>
+                                        <SelectContent>
                                             {DATE_RANGE_OPTIONS.map((option) => (
-                                                <option key={option.value} value={option.value}>
+                                                <SelectItem key={option.value} value={option.value}>
                                                     {option.label}
-                                                </option>
+                                                </SelectItem>
                                             ))}
-                                        </select>
-                                    </>
+                                        </SelectContent>
+                                    </Select>
                                 )}
                                 {actions}
                                 <NavLink
@@ -301,7 +308,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     Platform
                                 </NavLink>
                                 {isAdmin && (
-                                    <AccountMenu email={access?.email || null} isAdmin compact />
+                                    <AccountMenu email={access?.email || null} isAdmin compact className="hidden lg:block" />
                                 )}
                             </div>
                         </div>
