@@ -116,17 +116,19 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return (
         <LoginModalContext.Provider value={value}>
             {children}
-            <Suspense fallback={null}>
-                <AuthModal
-                    isOpen={state.isOpen}
-                    source={state.source}
-                    nextPath={state.nextPath}
-                    reloadOnSuccess={state.reloadOnSuccess}
-                    onClose={(reason) => {
-                        closeLoginModal(reason);
-                    }}
-                />
-            </Suspense>
+            {state.isOpen ? (
+                <Suspense fallback={null}>
+                    <AuthModal
+                        isOpen={state.isOpen}
+                        source={state.source}
+                        nextPath={state.nextPath}
+                        reloadOnSuccess={state.reloadOnSuccess}
+                        onClose={(reason) => {
+                            closeLoginModal(reason);
+                        }}
+                    />
+                </Suspense>
+            ) : null}
         </LoginModalContext.Provider>
     );
 };

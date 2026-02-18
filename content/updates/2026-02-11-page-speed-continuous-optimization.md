@@ -48,3 +48,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 👀 Deferred homepage example-carousel code/data loading until the section enters the viewport, preserving layout with a fixed-height placeholder.
 - [ ] [Internal] 🧩 Moved app runtime helpers from the monolithic utility module into a focused runtime service used by root app bootstrap.
 - [ ] [Internal] 📦 Disabled Vite module-preload dependency fan-out to keep entry execution on-demand and reduce first-load JavaScript on entry routes.
+- [ ] [Internal] 🪟 Gated login-modal rendering to open-state only so auth modal code is not fetched during initial page render.
