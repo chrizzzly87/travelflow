@@ -20,14 +20,15 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Initial CSS (raw) observed around 989 KB.
 - [x] `App.tsx` very large and centralizing many concerns.
 
-## Latest measured snapshot (after CSS + route extraction pass)
-- [x] Build entry JS: `assets/index-SNwqgVFJ.js` at `~795.60 KB` raw (`~167.27 KB` gzip).
-- [x] Build entry CSS: `assets/index-DmeIy-zA.css` at `~186.47 KB` raw (`~32.17 KB` gzip).
+## Latest measured snapshot (after header dependency split pass)
+- [x] Build entry JS: `assets/index-BapA8BLz.js` at `~795.05 KB` raw (`~167.12 KB` gzip).
+- [x] Build entry CSS: `assets/index-DvMAX5CV.css` at `~186.68 KB` raw (`~32.18 KB` gzip).
 - [x] `dist/index.html` now loads one module script and one stylesheet only (no modulepreload list).
 - [x] `dist/.vite/manifest.json` shows `index.html.imports = []` and `dynamicImports = 179`.
-- [x] Critical entry path (JS+CSS, unique) reduced to `~959.05 KiB` (from prior `~1762.42 KiB`).
+- [x] Critical entry path (JS+CSS, unique) remains at `~958.76 KiB` (from prior baseline `~1762.42 KiB`).
 - [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
 - [x] `App.tsx` reduced from `1076` lines to `419` lines by extracting route/prefetch/bootstrap modules.
+- [x] `SiteHeader` now dynamically imports `MobileMenu` and `AccountMenu`; the heavy select implementation is no longer in the header initial-load graph.
 
 ## Route perf check snapshot (Lighthouse, local preview, mobile profile)
 - [x] `/` improved from `41` to `76-78` score after deferring eager carousel prewarm + desktop-only plane-window media.
@@ -35,6 +36,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] `/create-trip` remained stable in the `80-83` score range across follow-up runs (normal Lighthouse variance observed).
 - [x] `/trip/:id` improved from `71` to `74-76` score in follow-up runs.
 - [x] Reports captured in `tmp/perf/*.json` during this session for before/after comparison.
+- [x] After header split, `/` remained stable at `76` while transfer dropped further to `~1244.8 KiB` and still avoids loading `select`/`MobileMenu`/`AccountMenu` on first paint.
+- [x] After header split, `/create-trip` remained stable at `82` with no regression in TBT (`~25 ms`).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -59,7 +62,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 
 ## Phase 3: Additional first-load wins (next)
 - [x] Reduce globally mounted heavy UI dependencies on marketing entry path.
-- [ ] Audit language selector/header dependency graph for lightweight path.
+- [x] Audit language selector/header dependency graph for lightweight path.
 - [ ] Keep admin-specific dependencies loading only in admin routes.
 - [x] Disable build-time asset inlining to stop large flag SVG data URIs from inflating entry CSS.
 - [ ] Re-check CSS payload and extract non-critical styles where safe.

@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { MobileMenu } from './MobileMenu';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -15,7 +14,20 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
-import { AccountMenu } from './AccountMenu';
+import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const MobileMenu = lazyWithRecovery('MobileMenu', () =>
+    import('./MobileMenu').then((module) => ({ default: module.MobileMenu }))
+);
+
+const AccountMenu = lazyWithRecovery('AccountMenu', () =>
+    import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
+);
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -155,7 +167,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             />
                         </div>
                         {isAuthenticated ? (
-                            <AccountMenu email={access?.email || null} isAdmin={isAdmin} />
+                            <Suspense
+                                fallback={(
+                                    <span
+                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 sm:inline-flex"
+                                        aria-hidden="true"
+                                    />
+                                )}
+                            >
+                                <AccountMenu email={access?.email || null} isAdmin={isAdmin} />
+                            </Suspense>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}
@@ -202,11 +223,15 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                 </div>
             </header>
 
-            <MobileMenu
-                isOpen={isMobileMenuOpen}
-                onClose={() => setIsMobileMenuOpen(false)}
-                onMyTripsClick={onMyTripsClick}
-            />
+            {isMobileMenuOpen && (
+                <Suspense fallback={null}>
+                    <MobileMenu
+                        isOpen={isMobileMenuOpen}
+                        onClose={() => setIsMobileMenuOpen(false)}
+                        onMyTripsClick={onMyTripsClick}
+                    />
+                </Suspense>
+            )}
         </>
     );
 };
