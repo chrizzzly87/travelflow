@@ -8,6 +8,28 @@ import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from 
 export const DB_ENABLED = isSupabaseEnabled;
 export { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin };
 
+export type DbTripAccessSource = 'owner' | 'admin_fallback';
+
+export interface DbTripAccessMetadata {
+    source: DbTripAccessSource;
+    ownerId: string | null;
+    ownerEmail: string | null;
+    canAdminWrite: boolean;
+    updatedAtIso: string | null;
+}
+
+export interface DbTripResult {
+    trip: ITrip;
+    view: IViewSettings | null;
+    access: DbTripAccessMetadata;
+}
+
+export interface DbAdminOverrideCommitResult {
+    tripId: string;
+    versionId: string | null;
+    updatedAtIso: string | null;
+}
+
 let cachedUserId: string | null = null;
 let isReauthInFlight = false;
 let sessionPromise: Promise<string | null> | null = null;
@@ -333,15 +355,19 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     return (row?.trip_id ?? row?.id) ?? null;
 };
 
-export const dbGetTrip = async (tripId: string) => {
+export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
     await ensureDbSession();
     let loadedViaAdminBypass = false;
+    let ownerId: string | null = null;
+    let ownerEmail: string | null = null;
+    let canAdminWrite = false;
+    let updatedAtIso: string | null = null;
 
     let { data, error } = await client
         .from('trips')
-        .select('id, data, view_settings, status, trip_expires_at, source_kind, source_template_id')
+        .select('id, owner_id, data, view_settings, status, trip_expires_at, source_kind, source_template_id, updated_at')
         .eq('id', tripId)
         .maybeSingle();
 
@@ -371,14 +397,20 @@ export const dbGetTrip = async (tripId: string) => {
             if (row) {
                 data = {
                     id: row.trip_id,
+                    owner_id: row.owner_id,
                     data: row.data,
                     view_settings: row.view_settings,
                     status: row.status,
                     trip_expires_at: row.trip_expires_at,
                     source_kind: row.source_kind,
                     source_template_id: row.source_template_id,
+                    updated_at: row.updated_at,
                 };
                 loadedViaAdminBypass = true;
+                ownerId = typeof row.owner_id === 'string' ? row.owner_id : null;
+                ownerEmail = typeof row.owner_email === 'string' ? row.owner_email : null;
+                canAdminWrite = Boolean(row.can_write);
+                updatedAtIso = typeof row.updated_at === 'string' ? row.updated_at : null;
             }
         } else if (!/not allowed/i.test(adminError.message || '')) {
             console.error('Failed admin trip-view fallback', adminError);
@@ -391,7 +423,27 @@ export const dbGetTrip = async (tripId: string) => {
     if (!normalizedBase) return null;
     const normalized = applyTripAccessFields(normalizedBase, data as Record<string, unknown>);
     if (normalized.status === 'archived' && !loadedViaAdminBypass) return null;
-    return { trip: normalized, view: normalizeViewSettingsPayload(data.view_settings) };
+    if (!ownerId) {
+        ownerId = typeof (data as { owner_id?: unknown }).owner_id === 'string'
+            ? (data as { owner_id: string }).owner_id
+            : null;
+    }
+    if (!updatedAtIso) {
+        updatedAtIso = typeof (data as { updated_at?: unknown }).updated_at === 'string'
+            ? (data as { updated_at: string }).updated_at
+            : null;
+    }
+    return {
+        trip: normalized,
+        view: normalizeViewSettingsPayload(data.view_settings),
+        access: {
+            source: loadedViaAdminBypass ? 'admin_fallback' : 'owner',
+            ownerId,
+            ownerEmail,
+            canAdminWrite: loadedViaAdminBypass ? canAdminWrite : false,
+            updatedAtIso,
+        },
+    };
 };
 
 export const dbGetTripVersion = async (tripId: string, versionId: string) => {
@@ -457,6 +509,43 @@ export const dbCreateTripVersion = async (
 
     const row = Array.isArray(data) ? data[0] : data;
     return (row?.trip_id ?? row?.id) ?? null;
+};
+
+export const dbAdminOverrideTripCommit = async (
+    trip: ITrip,
+    view: IViewSettings | undefined,
+    label?: string | null
+): Promise<DbAdminOverrideCommitResult | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+
+    const normalizedTrip = normalizeTripForStorage(trip);
+    const normalizedView = normalizeViewSettingsPayload(view ?? null);
+    const payload = {
+        p_trip_id: normalizedTrip.id,
+        p_data: normalizedTrip,
+        p_view: normalizedView,
+        p_title: normalizedTrip.title || 'Untitled trip',
+        p_start_date: normalizedTrip.startDate ? normalizedTrip.startDate.split('T')[0] : null,
+        p_is_favorite: Boolean(normalizedTrip.isFavorite),
+        p_label: label ?? null,
+    };
+
+    const { data, error } = await client.rpc('admin_override_trip_commit', payload);
+    if (error) {
+        console.error('Failed admin override trip commit', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.trip_id !== 'string') return null;
+
+    return {
+        tripId: row.trip_id as string,
+        versionId: typeof row.version_id === 'string' ? row.version_id : null,
+        updatedAtIso: typeof row.updated_at === 'string' ? row.updated_at : null,
+    };
 };
 
 export const dbListTrips = async (): Promise<ITrip[]> => {

@@ -146,6 +146,8 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 |-------|--------|---------|------|
 | `trip_view__auth--login` | — | `{ trip_id }` | `TripView.tsx` |
 | `trip_view__auth--logout` | — | `{ trip_id }` | `TripView.tsx` |
+| `trip_view__admin_override--toggle` | — | `{ trip_id, enabled }` | `TripView.tsx` |
+| `trip_view__admin_owner--open_users` | — | `{ trip_id, owner_id }` | `TripView.tsx` |
 
 ### Not Found
 | Event | Detail | Payload | File |

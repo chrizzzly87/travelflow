@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowSquareOut, SpinnerGap, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminGetUserProfile,
+    adminHardDeleteTrip,
     adminListTrips,
     adminUpdateTrip,
     type AdminTripRecord,
@@ -16,6 +17,8 @@ import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
+import { Checkbox } from '../components/ui/checkbox';
+import { useAppDialog } from '../components/AppDialogProvider';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -75,6 +78,7 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
 };
 
 export const AdminTripsPage: React.FC = () => {
+    const { confirm: confirmDialog } = useAppDialog();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedTrips = useMemo(
@@ -84,6 +88,7 @@ export const AdminTripsPage: React.FC = () => {
     const [trips, setTrips] = useState<AdminTripRecord[]>(cachedTrips);
     const [isLoading, setIsLoading] = useState(() => cachedTrips.length === 0);
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(() => new Set());
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [statusFilters, setStatusFilters] = useState<TripStatus[]>(
         () => parseQueryMultiValue(searchParams.get('status'), TRIP_STATUS_VALUES)
@@ -99,6 +104,13 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
     const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
+    const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
+    const deepLinkedOwnerId = useMemo(() => {
+        const drawer = searchParams.get('drawer');
+        const userId = searchParams.get('user');
+        if (drawer !== 'user' || !userId) return null;
+        return userId;
+    }, [searchParams]);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -108,9 +120,14 @@ export const AdminTripsPage: React.FC = () => {
             next.set('status', statusFilters.join(','));
         }
         if (dateRange !== '30d') next.set('range', dateRange);
+        const drawerOwnerId = selectedOwnerId || deepLinkedOwnerId;
+        if ((isOwnerDrawerOpen || deepLinkedOwnerId) && drawerOwnerId) {
+            next.set('user', drawerOwnerId);
+            next.set('drawer', 'user');
+        }
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [dateRange, searchParams, searchValue, setSearchParams, statusFilters]);
+    }, [dateRange, deepLinkedOwnerId, isOwnerDrawerOpen, searchParams, searchValue, selectedOwnerId, setSearchParams, statusFilters]);
 
     const loadTrips = async () => {
         setIsLoading(true);
@@ -161,6 +178,12 @@ export const AdminTripsPage: React.FC = () => {
         expired: visibleTrips.filter((trip) => trip.status === 'expired').length,
         archived: visibleTrips.filter((trip) => trip.status === 'archived').length,
     }), [visibleTrips]);
+    const selectedVisibleTrips = useMemo(
+        () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
+        [selectedTripIds, visibleTrips]
+    );
+    const areAllVisibleTripsSelected = visibleTrips.length > 0 && visibleTrips.every((trip) => selectedTripIds.has(trip.trip_id));
+    const isVisibleTripSelectionPartial = selectedVisibleTrips.length > 0 && !areAllVisibleTripsSelected;
 
     const statusFilterOptions = useMemo<AdminFilterMenuOption[]>(
         () => TRIP_STATUS_VALUES.map((value) => ({
@@ -200,6 +223,117 @@ export const AdminTripsPage: React.FC = () => {
         setSelectedOwnerId(ownerId);
         setIsOwnerDrawerOpen(true);
     };
+
+    const toggleTripSelection = (tripId: string, checked: boolean) => {
+        setSelectedTripIds((current) => {
+            const next = new Set(current);
+            if (checked) next.add(tripId);
+            else next.delete(tripId);
+            return next;
+        });
+    };
+
+    const toggleSelectAllVisibleTrips = (checked: boolean) => {
+        setSelectedTripIds((current) => {
+            const next = new Set(current);
+            if (!checked) {
+                visibleTrips.forEach((trip) => next.delete(trip.trip_id));
+                return next;
+            }
+            visibleTrips.forEach((trip) => next.add(trip.trip_id));
+            return next;
+        });
+    };
+
+    const handleBulkSoftDeleteTrips = async () => {
+        if (selectedVisibleTrips.length === 0) return;
+        const confirmed = await confirmDialog({
+            title: 'Soft delete selected trips',
+            message: `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
+            confirmLabel: 'Archive',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            await Promise.all(selectedVisibleTrips.map((trip) => adminUpdateTrip(trip.trip_id, { status: 'archived' })));
+            setMessage(`${selectedVisibleTrips.length} trip${selectedVisibleTrips.length === 1 ? '' : 's'} archived.`);
+            setSelectedTripIds(new Set());
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not archive selected trips.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBulkHardDeleteTrips = async () => {
+        if (selectedVisibleTrips.length === 0) return;
+        const confirmed = await confirmDialog({
+            title: 'Hard delete selected trips',
+            message: `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
+            confirmLabel: 'Hard delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const results = await Promise.allSettled(selectedVisibleTrips.map((trip) => adminHardDeleteTrip(trip.trip_id)));
+            const failed = results.filter((result) => result.status === 'rejected').length;
+            const deleted = results.length - failed;
+            if (deleted > 0) {
+                setMessage(
+                    failed > 0
+                        ? `${deleted} trip${deleted === 1 ? '' : 's'} permanently deleted. ${failed} failed.`
+                        : `${deleted} trip${deleted === 1 ? '' : 's'} permanently deleted.`
+                );
+            }
+            if (failed > 0 && deleted === 0) {
+                throw new Error('Could not hard-delete selected trips.');
+            }
+            setSelectedTripIds(new Set());
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected trips.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!deepLinkedOwnerId) {
+            handledDeepLinkedOwnerIdRef.current = null;
+            return;
+        }
+        if (handledDeepLinkedOwnerIdRef.current !== deepLinkedOwnerId) {
+            setSelectedOwnerId(deepLinkedOwnerId);
+            setIsOwnerDrawerOpen(true);
+            handledDeepLinkedOwnerIdRef.current = deepLinkedOwnerId;
+        }
+    }, [deepLinkedOwnerId]);
+
+    useEffect(() => {
+        setSelectedTripIds((current) => {
+            if (current.size === 0) return current;
+            const allowed = new Set(visibleTrips.map((trip) => trip.trip_id));
+            let changed = false;
+            const next = new Set<string>();
+            current.forEach((tripId) => {
+                if (allowed.has(tripId)) {
+                    next.add(tripId);
+                    return;
+                }
+                changed = true;
+            });
+            return changed ? next : current;
+        });
+    }, [visibleTrips]);
 
     useEffect(() => {
         if (!isOwnerDrawerOpen || !selectedOwnerId) return;
@@ -290,20 +424,64 @@ export const AdminTripsPage: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span className="text-xs font-semibold text-slate-700">{selectedVisibleTrips.length} selected</span>
+                    <button
+                        type="button"
+                        onClick={() => void handleBulkSoftDeleteTrips()}
+                        disabled={isSaving || selectedVisibleTrips.length === 0}
+                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Soft-delete selected
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => void handleBulkHardDeleteTrips()}
+                        disabled={isSaving || selectedVisibleTrips.length === 0}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Trash size={12} />
+                        Hard delete selected
+                    </button>
+                    {selectedVisibleTrips.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedTripIds(new Set())}
+                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="min-w-full border-collapse text-left text-sm">
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                <th className="px-3 py-2 align-middle">
+                                    <Checkbox
+                                        checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
+                                        onCheckedChange={(checked) => toggleSelectAllVisibleTrips(Boolean(checked))}
+                                        aria-label="Select all visible trips"
+                                    />
+                                </th>
                                 <th className="px-3 py-2">Trip</th>
                                 <th className="px-3 py-2">Owner</th>
                                 <th className="px-3 py-2">Status</th>
                                 <th className="px-3 py-2">Expires at</th>
-                                <th className="px-3 py-2">Actions</th>
+                                <th className="px-3 py-2">Last update</th>
                             </tr>
                         </thead>
                         <tbody>
                             {visibleTrips.map((trip) => (
-                                <tr key={trip.trip_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
+                                <tr key={trip.trip_id} className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                    <td className="px-3 py-2 align-middle">
+                                        <Checkbox
+                                            checked={selectedTripIds.has(trip.trip_id)}
+                                            onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
+                                            aria-label={`Select trip ${trip.title || trip.trip_id}`}
+                                        />
+                                    </td>
                                     <td className="px-3 py-2">
                                         <a
                                             href={`/trip/${encodeURIComponent(trip.trip_id)}`}
@@ -363,20 +541,20 @@ export const AdminTripsPage: React.FC = () => {
                                         />
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-500">
-                                        Updated: {new Date(trip.updated_at).toLocaleString()}
+                                        {new Date(trip.updated_at).toLocaleString()}
                                     </td>
                                 </tr>
                             ))}
                             {visibleTrips.length === 0 && !isLoading && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
                                         No trips match the current filters.
                                     </td>
                                 </tr>
                             )}
                             {isLoading && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
                                         <span className="inline-flex items-center gap-2">
                                             <SpinnerGap size={14} className="animate-spin" />
                                             Loading trips...
@@ -399,6 +577,12 @@ export const AdminTripsPage: React.FC = () => {
                     if (!open) {
                         setSelectedOwnerId(null);
                         setSelectedOwnerProfile(null);
+                        if (searchParams.has('user') || searchParams.get('drawer') === 'user') {
+                            const next = new URLSearchParams(searchParams);
+                            next.delete('user');
+                            next.delete('drawer');
+                            setSearchParams(next, { replace: true });
+                        }
                     }
                 }}
                 direction="right"
@@ -432,10 +616,10 @@ export const AdminTripsPage: React.FC = () => {
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => navigate(`/admin/users?q=${encodeURIComponent(selectedOwnerProfile.user_id)}`)}
+                                        onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
                                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                     >
-                                        Open full user editor
+                                        Open owner profile
                                         <ArrowSquareOut size={12} />
                                     </button>
                                 </section>

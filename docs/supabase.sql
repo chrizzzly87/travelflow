@@ -2182,6 +2182,7 @@ returns table(
   email text,
   is_anonymous boolean,
   auth_provider text,
+  auth_providers text[],
   activation_status text,
   last_sign_in_at timestamptz,
   display_name text,
@@ -2196,6 +2197,8 @@ returns table(
   disabled_at timestamptz,
   disabled_by uuid,
   onboarding_completed_at timestamptz,
+  active_trips integer,
+  total_trips integer,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -2220,9 +2223,26 @@ begin
     (
       case
         when u.id is null then 'placeholder'
-        else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+        else coalesce(
+          (
+            select provider_name
+              from unnest(coalesce(identity_providers.providers, array[]::text[])) provider_name
+             where provider_name <> 'email'
+             order by provider_name
+             limit 1
+          ),
+          case when u.email is not null then 'email' else 'unknown' end
+        )
       end
     )::text,
+    (
+      case
+        when u.id is null then array[]::text[]
+        when coalesce(array_length(identity_providers.providers, 1), 0) > 0 then identity_providers.providers
+        when u.email is not null then array['email']::text[]
+        else array[]::text[]
+      end
+    )::text[],
     (
       case
         when u.id is null then 'pending'
@@ -2245,6 +2265,8 @@ begin
     p.disabled_at,
     p.disabled_by,
     p.onboarding_completed_at,
+    coalesce(trip_counts.active_trips, 0)::integer,
+    coalesce(trip_counts.total_trips, 0)::integer,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -2252,6 +2274,22 @@ begin
     p.updated_at
   from public.profiles p
   left join auth.users u on u.id = p.id
+  left join lateral (
+    select
+      array_agg(distinct provider_name order by provider_name) filter (where provider_name is not null) as providers
+    from (
+      select nullif(lower(i.provider), '') as provider_name
+      from auth.identities i
+      where i.user_id = u.id
+    ) provider_rows
+  ) identity_providers on true
+  left join lateral (
+    select
+      count(*)::integer as total_trips,
+      count(*) filter (where coalesce(t.status, 'active') = 'active')::integer as active_trips
+    from public.trips t
+    where t.owner_id = p.id
+  ) trip_counts on true
   where (
     p_search is null
     or p_search = ''
@@ -2276,6 +2314,7 @@ returns table(
   email text,
   is_anonymous boolean,
   auth_provider text,
+  auth_providers text[],
   activation_status text,
   last_sign_in_at timestamptz,
   display_name text,
@@ -2290,6 +2329,8 @@ returns table(
   disabled_at timestamptz,
   disabled_by uuid,
   onboarding_completed_at timestamptz,
+  active_trips integer,
+  total_trips integer,
   system_role text,
   tier_key text,
   entitlements_override jsonb,
@@ -2314,9 +2355,26 @@ begin
     (
       case
         when u.id is null then 'placeholder'
-        else coalesce(nullif(u.raw_app_meta_data ->> 'provider', ''), case when u.email is not null then 'email' else 'unknown' end)
+        else coalesce(
+          (
+            select provider_name
+              from unnest(coalesce(identity_providers.providers, array[]::text[])) provider_name
+             where provider_name <> 'email'
+             order by provider_name
+             limit 1
+          ),
+          case when u.email is not null then 'email' else 'unknown' end
+        )
       end
     )::text,
+    (
+      case
+        when u.id is null then array[]::text[]
+        when coalesce(array_length(identity_providers.providers, 1), 0) > 0 then identity_providers.providers
+        when u.email is not null then array['email']::text[]
+        else array[]::text[]
+      end
+    )::text[],
     (
       case
         when u.id is null then 'pending'
@@ -2339,6 +2397,8 @@ begin
     p.disabled_at,
     p.disabled_by,
     p.onboarding_completed_at,
+    coalesce(trip_counts.active_trips, 0)::integer,
+    coalesce(trip_counts.total_trips, 0)::integer,
     p.system_role,
     p.tier_key,
     p.entitlements_override,
@@ -2346,6 +2406,22 @@ begin
     p.updated_at
   from public.profiles p
   left join auth.users u on u.id = p.id
+  left join lateral (
+    select
+      array_agg(distinct provider_name order by provider_name) filter (where provider_name is not null) as providers
+    from (
+      select nullif(lower(i.provider), '') as provider_name
+      from auth.identities i
+      where i.user_id = u.id
+    ) provider_rows
+  ) identity_providers on true
+  left join lateral (
+    select
+      count(*)::integer as total_trips,
+      count(*) filter (where coalesce(t.status, 'active') = 'active')::integer as active_trips
+    from public.trips t
+    where t.owner_id = p.id
+  ) trip_counts on true
   where p.id = p_user_id
   limit 1;
 end;
@@ -2577,7 +2653,8 @@ begin
 end;
 $$;
 
-create or replace function public.admin_get_trip_for_view(
+drop function if exists public.admin_get_trip_for_view(text);
+create function public.admin_get_trip_for_view(
   p_trip_id text
 )
 returns table(
@@ -2589,7 +2666,9 @@ returns table(
   status text,
   trip_expires_at timestamptz,
   source_kind text,
-  source_template_id text
+  source_template_id text,
+  updated_at timestamptz,
+  can_write boolean
 )
 language plpgsql
 security definer
@@ -2611,11 +2690,120 @@ begin
     coalesce(t.status, 'active'),
     t.trip_expires_at,
     t.source_kind,
-    t.source_template_id
+    t.source_template_id,
+    t.updated_at,
+    public.has_admin_permission('trips.write')
   from public.trips t
   left join auth.users u on u.id = t.owner_id
   where t.id = p_trip_id
   limit 1;
+end;
+$$;
+
+drop function if exists public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text);
+create function public.admin_override_trip_commit(
+  p_trip_id text,
+  p_data jsonb,
+  p_view jsonb default null,
+  p_title text default null,
+  p_start_date date default null,
+  p_is_favorite boolean default null,
+  p_label text default null
+)
+returns table(
+  trip_id text,
+  version_id uuid,
+  updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+  v_after jsonb;
+  v_status text;
+  v_trip_expires_at timestamptz;
+  v_updated_at timestamptz;
+  v_version_id uuid;
+  v_effective_label text;
+begin
+  if not public.has_admin_permission('trips.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  select
+    to_jsonb(t),
+    coalesce(t.status, 'active'),
+    t.trip_expires_at
+    into v_before, v_status, v_trip_expires_at
+  from public.trips t
+  where t.id = p_trip_id;
+
+  if v_before is null then
+    raise exception 'Trip not found';
+  end if;
+
+  if v_status = 'archived' then
+    raise exception 'Trip is archived and read-only in admin override mode';
+  end if;
+
+  if v_status = 'expired' then
+    raise exception 'Trip is expired and read-only in admin override mode';
+  end if;
+
+  if v_trip_expires_at is not null and v_trip_expires_at <= now() then
+    raise exception 'Trip has expired and is read-only in admin override mode';
+  end if;
+
+  update public.trips t
+     set data = coalesce(p_data, t.data),
+         view_settings = coalesce(p_view, t.view_settings),
+         title = coalesce(p_title, t.title),
+         start_date = coalesce(p_start_date, t.start_date),
+         is_favorite = coalesce(p_is_favorite, t.is_favorite),
+         updated_at = now()
+   where t.id = p_trip_id
+   returning t.updated_at into v_updated_at;
+
+  select to_jsonb(t)
+    into v_after
+  from public.trips t
+  where t.id = p_trip_id;
+
+  v_effective_label := coalesce(nullif(btrim(p_label), ''), 'Admin override commit');
+
+  insert into public.trip_versions (
+    trip_id,
+    data,
+    view_settings,
+    label,
+    created_by
+  )
+  values (
+    p_trip_id,
+    coalesce(p_data, v_before -> 'data'),
+    coalesce(p_view, v_before -> 'view_settings'),
+    v_effective_label,
+    auth.uid()
+  )
+  returning id into v_version_id;
+
+  perform public.admin_write_audit(
+    'admin.trip.override_commit',
+    'trip',
+    p_trip_id,
+    v_before,
+    v_after,
+    jsonb_build_object(
+      'version_id', v_version_id,
+      'label', v_effective_label
+    )
+  );
+
+  return query
+  select p_trip_id, v_version_id, v_updated_at;
 end;
 $$;
 
@@ -2715,6 +2903,50 @@ begin
     t.updated_at
   from public.trips t
   where t.id = p_trip_id;
+end;
+$$;
+
+create or replace function public.admin_hard_delete_trip(
+  p_trip_id text
+)
+returns table(
+  trip_id text
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_before jsonb;
+begin
+  if not public.has_admin_permission('trips.write') then
+    raise exception 'Not allowed';
+  end if;
+
+  select to_jsonb(t)
+    into v_before
+  from public.trips t
+  where t.id = p_trip_id;
+
+  if v_before is null then
+    raise exception 'Trip not found';
+  end if;
+
+  delete from public.trips t
+  where t.id = p_trip_id;
+
+  perform public.admin_write_audit(
+    'admin.trip.hard_delete',
+    'trip',
+    p_trip_id,
+    v_before,
+    '{}'::jsonb,
+    jsonb_build_object('hard_deleted', true)
+  );
+
+  return query
+  select p_trip_id;
 end;
 $$;
 
@@ -3066,7 +3298,9 @@ grant execute on function public.admin_update_plan_entitlements(text, jsonb) to 
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
+grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
+grant execute on function public.admin_hard_delete_trip(text) to authenticated;
 grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
 grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
 grant execute on function public.admin_preview_tier_reapply(text) to authenticated;

@@ -15,6 +15,7 @@ import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { AddActivityModal } from './AddActivityModal';
 import { AddCityModal } from './AddCityModal';
 import { Drawer, DrawerContent } from './ui/drawer';
+import { Switch } from './ui/switch';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight, Loader2
@@ -23,7 +24,17 @@ import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UN
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
-import { DB_ENABLED, dbCreateShareLink, dbGetTrip, dbListTripShares, dbRevokeTripShares, dbSetTripSharingEnabled, dbUpsertTrip, ensureDbSession } from '../services/dbService';
+import {
+    DB_ENABLED,
+    dbCreateShareLink,
+    dbGetTrip,
+    dbListTripShares,
+    dbRevokeTripShares,
+    dbSetTripSharingEnabled,
+    dbUpsertTrip,
+    ensureDbSession,
+    type DbTripAccessMetadata,
+} from '../services/dbService';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
 import {
@@ -235,7 +246,7 @@ const normalizeNegativeOffsetsForTrip = (
 interface TripViewProps {
     trip: ITrip;
     onUpdateTrip: (updatedTrip: ITrip, options?: { persist?: boolean }) => void;
-    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string }) => void;
+    onCommitState?: (updatedTrip: ITrip, view: IViewSettings, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => void;
     onOpenManager: () => void;
     onOpenSettings: () => void;
     initialViewSettings?: IViewSettings;
@@ -253,6 +264,7 @@ interface TripViewProps {
     isExamplePreview?: boolean;
     suppressToasts?: boolean;
     suppressReleaseNotice?: boolean;
+    adminAccess?: DbTripAccessMetadata;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -282,12 +294,13 @@ export const TripView: React.FC<TripViewProps> = ({
     isExamplePreview = false,
     suppressToasts = false,
     suppressReleaseNotice = false,
+    adminAccess,
     exampleTripBanner,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { openLoginModal } = useLoginModal();
-    const { isAuthenticated, isAnonymous, logout } = useAuth();
+    const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -309,7 +322,7 @@ export const TripView: React.FC<TripViewProps> = ({
         return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
     }, [latestInAppRelease]);
     const latestReleaseGroups = useMemo(() => groupReleaseItemsByType(latestReleaseItems), [latestReleaseItems]);
-    const showReleaseNotice = !suppressReleaseNotice && !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
+    const canShowReleaseNoticeByDismissal = !suppressReleaseNotice && !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
     const tripExpiresAtMs = useMemo(() => {
@@ -326,10 +339,19 @@ export const TripView: React.FC<TripViewProps> = ({
         () => shouldShowTripPaywall(trip, { lifecycleState }),
         [trip, lifecycleState]
     );
-    const canEdit = !readOnly && !isTripLockedByExpiry;
+    const isAdminFallbackView = adminAccess?.source === 'admin_fallback';
+    const [adminOverrideEnabled, setAdminOverrideEnabled] = useState(false);
+    const isTripLockedByArchive = (trip.status || 'active') === 'archived';
+    const isPaywallLocked = isTripLockedByExpiry && !isAdminFallbackView;
+    const effectiveReadOnly = readOnly || (isAdminFallbackView && !adminOverrideEnabled);
+    const canEdit = !effectiveReadOnly && !isTripLockedByExpiry && !isTripLockedByArchive;
     const displayTrip = useMemo(
-        () => (isTripLockedByExpiry ? buildPaywalledTripDisplay(trip) : trip),
-        [isTripLockedByExpiry, trip]
+        () => (isPaywallLocked ? buildPaywalledTripDisplay(trip) : trip),
+        [isPaywallLocked, trip]
+    );
+    const hasLoadingItems = useMemo(
+        () => displayTrip.items.some((item) => item.loading),
+        [displayTrip.items]
     );
     const expectedCityLaneCount = useMemo(
         () => displayTrip.items.filter((item) => item.type === 'city').length,
@@ -353,6 +375,15 @@ export const TripView: React.FC<TripViewProps> = ({
         if (diffDays === 0) return 'Expires today';
         return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
     }, [tripExpiresAtMs, nowMs]);
+    const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
+    const ownerUsersUrl = useMemo(() => {
+        if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
+        return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
+    }, [adminAccess?.ownerId, isAdminFallbackView]);
+
+    useEffect(() => {
+        setAdminOverrideEnabled(false);
+    }, [isAdminFallbackView, trip.id]);
 
     const handlePaywallLoginClick = useCallback((
         event: React.MouseEvent<HTMLAnchorElement>,
@@ -590,14 +621,26 @@ export const TripView: React.FC<TripViewProps> = ({
     }, [trip.id, showToast]);
 
     const requireEdit = useCallback(() => {
+        if (isTripLockedByArchive) {
+            showToast('Archived trips stay read-only. Unarchive in Admin Trips first.', { tone: 'neutral', title: 'Archived trip' });
+            return false;
+        }
         if (isTripLockedByExpiry) {
+            if (isAdminFallbackView) {
+                showToast('Expired trips stay read-only in admin override mode.', { tone: 'neutral', title: 'Expired trip' });
+                return false;
+            }
             showToast('Trip expired. Activate with an account to edit again.', { tone: 'neutral', title: 'Expired trip' });
             return false;
         }
         if (canEdit) return true;
+        if (isAdminFallbackView && !adminOverrideEnabled) {
+            showToast('Admin read-only mode is active. Enable override to edit.', { tone: 'neutral', title: 'Read only' });
+            return false;
+        }
         showToast('View-only link. Copy the trip to edit.', { tone: 'neutral', title: 'View only' });
         return false;
-    }, [canEdit, isTripLockedByExpiry, showToast]);
+    }, [adminOverrideEnabled, canEdit, isAdminFallbackView, isTripLockedByArchive, isTripLockedByExpiry, showToast]);
 
     const safeUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
         if (!requireEdit()) return;
@@ -1027,10 +1070,7 @@ export const TripView: React.FC<TripViewProps> = ({
         };
     }, [trip.items, trip.startDate]);
     const tripSummary = tripMeta.summaryLine;
-    const isLoadingPreview = useMemo(
-        () => displayTrip.items.some((item) => item.loading),
-        [displayTrip.items]
-    );
+    const isLoadingPreview = hasLoadingItems;
     const loadingDestinationSummary = useMemo(() => {
         const locations = displayTrip.items
             .filter((item) => item.type === 'city' && typeof item.location === 'string')
@@ -1043,7 +1083,16 @@ export const TripView: React.FC<TripViewProps> = ({
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
     const [generationProgressMessage, setGenerationProgressMessage] = useState(GENERATION_PROGRESS_MESSAGES[0]);
-    const showGenerationOverlay = isTripDetailRoute && isLoadingPreview;
+    const showGenerationOverlay = isTripDetailRoute
+        && isLoadingPreview
+        && !isAdminFallbackView
+        && !isTripLockedByExpiry
+        && !isTripLockedByArchive
+        && (trip.status || 'active') === 'active';
+    const showReleaseNotice = canShowReleaseNoticeByDismissal
+        && !isAdmin
+        && !isAdminFallbackView
+        && !showGenerationOverlay;
 
     useEffect(() => {
         if (!showGenerationOverlay) {
@@ -1322,7 +1371,11 @@ export const TripView: React.FC<TripViewProps> = ({
             const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
-            onCommitState(payload.trip, payload.view, { replace: false, label });
+            onCommitState(payload.trip, payload.view, {
+                replace: false,
+                label,
+                adminOverride: isAdminFallbackView && adminOverrideEnabled,
+            });
             pendingHistoryLabelRef.current = null;
             refreshHistory();
             showSavedToastForLabel(label);
@@ -1332,7 +1385,18 @@ export const TripView: React.FC<TripViewProps> = ({
                 if (typeof hook === 'function') hook({ label, ts: Date.now() });
             }
         }, commitDelay);
-    }, [onCommitState, trip, currentViewSettings, refreshHistory, showSavedToastForLabel, debugHistory, canEdit, isExamplePreview]);
+    }, [
+        adminOverrideEnabled,
+        canEdit,
+        currentViewSettings,
+        debugHistory,
+        isAdminFallbackView,
+        isExamplePreview,
+        onCommitState,
+        refreshHistory,
+        showSavedToastForLabel,
+        trip,
+    ]);
 
     useEffect(() => {
         const prev = prevViewRef.current;
@@ -2120,7 +2184,7 @@ export const TripView: React.FC<TripViewProps> = ({
             <GoogleMapsLoader language={appLanguage}>
                 <PrintLayout
                     trip={displayTrip}
-                    isPaywalled={isTripLockedByExpiry}
+                    isPaywalled={isPaywallLocked}
                     onClose={() => setViewMode('planner')}
                     onUpdateTrip={handleUpdateItems}
                 />
@@ -2307,6 +2371,83 @@ export const TripView: React.FC<TripViewProps> = ({
                     </div>
                 )}
 
+                {isAdminFallbackView && (
+                    <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 sm:px-6">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <p className="font-semibold">
+                                    {adminOverrideEnabled ? 'Admin override editing is enabled.' : 'Admin fallback view is read-only by default.'}
+                                </p>
+                                <p className="mt-1 text-[11px] text-indigo-800">
+                                    Owner: {adminAccess?.ownerEmail || 'No email'} · {adminAccess?.ownerId || 'Unknown user'}
+                                </p>
+                                {isTripLockedByArchive && (
+                                    <p className="mt-1 text-[11px] text-indigo-800">
+                                        This trip is archived and stays read-only here.
+                                    </p>
+                                )}
+                                {isTripLockedByExpiry && (
+                                    <p className="mt-1 text-[11px] text-indigo-800">
+                                        This trip is expired and stays read-only here.
+                                    </p>
+                                )}
+                                {!canEnableAdminOverride && (
+                                    <p className="mt-1 text-[11px] text-indigo-800">
+                                        You do not have trip write permission, so editing cannot be enabled.
+                                    </p>
+                                )}
+                                {hasLoadingItems && (
+                                    <p className="mt-1 text-[11px] text-indigo-800">
+                                        This trip has unfinished generation data, so some itinerary details may be missing.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {ownerUsersUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            trackEvent('trip_view__admin_owner--open_users', {
+                                                trip_id: trip.id,
+                                                owner_id: adminAccess?.ownerId || null,
+                                            });
+                                            navigate(ownerUsersUrl);
+                                        }}
+                                        className="rounded-md border border-indigo-300 bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-900 hover:bg-indigo-200"
+                                        {...getAnalyticsDebugAttributes('trip_view__admin_owner--open_users', {
+                                            trip_id: trip.id,
+                                            owner_id: adminAccess?.ownerId || null,
+                                        })}
+                                    >
+                                        Open owner drawer
+                                    </button>
+                                )}
+                                <div className="inline-flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800">
+                                        Enable editing
+                                    </span>
+                                    <Switch
+                                        checked={adminOverrideEnabled}
+                                        onCheckedChange={(checked) => {
+                                            if (!canEnableAdminOverride) return;
+                                            setAdminOverrideEnabled(checked);
+                                            trackEvent('trip_view__admin_override--toggle', {
+                                                trip_id: trip.id,
+                                                enabled: checked,
+                                            });
+                                        }}
+                                        disabled={!canEnableAdminOverride}
+                                        {...getAnalyticsDebugAttributes('trip_view__admin_override--toggle', {
+                                            trip_id: trip.id,
+                                            enabled: adminOverrideEnabled,
+                                        })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {shareSnapshotMeta && (
                     <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3">
                         <span>
@@ -2335,11 +2476,13 @@ export const TripView: React.FC<TripViewProps> = ({
                         }`}
                     >
                         <span>
-                            {isTripLockedByExpiry
+                            {isPaywallLocked
                                 ? `Trip preview paused${expirationLabel ? ` since ${expirationLabel}` : ''}. Reactivate to unlock full planning mode.`
+                                : isTripLockedByExpiry
+                                    ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
                                 : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
                         </span>
-                        {isTripLockedByExpiry && (
+                        {isPaywallLocked && (
                             <Link
                                 to="/login"
                                 onClick={(event) => handlePaywallLoginClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
@@ -2398,7 +2541,7 @@ export const TripView: React.FC<TripViewProps> = ({
                             onClick={() => setIsMobileMapExpanded(false)}
                         />
                     )}
-                    <div className={`w-full h-full ${isTripLockedByExpiry ? 'pointer-events-none select-none' : ''}`}>
+                    <div className={`w-full h-full ${isPaywallLocked ? 'pointer-events-none select-none' : ''}`}>
                         {isMobile ? (
                             <div className="w-full h-full flex flex-col">
                                 <div
@@ -2461,9 +2604,9 @@ export const TripView: React.FC<TripViewProps> = ({
                                         activeStyle={mapStyle}
                                         onStyleChange={setMapStyle}
                                         routeMode={routeMode}
-                                        onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
-                                        showCityNames={isTripLockedByExpiry ? false : showCityNames}
-                                        onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
+                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                        showCityNames={isPaywallLocked ? false : showCityNames}
+                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
                                         mapColorMode={mapColorMode}
                                         onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                         isExpanded={isMobileMapExpanded}
@@ -2472,7 +2615,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         onRouteMetrics={handleRouteMetrics}
                                         onRouteStatus={handleRouteStatus}
                                         fitToRouteKey={trip.id}
-                                        isPaywalled={isTripLockedByExpiry}
+                                        isPaywalled={isPaywallLocked}
                                         viewTransitionName={mapViewTransitionName}
                                     />
                                 </div>
@@ -2586,16 +2729,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 activeStyle={mapStyle}
                                                 onStyleChange={setMapStyle}
                                                 routeMode={routeMode}
-                                                onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
-                                                showCityNames={isTripLockedByExpiry ? false : showCityNames}
-                                                onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
+                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                showCityNames={isPaywallLocked ? false : showCityNames}
+                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
                                                 mapColorMode={mapColorMode}
                                                 onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
-                                                isPaywalled={isTripLockedByExpiry}
+                                                isPaywalled={isPaywallLocked}
                                                 viewTransitionName={mapViewTransitionName}
                                             />
                                         </div>
@@ -2611,16 +2754,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 activeStyle={mapStyle}
                                                 onStyleChange={setMapStyle}
                                                 routeMode={routeMode}
-                                                onRouteModeChange={isTripLockedByExpiry ? undefined : setRouteMode}
-                                                showCityNames={isTripLockedByExpiry ? false : showCityNames}
-                                                onShowCityNamesChange={isTripLockedByExpiry ? undefined : setShowCityNames}
+                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                showCityNames={isPaywallLocked ? false : showCityNames}
+                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
                                                 mapColorMode={mapColorMode}
                                                 onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
                                                 focusLocationQuery={initialMapFocusQuery}
                                                 onRouteMetrics={handleRouteMetrics}
                                                 onRouteStatus={handleRouteStatus}
                                                 fitToRouteKey={trip.id}
-                                                isPaywalled={isTripLockedByExpiry}
+                                                isPaywalled={isPaywallLocked}
                                                 viewTransitionName={mapViewTransitionName}
                                             />
                                         </div>
@@ -3004,7 +3147,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     <section className="border border-gray-200 rounded-xl p-3">
                                         {displayTrip.countryInfo ? (
                                             <CountryInfo info={displayTrip.countryInfo} />
-                                        ) : isTripLockedByExpiry ? (
+                                        ) : isPaywallLocked ? (
                                             <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
                                         ) : (
                                             <div className="text-xs text-gray-500">No destination info available for this trip yet.</div>
@@ -3299,7 +3442,7 @@ export const TripView: React.FC<TripViewProps> = ({
                         </div>
                     )}
 
-                    {isTripLockedByExpiry && (
+                    {isPaywallLocked && (
                         <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
                             <div className="pointer-events-auto w-full max-w-xl rounded-2xl bg-gradient-to-br from-accent-200/60 via-rose-100/70 to-amber-100/80 p-[1px] shadow-2xl">
                                 <div className="relative overflow-hidden rounded-[15px] border border-white/70 bg-white/95 px-5 py-5 backdrop-blur">

@@ -103,6 +103,7 @@ When adding a new key:
 1. Keep the URL unprefixed (no locale segment).
 2. Use active app language for text + formatting.
 3. Do not introduce locale-specific tool path variants unless explicitly approved.
+4. Admin workspace copy (`/admin/*`) is English-only by default; do not add locale keys for admin-only labels unless localization is explicitly requested.
 
 ## AI Translation Disclaimer
 - Localized marketing pages show translation disclaimer banner via `components/marketing/TranslationNoticeBanner.tsx`.

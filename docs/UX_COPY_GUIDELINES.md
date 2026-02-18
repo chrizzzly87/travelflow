@@ -57,10 +57,12 @@ This guide defines how to write copy for TravelFlow marketing pages, CTAs, and p
   - show final DE copy block
   - ask if tone should be more playful, more premium, or more direct
 - If feedback is unclear, ask a focused follow-up question before shipping.
+- Exemption: Admin workspace copy (`/admin/*`, admin tables/drawers/modals, admin-only controls) is English-only by default and does not require EN/DE sign-off unless explicitly requested.
 
 ## Agent Checklist For Copy Changes
 1. Check this file before editing marketing/planner text.
 2. Draft copy in EN first, then adapt to DE with transcreation (not literal translation).
 3. Validate consistency with existing UI terminology.
-4. Request EN/DE style sign-off from the user.
-5. Only finalize after feedback or explicit user opt-out.
+4. Request EN/DE style sign-off from the user for localized marketing/planner copy.
+5. Skip bilingual sign-off for admin-only copy unless explicitly requested.
+6. Only finalize after feedback or explicit user opt-out where sign-off applies.

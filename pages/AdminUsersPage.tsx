@@ -1,15 +1,25 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
+    AppleLogo,
+    ArrowSquareOut,
     ArrowsDownUp,
+    ChatCircleDots,
     ChartBarHorizontal,
+    DiscordLogo,
     DotsThreeVertical,
     EnvelopeSimple,
+    FacebookLogo,
+    GithubLogo,
+    GoogleLogo,
+    Key,
+    Question,
     SpinnerGap,
     Trash,
     X,
     UserPlus,
 } from '@phosphor-icons/react';
+import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
@@ -31,15 +41,20 @@ import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+import { useAppDialog } from '../components/AppDialogProvider';
 
-type SortKey = 'name' | 'email' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
+type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
 type SortDirection = 'asc' | 'desc';
 type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
 type UserAccountStatus = 'active' | 'disabled' | 'deleted';
+type UserLoginType = 'social' | 'password' | 'unknown';
+type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
+type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 
 const PAGE_SIZE = 25;
 const GENDER_UNSET_VALUE = '__gender_unset__';
@@ -47,6 +62,94 @@ const USERS_CACHE_KEY = 'admin.users.cache.v1';
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
+const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
+const SOCIAL_PROVIDER_VALUES: ReadonlyArray<SocialProviderFilter> = [
+    'google',
+    'facebook',
+    'kakao',
+    'apple',
+    'github',
+    'discord',
+    'other_social',
+];
+const SOCIAL_PROVIDER_OPTIONS: Array<{ value: SocialProviderFilter; label: string }> = [
+    { value: 'google', label: 'Gmail' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'kakao', label: 'Kakao' },
+    { value: 'apple', label: 'Apple' },
+    { value: 'github', label: 'GitHub' },
+    { value: 'discord', label: 'Discord' },
+    { value: 'other_social', label: 'Other social' },
+];
+
+type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
+
+interface LoginPillDefinition {
+    label: string;
+    className: string;
+    icon: IconComponent;
+}
+
+interface UserLoginProfile {
+    providers: string[];
+    hasPassword: boolean;
+    socialProviders: SocialProviderFilter[];
+    isUnknown: boolean;
+    isAnonymousOnly: boolean;
+}
+
+const LOGIN_PILL_DEFINITIONS: Record<LoginPillKey, LoginPillDefinition> = {
+    password: {
+        label: 'Username/password',
+        className: 'border-slate-300 bg-slate-50 text-slate-700',
+        icon: Key,
+    },
+    google: {
+        label: 'Gmail',
+        className: 'border-rose-200 bg-rose-50 text-rose-700',
+        icon: GoogleLogo,
+    },
+    facebook: {
+        label: 'Facebook',
+        className: 'border-sky-200 bg-sky-50 text-sky-700',
+        icon: FacebookLogo,
+    },
+    kakao: {
+        label: 'Kakao',
+        className: 'border-amber-200 bg-amber-50 text-amber-800',
+        icon: ChatCircleDots,
+    },
+    apple: {
+        label: 'Apple',
+        className: 'border-slate-400 bg-slate-100 text-slate-800',
+        icon: AppleLogo,
+    },
+    github: {
+        label: 'GitHub',
+        className: 'border-zinc-400 bg-zinc-100 text-zinc-800',
+        icon: GithubLogo,
+    },
+    discord: {
+        label: 'Discord',
+        className: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+        icon: DiscordLogo,
+    },
+    other_social: {
+        label: 'Other social',
+        className: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700',
+        icon: ChatCircleDots,
+    },
+    anonymous: {
+        label: 'Anonymous',
+        className: 'border-violet-300 bg-violet-50 text-violet-700',
+        icon: Question,
+    },
+    unknown: {
+        label: 'Unknown',
+        className: 'border-slate-300 bg-slate-50 text-slate-600',
+        icon: Question,
+    },
+};
 
 const parseAdminDateRange = (value: string | null): AdminDateRange => {
     if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
@@ -56,6 +159,7 @@ const parseAdminDateRange = (value: string | null): AdminDateRange => {
 const parseSortKey = (value: string | null): SortKey => {
     if (value === 'name'
         || value === 'email'
+        || value === 'total_trips'
         || value === 'activation_status'
         || value === 'last_sign_in_at'
         || value === 'created_at'
@@ -157,17 +261,83 @@ const activationPillClass = (status: UserActivationStatus): string => {
     return 'border-violet-300 bg-violet-50 text-violet-800';
 };
 
-const getProviderLabel = (user: AdminUserRecord): string => {
-    const activationStatus = resolveActivationStatus(user);
-    if (activationStatus === 'pending') return 'Pending activation';
-    if (activationStatus === 'anonymous') return 'Anonymous';
-    const provider = (user.auth_provider || '').trim().toLowerCase();
-    if (!provider || provider === 'email') return 'Email/password';
-    if (provider === 'google') return 'Google';
-    if (provider === 'apple') return 'Apple';
-    if (provider === 'github') return 'GitHub';
-    if (provider === 'discord') return 'Discord';
-    return provider;
+const normalizeProviderKey = (value: string | null | undefined): string => {
+    const normalized = (value || '').trim().toLowerCase();
+    if (!normalized) return '';
+    if (normalized === 'password' || normalized === 'credentials' || normalized === 'email_password' || normalized === 'mail') {
+        return 'email';
+    }
+    if (normalized === 'google_oauth2' || normalized === 'gmail') return 'google';
+    if (normalized === 'anon') return 'anonymous';
+    return normalized;
+};
+
+const mapProviderToSocialFilter = (provider: string): SocialProviderFilter | null => {
+    if (provider === 'google') return 'google';
+    if (provider === 'facebook') return 'facebook';
+    if (provider === 'kakao') return 'kakao';
+    if (provider === 'apple') return 'apple';
+    if (provider === 'github') return 'github';
+    if (provider === 'discord') return 'discord';
+    if (provider === 'email' || provider === 'anonymous' || provider === 'placeholder' || provider === 'unknown') {
+        return null;
+    }
+    return 'other_social';
+};
+
+const resolveUserLoginProfile = (user: AdminUserRecord): UserLoginProfile => {
+    const candidates: string[] = [];
+    if (Array.isArray(user.auth_providers)) {
+        user.auth_providers.forEach((provider) => candidates.push(provider));
+    }
+    if (user.auth_provider) candidates.push(user.auth_provider);
+    if (candidates.length === 0 && user.email) candidates.push('email');
+    if (user.is_anonymous) candidates.push('anonymous');
+
+    const providerSet = new Set<string>();
+    candidates.forEach((provider) => {
+        const normalized = normalizeProviderKey(provider);
+        if (normalized) providerSet.add(normalized);
+    });
+    if (providerSet.size === 0 && user.email) providerSet.add('email');
+
+    const providers = Array.from(providerSet);
+    const hasPassword = providers.includes('email');
+    const socialSet = new Set<SocialProviderFilter>();
+    providers.forEach((provider) => {
+        const socialProvider = mapProviderToSocialFilter(provider);
+        if (socialProvider) socialSet.add(socialProvider);
+    });
+    const socialProviders = SOCIAL_PROVIDER_VALUES.filter((provider) => socialSet.has(provider));
+    const isUnknown = !hasPassword && socialProviders.length === 0;
+    const isAnonymousOnly = isUnknown && (providers.includes('anonymous') || Boolean(user.is_anonymous));
+
+    return {
+        providers,
+        hasPassword,
+        socialProviders,
+        isUnknown,
+        isAnonymousOnly,
+    };
+};
+
+const getLoginPills = (user: AdminUserRecord): LoginPillDefinition[] => {
+    const profile = resolveUserLoginProfile(user);
+    const pills: LoginPillDefinition[] = [];
+    if (profile.hasPassword) pills.push(LOGIN_PILL_DEFINITIONS.password);
+    profile.socialProviders.forEach((provider) => pills.push(LOGIN_PILL_DEFINITIONS[provider]));
+    if (pills.length === 0 && profile.isAnonymousOnly) pills.push(LOGIN_PILL_DEFINITIONS.anonymous);
+    if (pills.length === 0) pills.push(LOGIN_PILL_DEFINITIONS.unknown);
+    return pills;
+};
+
+const getLoginMethodSummary = (user: AdminUserRecord): string => {
+    return getLoginPills(user).map((pill) => pill.label).join(', ');
+};
+
+const getLoginSearchText = (user: AdminUserRecord): string => {
+    const profile = resolveUserLoginProfile(user);
+    return `${profile.providers.join(' ')} ${getLoginMethodSummary(user)}`.trim().toLowerCase();
 };
 
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
@@ -300,7 +470,256 @@ const UserRowActionsMenu: React.FC<{
     );
 };
 
+interface LoginFilterCounts {
+    password: number;
+    social: number;
+    unknown: number;
+    socialProviders: Record<SocialProviderFilter, number>;
+}
+
+const LoginTypeFilterMenu: React.FC<{
+    selectedLoginTypes: UserLoginType[];
+    selectedSocialProviders: SocialProviderFilter[];
+    counts: LoginFilterCounts;
+    onSelectedLoginTypesChange: (next: UserLoginType[]) => void;
+    onSelectedSocialProvidersChange: (next: SocialProviderFilter[]) => void;
+}> = ({
+    selectedLoginTypes,
+    selectedSocialProviders,
+    counts,
+    onSelectedLoginTypesChange,
+    onSelectedSocialProvidersChange,
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; width: number }>({
+        top: 0,
+        left: 0,
+        width: 320,
+    });
+
+    const selectedLoginTypeSet = useMemo(() => new Set(selectedLoginTypes), [selectedLoginTypes]);
+    const socialEnabled = selectedLoginTypeSet.has('social');
+    const selectedSocialProviderSet = useMemo(
+        () => new Set(selectedSocialProviders),
+        [selectedSocialProviders]
+    );
+    const activeSocialProviderCount = socialEnabled
+        ? (selectedSocialProviders.length === 0 ? SOCIAL_PROVIDER_VALUES.length : selectedSocialProviders.length)
+        : 0;
+    const socialIndeterminate = socialEnabled
+        && activeSocialProviderCount > 0
+        && activeSocialProviderCount < SOCIAL_PROVIDER_VALUES.length;
+
+    const selectedLabelSummary = useMemo(() => {
+        if (selectedLoginTypes.length === 0) return 'All';
+        const labels: string[] = [];
+        if (selectedLoginTypeSet.has('social')) {
+            if (socialIndeterminate) labels.push(`Social (${activeSocialProviderCount})`);
+            else labels.push('Social');
+        }
+        if (selectedLoginTypeSet.has('password')) labels.push('Username/password');
+        if (selectedLoginTypeSet.has('unknown')) labels.push('Unknown');
+        return labels.join(', ');
+    }, [activeSocialProviderCount, selectedLoginTypeSet, selectedLoginTypes.length, socialIndeterminate]);
+
+    const updateMenuPosition = () => {
+        const trigger = triggerRef.current;
+        if (!trigger) return;
+        const rect = trigger.getBoundingClientRect();
+        const viewportPadding = 10;
+        const preferredWidth = Math.max(320, rect.width + 70);
+        const maxLeft = window.innerWidth - preferredWidth - viewportPadding;
+        const nextLeft = Math.max(viewportPadding, Math.min(rect.left, maxLeft));
+        setMenuPosition({
+            top: rect.bottom + 8,
+            left: nextLeft,
+            width: preferredWidth,
+        });
+    };
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+        updateMenuPosition();
+        const onPointer = (event: PointerEvent) => {
+            const targetNode = event.target as Node;
+            if (triggerRef.current?.contains(targetNode)) return;
+            if (menuRef.current?.contains(targetNode)) return;
+            setIsOpen(false);
+        };
+        const onEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            setIsOpen(false);
+        };
+        const onViewportChange = () => updateMenuPosition();
+        window.addEventListener('pointerdown', onPointer);
+        window.addEventListener('keydown', onEscape);
+        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('scroll', onViewportChange, true);
+        return () => {
+            window.removeEventListener('pointerdown', onPointer);
+            window.removeEventListener('keydown', onEscape);
+            window.removeEventListener('resize', onViewportChange);
+            window.removeEventListener('scroll', onViewportChange, true);
+        };
+    }, [isOpen]);
+
+    const setLoginTypeChecked = (value: UserLoginType, checked: boolean) => {
+        const next = new Set(selectedLoginTypeSet);
+        if (checked) next.add(value);
+        else next.delete(value);
+        if (!next.has('social')) onSelectedSocialProvidersChange([]);
+        onSelectedLoginTypesChange(USER_LOGIN_TYPE_VALUES.filter((candidate) => next.has(candidate)));
+    };
+
+    const setSocialParentChecked = (checked: boolean) => {
+        const next = new Set(selectedLoginTypeSet);
+        if (checked) {
+            next.add('social');
+        } else {
+            next.delete('social');
+            onSelectedSocialProvidersChange([]);
+        }
+        onSelectedLoginTypesChange(USER_LOGIN_TYPE_VALUES.filter((candidate) => next.has(candidate)));
+    };
+
+    const toggleSocialProvider = (provider: SocialProviderFilter) => {
+        const next = new Set(
+            selectedSocialProviders.length === 0
+                ? SOCIAL_PROVIDER_VALUES
+                : selectedSocialProviders
+        );
+        if (next.has(provider)) next.delete(provider);
+        else next.add(provider);
+        if (next.size === 0) {
+            setLoginTypeChecked('social', false);
+            onSelectedSocialProvidersChange([]);
+            return;
+        }
+        setLoginTypeChecked('social', true);
+        const ordered = SOCIAL_PROVIDER_VALUES.filter((candidate) => next.has(candidate));
+        if (ordered.length === SOCIAL_PROVIDER_VALUES.length) {
+            onSelectedSocialProvidersChange([]);
+            return;
+        }
+        onSelectedSocialProvidersChange(ordered);
+    };
+
+    const socialCheckboxState: boolean | 'indeterminate' = socialEnabled
+        ? (socialIndeterminate ? 'indeterminate' : true)
+        : false;
+
+    return (
+        <div>
+            <button
+                ref={triggerRef}
+                type="button"
+                onClick={() => {
+                    updateMenuPosition();
+                    setIsOpen((current) => !current);
+                }}
+                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400"
+                aria-label="Filter by login type"
+                aria-expanded={isOpen}
+            >
+                <Key size={14} className="text-slate-500" />
+                <span>Login type</span>
+                <span className="h-4 w-px bg-slate-200" />
+                <span className="max-w-[220px] truncate text-slate-600">{selectedLabelSummary}</span>
+            </button>
+
+            {isOpen && typeof document !== 'undefined' && createPortal(
+                <div
+                    ref={menuRef}
+                    className="fixed z-[1700] rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    style={{
+                        top: `${menuPosition.top}px`,
+                        left: `${menuPosition.left}px`,
+                        width: `${menuPosition.width}px`,
+                    }}
+                >
+                    <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        Login type
+                    </div>
+                    <div className="space-y-1 p-1.5">
+                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                            <label className="inline-flex cursor-pointer items-center gap-2">
+                                <Checkbox
+                                    checked={selectedLoginTypeSet.has('password')}
+                                    onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
+                                />
+                                <span>Username/password</span>
+                            </label>
+                            <span className="text-xs font-semibold text-slate-500">{counts.password}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                            <label className="inline-flex cursor-pointer items-center gap-2">
+                                <Checkbox
+                                    checked={socialCheckboxState}
+                                    onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
+                                />
+                                <span>Social</span>
+                            </label>
+                            <span className="text-xs font-semibold text-slate-500">{counts.social}</span>
+                        </div>
+                        <div className={`ms-6 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-2 ${socialEnabled ? '' : 'opacity-75'}`}>
+                            {SOCIAL_PROVIDER_OPTIONS.map((option) => {
+                                const checked = socialEnabled
+                                    && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
+                                const definition = LOGIN_PILL_DEFINITIONS[option.value];
+                                const Icon = definition.icon;
+                                return (
+                                    <div
+                                        key={`social-provider-filter-${option.value}`}
+                                        className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs text-slate-700 hover:bg-white"
+                                    >
+                                        <label className="inline-flex cursor-pointer items-center gap-2">
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={() => toggleSocialProvider(option.value)}
+                                            />
+                                            <Icon size={12} className="text-slate-500" />
+                                            {option.label}
+                                        </label>
+                                        <span className="text-[11px] font-semibold text-slate-500">{counts.socialProviders[option.value]}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                            <label className="inline-flex cursor-pointer items-center gap-2">
+                                <Checkbox
+                                    checked={selectedLoginTypeSet.has('unknown')}
+                                    onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
+                                />
+                                <span>Unknown</span>
+                            </label>
+                            <span className="text-xs font-semibold text-slate-500">{counts.unknown}</span>
+                        </div>
+                    </div>
+                    <div className="border-t border-slate-100 p-1.5">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onSelectedLoginTypesChange([]);
+                                onSelectedSocialProvidersChange([]);
+                                setIsOpen(false);
+                            }}
+                            className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                            Clear filters
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
+
 export const AdminUsersPage: React.FC = () => {
+    const { confirm: confirmDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedUsers = useMemo(
         () => readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []),
@@ -328,11 +747,18 @@ export const AdminUsersPage: React.FC = () => {
         if (legacyIdentity === 'anonymous') return ['pending', 'anonymous'];
         return [];
     });
+    const [loginTypeFilters, setLoginTypeFilters] = useState<UserLoginType[]>(
+        () => parseQueryMultiValue(searchParams.get('login'), USER_LOGIN_TYPE_VALUES)
+    );
+    const [socialProviderFilters, setSocialProviderFilters] = useState<SocialProviderFilter[]>(
+        () => parseQueryMultiValue(searchParams.get('social'), SOCIAL_PROVIDER_VALUES)
+    );
     const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [createMode, setCreateMode] = useState<'invite' | 'direct'>('invite');
@@ -357,6 +783,13 @@ export const AdminUsersPage: React.FC = () => {
     });
     const [userTrips, setUserTrips] = useState<AdminTripRecord[]>([]);
     const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+    const handledDeepLinkUserIdRef = useRef<string | null>(null);
+    const deepLinkedUserId = useMemo(() => {
+        const drawer = searchParams.get('drawer');
+        const userId = searchParams.get('user');
+        if (drawer !== 'user' || !userId) return null;
+        return userId;
+    }, [searchParams]);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -367,29 +800,101 @@ export const AdminUsersPage: React.FC = () => {
         if (tierFilters.length > 0 && tierFilters.length < PLAN_ORDER.length) next.set('tier', tierFilters.join(','));
         if (statusFilters.length > 0 && statusFilters.length < USER_STATUS_VALUES.length) next.set('status', statusFilters.join(','));
         if (activationFilters.length > 0 && activationFilters.length < USER_ACTIVATION_VALUES.length) next.set('activation', activationFilters.join(','));
+        if (loginTypeFilters.length > 0 && loginTypeFilters.length < USER_LOGIN_TYPE_VALUES.length) {
+            next.set('login', loginTypeFilters.join(','));
+        }
+        if (
+            loginTypeFilters.includes('social')
+            && socialProviderFilters.length > 0
+            && socialProviderFilters.length < SOCIAL_PROVIDER_VALUES.length
+        ) {
+            next.set('social', socialProviderFilters.join(','));
+        }
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
+        const drawerUserId = selectedUserId || deepLinkedUserId;
+        if ((isDetailOpen || deepLinkedUserId) && drawerUserId) {
+            next.set('user', drawerUserId);
+            next.set('drawer', 'user');
+        }
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
     }, [
+        deepLinkedUserId,
         activationFilters,
         dateRange,
+        isDetailOpen,
+        loginTypeFilters,
         page,
         roleFilters,
         searchParams,
         searchValue,
+        selectedUserId,
         setSearchParams,
         sortDirection,
         sortKey,
+        socialProviderFilters,
         statusFilters,
         tierFilters,
     ]);
+
+    useEffect(() => {
+        if (!deepLinkedUserId) {
+            handledDeepLinkUserIdRef.current = null;
+            return;
+        }
+        if (handledDeepLinkUserIdRef.current !== deepLinkedUserId) {
+            setSelectedUserId(deepLinkedUserId);
+            setIsDetailOpen(true);
+            handledDeepLinkUserIdRef.current = deepLinkedUserId;
+        }
+
+        const hasInTable = users.some((user) => user.user_id === deepLinkedUserId);
+        if (hasInTable) return;
+
+        let active = true;
+        void adminGetUserProfile(deepLinkedUserId)
+            .then((profile) => {
+                if (!active || !profile) return;
+                setUsers((current) => {
+                    const exists = current.some((candidate) => candidate.user_id === profile.user_id);
+                    const nextUsers = exists
+                        ? current.map((candidate) => (candidate.user_id === profile.user_id ? { ...candidate, ...profile } : candidate))
+                        : [profile, ...current];
+                    writeAdminCache(USERS_CACHE_KEY, nextUsers);
+                    return nextUsers;
+                });
+            })
+            .catch((error) => {
+                if (!active) return;
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load linked user profile.');
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [deepLinkedUserId, users]);
 
     const selectedUser = useMemo(
         () => users.find((user) => user.user_id === selectedUserId) || null,
         [selectedUserId, users]
     );
+    const selectedUserTripStats = useMemo(() => {
+        const fallbackTotal = Math.max(0, Number(selectedUser?.total_trips || 0));
+        const fallbackActive = Math.max(0, Number(selectedUser?.active_trips || 0));
+        if (isLoadingTrips) {
+            return { total: fallbackTotal, active: fallbackActive };
+        }
+        const total = userTrips.length;
+        const active = userTrips.filter((trip) => trip.status === 'active').length;
+        return { total, active };
+    }, [isLoadingTrips, selectedUser?.active_trips, selectedUser?.total_trips, userTrips]);
+    const selectedUserTripsPageLink = useMemo(() => {
+        if (!selectedUser) return null;
+        const token = (selectedUser.email || '').trim() || selectedUser.user_id;
+        return `/admin/trips?q=${encodeURIComponent(token)}`;
+    }, [selectedUser]);
 
     const loadUsers = async () => {
         setIsLoadingUsers(true);
@@ -467,17 +972,35 @@ export const AdminUsersPage: React.FC = () => {
         const filtered = users.filter((user) => {
             const accountStatus = (user.account_status || 'active') as UserAccountStatus;
             const activationStatus = resolveActivationStatus(user);
+            const loginProfile = resolveUserLoginProfile(user);
             if (!isIsoDateInRange(user.created_at, dateRange)) return false;
             if (roleFilters.length > 0 && !roleFilters.includes(user.system_role)) return false;
             if (tierFilters.length > 0 && !tierFilters.includes(user.tier_key)) return false;
             if (statusFilters.length > 0 && !statusFilters.includes(accountStatus)) return false;
             if (activationFilters.length > 0 && !activationFilters.includes(activationStatus)) return false;
+            if (loginTypeFilters.length > 0) {
+                let loginMatches = false;
+                if (loginTypeFilters.includes('password') && loginProfile.hasPassword) {
+                    loginMatches = true;
+                }
+                if (loginTypeFilters.includes('unknown') && loginProfile.isUnknown) {
+                    loginMatches = true;
+                }
+                if (loginTypeFilters.includes('social') && loginProfile.socialProviders.length > 0) {
+                    if (socialProviderFilters.length === 0) {
+                        loginMatches = true;
+                    } else if (loginProfile.socialProviders.some((provider) => socialProviderFilters.includes(provider))) {
+                        loginMatches = true;
+                    }
+                }
+                if (!loginMatches) return false;
+            }
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
                 || (user.email || '').toLowerCase().includes(token)
                 || user.user_id.toLowerCase().includes(token)
-                || getProviderLabel(user).toLowerCase().includes(token)
+                || getLoginSearchText(user).includes(token)
                 || (user.username || '').toLowerCase().includes(token)
                 || getActivationStatusLabel(activationStatus).toLowerCase().includes(token)
             );
@@ -486,6 +1009,7 @@ export const AdminUsersPage: React.FC = () => {
         const getSortValue = (user: AdminUserRecord): string | number => {
             if (sortKey === 'name') return getUserDisplayName(user).toLowerCase();
             if (sortKey === 'email') return (user.email || '').toLowerCase();
+            if (sortKey === 'total_trips') return Number(user.total_trips || 0);
             if (sortKey === 'activation_status') return resolveActivationStatus(user);
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
@@ -511,8 +1035,10 @@ export const AdminUsersPage: React.FC = () => {
     }, [
         activationFilters,
         dateRange,
+        loginTypeFilters,
         roleFilters,
         searchValue,
+        socialProviderFilters,
         sortDirection,
         sortKey,
         statusFilters,
@@ -587,15 +1113,70 @@ export const AdminUsersPage: React.FC = () => {
         [usersInDateRange]
     );
 
+    const loginFilterCounts = useMemo<LoginFilterCounts>(() => {
+        const socialProviders: Record<SocialProviderFilter, number> = {
+            google: 0,
+            facebook: 0,
+            kakao: 0,
+            apple: 0,
+            github: 0,
+            discord: 0,
+            other_social: 0,
+        };
+        let password = 0;
+        let social = 0;
+        let unknown = 0;
+        usersInDateRange.forEach((user) => {
+            const profile = resolveUserLoginProfile(user);
+            if (profile.hasPassword) password += 1;
+            if (profile.socialProviders.length > 0) {
+                social += 1;
+                profile.socialProviders.forEach((provider) => {
+                    socialProviders[provider] += 1;
+                });
+            }
+            if (profile.isUnknown) unknown += 1;
+        });
+        return {
+            password,
+            social,
+            unknown,
+            socialProviders,
+        };
+    }, [usersInDateRange]);
+
     const pageCount = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
     const pagedUsers = useMemo(() => {
         const start = (page - 1) * PAGE_SIZE;
         return filteredUsers.slice(start, start + PAGE_SIZE);
     }, [filteredUsers, page]);
+    const selectedVisibleUsers = useMemo(
+        () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id)),
+        [filteredUsers, selectedUserIds]
+    );
+    const areAllVisibleUsersSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedUserIds.has(user.user_id));
+    const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
 
     useEffect(() => {
         if (page > pageCount) setPage(pageCount);
     }, [page, pageCount]);
+
+    useEffect(() => {
+        setSelectedUserIds((current) => {
+            if (current.size === 0) return current;
+            const allowed = new Set(filteredUsers.map((user) => user.user_id));
+            let changed = false;
+            const next = new Set<string>();
+            current.forEach((userId) => {
+                if (allowed.has(userId)) {
+                    next.add(userId);
+                    return;
+                }
+                changed = true;
+            });
+            return changed ? next : current;
+        });
+    }, [filteredUsers]);
 
     const toggleSort = (key: SortKey) => {
         if (sortKey === key) {
@@ -609,6 +1190,27 @@ export const AdminUsersPage: React.FC = () => {
     const openUserDetail = (userId: string) => {
         setSelectedUserId(userId);
         setIsDetailOpen(true);
+    };
+
+    const toggleUserSelection = (userId: string, checked: boolean) => {
+        setSelectedUserIds((current) => {
+            const next = new Set(current);
+            if (checked) next.add(userId);
+            else next.delete(userId);
+            return next;
+        });
+    };
+
+    const toggleSelectAllVisibleUsers = (checked: boolean) => {
+        setSelectedUserIds((current) => {
+            const next = new Set(current);
+            if (!checked) {
+                filteredUsers.forEach((user) => next.delete(user.user_id));
+                return next;
+            }
+            filteredUsers.forEach((user) => next.add(user.user_id));
+            return next;
+        });
     };
 
     const saveSelectedUser = async () => {
@@ -657,8 +1259,14 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleHardDelete = async (user: AdminUserRecord) => {
-        const confirmText = `Hard-delete ${user.email || user.user_id}? This permanently removes auth + profile data.`;
-        if (!window.confirm(confirmText)) return;
+        const confirmed = await confirmDialog({
+            title: 'Hard delete user',
+            message: `Hard-delete ${user.email || user.user_id}? This permanently removes auth and profile data.`,
+            confirmLabel: 'Hard delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
@@ -670,6 +1278,71 @@ export const AdminUsersPage: React.FC = () => {
             await loadUsers();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete user.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBulkSoftDeleteUsers = async () => {
+        if (selectedVisibleUsers.length === 0) return;
+        const confirmed = await confirmDialog({
+            title: 'Soft delete selected users',
+            message: `Soft-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
+            confirmLabel: 'Soft delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            await Promise.all(selectedVisibleUsers.map((user) => adminUpdateUserProfile(user.user_id, { accountStatus: 'deleted' })));
+            setMessage(`${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} soft-deleted.`);
+            setSelectedUserIds(new Set());
+            await loadUsers();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not soft-delete selected users.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleBulkHardDeleteUsers = async () => {
+        if (selectedVisibleUsers.length === 0) return;
+        const confirmed = await confirmDialog({
+            title: 'Hard delete selected users',
+            message: `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}? This cannot be undone.`,
+            confirmLabel: 'Hard delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
+            const failed = results.filter((result) => result.status === 'rejected').length;
+            const deleted = results.length - failed;
+            if (deleted > 0) {
+                setMessage(
+                    failed > 0
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted. ${failed} failed.`
+                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
+                );
+            }
+            if (failed > 0 && deleted === 0) {
+                throw new Error('Could not hard-delete selected users.');
+            }
+            setSelectedUserIds(new Set());
+            if (selectedUserId && selectedVisibleUsers.some((user) => user.user_id === selectedUserId)) {
+                setSelectedUserId(null);
+                setIsDetailOpen(false);
+            }
+            await loadUsers();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
         } finally {
             setIsSaving(false);
         }
@@ -742,6 +1415,8 @@ export const AdminUsersPage: React.FC = () => {
         setTierFilters([]);
         setStatusFilters([]);
         setActivationFilters([]);
+        setLoginTypeFilters([]);
+        setSocialProviderFilters([]);
         setPage(1);
     };
 
@@ -851,6 +1526,19 @@ export const AdminUsersPage: React.FC = () => {
                                 setPage(1);
                             }}
                         />
+                        <LoginTypeFilterMenu
+                            selectedLoginTypes={loginTypeFilters}
+                            selectedSocialProviders={socialProviderFilters}
+                            counts={loginFilterCounts}
+                            onSelectedLoginTypesChange={(next) => {
+                                setLoginTypeFilters(next);
+                                setPage(1);
+                            }}
+                            onSelectedSocialProvidersChange={(next) => {
+                                setSocialProviderFilters(next);
+                                setPage(1);
+                            }}
+                        />
                         <AdminFilterMenu
                             label="Status"
                             options={statusFilterOptions}
@@ -889,10 +1577,49 @@ export const AdminUsersPage: React.FC = () => {
                     </div>
                 </div>
 
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span className="text-xs font-semibold text-slate-700">
+                        {selectedVisibleUsers.length} selected
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => void handleBulkSoftDeleteUsers()}
+                        disabled={isSaving || selectedVisibleUsers.length === 0}
+                        className="inline-flex h-8 items-center rounded-lg border border-amber-300 px-3 text-xs font-semibold text-amber-700 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Soft-delete selected
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => void handleBulkHardDeleteUsers()}
+                        disabled={isSaving || selectedVisibleUsers.length === 0}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <Trash size={12} />
+                        Hard delete selected
+                    </button>
+                    {selectedVisibleUsers.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setSelectedUserIds(new Set())}
+                            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+
                 <div className="mt-3 overflow-x-auto">
                     <table className="min-w-full border-collapse text-left text-sm">
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                                <th className="px-3 py-2 align-middle">
+                                    <Checkbox
+                                        checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
+                                        onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
+                                        aria-label="Select all visible users"
+                                    />
+                                </th>
                                 <th className="px-3 py-2">
                                     <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
                                         User <ArrowsDownUp size={12} />
@@ -901,6 +1628,11 @@ export const AdminUsersPage: React.FC = () => {
                                 <th className="px-3 py-2">
                                     <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('email')}>
                                         Login <ArrowsDownUp size={12} />
+                                    </button>
+                                </th>
+                                <th className="px-3 py-2">
+                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('total_trips')}>
+                                        Trips <ArrowsDownUp size={12} />
                                     </button>
                                 </th>
                                 <th className="px-3 py-2">
@@ -941,8 +1673,16 @@ export const AdminUsersPage: React.FC = () => {
                                 const userName = getUserDisplayName(user);
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
+                                const isSelected = selectedUserIds.has(user.user_id);
                                 return (
-                                    <tr key={user.user_id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
+                                    <tr key={user.user_id} className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                        <td className="px-3 py-2 align-middle">
+                                            <Checkbox
+                                                checked={isSelected}
+                                                onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
+                                                aria-label={`Select ${userName}`}
+                                            />
+                                        </td>
                                         <td className="px-3 py-2">
                                             <button
                                                 type="button"
@@ -957,9 +1697,15 @@ export const AdminUsersPage: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-2">
                                             <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                                                    {getProviderLabel(user)}
-                                                </span>
+                                                {getLoginPills(user).map((pill) => {
+                                                    const Icon = pill.icon;
+                                                    return (
+                                                        <span key={`${user.user_id}-login-pill-${pill.label}`} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}>
+                                                            <Icon size={11} />
+                                                            {pill.label}
+                                                        </span>
+                                                    );
+                                                })}
                                                 {activationStatus === 'pending' && (
                                                     <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                                                         Needs activation
@@ -975,6 +1721,14 @@ export const AdminUsersPage: React.FC = () => {
                                                         Temp
                                                     </span>
                                                 )}
+                                            </div>
+                                        </td>
+                                        <td className="px-3 py-2 text-xs text-slate-600">
+                                            <div className="font-semibold text-slate-800">
+                                                {Math.max(0, Number(user.total_trips || 0))} total
+                                            </div>
+                                            <div className="text-[11px] text-slate-500">
+                                                {Math.max(0, Number(user.active_trips || 0))} active
                                             </div>
                                         </td>
                                         <td className="px-3 py-2">
@@ -1014,14 +1768,14 @@ export const AdminUsersPage: React.FC = () => {
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={9}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
                                         No users match your filters.
                                     </td>
                                 </tr>
                             )}
                             {isLoadingUsers && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={9}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
                                         <span className="inline-flex items-center gap-2">
                                             <SpinnerGap size={14} className="animate-spin" />
                                             Loading users...
@@ -1224,7 +1978,20 @@ export const AdminUsersPage: React.FC = () => {
                 </DialogContent>
             </Dialog>
 
-            <Drawer open={isDetailOpen} onOpenChange={setIsDetailOpen} direction="right">
+            <Drawer
+                open={isDetailOpen}
+                onOpenChange={(open) => {
+                    setIsDetailOpen(open);
+                    if (open) return;
+                    setSelectedUserId(null);
+                    if (!searchParams.has('user') && searchParams.get('drawer') !== 'user') return;
+                    const next = new URLSearchParams(searchParams);
+                    next.delete('user');
+                    next.delete('drawer');
+                    setSearchParams(next, { replace: true });
+                }}
+                direction="right"
+            >
                 <DrawerContent
                     side="right"
                     className="w-[min(96vw,680px)] p-0"
@@ -1240,6 +2007,20 @@ export const AdminUsersPage: React.FC = () => {
                                 <p className="truncate text-sm text-slate-600">
                                     {selectedUser.email || selectedUser.user_id}
                                 </p>
+                                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                                    <p className="text-xs font-semibold text-slate-600">
+                                        {selectedUserTripStats.active} active trips / {selectedUserTripStats.total} total trips
+                                    </p>
+                                    {selectedUserTripsPageLink && (
+                                        <a
+                                            href={selectedUserTripsPageLink}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Open in Trips
+                                            <ArrowSquareOut size={12} />
+                                        </a>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4">
@@ -1428,7 +2209,7 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="space-y-2">
                                         {userTrips.map((trip) => (
                                             <article key={trip.trip_id} className="rounded-lg border border-slate-200 p-3">
-                                                <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0 flex-1">
                                                         <a
                                                             href={`/trip/${encodeURIComponent(trip.trip_id)}`}
@@ -1441,21 +2222,6 @@ export const AdminUsersPage: React.FC = () => {
                                                         </a>
                                                         <div className="text-[11px] text-slate-500">{trip.trip_id}</div>
                                                     </div>
-                                                    <Select
-                                                        value={trip.status}
-                                                        onValueChange={(value) => {
-                                                            void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="h-8 w-[140px] text-xs">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="active">Active</SelectItem>
-                                                            <SelectItem value="expired">Expired</SelectItem>
-                                                            <SelectItem value="archived">Archived</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                                                     <input
@@ -1467,6 +2233,21 @@ export const AdminUsersPage: React.FC = () => {
                                                         }}
                                                         className="h-8 rounded border border-slate-300 px-2"
                                                     />
+                                                    <Select
+                                                        value={trip.status}
+                                                        onValueChange={(value) => {
+                                                            void handleTripPatch(trip, { status: value as 'active' | 'archived' | 'expired' });
+                                                        }}
+                                                    >
+                                                        <SelectTrigger className="h-8 w-[116px] text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="active">Active</SelectItem>
+                                                            <SelectItem value="expired">Expired</SelectItem>
+                                                            <SelectItem value="archived">Archived</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                     <span className="text-slate-500">Owner: {trip.owner_email || trip.owner_id}</span>
                                                 </div>
                                             </article>
@@ -1482,7 +2263,7 @@ export const AdminUsersPage: React.FC = () => {
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
                                         <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
                                         <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
-                                        <div><span className="font-semibold text-slate-800">Login method:</span> {getProviderLabel(selectedUser)}</div>
+                                        <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
                                         <div><span className="font-semibold text-slate-800">Last visit:</span> {formatTimestamp(selectedUser.last_sign_in_at)}</div>
                                     </div>

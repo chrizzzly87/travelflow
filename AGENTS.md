@@ -6,13 +6,15 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
-- For user-facing copy changes, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
+- For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
+- Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
 - For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
-- When adding locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace).
+- When adding locale keys for localized user-facing surfaces, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and validate namespace placement (`common/pages/legal` vs route-specific namespace). Admin-only UI copy is excluded unless localization is explicitly requested.
 - Run `npm run i18n:validate` for locale-related changes before finalizing.
 - Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless the user explicitly asks for it.
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
 - For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
+- Reuse existing shared components/hooks before creating new UI patterns. For confirmation/prompt flows, use the styled app dialog system (`useAppDialog` from `components/AppDialogProvider`) instead of native browser prompts.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
 - Update/finalize that single release note shortly before opening the PR, once final scope is clear.

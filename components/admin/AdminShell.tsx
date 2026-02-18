@@ -158,7 +158,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     ));
 
     return (
-        <div className="min-h-screen bg-slate-100 text-slate-900">
+        <div className="min-h-dvh bg-slate-100 text-slate-900">
             {isMobileSidebarOpen && (
                 <div
                     className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"
@@ -211,9 +211,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                 )}
             </aside>
 
-            <div className="flex min-h-screen w-full">
+            <div className="flex min-h-dvh w-full">
                 <div className="relative hidden lg:block">
-                    <aside className={`flex h-screen shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
+                    <aside className={`flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
                             className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
@@ -262,7 +262,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     </button>
                 </div>
 
-                <main className="min-w-0 flex-1">
+                <main className="min-w-0 flex-1 min-h-dvh">
                     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
                         <div className="flex flex-col gap-3 px-4 py-4 md:px-6 lg:flex-row lg:items-end lg:justify-between">
                             <div className="min-w-0">
