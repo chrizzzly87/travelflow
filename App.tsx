@@ -1177,7 +1177,9 @@ const AppContent: React.FC = () => {
         if (isAuthLoading) return;
         const strippedPath = stripLocalePrefix(location.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
-        if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
+        if (!isAuthenticated || !access || isAuthPath) return;
+        const isRegisteredUser = Boolean(access.email) && !access.isAnonymous;
+        if (!isRegisteredUser) return;
 
         if (access.accountStatus !== 'active') {
             void logout();
