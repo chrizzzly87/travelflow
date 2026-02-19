@@ -76,6 +76,11 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] With this pass, homepage `/` stayed strong at `95` score with improved transfer (`~252.2 KiB`, `31` requests, `FCP ~1782 ms`, `LCP ~2583 ms`).
 - [x] With this pass, `/create-trip` improved to `96` score with transfer reduced to `~467.1 KiB` (`54` requests, `FCP ~1759 ms`, `LCP ~2555 ms`).
 - [x] With this pass, `/example/thailand-islands` improved to `94` score with transfer reduced to `~271.3 KiB` (`27` requests, `FCP ~1940 ms`, `LCP ~2763 ms`).
+- [x] Split non-critical route-table concerns into lazy `DeferredAppRoutes`; `AppRoutes.tsx` now contains only first-load-critical route wiring (`179` lines) while secondary marketing/admin/profile/lab routes are loaded on demand.
+- [x] After deferred route-table extraction, build entry JS dropped from `~291.67 KB` raw (`~91.66 KB` gzip) to `~284.38 KB` raw (`~90.20 KB` gzip).
+- [x] After deferred route-table extraction, homepage `/` stayed at `95` score with transfer reduced from `~252.2 KiB` to `~250.7 KiB` (`31` requests, `FCP ~1874 ms`, `LCP ~2707 ms`).
+- [x] After deferred route-table extraction, `/create-trip` improved to `92` score with transfer reduced from `~467.1 KiB` to `~465.7 KiB` (`54` requests, `FCP ~1887 ms`, `LCP ~2770 ms`).
+- [x] After deferred route-table extraction, `/example/thailand-islands` improved to `95` score with transfer reduced from `~271.3 KiB` to `~269.8 KiB` (`27` requests, `FCP ~1800 ms`, `LCP ~2548 ms`).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -129,6 +134,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Load `/example/:templateId` template factories via per-template dynamic imports so example entry routes avoid fetching the monolithic templates index on first render.
 - [x] Replace i18n runtime plugins (`i18next-browser-languagedetector`, `i18next-icu`) with lightweight local locale detection + `{}` interpolation setup to reduce shared entry bundle cost.
 - [x] Lazy-load navigation prefetch/speculation managers and make warmup interaction-only on first-load-critical paths so prefetch infrastructure stays out of critical first render.
+- [x] Keep only critical routes in `app/routes/AppRoutes.tsx` and move secondary marketing/profile/admin/create-trip-lab routes to lazy `app/routes/DeferredAppRoutes.tsx`.
 
 ## Validation checklist
 - [x] `npx vite build`

@@ -70,3 +70,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Split example-template factory loading into per-template dynamic imports so example-trip entry routes avoid fetching the monolithic template index on first render.
 - [ ] [Internal] 🌐 Reworked i18n startup to use lightweight in-app locale detection and interpolation config so first-load entry JavaScript stays smaller on homepage and trip entry routes.
 - [ ] [Internal] 💤 Deferred navigation prefetch/speculation managers into post-warmup lazy chunks and switched critical entry paths to interaction-only warmup so first-load rendering is not interrupted by background prefetch infrastructure.
+- [ ] [Internal] 🗂️ Split non-critical route definitions (secondary marketing paths, admin/profile flows, and create-trip lab variants) into a lazily loaded route module so first-load entry routing stays focused on homepage and primary planner/trip routes.
