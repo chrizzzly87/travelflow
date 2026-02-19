@@ -14,9 +14,6 @@ import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/pro
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
-import { NavigationPrefetchManager } from './components/NavigationPrefetchManager';
-import { SpeculationRulesManager } from './components/SpeculationRulesManager';
-import { isNavPrefetchEnabled } from './services/navigationPrefetch';
 import { useAuth } from './hooks/useAuth';
 import {
     dbAdminOverrideTripCommit,
@@ -33,7 +30,6 @@ import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
 import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
-import { getPathnameFromHref, preloadRouteForPath } from './app/prefetch/fallbackRouteWarmup';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
@@ -45,6 +41,21 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 const TripManager = lazyWithRecovery('TripManager', () => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
 const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
 const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
+const NavigationPrefetchManager = lazyWithRecovery(
+    'NavigationPrefetchManager',
+    () => import('./components/NavigationPrefetchManager').then((module) => ({ default: module.NavigationPrefetchManager }))
+);
+const SpeculationRulesManager = lazyWithRecovery(
+    'SpeculationRulesManager',
+    () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
+);
+
+const isNavPrefetchEnabled = (): boolean => {
+    const navPrefetchEnabledByEnv = (import.meta as any)?.env?.VITE_NAV_PREFETCH_ENABLED;
+    if (navPrefetchEnabledByEnv === 'true') return true;
+    if (navPrefetchEnabledByEnv === 'false') return false;
+    return Boolean((import.meta as any)?.env?.PROD);
+};
 
 const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
     useEffect(() => {
@@ -53,18 +64,36 @@ const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
         // navigation prefetch manager is disabled.
         if (isNavPrefetchEnabled()) return;
 
-        const warmLinkTarget = (target: EventTarget | null) => {
+        let fallbackWarmupModulePromise: Promise<{
+            getPathnameFromHref: (href: string) => string;
+            preloadRouteForPath: (pathname: string) => Promise<void>;
+        }> | null = null;
+        const loadFallbackWarmupModule = async () => {
+            if (!fallbackWarmupModulePromise) {
+                fallbackWarmupModulePromise = import('./app/prefetch/fallbackRouteWarmup');
+            }
+            return fallbackWarmupModulePromise;
+        };
+
+        const warmLinkTarget = async (target: EventTarget | null) => {
             const anchor = (target as HTMLElement | null)?.closest?.('a');
             if (!anchor) return;
             const href = anchor.getAttribute('href');
             if (!href || !href.startsWith('/')) return;
+            const { getPathnameFromHref, preloadRouteForPath } = await loadFallbackWarmupModule();
             const pathname = getPathnameFromHref(href);
-            void preloadRouteForPath(pathname);
+            await preloadRouteForPath(pathname);
         };
 
-        const handleMouseOver = (event: MouseEvent) => warmLinkTarget(event.target);
-        const handleFocusIn = (event: FocusEvent) => warmLinkTarget(event.target);
-        const handleTouchStart = (event: TouchEvent) => warmLinkTarget(event.target);
+        const handleMouseOver = (event: MouseEvent) => {
+            void warmLinkTarget(event.target);
+        };
+        const handleFocusIn = (event: FocusEvent) => {
+            void warmLinkTarget(event.target);
+        };
+        const handleTouchStart = (event: TouchEvent) => {
+            void warmLinkTarget(event.target);
+        };
 
         document.addEventListener('mouseover', handleMouseOver, true);
         document.addEventListener('focusin', handleFocusIn, true);
@@ -75,10 +104,12 @@ const ViewTransitionHandler: React.FC<{ enabled: boolean }> = ({ enabled }) => {
         let warmupTimerId: number | null = null;
         if (IS_DEV) {
             warmupTimerId = window.setTimeout(() => {
-                void preloadRouteForPath('/features');
-                void preloadRouteForPath('/inspirations');
-                void preloadRouteForPath('/blog');
-                void preloadRouteForPath('/pricing');
+                void loadFallbackWarmupModule().then(({ preloadRouteForPath }) => Promise.all([
+                    preloadRouteForPath('/features'),
+                    preloadRouteForPath('/inspirations'),
+                    preloadRouteForPath('/blog'),
+                    preloadRouteForPath('/pricing'),
+                ]));
             }, 600);
         }
         return () => {
@@ -119,11 +150,12 @@ const AppContent: React.FC = () => {
     const location = useLocation();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
-    const isWarmupEnabled = useWarmupGate();
-    const shouldSuppressSpeculationRules = useMemo(
+    const isFirstLoadCritical = useMemo(
         () => isFirstLoadCriticalPath(location.pathname),
         [location.pathname]
     );
+    const isWarmupEnabled = useWarmupGate({ interactionOnly: isFirstLoadCritical });
+    const shouldSuppressSpeculationRules = isFirstLoadCritical;
 
     useAuthNavigationBootstrap();
     useAnalyticsBootstrap();
@@ -352,8 +384,12 @@ const AppContent: React.FC = () => {
     return (
         <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
             <ViewTransitionHandler enabled={isWarmupEnabled} />
-            <NavigationPrefetchManager enabled={isWarmupEnabled} />
-            <SpeculationRulesManager enabled={isWarmupEnabled && !shouldSuppressSpeculationRules} />
+            {isWarmupEnabled && (
+                <Suspense fallback={null}>
+                    <NavigationPrefetchManager enabled />
+                    <SpeculationRulesManager enabled={!shouldSuppressSpeculationRules} />
+                </Suspense>
+            )}
             <AppRoutes
                 trip={trip}
                 appLanguage={appLanguage}

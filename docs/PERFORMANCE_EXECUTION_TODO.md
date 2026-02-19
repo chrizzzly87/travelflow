@@ -70,6 +70,12 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After the i18n bootstrap simplification pass, homepage `/` improved to `96` score with `~254.7 KiB` transfer (`31` requests, `FCP ~1867 ms`, `LCP ~2642 ms`, `TBT 0 ms`).
 - [x] After the i18n bootstrap simplification pass, `/create-trip` measured `84` score with `~469.7 KiB` transfer (`54` requests, `FCP ~2435 ms`, `LCP ~3961 ms`, `TBT ~29 ms`).
 - [x] After the i18n bootstrap simplification pass, `/example/thailand-islands` improved from `~286.9 KiB` to `~273.9 KiB` transfer (`27` requests, score `90`, `FCP ~2123 ms`, `LCP ~3330 ms`, `TBT ~4 ms`).
+- [x] Deferred `NavigationPrefetchManager` and `SpeculationRulesManager` behind lazy chunks so prefetch infra/config no longer loads in the initial entry bundle.
+- [x] Updated warmup gating to interaction-only on first-load-critical paths (`/`, `/create-trip`, `/trip`, `/example`) so deferred prefetch chunks do not load during first paint/idle on those entries.
+- [x] After prefetch-manager deferral + critical-path interaction-only warmup, build entry JS dropped from `~302.74 KB` raw (`~94.31 KB` gzip) to `~291.67 KB` raw (`~91.66 KB` gzip).
+- [x] With this pass, homepage `/` stayed strong at `95` score with improved transfer (`~252.2 KiB`, `31` requests, `FCP ~1782 ms`, `LCP ~2583 ms`).
+- [x] With this pass, `/create-trip` improved to `96` score with transfer reduced to `~467.1 KiB` (`54` requests, `FCP ~1759 ms`, `LCP ~2555 ms`).
+- [x] With this pass, `/example/thailand-islands` improved to `94` score with transfer reduced to `~271.3 KiB` (`27` requests, `FCP ~1940 ms`, `LCP ~2763 ms`).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -122,6 +128,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Read example-route banner metadata from a lightweight loader-runtime module so `/example/:templateId` avoids loading the marketing card dataset during first-load trip hydration.
 - [x] Load `/example/:templateId` template factories via per-template dynamic imports so example entry routes avoid fetching the monolithic templates index on first render.
 - [x] Replace i18n runtime plugins (`i18next-browser-languagedetector`, `i18next-icu`) with lightweight local locale detection + `{}` interpolation setup to reduce shared entry bundle cost.
+- [x] Lazy-load navigation prefetch/speculation managers and make warmup interaction-only on first-load-critical paths so prefetch infrastructure stays out of critical first render.
 
 ## Validation checklist
 - [x] `npx vite build`

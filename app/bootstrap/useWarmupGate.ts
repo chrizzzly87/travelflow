@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 
-export const useWarmupGate = (): boolean => {
+interface UseWarmupGateOptions {
+    interactionOnly?: boolean;
+}
+
+export const useWarmupGate = (options?: UseWarmupGateOptions): boolean => {
     const [isWarmupEnabled, setIsWarmupEnabled] = useState(false);
+    const interactionOnly = options?.interactionOnly ?? false;
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -43,14 +48,16 @@ export const useWarmupGate = (): boolean => {
         window.addEventListener('keydown', onFirstInteraction, true);
         window.addEventListener('touchstart', onFirstInteraction, true);
 
-        timeoutId = window.setTimeout(enableWarmup, 5000);
+        if (!interactionOnly) {
+            timeoutId = window.setTimeout(enableWarmup, 5000);
 
-        if ('requestIdleCallback' in window) {
-            idleId = (window as Window & {
-                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
-            }).requestIdleCallback(() => {
-                enableWarmup();
-            }, { timeout: 4500 });
+            if ('requestIdleCallback' in window) {
+                idleId = (window as Window & {
+                    requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
+                }).requestIdleCallback(() => {
+                    enableWarmup();
+                }, { timeout: 4500 });
+            }
         }
 
         return () => {
@@ -58,7 +65,7 @@ export const useWarmupGate = (): boolean => {
             removeInteractionListeners();
             clearTimers();
         };
-    }, []);
+    }, [interactionOnly]);
 
     return isWarmupEnabled;
 };
