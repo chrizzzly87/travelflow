@@ -1,0 +1,51 @@
+{
+  "hero": {
+    "badge": "AI-Powered Trip Planning",
+    "titleBefore": "Your next adventure, planned",
+    "titleHighlight": "in seconds",
+    "description": "Tell us where you want to go and when — our AI builds a complete, day-by-day itinerary with optimized routes, curated activities, and real booking links. Adjust everything on a visual timeline and map, then share with your travel crew in one click.",
+    "floating": {
+      "ai": "AI-generated itineraries",
+      "share": "Share & collaborate",
+      "booking": "Booking links"
+    }
+  },
+  "examples": {
+    "title": "Trips built with TravelFlow",
+    "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips."
+  },
+  "featureShowcase": {
+    "title": "Everything you need to plan, share, and go",
+    "subtitle": "From first spark of inspiration to boarding pass — TravelFlow handles the entire journey.",
+    "items": {
+      "aiTripCreation": {
+        "title": "AI Trip Creation",
+        "description": "Describe your dream trip in plain language. Our AI builds a complete, day-by-day itinerary with smart city sequencing, activity suggestions, and estimated travel times — all in under 30 seconds."
+      },
+      "interactiveMapStyles": {
+        "title": "Interactive Map Styles",
+        "description": "Switch between satellite, terrain, and minimalist map layers. See your route come alive with animated path lines, city markers, and dynamic zoom that follows your scroll position."
+      },
+      "easyItineraryAdjustments": {
+        "title": "Easy Itinerary Adjustments",
+        "description": "Drag cities to reorder, stretch durations, or add spontaneous stops — all on a visual timeline. Changes cascade automatically so dates and connections always stay in sync."
+      },
+      "communityExamples": {
+        "title": "Community Examples",
+        "description": "Browse itineraries from fellow travelers to discover hidden gems and proven routes. Fork any community trip as a starting point for your own adventure."
+      },
+      "shareCollaborate": {
+        "title": "Share & Collaborate",
+        "description": "Generate a shareable link in one click. Co-travelers see the full map, timeline, and activity list — no account required. Updates sync instantly for everyone viewing the trip."
+      },
+      "activityBookingLinks": {
+        "title": "Activity Booking Links",
+        "description": "Each AI-suggested activity links directly to booking platforms. Reserve tours, restaurants, and transport without leaving your itinerary — keeping everything in one place."
+      }
+    }
+  },
+  "cta": {
+    "title": "Ready to plan your next trip?",
+    "subtitle": "Join thousands of travelers who build smarter itineraries in minutes. No account needed to start."
+  }
+}
