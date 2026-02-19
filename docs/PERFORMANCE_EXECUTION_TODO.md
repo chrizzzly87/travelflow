@@ -81,6 +81,12 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After deferred route-table extraction, homepage `/` stayed at `95` score with transfer reduced from `~252.2 KiB` to `~250.7 KiB` (`31` requests, `FCP ~1874 ms`, `LCP ~2707 ms`).
 - [x] After deferred route-table extraction, `/create-trip` improved to `92` score with transfer reduced from `~467.1 KiB` to `~465.7 KiB` (`54` requests, `FCP ~1887 ms`, `LCP ~2770 ms`).
 - [x] After deferred route-table extraction, `/example/thailand-islands` improved to `95` score with transfer reduced from `~271.3 KiB` to `~269.8 KiB` (`27` requests, `FCP ~1800 ms`, `LCP ~2548 ms`).
+- [x] Split Tailwind output into critical entry CSS (`index.css`) and deferred route CSS (`styles/deferred-routes.css`) using `@source` include/exclude rules tied to `DeferredAppRoutes`.
+- [x] Entry CSS dropped from `~158.36 KB` raw (`~25.11 KB` gzip) to `~127.75 KB` raw (`~21.51 KB` gzip); deferred non-critical routes now load `DeferredAppRoutes.css` (`~71.23 KB` raw, `~12.30 KB` gzip) on demand.
+- [x] After CSS splitting, homepage `/` transfer dropped to `~247.3 KiB` (`31` requests) with stable high Lighthouse performance (`91-93` across follow-up runs).
+- [x] After CSS splitting, `/create-trip` transfer dropped to `~462.3 KiB` (`54` requests) with stable high Lighthouse performance (`91-93` across follow-up runs).
+- [x] After CSS splitting, `/example/thailand-islands` transfer dropped to `~266.4 KiB` (`27` requests, score `96` in measured run).
+- [x] Verified deferred stylesheet loading on non-critical route `/features` (`DeferredAppRoutes-*.css` requested at runtime), confirming style separation is active.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -135,6 +141,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Replace i18n runtime plugins (`i18next-browser-languagedetector`, `i18next-icu`) with lightweight local locale detection + `{}` interpolation setup to reduce shared entry bundle cost.
 - [x] Lazy-load navigation prefetch/speculation managers and make warmup interaction-only on first-load-critical paths so prefetch infrastructure stays out of critical first render.
 - [x] Keep only critical routes in `app/routes/AppRoutes.tsx` and move secondary marketing/profile/admin/create-trip-lab routes to lazy `app/routes/DeferredAppRoutes.tsx`.
+- [x] Split Tailwind scanning/output between critical and deferred routes so entry CSS excludes non-critical/admin/page-class payload until deferred routes load.
 
 ## Validation checklist
 - [x] `npx vite build`

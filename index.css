@@ -1,4 +1,36 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+@source "./**/*.{ts,tsx}";
+@source not "./app/routes/DeferredAppRoutes.tsx";
+@source not "./components/CreateTripForm.tsx";
+@source not "./components/admin/**/*.tsx";
+@source not "./pages/Admin*.tsx";
+@source not "./pages/FeaturesPage.tsx";
+@source not "./pages/UpdatesPage.tsx";
+@source not "./pages/BlogPage.tsx";
+@source not "./pages/BlogPostPage.tsx";
+@source not "./pages/InspirationsPage.tsx";
+@source not "./pages/inspirations/**/*.tsx";
+@source not "./pages/LoginPage.tsx";
+@source not "./pages/ResetPasswordPage.tsx";
+@source not "./pages/ContactPage.tsx";
+@source not "./pages/ImprintPage.tsx";
+@source not "./pages/PrivacyPage.tsx";
+@source not "./pages/TermsPage.tsx";
+@source not "./pages/CookiesPage.tsx";
+@source not "./pages/ProfilePage.tsx";
+@source not "./pages/ProfileSettingsPage.tsx";
+@source not "./pages/ProfileOnboardingPage.tsx";
+@source not "./pages/AdminWorkspaceRouter.tsx";
+@source not "./pages/PricingPage.tsx";
+@source not "./pages/FaqPage.tsx";
+@source not "./pages/ShareUnavailablePage.tsx";
+@source not "./pages/NotFoundPage.tsx";
+@source not "./pages/CreateTripV1Page.tsx";
+@source not "./pages/CreateTripV2Page.tsx";
+@source not "./pages/CreateTripV3Page.tsx";
+@source not "./pages/CreateTripSplitWorkspaceLabPage.tsx";
+@source not "./pages/CreateTripJourneyArchitectLabPage.tsx";
 
 @font-face {
   font-family: "Bricolage Grotesque";
