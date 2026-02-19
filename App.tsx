@@ -15,7 +15,6 @@ import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
-import { getTripLifecycleState } from './config/paywall';
 import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
@@ -601,10 +600,6 @@ const SharedTripLoader = ({
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
-                navigate('/share-unavailable', { replace: true });
-                return;
-            }
-            if (getTripLifecycleState(shared.trip) !== 'active') {
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
