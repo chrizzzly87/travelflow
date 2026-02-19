@@ -730,7 +730,9 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     if (!row) return null;
 
     const trip = row.data as ITrip;
-    const normalized = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    const normalizedBase = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    if (!normalizedBase) return null;
+    const normalized = applyTripAccessFields(normalizedBase, row as Record<string, unknown>);
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
@@ -762,7 +764,9 @@ export const dbGetSharedTripVersion = async (
     if (!row) return null;
 
     const trip = row.data as ITrip;
-    const normalized = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    const normalizedBase = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
+    if (!normalizedBase) return null;
+    const normalized = applyTripAccessFields(normalizedBase, row as Record<string, unknown>);
     const resolvedVersionId = (row.version_id as string | undefined) || versionId;
 
     return {

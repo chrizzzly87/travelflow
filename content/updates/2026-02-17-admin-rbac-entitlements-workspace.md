@@ -61,6 +61,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Fixed] 🧑‍🔧 Fixed a profile-settings stability issue that could prevent authenticated users from loading the settings form.
 - [x] [Fixed] 👥 Fixed an onboarding redirect issue so guest trip links and trip creation stay accessible without forcing profile completion.
 - [x] [Fixed] 🔗 Restored shared-token trip loading so valid shared links no longer get rejected as unavailable.
+- [x] [Improved] 🧭 Improved shared-link reliability by aligning lifecycle handling with live trip status and expiry metadata.
 - [ ] [Internal] 🔐 Added admin identity edge API wiring for invite/direct creation and hard-delete operations using service-role authorization.
 - [ ] [Internal] 🧾 Added admin audit log schema and RPC plumbing for user/trip/tier action tracking and replay.
 - [ ] [Internal] 🛡️ Hardened profile update safety with privileged-field guardrails while preserving user self-service edits for profile data.
