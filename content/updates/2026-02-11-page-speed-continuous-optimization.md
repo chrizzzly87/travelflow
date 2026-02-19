@@ -72,3 +72,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 💤 Deferred navigation prefetch/speculation managers into post-warmup lazy chunks and switched critical entry paths to interaction-only warmup so first-load rendering is not interrupted by background prefetch infrastructure.
 - [ ] [Internal] 🗂️ Split non-critical route definitions (secondary marketing paths, admin/profile flows, and create-trip lab variants) into a lazily loaded route module so first-load entry routing stays focused on homepage and primary planner/trip routes.
 - [ ] [Internal] 🎚️ Split Tailwind output into critical-entry and deferred-route stylesheets with source-based include/exclude rules so non-critical route/page classes no longer inflate the initial CSS payload.
+- [ ] [Internal] 🧹 Added ignore rules for perf artifact folders so generated Lighthouse/perf traces stay out of Git and local IDE indexing remains lightweight.
