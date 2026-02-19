@@ -68,3 +68,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 📉 Deferred the non-default vertical timeline bundle so default trip loads avoid shipping both timeline variants upfront.
 - [ ] [Internal] 🧭 Stopped loading heavy example-card datasets during example-trip hydration by using lightweight template metadata in the route loader.
 - [ ] [Internal] 🧩 Split example-template factory loading into per-template dynamic imports so example-trip entry routes avoid fetching the monolithic template index on first render.
+- [ ] [Internal] 🌐 Reworked i18n startup to use lightweight in-app locale detection and interpolation config so first-load entry JavaScript stays smaller on homepage and trip entry routes.

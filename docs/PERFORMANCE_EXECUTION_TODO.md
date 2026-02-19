@@ -1,6 +1,6 @@
 # Performance Execution TODO
 
-Last updated: 2026-02-18
+Last updated: 2026-02-19
 Owner: Codex + @chrizzzly
 Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure clarity.
 
@@ -66,6 +66,10 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Deferred the non-default `VerticalTimeline` bundle so default horizontal trip render no longer ships both timeline variants upfront; `/example/thailand-islands` improved from `~313.9 KiB` to `~312.3 KiB` transfer (`27` requests stable) with score improvement (`88` to `90`) and trip static graph reduction from `~536.8 KiB` to `~522.4 KiB`.
 - [x] Removed `/example/:templateId` dependency on heavy `exampleTripCards` data during initial loader hydration by sourcing lightweight title/country metadata from a dedicated loader-runtime module; `/example/thailand-islands` transfer dropped from `~312.3 KiB` to `~306.9 KiB` (`27` to `26` requests) and no longer requests `exampleTripCards` on first load.
 - [x] Replaced monolithic example-template index loading with per-template dynamic factory imports for `/example/:templateId`; `/example/thailand-islands` transfer dropped further from `~306.9 KiB` to `~286.9 KiB` (`26` to `27` requests) while keeping score stable/improved (`88` to `89`) and removing first-load requests for the large `exampleTripTemplates` index chunk.
+- [x] Simplified i18n bootstrap by replacing runtime language-detector/ICU plugins with lightweight app-local locale detection and `{}` interpolation config; build entry JS dropped from `~348.58 KB` raw (`~107.55 KB` gzip) to `~302.74 KB` raw (`~94.31 KB` gzip).
+- [x] After the i18n bootstrap simplification pass, homepage `/` improved to `96` score with `~254.7 KiB` transfer (`31` requests, `FCP ~1867 ms`, `LCP ~2642 ms`, `TBT 0 ms`).
+- [x] After the i18n bootstrap simplification pass, `/create-trip` measured `84` score with `~469.7 KiB` transfer (`54` requests, `FCP ~2435 ms`, `LCP ~3961 ms`, `TBT ~29 ms`).
+- [x] After the i18n bootstrap simplification pass, `/example/thailand-islands` improved from `~286.9 KiB` to `~273.9 KiB` transfer (`27` requests, score `90`, `FCP ~2123 ms`, `LCP ~3330 ms`, `TBT ~4 ms`).
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -117,6 +121,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Lazy-load `VerticalTimeline` in `TripView` so default horizontal timeline mode does not include both timeline variants in the initial bundle.
 - [x] Read example-route banner metadata from a lightweight loader-runtime module so `/example/:templateId` avoids loading the marketing card dataset during first-load trip hydration.
 - [x] Load `/example/:templateId` template factories via per-template dynamic imports so example entry routes avoid fetching the monolithic templates index on first render.
+- [x] Replace i18n runtime plugins (`i18next-browser-languagedetector`, `i18next-icu`) with lightweight local locale detection + `{}` interpolation setup to reduce shared entry bundle cost.
 
 ## Validation checklist
 - [x] `npx vite build`
