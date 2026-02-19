@@ -761,6 +761,8 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  status text,
+  trip_expires_at timestamptz,
   mode text,
   allow_copy boolean,
   latest_version_id uuid
@@ -775,6 +777,8 @@ begin
     t.id,
     t.data,
     t.view_settings,
+    t.status,
+    t.trip_expires_at,
     s.mode,
     s.allow_copy,
     (
@@ -801,6 +805,8 @@ returns table(
   trip_id text,
   data jsonb,
   view_settings jsonb,
+  status text,
+  trip_expires_at timestamptz,
   mode text,
   allow_copy boolean,
   version_id uuid,
@@ -842,11 +848,14 @@ begin
     v.trip_id,
     v.data,
     v.view_settings,
+    t.status,
+    t.trip_expires_at,
     v_mode,
     v_allow_copy,
     v.id,
     v_latest_version_id
   from public.trip_versions v
+  join public.trips t on t.id = v.trip_id
   where v.id = p_version_id
     and v.trip_id = v_trip_id;
 

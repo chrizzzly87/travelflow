@@ -15,7 +15,6 @@ import { AppDialogProvider } from './components/AppDialogProvider';
 import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { initializeAnalytics, trackEvent, trackPageView } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
-import { getTripLifecycleState } from './config/paywall';
 import { applyDocumentLocale, DEFAULT_LOCALE, SUPPORTED_LOCALES, normalizeLocale } from './config/locales';
 import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
@@ -604,10 +603,6 @@ const SharedTripLoader = ({
                 navigate('/share-unavailable', { replace: true });
                 return;
             }
-            if (getTripLifecycleState(shared.trip) !== 'active') {
-                navigate('/share-unavailable', { replace: true });
-                return;
-            }
 
             setShareMode(shared.mode);
             setAllowCopy(shared.allowCopy ?? true);
@@ -1177,7 +1172,9 @@ const AppContent: React.FC = () => {
         if (isAuthLoading) return;
         const strippedPath = stripLocalePrefix(location.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
-        if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
+        if (!isAuthenticated || !access || isAuthPath) return;
+        const isRegisteredUser = Boolean(access.email) && !access.isAnonymous;
+        if (!isRegisteredUser) return;
 
         if (access.accountStatus !== 'active') {
             void logout();
