@@ -1,51 +1,51 @@
 {
   "hero": {
-    "badge": "AI-Powered Trip Planning",
-    "titleBefore": "Your next adventure, planned",
-    "titleHighlight": "in seconds",
-    "description": "Tell us where you want to go and when — our AI builds a complete, day-by-day itinerary with optimized routes, curated activities, and real booking links. Adjust everything on a visual timeline and map, then share with your travel crew in one click.",
+    "badge": "AI سے چلنے والی سفری منصوبہ بندی",
+    "titleBefore": "آپ کی اگلی مہم",
+    "titleHighlight": "چند سیکنڈ میں منصوبہ بند",
+    "description": "ہمیں بتائیں کہ آپ کہاں اور کب جانا چاہتے ہیں — ہمارا AI ایک مکمل روزانہ سفرنامہ تیار کرتا ہے جس میں بہتر راستے، منتخب سرگرمیاں اور حقیقی بکنگ لنکس شامل ہوتے ہیں۔ سب کچھ بصری ٹائم لائن اور نقشے پر ایڈجسٹ کریں، پھر ایک کلک سے اپنی ٹریول ٹیم کے ساتھ شیئر کریں۔",
     "floating": {
-      "ai": "AI-generated itineraries",
-      "share": "Share & collaborate",
-      "booking": "Booking links"
+      "ai": "AI سے تیار کردہ سفرنامے",
+      "share": "شیئر اور اشتراکِ عمل",
+      "booking": "بکنگ لنکس"
     }
   },
   "examples": {
-    "title": "Trips built with TravelFlow",
-    "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips."
+    "title": "TravelFlow سے بنائے گئے سفر",
+    "subtitle": "ہماری کمیونٹی کے بنائے ہوئے حقیقی سفرنامے دیکھیں — ایک ہفتے کی جزیرہ سیر سے لے کر ملک بھر کے روڈ ٹرپس تک۔"
   },
   "featureShowcase": {
-    "title": "Everything you need to plan, share, and go",
-    "subtitle": "From first spark of inspiration to boarding pass — TravelFlow handles the entire journey.",
+    "title": "منصوبہ بندی، شیئر اور روانگی کے لیے سب کچھ",
+    "subtitle": "خیال کی پہلی چنگاری سے بورڈنگ پاس تک — TravelFlow پورا سفر سنبھالتا ہے۔",
     "items": {
       "aiTripCreation": {
-        "title": "AI Trip Creation",
-        "description": "Describe your dream trip in plain language. Our AI builds a complete, day-by-day itinerary with smart city sequencing, activity suggestions, and estimated travel times — all in under 30 seconds."
+        "title": "AI سے سفر بنائیں",
+        "description": "اپنے خوابوں کے سفر کو سادہ زبان میں بیان کریں۔ ہمارا AI 30 سیکنڈ سے کم وقت میں مکمل روزانہ سفرنامہ تیار کرتا ہے جس میں ذہین شہر ترتیب، سرگرمی تجاویز اور اندازاً سفری وقت شامل ہوتا ہے۔"
       },
       "interactiveMapStyles": {
-        "title": "Interactive Map Styles",
-        "description": "Switch between satellite, terrain, and minimalist map layers. See your route come alive with animated path lines, city markers, and dynamic zoom that follows your scroll position."
+        "title": "انٹرایکٹو نقشہ انداز",
+        "description": "سیٹلائٹ، ٹیرین اور منیمل نقشہ لیئرز کے درمیان سوئچ کریں۔ اینیمیٹڈ راستہ لائنز، شہر مارکرز اور اسکرول کے مطابق زوم کے ساتھ اپنا روٹ زندہ دیکھیں۔"
       },
       "easyItineraryAdjustments": {
-        "title": "Easy Itinerary Adjustments",
-        "description": "Drag cities to reorder, stretch durations, or add spontaneous stops — all on a visual timeline. Changes cascade automatically so dates and connections always stay in sync."
+        "title": "سفرنامہ آسانی سے ایڈجسٹ کریں",
+        "description": "شہروں کو گھسیٹ کر ترتیب بدلیں، دورانیہ بڑھائیں یا اچانک اسٹاپ شامل کریں — سب کچھ ایک بصری ٹائم لائن پر۔ تبدیلیاں خودکار طور پر ہم آہنگ ہوتی ہیں تاکہ تاریخیں اور روابط درست رہیں۔"
       },
       "communityExamples": {
-        "title": "Community Examples",
-        "description": "Browse itineraries from fellow travelers to discover hidden gems and proven routes. Fork any community trip as a starting point for your own adventure."
+        "title": "کمیونٹی مثالیں",
+        "description": "دوسرے مسافروں کے سفرنامے دیکھیں تاکہ پوشیدہ مقامات اور آزمودہ راستے دریافت کریں۔ کسی بھی کمیونٹی ٹرپ کو فورک کر کے اپنی مہم کی شروعات کریں۔"
       },
       "shareCollaborate": {
-        "title": "Share & Collaborate",
-        "description": "Generate a shareable link in one click. Co-travelers see the full map, timeline, and activity list — no account required. Updates sync instantly for everyone viewing the trip."
+        "title": "شیئر اور تعاون",
+        "description": "ایک کلک میں شیئر کرنے کے قابل لنک بنائیں۔ ہم سفر پورا نقشہ، ٹائم لائن اور سرگرمی فہرست دیکھ سکتے ہیں — اکاؤنٹ کے بغیر۔ اپ ڈیٹس فوری طور پر سب کے لیے سنک رہتی ہیں۔"
       },
       "activityBookingLinks": {
-        "title": "Activity Booking Links",
-        "description": "Each AI-suggested activity links directly to booking platforms. Reserve tours, restaurants, and transport without leaving your itinerary — keeping everything in one place."
+        "title": "سرگرمیوں کے بکنگ لنکس",
+        "description": "AI کی تجویز کردہ ہر سرگرمی براہِ راست بکنگ پلیٹ فارمز سے جڑتی ہے۔ ٹورز، ریسٹورنٹس اور ٹرانسپورٹ اپنی itinerary سے باہر گئے بغیر بک کریں تاکہ سب کچھ ایک جگہ رہے۔"
       }
     }
   },
   "cta": {
-    "title": "Ready to plan your next trip?",
-    "subtitle": "Join thousands of travelers who build smarter itineraries in minutes. No account needed to start."
+    "title": "اگلا سفر پلان کرنے کے لیے تیار ہیں؟",
+    "subtitle": "ہزاروں مسافروں میں شامل ہوں جو چند منٹ میں بہتر سفرنامے بناتے ہیں۔ شروع کرنے کے لیے اکاؤنٹ ضروری نہیں۔"
   }
 }

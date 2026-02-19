@@ -12,6 +12,7 @@ summary: "Added Persian and Urdu language options for marketing pages with autom
 
 ## Changes
 - [x] [New feature] 🌍 Added Persian and Urdu as selectable website languages on marketing pages.
+- [x] [Improved] 🗣️ Homepage and core marketing navigation copy now appear in Persian and Urdu instead of English fallback text.
 - [x] [Improved] ↔️ Page reading direction now switches automatically between left-to-right and right-to-left based on the selected language.
 - [x] [Improved] 🧭 Destination and country-name data now includes Persian and Urdu locale entries.
 - [ ] [Internal] 🧱 Extended locale, profile, and SEO metadata mappings so language and direction stay synchronized across runtime and edge rendering.

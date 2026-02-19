@@ -1,51 +1,51 @@
 {
   "hero": {
-    "badge": "AI-Powered Trip Planning",
-    "titleBefore": "Your next adventure, planned",
-    "titleHighlight": "in seconds",
-    "description": "Tell us where you want to go and when — our AI builds a complete, day-by-day itinerary with optimized routes, curated activities, and real booking links. Adjust everything on a visual timeline and map, then share with your travel crew in one click.",
+    "badge": "برنامه‌ریزی سفر با هوش مصنوعی",
+    "titleBefore": "ماجراجویی بعدی شما",
+    "titleHighlight": "در چند ثانیه برنامه‌ریزی می‌شود",
+    "description": "به ما بگویید کجا و چه زمانی می‌خواهید سفر کنید — هوش مصنوعی ما یک برنامه سفر کاملِ روزبه‌روز با مسیرهای بهینه، فعالیت‌های منتخب و لینک‌های واقعی رزرو می‌سازد. همه چیز را روی تایم‌لاین و نقشه بصری ویرایش کنید و سپس با یک کلیک با هم‌سفرهایتان به اشتراک بگذارید.",
     "floating": {
-      "ai": "AI-generated itineraries",
-      "share": "Share & collaborate",
-      "booking": "Booking links"
+      "ai": "برنامه سفر تولیدشده با AI",
+      "share": "اشتراک‌گذاری و همکاری",
+      "booking": "لینک‌های رزرو"
     }
   },
   "examples": {
-    "title": "Trips built with TravelFlow",
-    "subtitle": "Browse real itineraries created by our community — from week-long island getaways to cross-country road trips."
+    "title": "سفرهایی که با TravelFlow ساخته شده‌اند",
+    "subtitle": "برنامه‌سفرهای واقعی ساخته‌شده توسط جامعه ما را ببینید — از سفرهای جزیره‌ای یک‌هفته‌ای تا جاده‌گردی‌های بین‌شهری."
   },
   "featureShowcase": {
-    "title": "Everything you need to plan, share, and go",
-    "subtitle": "From first spark of inspiration to boarding pass — TravelFlow handles the entire journey.",
+    "title": "هرآنچه برای برنامه‌ریزی، اشتراک‌گذاری و حرکت لازم دارید",
+    "subtitle": "از اولین جرقه الهام تا کارت پرواز — TravelFlow تمام مسیر را پوشش می‌دهد.",
     "items": {
       "aiTripCreation": {
-        "title": "AI Trip Creation",
-        "description": "Describe your dream trip in plain language. Our AI builds a complete, day-by-day itinerary with smart city sequencing, activity suggestions, and estimated travel times — all in under 30 seconds."
+        "title": "ساخت سفر با هوش مصنوعی",
+        "description": "سفر رویایی‌تان را با زبان ساده توضیح دهید. هوش مصنوعی ما در کمتر از ۳۰ ثانیه یک برنامه سفر کاملِ روزبه‌روز با توالی هوشمند شهرها، پیشنهاد فعالیت و زمان تقریبی جابه‌جایی می‌سازد."
       },
       "interactiveMapStyles": {
-        "title": "Interactive Map Styles",
-        "description": "Switch between satellite, terrain, and minimalist map layers. See your route come alive with animated path lines, city markers, and dynamic zoom that follows your scroll position."
+        "title": "سبک‌های تعاملی نقشه",
+        "description": "بین لایه‌های ماهواره‌ای، توپوگرافی و مینیمال جابه‌جا شوید. مسیرتان را با خطوط متحرک، نشانگرهای شهر و زوم پویا که با اسکرول شما هماهنگ است، زنده ببینید."
       },
       "easyItineraryAdjustments": {
-        "title": "Easy Itinerary Adjustments",
-        "description": "Drag cities to reorder, stretch durations, or add spontaneous stops — all on a visual timeline. Changes cascade automatically so dates and connections always stay in sync."
+        "title": "ویرایش آسان برنامه سفر",
+        "description": "شهرها را بکشید و جابه‌جا کنید، مدت‌ها را تغییر دهید یا توقف‌های ناگهانی اضافه کنید — همه روی یک تایم‌لاین بصری. تغییرات به‌صورت خودکار اعمال می‌شوند تا تاریخ‌ها و ارتباط مسیرها همیشه هماهنگ بمانند."
       },
       "communityExamples": {
-        "title": "Community Examples",
-        "description": "Browse itineraries from fellow travelers to discover hidden gems and proven routes. Fork any community trip as a starting point for your own adventure."
+        "title": "نمونه‌های جامعه کاربران",
+        "description": "برنامه‌سفرهای مسافران دیگر را ببینید تا مسیرهای امتحان‌شده و نقاط جذاب کمتر شناخته‌شده را پیدا کنید. هر سفر را می‌توانید فورک کنید و نقطه شروع سفر خودتان قرار دهید."
       },
       "shareCollaborate": {
-        "title": "Share & Collaborate",
-        "description": "Generate a shareable link in one click. Co-travelers see the full map, timeline, and activity list — no account required. Updates sync instantly for everyone viewing the trip."
+        "title": "اشتراک‌گذاری و همکاری",
+        "description": "با یک کلیک لینک قابل اشتراک بسازید. هم‌سفرها نقشه کامل، تایم‌لاین و فهرست فعالیت‌ها را می‌بینند — بدون نیاز به حساب کاربری. به‌روزرسانی‌ها برای همه بینندگان فوراً همگام می‌شود."
       },
       "activityBookingLinks": {
-        "title": "Activity Booking Links",
-        "description": "Each AI-suggested activity links directly to booking platforms. Reserve tours, restaurants, and transport without leaving your itinerary — keeping everything in one place."
+        "title": "لینک‌های رزرو فعالیت‌ها",
+        "description": "هر فعالیت پیشنهادی AI مستقیم به پلتفرم‌های رزرو وصل است. تورها، رستوران‌ها و حمل‌ونقل را بدون خروج از برنامه سفر رزرو کنید تا همه چیز یکجا بماند."
       }
     }
   },
   "cta": {
-    "title": "Ready to plan your next trip?",
-    "subtitle": "Join thousands of travelers who build smarter itineraries in minutes. No account needed to start."
+    "title": "برای برنامه‌ریزی سفر بعدی آماده‌اید؟",
+    "subtitle": "به هزاران مسافر بپیوندید که در چند دقیقه برنامه‌سفر هوشمند می‌سازند. برای شروع نیازی به حساب کاربری نیست."
   }
 }

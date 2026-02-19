@@ -1,28 +1,28 @@
 {
   "nav": {
-    "features": "Features",
-    "inspirations": "Inspirations",
-    "updates": "News & Updates",
-    "blog": "Blog",
-    "pricing": "Pricing",
-    "login": "Login",
-    "createTrip": "Create Trip",
-    "myTrips": "My Trips",
-    "openMenu": "Open menu",
-    "admin": "Admin",
-    "logout": "Logout"
+    "features": "ویژگی‌ها",
+    "inspirations": "الهام‌ها",
+    "updates": "خبرها و به‌روزرسانی‌ها",
+    "blog": "وبلاگ",
+    "pricing": "قیمت‌گذاری",
+    "login": "ورود",
+    "createTrip": "ساخت سفر",
+    "myTrips": "سفرهای من",
+    "openMenu": "باز کردن منو",
+    "admin": "ادمین",
+    "logout": "خروج"
   },
   "footer": {
-    "rightsReserved": "© {year} {appName}. All rights reserved.",
-    "contact": "Contact",
-    "imprint": "Imprint",
-    "privacy": "Privacy",
-    "terms": "Terms",
-    "cookies": "Cookies",
-    "legalNotice": "Legal content is scaffolded and should be replaced with approved production text before public launch."
+    "rightsReserved": "© {year} {appName}. همه حقوق محفوظ است.",
+    "contact": "تماس",
+    "imprint": "اطلاعات حقوقی",
+    "privacy": "حریم خصوصی",
+    "terms": "شرایط استفاده",
+    "cookies": "کوکی‌ها",
+    "legalNotice": "محتوای حقوقی فعلاً نمونه است و پیش از انتشار عمومی باید با متن تأییدشده نهایی جایگزین شود."
   },
   "language": {
-    "label": "Language",
+    "label": "زبان",
     "en": "English",
     "es": "Español",
     "de": "Deutsch",
@@ -36,37 +36,37 @@
     "ur": "اردو"
   },
   "buttons": {
-    "startPlanning": "Start Planning",
-    "seeExampleTrips": "See Example Trips",
-    "startPlanningFree": "Start Planning — It's Free",
-    "done": "Done",
-    "essentialOnly": "Essential only",
-    "acceptAll": "Accept all",
-    "backToBlog": "Back to Blog",
-    "all": "All"
+    "startPlanning": "شروع برنامه‌ریزی",
+    "seeExampleTrips": "مشاهده سفرهای نمونه",
+    "startPlanningFree": "برنامه‌ریزی را شروع کنید — رایگان است",
+    "done": "انجام شد",
+    "essentialOnly": "فقط ضروری",
+    "acceptAll": "پذیرفتن همه",
+    "backToBlog": "بازگشت به وبلاگ",
+    "all": "همه"
   },
   "earlyAccess": {
-    "tag": "Early preview",
-    "message": "{appName} is under active development. Features may change, and some things might not work perfectly yet.",
-    "dismiss": "Dismiss banner"
+    "tag": "پیش‌نمایش اولیه",
+    "message": "{appName} در حال توسعه فعال است. امکانات ممکن است تغییر کنند و برخی بخش‌ها هنوز کاملاً پایدار نباشند.",
+    "dismiss": "بستن بنر"
   },
   "cookieBanner": {
-    "message": "We use essential cookies to keep {appName} stable and optional cookies to improve your experience. See our",
-    "policyLinkLabel": "Cookie Policy"
+    "message": "برای پایدار نگه داشتن {appName} از کوکی‌های ضروری و برای بهبود تجربه شما از کوکی‌های اختیاری استفاده می‌کنیم. سیاست",
+    "policyLinkLabel": "کوکی‌ها"
   },
   "translationNotice": {
-    "message": "This page was recently translated with AI support and may still contain translation errors.",
-    "cta": "Report a translation issue",
-    "ctaShort": "Report"
+    "message": "این صفحه به‌تازگی با کمک هوش مصنوعی ترجمه شده و ممکن است هنوز خطاهای ترجمه داشته باشد.",
+    "cta": "گزارش خطای ترجمه",
+    "ctaShort": "گزارش"
   },
   "contact": {
-    "title": "Contact",
-    "description": "Use this page to report translation issues or send localization feedback.",
-    "formStatusTitle": "Contact form coming soon",
-    "formStatusBody": "The dedicated form is not live yet. Please contact us by email in the meantime.",
-    "emailLabel": "Email",
+    "title": "تماس",
+    "description": "از این صفحه برای گزارش خطاهای ترجمه یا ارسال بازخورد بومی‌سازی استفاده کنید.",
+    "formStatusTitle": "فرم تماس به‌زودی اضافه می‌شود",
+    "formStatusBody": "فرم اختصاصی هنوز فعال نیست. تا آن زمان لطفاً از طریق ایمیل با ما تماس بگیرید.",
+    "emailLabel": "ایمیل",
     "emailValue": "support@travelflow.app",
-    "responseNote": "We usually reply within 2–3 business days.",
-    "backHome": "Back to homepage"
+    "responseNote": "معمولاً طی ۲ تا ۳ روز کاری پاسخ می‌دهیم.",
+    "backHome": "بازگشت به صفحه اصلی"
   }
 }
