@@ -114,3 +114,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🩺 Verified this modal pass with full build/update validation and improved `react-doctor` from `91/158` to `91/157`.
 - [ ] [Internal] 🧩 Extracted trip-history presentation and open-panel orchestration into a dedicated tripview hook so `TripView` keeps shrinking and history UI wiring stays isolated.
 - [ ] [Internal] 🩺 Cleaned remaining trip `DetailsPanel` lint hotspots (default array allocation, index-based swatch keys, prop-init state handling), improving `react-doctor` from `91/157` to `93/153`.
+- [ ] [Internal] ♿ Wired classic/wizard/surprise create-trip labels to explicit form controls to tighten accessibility semantics and improve `react-doctor` from `93/153` to `93/143`.
