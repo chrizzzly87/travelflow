@@ -49,6 +49,51 @@ const SpeculationRulesManager = lazyWithRecovery(
     'SpeculationRulesManager',
     () => import('./components/SpeculationRulesManager').then((module) => ({ default: module.SpeculationRulesManager }))
 );
+const TRIP_MANAGER_FALLBACK_ROWS = [0, 1, 2, 3, 4, 5];
+
+const TripManagerLoadingFallback: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => (
+    <>
+        <button
+            type="button"
+            className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-[1100] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            style={{
+                opacity: isOpen ? 1 : 0,
+                pointerEvents: isOpen ? 'auto' : 'none',
+            }}
+            onClick={onClose}
+            aria-label="Close My Plans panel"
+        />
+        <div
+            className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+            style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        >
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="h-8 w-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    aria-label="Close"
+                >
+                    x
+                </button>
+            </div>
+            <div className="px-3 py-2 border-b border-gray-100">
+                <div className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 animate-pulse" />
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+                {TRIP_MANAGER_FALLBACK_ROWS.map((row) => (
+                    <div key={row} className="rounded-lg border border-gray-100 bg-white px-2 py-2">
+                        <div className="animate-pulse">
+                            <div className="h-3.5 w-32 rounded bg-gray-200" />
+                            <div className="mt-2 h-2.5 w-44 rounded bg-gray-100" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </>
+);
 
 const isNavPrefetchEnabled = (): boolean => {
     const navPrefetchEnabledByEnv = (import.meta as any)?.env?.VITE_NAV_PREFETCH_ENABLED;
@@ -404,7 +449,7 @@ const AppContent: React.FC = () => {
             />
 
             {isManagerOpen && (
-                <Suspense fallback={null}>
+                <Suspense fallback={<TripManagerLoadingFallback isOpen={isManagerOpen} onClose={() => setIsManagerOpen(false)} />}>
                     <TripManager
                         isOpen={isManagerOpen}
                         onClose={() => setIsManagerOpen(false)}
