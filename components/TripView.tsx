@@ -11,7 +11,6 @@ import {
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
-import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import {
     dbCreateShareLink,
     dbGetTrip,
@@ -38,6 +37,8 @@ import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
+import { useTripOverlayController } from './tripview/useTripOverlayController';
+import { useTripHistoryController } from './tripview/useTripHistoryController';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -507,15 +508,6 @@ export const TripView: React.FC<TripViewProps> = ({
         void loadTripInfoModalModule().catch(() => undefined);
     }, []);
 
-    const openTripInfoModal = useCallback(() => {
-        prewarmTripInfoModal();
-        setIsTripInfoOpen(true);
-    }, [prewarmTripInfoModal]);
-
-    const closeTripInfoModal = useCallback(() => {
-        setIsTripInfoOpen(false);
-    }, []);
-
     const handleHeaderAuthAction = useCallback(async () => {
         if (isHeaderAuthSubmitting) return;
 
@@ -591,16 +583,26 @@ export const TripView: React.FC<TripViewProps> = ({
         return 'planner';
     });
 
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [isTripInfoOpen, setIsTripInfoOpen] = useState(false);
-    const [isTripInfoHistoryExpanded, setIsTripInfoHistoryExpanded] = useState(false);
-    const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
     const [toastState, setToastState] = useState<ToastState | null>(null);
-    const [showAllHistory, setShowAllHistory] = useState(false);
-    const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
+    });
+    const currentUrl = location.pathname + location.search;
+    const {
+        isHistoryOpen,
+        setIsHistoryOpen,
+        isTripInfoOpen,
+        isTripInfoHistoryExpanded,
+        setIsTripInfoHistoryExpanded,
+        isMobileMapExpanded,
+        setIsMobileMapExpanded,
+        openTripInfoModal,
+        closeTripInfoModal,
+    } = useTripOverlayController({
+        tripId: trip.id,
+        isMobileViewport,
+        prewarmTripInfoModal,
     });
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -610,10 +612,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const suppressCommitRef = useRef(false);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
-    const lastNavActionRef = useRef<'undo' | 'redo' | null>(null);
-    const lastNavFromLabelRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
-    const currentUrlRef = useRef<string>('');
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
        if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'standard';
@@ -761,71 +760,24 @@ export const TripView: React.FC<TripViewProps> = ({
         const { label: actionLabel } = getToneMeta(tone);
         showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
     }, [showToast]);
-
-    const refreshHistory = useCallback(() => {
-        if (isExamplePreview) {
-            setHistoryEntries([]);
-            return;
-        }
-        setHistoryEntries(getHistoryEntries(trip.id));
-    }, [isExamplePreview, trip.id]);
-
-    const baseUrl = useMemo(() => {
-        if (location.pathname.startsWith('/trip/')) {
-            return `/trip/${encodeURIComponent(trip.id)}`;
-        }
-        if (location.pathname.startsWith('/s/')) {
-            return location.pathname;
-        }
-        return location.pathname;
-    }, [location.pathname, trip.id]);
-
-    const resolvedHistoryEntries = useMemo(() => {
-        const base = baseUrl;
-        const filtered = historyEntries.filter(entry => entry.url !== base);
-        const latestEntry: HistoryEntry = {
-            id: 'latest',
-            tripId: trip.id,
-            url: base,
-            label: 'Data: Latest version',
-            ts: typeof trip.updatedAt === 'number' ? trip.updatedAt : Date.now(),
-        };
-        return [latestEntry, ...filtered];
-    }, [historyEntries, baseUrl, trip.id, trip.updatedAt]);
-
-    useEffect(() => {
-        refreshHistory();
-    }, [refreshHistory]);
-
-    const getHistoryIndex = useCallback((url: string) => {
-        const idx = resolvedHistoryEntries.findIndex(entry => entry.url === url);
-        return idx >= 0 ? idx : null;
-    }, [resolvedHistoryEntries]);
-
-    const getHistoryEntryForAction = useCallback((action: 'undo' | 'redo') => {
-        if (resolvedHistoryEntries.length === 0) return null;
-        const currentIndex = getHistoryIndex(currentUrlRef.current);
-        const baseIndex = currentIndex ?? 0;
-        const nextIndex = action === 'undo' ? baseIndex + 1 : baseIndex - 1;
-        if (nextIndex < 0 || nextIndex >= resolvedHistoryEntries.length) return null;
-        return resolvedHistoryEntries[nextIndex];
-    }, [resolvedHistoryEntries, getHistoryIndex]);
-
-    const navigateHistory = useCallback((action: 'undo' | 'redo') => {
-        const target = getHistoryEntryForAction(action);
-        if (!target) {
-            showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
-                tone: 'neutral',
-                title: action === 'undo' ? 'Undo' : 'Redo',
-            });
-            return;
-        }
-        suppressCommitRef.current = true;
-        lastNavActionRef.current = action;
-        lastNavFromLabelRef.current = null;
-        navigate(target.url, { replace: true });
-        showToast(stripHistoryPrefix(target.label), { tone: 'neutral', title: action === 'undo' ? 'Undo' : 'Redo' });
-    }, [getHistoryEntryForAction, navigate, showToast]);
+    const {
+        showAllHistory,
+        setShowAllHistory,
+        refreshHistory,
+        navigateHistory,
+        formatHistoryTime,
+        displayHistoryEntries,
+    } = useTripHistoryController({
+        tripId: trip.id,
+        tripUpdatedAt: typeof trip.updatedAt === 'number' ? trip.updatedAt : undefined,
+        locationPathname: location.pathname,
+        currentUrl,
+        isExamplePreview,
+        navigate,
+        suppressCommitRef,
+        stripHistoryPrefix,
+        showToast,
+    });
 
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
@@ -833,8 +785,6 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const markUserEdit = useCallback(() => {
         suppressCommitRef.current = false;
-        lastNavActionRef.current = null;
-        lastNavFromLabelRef.current = null;
     }, []);
 
     const debugHistory = useCallback((message: string, data?: any) => {
@@ -971,12 +921,6 @@ export const TripView: React.FC<TripViewProps> = ({
     }, [trip.id]);
 
     useEffect(() => {
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
-    }, [trip.id]);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return;
         try {
             window.localStorage.setItem(getShareLinksStorageKey(trip.id), JSON.stringify(shareUrlsByMode));
@@ -1035,12 +979,6 @@ export const TripView: React.FC<TripViewProps> = ({
             canceled = true;
         };
     }, [canShare, isTripLockedByExpiry, trip.id]);
-
-    const currentUrl = location.pathname + location.search;
-
-    useEffect(() => {
-        currentUrlRef.current = currentUrl;
-    }, [currentUrl]);
 
     useEffect(() => {
         setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
@@ -1123,13 +1061,6 @@ export const TripView: React.FC<TripViewProps> = ({
         const interval = window.setInterval(() => setNowMs(Date.now()), 60_000);
         return () => window.clearInterval(interval);
     }, [tripExpiresAtMs]);
-
-    useEffect(() => {
-        if (isMobileViewport) return;
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
-    }, [isMobileViewport]);
 
     useEffect(() => {
         const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
@@ -1387,32 +1318,6 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings, isTripLockedByExpiry]);
 
-    const formatHistoryTime = useCallback((ts: number) => {
-        const diffMs = Date.now() - ts;
-        const absMs = Math.abs(diffMs);
-        const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-        const sec = Math.round(absMs / 1000);
-        if (sec < 60) return rtf.format(-sec, 'second');
-        const min = Math.round(sec / 60);
-        if (min < 60) return rtf.format(-min, 'minute');
-        const hrs = Math.round(min / 60);
-        if (hrs < 24) return rtf.format(-hrs, 'hour');
-        const days = Math.round(hrs / 24);
-        if (days < 7) return rtf.format(-days, 'day');
-        return new Date(ts).toLocaleString();
-    }, []);
-
-    const displayHistoryEntries = useMemo(() => {
-        if (isExamplePreview) return [];
-        if (showAllHistory) return resolvedHistoryEntries;
-        const seen = new Set<string>();
-        return resolvedHistoryEntries.filter(entry => {
-            if (seen.has(entry.label)) return false;
-            seen.add(entry.label);
-            return true;
-        });
-    }, [isExamplePreview, resolvedHistoryEntries, showAllHistory]);
-
     const historyModalItems = useMemo(() => {
         return displayHistoryEntries.map((entry) => {
             const tone = resolveChangeTone(entry.label);
@@ -1432,97 +1337,7 @@ export const TripView: React.FC<TripViewProps> = ({
         trackEvent('app__trip_history--open', { source });
         refreshHistory();
         setIsHistoryOpen(true);
-    }, [refreshHistory]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handleHistoryUpdate = (event: Event) => {
-            const detail = (event as CustomEvent).detail as { tripId?: string };
-            if (!detail || detail.tripId !== trip.id) return;
-            refreshHistory();
-        };
-        if (typeof window === 'undefined') return;
-        window.addEventListener('tf:history', handleHistoryUpdate);
-        return () => window.removeEventListener('tf:history', handleHistoryUpdate);
-    }, [isExamplePreview, trip.id, refreshHistory]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return;
-            if (isHistoryOpen) {
-                setIsHistoryOpen(false);
-                return;
-            }
-            if (isTripInfoOpen) {
-                setIsTripInfoOpen(false);
-                return;
-            }
-            if (isMobileMapExpanded) {
-                setIsMobileMapExpanded(false);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isHistoryOpen, isTripInfoOpen, isMobileMapExpanded]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement | null;
-            const isEditable = !!target && (
-                target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA' ||
-                (target as HTMLElement).isContentEditable
-            );
-            if (isEditable) return;
-
-            const isMeta = e.metaKey || e.ctrlKey;
-            if (!isMeta) return;
-
-            if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                navigateHistory('undo');
-            } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
-                e.preventDefault();
-                navigateHistory('redo');
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [trip.id, navigateHistory, isExamplePreview]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handlePopState = () => {
-            const nextPath = window.location.pathname;
-            const nextUrl = nextPath + window.location.search;
-            const expectedTripPrefix = `/trip/${encodeURIComponent(trip.id)}`;
-            const isTripRoute = nextPath.startsWith('/trip/');
-            const isShareRoute = nextPath.startsWith('/s/');
-            if ((!isTripRoute && !isShareRoute) || (isTripRoute && !nextPath.startsWith(expectedTripPrefix))) {
-                navigate(currentUrlRef.current || '/', { replace: true });
-                showToast('Reached start of history', { tone: 'neutral', title: 'Undo' });
-                return;
-            }
-            suppressCommitRef.current = true;
-            const entry = findHistoryEntryByUrl(trip.id, nextUrl);
-            const prevIdx = getHistoryIndex(currentUrlRef.current);
-            const nextIdx = getHistoryIndex(nextUrl);
-            const inferredAction = (prevIdx !== null && nextIdx !== null)
-                ? (nextIdx > prevIdx ? 'undo' : 'redo')
-                : null;
-            if (entry) {
-                showToast(stripHistoryPrefix(entry.label), {
-                    tone: 'neutral',
-                    title: inferredAction === 'redo' ? 'Redo' : 'Undo',
-                });
-            }
-            lastNavActionRef.current = null;
-            lastNavFromLabelRef.current = null;
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [trip.id, showToast, navigate, getHistoryIndex, isExamplePreview]);
+    }, [refreshHistory, setIsHistoryOpen]);
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
         if (!onCommitState) return;
@@ -3284,7 +3099,6 @@ export const TripView: React.FC<TripViewProps> = ({
                                 onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
                                 onGo={(item) => {
                                     setIsHistoryOpen(false);
-                                    lastNavActionRef.current = null;
                                     suppressCommitRef.current = true;
                                     navigate(item.url);
                                     showToast(item.details, { tone: item.tone, title: 'Opened from history' });

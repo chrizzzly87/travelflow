@@ -149,18 +149,28 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         setMode('manual');
     };
 
+    const titleInputId = 'add-activity-title-input';
+    const descriptionInputId = 'add-activity-description-input';
+    const promptInputId = 'add-activity-prompt-input';
+
     return (
-        <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1300] flex items-center justify-center p-4"
-            onClick={onClose}
-        >
+        <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4">
+            <button
+                type="button"
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Close add activity dialog"
+            />
             <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
-                onClick={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="add-activity-title"
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
             >
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-lg font-bold text-gray-900">Add Activity for Day {Math.floor(dayOffset) + 1}</h3>
+                    <h3 id="add-activity-title" className="text-lg font-bold text-gray-900">Add Activity for Day {Math.floor(dayOffset) + 1}</h3>
                     <button
+                        type="button"
                         onClick={onClose}
                         className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
                     >
@@ -170,12 +180,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
 
                 <div className="p-4 border-b border-gray-100 flex gap-2">
                     <button 
+                        type="button"
                         onClick={() => setMode('manual')}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${mode === 'manual' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                     >
                         Manual Entry
                     </button>
                     <button 
+                        type="button"
                         onClick={() => setMode('ai')}
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${mode === 'ai' ? 'bg-accent-100 text-accent-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                     >
@@ -187,8 +199,9 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     {mode === 'manual' ? (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
+                                <label htmlFor={titleInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
                                 <input 
+                                    id={titleInputId}
                                     ref={manualTitleInputRef}
                                     type="text" 
                                     value={title}
@@ -197,13 +210,15 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                     placeholder="e.g. Visit Louvre Museum"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Types (Multi-select)</label>
+                            <fieldset>
+                                <legend className="block text-xs font-bold text-gray-500 uppercase mb-1">Types (Multi-select)</legend>
                                 <div className="flex flex-wrap gap-2">
                                     {ALL_ACTIVITY_TYPES.map(type => (
                                         <button
+                                            type="button"
                                             key={type}
                                             onClick={() => toggleType(type)}
+                                            aria-pressed={selectedTypes.includes(type)}
                                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${getActivityTypeButtonClass(type, selectedTypes.includes(type))}`}
                                         >
                                             <ActivityTypeIcon type={type} size={12} />
@@ -211,10 +226,11 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         </button>
                                     ))}
                                 </div>
-                            </div>
+                            </fieldset>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
+                                <label htmlFor={descriptionInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label>
                                 <textarea 
+                                    id={descriptionInputId}
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none h-24 resize-none"
@@ -222,6 +238,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                 />
                             </div>
                             <button 
+                                type="button"
                                 onClick={handleManualAdd}
                                 disabled={!title}
                                 className="w-full py-3 bg-accent-600 text-white font-bold rounded-xl hover:bg-accent-700 transition-colors disabled:opacity-50"
@@ -232,9 +249,10 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     ) : (
                         <div className="space-y-6">
                             <div className="relative">
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">What are you looking for?</label>
+                                <label htmlFor={promptInputId} className="block text-xs font-bold text-gray-500 uppercase mb-1">What are you looking for?</label>
                                 <div className="flex gap-2">
                                     <input 
+                                        id={promptInputId}
                                         type="text" 
                                         value={prompt}
                                         onChange={e => setPrompt(e.target.value)}
@@ -243,6 +261,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                         onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
                                     />
                                     <button 
+                                        type="button"
                                         onClick={handleGenerate}
                                         disabled={!prompt || isGenerating}
                                         className="px-4 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors disabled:opacity-50"
@@ -254,8 +273,13 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
 
                             {proposals.length > 0 && (
                                 <div className="grid gap-3">
-                                    {proposals.map((p, i) => (
-                                        <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group" onClick={() => handleSelectProposal(p)}>
+                                    {proposals.map((p) => (
+                                        <button
+                                            type="button"
+                                            key={`${p.title}-${p.description ?? ''}`}
+                                            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-accent-300 hover:bg-accent-50 transition-all cursor-pointer group"
+                                            onClick={() => handleSelectProposal(p)}
+                                        >
                                             {(() => {
                                                 const activityTypes = normalizeActivityTypes(p.activityTypes ?? p.type);
                                                 return (
@@ -284,7 +308,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                                             <div className="mt-2 text-xs text-accent-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                                                 Click to add <Check size={12} />
                                             </div>
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             )}

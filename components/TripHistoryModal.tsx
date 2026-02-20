@@ -48,18 +48,24 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[1500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4">
+            <button
+                type="button"
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Close change history dialog"
+            />
+            <div role="dialog" aria-modal="true" aria-labelledby="trip-history-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900">Change History</h3>
+                        <h3 id="trip-history-title" className="text-lg font-bold text-gray-900">Change History</h3>
                         <p className="text-xs text-gray-500">
                             {isExamplePreview
                                 ? 'Example trips are editable for exploration, but changes are not saved.'
                                 : 'Undo/redo works with browser history and Cmd+Z / Cmd+Y.'}
                         </p>
                     </div>
-                    <button onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                    <button type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                         Close
                     </button>
                 </div>
@@ -71,18 +77,21 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                     <>
                         <div className="p-3 border-b border-gray-100 flex items-center gap-2">
                             <button
+                                type="button"
                                 onClick={onUndo}
                                 className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                             >
                                 Undo
                             </button>
                             <button
+                                type="button"
                                 onClick={onRedo}
                                 className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                             >
                                 Redo
                             </button>
                             <button
+                                type="button"
                                 onClick={onToggleShowAllHistory}
                                 className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                             >
@@ -117,6 +126,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                 </div>
                                                 <div className="shrink-0">
                                                     <button
+                                                        type="button"
                                                         onClick={() => onGo(item)}
                                                         className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
                                                     >

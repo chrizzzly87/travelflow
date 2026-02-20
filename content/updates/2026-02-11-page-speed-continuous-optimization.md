@@ -95,3 +95,6 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `203`) by addressing low-risk trip-flow findings and removing remaining inline timeline-render hotspots in `TripView`.
 - [x] [Improved] ⚡ Trip information now opens instantly with a lightweight loading shell instead of waiting for the modal bundle to finish loading.
 - [ ] [Internal] 🔥 Added explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the lazy TripInfo modal chunk to reduce first-open latency without increasing initial payload.
+- [ ] [Internal] 🧩 Extracted TripView history and overlay orchestration into dedicated hooks to keep undo/redo, popstate, and modal state management out of the main component body.
+- [x] [Improved] ♿ Trip info, history, share, and add-activity dialogs now use stronger semantic modal and form patterns for better keyboard and assistive-technology behavior.
+- [ ] [Internal] 🩺 Cleared high-signal trip-modal accessibility warnings and reduced `react-doctor` warning count from `203` to `177` in this pass.

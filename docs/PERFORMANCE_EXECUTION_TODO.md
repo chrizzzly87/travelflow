@@ -106,6 +106,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extracted trip map bootstrap orchestration from `TripView` into `components/tripview/useDeferredMapBootstrap.ts` (visibility/delay/interaction/max-wait gates unchanged) to reduce `TripView` complexity and keep map-loading logic isolated.
 - [x] Follow-up `react-doctor` passes after trip refactor + history-open/timeline-render cleanup improved score from `90` to `91` and reduced warnings from `209` to `203`.
 - [x] Added a `TripInfoModal` suspense loading shell + intent prewarm (`hover`/`focus`/`touchstart`) so the modal opens immediately while its lazy chunk resolves in the background.
+- [x] Extracted trip history + overlay orchestration from `TripView` into focused hooks (`useTripHistoryController`, `useTripOverlayController`), reducing `TripView.tsx` from `3418` to `3232` lines while keeping undo/redo, popstate, and escape behavior intact.
+- [x] Cleared remaining high-signal `react-doctor` accessibility issues in trip-focused modals (`TripInfoModal`, `TripHistoryModal`, `TripShareModal`, `AddActivityModal`), reducing project warning count from `203` to `177` in the latest pass.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -166,6 +168,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Defer map-script bootstrap until map container visibility + short delay (or first interaction), with a max-wait safety fallback.
 - [x] Resolve low-risk planner `react-doctor` findings (title edit semantics, keyboard-accessible resize handles, and modal focus management) without impacting route transfer budgets.
 - [x] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
+- [x] Extract history/overlay orchestration from `TripView` into dedicated hooks to continue shrinking the main planner component.
+- [x] Resolve high-signal trip-modal `react-doctor` accessibility findings with semantic dialog/backdrop and label-control associations.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -190,4 +194,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: continue `TripView` structural extraction by separating history/overlay orchestration from the render tree and reducing inline render-function hotspots flagged by `react-doctor`.
+- Next highest-impact target: continue `TripView` structural extraction by moving remaining modal/item wiring and history presentation mapping out of the main render body, then re-measure `/trip/:id` with fresh Lighthouse baselines.
