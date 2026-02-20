@@ -37,6 +37,7 @@ import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
+import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -186,9 +187,6 @@ const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
-const MAP_BOOTSTRAP_DELAY_MS = 900;
-const MAP_BOOTSTRAP_MAX_WAIT_MS = 4000;
-const MAP_BOOTSTRAP_INTERSECTION_THRESHOLD = 0.01;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
@@ -401,10 +399,7 @@ export const TripView: React.FC<TripViewProps> = ({
         () => displayTrip.items.some((item) => item.loading),
         [displayTrip.items]
     );
-    const expectedCityLaneCount = useMemo(
-        () => displayTrip.items.filter((item) => item.type === 'city').length,
-        [displayTrip.items]
-    );
+    const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const expirationLabel = useMemo(() => {
         if (!tripExpiresAtMs) return null;
         const date = new Date(tripExpiresAtMs);
@@ -534,14 +529,10 @@ export const TripView: React.FC<TripViewProps> = ({
     const [toastState, setToastState] = useState<ToastState | null>(null);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
-    const [isMapBootstrapEnabled, setIsMapBootstrapEnabled] = useState(false);
-    const [isMapViewportVisible, setIsMapViewportVisible] = useState(false);
-    const [hasMapBootstrapDelayElapsed, setHasMapBootstrapDelayElapsed] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
     });
-    const mapViewportRef = useRef<HTMLDivElement | null>(null);
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
@@ -1368,9 +1359,11 @@ export const TripView: React.FC<TripViewProps> = ({
         });
     }, [displayHistoryEntries, currentUrl]);
 
-    useEffect(() => {
-        if (isHistoryOpen) refreshHistory();
-    }, [isHistoryOpen, refreshHistory]);
+    const openHistoryPanel = useCallback((source: 'desktop_header' | 'mobile_header' | 'trip_info') => {
+        trackEvent('app__trip_history--open', { source });
+        refreshHistory();
+        setIsHistoryOpen(true);
+    }, [refreshHistory]);
 
     useEffect(() => {
         if (isExamplePreview) return;
@@ -2250,6 +2243,16 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const isMobile = isMobileViewport;
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
+    const {
+        mapViewportRef,
+        isMapBootstrapEnabled,
+        enableMapBootstrap,
+    } = useDeferredMapBootstrap({
+        viewMode,
+        effectiveLayoutMode,
+        isMobile,
+        isMobileMapExpanded,
+    });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
     const infoHistoryEntries = useMemo(() => {
         return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
@@ -2263,70 +2266,6 @@ export const TripView: React.FC<TripViewProps> = ({
             isCurrent: entry.url === currentUrl,
         }));
     }, [infoHistoryEntries, currentUrl]);
-    const enableMapBootstrap = useCallback(() => {
-        setIsMapBootstrapEnabled(true);
-    }, []);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || hasMapBootstrapDelayElapsed || typeof window === 'undefined') return;
-        const timer = window.setTimeout(() => {
-            setHasMapBootstrapDelayElapsed(true);
-        }, MAP_BOOTSTRAP_DELAY_MS);
-        return () => window.clearTimeout(timer);
-    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled) return;
-        if (hasMapBootstrapDelayElapsed && isMapViewportVisible) {
-            setIsMapBootstrapEnabled(true);
-        }
-    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled, isMapViewportVisible]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
-        const forceEnableTimer = window.setTimeout(() => {
-            setIsMapBootstrapEnabled(true);
-        }, MAP_BOOTSTRAP_MAX_WAIT_MS);
-        return () => window.clearTimeout(forceEnableTimer);
-    }, [isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
-        const handleInteraction = () => setIsMapBootstrapEnabled(true);
-        const interactionEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart'];
-        interactionEvents.forEach((eventName) => {
-            window.addEventListener(eventName, handleInteraction);
-        });
-        return () => {
-            interactionEvents.forEach((eventName) => {
-                window.removeEventListener(eventName, handleInteraction);
-            });
-        };
-    }, [isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined' || viewMode !== 'planner') return;
-        const mapContainer = mapViewportRef.current;
-        if (!mapContainer) return;
-        if (typeof window.IntersectionObserver !== 'function') {
-            setIsMapViewportVisible(true);
-            return;
-        }
-
-        const observer = new window.IntersectionObserver(
-            (entries) => {
-                const mapIsVisible = entries.some((entry) => entry.isIntersecting || entry.intersectionRatio > 0);
-                if (mapIsVisible) {
-                    setIsMapViewportVisible(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold: MAP_BOOTSTRAP_INTERSECTION_THRESHOLD }
-        );
-
-        observer.observe(mapContainer);
-        return () => observer.disconnect();
-    }, [effectiveLayoutMode, isMapBootstrapEnabled, isMobile, isMobileMapExpanded, viewMode]);
 
     const renderTimelineCanvas = () => {
         if (timelineView === 'vertical') {
@@ -2565,8 +2504,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                 </div>
                                 <button
                                     onClick={() => {
-                                        trackEvent('app__trip_history--open', { source: 'desktop_header' });
-                                        setIsHistoryOpen(true);
+                                        openHistoryPanel('desktop_header');
                                     }}
                                     className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                                     aria-label="History"
@@ -2605,8 +2543,7 @@ export const TripView: React.FC<TripViewProps> = ({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    trackEvent('app__trip_history--open', { source: 'mobile_header' });
-                                    setIsHistoryOpen(true);
+                                    openHistoryPanel('mobile_header');
                                 }}
                                 className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                                 aria-label="History"
@@ -3211,7 +3148,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                 }}
                                 onOpenFullHistory={() => {
                                     setIsTripInfoOpen(false);
-                                    setIsHistoryOpen(true);
+                                    openHistoryPanel('trip_info');
                                 }}
                                 formatHistoryTime={formatHistoryTime}
                                 countryInfo={displayTrip.countryInfo}

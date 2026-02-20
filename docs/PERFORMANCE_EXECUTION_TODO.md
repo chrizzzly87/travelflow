@@ -100,6 +100,11 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Removed conditional hook execution in `NavigationPrefetchManager` by keeping hooks always mounted and gating behavior internally with `isPrefetchActive`.
 - [x] Removed `TripView` admin-override state reset effect and moved reset semantics to keyed `TripView` mounting in the trip loader route.
 - [x] Re-ran `react-doctor` after these changes: score improved from `86` to `89` and blocking errors dropped from `4` to `0`.
+- [x] Ran `/trip/:id` Lighthouse against a valid non-redirecting trip URL (`/trip/<compressed-state>`) and captured fresh baselines in `tmp/perf/trip-real-url-baseline-mobile.json` and `tmp/perf/trip-real-url-baseline.json`.
+- [x] New `/trip/:id` valid-URL baseline (mobile profile): score `91`, `FCP ~2040 ms`, `LCP ~3172 ms`, `TBT ~17 ms`, transfer `~390.4 KiB`, `31` requests.
+- [x] New `/trip/:id` valid-URL baseline (desktop profile): score `100`, `FCP ~511 ms`, `LCP ~734 ms`, `TBT 0 ms`, transfer `~390.4 KiB`, `31` requests.
+- [x] Extracted trip map bootstrap orchestration from `TripView` into `components/tripview/useDeferredMapBootstrap.ts` (visibility/delay/interaction/max-wait gates unchanged) to reduce `TripView` complexity and keep map-loading logic isolated.
+- [x] Follow-up `react-doctor` pass after trip refactor + history-open cleanup improved score from `90` to `91` and reduced warnings from `209` to `206`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -184,4 +189,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: run `/trip/:id` measurements against a valid non-redirecting trip URL and start extracting `TripView` orchestration (map/bootstrap/history) into focused hooks to keep performance work and maintenance tractable.
+- Next highest-impact target: continue `TripView` structural extraction by separating history/overlay orchestration from the render tree and reducing inline render-function hotspots flagged by `react-doctor`.

@@ -89,3 +89,7 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Added a dedicated TripManager suspense shell plus first-frame trip hydration + async DB sync state handling to keep panel animation responsive under slow network/database conditions.
 - [ ] [Internal] 🔥 Added a follow-up performance TODO to prewarm the My Plans lazy chunk on explicit trigger intent (hover/focus/touchstart) after merge.
 - [ ] [Internal] 🧭 Documented the onboarding gate + guest queued-generation handoff contract in the Supabase runbook and added a deferred hardening backlog for future production rollout.
+- [ ] [Internal] 🚀 Implemented explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the My Plans lazy chunk so the first panel open resolves faster without increasing first-render payload.
+- [ ] [Internal] 🧱 Extracted TripView map bootstrap gating into a dedicated hook (`useDeferredMapBootstrap`) to isolate visibility/delay/interaction loading orchestration from the main trip render component.
+- [ ] [Internal] 📏 Captured a real non-redirecting `/trip/:id` Lighthouse baseline using a valid compressed trip URL to anchor further trip-page optimization work (`91` mobile / `100` desktop in local preview runs).
+- [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `206`) by addressing low-risk trip-flow findings.
