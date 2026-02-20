@@ -55,10 +55,7 @@ const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | nul
 export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps> = ({ enabled = true }) => {
     const location = useLocation();
     const prefetchEnabled = isNavPrefetchEnabled();
-
-    if (!prefetchEnabled || !enabled) {
-        return null;
-    }
+    const isPrefetchActive = prefetchEnabled && enabled;
 
     const emitPrefetchLinkHighlight = (element: Element, path: string, reason: PrefetchReason) => {
         if (typeof window === 'undefined') return;
@@ -133,6 +130,9 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
     };
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
+        if (typeof document === 'undefined') return;
+
         const onPointerEnter = (event: Event) => {
             if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
@@ -180,9 +180,10 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             document.removeEventListener('pointerdown', onPointerDown, true);
             document.removeEventListener('touchstart', onTouchStart, true);
         };
-    }, []);
+    }, [isPrefetchActive]);
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
         if (typeof window === 'undefined') return;
         if (isFirstLoadCriticalPath(location.pathname)) {
             return;
@@ -228,13 +229,14 @@ export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps>
             mutationObserver.disconnect();
             observer.disconnect();
         };
-    }, [location.pathname]);
+    }, [isPrefetchActive, location.pathname]);
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
         const extraCandidates = collectIdleCandidatesForPath(location.pathname);
         scheduleIdleWarmups(location.pathname, extraCandidates);
         publishPrefetchStats();
-    }, [location.pathname]);
+    }, [isPrefetchActive, location.pathname]);
 
     return null;
 };

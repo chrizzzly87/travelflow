@@ -76,3 +76,6 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Split trip/share/example route loaders into dedicated lazy modules so each entry route fetches only its own loader logic.
 - [ ] [Internal] 🔗 Restored share-token resolution fallback for direct trip URLs so `/trip/:id` can redirect to canonical shared links when applicable.
 - [ ] [Internal] 🗺️ Updated sitemap route-source parsing to follow the deferred route-table module so Netlify builds remain stable after route extraction refactors.
+- [ ] [Internal] 🧭 Fixed navigation-prefetch hook wiring to avoid conditional hook execution while keeping prefetch behavior behind runtime gating.
+- [ ] [Internal] 🔁 Removed TripView’s admin-override reset effect and reset that state via route-level keyed remounting for cleaner state lifecycle.
+- [ ] [Internal] 🩺 Added agent guidance for careful use of `vercel-react-best-practices`, `react-doctor`, and `find-skills` so optimization workflows stay consistent without overuse.

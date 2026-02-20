@@ -90,6 +90,9 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Split `routes/TripRouteLoaders.tsx` into route-specific lazy modules (`TripLoaderRoute`, `SharedTripLoaderRoute`, `ExampleTripLoaderRoute`) so loader code is no longer bundled as one shared loader chunk.
 - [x] Verified route-loader chunk isolation in build output: `TripLoaderRoute` `~3.22 KB` raw (`~1.51 KB` gzip), `SharedTripLoaderRoute` `~4.06 KB` raw (`~1.87 KB` gzip), `ExampleTripLoaderRoute` `~5.02 KB` raw (`~2.15 KB` gzip).
 - [x] Restored `/trip/:id` DB fallback to `/s/:token` via `trip-share-resolve` so merged main share-resolution behavior is preserved in modular route loaders.
+- [x] Removed conditional hook execution in `NavigationPrefetchManager` by keeping hooks always mounted and gating behavior internally with `isPrefetchActive`.
+- [x] Removed `TripView` admin-override state reset effect and moved reset semantics to keyed `TripView` mounting in the trip loader route.
+- [x] Re-ran `react-doctor` after these changes: score improved from `86` to `89` and blocking errors dropped from `4` to `0`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -152,7 +155,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Inspect `dist/index.html` modulepreload list.
 - [x] Inspect `dist/.vite/manifest.json` import graph for `index.html`.
 - [x] Run route perf checks on `/`, `/create-trip`, `/trip/:id`.
-- [ ] Deploy preview to Netlify and verify real environment behavior.
+- [x] Deploy preview to Netlify and verify real environment behavior.
 
 ## Useful commands
 ```bash

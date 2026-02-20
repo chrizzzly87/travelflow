@@ -403,10 +403,6 @@ export const TripView: React.FC<TripViewProps> = ({
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
 
-    useEffect(() => {
-        setAdminOverrideEnabled(false);
-    }, [isAdminFallbackView, trip.id]);
-
     const handlePaywallLoginClick = useCallback((
         event: React.MouseEvent<HTMLAnchorElement>,
         analyticsEvent: 'trip_paywall__strip--activate' | 'trip_paywall__overlay--activate',

@@ -201,9 +201,11 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
     if (!trip) return null;
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
+    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : 'default'}`;
 
     return (
         <TripView
+            key={tripViewKey}
             trip={trip}
             initialMapFocusQuery={resolveTripInitialMapFocusQuery(trip)}
             initialViewSettings={viewSettings ?? trip.defaultView}
