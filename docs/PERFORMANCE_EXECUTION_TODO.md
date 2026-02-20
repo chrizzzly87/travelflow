@@ -1,6 +1,6 @@
 # Performance Execution TODO
 
-Last updated: 2026-02-19
+Last updated: 2026-02-20
 Owner: Codex + @chrizzzly
 Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure clarity.
 
@@ -87,6 +87,9 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After CSS splitting, `/create-trip` transfer dropped to `~462.3 KiB` (`54` requests) with stable high Lighthouse performance (`91-93` across follow-up runs).
 - [x] After CSS splitting, `/example/thailand-islands` transfer dropped to `~266.4 KiB` (`27` requests, score `96` in measured run).
 - [x] Verified deferred stylesheet loading on non-critical route `/features` (`DeferredAppRoutes-*.css` requested at runtime), confirming style separation is active.
+- [x] Split `routes/TripRouteLoaders.tsx` into route-specific lazy modules (`TripLoaderRoute`, `SharedTripLoaderRoute`, `ExampleTripLoaderRoute`) so loader code is no longer bundled as one shared loader chunk.
+- [x] Verified route-loader chunk isolation in build output: `TripLoaderRoute` `~3.22 KB` raw (`~1.51 KB` gzip), `SharedTripLoaderRoute` `~4.06 KB` raw (`~1.87 KB` gzip), `ExampleTripLoaderRoute` `~5.02 KB` raw (`~2.15 KB` gzip).
+- [x] Restored `/trip/:id` DB fallback to `/s/:token` via `trip-share-resolve` so merged main share-resolution behavior is preserved in modular route loaders.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -108,6 +111,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] `app/trip/*` (trip loaders/handlers)
 - [x] `app/prefetch/*` (route preload + warmup logic)
 - [x] Eliminate duplicated route preload definitions by moving to one source of truth.
+- [x] Split route-loader concerns into dedicated files per route (`routes/TripLoaderRoute.tsx`, `routes/SharedTripLoaderRoute.tsx`, `routes/ExampleTripLoaderRoute.tsx`) and kept `routes/TripRouteLoaders.tsx` as a lightweight compatibility barrel.
 
 ## Phase 3: Additional first-load wins (next)
 - [x] Reduce globally mounted heavy UI dependencies on marketing entry path.

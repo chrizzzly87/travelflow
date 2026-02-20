@@ -11,9 +11,9 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
 const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
-const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripRouteLoaders').then((module) => ({ default: module.TripLoaderRoute })));
-const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/TripRouteLoaders').then((module) => ({ default: module.SharedTripLoaderRoute })));
-const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/TripRouteLoaders').then((module) => ({ default: module.ExampleTripLoaderRoute })));
+const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripLoaderRoute').then((module) => ({ default: module.TripLoaderRoute })));
+const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
+const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
 const CreateTripClassicLabPage = lazyWithRecovery('CreateTripClassicLabPage', () => import('../../pages/CreateTripClassicLabPage').then((module) => ({ default: module.CreateTripClassicLabPage })));
 const DeferredAppRoutes = lazyWithRecovery('DeferredAppRoutes', () => import('./DeferredAppRoutes').then((module) => ({ default: module.DeferredAppRoutes })));
 

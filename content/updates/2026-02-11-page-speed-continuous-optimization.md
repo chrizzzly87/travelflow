@@ -73,3 +73,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🗂️ Split non-critical route definitions (secondary marketing paths, admin/profile flows, and create-trip lab variants) into a lazily loaded route module so first-load entry routing stays focused on homepage and primary planner/trip routes.
 - [ ] [Internal] 🎚️ Split Tailwind output into critical-entry and deferred-route stylesheets with source-based include/exclude rules so non-critical route/page classes no longer inflate the initial CSS payload.
 - [ ] [Internal] 🧹 Added ignore rules for perf artifact folders so generated Lighthouse/perf traces stay out of Git and local IDE indexing remains lightweight.
+- [ ] [Internal] 🧩 Split trip/share/example route loaders into dedicated lazy modules so each entry route fetches only its own loader logic.
+- [ ] [Internal] 🔗 Restored share-token resolution fallback for direct trip URLs so `/trip/:id` can redirect to canonical shared links when applicable.
