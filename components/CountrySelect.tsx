@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { getDestinationMetaLabel, getDestinationOptionByName, getDestinationSeasonCountryName, resolveDestinationName, searchDestinationOptions } from '../services/destinationService';
 import { MapPin, Search, Plus } from 'lucide-react';
@@ -18,7 +18,9 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
     const [search, setSearch] = useState('');
     const wrapperRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+    const searchInputId = useId();
 
     // Parse existing value into array (comma separated)
     const selectedCountries = value
@@ -89,13 +91,12 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
 
     return (
         <div className="relative" ref={wrapperRef}>
-             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+             <label htmlFor={searchInputId} className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                 <MapPin size={14} className="text-accent-500"/> Destination(s)
             </label>
             
             <div 
                 className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-accent-500 focus-within:bg-white transition-all flex flex-wrap items-center gap-2 cursor-text min-h-[3rem] ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
-                onClick={openDropdown}
             >
                 {/* Selected Tags */}
                 {selectedCountries.map((countryName) => {
@@ -125,6 +126,8 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                 <div className="flex-1 min-w-[120px] flex items-center gap-2">
                     {selectedCountries.length === 0 && <Search size={16} className="text-gray-400" />}
                     <input 
+                        id={searchInputId}
+                        ref={searchInputRef}
                         type="text"
                         value={search}
                         onChange={(e) => {
@@ -150,9 +153,10 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                     }}
                 >
                     {filtered.length > 0 ? filtered.map((country) => (
-                        <div 
+                        <button
                             key={country.code}
-                            className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group"
+                            type="button"
+                            className="w-full px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center justify-between transition-colors group text-left"
                             onClick={() => addCountry(country.name)}
                         >
                             <div className="flex items-start gap-3 min-w-0">
@@ -165,7 +169,7 @@ export const CountrySelect: React.FC<CountrySelectProps> = ({ value, onChange, d
                                 </div>
                             </div>
                             <Plus size={16} className="text-gray-300 group-hover:text-accent-500" />
-                        </div>
+                        </button>
                     )) : (
                         <div className="p-4 text-center text-gray-400 text-sm">
                             {search ? "No matching destinations" : "Type to search"}

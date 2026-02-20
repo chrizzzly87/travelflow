@@ -172,6 +172,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Resolve high-signal trip-modal `react-doctor` accessibility findings with semantic dialog/backdrop and label-control associations.
 - [x] Added a shared focus-trap hook and wired it into custom dialogs/overlays/sidepanels (`TripInfo`, `TripHistory`, `TripShare`, `AddActivity`, `AddCity`, `DeleteCity`, `Settings`, release notice, mobile menu, My Plans panel) so keyboard focus stays inside open overlays.
 - [x] Follow-up `react-doctor` after focus-trap rollout improved from `91/177` to `91/175` by removing remaining modal/overlay accessibility regressions introduced during the pass.
+- [x] Replaced remaining clickable non-semantic wrappers in destination pickers and print-calendar interactions with semantic controls (buttons + explicit label/input associations), removing those surfaces from `react-doctor` high-signal accessibility findings.
+- [x] Follow-up `react-doctor` after the semantic-control pass improved warnings from `175` to `163` (score held at `91`) while reducing flagged files from `24` to `22`.
 
 ## Validation checklist
 - [x] `npx vite build`

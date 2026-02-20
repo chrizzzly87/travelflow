@@ -1484,7 +1484,6 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <div className="relative" ref={wizardSearchRef}>
                                         <div
                                             className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 min-h-[64px] flex flex-wrap items-start gap-2 focus-within:ring-2 focus-within:ring-accent-500 focus-within:bg-white"
-                                            onClick={openWizardSearch}
                                         >
                                             {selectedCountries.map((countryName) => (
                                                 <SeasonAwareCountryTag

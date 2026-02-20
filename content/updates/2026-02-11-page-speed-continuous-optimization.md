@@ -101,3 +101,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [x] [Improved] ⌨️ Keyboard tab navigation is now contained inside open dialogs and side panels so focus no longer jumps to background page content.
 - [ ] [Internal] ♿ Added a shared focus-trap hook across custom overlay surfaces and standardized backdrop layers to semantic button elements.
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `177` to `175` while retaining score `91`.
+- [ ] [Internal] ♿ Converted remaining non-semantic destination-picker and print-calendar click targets to semantic controls and tightened label/input associations to remove those hotspots from accessibility linting.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `175` to `163` while retaining score `91`.

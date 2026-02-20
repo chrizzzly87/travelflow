@@ -44,6 +44,16 @@ const formatLegendDate = (date: Date): string => {
     return `${day}. ${month}`;
 };
 
+const WEEKDAY_HEADERS = [
+    { id: 'mon', label: 'M' },
+    { id: 'tue', label: 'T' },
+    { id: 'wed', label: 'W' },
+    { id: 'thu', label: 'T' },
+    { id: 'fri', label: 'F' },
+    { id: 'sat', label: 'S' },
+    { id: 'sun', label: 'S' },
+];
+
 // Helper to generate calendar grids
 const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> = ({ trip, onScrollTo }) => {
     const startDate = parseLocalDate(trip.startDate);
@@ -102,8 +112,9 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                          const cityColor = getHexFromColorClass(city.color || '');
 
                          return (
-                             <div 
+                             <button
                                 key={city.id} 
+                                type="button"
                                 className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors"
                                 onClick={() => onScrollTo(city.id)}
                              >
@@ -118,7 +129,7 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                          <span className="font-mono">{shorthand}</span>
                                      </div>
                                  </div>
-                             </div>
+                             </button>
                          );
                      })}
                  </div>
@@ -141,8 +152,8 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                             </h4>
                             <div className="grid grid-cols-7 gap-1 text-center">
                                 {/* Weekday Headers */}
-                                {['M','T','W','T','F','S','S'].map((d,i) => (
-                                    <div key={i} className="text-xs font-bold text-gray-300 mb-1">{d}</div>
+                                {WEEKDAY_HEADERS.map((weekday) => (
+                                    <div key={weekday.id} className="text-xs font-bold text-gray-300 mb-1">{weekday.label}</div>
                                 ))}
 
                                 {/* Empties */}
@@ -157,35 +168,33 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                     const activeCities = getCitiesForDate(date);
                                     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
 
-                                    return (
-                                        <div 
-                                            key={day} 
-                                            className={`
-                                                aspect-square relative flex items-center justify-center isolate border border-transparent text-xs
-                                                ${isWeekend ? 'bg-gray-50/50' : ''}
-                                                ${activeCities.length > 0 ? 'cursor-pointer' : ''}
-                                            `}
-                                            onClick={() => activeCities.length > 0 && onScrollTo(activeCities[0].item.id)}
-                                        >
+                                    const dayCellClass = `
+                                        aspect-square relative flex items-center justify-center isolate border border-transparent text-xs
+                                        ${isWeekend ? 'bg-gray-50/50' : ''}
+                                        ${activeCities.length > 0 ? 'cursor-pointer' : ''}
+                                    `;
+
+                                    const dayCellContent = (
+                                        <>
                                             {/* Render Bars for Cities */}
                                             {activeCities.map(({ item, dayIndex }) => {
                                                 const itemColor = getHexFromColorClass(item.color || '');
-                                                
+
                                                 const cityStart = item.startDateOffset;
                                                 const cityEnd = item.startDateOffset + item.duration;
-                                                
+
                                                 const visibleStart = Math.max(cityStart, dayIndex);
                                                 const visibleEnd = Math.min(cityEnd, dayIndex + 1);
-                                                
+
                                                 const leftPct = (visibleStart - dayIndex) * 100;
                                                 const widthPct = (visibleEnd - visibleStart) * 100;
-                                                
+
                                                 const isStart = Math.abs(cityStart - visibleStart) < 0.001;
                                                 const isEnd = Math.abs(cityEnd - visibleEnd) < 0.001;
                                                 const roundedClass = `${isStart ? 'rounded-l-sm' : ''} ${isEnd ? 'rounded-r-sm' : ''}`;
 
                                                 return (
-                                                    <div 
+                                                    <div
                                                         key={item.id}
                                                         className={`absolute top-0 bottom-0 -z-10 ${roundedClass} opacity-70 print:opacity-60`}
                                                         style={{ left: `${leftPct}%`, width: `${widthPct}%`, backgroundColor: itemColor }}
@@ -197,6 +206,26 @@ const CalendarView: React.FC<{ trip: ITrip; onScrollTo: (id: string) => void }> 
                                             <span className={`relative z-10 font-medium ${activeCities.length > 0 ? 'text-gray-900' : (isWeekend ? 'text-gray-400' : 'text-gray-500')}`}>
                                                 {day}
                                             </span>
+                                        </>
+                                    );
+
+                                    if (activeCities.length > 0) {
+                                        return (
+                                            <button
+                                                key={day}
+                                                type="button"
+                                                className={dayCellClass}
+                                                onClick={() => onScrollTo(activeCities[0].item.id)}
+                                                aria-label={`Go to ${activeCities[0].item.title} on day ${day}`}
+                                            >
+                                                {dayCellContent}
+                                            </button>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={day} className={dayCellClass}>
+                                            {dayCellContent}
                                         </div>
                                     );
                                 })}
