@@ -86,3 +86,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [x] [Improved] ♿ Trip planner title editing and panel resizing now have better keyboard/focus accessibility behavior.
 - [x] [Improved] ⚡ The My Plans side panel now opens immediately with visible loading placeholders instead of waiting on trip-data fetch completion.
 - [ ] [Internal] 🧩 Added a dedicated TripManager suspense shell plus first-frame trip hydration + async DB sync state handling to keep panel animation responsive under slow network/database conditions.
+- [ ] [Internal] 🔥 Added a follow-up performance TODO to prewarm the My Plans lazy chunk on explicit trigger intent (hover/focus/touchstart) after merge.
