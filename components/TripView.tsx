@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, laz
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
-import { Timeline } from './Timeline';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
@@ -40,6 +39,7 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
+import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -64,10 +64,6 @@ const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
     import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
-);
-
-const VerticalTimeline = lazyWithRecovery('VerticalTimeline', () =>
-    import('./VerticalTimeline').then((module) => ({ default: module.VerticalTimeline }))
 );
 
 const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
@@ -2168,61 +2164,24 @@ export const TripView: React.FC<TripViewProps> = ({
         }));
     }, [infoHistoryEntries, currentUrl]);
 
-    const timelineCanvas = useMemo(() => {
-        if (timelineView === 'vertical') {
-            return (
-                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
-                    <VerticalTimeline
-                        trip={displayTrip}
-                        onUpdateItems={handleUpdateItems}
-                        onSelect={handleTimelineSelect}
-                        selectedItemId={selectedItemId}
-                        selectedCityIds={selectedCityIds}
-                        readOnly={!canEdit}
-                        onAddCity={handleOpenAddCity}
-                        onAddActivity={handleOpenAddActivity}
-                        onForceFill={handleForceFill}
-                        onSwapSelectedCities={handleReverseSelectedCities}
-                        pixelsPerDay={pixelsPerDay}
-                        enableExampleSharedTransition={useExampleSharedTransition}
-                    />
-                </Suspense>
-            );
-        }
-
-        return (
-            <Timeline
-                trip={displayTrip}
-                onUpdateItems={handleUpdateItems}
-                onSelect={handleTimelineSelect}
-                selectedItemId={selectedItemId}
-                selectedCityIds={selectedCityIds}
-                readOnly={!canEdit}
-                onAddCity={handleOpenAddCity}
-                onAddActivity={handleOpenAddActivity}
-                onForceFill={handleForceFill}
-                onSwapSelectedCities={handleReverseSelectedCities}
-                routeStatusById={routeStatusById}
-                pixelsPerDay={pixelsPerDay}
-                enableExampleSharedTransition={useExampleSharedTransition}
-            />
-        );
-    }, [
-        canEdit,
-        displayTrip,
-        handleForceFill,
-        handleOpenAddActivity,
-        handleOpenAddCity,
-        handleReverseSelectedCities,
-        handleTimelineSelect,
-        handleUpdateItems,
-        pixelsPerDay,
-        routeStatusById,
-        selectedCityIds,
-        selectedItemId,
-        timelineView,
-        useExampleSharedTransition,
-    ]);
+    const timelineCanvas = (
+        <TripTimelineCanvas
+            timelineView={timelineView}
+            trip={displayTrip}
+            onUpdateItems={handleUpdateItems}
+            onSelect={handleTimelineSelect}
+            selectedItemId={selectedItemId}
+            selectedCityIds={selectedCityIds}
+            readOnly={!canEdit}
+            onAddCity={handleOpenAddCity}
+            onAddActivity={handleOpenAddActivity}
+            onForceFill={handleForceFill}
+            onSwapSelectedCities={handleReverseSelectedCities}
+            routeStatusById={routeStatusById}
+            pixelsPerDay={pixelsPerDay}
+            enableExampleSharedTransition={useExampleSharedTransition}
+        />
+    );
 
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;

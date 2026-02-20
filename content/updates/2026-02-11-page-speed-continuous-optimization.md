@@ -103,3 +103,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `177` to `175` while retaining score `91`.
 - [ ] [Internal] ♿ Converted remaining non-semantic destination-picker and print-calendar click targets to semantic controls and tightened label/input associations to remove those hotspots from accessibility linting.
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `175` to `163` while retaining score `91`.
+- [ ] [Internal] 🧩 Extracted trip timeline-render orchestration into a dedicated `TripTimelineCanvas` module so `TripView` keeps shrinking without changing planner behavior.

@@ -174,6 +174,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Follow-up `react-doctor` after focus-trap rollout improved from `91/177` to `91/175` by removing remaining modal/overlay accessibility regressions introduced during the pass.
 - [x] Replaced remaining clickable non-semantic wrappers in destination pickers and print-calendar interactions with semantic controls (buttons + explicit label/input associations), removing those surfaces from `react-doctor` high-signal accessibility findings.
 - [x] Follow-up `react-doctor` after the semantic-control pass improved warnings from `175` to `163` (score held at `91`) while reducing flagged files from `24` to `22`.
+- [x] Extracted timeline-render orchestration from `TripView` into `components/tripview/TripTimelineCanvas.tsx`, reducing `TripView.tsx` from `3244` lines to `3203` lines while preserving timeline behavior and warning counts (`react-doctor` stayed `91/163`).
 
 ## Validation checklist
 - [x] `npx vite build`
