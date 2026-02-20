@@ -35,6 +35,8 @@ interface SiteHeaderProps {
     variant?: HeaderVariant;
     /** When provided, "My Trips" opens this callback instead of navigating. */
     onMyTripsClick?: () => void;
+    /** Prewarm callback for explicit My Trips intent. */
+    onMyTripsIntent?: () => void;
     /** Hide the "Create Trip" CTA (e.g. when already on the create-trip page). */
     hideCreateTrip?: boolean;
 }
@@ -57,6 +59,7 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
 export const SiteHeader: React.FC<SiteHeaderProps> = ({
     variant = 'solid',
     onMyTripsClick,
+    onMyTripsIntent,
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -194,6 +197,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                         handleNavClick('my_trips');
                                         onMyTripsClick();
                                     }}
+                                    onMouseEnter={onMyTripsIntent}
+                                    onFocus={onMyTripsIntent}
+                                    onTouchStart={onMyTripsIntent}
                                     className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                     {...navDebugAttributes('my_trips')}
                                 >
@@ -229,6 +235,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                         isOpen={isMobileMenuOpen}
                         onClose={() => setIsMobileMenuOpen(false)}
                         onMyTripsClick={onMyTripsClick}
+                        onMyTripsIntent={onMyTripsIntent}
                     />
                 </Suspense>
             )}

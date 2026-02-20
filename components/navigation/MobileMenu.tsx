@@ -20,6 +20,7 @@ interface MobileMenuProps {
     isOpen: boolean;
     onClose: () => void;
     onMyTripsClick?: () => void;
+    onMyTripsIntent?: () => void;
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -38,7 +39,7 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
     !event.shiftKey
 );
 
-export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick }) => {
+export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTripsClick, onMyTripsIntent }) => {
     const hasTrips = useHasSavedTrips();
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
@@ -236,6 +237,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     handleNavClick('my_trips');
                                     onMyTripsClick();
                                 }}
+                                onMouseEnter={onMyTripsIntent}
+                                onFocus={onMyTripsIntent}
+                                onTouchStart={onMyTripsIntent}
                                 className="block w-full rounded-xl bg-accent-600 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-colors hover:bg-accent-700"
                                 {...mobileNavDebugAttributes('my_trips')}
                             >

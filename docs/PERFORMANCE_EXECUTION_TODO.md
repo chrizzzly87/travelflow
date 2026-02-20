@@ -159,7 +159,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Split `ItineraryMap` from `TripView` into a lazy chunk to keep the core planner UI module smaller and easier to iterate independently.
 - [x] Defer map-script bootstrap until map container visibility + short delay (or first interaction), with a max-wait safety fallback.
 - [x] Resolve low-risk planner `react-doctor` findings (title edit semantics, keyboard-accessible resize handles, and modal focus management) without impacting route transfer budgets.
-- [ ] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
+- [x] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
 
 ## Validation checklist
 - [x] `npx vite build`
