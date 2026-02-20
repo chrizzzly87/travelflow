@@ -50,6 +50,10 @@
   function = "trip-map-preview"
 
 [[edge_functions]]
+  path = "/api/trip-share-resolve"
+  function = "trip-share-resolve"
+
+[[edge_functions]]
   path = "/api/og/trip"
   function = "trip-og-image"
 

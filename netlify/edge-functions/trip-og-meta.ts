@@ -5,6 +5,7 @@ import {
   escapeHtml,
   fallbackSummary,
   fetchSharedTrip,
+  fetchSharedTripByTripId,
   getMapsApiKeyFromEnv,
   isMapColorMode,
   isOgMapStyle,
@@ -36,6 +37,8 @@ interface OgPreferenceOverrides {
   showStops: boolean | null;
   showCities: boolean | null;
 }
+
+type ParsedRouteTarget = NonNullable<ReturnType<typeof parseRouteTarget>>;
 
 const parseBooleanOverride = (value: string | null): boolean | null => {
   if (!value) return null;
@@ -127,15 +130,24 @@ const buildFallbackMetadata = (
 
 const buildShareMetadata = async (
   origin: string,
-  routeTarget: NonNullable<ReturnType<typeof parseRouteTarget>>,
+  routeTarget: ParsedRouteTarget,
   overrides: OgPreferenceOverrides,
 ): Promise<Metadata> => {
   if (!routeTarget.token) {
     return buildFallbackMetadata(origin, routeTarget, "/", overrides);
   }
 
+  return buildShareBackedMetadata(origin, routeTarget, routeTarget.token, await fetchSharedTrip(routeTarget.token, routeTarget.versionId), overrides);
+};
+
+const buildShareBackedMetadata = async (
+  origin: string,
+  routeTarget: ParsedRouteTarget,
+  token: string,
+  sharedTrip: Awaited<ReturnType<typeof fetchSharedTrip>>,
+  overrides: OgPreferenceOverrides,
+): Promise<Metadata> => {
   const mapsApiKey = getMapsApiKeyFromEnv();
-  const sharedTrip = await fetchSharedTrip(routeTarget.token, routeTarget.versionId);
   const summary = sharedTrip
     ? await buildTripOgSummary(sharedTrip.trip, {
       mapsApiKey,
@@ -153,8 +165,11 @@ const buildShareMetadata = async (
 
   const title = `${summary.title} | ${SITE_NAME}`;
   const canonicalUrl = buildCanonicalUrl(origin, routeTarget);
+  const ogImageRoutePayload = routeTarget.tripId
+    ? { tripId: routeTarget.tripId }
+    : { token };
   const ogImageUrl = buildOgImageUrl(origin, {
-    token: routeTarget.token,
+    ...ogImageRoutePayload,
     versionId: routeTarget.versionId ?? sharedTrip?.resolvedVersionId ?? null,
     updatedAt: summary.updatedAt,
     mapStyle: overrides.mapStyle ?? sharedTrip?.viewSettings?.mapStyle ?? null,
@@ -176,6 +191,29 @@ const buildShareMetadata = async (
   };
 };
 
+const buildTripRouteMetadata = async (
+  origin: string,
+  routeTarget: ParsedRouteTarget,
+  overrides: OgPreferenceOverrides,
+): Promise<Metadata> => {
+  if (!routeTarget.tripId) {
+    return buildFallbackMetadata(origin, routeTarget, "/", overrides);
+  }
+
+  const sharedByTripId = await fetchSharedTripByTripId(routeTarget.tripId, routeTarget.versionId);
+  if (sharedByTripId) {
+    return buildShareBackedMetadata(
+      origin,
+      routeTarget,
+      sharedByTripId.token,
+      sharedByTripId.sharedTrip,
+      overrides,
+    );
+  }
+
+  return buildFallbackMetadata(origin, routeTarget, "/", overrides);
+};
+
 export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
   const url = new URL(request.url);
   const routeTarget = parseRouteTarget(url);
@@ -191,6 +229,7 @@ export default async (request: Request, context: { next: () => Promise<Response>
     showCities: parseBooleanOverride(url.searchParams.get("showCities")) ??
       parseBooleanOverride(url.searchParams.get("cityNames")),
   };
+
   const baseResponse = await context.next();
   const fallbackResponse = baseResponse.clone();
   const contentType = baseResponse.headers.get("content-type") || "";
@@ -206,7 +245,7 @@ export default async (request: Request, context: { next: () => Promise<Response>
   try {
     const metadata = routeTarget.token
       ? await buildShareMetadata(url.origin, routeTarget, overrides)
-      : buildFallbackMetadata(url.origin, routeTarget, url.pathname, overrides);
+      : await buildTripRouteMetadata(url.origin, routeTarget, overrides);
 
     const html = await baseResponse.text();
     const rewrittenHtml = injectMetaTags(html, metadata);

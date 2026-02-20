@@ -1,35 +1,20 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { resolveSiteUrl } from '../config/site-url.mjs';
 
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
+const APP_FILE = path.join(ROOT, 'App.tsx');
+const LOCALES_FILE = path.join(ROOT, 'config', 'locales.ts');
 
-const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://travelflow.app').replace(/\/$/, '');
-const SUPPORTED_LOCALES = ['en', 'es', 'de', 'fr', 'pt', 'ru', 'it', 'pl', 'ko'];
-const DEFAULT_LOCALE = 'en';
-
-const MARKETING_PATHS = [
-    '/',
-    '/features',
-    '/inspirations',
-    '/inspirations/themes',
-    '/inspirations/best-time-to-travel',
-    '/inspirations/countries',
-    '/inspirations/events-and-festivals',
-    '/inspirations/weekend-getaways',
-    '/updates',
-    '/blog',
-    '/pricing',
-    '/faq',
-    '/login',
-    '/contact',
-    '/imprint',
-    '/privacy',
-    '/terms',
-    '/cookies',
-    '/share-unavailable',
-];
+const SITE_URL = resolveSiteUrl();
+const NON_INDEXABLE_STATIC_PATHS = new Set(['/auth/reset-password', '/share-unavailable']);
+const MARKETING_ROUTE_CONFIG_REGEX = /const\s+MARKETING_ROUTE_CONFIGS[\s\S]*?=\s*\[([\s\S]*?)\];/;
+const SUPPORTED_LOCALES_REGEX = /export\s+const\s+SUPPORTED_LOCALES\s*:[^=]*=\s*\[([\s\S]*?)\];/;
+const DEFAULT_LOCALE_REGEX = /export\s+const\s+DEFAULT_LOCALE\s*:[^=]*=\s*['"]([^'"]+)['"];/;
+const PATH_LITERAL_REGEX = /path:\s*['"]([^'"]+)['"]/g;
+const LOCALE_LITERAL_REGEX = /['"]([A-Za-z0-9-]+)['"]/g;
 
 const FRONTMATTER_REGEX = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 
@@ -60,8 +45,59 @@ const parseFrontmatter = (raw) => {
     return { meta, body: match[2] };
 };
 
-const localizePath = (pathName, locale) => {
-    if (locale === DEFAULT_LOCALE) return pathName;
+const readLocalesConfig = async () => {
+    const raw = await fs.readFile(LOCALES_FILE, 'utf8');
+    const supportedLocalesMatch = raw.match(SUPPORTED_LOCALES_REGEX);
+    const defaultLocaleMatch = raw.match(DEFAULT_LOCALE_REGEX);
+
+    if (!supportedLocalesMatch || !defaultLocaleMatch) {
+        throw new Error(`[sitemap:generate] Could not parse locales from ${LOCALES_FILE}`);
+    }
+
+    const supportedLocales = [];
+    for (const match of supportedLocalesMatch[1].matchAll(LOCALE_LITERAL_REGEX)) {
+        supportedLocales.push(match[1]);
+    }
+
+    if (supportedLocales.length === 0) {
+        throw new Error(`[sitemap:generate] No locales found in ${LOCALES_FILE}`);
+    }
+
+    const defaultLocale = defaultLocaleMatch[1];
+    if (!supportedLocales.includes(defaultLocale)) {
+        throw new Error(
+            `[sitemap:generate] DEFAULT_LOCALE (${defaultLocale}) is not in SUPPORTED_LOCALES from ${LOCALES_FILE}`
+        );
+    }
+
+    return { supportedLocales, defaultLocale };
+};
+
+const readIndexableMarketingPaths = async () => {
+    const raw = await fs.readFile(APP_FILE, 'utf8');
+    const configMatch = raw.match(MARKETING_ROUTE_CONFIG_REGEX);
+    if (!configMatch) {
+        throw new Error(`[sitemap:generate] Could not parse MARKETING_ROUTE_CONFIGS from ${APP_FILE}`);
+    }
+
+    const uniquePaths = [];
+    for (const match of configMatch[1].matchAll(PATH_LITERAL_REGEX)) {
+        const routePath = match[1];
+        if (routePath.includes(':')) continue;
+        if (NON_INDEXABLE_STATIC_PATHS.has(routePath)) continue;
+        if (uniquePaths.includes(routePath)) continue;
+        uniquePaths.push(routePath);
+    }
+
+    if (uniquePaths.length === 0) {
+        throw new Error(`[sitemap:generate] No indexable marketing paths extracted from ${APP_FILE}`);
+    }
+
+    return uniquePaths;
+};
+
+const localizePath = (pathName, locale, defaultLocale) => {
+    if (locale === defaultLocale) return pathName;
     if (pathName === '/') return `/${locale}`;
     return `/${locale}${pathName}`;
 };
@@ -76,16 +112,16 @@ const escapeXml = (value) =>
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&apos;');
 
-const buildAlternateLinks = (basePath, locales = SUPPORTED_LOCALES) => {
+const buildAlternateLinks = ({ basePath, locales, defaultLocale }) => {
     const uniqueLocales = Array.from(new Set(locales));
     const lines = [];
     for (const locale of uniqueLocales) {
-        const href = toAbsoluteUrl(localizePath(basePath, locale));
+        const href = toAbsoluteUrl(localizePath(basePath, locale, defaultLocale));
         lines.push(`<xhtml:link rel="alternate" hreflang="${locale}" href="${escapeXml(href)}" />`);
     }
 
-    const xDefaultLocale = uniqueLocales.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : (uniqueLocales[0] || DEFAULT_LOCALE);
-    const xDefault = toAbsoluteUrl(localizePath(basePath, xDefaultLocale));
+    const xDefaultLocale = uniqueLocales.includes(defaultLocale) ? defaultLocale : (uniqueLocales[0] || defaultLocale);
+    const xDefault = toAbsoluteUrl(localizePath(basePath, xDefaultLocale, defaultLocale));
     lines.push(`<xhtml:link rel="alternate" hreflang="x-default" href="${escapeXml(xDefault)}" />`);
     return lines;
 };
@@ -100,7 +136,7 @@ const buildUrlNode = ({ loc, alternates, lastmod }) => {
     return parts.join('\n');
 };
 
-const readPublishedBlogPosts = async () => {
+const readPublishedBlogPosts = async ({ supportedLocales, defaultLocale }) => {
     let entries = [];
     try {
         entries = await fs.readdir(BLOG_DIR, { withFileTypes: true });
@@ -118,7 +154,7 @@ const readPublishedBlogPosts = async () => {
         const { meta } = parseFrontmatter(raw);
         if ((meta.status || '').toLowerCase() !== 'published') continue;
         const slug = meta.slug;
-        const language = SUPPORTED_LOCALES.includes(meta.language) ? meta.language : DEFAULT_LOCALE;
+        const language = supportedLocales.includes(meta.language) ? meta.language : defaultLocale;
         if (!slug) continue;
         posts.push({
             slug,
@@ -132,18 +168,27 @@ const readPublishedBlogPosts = async () => {
 };
 
 const buildSitemap = async () => {
+    const [{ supportedLocales, defaultLocale }, marketingPaths] = await Promise.all([
+        readLocalesConfig(),
+        readIndexableMarketingPaths(),
+    ]);
+
     const nodes = [];
 
-    for (const pathName of MARKETING_PATHS) {
-        for (const locale of SUPPORTED_LOCALES) {
-            const localizedPath = localizePath(pathName, locale);
+    for (const pathName of marketingPaths) {
+        for (const locale of supportedLocales) {
+            const localizedPath = localizePath(pathName, locale, defaultLocale);
             const loc = toAbsoluteUrl(localizedPath);
-            const alternates = buildAlternateLinks(pathName);
+            const alternates = buildAlternateLinks({
+                basePath: pathName,
+                locales: supportedLocales,
+                defaultLocale,
+            });
             nodes.push(buildUrlNode({ loc, alternates }));
         }
     }
 
-    const blogPosts = await readPublishedBlogPosts();
+    const blogPosts = await readPublishedBlogPosts({ supportedLocales, defaultLocale });
     const groups = new Map();
 
     for (const post of blogPosts) {
@@ -156,8 +201,12 @@ const buildSitemap = async () => {
         const locales = Array.from(new Set(posts.map((post) => post.language)));
         for (const post of posts) {
             const basePath = `/blog/${encodeURIComponent(post.slug)}`;
-            const loc = toAbsoluteUrl(localizePath(basePath, post.language));
-            const alternates = buildAlternateLinks(basePath, locales);
+            const loc = toAbsoluteUrl(localizePath(basePath, post.language, defaultLocale));
+            const alternates = buildAlternateLinks({
+                basePath,
+                locales,
+                defaultLocale,
+            });
             nodes.push(buildUrlNode({ loc, alternates, lastmod: post.publishedAt || undefined }));
         }
     }
@@ -171,7 +220,9 @@ const buildSitemap = async () => {
     ].join('\n');
 
     await fs.writeFile(OUT_FILE, xml, 'utf8');
-    console.log(`[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs)`);
+    console.log(
+        `[sitemap:generate] wrote ${OUT_FILE} (${nodes.length} URLs from ${marketingPaths.length} static routes + ${blogPosts.length} blog posts)`
+    );
 };
 
 buildSitemap().catch((error) => {

@@ -16,6 +16,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
 | `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip OG images | Dev tool |
 | `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
+| `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 
 **Shared helper:** `netlify/edge-lib/trip-og-data.ts` — Supabase RPC calls, HTML escaping, URL builders, map API key access.
 
@@ -33,6 +34,7 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
                     trip-og-image.tsx
 
 /api/trip-map-preview ──▶ trip-map-preview.ts ──302──▶ Google Static Maps
+/api/trip-share-resolve ──▶ trip-share-resolve.ts ──JSON──▶ share token + canonical /s path
 ```
 
 - **Middleware functions** (`*-meta.ts`) call `context.next()` to get the SPA HTML, then rewrite `<head>` tags before returning the response.
@@ -53,8 +55,9 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | Variable | Used by | Purpose |
 |---|---|---|
 | `VITE_GOOGLE_MAPS_API_KEY` | `trip-map-preview.ts`, `trip-og-image.tsx`, `trip-og-meta.ts` (via `trip-og-data.ts`) | Google Static Maps API access |
-| `VITE_SUPABASE_URL` | `trip-og-meta.ts` (via `trip-og-data.ts`) | Supabase REST API base URL |
-| `VITE_SUPABASE_ANON_KEY` | `trip-og-meta.ts` (via `trip-og-data.ts`) | Supabase anonymous auth key |
+| `VITE_SUPABASE_URL` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`) | Supabase REST API base URL |
+| `VITE_SUPABASE_ANON_KEY` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`) | Supabase anonymous auth key for shared-trip RPC reads |
+| `SUPABASE_SERVICE_ROLE_KEY` | `trip-og-meta.ts`, `trip-og-image.tsx`, `trip-share-resolve.ts` (via `trip-og-data.ts`) | Server-side lookup of active share tokens for trip-id based shared-route resolution |
 | `GEMINI_API_KEY` | `ai-generate.ts` | Preferred server-side Gemini key for `/api/ai/generate` |
 | `VITE_GEMINI_API_KEY` | `ai-generate.ts` (fallback), legacy browser path | Compatibility fallback if `GEMINI_API_KEY` is not set |
 | `TF_ADMIN_API_KEY` | `ai-benchmark.ts` | Emergency fallback key for internal benchmark endpoints when `TF_ENABLE_ADMIN_KEY_FALLBACK` is enabled |
@@ -101,4 +104,5 @@ All CDN-cached functions use `max-age=0` for browser to always revalidate with t
 | **500 on OG image endpoints** | Deno CDN import failure (`esm.sh`, `deno.land/x`) | Retry deploy; consider pinning `og_edge` version |
 | **Blank/generic OG previews** | Missing `VITE_GOOGLE_MAPS_API_KEY` or Supabase env vars | Set env vars in Netlify dashboard |
 | **Trip OG shows fallback card** | Supabase RPC returns null (trip deleted or token invalid) | Expected behavior — fallback is intentional |
+| **Direct `/trip/...` links show generic previews** | Missing `SUPABASE_SERVICE_ROLE_KEY` prevents active-share lookup by trip ID | Set `SUPABASE_SERVICE_ROLE_KEY` so trip routes can resolve share-backed OG data |
 | **Stale social previews** | CDN cache not yet expired | Append `?v=2` to force refetch, or purge via Netlify dashboard |

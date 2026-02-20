@@ -166,11 +166,12 @@ Main write path (client):
 Share path:
 
 1. `rpc('create_share_token', ...)`.
-2. Open share URL `/s/:token`.
-3. Load shared data via `rpc('get_shared_trip', ...)`.
-4. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
-5. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
-6. In `view` mode, editing controls are disabled; copy creates a new owned trip.
+2. Open share URL `/s/:token` (canonical shared route).
+3. If a direct planner URL (`/trip/:tripId`) is opened by a non-owner (and non-admin) for a trip that has an active share, the trip loader resolves the active share token and routes to `/s/:token`.
+4. Load shared data via `rpc('get_shared_trip', ...)`.
+5. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
+6. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
+7. In `view` mode, editing controls are disabled; copy creates a new owned trip.
 
 ## Migration Behavior (LocalStorage -> DB)
 

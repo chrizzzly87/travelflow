@@ -62,7 +62,7 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/` marketing landing page
 - `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*`, `/pl/*`, `/ko/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
-- `/trip/:tripId` planner
+- `/trip/:tripId` planner (owner/admin stays; non-owner viewers route to `/s/:token` when an active share exists; without share they are routed to login/share-unavailable)
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
@@ -109,6 +109,7 @@ For trip lifecycle state handling, lock behavior, and paywall rules, use:
 For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
 
 - `docs/SUPABASE_RUNBOOK.md`
+- `docs/SHARE_USERFLOWS.md`
 
 ## Build
 
@@ -208,6 +209,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - Build command: `npm run build`
    - Publish directory: `dist`
 4. In Netlify environment variables, add:
+   - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
    - `GEMINI_API_KEY` (preferred server-side key for `/api/ai/generate`)
    - `VITE_GEMINI_API_KEY` (optional browser fallback for local/dev compatibility)
    - `VITE_GOOGLE_MAPS_API_KEY`
@@ -220,6 +222,12 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
 
+Sitemap behavior:
+- `npm run build` regenerates `public/sitemap.xml` on every deploy.
+- The canonical sitemap host is read from `SITE_URL` (`VITE_SITE_URL` fallback) via `config/site-url.mjs`.
+- Static marketing URLs are derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
+- Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
+
 `/admin/ai-benchmark` uses:
 - temporary simulated-login UI gate (debug mode)
 - `x-tf-admin-key` request header (from your entered `TF_ADMIN_API_KEY`)
@@ -231,6 +239,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
 
 - Non-trip pages (home, features, updates, blog, legal pages, etc.) use a dedicated `/api/og/site` image generator with page title + subline, TravelFlow branding, and an accent-gradient hero.
 - Shared links (`/s/:token`) use Netlify Edge Functions to inject route-specific Open Graph and Twitter meta tags into the HTML response.
+- Direct trip links (`/trip/:tripId`) with an active share use share-backed OG metadata/images, and non-owner viewers are routed to the canonical shared route (`/s/:token`).
 - OG images are generated at `/api/og/trip` with `og_edge` (Netlify-compatible `@vercel/og`), including:
   - trip title
   - weeks/months/total distance metrics
