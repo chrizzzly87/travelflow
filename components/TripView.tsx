@@ -2057,6 +2057,11 @@ export const TripView: React.FC<TripViewProps> = ({
     }, [selectedItemId, trip.items, isHistoryOpen, addActivityState.isOpen, isAddCityModalOpen, handleDeleteItem, requireEdit]);
 
     // Modal Handlers
+    const handleOpenAddCity = useCallback(() => {
+        if (!requireEdit()) return;
+        setIsAddCityModalOpen(true);
+    }, [requireEdit]);
+
     const handleOpenAddActivity = (dayOffset: number) => {
          if (!requireEdit()) return;
          // Find city at this time
@@ -2267,7 +2272,7 @@ export const TripView: React.FC<TripViewProps> = ({
         }));
     }, [infoHistoryEntries, currentUrl]);
 
-    const renderTimelineCanvas = () => {
+    const timelineCanvas = useMemo(() => {
         if (timelineView === 'vertical') {
             return (
                 <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
@@ -2278,7 +2283,7 @@ export const TripView: React.FC<TripViewProps> = ({
                         selectedItemId={selectedItemId}
                         selectedCityIds={selectedCityIds}
                         readOnly={!canEdit}
-                        onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                        onAddCity={handleOpenAddCity}
                         onAddActivity={handleOpenAddActivity}
                         onForceFill={handleForceFill}
                         onSwapSelectedCities={handleReverseSelectedCities}
@@ -2297,7 +2302,7 @@ export const TripView: React.FC<TripViewProps> = ({
                 selectedItemId={selectedItemId}
                 selectedCityIds={selectedCityIds}
                 readOnly={!canEdit}
-                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                onAddCity={handleOpenAddCity}
                 onAddActivity={handleOpenAddActivity}
                 onForceFill={handleForceFill}
                 onSwapSelectedCities={handleReverseSelectedCities}
@@ -2306,7 +2311,22 @@ export const TripView: React.FC<TripViewProps> = ({
                 enableExampleSharedTransition={useExampleSharedTransition}
             />
         );
-    };
+    }, [
+        canEdit,
+        displayTrip,
+        handleForceFill,
+        handleOpenAddActivity,
+        handleOpenAddCity,
+        handleReverseSelectedCities,
+        handleTimelineSelect,
+        handleUpdateItems,
+        pixelsPerDay,
+        routeStatusById,
+        selectedCityIds,
+        selectedItemId,
+        timelineView,
+        useExampleSharedTransition,
+    ]);
 
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;
@@ -2776,7 +2796,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     onTouchEnd={handleTimelineTouchEnd}
                                     onTouchCancel={handleTimelineTouchEnd}
                                 >
-                                    {renderTimelineCanvas()}
+                                    {timelineCanvas}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2830,7 +2850,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
-                                                    {renderTimelineCanvas()}
+                                                    {timelineCanvas}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2976,7 +2996,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                                 <div className="w-full h-full relative min-w-0">
-                                                    {renderTimelineCanvas()}
+                                                    {timelineCanvas}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>

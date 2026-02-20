@@ -104,7 +104,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] New `/trip/:id` valid-URL baseline (mobile profile): score `91`, `FCP ~2040 ms`, `LCP ~3172 ms`, `TBT ~17 ms`, transfer `~390.4 KiB`, `31` requests.
 - [x] New `/trip/:id` valid-URL baseline (desktop profile): score `100`, `FCP ~511 ms`, `LCP ~734 ms`, `TBT 0 ms`, transfer `~390.4 KiB`, `31` requests.
 - [x] Extracted trip map bootstrap orchestration from `TripView` into `components/tripview/useDeferredMapBootstrap.ts` (visibility/delay/interaction/max-wait gates unchanged) to reduce `TripView` complexity and keep map-loading logic isolated.
-- [x] Follow-up `react-doctor` pass after trip refactor + history-open cleanup improved score from `90` to `91` and reduced warnings from `209` to `206`.
+- [x] Follow-up `react-doctor` passes after trip refactor + history-open/timeline-render cleanup improved score from `90` to `91` and reduced warnings from `209` to `203`.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).

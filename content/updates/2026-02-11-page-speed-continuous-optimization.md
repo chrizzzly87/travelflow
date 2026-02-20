@@ -92,4 +92,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🚀 Implemented explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the My Plans lazy chunk so the first panel open resolves faster without increasing first-render payload.
 - [ ] [Internal] 🧱 Extracted TripView map bootstrap gating into a dedicated hook (`useDeferredMapBootstrap`) to isolate visibility/delay/interaction loading orchestration from the main trip render component.
 - [ ] [Internal] 📏 Captured a real non-redirecting `/trip/:id` Lighthouse baseline using a valid compressed trip URL to anchor further trip-page optimization work (`91` mobile / `100` desktop in local preview runs).
-- [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `206`) by addressing low-risk trip-flow findings.
+- [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `203`) by addressing low-risk trip-flow findings and removing remaining inline timeline-render hotspots in `TripView`.
