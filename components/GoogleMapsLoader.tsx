@@ -26,15 +26,22 @@ const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
 interface GoogleMapsLoaderProps {
     children: React.ReactNode;
     language?: AppLanguage;
+    enabled?: boolean;
 }
 
-export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language }) => {
+export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language, enabled = true }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<Error | null>(null);
     const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
     const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
 
     useEffect(() => {
+        if (!enabled) {
+            setIsLoaded(false);
+            setLoadError(null);
+            return;
+        }
+
         const isGoogleMapsReady = () => Boolean(window.google?.maps?.Map && typeof window.google.maps.Map === 'function');
         const settleLoaded = () => {
             setIsLoaded(true);
@@ -122,7 +129,7 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
                 readyCheckTimeout = null;
             }
         };
-    }, [requestedMapLanguage]);
+    }, [requestedMapLanguage, enabled]);
 
     return (
         <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>

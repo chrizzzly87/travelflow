@@ -84,10 +84,13 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Split Tailwind output into critical entry CSS (`index.css`) and deferred route CSS (`styles/deferred-routes.css`) using `@source` include/exclude rules tied to `DeferredAppRoutes`.
 - [x] Entry CSS dropped from `~158.36 KB` raw (`~25.11 KB` gzip) to `~127.75 KB` raw (`~21.51 KB` gzip); deferred non-critical routes now load `DeferredAppRoutes.css` (`~71.23 KB` raw, `~12.30 KB` gzip) on demand.
 - [x] Split `TripView` map code into a dedicated lazy chunk: `TripView` dropped from `~132.66 KB` raw (`~36.64 KB` gzip) to `~106.03 KB` raw (`~29.87 KB` gzip), while new `ItineraryMap` chunk is `~28.01 KB` raw (`~7.91 KB` gzip).
+- [x] Deferred `GoogleMapsLoader` bootstrap behind a map-visibility + delay gate with interaction/timeout fallback so map script loading does not start during planner-shell first paint.
+- [x] After map-bootstrap gating logic was added, `TripView` stayed near the post-split size (`~107.78 KB` raw, `~30.39 KB` gzip), preserving most of the previous map-splitting bundle win.
 - [x] After CSS splitting, homepage `/` transfer dropped to `~247.3 KiB` (`31` requests) with stable high Lighthouse performance (`91-93` across follow-up runs).
 - [x] After CSS splitting, `/create-trip` transfer dropped to `~462.3 KiB` (`54` requests) with stable high Lighthouse performance (`91-93` across follow-up runs).
 - [x] After CSS splitting, `/example/thailand-islands` transfer dropped to `~266.4 KiB` (`27` requests, score `96` in measured run).
 - [x] Follow-up Lighthouse after map-split showed stable transfer envelopes on key entry routes (`/` `~247.3 KiB`, `/create-trip` `~462.3 KiB`, `/example/thailand-islands` `~266.5 KiB`) with no payload regression from the chunk move.
+- [x] Follow-up Lighthouse after map-bootstrap gating stayed within prior transfer envelopes (`/` `~247.3 KiB`, `/create-trip` `~462.4 KiB`, `/example/thailand-islands` `~267.0 KiB`) while reducing early map-script pressure on trip-entry startup.
 - [x] Verified deferred stylesheet loading on non-critical route `/features` (`DeferredAppRoutes-*.css` requested at runtime), confirming style separation is active.
 - [x] Split `routes/TripRouteLoaders.tsx` into route-specific lazy modules (`TripLoaderRoute`, `SharedTripLoaderRoute`, `ExampleTripLoaderRoute`) so loader code is no longer bundled as one shared loader chunk.
 - [x] Verified route-loader chunk isolation in build output: `TripLoaderRoute` `~3.22 KB` raw (`~1.51 KB` gzip), `SharedTripLoaderRoute` `~4.06 KB` raw (`~1.87 KB` gzip), `ExampleTripLoaderRoute` `~5.02 KB` raw (`~2.15 KB` gzip).
@@ -152,6 +155,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Keep only critical routes in `app/routes/AppRoutes.tsx` and move secondary marketing/profile/admin/create-trip-lab routes to lazy `app/routes/DeferredAppRoutes.tsx`.
 - [x] Split Tailwind scanning/output between critical and deferred routes so entry CSS excludes non-critical/admin/page-class payload until deferred routes load.
 - [x] Split `ItineraryMap` from `TripView` into a lazy chunk to keep the core planner UI module smaller and easier to iterate independently.
+- [x] Defer map-script bootstrap until map container visibility + short delay (or first interaction), with a max-wait safety fallback.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -176,4 +180,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: reduce real `/trip/:id` first-load cost further by gating initial map bootstrap on visibility/interaction where feasible, then re-measure against valid non-redirecting trip URLs.
+- Next highest-impact target: run `/trip/:id` measurements against a valid non-redirecting trip URL and start extracting `TripView` orchestration (map/bootstrap/history) into focused hooks to keep performance work and maintenance tractable.

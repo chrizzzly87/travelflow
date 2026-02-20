@@ -80,3 +80,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🔁 Removed TripView’s admin-override reset effect and reset that state via route-level keyed remounting for cleaner state lifecycle.
 - [ ] [Internal] 🩺 Added agent guidance for careful use of `vercel-react-best-practices`, `react-doctor`, and `find-skills` so optimization workflows stay consistent without overuse.
 - [ ] [Internal] 🗺️ Split TripView map rendering into a lazy ItineraryMap chunk so planner-shell logic stays smaller and map runtime code is isolated.
+- [ ] [Internal] ⏳ Deferred map-script bootstrap behind map visibility and first-interaction gating so trip planner shell can render before loading Google Maps runtime.

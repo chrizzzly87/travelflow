@@ -185,6 +185,9 @@ const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
+const MAP_BOOTSTRAP_DELAY_MS = 900;
+const MAP_BOOTSTRAP_MAX_WAIT_MS = 4000;
+const MAP_BOOTSTRAP_INTERSECTION_THRESHOLD = 0.01;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
@@ -318,6 +321,19 @@ interface ExampleTransitionLocationState {
 const MapLoadingFallback: React.FC = () => (
     <div className="h-full w-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
         Loading map...
+    </div>
+);
+
+const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
+    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+        <span>Preparing map...</span>
+        <button
+            type="button"
+            onClick={onLoadNow}
+            className="inline-flex h-8 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+        >
+            Load map now
+        </button>
     </div>
 );
 
@@ -517,10 +533,14 @@ export const TripView: React.FC<TripViewProps> = ({
     const [toastState, setToastState] = useState<ToastState | null>(null);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
+    const [isMapBootstrapEnabled, setIsMapBootstrapEnabled] = useState(false);
+    const [isMapViewportVisible, setIsMapViewportVisible] = useState(false);
+    const [hasMapBootstrapDelayElapsed, setHasMapBootstrapDelayElapsed] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
     });
+    const mapViewportRef = useRef<HTMLDivElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2214,6 +2234,70 @@ export const TripView: React.FC<TripViewProps> = ({
             isCurrent: entry.url === currentUrl,
         }));
     }, [infoHistoryEntries, currentUrl]);
+    const enableMapBootstrap = useCallback(() => {
+        setIsMapBootstrapEnabled(true);
+    }, []);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || hasMapBootstrapDelayElapsed || typeof window === 'undefined') return;
+        const timer = window.setTimeout(() => {
+            setHasMapBootstrapDelayElapsed(true);
+        }, MAP_BOOTSTRAP_DELAY_MS);
+        return () => window.clearTimeout(timer);
+    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled) return;
+        if (hasMapBootstrapDelayElapsed && isMapViewportVisible) {
+            setIsMapBootstrapEnabled(true);
+        }
+    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled, isMapViewportVisible]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
+        const forceEnableTimer = window.setTimeout(() => {
+            setIsMapBootstrapEnabled(true);
+        }, MAP_BOOTSTRAP_MAX_WAIT_MS);
+        return () => window.clearTimeout(forceEnableTimer);
+    }, [isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
+        const handleInteraction = () => setIsMapBootstrapEnabled(true);
+        const interactionEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart'];
+        interactionEvents.forEach((eventName) => {
+            window.addEventListener(eventName, handleInteraction);
+        });
+        return () => {
+            interactionEvents.forEach((eventName) => {
+                window.removeEventListener(eventName, handleInteraction);
+            });
+        };
+    }, [isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined' || viewMode !== 'planner') return;
+        const mapContainer = mapViewportRef.current;
+        if (!mapContainer) return;
+        if (typeof window.IntersectionObserver !== 'function') {
+            setIsMapViewportVisible(true);
+            return;
+        }
+
+        const observer = new window.IntersectionObserver(
+            (entries) => {
+                const mapIsVisible = entries.some((entry) => entry.isIntersecting || entry.intersectionRatio > 0);
+                if (mapIsVisible) {
+                    setIsMapViewportVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold: MAP_BOOTSTRAP_INTERSECTION_THRESHOLD }
+        );
+
+        observer.observe(mapContainer);
+        return () => observer.disconnect();
+    }, [effectiveLayoutMode, isMapBootstrapEnabled, isMobile, isMobileMapExpanded, viewMode]);
 
     const renderTimelineCanvas = () => {
         if (timelineView === 'vertical') {
@@ -2335,7 +2419,7 @@ export const TripView: React.FC<TripViewProps> = ({
     }
 
     return (
-        <GoogleMapsLoader language={appLanguage}>
+        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
                 
                 {/* Header */}
@@ -2720,31 +2804,38 @@ export const TripView: React.FC<TripViewProps> = ({
                                         </div>
                                     </div>
                                 </div>
-                                <div className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}>
-                                    <Suspense fallback={<MapLoadingFallback />}>
-                                        <ItineraryMap
-                                            items={displayTrip.items}
-                                            selectedItemId={selectedItemId}
-                                            layoutMode="vertical"
-                                            showLayoutControls={false}
-                                            activeStyle={mapStyle}
-                                            onStyleChange={setMapStyle}
-                                            routeMode={routeMode}
-                                            onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                            showCityNames={isPaywallLocked ? false : showCityNames}
-                                            onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                            mapColorMode={mapColorMode}
-                                            onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                            isExpanded={isMobileMapExpanded}
-                                            onToggleExpanded={() => setIsMobileMapExpanded(v => !v)}
-                                            focusLocationQuery={initialMapFocusQuery}
-                                            onRouteMetrics={handleRouteMetrics}
-                                            onRouteStatus={handleRouteStatus}
-                                            fitToRouteKey={trip.id}
-                                            isPaywalled={isPaywallLocked}
-                                            viewTransitionName={mapViewTransitionName}
-                                        />
-                                    </Suspense>
+                                <div
+                                    ref={mapViewportRef}
+                                    className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
+                                >
+                                    {isMapBootstrapEnabled ? (
+                                        <Suspense fallback={<MapLoadingFallback />}>
+                                            <ItineraryMap
+                                                items={displayTrip.items}
+                                                selectedItemId={selectedItemId}
+                                                layoutMode="vertical"
+                                                showLayoutControls={false}
+                                                activeStyle={mapStyle}
+                                                onStyleChange={setMapStyle}
+                                                routeMode={routeMode}
+                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                showCityNames={isPaywallLocked ? false : showCityNames}
+                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                mapColorMode={mapColorMode}
+                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                isExpanded={isMobileMapExpanded}
+                                                onToggleExpanded={() => setIsMobileMapExpanded(v => !v)}
+                                                focusLocationQuery={initialMapFocusQuery}
+                                                onRouteMetrics={handleRouteMetrics}
+                                                onRouteStatus={handleRouteStatus}
+                                                fitToRouteKey={trip.id}
+                                                isPaywalled={isPaywallLocked}
+                                                viewTransitionName={mapViewTransitionName}
+                                            />
+                                        </Suspense>
+                                    ) : (
+                                        <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -2820,56 +2911,64 @@ export const TripView: React.FC<TripViewProps> = ({
                                             </div>
                                         )}
 
-                                        <div className="flex-1 h-full relative bg-gray-100 min-w-0">
-                                            <Suspense fallback={<MapLoadingFallback />}>
-                                                <ItineraryMap
-                                                    items={displayTrip.items}
-                                                    selectedItemId={selectedItemId}
-                                                    layoutMode={layoutMode}
-                                                    onLayoutChange={setLayoutMode}
-                                                    activeStyle={mapStyle}
-                                                    onStyleChange={setMapStyle}
-                                                    routeMode={routeMode}
-                                                    onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                                    showCityNames={isPaywallLocked ? false : showCityNames}
-                                                    onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                                    mapColorMode={mapColorMode}
-                                                    onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                                    focusLocationQuery={initialMapFocusQuery}
-                                                    onRouteMetrics={handleRouteMetrics}
-                                                    onRouteStatus={handleRouteStatus}
-                                                    fitToRouteKey={trip.id}
-                                                    isPaywalled={isPaywallLocked}
-                                                    viewTransitionName={mapViewTransitionName}
-                                                />
-                                            </Suspense>
+                                        <div ref={mapViewportRef} className="flex-1 h-full relative bg-gray-100 min-w-0">
+                                            {isMapBootstrapEnabled ? (
+                                                <Suspense fallback={<MapLoadingFallback />}>
+                                                    <ItineraryMap
+                                                        items={displayTrip.items}
+                                                        selectedItemId={selectedItemId}
+                                                        layoutMode={layoutMode}
+                                                        onLayoutChange={setLayoutMode}
+                                                        activeStyle={mapStyle}
+                                                        onStyleChange={setMapStyle}
+                                                        routeMode={routeMode}
+                                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                        showCityNames={isPaywallLocked ? false : showCityNames}
+                                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                        mapColorMode={mapColorMode}
+                                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                        focusLocationQuery={initialMapFocusQuery}
+                                                        onRouteMetrics={handleRouteMetrics}
+                                                        onRouteStatus={handleRouteStatus}
+                                                        fitToRouteKey={trip.id}
+                                                        isPaywalled={isPaywallLocked}
+                                                        viewTransitionName={mapViewTransitionName}
+                                                    />
+                                                </Suspense>
+                                            ) : (
+                                                <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                            )}
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="flex-1 relative bg-gray-100 min-h-0 w-full">
-                                            <Suspense fallback={<MapLoadingFallback />}>
-                                                <ItineraryMap
-                                                    items={displayTrip.items}
-                                                    selectedItemId={selectedItemId}
-                                                    layoutMode={layoutMode}
-                                                    onLayoutChange={setLayoutMode}
-                                                    activeStyle={mapStyle}
-                                                    onStyleChange={setMapStyle}
-                                                    routeMode={routeMode}
-                                                    onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                                    showCityNames={isPaywallLocked ? false : showCityNames}
-                                                    onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                                    mapColorMode={mapColorMode}
-                                                    onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                                    focusLocationQuery={initialMapFocusQuery}
-                                                    onRouteMetrics={handleRouteMetrics}
-                                                    onRouteStatus={handleRouteStatus}
-                                                    fitToRouteKey={trip.id}
-                                                    isPaywalled={isPaywallLocked}
-                                                    viewTransitionName={mapViewTransitionName}
-                                                />
-                                            </Suspense>
+                                        <div ref={mapViewportRef} className="flex-1 relative bg-gray-100 min-h-0 w-full">
+                                            {isMapBootstrapEnabled ? (
+                                                <Suspense fallback={<MapLoadingFallback />}>
+                                                    <ItineraryMap
+                                                        items={displayTrip.items}
+                                                        selectedItemId={selectedItemId}
+                                                        layoutMode={layoutMode}
+                                                        onLayoutChange={setLayoutMode}
+                                                        activeStyle={mapStyle}
+                                                        onStyleChange={setMapStyle}
+                                                        routeMode={routeMode}
+                                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                        showCityNames={isPaywallLocked ? false : showCityNames}
+                                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                        mapColorMode={mapColorMode}
+                                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                        focusLocationQuery={initialMapFocusQuery}
+                                                        onRouteMetrics={handleRouteMetrics}
+                                                        onRouteStatus={handleRouteStatus}
+                                                        fitToRouteKey={trip.id}
+                                                        isPaywalled={isPaywallLocked}
+                                                        viewTransitionName={mapViewTransitionName}
+                                                    />
+                                                </Suspense>
+                                            ) : (
+                                                <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                            )}
                                         </div>
                                         <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
                                             <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
