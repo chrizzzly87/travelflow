@@ -170,6 +170,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
 - [x] Extract history/overlay orchestration from `TripView` into dedicated hooks to continue shrinking the main planner component.
 - [x] Resolve high-signal trip-modal `react-doctor` accessibility findings with semantic dialog/backdrop and label-control associations.
+- [x] Added a shared focus-trap hook and wired it into custom dialogs/overlays/sidepanels (`TripInfo`, `TripHistory`, `TripShare`, `AddActivity`, `AddCity`, `DeleteCity`, `Settings`, release notice, mobile menu, My Plans panel) so keyboard focus stays inside open overlays.
+- [x] Follow-up `react-doctor` after focus-trap rollout improved from `91/177` to `91/175` by removing remaining modal/overlay accessibility regressions introduced during the pass.
 
 ## Validation checklist
 - [x] `npx vite build`

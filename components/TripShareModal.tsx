@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ShareMode } from '../types';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export interface TripShareModalProps {
     isOpen: boolean;
@@ -22,6 +23,15 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
     onGenerateShare,
     isGeneratingShare,
 }) => {
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
+
     if (!isOpen) return null;
 
     return (
@@ -32,13 +42,13 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                 onClick={onClose}
                 aria-label="Close share trip dialog"
             />
-            <div role="dialog" aria-modal="true" aria-labelledby="trip-share-title" className="relative bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="trip-share-title" className="relative bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h3 id="trip-share-title" className="text-lg font-bold text-gray-900">Share trip</h3>
                         <p className="text-xs text-gray-500">Choose view-only or collaboration editing.</p>
                     </div>
-                    <button type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                    <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                         Close
                     </button>
                 </div>

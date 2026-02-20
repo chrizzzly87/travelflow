@@ -3,6 +3,7 @@ import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { X, Sparkles, Check } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface AddActivityModalProps {
     isOpen: boolean;
@@ -34,7 +35,14 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
     const manualTitleInputRef = useRef<HTMLInputElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: manualTitleInputRef,
+    });
 
     // Close on Escape Key
     useEffect(() => {
@@ -162,6 +170,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                 aria-label="Close add activity dialog"
             />
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="add-activity-title"

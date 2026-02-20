@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Star } from 'lucide-react';
 import { ICountryInfo } from '../types';
 import { CountryInfo } from './CountryInfo';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface TripMetaSummary {
     dateRange: string;
@@ -90,7 +91,15 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     countryInfo,
     isPaywallLocked,
 }) => {
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
 
     useEffect(() => {
         if (!isOpen || !isEditingTitle || typeof window === 'undefined') return;
@@ -113,6 +122,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 aria-label="Close trip information dialog"
             />
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="trip-info-title"
@@ -123,7 +133,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <h3 id="trip-info-title" className="text-lg font-bold text-gray-900">Trip information</h3>
                         <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
                     </div>
-                    <button type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                    <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                         Close
                     </button>
                 </div>

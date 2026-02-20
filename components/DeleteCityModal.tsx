@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DeleteStrategy } from '../types';
 import { ArrowLeft, ArrowRight, X, ArrowLeftRight, CheckSquare, Square } from 'lucide-react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface DeleteCityModalProps {
     isOpen: boolean;
@@ -11,6 +12,14 @@ interface DeleteCityModalProps {
 
 export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityName, onClose, onConfirm }) => {
     const [deleteActivities, setDeleteActivities] = useState(true);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,17 +34,25 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
     if (!isOpen) return null;
 
     return (
-        <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1200] flex items-center justify-center p-4"
-            onClick={onClose}
-        >
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4">
+            <button
+                type="button"
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Close delete city dialog"
+            />
             <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-city-title"
+                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             >
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-lg font-bold text-gray-800">Delete {cityName}</h3>
+                    <h3 id="delete-city-title" className="text-lg font-bold text-gray-800">Delete {cityName}</h3>
                     <button
+                        ref={closeButtonRef}
+                        type="button"
                         onClick={onClose}
                         className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
                     >
@@ -48,18 +65,21 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                         How should we handle the timeline gap created by removing this city?
                     </p>
 
-                    <div 
-                        className="flex items-center gap-2 mb-6 cursor-pointer select-none group"
+                    <button
+                        type="button"
+                        className="w-full flex items-center gap-2 mb-6 cursor-pointer select-none group text-left"
                         onClick={() => setDeleteActivities(!deleteActivities)}
+                        aria-pressed={deleteActivities}
                     >
                         <div className={`transition-colors ${deleteActivities ? 'text-accent-600' : 'text-gray-300 group-hover:text-gray-400'}`}>
                             {deleteActivities ? <CheckSquare size={20} /> : <Square size={20} />}
                         </div>
                         <span className="text-sm font-medium text-gray-700">Delete attached activities</span>
-                    </div>
+                    </button>
 
                     <div className="space-y-3">
                         <button 
+                            type="button"
                             onClick={() => onConfirm('extend-prev', deleteActivities)}
                             className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >
@@ -73,6 +93,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                         </button>
 
                         <button 
+                            type="button"
                             onClick={() => onConfirm('extend-next', deleteActivities)}
                             className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >
@@ -86,6 +107,7 @@ export const DeleteCityModal: React.FC<DeleteCityModalProps> = ({ isOpen, cityNa
                         </button>
 
                         <button 
+                            type="button"
                             onClick={() => onConfirm('move-rest', deleteActivities)}
                             className="w-full flex items-center p-4 rounded-xl border border-gray-200 hover:border-accent-500 hover:bg-accent-50 transition-all group text-left"
                         >

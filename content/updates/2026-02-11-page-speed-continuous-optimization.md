@@ -98,3 +98,6 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Extracted TripView history and overlay orchestration into dedicated hooks to keep undo/redo, popstate, and modal state management out of the main component body.
 - [x] [Improved] ♿ Trip info, history, share, and add-activity dialogs now use stronger semantic modal and form patterns for better keyboard and assistive-technology behavior.
 - [ ] [Internal] 🩺 Cleared high-signal trip-modal accessibility warnings and reduced `react-doctor` warning count from `203` to `177` in this pass.
+- [x] [Improved] ⌨️ Keyboard tab navigation is now contained inside open dialogs and side panels so focus no longer jumps to background page content.
+- [ ] [Internal] ♿ Added a shared focus-trap hook across custom overlay surfaces and standardized backdrop layers to semantic button elements.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `177` to `175` while retaining score `91`.

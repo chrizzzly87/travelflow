@@ -7,6 +7,7 @@ import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../serv
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -902,10 +903,18 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const [isSyncingTrips, setIsSyncingTrips] = React.useState(false);
   const [, startTransition] = React.useTransition();
 
+  const panelRef = React.useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const closeHoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isEnrichingRef = React.useRef(false);
   const countryCacheRef = React.useRef<Record<string, { countryCode: string; countryName: string }>>({});
   const openLoadTokenRef = React.useRef(0);
+
+  useFocusTrap({
+    isActive: isOpen,
+    containerRef: panelRef,
+    initialFocusRef: closeButtonRef,
+  });
 
   const cancelHoverClose = React.useCallback(() => {
     if (closeHoverTimerRef.current) {
@@ -1232,20 +1241,30 @@ export const TripManager: React.FC<TripManagerProps> = ({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-[1100] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-[1100] transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
         }}
-        onClick={onClose}
-      />
+      >
+        <button
+          type="button"
+          className="h-full w-full bg-black/20 backdrop-blur-sm"
+          onClick={onClose}
+          aria-label="Close My Plans panel"
+        />
+      </div>
 
       <div
+        ref={panelRef}
         className={`fixed inset-y-0 right-0 w-[380px] max-w-[94vw] bg-white shadow-2xl z-[1200] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="trip-manager-title"
       >
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">My Plans</h2>
+          <h2 id="trip-manager-title" className="text-lg font-semibold text-gray-800">My Plans</h2>
           <div className="flex items-center gap-1">
             <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
               <button
@@ -1273,7 +1292,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
                 <CalendarDays size={14} />
               </button>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
+            <button ref={closeButtonRef} type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600" aria-label="Close">
               <X size={18} />
             </button>
           </div>

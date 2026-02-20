@@ -1,5 +1,5 @@
-import React from 'react';
-import type { ComponentType } from 'react';
+import React, { useRef, type ComponentType } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 type HistoryItemTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -45,6 +45,15 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
     onGo,
     formatHistoryTime,
 }) => {
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
+
     if (!isOpen) return null;
 
     return (
@@ -55,7 +64,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                 onClick={onClose}
                 aria-label="Close change history dialog"
             />
-            <div role="dialog" aria-modal="true" aria-labelledby="trip-history-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
+            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="trip-history-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                     <div>
                         <h3 id="trip-history-title" className="text-lg font-bold text-gray-900">Change History</h3>
@@ -65,7 +74,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                 : 'Undo/redo works with browser history and Cmd+Z / Cmd+Y.'}
                         </p>
                     </div>
-                    <button type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                    <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
                         Close
                     </button>
                 </div>

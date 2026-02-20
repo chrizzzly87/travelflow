@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { X, AirplaneTilt } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -47,6 +48,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { isAuthenticated, isAdmin, logout } = useAuth();
     const { openLoginModal } = useLoginModal();
     const [adminLinks, setAdminLinks] = useState<Array<{ id: string; label: string; path: string }>>([]);
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: panelRef,
+        initialFocusRef: closeButtonRef,
+    });
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(location.pathname);
@@ -175,11 +184,18 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                 className={`fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-300 ${
                     isOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
                 }`}
-                onClick={onClose}
                 aria-hidden="true"
-            />
+            >
+                <button
+                    type="button"
+                    className="h-full w-full"
+                    onClick={onClose}
+                    aria-label="Close navigation menu"
+                />
+            </div>
 
             <div
+                ref={panelRef}
                 className={`fixed inset-y-0 right-0 z-50 w-[85vw] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
@@ -196,6 +212,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                             <span className="text-lg font-extrabold tracking-tight">{APP_NAME}</span>
                         </div>
                         <button
+                            ref={closeButtonRef}
+                            type="button"
                             onClick={onClose}
                             className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                             aria-label="Close menu"

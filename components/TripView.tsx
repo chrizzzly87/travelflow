@@ -36,6 +36,7 @@ import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
@@ -346,53 +347,64 @@ const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow })
 
 const TRIP_INFO_FALLBACK_ROWS = [0, 1, 2];
 
-const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClose }) => (
-    <>
-        <button
-            type="button"
-            className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
-            onClick={onClose}
-            aria-label="Close"
-        />
-        <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="trip-info-loading-title"
-            className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
-        >
-            <div className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <div>
-                        <h3 id="trip-info-loading-title" className="text-lg font-bold text-gray-900">Trip information</h3>
-                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
-                    </div>
-                    <button onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                        Close
-                    </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
-                        <div className="h-5 w-44 rounded bg-gray-200" />
-                        <div className="h-3 w-64 rounded bg-gray-100" />
-                    </div>
-                    <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
-                        <div className="h-4 w-28 rounded bg-gray-200" />
-                        <div className="grid grid-cols-2 gap-2">
-                            {TRIP_INFO_FALLBACK_ROWS.map((row) => (
-                                <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
-                            ))}
+const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: true,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
+
+    return (
+        <>
+            <button
+                type="button"
+                className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Close"
+            />
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="trip-info-loading-title"
+                className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
+            >
+                <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 id="trip-info-loading-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                            <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
                         </div>
+                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                            Close
+                        </button>
                     </div>
-                    <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
-                        <div className="h-4 w-20 rounded bg-gray-200" />
-                        <div className="h-10 rounded bg-gray-100 border border-gray-100" />
-                        <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                            <div className="h-5 w-44 rounded bg-gray-200" />
+                            <div className="h-3 w-64 rounded bg-gray-100" />
+                        </div>
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
+                            <div className="h-4 w-28 rounded bg-gray-200" />
+                            <div className="grid grid-cols-2 gap-2">
+                                {TRIP_INFO_FALLBACK_ROWS.map((row) => (
+                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                            <div className="h-4 w-20 rounded bg-gray-200" />
+                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </>
-);
+        </>
+    );
+};
 
 export const TripView: React.FC<TripViewProps> = ({
     trip,
