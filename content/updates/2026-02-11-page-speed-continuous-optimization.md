@@ -106,3 +106,4 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Extracted trip timeline-render orchestration into a dedicated `TripTimelineCanvas` module so `TripView` keeps shrinking without changing planner behavior.
 - [ ] [Internal] ♿ Converted `DetailsPanel` hotel-search rows and overlay backdrop to semantic controls and switched hotel-search list keys from indexes to stable IDs.
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `163` to `158` while retaining score `91`.
+- [ ] [Internal] 📏 Captured fresh `/trip/:id` real-URL Lighthouse follow-up runs after this refactor cycle; desktop stayed at `100` while mobile remained in an expected variance band with transfer/TBT envelopes stable.
