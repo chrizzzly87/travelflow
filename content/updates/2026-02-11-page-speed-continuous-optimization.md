@@ -93,3 +93,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧱 Extracted TripView map bootstrap gating into a dedicated hook (`useDeferredMapBootstrap`) to isolate visibility/delay/interaction loading orchestration from the main trip render component.
 - [ ] [Internal] 📏 Captured a real non-redirecting `/trip/:id` Lighthouse baseline using a valid compressed trip URL to anchor further trip-page optimization work (`91` mobile / `100` desktop in local preview runs).
 - [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `203`) by addressing low-risk trip-flow findings and removing remaining inline timeline-render hotspots in `TripView`.
+- [x] [Improved] ⚡ Trip information now opens instantly with a lightweight loading shell instead of waiting for the modal bundle to finish loading.
+- [ ] [Internal] 🔥 Added explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the lazy TripInfo modal chunk to reduce first-open latency without increasing initial payload.

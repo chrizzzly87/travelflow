@@ -96,9 +96,16 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
 );
 
-const TripInfoModal = lazyWithRecovery('TripInfoModal', () =>
-    import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }))
-);
+let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
+
+const loadTripInfoModalModule = (): Promise<{ default: React.ComponentType<any> }> => {
+    if (!tripInfoModalModulePromise) {
+        tripInfoModalModulePromise = import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }));
+    }
+    return tripInfoModalModulePromise;
+};
+
+const TripInfoModal = lazyWithRecovery('TripInfoModal', () => loadTripInfoModalModule());
 
 const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
     import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
@@ -336,6 +343,56 @@ const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow })
     </div>
 );
 
+const TRIP_INFO_FALLBACK_ROWS = [0, 1, 2];
+
+const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClose }) => (
+    <>
+        <button
+            type="button"
+            className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+            aria-label="Close trip information"
+        />
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="trip-info-loading-title"
+            className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
+        >
+            <div className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <div>
+                        <h3 id="trip-info-loading-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
+                    </div>
+                    <button onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                        Close
+                    </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="h-5 w-44 rounded bg-gray-200" />
+                        <div className="h-3 w-64 rounded bg-gray-100" />
+                    </div>
+                    <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
+                        <div className="h-4 w-28 rounded bg-gray-200" />
+                        <div className="grid grid-cols-2 gap-2">
+                            {TRIP_INFO_FALLBACK_ROWS.map((row) => (
+                                <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                        <div className="h-4 w-20 rounded bg-gray-200" />
+                        <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                        <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </>
+);
+
 export const TripView: React.FC<TripViewProps> = ({
     trip,
     onUpdateTrip,
@@ -446,6 +503,18 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const [isHeaderAuthSubmitting, setIsHeaderAuthSubmitting] = useState(false);
     const canUseAuthenticatedSession = isAuthenticated && !isAnonymous;
+    const prewarmTripInfoModal = useCallback(() => {
+        void loadTripInfoModalModule().catch(() => undefined);
+    }, []);
+
+    const openTripInfoModal = useCallback(() => {
+        prewarmTripInfoModal();
+        setIsTripInfoOpen(true);
+    }, [prewarmTripInfoModal]);
+
+    const closeTripInfoModal = useCallback(() => {
+        setIsTripInfoOpen(false);
+    }, []);
 
     const handleHeaderAuthAction = useCallback(async () => {
         if (isHeaderAuthSubmitting) return;
@@ -2509,7 +2578,10 @@ export const TripView: React.FC<TripViewProps> = ({
                         </button>
                         <button
                             type="button"
-                            onClick={() => setIsTripInfoOpen(true)}
+                            onClick={openTripInfoModal}
+                            onMouseEnter={prewarmTripInfoModal}
+                            onFocus={prewarmTripInfoModal}
+                            onTouchStart={prewarmTripInfoModal}
                             className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                             aria-label="Trip information"
                         >
@@ -3136,10 +3208,10 @@ export const TripView: React.FC<TripViewProps> = ({
                      )}
 
                     {isTripInfoOpen && (
-                        <Suspense fallback={null}>
+                        <Suspense fallback={<TripInfoModalLoadingFallback onClose={closeTripInfoModal} />}>
                             <TripInfoModal
                                 isOpen={isTripInfoOpen}
-                                onClose={() => setIsTripInfoOpen(false)}
+                                onClose={closeTripInfoModal}
                                 tripTitle={trip.title}
                                 isEditingTitle={isEditingTitle}
                                 editTitleValue={editTitleValue}
@@ -3162,12 +3234,12 @@ export const TripView: React.FC<TripViewProps> = ({
                                 onHistoryRedo={() => navigateHistory('redo')}
                                 infoHistoryItems={tripInfoHistoryItems}
                                 onGoToHistoryEntry={(url) => {
-                                    setIsTripInfoOpen(false);
+                                    closeTripInfoModal();
                                     suppressCommitRef.current = true;
                                     navigate(url);
                                 }}
                                 onOpenFullHistory={() => {
-                                    setIsTripInfoOpen(false);
+                                    closeTripInfoModal();
                                     openHistoryPanel('trip_info');
                                 }}
                                 formatHistoryTime={formatHistoryTime}
