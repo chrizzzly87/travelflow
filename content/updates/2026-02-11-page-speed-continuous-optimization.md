@@ -104,3 +104,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] ♿ Converted remaining non-semantic destination-picker and print-calendar click targets to semantic controls and tightened label/input associations to remove those hotspots from accessibility linting.
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `175` to `163` while retaining score `91`.
 - [ ] [Internal] 🧩 Extracted trip timeline-render orchestration into a dedicated `TripTimelineCanvas` module so `TripView` keeps shrinking without changing planner behavior.
+- [ ] [Internal] ♿ Converted `DetailsPanel` hotel-search rows and overlay backdrop to semantic controls and switched hotel-search list keys from indexes to stable IDs.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `163` to `158` while retaining score `91`.
