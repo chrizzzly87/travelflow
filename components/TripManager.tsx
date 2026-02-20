@@ -43,6 +43,7 @@ interface CountryMatch {
 }
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
+const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
 
 const TOOLTIP_CLEAN_STYLE = [
   'style=element:geometry|color:0xf9f9f9',
@@ -861,6 +862,25 @@ const BucketList: React.FC<BucketListProps> = ({
   );
 };
 
+const TripListSkeleton: React.FC<{ syncing: boolean }> = ({ syncing }) => (
+  <div className="space-y-2 px-1">
+    <div className="px-2 py-1">
+      <div className="h-3 w-24 rounded bg-gray-100" />
+    </div>
+    {TRIP_SKELETON_ROWS.map((row) => (
+      <div key={row} className="rounded-lg border border-gray-100 bg-white px-2 py-2">
+        <div className="animate-pulse">
+          <div className="h-3.5 w-32 rounded bg-gray-200" />
+          <div className="mt-2 h-2.5 w-48 max-w-[85%] rounded bg-gray-100" />
+        </div>
+      </div>
+    ))}
+    <div className="px-2 pt-1 text-[11px] text-gray-400">
+      {syncing ? 'Syncing your plans...' : 'Loading your plans...'}
+    </div>
+  </div>
+);
+
 export const TripManager: React.FC<TripManagerProps> = ({
   isOpen,
   onClose,
@@ -878,10 +898,14 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const [showPastTrips, setShowPastTrips] = React.useState(false);
   const [sortMode, setSortMode] = React.useState<TripSortMode>('updated');
   const [hoverAnchor, setHoverAnchor] = React.useState<HoverAnchor | null>(null);
+  const [isInitialListLoading, setIsInitialListLoading] = React.useState(false);
+  const [isSyncingTrips, setIsSyncingTrips] = React.useState(false);
+  const [, startTransition] = React.useTransition();
 
   const closeHoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isEnrichingRef = React.useRef(false);
   const countryCacheRef = React.useRef<Record<string, { countryCode: string; countryName: string }>>({});
+  const openLoadTokenRef = React.useRef(0);
 
   const cancelHoverClose = React.useCallback(() => {
     if (closeHoverTimerRef.current) {
@@ -977,8 +1001,12 @@ export const TripManager: React.FC<TripManagerProps> = ({
     if (DB_ENABLED) {
       await syncTripsFromDb();
     }
-    setTrips(getAllTrips());
-  }, []);
+    const loadedTrips = getAllTrips();
+    startTransition(() => {
+      setTrips(loadedTrips);
+    });
+    return loadedTrips;
+  }, [startTransition]);
 
   const enrichTripsWithCountryData = React.useCallback(async (sourceTrips: ITrip[]) => {
     if (isEnrichingRef.current) return;
@@ -1037,23 +1065,58 @@ export const TripManager: React.FC<TripManagerProps> = ({
       }
 
       if (hasChanges) {
-        setTrips(getAllTrips());
+        startTransition(() => {
+          setTrips(getAllTrips());
+        });
       }
     } finally {
       isEnrichingRef.current = false;
     }
-  }, [currentTripId, onUpdateTrip, reverseGeocodeCountry]);
+  }, [currentTripId, onUpdateTrip, reverseGeocodeCountry, startTransition]);
 
   React.useEffect(() => {
-    if (isOpen) {
-      const loaded = getAllTrips();
-      setTrips(loaded);
-      void enrichTripsWithCountryData(loaded);
-      void refreshTrips();
-    } else {
+    if (!isOpen) {
+      openLoadTokenRef.current += 1;
+      setIsInitialListLoading(false);
+      setIsSyncingTrips(false);
       hideHoverNow();
+      return;
     }
-  }, [isOpen, enrichTripsWithCountryData, hideHoverNow, refreshTrips]);
+
+    const openToken = openLoadTokenRef.current + 1;
+    openLoadTokenRef.current = openToken;
+    setIsInitialListLoading(true);
+    setIsSyncingTrips(false);
+
+    let rafId: number | null = null;
+    const queueInitialLoad = () => {
+      if (openLoadTokenRef.current !== openToken) return;
+
+      const loaded = getAllTrips();
+      startTransition(() => {
+        setTrips(loaded);
+      });
+      setIsInitialListLoading(false);
+      void enrichTripsWithCountryData(loaded);
+      setIsSyncingTrips(true);
+      void refreshTrips().finally(() => {
+        if (openLoadTokenRef.current !== openToken) return;
+        setIsSyncingTrips(false);
+      });
+    };
+
+    if (typeof window !== 'undefined') {
+      rafId = window.requestAnimationFrame(queueInitialLoad);
+    } else {
+      queueInitialLoad();
+    }
+
+    return () => {
+      if (rafId !== null && typeof window !== 'undefined') {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [isOpen, enrichTripsWithCountryData, hideHoverNow, refreshTrips, startTransition]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1069,11 +1132,13 @@ export const TripManager: React.FC<TripManagerProps> = ({
     if (typeof window === 'undefined') return;
     const handleDebugExpiryUpdate = () => {
       if (!isOpen) return;
-      setTrips(getAllTrips());
+      startTransition(() => {
+        setTrips(getAllTrips());
+      });
     };
     window.addEventListener(TRIP_EXPIRY_DEBUG_EVENT, handleDebugExpiryUpdate as EventListener);
     return () => window.removeEventListener(TRIP_EXPIRY_DEBUG_EVENT, handleDebugExpiryUpdate as EventListener);
-  }, [isOpen]);
+  }, [isOpen, startTransition]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -1142,6 +1207,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const favoriteByTravelDate = React.useMemo(() => splitTripsByTravelDate(favoriteTrips), [favoriteTrips]);
   const regularByTravelDate = React.useMemo(() => splitTripsByTravelDate(regularTrips), [regularTrips]);
   const forceExpandPast = normalizedQuery.length > 0;
+  const showLoadingSkeleton = isOpen && (isInitialListLoading || (isSyncingTrips && trips.length === 0));
 
   const hoveredTrip = React.useMemo(() => {
     if (!hoverAnchor) return null;
@@ -1228,7 +1294,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2" onScroll={hideHoverNow}>
-          {trips.length === 0 ? (
+          {showLoadingSkeleton ? (
+            <TripListSkeleton syncing={isSyncingTrips} />
+          ) : trips.length === 0 ? (
             <div className="text-center py-8 text-gray-400 text-sm">No saved plans yet.</div>
           ) : filteredTrips.length === 0 ? (
             <div className="text-center py-8 text-gray-400 text-sm">No matches for "{searchQuery}".</div>

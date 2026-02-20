@@ -92,10 +92,6 @@ export const ExampleTripsCarousel: React.FC = () => {
         }
     }, []);
 
-    useEffect(() => {
-        prewarmTripView();
-    }, [prewarmTripView]);
-
     const handleCardClick = useCallback((templateId: string, transitionKey: string) => {
         const factory = TRIP_FACTORIES[templateId];
         if (!factory) return;

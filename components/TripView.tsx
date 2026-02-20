@@ -1,31 +1,18 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { Timeline } from './Timeline';
-import { VerticalTimeline } from './VerticalTimeline';
-import { DetailsPanel } from './DetailsPanel';
-import { SelectedCitiesPanel } from './SelectedCitiesPanel';
-import { ItineraryMap } from './ItineraryMap';
-import { CountryInfo } from './CountryInfo';
-import { PrintLayout } from './PrintLayout';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
-import { AddActivityModal } from './AddActivityModal';
-import { AddCityModal } from './AddCityModal';
-import { Drawer, DrawerContent } from './ui/drawer';
-import { Switch } from './ui/switch';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, ChevronDown, ChevronRight, Loader2
+    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, Loader2
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import {
-    DB_ENABLED,
     dbCreateShareLink,
     dbGetTrip,
     dbListTripShares,
@@ -34,9 +21,8 @@ import {
     dbUpsertTrip,
     ensureDbSession,
     type DbTripAccessMetadata,
-} from '../services/dbService';
-import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
-import { ReleasePill } from './marketing/ReleasePill';
+} from '../services/dbApi';
+import { DB_ENABLED } from '../config/db';
 import {
     buildPaywalledTripDisplay,
     getDebugTripExpiredOverride,
@@ -50,6 +36,7 @@ import { APP_NAME } from '../config/appGlobals';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
@@ -62,6 +49,59 @@ interface ToastState {
 type TripDebugWindow = Window & typeof globalThis & {
     toggleExpired?: (force?: boolean) => boolean;
 };
+
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
+    import('./ReleaseNoticeDialog').then((module) => ({ default: module.ReleaseNoticeDialog }))
+);
+
+const PrintLayout = lazyWithRecovery('PrintLayout', () =>
+    import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
+);
+
+const VerticalTimeline = lazyWithRecovery('VerticalTimeline', () =>
+    import('./VerticalTimeline').then((module) => ({ default: module.VerticalTimeline }))
+);
+
+const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
+    import('./DetailsPanel').then((module) => ({ default: module.DetailsPanel }))
+);
+
+const SelectedCitiesPanel = lazyWithRecovery('SelectedCitiesPanel', () =>
+    import('./SelectedCitiesPanel').then((module) => ({ default: module.SelectedCitiesPanel }))
+);
+
+const TripDetailsDrawer = lazyWithRecovery('TripDetailsDrawer', () =>
+    import('./TripDetailsDrawer').then((module) => ({ default: module.TripDetailsDrawer }))
+);
+
+const AddActivityModal = lazyWithRecovery('AddActivityModal', () =>
+    import('./AddActivityModal').then((module) => ({ default: module.AddActivityModal }))
+);
+
+const AddCityModal = lazyWithRecovery('AddCityModal', () =>
+    import('./AddCityModal').then((module) => ({ default: module.AddCityModal }))
+);
+
+const TripShareModal = lazyWithRecovery('TripShareModal', () =>
+    import('./TripShareModal').then((module) => ({ default: module.TripShareModal }))
+);
+
+const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
+    import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
+);
+
+const TripInfoModal = lazyWithRecovery('TripInfoModal', () =>
+    import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }))
+);
+
+const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
+    import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
+);
 
 const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
 
@@ -138,14 +178,17 @@ const MIN_TIMELINE_COLUMN_WIDTH = 420;
 const MIN_DETAILS_WIDTH = 360;
 const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
+const RESIZE_KEYBOARD_STEP = 16;
 const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
-const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
+const MAP_BOOTSTRAP_DELAY_MS = 900;
+const MAP_BOOTSTRAP_MAX_WAIT_MS = 4000;
+const MAP_BOOTSTRAP_INTERSECTION_THRESHOLD = 0.01;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
@@ -276,6 +319,25 @@ interface ExampleTransitionLocationState {
     useExampleSharedTransition?: boolean;
 }
 
+const MapLoadingFallback: React.FC = () => (
+    <div className="h-full w-full flex items-center justify-center bg-gray-100 text-xs text-gray-500">
+        Loading map...
+    </div>
+);
+
+const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow }) => (
+    <div className="h-full w-full flex flex-col items-center justify-center gap-3 bg-gray-100 text-xs text-gray-500">
+        <span>Preparing map...</span>
+        <button
+            type="button"
+            onClick={onLoadNow}
+            className="inline-flex h-8 items-center rounded-md border border-gray-300 bg-white px-3 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
+        >
+            Load map now
+        </button>
+    </div>
+);
+
 export const TripView: React.FC<TripViewProps> = ({
     trip,
     onUpdateTrip,
@@ -308,21 +370,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     tripRef.current = trip;
-    const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
-    const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
-        if (typeof window === 'undefined') return null;
-        try {
-            return window.localStorage.getItem(RELEASE_NOTICE_DISMISSED_KEY);
-        } catch (e) {
-            return null;
-        }
-    });
-    const latestReleaseItems = useMemo(() => {
-        if (!latestInAppRelease) return [];
-        return getWebsiteVisibleItems(latestInAppRelease).slice(0, 3);
-    }, [latestInAppRelease]);
-    const latestReleaseGroups = useMemo(() => groupReleaseItemsByType(latestReleaseItems), [latestReleaseItems]);
-    const canShowReleaseNoticeByDismissal = !suppressReleaseNotice && !!latestInAppRelease && dismissedReleaseId !== latestInAppRelease.id;
+    const [isReleaseNoticeReady, setIsReleaseNoticeReady] = useState(false);
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
     const tripExpiresAtMs = useMemo(() => {
@@ -380,10 +428,6 @@ export const TripView: React.FC<TripViewProps> = ({
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
         return `/admin/trips?user=${encodeURIComponent(adminAccess.ownerId)}&drawer=user`;
     }, [adminAccess?.ownerId, isAdminFallbackView]);
-
-    useEffect(() => {
-        setAdminOverrideEnabled(false);
-    }, [isAdminFallbackView, trip.id]);
 
     const handlePaywallLoginClick = useCallback((
         event: React.MouseEvent<HTMLAnchorElement>,
@@ -490,10 +534,15 @@ export const TripView: React.FC<TripViewProps> = ({
     const [toastState, setToastState] = useState<ToastState | null>(null);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
+    const [isMapBootstrapEnabled, setIsMapBootstrapEnabled] = useState(false);
+    const [isMapViewportVisible, setIsMapViewportVisible] = useState(false);
+    const [hasMapBootstrapDelayElapsed, setHasMapBootstrapDelayElapsed] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
     });
+    const mapViewportRef = useRef<HTMLDivElement | null>(null);
+    const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1089,10 +1138,69 @@ export const TripView: React.FC<TripViewProps> = ({
         && !isTripLockedByExpiry
         && !isTripLockedByArchive
         && (trip.status || 'active') === 'active';
-    const showReleaseNotice = canShowReleaseNoticeByDismissal
+    const shouldEnableReleaseNotice = isReleaseNoticeReady
+        && !suppressReleaseNotice
         && !isAdmin
         && !isAdminFallbackView
         && !showGenerationOverlay;
+
+    useEffect(() => {
+        if (suppressReleaseNotice) return;
+        if (typeof window === 'undefined') return;
+
+        let resolved = false;
+        let timeoutId: number | null = null;
+        let idleId: number | null = null;
+
+        const removeInteractionListeners = () => {
+            window.removeEventListener('pointerdown', onTrigger, true);
+            window.removeEventListener('keydown', onTrigger, true);
+            window.removeEventListener('touchstart', onTrigger, true);
+        };
+
+        const clearTimers = () => {
+            if (timeoutId !== null) {
+                window.clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            if (idleId !== null && 'cancelIdleCallback' in window) {
+                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+                idleId = null;
+            }
+        };
+
+        const enableReleaseNotice = () => {
+            if (resolved) return;
+            resolved = true;
+            setIsReleaseNoticeReady(true);
+            removeInteractionListeners();
+            clearTimers();
+        };
+
+        const onTrigger = () => {
+            enableReleaseNotice();
+        };
+
+        window.addEventListener('pointerdown', onTrigger, true);
+        window.addEventListener('keydown', onTrigger, true);
+        window.addEventListener('touchstart', onTrigger, true);
+
+        timeoutId = window.setTimeout(enableReleaseNotice, 5000);
+
+        if ('requestIdleCallback' in window) {
+            idleId = (window as Window & {
+                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
+            }).requestIdleCallback(() => {
+                enableReleaseNotice();
+            }, { timeout: 4500 });
+        }
+
+        return () => {
+            resolved = true;
+            removeInteractionListeners();
+            clearTimers();
+        };
+    }, [suppressReleaseNotice]);
 
     useEffect(() => {
         if (!showGenerationOverlay) {
@@ -1136,17 +1244,6 @@ export const TripView: React.FC<TripViewProps> = ({
         document.execCommand('copy');
         document.body.removeChild(input);
     }, []);
-
-    const dismissReleaseNotice = useCallback(() => {
-        if (!latestInAppRelease) return;
-        setDismissedReleaseId(latestInAppRelease.id);
-        if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.setItem(RELEASE_NOTICE_DISMISSED_KEY, latestInAppRelease.id);
-        } catch (e) {
-            // ignore storage issues
-        }
-    }, [latestInAppRelease]);
 
     const activeShareUrl = shareUrlsByMode[shareMode] ?? null;
 
@@ -1255,6 +1352,21 @@ export const TripView: React.FC<TripViewProps> = ({
             return true;
         });
     }, [isExamplePreview, resolvedHistoryEntries, showAllHistory]);
+
+    const historyModalItems = useMemo(() => {
+        return displayHistoryEntries.map((entry) => {
+            const tone = resolveChangeTone(entry.label);
+            return {
+                id: entry.id,
+                url: entry.url,
+                ts: entry.ts,
+                isCurrent: entry.url === currentUrl,
+                details: stripHistoryPrefix(entry.label),
+                tone,
+                meta: getToneMeta(tone),
+            };
+        });
+    }, [displayHistoryEntries, currentUrl]);
 
     useEffect(() => {
         if (isHistoryOpen) refreshHistory();
@@ -2100,6 +2212,33 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [detailsPanelVisible, detailsWidth, clampDetailsWidth]);
 
+    const handleSidebarResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
+        const maxSidebar = window.innerWidth - reservedForDetails - MIN_MAP_WIDTH - (RESIZER_WIDTH * 2);
+        const boundedMax = Math.max(MIN_SIDEBAR_WIDTH, maxSidebar);
+        setSidebarWidth((prev) => Math.max(MIN_SIDEBAR_WIDTH, Math.min(boundedMax, prev + (direction * RESIZE_KEYBOARD_STEP))));
+    }, [detailsPanelVisible, detailsWidth]);
+
+    const handleDetailsResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        setDetailsWidth((prev) => clampDetailsWidth(prev + (direction * RESIZE_KEYBOARD_STEP)));
+    }, [clampDetailsWidth]);
+
+    const handleTimelineResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowUp' ? 1 : -1;
+        const maxTimelineHeight = window.innerHeight - MIN_BOTTOM_MAP_HEIGHT;
+        setTimelineHeight((prev) =>
+            Math.max(MIN_TIMELINE_HEIGHT, Math.min(maxTimelineHeight, prev + (direction * RESIZE_KEYBOARD_STEP)))
+        );
+    }, []);
+
     useEffect(() => {
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', stopResizing);
@@ -2115,6 +2254,120 @@ export const TripView: React.FC<TripViewProps> = ({
     const infoHistoryEntries = useMemo(() => {
         return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
     }, [displayHistoryEntries, showAllHistory]);
+    const tripInfoHistoryItems = useMemo(() => {
+        return infoHistoryEntries.map((entry) => ({
+            id: entry.id,
+            url: entry.url,
+            ts: entry.ts,
+            details: stripHistoryPrefix(entry.label),
+            isCurrent: entry.url === currentUrl,
+        }));
+    }, [infoHistoryEntries, currentUrl]);
+    const enableMapBootstrap = useCallback(() => {
+        setIsMapBootstrapEnabled(true);
+    }, []);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || hasMapBootstrapDelayElapsed || typeof window === 'undefined') return;
+        const timer = window.setTimeout(() => {
+            setHasMapBootstrapDelayElapsed(true);
+        }, MAP_BOOTSTRAP_DELAY_MS);
+        return () => window.clearTimeout(timer);
+    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled) return;
+        if (hasMapBootstrapDelayElapsed && isMapViewportVisible) {
+            setIsMapBootstrapEnabled(true);
+        }
+    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled, isMapViewportVisible]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
+        const forceEnableTimer = window.setTimeout(() => {
+            setIsMapBootstrapEnabled(true);
+        }, MAP_BOOTSTRAP_MAX_WAIT_MS);
+        return () => window.clearTimeout(forceEnableTimer);
+    }, [isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
+        const handleInteraction = () => setIsMapBootstrapEnabled(true);
+        const interactionEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart'];
+        interactionEvents.forEach((eventName) => {
+            window.addEventListener(eventName, handleInteraction);
+        });
+        return () => {
+            interactionEvents.forEach((eventName) => {
+                window.removeEventListener(eventName, handleInteraction);
+            });
+        };
+    }, [isMapBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isMapBootstrapEnabled || typeof window === 'undefined' || viewMode !== 'planner') return;
+        const mapContainer = mapViewportRef.current;
+        if (!mapContainer) return;
+        if (typeof window.IntersectionObserver !== 'function') {
+            setIsMapViewportVisible(true);
+            return;
+        }
+
+        const observer = new window.IntersectionObserver(
+            (entries) => {
+                const mapIsVisible = entries.some((entry) => entry.isIntersecting || entry.intersectionRatio > 0);
+                if (mapIsVisible) {
+                    setIsMapViewportVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { threshold: MAP_BOOTSTRAP_INTERSECTION_THRESHOLD }
+        );
+
+        observer.observe(mapContainer);
+        return () => observer.disconnect();
+    }, [effectiveLayoutMode, isMapBootstrapEnabled, isMobile, isMobileMapExpanded, viewMode]);
+
+    const renderTimelineCanvas = () => {
+        if (timelineView === 'vertical') {
+            return (
+                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
+                    <VerticalTimeline
+                        trip={displayTrip}
+                        onUpdateItems={handleUpdateItems}
+                        onSelect={handleTimelineSelect}
+                        selectedItemId={selectedItemId}
+                        selectedCityIds={selectedCityIds}
+                        readOnly={!canEdit}
+                        onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                        onAddActivity={handleOpenAddActivity}
+                        onForceFill={handleForceFill}
+                        onSwapSelectedCities={handleReverseSelectedCities}
+                        pixelsPerDay={pixelsPerDay}
+                        enableExampleSharedTransition={useExampleSharedTransition}
+                    />
+                </Suspense>
+            );
+        }
+
+        return (
+            <Timeline
+                trip={displayTrip}
+                onUpdateItems={handleUpdateItems}
+                onSelect={handleTimelineSelect}
+                selectedItemId={selectedItemId}
+                selectedCityIds={selectedCityIds}
+                readOnly={!canEdit}
+                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
+                onAddActivity={handleOpenAddActivity}
+                onForceFill={handleForceFill}
+                onSwapSelectedCities={handleReverseSelectedCities}
+                routeStatusById={routeStatusById}
+                pixelsPerDay={pixelsPerDay}
+                enableExampleSharedTransition={useExampleSharedTransition}
+            />
+        );
+    };
 
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;
@@ -2122,6 +2375,16 @@ export const TripView: React.FC<TripViewProps> = ({
         setEditTitleValue(trip.title);
         setIsEditingTitle(true);
     }, [canManageTripMetadata, requireEdit, trip.title]);
+
+    useEffect(() => {
+        if (!isEditingTitle || isMobile || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            editTitleInputRef.current?.focus();
+        });
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [isEditingTitle, isMobile]);
 
     const handleCommitTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) {
@@ -2182,18 +2445,20 @@ export const TripView: React.FC<TripViewProps> = ({
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
-                <PrintLayout
-                    trip={displayTrip}
-                    isPaywalled={isPaywallLocked}
-                    onClose={() => setViewMode('planner')}
-                    onUpdateTrip={handleUpdateItems}
-                />
+                <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center text-sm text-gray-500">Preparing print layout...</div>}>
+                    <PrintLayout
+                        trip={displayTrip}
+                        isPaywalled={isPaywallLocked}
+                        onClose={() => setViewMode('planner')}
+                        onUpdateTrip={handleUpdateItems}
+                    />
+                </Suspense>
             </GoogleMapsLoader>
         );
     }
 
     return (
-        <GoogleMapsLoader language={appLanguage}>
+        <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
                 
                 {/* Header */}
@@ -2215,6 +2480,7 @@ export const TripView: React.FC<TripViewProps> = ({
                             <div className="flex flex-col leading-tight min-w-0">
                                 {!isMobile && isEditingTitle ? (
                                     <input
+                                        ref={editTitleInputRef}
                                         value={editTitleValue}
                                         onChange={e => setEditTitleValue(e.target.value)}
                                         onBlur={handleCommitTitleEdit}
@@ -2223,13 +2489,14 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 handleCommitTitleEdit();
                                             }
                                         }}
-                                        autoFocus
                                         className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
                                     />
-                                ) : (
-                                    <div
-                                        className={`flex items-center gap-2 ${!isMobile && canManageTripMetadata ? 'group cursor-pointer' : ''}`}
-                                        onClick={!isMobile && canManageTripMetadata ? handleStartTitleEdit : undefined}
+                                ) : !isMobile && canManageTripMetadata ? (
+                                    <button
+                                        type="button"
+                                        className="group flex items-center gap-2 cursor-pointer text-left"
+                                        onClick={handleStartTitleEdit}
+                                        aria-label="Edit trip title"
                                     >
                                         <h1
                                             className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
@@ -2237,9 +2504,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                         >
                                             {trip.title}
                                         </h1>
-                                        {!isMobile && canManageTripMetadata && (
-                                            <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        )}
+                                        <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <h1
+                                            className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
+                                            style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
+                                        >
+                                            {trip.title}
+                                        </h1>
                                     </div>
                                 )}
                                 {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
@@ -2426,22 +2700,36 @@ export const TripView: React.FC<TripViewProps> = ({
                                     <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800">
                                         Enable editing
                                     </span>
-                                    <Switch
-                                        checked={adminOverrideEnabled}
-                                        onCheckedChange={(checked) => {
-                                            if (!canEnableAdminOverride) return;
-                                            setAdminOverrideEnabled(checked);
-                                            trackEvent('trip_view__admin_override--toggle', {
-                                                trip_id: trip.id,
-                                                enabled: checked,
-                                            });
-                                        }}
-                                        disabled={!canEnableAdminOverride}
+                                    <label
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            adminOverrideEnabled ? 'bg-indigo-600' : 'bg-indigo-300'
+                                        } ${canEnableAdminOverride ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                         {...getAnalyticsDebugAttributes('trip_view__admin_override--toggle', {
                                             trip_id: trip.id,
                                             enabled: adminOverrideEnabled,
                                         })}
-                                    />
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={adminOverrideEnabled}
+                                            disabled={!canEnableAdminOverride}
+                                            onChange={(event) => {
+                                                if (!canEnableAdminOverride) return;
+                                                const checked = event.target.checked;
+                                                setAdminOverrideEnabled(checked);
+                                                trackEvent('trip_view__admin_override--toggle', {
+                                                    trip_id: trip.id,
+                                                    enabled: checked,
+                                                });
+                                            }}
+                                        />
+                                        <span
+                                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                                adminOverrideEnabled ? 'translate-x-5' : 'translate-x-1'
+                                            }`}
+                                        />
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -2551,38 +2839,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     onTouchEnd={handleTimelineTouchEnd}
                                     onTouchCancel={handleTimelineTouchEnd}
                                 >
-                                    {timelineView === 'vertical' ? (
-                                        <VerticalTimeline
-                                            trip={displayTrip}
-                                            onUpdateItems={handleUpdateItems}
-                                            onSelect={handleTimelineSelect}
-                                            selectedItemId={selectedItemId}
-                                            selectedCityIds={selectedCityIds}
-                                            readOnly={!canEdit}
-                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                            onAddActivity={handleOpenAddActivity}
-                                            onForceFill={handleForceFill}
-                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                            pixelsPerDay={pixelsPerDay}
-                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                        />
-                                    ) : (
-                                        <Timeline
-                                            trip={displayTrip}
-                                            onUpdateItems={handleUpdateItems}
-                                            onSelect={handleTimelineSelect}
-                                            selectedItemId={selectedItemId}
-                                            selectedCityIds={selectedCityIds}
-                                            readOnly={!canEdit}
-                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                            onAddActivity={handleOpenAddActivity}
-                                            onForceFill={handleForceFill}
-                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                            routeStatusById={routeStatusById}
-                                            pixelsPerDay={pixelsPerDay}
-                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                        />
-                                    )}
+                                    {renderTimelineCanvas()}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2595,29 +2852,38 @@ export const TripView: React.FC<TripViewProps> = ({
                                         </div>
                                     </div>
                                 </div>
-                                <div className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}>
-                                    <ItineraryMap
-                                        items={displayTrip.items}
-                                        selectedItemId={selectedItemId}
-                                        layoutMode="vertical"
-                                        showLayoutControls={false}
-                                        activeStyle={mapStyle}
-                                        onStyleChange={setMapStyle}
-                                        routeMode={routeMode}
-                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                        showCityNames={isPaywallLocked ? false : showCityNames}
-                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                        mapColorMode={mapColorMode}
-                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                        isExpanded={isMobileMapExpanded}
-                                        onToggleExpanded={() => setIsMobileMapExpanded(v => !v)}
-                                        focusLocationQuery={initialMapFocusQuery}
-                                        onRouteMetrics={handleRouteMetrics}
-                                        onRouteStatus={handleRouteStatus}
-                                        fitToRouteKey={trip.id}
-                                        isPaywalled={isPaywallLocked}
-                                        viewTransitionName={mapViewTransitionName}
-                                    />
+                                <div
+                                    ref={mapViewportRef}
+                                    className={`${isMobileMapExpanded ? 'fixed inset-x-0 bottom-0 h-[70vh] z-[1450] border-t border-gray-200 shadow-2xl bg-white' : 'relative h-[34vh] min-h-[220px] bg-gray-100'}`}
+                                >
+                                    {isMapBootstrapEnabled ? (
+                                        <Suspense fallback={<MapLoadingFallback />}>
+                                            <ItineraryMap
+                                                items={displayTrip.items}
+                                                selectedItemId={selectedItemId}
+                                                layoutMode="vertical"
+                                                showLayoutControls={false}
+                                                activeStyle={mapStyle}
+                                                onStyleChange={setMapStyle}
+                                                routeMode={routeMode}
+                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                showCityNames={isPaywallLocked ? false : showCityNames}
+                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                mapColorMode={mapColorMode}
+                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                isExpanded={isMobileMapExpanded}
+                                                onToggleExpanded={() => setIsMobileMapExpanded(v => !v)}
+                                                focusLocationQuery={initialMapFocusQuery}
+                                                onRouteMetrics={handleRouteMetrics}
+                                                onRouteStatus={handleRouteStatus}
+                                                fitToRouteKey={trip.id}
+                                                isPaywalled={isPaywallLocked}
+                                                viewTransitionName={mapViewTransitionName}
+                                            />
+                                        </Suspense>
+                                    ) : (
+                                        <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -2627,38 +2893,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
-                                                    {timelineView === 'vertical' ? (
-                                                        <VerticalTimeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    ) : (
-                                                        <Timeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            routeStatusById={routeStatusById}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    )}
+                                                    {renderTimelineCanvas()}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2674,153 +2909,20 @@ export const TripView: React.FC<TripViewProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group" onMouseDown={() => startResizing('sidebar')}>
+                                        <button
+                                            type="button"
+                                            className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
+                                            onMouseDown={() => startResizing('sidebar')}
+                                            onKeyDown={handleSidebarResizeKeyDown}
+                                            aria-label="Resize timeline and map panels"
+                                        >
                                             <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
+                                        </button>
 
                                         {detailsPanelVisible && (
                                             <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
                                                 {showSelectedCitiesPanel ? (
-                                                    <SelectedCitiesPanel
-                                                        selectedCities={selectedCitiesInTimeline}
-                                                        onClose={clearSelection}
-                                                        onApplyOrder={applySelectedCityOrder}
-                                                        onReverse={handleReverseSelectedCities}
-                                                        timelineView={timelineView}
-                                                        readOnly={!canEdit}
-                                                    />
-                                                ) : (
-                                                    <DetailsPanel
-                                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                                        isOpen={!!selectedItemId}
-                                                        onClose={clearSelection}
-                                                        onUpdate={handleUpdateItem}
-                                                        onBatchUpdate={handleBatchItemUpdate}
-                                                        onDelete={handleDeleteItem}
-                                                        tripStartDate={trip.startDate}
-                                                        tripItems={displayTrip.items}
-                                                        routeMode={routeMode}
-                                                        routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                        onForceFill={handleForceFill}
-                                                        forceFillMode={selectedCityForceFill?.mode}
-                                                        forceFillLabel={selectedCityForceFill?.label}
-                                                        variant="sidebar"
-                                                        readOnly={!canEdit}
-                                                        cityColorPaletteId={cityColorPaletteId}
-                                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                                    />
-                                                )}
-                                                <div
-                                                    className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
-                                                    onMouseDown={(e) => startResizing('details', e.clientX)}
-                                                    title="Resize details panel"
-                                                >
-                                                    <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div className="flex-1 h-full relative bg-gray-100 min-w-0">
-                                            <ItineraryMap
-                                                items={displayTrip.items}
-                                                selectedItemId={selectedItemId}
-                                                layoutMode={layoutMode}
-                                                onLayoutChange={setLayoutMode}
-                                                activeStyle={mapStyle}
-                                                onStyleChange={setMapStyle}
-                                                routeMode={routeMode}
-                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                                showCityNames={isPaywallLocked ? false : showCityNames}
-                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                                mapColorMode={mapColorMode}
-                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                                focusLocationQuery={initialMapFocusQuery}
-                                                onRouteMetrics={handleRouteMetrics}
-                                                onRouteStatus={handleRouteStatus}
-                                                fitToRouteKey={trip.id}
-                                                isPaywalled={isPaywallLocked}
-                                                viewTransitionName={mapViewTransitionName}
-                                            />
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="flex-1 relative bg-gray-100 min-h-0 w-full">
-                                            <ItineraryMap
-                                                items={displayTrip.items}
-                                                selectedItemId={selectedItemId}
-                                                layoutMode={layoutMode}
-                                                onLayoutChange={setLayoutMode}
-                                                activeStyle={mapStyle}
-                                                onStyleChange={setMapStyle}
-                                                routeMode={routeMode}
-                                                onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
-                                                showCityNames={isPaywallLocked ? false : showCityNames}
-                                                onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
-                                                mapColorMode={mapColorMode}
-                                                onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
-                                                focusLocationQuery={initialMapFocusQuery}
-                                                onRouteMetrics={handleRouteMetrics}
-                                                onRouteStatus={handleRouteStatus}
-                                                fitToRouteKey={trip.id}
-                                                isPaywalled={isPaywallLocked}
-                                                viewTransitionName={mapViewTransitionName}
-                                            />
-                                        </div>
-                                        <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
-                                            <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                        <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
-                                            <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
-                                                <div className="w-full h-full relative min-w-0">
-                                                    {timelineView === 'vertical' ? (
-                                                        <VerticalTimeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    ) : (
-                                                        <Timeline
-                                                            trip={displayTrip}
-                                                            onUpdateItems={handleUpdateItems}
-                                                            onSelect={handleTimelineSelect}
-                                                            selectedItemId={selectedItemId}
-                                                            selectedCityIds={selectedCityIds}
-                                                            readOnly={!canEdit}
-                                                            onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                                                            onAddActivity={handleOpenAddActivity}
-                                                            onForceFill={handleForceFill}
-                                                            onSwapSelectedCities={handleReverseSelectedCities}
-                                                            routeStatusById={routeStatusById}
-                                                            pixelsPerDay={pixelsPerDay}
-                                                            enableExampleSharedTransition={useExampleSharedTransition}
-                                                        />
-                                                    )}
-                                                    <div className="absolute top-4 right-4 z-40 flex gap-2">
-                                                        <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
-                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
-                                                        </div>
-                                                        <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
-                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
-                                                                {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {detailsPanelVisible && (
-                                                <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
-                                                    {showSelectedCitiesPanel ? (
+                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
                                                         <SelectedCitiesPanel
                                                             selectedCities={selectedCitiesInTimeline}
                                                             onClose={clearSelection}
@@ -2829,7 +2931,9 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             timelineView={timelineView}
                                                             readOnly={!canEdit}
                                                         />
-                                                    ) : (
+                                                    </Suspense>
+                                                ) : (
+                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
                                                         <DetailsPanel
                                                             item={displayTrip.items.find(i => i.id === selectedItemId) || null}
                                                             isOpen={!!selectedItemId}
@@ -2849,14 +2953,152 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             cityColorPaletteId={cityColorPaletteId}
                                                             onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
                                                         />
+                                                    </Suspense>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
+                                                    onMouseDown={(e) => startResizing('details', e.clientX)}
+                                                    onKeyDown={handleDetailsResizeKeyDown}
+                                                    title="Resize details panel"
+                                                    aria-label="Resize details panel"
+                                                >
+                                                    <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div ref={mapViewportRef} className="flex-1 h-full relative bg-gray-100 min-w-0">
+                                            {isMapBootstrapEnabled ? (
+                                                <Suspense fallback={<MapLoadingFallback />}>
+                                                    <ItineraryMap
+                                                        items={displayTrip.items}
+                                                        selectedItemId={selectedItemId}
+                                                        layoutMode={layoutMode}
+                                                        onLayoutChange={setLayoutMode}
+                                                        activeStyle={mapStyle}
+                                                        onStyleChange={setMapStyle}
+                                                        routeMode={routeMode}
+                                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                        showCityNames={isPaywallLocked ? false : showCityNames}
+                                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                        mapColorMode={mapColorMode}
+                                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                        focusLocationQuery={initialMapFocusQuery}
+                                                        onRouteMetrics={handleRouteMetrics}
+                                                        onRouteStatus={handleRouteStatus}
+                                                        fitToRouteKey={trip.id}
+                                                        isPaywalled={isPaywallLocked}
+                                                        viewTransitionName={mapViewTransitionName}
+                                                    />
+                                                </Suspense>
+                                            ) : (
+                                                <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div ref={mapViewportRef} className="flex-1 relative bg-gray-100 min-h-0 w-full">
+                                            {isMapBootstrapEnabled ? (
+                                                <Suspense fallback={<MapLoadingFallback />}>
+                                                    <ItineraryMap
+                                                        items={displayTrip.items}
+                                                        selectedItemId={selectedItemId}
+                                                        layoutMode={layoutMode}
+                                                        onLayoutChange={setLayoutMode}
+                                                        activeStyle={mapStyle}
+                                                        onStyleChange={setMapStyle}
+                                                        routeMode={routeMode}
+                                                        onRouteModeChange={isPaywallLocked ? undefined : setRouteMode}
+                                                        showCityNames={isPaywallLocked ? false : showCityNames}
+                                                        onShowCityNamesChange={isPaywallLocked ? undefined : setShowCityNames}
+                                                        mapColorMode={mapColorMode}
+                                                        onMapColorModeChange={allowMapColorModeControls ? handleMapColorModeChange : undefined}
+                                                        focusLocationQuery={initialMapFocusQuery}
+                                                        onRouteMetrics={handleRouteMetrics}
+                                                        onRouteStatus={handleRouteStatus}
+                                                        fitToRouteKey={trip.id}
+                                                        isPaywalled={isPaywallLocked}
+                                                        viewTransitionName={mapViewTransitionName}
+                                                    />
+                                                </Suspense>
+                                            ) : (
+                                                <MapDeferredFallback onLoadNow={enableMapBootstrap} />
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"
+                                            onMouseDown={() => startResizing('timeline-h')}
+                                            onKeyDown={handleTimelineResizeKeyDown}
+                                            aria-label="Resize timeline panel"
+                                        >
+                                            <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </button>
+                                        <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
+                                            <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
+                                                <div className="w-full h-full relative min-w-0">
+                                                    {renderTimelineCanvas()}
+                                                    <div className="absolute top-4 right-4 z-40 flex gap-2">
+                                                        <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
+                                                            <button onClick={() => setZoomLevel(z => clampZoomLevel(z + 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
+                                                        </div>
+                                                        <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
+                                                            <button onClick={() => setTimelineView(v => v === 'horizontal' ? 'vertical' : 'horizontal')} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
+                                                                {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {detailsPanelVisible && (
+                                                <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
+                                                    {showSelectedCitiesPanel ? (
+                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                                                            <SelectedCitiesPanel
+                                                                selectedCities={selectedCitiesInTimeline}
+                                                                onClose={clearSelection}
+                                                                onApplyOrder={applySelectedCityOrder}
+                                                                onReverse={handleReverseSelectedCities}
+                                                                timelineView={timelineView}
+                                                                readOnly={!canEdit}
+                                                            />
+                                                        </Suspense>
+                                                    ) : (
+                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                                                            <DetailsPanel
+                                                                item={displayTrip.items.find(i => i.id === selectedItemId) || null}
+                                                                isOpen={!!selectedItemId}
+                                                                onClose={clearSelection}
+                                                                onUpdate={handleUpdateItem}
+                                                                onBatchUpdate={handleBatchItemUpdate}
+                                                                onDelete={handleDeleteItem}
+                                                                tripStartDate={trip.startDate}
+                                                                tripItems={displayTrip.items}
+                                                                routeMode={routeMode}
+                                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                                                onForceFill={handleForceFill}
+                                                                forceFillMode={selectedCityForceFill?.mode}
+                                                                forceFillLabel={selectedCityForceFill?.label}
+                                                                variant="sidebar"
+                                                                readOnly={!canEdit}
+                                                                cityColorPaletteId={cityColorPaletteId}
+                                                                onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+                                                            />
+                                                        </Suspense>
                                                     )}
-                                                    <div
-                                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
+                                                    <button
+                                                        type="button"
+                                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
                                                         onMouseDown={(e) => startResizing('details', e.clientX)}
+                                                        onKeyDown={handleDetailsResizeKeyDown}
                                                         title="Resize details panel"
+                                                        aria-label="Resize details panel"
                                                     >
                                                         <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
-                                                    </div>
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -2865,560 +3107,162 @@ export const TripView: React.FC<TripViewProps> = ({
                             </div>
                         )}
                     </div>
-                    {isMobile && (
-                        <Drawer
-                            open={detailsPanelVisible}
-                            onOpenChange={(open) => {
-                                if (!open) clearSelection();
-                            }}
-                            shouldScaleBackground={false}
-                            modal={true}
-                            dismissible={true}
-                        >
-                            <DrawerContent className="h-[82vh] p-0" accessibleTitle="Trip details" accessibleDescription="View and edit selected city, travel segment, or activity details.">
+                    {isMobile && detailsPanelVisible && (
+                        <Suspense fallback={null}>
+                            <TripDetailsDrawer
+                                open={detailsPanelVisible}
+                                onOpenChange={(open) => {
+                                    if (!open) clearSelection();
+                                }}
+                            >
                                 {showSelectedCitiesPanel ? (
-                                    <SelectedCitiesPanel
-                                        selectedCities={selectedCitiesInTimeline}
-                                        onClose={clearSelection}
-                                        onApplyOrder={applySelectedCityOrder}
-                                        onReverse={handleReverseSelectedCities}
-                                        timelineView={timelineView}
-                                        readOnly={!canEdit}
-                                    />
+                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+                                        <SelectedCitiesPanel
+                                            selectedCities={selectedCitiesInTimeline}
+                                            onClose={clearSelection}
+                                            onApplyOrder={applySelectedCityOrder}
+                                            onReverse={handleReverseSelectedCities}
+                                            timelineView={timelineView}
+                                            readOnly={!canEdit}
+                                        />
+                                    </Suspense>
                                 ) : (
-                                    <DetailsPanel
-                                        item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                        isOpen={!!selectedItemId}
-                                        onClose={clearSelection}
-                                        onUpdate={handleUpdateItem}
-                                        onBatchUpdate={handleBatchItemUpdate}
-                                        onDelete={handleDeleteItem}
-                                        tripStartDate={trip.startDate}
-                                        tripItems={displayTrip.items}
-                                        routeMode={routeMode}
-                                        routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                        onForceFill={handleForceFill}
-                                        forceFillMode={selectedCityForceFill?.mode}
-                                        forceFillLabel={selectedCityForceFill?.label}
-                                        variant="sidebar"
-                                        readOnly={!canEdit}
-                                        cityColorPaletteId={cityColorPaletteId}
-                                        onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                    />
+                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+                                        <DetailsPanel
+                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
+                                            isOpen={!!selectedItemId}
+                                            onClose={clearSelection}
+                                            onUpdate={handleUpdateItem}
+                                            onBatchUpdate={handleBatchItemUpdate}
+                                            onDelete={handleDeleteItem}
+                                            tripStartDate={trip.startDate}
+                                            tripItems={displayTrip.items}
+                                            routeMode={routeMode}
+                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
+                                            onForceFill={handleForceFill}
+                                            forceFillMode={selectedCityForceFill?.mode}
+                                            forceFillLabel={selectedCityForceFill?.label}
+                                            variant="sidebar"
+                                            readOnly={!canEdit}
+                                            cityColorPaletteId={cityColorPaletteId}
+                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+                                        />
+                                    </Suspense>
                                 )}
-                            </DrawerContent>
-                        </Drawer>
+                            </TripDetailsDrawer>
+                        </Suspense>
                     )}
 
                      {/* Modals */}
-                     <AddActivityModal 
-                         isOpen={addActivityState.isOpen}
-                         onClose={() => setAddActivityState({ ...addActivityState, isOpen: false })}
-                         dayOffset={addActivityState.dayOffset}
-                         location={addActivityState.location}
-                         onAdd={handleAddActivityItem}
-                         trip={trip}
-                         notes="" // TODO
-                     />
-                     
-                     <AddCityModal
-                        isOpen={isAddCityModalOpen}
-                        onClose={() => setIsAddCityModalOpen(false)}
-                        onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
-                     />
-
-                     {isTripInfoOpen && (
-                        <div className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsTripInfoOpen(false)}>
-                            <div
-                                role="dialog"
-                                aria-modal="true"
-                                aria-labelledby="trip-info-title"
-                                className="bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                    <div>
-                                        <h3 id="trip-info-title" className="text-lg font-bold text-gray-900">Trip information</h3>
-                                        <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
-                                    </div>
-                                    <button onClick={() => setIsTripInfoOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                                        Close
-                                    </button>
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                    <section className="border border-gray-200 rounded-xl p-3 space-y-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0 flex-1">
-                                                {isEditingTitle ? (
-                                                    <input
-                                                        value={editTitleValue}
-                                                        onChange={(e) => setEditTitleValue(e.target.value)}
-                                                        onBlur={handleCommitTitleEdit}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleCommitTitleEdit();
-                                                        }}
-                                                        autoFocus
-                                                        className="w-full font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
-                                                    />
-                                                ) : (
-                                                    <h4 className="text-lg font-bold text-gray-900 break-words">{trip.title}</h4>
-                                                )}
-                                            </div>
-                                            {canManageTripMetadata && (
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleStartTitleEdit}
-                                                        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100" aria-label="Edit title"
-                                                    >
-                                                        <Pencil size={16} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleToggleFavorite}
-                                                        disabled={!canEdit}
-                                                        className={`p-2 rounded-lg transition-colors ${canEdit ? 'hover:bg-amber-50' : 'opacity-50 cursor-not-allowed'}`}
-                                                        title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                                        aria-label={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                                    >
-                                                        <Star
-                                                            size={16}
-                                                            className={trip.isFavorite ? 'text-amber-500 fill-amber-400' : 'text-gray-300 hover:text-amber-500'}
-                                                        />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {!canManageTripMetadata && (
-                                            <p className="text-xs text-gray-500">
-                                                {isExamplePreview
-                                                    ? 'Example trips cannot be renamed or favorited. Copy this trip first to make it your own.'
-                                                    : 'Edit and favorite actions are unavailable for shared trips.'}
-                                            </p>
-                                        )}
-                                    </section>
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Trip meta</h4>
-                                        <dl className="grid grid-cols-2 gap-2 text-xs">
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Duration</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.dateRange}</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Total days</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.totalDaysLabel} days</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Cities</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.cityCount}</dd>
-                                            </div>
-                                            <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                <dt className="text-gray-500">Total distance</dt>
-                                                <dd className="mt-1 font-semibold text-gray-900">{tripMeta.distanceLabel || '—'}</dd>
-                                            </div>
-                                        </dl>
-                                    </section>
-
-                                    {displayTrip.aiMeta && (
-                                        <section className="border border-gray-200 rounded-xl p-3">
-                                            <h4 className="text-sm font-semibold text-gray-800 mb-2">AI generation</h4>
-                                            <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                    <dt className="text-gray-500">Provider</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900">{displayTrip.aiMeta.provider}</dd>
-                                                </div>
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2">
-                                                    <dt className="text-gray-500">Model</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900 break-all">{displayTrip.aiMeta.model}</dd>
-                                                </div>
-                                                <div className="rounded-lg bg-gray-50 border border-gray-100 p-2 sm:col-span-2">
-                                                    <dt className="text-gray-500">Generated at</dt>
-                                                    <dd className="mt-1 font-semibold text-gray-900">
-                                                        {displayTrip.aiMeta.generatedAt
-                                                            ? new Date(displayTrip.aiMeta.generatedAt).toLocaleString()
-                                                            : '—'}
-                                                    </dd>
-                                                </div>
-                                            </dl>
-                                        </section>
-                                    )}
-
-                                    {forkMeta && (
-                                        <section className="rounded-xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-3">
-                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">Trip source</p>
-                                            <p className="mt-1 text-sm font-semibold text-gray-900">{forkMeta.label}</p>
-                                            <p className="mt-1 text-xs text-gray-600">
-                                                {forkMeta.url
-                                                    ? 'This itinerary was copied from a shared trip snapshot.'
-                                                    : 'This itinerary was copied from another trip in your workspace.'}
-                                            </p>
-                                            {forkMeta.url && (
-                                                <a href={forkMeta.url} className="inline-flex mt-2 text-xs font-semibold text-accent-700 hover:underline">
-                                                    View source
-                                                </a>
-                                            )}
-                                        </section>
-                                    )}
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsTripInfoHistoryExpanded(v => !v)}
-                                            className="w-full flex items-center justify-between text-sm font-semibold text-gray-800"
-                                        >
-                                            <span>History</span>
-                                            {isTripInfoHistoryExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                        </button>
-                                        {isTripInfoHistoryExpanded && (
-                                            <div className="mt-3 space-y-3">
-                                                {isExamplePreview ? (
-                                                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                                                        Example trips do not save history snapshots. Copy this trip first to keep edits and track changes.
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => navigateHistory('undo')}
-                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                Undo
-                                                            </button>
-                                                            <button
-                                                                onClick={() => navigateHistory('redo')}
-                                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                Redo
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setShowAllHistory(v => !v)}
-                                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                                            >
-                                                                {showAllHistory ? 'Show Recent' : 'Show All'}
-                                                            </button>
-                                                        </div>
-                                                        <div className="rounded-lg border border-gray-100 overflow-hidden">
-                                                            {infoHistoryEntries.length === 0 ? (
-                                                                <div className="p-4 text-xs text-gray-500">No history entries yet.</div>
-                                                            ) : (
-                                                                <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto">
-                                                                    {infoHistoryEntries.map(entry => {
-                                                                        const isCurrent = entry.url === currentUrl;
-                                                                        const details = stripHistoryPrefix(entry.label);
-                                                                        return (
-                                                                            <li key={entry.id} className={`p-3 flex items-start gap-2 ${isCurrent ? 'bg-accent-50/70' : 'bg-white'}`}>
-                                                                                <div className="min-w-0 flex-1">
-                                                                                    <div className="text-[11px] text-gray-500">{formatHistoryTime(entry.ts)}</div>
-                                                                                    <div className="text-xs font-semibold text-gray-900 leading-snug">{details}</div>
-                                                                                </div>
-                                                                                <button
-                                                                                    onClick={() => {
-                                                                                        setIsTripInfoOpen(false);
-                                                                                        suppressCommitRef.current = true;
-                                                                                        navigate(entry.url);
-                                                                                    }}
-                                                                                    className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                                                >
-                                                                                    Go
-                                                                                </button>
-                                                                            </li>
-                                                                        );
-                                                                    })}
-                                                                </ul>
-                                                            )}
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setIsTripInfoOpen(false);
-                                                                setIsHistoryOpen(true);
-                                                            }}
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                                                        >
-                                                            Open full history
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-                                    </section>
-
-                                    <section className="border border-gray-200 rounded-xl p-3">
-                                        {displayTrip.countryInfo ? (
-                                            <CountryInfo info={displayTrip.countryInfo} />
-                                        ) : isPaywallLocked ? (
-                                            <div className="text-xs text-gray-500">Destination details are hidden until this trip is activated.</div>
-                                        ) : (
-                                            <div className="text-xs text-gray-500">No destination info available for this trip yet.</div>
-                                        )}
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
-                     )}
-
-                     {showReleaseNotice && latestInAppRelease && (
-                        <div className="fixed inset-0 z-[1650] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="release-update-title">
-                            <button
-                                type="button"
-                                className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px]"
-                                aria-label="Close release update"
-                                onClick={dismissReleaseNotice}
+                     {addActivityState.isOpen && (
+                        <Suspense fallback={null}>
+                            <AddActivityModal
+                                isOpen={addActivityState.isOpen}
+                                onClose={() => setAddActivityState({ ...addActivityState, isOpen: false })}
+                                dayOffset={addActivityState.dayOffset}
+                                location={addActivityState.location}
+                                onAdd={handleAddActivityItem}
+                                trip={trip}
+                                notes="" // TODO
                             />
-                            <div className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
-                                <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
-                                        Latest release · {latestInAppRelease.version}
-                                    </p>
-                                    <h2 id="release-update-title" className="mt-2 text-xl font-black text-slate-900">
-                                        {latestInAppRelease.title}
-                                    </h2>
-                                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        {new Date(latestInAppRelease.publishedAt).toLocaleDateString()}
-                                    </p>
-                                </div>
-                                <div className="px-6 py-5">
-                                    {latestInAppRelease.summary && (
-                                        <div className="text-sm leading-6 text-slate-700">
-                                            <ReactMarkdown
-                                                remarkPlugins={[remarkGfm]}
-                                                components={{
-                                                    p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                    a: ({ node, ...props }) => (
-                                                        <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
-                                                    ),
-                                                    code: ({ node, ...props }) => (
-                                                        <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
-                                                    ),
-                                                }}
-                                            >
-                                                {latestInAppRelease.summary}
-                                            </ReactMarkdown>
-                                        </div>
-                                    )}
-                                    {latestReleaseGroups.length > 0 && (
-                                        <div className="mt-3 space-y-3">
-                                            {latestReleaseGroups.map((group, groupIndex) => (
-                                                <div key={`${latestInAppRelease.id}-notice-group-${group.typeKey}-${group.typeLabel}-${groupIndex}`}>
-                                                    <ReleasePill item={group.items[0]} />
-                                                    <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-700 marker:text-slate-400">
-                                                        {group.items.map((item, itemIndex) => (
-                                                            <li key={`${latestInAppRelease.id}-notice-item-${group.typeKey}-${group.typeLabel}-${itemIndex}`}>
-                                                                <ReactMarkdown
-                                                                    remarkPlugins={[remarkGfm]}
-                                                                    components={{
-                                                                        p: ({ node, ...props }) => <p {...props} className="m-0" />,
-                                                                        a: ({ node, ...props }) => (
-                                                                            <a {...props} className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800" />
-                                                                        ),
-                                                                        code: ({ node, ...props }) => (
-                                                                            <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[0.92em] text-slate-800" />
-                                                                        ),
-                                                                    }}
-                                                                >
-                                                                    {item.text}
-                                                                </ReactMarkdown>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 px-6 py-4">
-                                    <Link
-                                        to="/updates"
-                                        className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400"
-                                    >
-                                        View full changelog
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        onClick={dismissReleaseNotice}
-                                        className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        </Suspense>
                      )}
 
-                     {isShareOpen && (
-                        <div className="fixed inset-0 z-[1600] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 sm:p-4" onClick={() => setIsShareOpen(false)}>
-                            <div className="bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Share trip</h3>
-                                        <p className="text-xs text-gray-500">Choose view-only or collaboration editing.</p>
-                                    </div>
-                                    <button onClick={() => setIsShareOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                                        Close
-                                    </button>
-                                </div>
-                                <div className="p-4 space-y-3">
-                                    <label className="flex items-start gap-3 text-sm cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="share-mode"
-                                            className="mt-1"
-                                            checked={shareMode === 'view'}
-                                            onChange={() => setShareMode('view')}
-                                        />
-                                        <span>
-                                            <span className="font-semibold text-gray-900">View only</span>
-                                            <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
-                                        </span>
-                                    </label>
-                                    <label className="flex items-start gap-3 text-sm cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="share-mode"
-                                            className="mt-1"
-                                            checked={shareMode === 'edit'}
-                                            onChange={() => setShareMode('edit')}
-                                        />
-                                        <span>
-                                            <span className="font-semibold text-gray-900">Allow editing</span>
-                                            <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
-                                        </span>
-                                    </label>
-                                    {activeShareUrl && (
-                                        <div className="mt-2">
-                                            <div className="text-xs font-semibold text-gray-600 mb-1">Share link</div>
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    value={activeShareUrl}
-                                                    readOnly
-                                                    className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleCopyShareLink}
-                                                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                                >
-                                                    Copy
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-2">
-                                    <button
-                                        onClick={() => setIsShareOpen(false)}
-                                        className="px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleGenerateShare}
-                                        disabled={isGeneratingShare}
-                                        className={`px-4 py-2 rounded-lg text-sm font-semibold text-white ${isGeneratingShare ? 'bg-accent-300' : 'bg-accent-600 hover:bg-accent-700'}`}
-                                    >
-                                        {isGeneratingShare ? 'Creating…' : (activeShareUrl ? 'Create new link' : 'Generate link')}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                     {isAddCityModalOpen && (
+                        <Suspense fallback={null}>
+                            <AddCityModal
+                                isOpen={isAddCityModalOpen}
+                                onClose={() => setIsAddCityModalOpen(false)}
+                                onAdd={(name, lat, lng) => handleAddCityItem({ title: name, coordinates: { lat, lng } })}
+                            />
+                        </Suspense>
                      )}
+
+                    {isTripInfoOpen && (
+                        <Suspense fallback={null}>
+                            <TripInfoModal
+                                isOpen={isTripInfoOpen}
+                                onClose={() => setIsTripInfoOpen(false)}
+                                tripTitle={trip.title}
+                                isEditingTitle={isEditingTitle}
+                                editTitleValue={editTitleValue}
+                                onEditTitleValueChange={setEditTitleValue}
+                                onCommitTitleEdit={handleCommitTitleEdit}
+                                onStartTitleEdit={handleStartTitleEdit}
+                                canManageTripMetadata={canManageTripMetadata}
+                                canEdit={canEdit}
+                                isFavorite={trip.isFavorite}
+                                onToggleFavorite={handleToggleFavorite}
+                                isExamplePreview={isExamplePreview}
+                                tripMeta={tripMeta}
+                                aiMeta={displayTrip.aiMeta}
+                                forkMeta={forkMeta}
+                                isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
+                                onToggleTripInfoHistoryExpanded={() => setIsTripInfoHistoryExpanded(v => !v)}
+                                showAllHistory={showAllHistory}
+                                onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
+                                onHistoryUndo={() => navigateHistory('undo')}
+                                onHistoryRedo={() => navigateHistory('redo')}
+                                infoHistoryItems={tripInfoHistoryItems}
+                                onGoToHistoryEntry={(url) => {
+                                    setIsTripInfoOpen(false);
+                                    suppressCommitRef.current = true;
+                                    navigate(url);
+                                }}
+                                onOpenFullHistory={() => {
+                                    setIsTripInfoOpen(false);
+                                    setIsHistoryOpen(true);
+                                }}
+                                formatHistoryTime={formatHistoryTime}
+                                countryInfo={displayTrip.countryInfo}
+                                isPaywallLocked={isPaywallLocked}
+                            />
+                        </Suspense>
+                     )}
+
+                    {shouldEnableReleaseNotice && (
+                        <Suspense fallback={null}>
+                            <ReleaseNoticeDialog enabled={shouldEnableReleaseNotice} />
+                        </Suspense>
+                    )}
+
+                    {isShareOpen && (
+                        <Suspense fallback={null}>
+                            <TripShareModal
+                                isOpen={isShareOpen}
+                                shareMode={shareMode}
+                                onShareModeChange={setShareMode}
+                                activeShareUrl={activeShareUrl}
+                                onClose={() => setIsShareOpen(false)}
+                                onCopyShareLink={handleCopyShareLink}
+                                onGenerateShare={handleGenerateShare}
+                                isGeneratingShare={isGeneratingShare}
+                            />
+                        </Suspense>
+                    )}
 
                     {/* History Panel */}
                     {isHistoryOpen && (
-                        <div className="fixed inset-0 z-[1500] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsHistoryOpen(false)}>
-                            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900">Change History</h3>
-                                        <p className="text-xs text-gray-500">
-                                            {isExamplePreview
-                                                ? 'Example trips are editable for exploration, but changes are not saved.'
-                                                : 'Undo/redo works with browser history and Cmd+Z / Cmd+Y.'}
-                                        </p>
-                                    </div>
-                                    <button onClick={() => setIsHistoryOpen(false)} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                                        Close
-                                    </button>
-                                </div>
-                                {isExamplePreview ? (
-                                    <div className="p-5 text-sm text-slate-600">
-                                        This example trip is a playground. History snapshots are intentionally disabled so no local or database state is created while exploring.
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div className="p-3 border-b border-gray-100 flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    navigateHistory('undo');
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                Undo
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    navigateHistory('redo');
-                                                }}
-                                                className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                Redo
-                                            </button>
-                                            <button
-                                                onClick={() => setShowAllHistory(v => !v)}
-                                                className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
-                                            >
-                                                {showAllHistory ? 'Show Recent' : 'Show All'}
-                                            </button>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto">
-                                            {displayHistoryEntries.length === 0 ? (
-                                                <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
-                                            ) : (
-                                                <ul className="divide-y divide-gray-100">
-                                                    {displayHistoryEntries.map(entry => {
-                                                        const isCurrent = entry.url === currentUrl;
-                                                        const tone = resolveChangeTone(entry.label);
-                                                        const details = stripHistoryPrefix(entry.label);
-                                                        const meta = getToneMeta(tone);
-                                                        const Icon = meta.Icon;
-                                                        return (
-                                                            <li key={entry.id} className={`p-4 flex items-start gap-3 ${isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
-                                                                <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center ${meta.iconClass}`}>
-                                                                    <Icon size={15} />
-                                                                </div>
-                                                                <div className="min-w-0 flex-1">
-                                                                    <div className="flex flex-wrap items-center gap-2">
-                                                                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${meta.badgeClass}`}>{meta.label}</span>
-                                                                        <span className="text-xs text-gray-500">{formatHistoryTime(entry.ts)}</span>
-                                                                        {isCurrent && <span className="text-[10px] font-semibold text-accent-600 bg-accent-100 px-2 py-0.5 rounded-full">Current</span>}
-                                                                    </div>
-                                                                    <div className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{details}</div>
-                                                                </div>
-                                                                <div className="shrink-0">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setIsHistoryOpen(false);
-                                                                            lastNavActionRef.current = null;
-                                                                            suppressCommitRef.current = true;
-                                                                            navigate(entry.url);
-                                                                            showToast(details, { tone, title: 'Opened from history' });
-                                                                        }}
-                                                                        className="px-2 py-1 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                                                                    >
-                                                                        Go
-                                                                    </button>
-                                                                </div>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </div>
+                        <Suspense fallback={null}>
+                            <TripHistoryModal
+                                isOpen={isHistoryOpen}
+                                isExamplePreview={isExamplePreview}
+                                showAllHistory={showAllHistory}
+                                items={historyModalItems}
+                                onClose={() => setIsHistoryOpen(false)}
+                                onUndo={() => navigateHistory('undo')}
+                                onRedo={() => navigateHistory('redo')}
+                                onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
+                                onGo={(item) => {
+                                    setIsHistoryOpen(false);
+                                    lastNavActionRef.current = null;
+                                    suppressCommitRef.current = true;
+                                    navigate(item.url);
+                                    showToast(item.details, { tone: item.tone, title: 'Opened from history' });
+                                }}
+                                formatHistoryTime={formatHistoryTime}
+                            />
+                        </Suspense>
                     )}
 
                     {shareStatus === 'view' && onCopyTrip && (

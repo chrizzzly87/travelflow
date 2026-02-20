@@ -1,5 +1,5 @@
 import React from 'react';
-import { normalizeFlagCode } from '../../utils/flagUtils';
+import { flagCodeToEmoji } from '../../utils/flagUtils';
 
 type FlagIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -33,13 +33,13 @@ export const FlagIcon: React.FC<FlagIconProps> = ({
     fallback = '🌍',
     label,
 }) => {
-    const normalizedCode = normalizeFlagCode(code || value);
+    const emojiFlag = flagCodeToEmoji(code || value);
     const baseClassName = [SIZE_CLASS_MAP[size], 'inline-block shrink-0 align-middle leading-none', className]
         .filter(Boolean)
         .join(' ')
         .trim();
 
-    if (!normalizedCode) {
+    if (!emojiFlag) {
         if (!fallback) return null;
         return (
             <span
@@ -56,15 +56,15 @@ export const FlagIcon: React.FC<FlagIconProps> = ({
     return (
         <span
             className={[
-                'fp',
-                normalizedCode,
-                square ? 'fp-square' : '',
-                rounded ? 'fp-rounded' : '',
                 baseClassName,
+                square ? 'inline-flex h-[1.05em] w-[1.05em] items-center justify-center' : '',
+                rounded ? 'rounded-[2px]' : '',
             ].filter(Boolean).join(' ')}
             role={label ? 'img' : undefined}
             aria-label={label}
             aria-hidden={label ? undefined : true}
-        />
+        >
+            {emojiFlag}
+        </span>
     );
 };

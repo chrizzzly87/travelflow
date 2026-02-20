@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { getDestinationMetaLabel, getDestinationOptionByName, getDestinationSeasonCountryName, resolveDestinationName, searchDestinationOptions } from '../utils';
+import { getDestinationMetaLabel, getDestinationOptionByName, getDestinationSeasonCountryName, resolveDestinationName, searchDestinationOptions } from '../services/destinationService';
 import { MapPin, Search, Plus } from 'lucide-react';
 import { CountryTag } from './CountryTag';
 import { IdealTravelTimeline } from './IdealTravelTimeline';

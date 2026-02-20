@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { X, AirplaneTilt } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +15,6 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
-import { ADMIN_NAV_ITEMS } from '../admin/adminNavConfig';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -46,6 +45,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const navigate = useNavigate();
     const { isAuthenticated, isAdmin, logout } = useAuth();
     const { openLoginModal } = useLoginModal();
+    const [adminLinks, setAdminLinks] = useState<Array<{ id: string; label: string; path: string }>>([]);
 
     const activeLocale = useMemo<AppLanguage>(() => {
         const routeLocale = extractLocaleFromPath(location.pathname);
@@ -73,6 +73,31 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
+
+    useEffect(() => {
+        if (!isOpen || !isAdmin) return;
+        let cancelled = false;
+
+        const loadAdminLinks = async () => {
+            const module = await import('../admin/adminNavConfig');
+            if (cancelled) return;
+            setAdminLinks(module.ADMIN_NAV_ITEMS.map((item) => ({
+                id: item.id,
+                label: item.label,
+                path: item.path,
+            })));
+        };
+
+        void loadAdminLinks();
+        return () => {
+            cancelled = true;
+        };
+    }, [isAdmin, isOpen]);
+
+    useEffect(() => {
+        if (isAdmin) return;
+        setAdminLinks([]);
+    }, [isAdmin]);
 
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);
@@ -143,8 +168,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
     const visibleItems = NAV_ITEMS;
-    const adminLinks = ADMIN_NAV_ITEMS;
-
     return (
         <>
             <div

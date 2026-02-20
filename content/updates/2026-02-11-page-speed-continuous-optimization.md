@@ -28,3 +28,64 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧪 Added live navigation-prefetch diagnostics to the on-page debugger for attempts/completions/skip-reason visibility.
 - [ ] [Internal] 🧰 Made Navigation Prefetch and View Transition debugger cards collapsible (persisted state), added inline info tooltips, and added an optional overlay that highlights links when prefetch is triggered.
 - [ ] [Internal] 📋 Continued documenting performance and transition guardrails in backlog/docs to prevent regressions during UX iteration.
+- [x] [Improved] ⏱️ First-load now prioritizes rendering and interaction before background route warmup starts.
+- [x] [Improved] ⚡ Homepage startup now ships less JavaScript before the page becomes interactive.
+- [ ] [Internal] 🧭 Added a shared warmup gate so speculative rules and route prefetch stay deferred until idle or first interaction.
+- [ ] [Internal] 🗂️ Added a dedicated performance execution checklist with baseline metrics and step-by-step continuation tasks.
+- [ ] [Internal] 🧩 Moved trip/share/example route loaders out of `App.tsx` into a lazy route-loader module to reduce entry-graph weight.
+- [ ] [Internal] 🔌 Split DB wrappers into a shared API layer and switched DB capability checks to env-only evaluation so Supabase runtime code is not pulled in eagerly.
+- [ ] [Internal] 🔐 Deferred auth modal and auth-service loading so authentication bundles are fetched only when the auth flow is actually needed.
+- [ ] [Internal] 🎛️ Disabled build-time asset inlining so flag assets emit as separate SVG files instead of inflating the entry CSS bundle.
+- [ ] [Internal] 🗂️ Extracted route-table and fallback route-warmup concerns into dedicated `app/routes/*` and `app/prefetch/*` modules to keep `App.tsx` smaller and preload logic single-sourced.
+- [ ] [Internal] 🧱 Extracted startup bootstrap hooks (`warmup`, debugger wiring, analytics init, auth return-path memory) into `app/bootstrap/*` to further simplify `App.tsx` orchestration.
+- [ ] [Internal] 🪟 Gated heavy plane-window hero media to desktop-only rendering so mobile home loads avoid large hidden-image downloads.
+- [ ] [Internal] 🧪 Added route-level Lighthouse checks for `/`, `/create-trip`, and `/trip/:id` and used the results to remove eager home carousel `TripView` prewarm from first render.
+- [ ] [Internal] 🧭 Replaced header locale selection with a lightweight native control and lazy-loaded account/mobile header menus so they do not load on first paint.
+- [ ] [Internal] 🏳️ Replaced global flagpack CSS usage with emoji-based flag rendering to remove heavy flag stylesheet payload from initial page load.
+- [ ] [Internal] 🛡️ Deferred admin navigation metadata loading in the shared mobile menu so non-admin sessions no longer pay the admin-config parsing cost.
+- [ ] [Internal] 🧱 Extracted app-level provider composition into `app/bootstrap/AppProviderShell.tsx` to keep root bootstrap responsibilities isolated from app orchestration logic.
+- [ ] [Internal] 💤 Removed idle route warmups from homepage and create-trip entry paths so first-load bandwidth is reserved for currently visible UI.
+- [ ] [Internal] 👀 Deferred homepage example-carousel code/data loading until the section enters the viewport, preserving layout with a fixed-height placeholder.
+- [ ] [Internal] 🧩 Moved app runtime helpers from the monolithic utility module into a focused runtime service used by root app bootstrap.
+- [ ] [Internal] 📦 Disabled Vite module-preload dependency fan-out to keep entry execution on-demand and reduce first-load JavaScript on entry routes.
+- [ ] [Internal] 🪟 Gated login-modal rendering to open-state only so auth modal code is not fetched during initial page render.
+- [ ] [Internal] 🔐 Switched auth bootstrap on non-critical marketing routes to interaction-triggered loading so auth bundles are not fetched during homepage first render.
+- [ ] [Internal] 🧱 Split destination catalog/search logic into a dedicated service and moved prefill decoding out of `utils` so the shared utility bundle is substantially smaller.
+- [ ] [Internal] 🧭 Suppressed passive (viewport/hover/focus) route prefetch on first-load-critical paths while keeping click/touch-triggered warmups.
+- [ ] [Internal] 🧭 Added a shared first-load-critical route matcher and used it to disable speculation-rules mounting on `/`, `/create-trip`, `/trip`, and `/example` during initial load.
+- [ ] [Internal] 🔌 Migrated `TripView` database operations to `dbApi` wrappers so Supabase runtime modules are no longer statically imported in trip-route chunks.
+- [ ] [Internal] 🤖 Deferred trip-side AI helper imports so the heavy AI runtime bundle loads only when AI enhancement actions are used.
+- [ ] [Internal] 🗞️ Moved trip release-notice markdown rendering into a lazy chunk and deferred it until interaction/idle so initial trip loading stays lighter.
+- [ ] [Internal] 📝 Deferred markdown editor and print layout code so trip entry loads only planner essentials on first render.
+- [ ] [Internal] 🧩 Deferred trip detail panels so selection/editing bundles load only after users focus a timeline item.
+- [ ] [Internal] 📱 Deferred mobile details drawer code until panel open-state so mobile trip entry keeps less UI runtime upfront.
+- [ ] [Internal] 🔧 Replaced the trip admin edit toggle with a native control to remove remaining Radix switch runtime from first-load trip bundles.
+- [ ] [Internal] ➕ Deferred add-city/add-activity modal bundles until users open those planners, reducing initial trip JS work.
+- [ ] [Internal] 🌍 Deferred destination info panel code until the trip-info overlay is opened, trimming initial trip bundle weight.
+- [ ] [Internal] 🔗 Deferred trip sharing dialog code until users open share controls, keeping initial planner bundles leaner.
+- [ ] [Internal] 🕘 Deferred trip history dialog code until users open history, reducing default planner bundle scope.
+- [ ] [Internal] 🧾 Deferred trip-info modal shell code until users open trip information, shrinking initial planner payload.
+- [ ] [Internal] 📉 Deferred the non-default vertical timeline bundle so default trip loads avoid shipping both timeline variants upfront.
+- [ ] [Internal] 🧭 Stopped loading heavy example-card datasets during example-trip hydration by using lightweight template metadata in the route loader.
+- [ ] [Internal] 🧩 Split example-template factory loading into per-template dynamic imports so example-trip entry routes avoid fetching the monolithic template index on first render.
+- [ ] [Internal] 🌐 Reworked i18n startup to use lightweight in-app locale detection and interpolation config so first-load entry JavaScript stays smaller on homepage and trip entry routes.
+- [ ] [Internal] 💤 Deferred navigation prefetch/speculation managers into post-warmup lazy chunks and switched critical entry paths to interaction-only warmup so first-load rendering is not interrupted by background prefetch infrastructure.
+- [ ] [Internal] 🗂️ Split non-critical route definitions (secondary marketing paths, admin/profile flows, and create-trip lab variants) into a lazily loaded route module so first-load entry routing stays focused on homepage and primary planner/trip routes.
+- [ ] [Internal] 🎚️ Split Tailwind output into critical-entry and deferred-route stylesheets with source-based include/exclude rules so non-critical route/page classes no longer inflate the initial CSS payload.
+- [ ] [Internal] 🧹 Added ignore rules for perf artifact folders so generated Lighthouse/perf traces stay out of Git and local IDE indexing remains lightweight.
+- [ ] [Internal] 🧩 Split trip/share/example route loaders into dedicated lazy modules so each entry route fetches only its own loader logic.
+- [ ] [Internal] 🔗 Restored share-token resolution fallback for direct trip URLs so `/trip/:id` can redirect to canonical shared links when applicable.
+- [ ] [Internal] 🗺️ Updated sitemap route-source parsing to follow the deferred route-table module so Netlify builds remain stable after route extraction refactors.
+- [ ] [Internal] 🧭 Fixed navigation-prefetch hook wiring to avoid conditional hook execution while keeping prefetch behavior behind runtime gating.
+- [ ] [Internal] 🔁 Removed TripView’s admin-override reset effect and reset that state via route-level keyed remounting for cleaner state lifecycle.
+- [ ] [Internal] 🩺 Added agent guidance for careful use of `vercel-react-best-practices`, `react-doctor`, and `find-skills` so optimization workflows stay consistent without overuse.
+- [ ] [Internal] 🗺️ Split TripView map rendering into a lazy ItineraryMap chunk so planner-shell logic stays smaller and map runtime code is isolated.
+- [ ] [Internal] ⏳ Deferred map-script bootstrap behind map visibility and first-interaction gating so trip planner shell can render before loading Google Maps runtime.
+- [x] [Fixed] 🗺️ Trip and example map panels now fail gracefully when a deploy preview has an invalid map API key instead of surfacing hard runtime script errors.
+- [ ] [Internal] 🔐 Added map-key format validation and auth-failure handling in the Google Maps loader so key/config issues surface as controlled app errors.
+- [x] [Fixed] 🧭 Example and shared trip entry flows no longer interrupt guests with an unexpected required-onboarding redirect.
+- [x] [Improved] ♿ Trip planner title editing and panel resizing now have better keyboard/focus accessibility behavior.
+- [x] [Improved] ⚡ The My Plans side panel now opens immediately with visible loading placeholders instead of waiting on trip-data fetch completion.
+- [ ] [Internal] 🧩 Added a dedicated TripManager suspense shell plus first-frame trip hydration + async DB sync state handling to keep panel animation responsive under slow network/database conditions.
+- [ ] [Internal] 🔥 Added a follow-up performance TODO to prewarm the My Plans lazy chunk on explicit trigger intent (hover/focus/touchstart) after merge.
+- [ ] [Internal] 🧭 Documented the onboarding gate + guest queued-generation handoff contract in the Supabase runbook and added a deferred hardening backlog for future production rollout.

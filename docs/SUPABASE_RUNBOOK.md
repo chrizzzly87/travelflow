@@ -155,6 +155,22 @@ Future monetization/auth tables already present:
 3. Stale rows are expired via `expire_stale_trip_generation_requests()`.
 4. Default queue TTL is 14 days.
 
+## Onboarding Gate Contract
+
+1. Required onboarding applies only to authenticated, non-anonymous users with incomplete onboarding.
+2. Anonymous and identity-uncertain sessions are treated as guest sessions and must never be forced into onboarding.
+3. Public planner-entry routes are exempt from forced onboarding redirects:
+   - `/create-trip`
+   - `/trip/*`
+   - `/s/*`
+   - `/example/*`
+4. Guest trip generation handoff contract:
+   - Guest starts generation and sees the generation/loading shell.
+   - Request is queued (`trip_generation_requests`) before generation execution.
+   - User is prompted to sign in/register.
+   - Login uses `claim=<requestId>` and resumes queued generation after auth.
+   - Successful claim navigates to the generated trip (`/trip/:id`).
+
 ## Runtime Write Path
 
 Main write path (client):

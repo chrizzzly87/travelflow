@@ -27,19 +27,21 @@ import { generateItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
+    generateTripId,
+    getDefaultTripDates,
+    getDaysDifference,
+    COUNTRIES,
+    encodeTripPrefill,
+} from '../utils';
+import {
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getDestinationSeasonCountryName,
-    generateTripId,
-    getDefaultTripDates,
-    getDaysDifference,
     isIslandDestination,
     resolveDestinationName,
-    COUNTRIES,
-    decodeTripPrefill,
-    encodeTripPrefill,
-} from '../utils';
+} from '../services/destinationService';
+import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 import { createThailandTrip } from '../data/exampleTrips';
 import { TripView } from '../components/TripView';
 import { TripGenerationSkeleton } from '../components/TripGenerationSkeleton';

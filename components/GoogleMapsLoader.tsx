@@ -2,6 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AppLanguage } from '../types';
 import { getGoogleMapsApiKey, getStoredAppLanguage, normalizeAppLanguage } from '../utils';
 
+type GoogleMapsWindow = Window & typeof globalThis & {
+    gm_authFailure?: () => void;
+};
+
 interface GoogleMapsContextType {
     isLoaded: boolean;
     loadError: Error | null;
@@ -23,18 +27,28 @@ const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
     ko: 'ko',
 };
 
+const GOOGLE_MAPS_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{35}$/;
+
 interface GoogleMapsLoaderProps {
     children: React.ReactNode;
     language?: AppLanguage;
+    enabled?: boolean;
 }
 
-export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language }) => {
+export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, language, enabled = true }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [loadError, setLoadError] = useState<Error | null>(null);
     const requestedLanguage = normalizeAppLanguage(language ?? getStoredAppLanguage());
     const requestedMapLanguage = MAPS_LANGUAGE_MAP[requestedLanguage] ?? 'en';
 
     useEffect(() => {
+        if (!enabled) {
+            setIsLoaded(false);
+            setLoadError(null);
+            return;
+        }
+
+        const mapsWindow = window as GoogleMapsWindow;
         const isGoogleMapsReady = () => Boolean(window.google?.maps?.Map && typeof window.google.maps.Map === 'function');
         const settleLoaded = () => {
             setIsLoaded(true);
@@ -42,17 +56,22 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
         };
         let readyCheckLoop: number | null = null;
         let readyCheckTimeout: number | null = null;
+        const previousAuthFailure = mapsWindow.gm_authFailure;
 
         if (isGoogleMapsReady()) {
             settleLoaded();
             return;
         }
 
-        const apiKey = getGoogleMapsApiKey();
-        if (!apiKey) {
-            setLoadError(new Error("Google Maps API Key is missing"));
+        const apiKey = getGoogleMapsApiKey().trim();
+        if (!GOOGLE_MAPS_KEY_PATTERN.test(apiKey)) {
+            setLoadError(new Error('Google Maps API key is missing or invalid for this deploy context'));
             return;
         }
+
+        mapsWindow.gm_authFailure = () => {
+            setLoadError(new Error('Google Maps authentication failed (invalid API key or referrer restriction)'));
+        };
 
         const scriptId = 'google-maps-script';
         const existingScript = document.getElementById(scriptId);
@@ -66,6 +85,7 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
             }, 50);
             return () => {
                 window.clearInterval(checkLoop);
+                mapsWindow.gm_authFailure = previousAuthFailure;
             };
         }
 
@@ -121,8 +141,9 @@ export const GoogleMapsLoader: React.FC<GoogleMapsLoaderProps> = ({ children, la
                 window.clearTimeout(readyCheckTimeout);
                 readyCheckTimeout = null;
             }
+            mapsWindow.gm_authFailure = previousAuthFailure;
         };
-    }, [requestedMapLanguage]);
+    }, [requestedMapLanguage, enabled]);
 
     return (
         <GoogleMapsContext.Provider value={{ isLoaded, loadError }}>

@@ -1,19 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
-import { suggestActivityDetails, generateCityNotesAddition } from '../services/aiService';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
-import { MarkdownEditor } from './MarkdownEditor';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 import { FlagIcon } from './flags/FlagIcon';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -73,6 +72,22 @@ const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
         description: 'Adds lightweight morning/afternoon/evening checklist ideas.'
     }
 ];
+
+type AiServiceModule = typeof import('../services/aiService');
+let aiServicePromise: Promise<AiServiceModule> | null = null;
+
+const LazyMarkdownEditor = lazy(() =>
+    loadLazyComponentWithRecovery('MarkdownEditor', () =>
+        import('./MarkdownEditor').then((module) => ({ default: module.MarkdownEditor }))
+    )
+);
+
+const loadAiService = async (): Promise<AiServiceModule> => {
+    if (!aiServicePromise) {
+        aiServicePromise = import('../services/aiService');
+    }
+    return aiServicePromise;
+};
 
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
@@ -685,7 +700,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (!displayItem) return;
       setLoading(true);
       try {
-          const details = await suggestActivityDetails(displayItem.title, displayItem.location || "");
+          const aiService = await loadAiService();
+          const details = await aiService.suggestActivityDetails(displayItem.title, displayItem.location || "");
           handleUpdate(displayItem.id, {
               aiInsights: { cost: details.cost, bestTime: details.bestTime, tips: details.tips },
           });
@@ -705,7 +721,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       setIsEnhancing(true);
 
       try {
-          const addition = await generateCityNotesAddition(
+          const aiService = await loadAiService();
+          const addition = await aiService.generateCityNotesAddition(
               displayItem.location || displayItem.title,
               displayItem.description || '',
               mode
@@ -1516,20 +1533,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</h3></div>
-                <MarkdownEditor
-                    key={displayItem.id}
-                    value={displayItem.description || ''}
-                    onChange={canEdit ? ((val) => handleUpdate(displayItem.id, { description: val })) : undefined}
-                    aiActions={isCity && canEdit ? CITY_NOTES_AI_ACTIONS : undefined}
-                    onAiActionSelect={isCity && canEdit ? ((actionId) => {
-                        if (actionId === 'expand-checklists' || actionId === 'local-tips' || actionId === 'day-plan') {
-                            handleEnhanceNotes(actionId);
-                        }
-                    }) : undefined}
-                    isGenerating={isEnhancing}
-                    aiStatus={isCity ? aiStatus : null}
-                    readOnly={!canEdit}
-                />
+                <Suspense
+                    fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor...</div>}
+                >
+                    <LazyMarkdownEditor
+                        key={displayItem.id}
+                        value={displayItem.description || ''}
+                        onChange={canEdit ? ((val) => handleUpdate(displayItem.id, { description: val })) : undefined}
+                        aiActions={isCity && canEdit ? CITY_NOTES_AI_ACTIONS : undefined}
+                        onAiActionSelect={isCity && canEdit ? ((actionId) => {
+                            if (actionId === 'expand-checklists' || actionId === 'local-tips' || actionId === 'day-plan') {
+                                handleEnhanceNotes(actionId);
+                            }
+                        }) : undefined}
+                        isGenerating={isEnhancing}
+                        aiStatus={isCity ? aiStatus : null}
+                        readOnly={!canEdit}
+                    />
+                </Suspense>
                 {aiError && (
                     <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                         {aiError}
@@ -1544,7 +1565,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </div>
                         </div>
                         <div className="p-4 bg-white">
-                            <MarkdownEditor value={proposedNotesPreview} readOnly />
+                            <Suspense
+                                fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading preview...</div>}
+                            >
+                                <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
+                            </Suspense>
                         </div>
                         <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2">
                             <button

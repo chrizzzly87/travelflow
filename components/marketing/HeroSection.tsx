@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkle, ShareNetwork, LinkSimple, RocketLaunch } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,25 @@ const ZigzagUnderline: React.FC = () => (
 
 export const HeroSection: React.FC = () => {
     const { t } = useTranslation('home');
+    const [showPlaneWindow, setShowPlaneWindow] = useState(() => (
+        typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : false
+    ));
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const mediaQuery = window.matchMedia('(min-width: 1024px)');
+        const update = () => setShowPlaneWindow(mediaQuery.matches);
+        update();
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', update);
+            return () => mediaQuery.removeEventListener('change', update);
+        }
+
+        mediaQuery.addListener(update);
+        return () => mediaQuery.removeListener(update);
+    }, []);
 
     const handleCtaClick = (ctaName: string) => {
         trackEvent(`home__hero_cta--${ctaName}`);
@@ -109,7 +128,7 @@ export const HeroSection: React.FC = () => {
                 </div>
 
                 <div className="hidden lg:block w-[280px] xl:w-[320px] shrink-0 animate-hero-stagger" style={{ '--stagger': '400ms' } as React.CSSProperties}>
-                    <PlaneWindowAnimation />
+                    {showPlaneWindow ? <PlaneWindowAnimation /> : null}
                 </div>
             </div>
         </section>

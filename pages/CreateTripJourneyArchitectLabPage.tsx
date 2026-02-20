@@ -18,7 +18,8 @@ import { SiteFooter } from '../components/marketing/SiteFooter';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { useDbSync } from '../hooks/useDbSync';
 import { AppLanguage } from '../types';
-import { buildCreateTripUrl, getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../utils';
+import { buildCreateTripUrl } from '../utils';
+import { getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../services/destinationService';
 
 interface CreateTripJourneyArchitectLabPageProps {
     onOpenManager: () => void;
