@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
-import { X, Sparkles, Check } from 'lucide-react';
+import { Sparkles, Check } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass, getActivityTypePaletteClass } from './ActivityTypeVisuals';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import { AppModal } from './ui/app-modal';
 
 interface AddActivityModalProps {
     isOpen: boolean;
@@ -35,25 +35,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
-    const dialogRef = useRef<HTMLDivElement | null>(null);
     const manualTitleInputRef = useRef<HTMLInputElement | null>(null);
-
-    useFocusTrap({
-        isActive: isOpen,
-        containerRef: dialogRef,
-        initialFocusRef: manualTitleInputRef,
-    });
-
-    // Close on Escape Key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (isOpen && e.key === 'Escape') {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
 
     useEffect(() => {
         if (!isOpen || mode !== 'manual' || typeof window === 'undefined') return;
@@ -64,8 +46,6 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
             window.cancelAnimationFrame(rafId);
         };
     }, [isOpen, mode]);
-
-    if (!isOpen) return null;
 
     const handleManualAdd = () => {
         if (!title) return;
@@ -162,32 +142,24 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const promptInputId = 'add-activity-prompt-input';
 
     return (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4">
-            <button
-                type="button"
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-                aria-label="Close add activity dialog"
-            />
-            <div
-                ref={dialogRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="add-activity-title"
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
-            >
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 id="add-activity-title" className="text-lg font-bold text-gray-900">Add Activity for Day {Math.floor(dayOffset) + 1}</h3>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-
-                <div className="p-4 border-b border-gray-100 flex gap-2">
+        <AppModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={`Add Activity for Day ${Math.floor(dayOffset) + 1}`}
+            closeLabel="Close add activity dialog"
+            size="lg"
+            mobileSheet={false}
+            contentClassName="max-h-[90vh] sm:w-[min(94vw,860px)]"
+            bodyClassName="flex-1 overflow-y-auto p-0"
+            headerClassName="bg-gray-50 p-4"
+            onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                if (mode === 'manual') {
+                    manualTitleInputRef.current?.focus();
+                }
+            }}
+        >
+                <div className="flex gap-2 border-b border-gray-100 p-4">
                     <button 
                         type="button"
                         onClick={() => setMode('manual')}
@@ -204,7 +176,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                     </button>
                 </div>
                 
-                <div className="p-6 overflow-y-auto flex-1">
+                <div className="flex-1 overflow-y-auto p-6">
                     {mode === 'manual' ? (
                         <div className="space-y-4">
                             <div>
@@ -331,7 +303,6 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+        </AppModal>
     );
 };

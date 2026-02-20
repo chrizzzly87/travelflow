@@ -109,3 +109,6 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 📏 Captured fresh `/trip/:id` real-URL Lighthouse follow-up runs after this refactor cycle; desktop stayed at `100` while mobile remained in an expected variance band with transfer/TBT envelopes stable.
 - [x] [Improved] ♿ Trip share, history, and info overlays now use one consistent modal foundation with aligned close/focus/escape behavior.
 - [ ] [Internal] 🧩 Added a shared Radix-based app modal shell and migrated trip overlays (`TripInfo`, `TripShare`, `TripHistory`) to reduce duplicated overlay logic.
+- [x] [Improved] ⌨️ Add destination/activity, delete city, and settings dialogs now keep keyboard focus and close behavior consistent with the rest of the planner overlays.
+- [ ] [Internal] 🧱 Migrated the remaining planner dialogs onto the shared app-modal foundation to remove duplicated per-dialog focus/escape wiring.
+- [ ] [Internal] 🩺 Verified this modal pass with full build/update validation and improved `react-doctor` from `91/158` to `91/157`.

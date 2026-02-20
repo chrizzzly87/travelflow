@@ -179,6 +179,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Cleared remaining trip `DetailsPanel` non-semantic click targets (hotel search results + overlay backdrop) and replaced index-based hotel-result keys with stable identifiers, reducing `react-doctor` warnings from `163` to `158` while keeping score at `91`.
 - [x] Added a shared Radix-based `AppModal` shell (`components/ui/app-modal.tsx`) and migrated `TripInfoModal`, `TripShareModal`, and `TripHistoryModal` to the unified modal primitive for consistent ESC/backdrop close + focus management behavior.
 - [x] Verified modal-shell migration with full build + `react-doctor`; score/warnings remained stable at `91/158` (no regression).
+- [x] Migrated remaining planner dialogs (`AddCity`, `AddActivity`, `DeleteCity`, `Settings`) to the shared `AppModal` shell and removed duplicated per-dialog focus/escape handling.
+- [x] Verified the expanded modal-shell rollout with full validation (`npm run build`, `npx -y react-doctor@latest . --verbose --diff`, `npm run updates:validate`); `react-doctor` improved from `91/158` to `91/157`.
 
 ## Validation checklist
 - [x] `npx vite build`

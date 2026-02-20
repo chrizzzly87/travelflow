@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Layout, Map, Globe, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layout, Map, Globe, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, MapStyle } from '../types';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_LABELS } from '../config/locales';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import { AppModal } from './ui/app-modal';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -28,56 +28,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
     const { t } = useTranslation(['settings', 'common']);
     const [activeTab, setActiveTab] = useState<'layout' | 'appearance' | 'language'>('layout');
-    const dialogRef = useRef<HTMLDivElement | null>(null);
-    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
     const appLanguageSelectId = 'settings-app-language';
 
-    useFocusTrap({
-        isActive: isOpen,
-        containerRef: dialogRef,
-        initialFocusRef: closeButtonRef,
-    });
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (isOpen && e.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
-
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-[1400] flex items-center justify-center p-4">
-            <button
-                type="button"
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-                aria-label="Close settings dialog"
-            />
-            <div
-                ref={dialogRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="settings-modal-title"
-                className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]"
-            >
-                
-                {/* Header */}
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 id="settings-modal-title" className="text-lg font-bold text-gray-900">{t('settings:title')}</h3>
-                    <button
-                        ref={closeButtonRef}
-                        type="button"
-                        onClick={onClose}
-                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close settings"
-                    >
-                        <X size={20} />
+        <AppModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={t('settings:title')}
+            closeLabel="Close settings dialog"
+            size="lg"
+            mobileSheet={false}
+            contentClassName="max-h-[85vh] sm:max-w-2xl"
+            bodyClassName="flex flex-1 overflow-hidden p-0"
+            footer={(
+                <div className="flex justify-end">
+                    <button type="button" onClick={onClose} className="rounded-lg bg-accent-600 px-4 py-2 font-medium text-white hover:bg-accent-700">
+                        {t('common:buttons.done')}
                     </button>
                 </div>
-
-                <div className="flex flex-1 overflow-hidden">
+            )}
+        >
                     {/* Sidebar Tabs */}
                     <div className="w-48 bg-gray-50 border-r border-gray-100 p-2 space-y-1">
                         <button 
@@ -222,14 +192,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         )}
 
                     </div>
-                </div>
-                
-                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
-                    <button type="button" onClick={onClose} className="px-4 py-2 bg-accent-600 text-white font-medium rounded-lg hover:bg-accent-700">
-                        {t('common:buttons.done')}
-                    </button>
-                </div>
-            </div>
-        </div>
+        </AppModal>
     );
 };
