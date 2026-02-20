@@ -351,7 +351,7 @@ const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClo
             type="button"
             className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
             onClick={onClose}
-            aria-label="Close trip information"
+            aria-label="Close"
         />
         <div
             role="dialog"
