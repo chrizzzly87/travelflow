@@ -177,6 +177,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Follow-up `react-doctor` after the semantic-control pass improved warnings from `175` to `163` (score held at `91`) while reducing flagged files from `24` to `22`.
 - [x] Extracted timeline-render orchestration from `TripView` into `components/tripview/TripTimelineCanvas.tsx`, reducing `TripView.tsx` from `3244` lines to `3203` lines while preserving timeline behavior and warning counts (`react-doctor` stayed `91/163`).
 - [x] Cleared remaining trip `DetailsPanel` non-semantic click targets (hotel search results + overlay backdrop) and replaced index-based hotel-result keys with stable identifiers, reducing `react-doctor` warnings from `163` to `158` while keeping score at `91`.
+- [x] Added a shared Radix-based `AppModal` shell (`components/ui/app-modal.tsx`) and migrated `TripInfoModal`, `TripShareModal`, and `TripHistoryModal` to the unified modal primitive for consistent ESC/backdrop close + focus management behavior.
+- [x] Verified modal-shell migration with full build + `react-doctor`; score/warnings remained stable at `91/158` (no regression).
 
 ## Validation checklist
 - [x] `npx vite build`

@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { ShareMode } from '../types';
-import { useFocusTrap } from '../hooks/useFocusTrap';
+import { AppModal } from './ui/app-modal';
 
 export interface TripShareModalProps {
     isOpen: boolean;
@@ -23,85 +23,18 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
     onGenerateShare,
     isGeneratingShare,
 }) => {
-    const dialogRef = useRef<HTMLDivElement | null>(null);
-    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-
-    useFocusTrap({
-        isActive: isOpen,
-        containerRef: dialogRef,
-        initialFocusRef: closeButtonRef,
-    });
-
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 z-[1600] flex items-end sm:items-center justify-center p-3 sm:p-4">
-            <button
-                type="button"
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={onClose}
-                aria-label="Close share trip dialog"
-            />
-            <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="trip-share-title" className="relative bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <div>
-                        <h3 id="trip-share-title" className="text-lg font-bold text-gray-900">Share trip</h3>
-                        <p className="text-xs text-gray-500">Choose view-only or collaboration editing.</p>
-                    </div>
-                    <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
-                        Close
-                    </button>
-                </div>
-                <div className="p-4 space-y-3">
-                    <div className="flex items-start gap-3 text-sm">
-                        <input
-                            id="trip-share-mode-view"
-                            type="radio"
-                            name="share-mode"
-                            className="mt-1"
-                            checked={shareMode === 'view'}
-                            onChange={() => onShareModeChange('view')}
-                        />
-                        <label htmlFor="trip-share-mode-view" className="cursor-pointer">
-                            <span className="font-semibold text-gray-900">View only</span>
-                            <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
-                        </label>
-                    </div>
-                    <div className="flex items-start gap-3 text-sm">
-                        <input
-                            id="trip-share-mode-edit"
-                            type="radio"
-                            name="share-mode"
-                            className="mt-1"
-                            checked={shareMode === 'edit'}
-                            onChange={() => onShareModeChange('edit')}
-                        />
-                        <label htmlFor="trip-share-mode-edit" className="cursor-pointer">
-                            <span className="font-semibold text-gray-900">Allow editing</span>
-                            <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
-                        </label>
-                    </div>
-                    {activeShareUrl && (
-                        <div className="mt-2">
-                            <div className="text-xs font-semibold text-gray-600 mb-1">Share link</div>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    value={activeShareUrl}
-                                    readOnly
-                                    className="w-full text-xs px-3 py-2 rounded-lg border border-gray-200 bg-gray-50"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={onCopyShareLink}
-                                    className="px-3 py-2 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                >
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-                <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-2">
+        <AppModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title="Share trip"
+            description="Choose view-only or collaboration editing."
+            closeLabel="Close share trip dialog"
+            size="sm"
+            mobileSheet
+            bodyClassName="p-4 space-y-3"
+            footer={
+                <div className="flex items-center justify-end gap-2">
                     <button
                         type="button"
                         onClick={onClose}
@@ -118,7 +51,55 @@ export const TripShareModal: React.FC<TripShareModalProps> = ({
                         {isGeneratingShare ? 'Creating…' : (activeShareUrl ? 'Create new link' : 'Generate link')}
                     </button>
                 </div>
+            }
+        >
+            <div className="flex items-start gap-3 text-sm">
+                <input
+                    id="trip-share-mode-view"
+                    type="radio"
+                    name="share-mode"
+                    className="mt-1"
+                    checked={shareMode === 'view'}
+                    onChange={() => onShareModeChange('view')}
+                />
+                <label htmlFor="trip-share-mode-view" className="cursor-pointer">
+                    <span className="font-semibold text-gray-900">View only</span>
+                    <span className="block text-xs text-gray-500">People can see the trip but can’t edit.</span>
+                </label>
             </div>
-        </div>
+            <div className="flex items-start gap-3 text-sm">
+                <input
+                    id="trip-share-mode-edit"
+                    type="radio"
+                    name="share-mode"
+                    className="mt-1"
+                    checked={shareMode === 'edit'}
+                    onChange={() => onShareModeChange('edit')}
+                />
+                <label htmlFor="trip-share-mode-edit" className="cursor-pointer">
+                    <span className="font-semibold text-gray-900">Allow editing</span>
+                    <span className="block text-xs text-gray-500">Anyone with the link can make changes.</span>
+                </label>
+            </div>
+            {activeShareUrl && (
+                <div className="mt-2">
+                    <div className="mb-1 text-xs font-semibold text-gray-600">Share link</div>
+                    <div className="flex items-center gap-2">
+                        <input
+                            value={activeShareUrl}
+                            readOnly
+                            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs"
+                        />
+                        <button
+                            type="button"
+                            onClick={onCopyShareLink}
+                            className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200"
+                        >
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            )}
+        </AppModal>
     );
 };

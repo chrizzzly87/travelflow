@@ -107,3 +107,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] ♿ Converted `DetailsPanel` hotel-search rows and overlay backdrop to semantic controls and switched hotel-search list keys from indexes to stable IDs.
 - [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `163` to `158` while retaining score `91`.
 - [ ] [Internal] 📏 Captured fresh `/trip/:id` real-URL Lighthouse follow-up runs after this refactor cycle; desktop stayed at `100` while mobile remained in an expected variance band with transfer/TBT envelopes stable.
+- [x] [Improved] ♿ Trip share, history, and info overlays now use one consistent modal foundation with aligned close/focus/escape behavior.
+- [ ] [Internal] 🧩 Added a shared Radix-based app modal shell and migrated trip overlays (`TripInfo`, `TripShare`, `TripHistory`) to reduce duplicated overlay logic.
