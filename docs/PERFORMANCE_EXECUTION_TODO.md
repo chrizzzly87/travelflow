@@ -184,6 +184,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extracted trip history presentation mapping (`historyModalItems`, `tripInfoHistoryItems`, history-open wiring) from `TripView` into `components/tripview/useTripHistoryPresentation.ts`, reducing `TripView.tsx` from `3203` lines to `3120`.
 - [x] Follow-up trip-page cleanup in `DetailsPanel` removed remaining default-array + index-key + prop-init lint hotspots; `react-doctor` improved from `91/157` to `93/153`.
 - [x] Fixed label/control associations in `CreateTripForm` (classic, wizard, and surprise modes), reducing form-a11y lint debt and improving `react-doctor` from `93/153` to `93/143`.
+- [x] Added shared focus-trap enforcement to the global auth login/register modal and queued guest-auth overlay so keyboard tab focus no longer escapes into background page content.
 
 ## Validation checklist
 - [x] `npx vite build`

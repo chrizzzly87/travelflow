@@ -115,3 +115,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Extracted trip-history presentation and open-panel orchestration into a dedicated tripview hook so `TripView` keeps shrinking and history UI wiring stays isolated.
 - [ ] [Internal] 🩺 Cleaned remaining trip `DetailsPanel` lint hotspots (default array allocation, index-based swatch keys, prop-init state handling), improving `react-doctor` from `91/157` to `93/153`.
 - [ ] [Internal] ♿ Wired classic/wizard/surprise create-trip labels to explicit form controls to tighten accessibility semantics and improve `react-doctor` from `93/153` to `93/143`.
+- [x] [Improved] ⌨️ Login and queued-auth overlays now keep keyboard tab focus inside the modal so background controls are no longer reachable while authentication is open.
+- [ ] [Internal] ♿ Added focus-trap refs and dialog semantics to the auth modal and queued guest-auth overlay to standardize modal keyboard behavior with the rest of planner overlays.
