@@ -83,6 +83,7 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] ⏳ Deferred map-script bootstrap behind map visibility and first-interaction gating so trip planner shell can render before loading Google Maps runtime.
 - [x] [Fixed] 🗺️ Trip and example map panels now fail gracefully when a deploy preview has an invalid map API key instead of surfacing hard runtime script errors.
 - [ ] [Internal] 🔐 Added map-key format validation and auth-failure handling in the Google Maps loader so key/config issues surface as controlled app errors.
+- [x] [Fixed] 🧭 Example and shared trip entry flows no longer interrupt guests with an unexpected required-onboarding redirect.
 - [x] [Improved] ♿ Trip planner title editing and panel resizing now have better keyboard/focus accessibility behavior.
 - [x] [Improved] ⚡ The My Plans side panel now opens immediately with visible loading placeholders instead of waiting on trip-data fetch completion.
 - [ ] [Internal] 🧩 Added a dedicated TripManager suspense shell plus first-frame trip hydration + async DB sync state handling to keep panel animation responsive under slow network/database conditions.

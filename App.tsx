@@ -12,7 +12,12 @@ import { GlobalTooltipLayer } from './components/GlobalTooltipLayer';
 import { trackEvent } from './services/analyticsService';
 import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/productLimits';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
-import { extractLocaleFromPath, isToolRoute, stripLocalePrefix } from './config/routes';
+import {
+    extractLocaleFromPath,
+    isOnboardingExemptPath,
+    isToolRoute,
+    stripLocalePrefix,
+} from './config/routes';
 import { APP_NAME } from './config/appGlobals';
 import { useAuth } from './hooks/useAuth';
 import {
@@ -210,6 +215,7 @@ const AppContent: React.FC = () => {
         const strippedPath = stripLocalePrefix(location.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
         if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
+        if (isOnboardingExemptPath(strippedPath)) return;
 
         if (access.accountStatus !== 'active') {
             void logout();
