@@ -393,6 +393,29 @@ const resolveTripInitialMapFocusQuery = (trip: ITrip): string | undefined => {
     return uniqueLocations.join(' || ');
 };
 
+const resolveSharedTripPathByTripId = async (tripId: string, versionId?: string | null): Promise<string | null> => {
+    if (!tripId) return null;
+    const params = new URLSearchParams();
+    params.set('trip', tripId);
+    if (versionId) params.set('v', versionId);
+
+    try {
+        const response = await fetch(`/api/trip-share-resolve?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+        if (!response.ok) return null;
+        const payload = await response.json() as { path?: unknown };
+        return typeof payload?.path === 'string' && payload.path.startsWith('/s/')
+            ? payload.path
+            : null;
+    } catch {
+        return null;
+    }
+};
+
 // Legacy compressed URLs still supported in TripLoader.
 
 // Component to handle trip loading from URL
@@ -420,6 +443,7 @@ const TripLoader = ({
     const { tripId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const lastLoadRef = useRef<string | null>(null);
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -432,12 +456,18 @@ const TripLoader = ({
     useDbSync(onLanguageLoaded);
 
     useEffect(() => {
+        if (isAuthLoading) return;
         if (!tripId) return;
         const loadKey = `${tripId}:${versionId || ''}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
 
         const load = async () => {
+            const currentPath = buildPathFromLocationParts({
+                pathname: location.pathname,
+                search: location.search,
+                hash: location.hash,
+            });
             setViewSettings(undefined);
             setTripAccess(null);
             // 1. Legacy compressed URLs
@@ -506,12 +536,34 @@ const TripLoader = ({
                 return;
             }
 
+            if (DB_ENABLED) {
+                const sharedPath = await resolveSharedTripPathByTripId(tripId, versionId);
+                if (sharedPath) {
+                    navigate(sharedPath, { replace: true });
+                    return;
+                }
+            }
+
+            if (DB_ENABLED) {
+                if (!isAuthenticated) {
+                    rememberAuthReturnPath(currentPath);
+                    navigate('/login', {
+                        replace: true,
+                        state: { from: currentPath },
+                    });
+                    return;
+                }
+
+                navigate('/share-unavailable', { replace: true });
+                return;
+            }
+
             console.error('Failed to load trip from URL');
             navigate('/create-trip', { replace: true });
         };
 
         void load();
-    }, [tripId, versionId, navigate, onTripLoaded]);
+    }, [tripId, versionId, location.hash, location.pathname, location.search, navigate, onTripLoaded, isAuthenticated, isAuthLoading]);
 
     if (!trip) return null;
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
