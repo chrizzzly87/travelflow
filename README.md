@@ -62,7 +62,7 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/` marketing landing page
 - `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*`, `/pl/*`, `/ko/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
-- `/trip/:tripId` planner
+- `/trip/:tripId` planner (owner/admin stays; non-owner viewers route to `/s/:token` when an active share exists; without share they are routed to login/share-unavailable)
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
@@ -109,6 +109,7 @@ For trip lifecycle state handling, lock behavior, and paywall rules, use:
 For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
 
 - `docs/SUPABASE_RUNBOOK.md`
+- `docs/SHARE_USERFLOWS.md`
 
 ## Build
 
@@ -238,6 +239,7 @@ Sitemap behavior:
 
 - Non-trip pages (home, features, updates, blog, legal pages, etc.) use a dedicated `/api/og/site` image generator with page title + subline, TravelFlow branding, and an accent-gradient hero.
 - Shared links (`/s/:token`) use Netlify Edge Functions to inject route-specific Open Graph and Twitter meta tags into the HTML response.
+- Direct trip links (`/trip/:tripId`) with an active share use share-backed OG metadata/images, and non-owner viewers are routed to the canonical shared route (`/s/:token`).
 - OG images are generated at `/api/og/trip` with `og_edge` (Netlify-compatible `@vercel/og`), including:
   - trip title
   - weeks/months/total distance metrics

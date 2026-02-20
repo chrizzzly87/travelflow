@@ -5,6 +5,7 @@ import {
   buildTripOgSummary,
   fallbackSummary,
   fetchSharedTrip,
+  fetchSharedTripByTripId,
   getMapsApiKeyFromEnv,
   isMapColorMode,
   isOgMapStyle,
@@ -560,6 +561,21 @@ export default async (request: Request): Promise<Response> => {
       }
     } else if (tripId) {
       routePath = buildDisplayPath({ tripId, versionId });
+      const sharedByTripId = await fetchSharedTripByTripId(tripId, versionId);
+      if (sharedByTripId) {
+        const sharedTrip = sharedByTripId.sharedTrip;
+        summary = await buildTripOgSummary(sharedTrip.trip, {
+          mapsApiKey,
+          mapStyle: mapStyleOverride ?? sharedTrip.viewSettings?.mapStyle,
+          routeMode: routeModeOverride ?? sharedTrip.viewSettings?.routeMode,
+          mapColorMode: mapColorModeOverride ?? sharedTrip.viewSettings?.mapColorMode ?? sharedTrip.trip.mapColorMode,
+          showStops: showStopsOverride ?? sharedTrip.viewSettings?.showStops,
+          showCities: showCitiesOverride ??
+            sharedTrip.viewSettings?.showCities ??
+            sharedTrip.viewSettings?.showCityNames,
+          showCityNames: sharedTrip.viewSettings?.showCityNames,
+        });
+      }
     }
 
     if (titleOverride) summary.title = titleOverride;
