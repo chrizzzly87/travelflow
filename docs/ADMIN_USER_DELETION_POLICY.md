@@ -24,6 +24,7 @@ Define the operational policy for deleting users in the admin workspace, includi
   - Permanently removes auth account and profile.
   - Permanently removes all trips owned by that user because ownership is linked with cascade delete.
   - Permanently removes dependent trip records (for example history versions, share links, collaborator links tied to deleted trips).
+  - Preserves unrelated records by clearing nullable historical references (for example `created_by` / `role_updated_by`) when those links would otherwise block hard delete.
 - Recovery: not supported as a standard workflow.
 
 ## Transfer-Before-Delete Flow
@@ -45,6 +46,7 @@ For users who still own trips, admins should prefer transfer-before-delete:
 
 - If any trip transfer fails, hard delete is skipped.
 - If all transfers succeed but hard delete fails, transferred trips remain with new owner and admin can retry hard delete separately.
+- Bulk hard delete now returns per-user failure reasons so support can retry only failed rows.
 
 ## Audit Expectations
 

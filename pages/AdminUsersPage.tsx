@@ -389,6 +389,19 @@ const getUserReferenceText = (user: AdminUserRecord): string => {
     return `${name} (${user.user_id})`;
 };
 
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message.trim()) return error.message.trim();
+    if (typeof error === 'string' && error.trim()) return error.trim();
+    return fallback;
+};
+
+const summarizeBulkDeleteFailures = (details: string[]): string => {
+    if (details.length === 0) return '';
+    const visible = details.slice(0, 3).join(' | ');
+    if (details.length <= 3) return visible;
+    return `${visible} | +${details.length - 3} more`;
+};
+
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
     return JSON.stringify(value, null, 2);
@@ -1413,7 +1426,22 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
-            const failed = results.filter((result) => result.status === 'rejected').length;
+            const failedIndexes: number[] = [];
+            const failedDetails: string[] = [];
+            const deletedIds = new Set<string>();
+
+            results.forEach((result, index) => {
+                const user = selectedVisibleUsers[index];
+                if (result.status === 'fulfilled') {
+                    deletedIds.add(user.user_id);
+                    return;
+                }
+                failedIndexes.push(index);
+                const reason = getUnknownErrorMessage(result.reason, 'Unknown delete error.');
+                failedDetails.push(`${getUserReferenceText(user)}: ${reason}`);
+            });
+
+            const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
                 setMessage(
@@ -1422,11 +1450,28 @@ export const AdminUsersPage: React.FC = () => {
                         : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
                 );
             }
-            if (failed > 0 && deleted === 0) {
-                throw new Error('Could not hard-delete selected users.');
+            if (failed > 0) {
+                const detailSummary = summarizeBulkDeleteFailures(failedDetails);
+                if (deleted === 0) {
+                    setErrorMessage(
+                        detailSummary
+                            ? `Could not hard-delete selected users. ${detailSummary}`
+                            : 'Could not hard-delete selected users.'
+                    );
+                } else {
+                    setErrorMessage(
+                        detailSummary
+                            ? `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete. ${detailSummary}`
+                            : `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.`
+                    );
+                }
             }
-            setSelectedUserIds(new Set());
-            if (selectedUserId && selectedVisibleUsers.some((user) => user.user_id === selectedUserId)) {
+            if (failed > 0) {
+                setSelectedUserIds(new Set(failedIndexes.map((index) => selectedVisibleUsers[index].user_id)));
+            } else {
+                setSelectedUserIds(new Set());
+            }
+            if (selectedUserId && deletedIds.has(selectedUserId)) {
                 setSelectedUserId(null);
                 setIsDetailOpen(false);
             }

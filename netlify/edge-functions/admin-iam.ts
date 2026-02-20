@@ -42,6 +42,15 @@ const safeJsonParse = async (response: Response): Promise<any> => {
   }
 };
 
+const extractServiceError = (payload: any, fallback: string): string => {
+  if (payload && typeof payload === "object") {
+    if (typeof payload.message === "string" && payload.message.trim()) return payload.message.trim();
+    if (typeof payload.error_description === "string" && payload.error_description.trim()) return payload.error_description.trim();
+    if (typeof payload.error === "string" && payload.error.trim()) return payload.error.trim();
+  }
+  return fallback;
+};
+
 const extractBooleanRpcResult = (payload: any): boolean | null => {
   if (typeof payload === "boolean") return payload;
   if (Array.isArray(payload) && payload.length > 0) {
@@ -86,6 +95,36 @@ const buildServiceHeaders = (serviceRoleKey: string, extra?: Record<string, stri
   Authorization: `Bearer ${serviceRoleKey}`,
   ...extra,
 });
+
+const serviceRolePatch = async (
+  config: { url: string; serviceRoleKey: string },
+  path: string,
+  patch: Record<string, unknown>,
+): Promise<void> => {
+  const response = await fetch(`${config.url}${path}`, {
+    method: "PATCH",
+    headers: buildServiceHeaders(config.serviceRoleKey, {
+      Prefer: "return=minimal",
+    }),
+    body: JSON.stringify(patch),
+  });
+  if (!response.ok) {
+    const payload = await safeJsonParse(response);
+    throw new Error(extractServiceError(payload, "Could not update user references before delete."));
+  }
+};
+
+const clearHardDeleteBlockingReferences = async (
+  config: { url: string; serviceRoleKey: string },
+  userId: string,
+): Promise<void> => {
+  const encodedUserId = encodeURIComponent(userId);
+  await Promise.all([
+    serviceRolePatch(config, `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`, { created_by: null }),
+    serviceRolePatch(config, `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`, { created_by: null }),
+    serviceRolePatch(config, `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`, { role_updated_by: null }),
+  ]);
+};
 
 const supabaseFetch = async (
   config: { url: string; anonKey: string },
@@ -279,16 +318,45 @@ export default async (request: Request): Promise<Response> => {
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     if (!userId) return json(400, { ok: false, error: "Missing userId for delete action." });
 
-    const response = await fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
-      method: "DELETE",
-      headers: buildServiceHeaders(config.serviceRoleKey),
-    });
+    const deleteAuthUser = async (): Promise<Response> =>
+      fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+        headers: buildServiceHeaders(config.serviceRoleKey),
+      });
+
+    let response = await deleteAuthUser();
     if (!response.ok) {
       const payload = await safeJsonParse(response);
-      return json(400, {
-        ok: false,
-        error: payload?.message || payload?.error_description || payload?.error || "Could not delete user.",
-      });
+      const deleteError = extractServiceError(payload, "Could not delete user.");
+      const isForeignKeyDeleteFailure = /foreign key constraint/i.test(deleteError);
+
+      if (isForeignKeyDeleteFailure) {
+        try {
+          await clearHardDeleteBlockingReferences(config, userId);
+          response = await deleteAuthUser();
+        } catch (cleanupError) {
+          const cleanupMessage = cleanupError instanceof Error && cleanupError.message.trim()
+            ? cleanupError.message.trim()
+            : "Could not prepare user references for hard delete.";
+          return json(400, {
+            ok: false,
+            error: `Could not delete user due to linked records. ${cleanupMessage}`,
+          });
+        }
+
+        if (!response.ok) {
+          const retryPayload = await safeJsonParse(response);
+          return json(400, {
+            ok: false,
+            error: extractServiceError(retryPayload, "Could not delete user after cleaning linked records."),
+          });
+        }
+      } else {
+        return json(400, {
+          ok: false,
+          error: deleteError,
+        });
+      }
     }
 
     await logAdminAction(config, authToken, {
