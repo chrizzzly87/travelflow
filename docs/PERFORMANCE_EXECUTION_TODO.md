@@ -181,6 +181,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Verified modal-shell migration with full build + `react-doctor`; score/warnings remained stable at `91/158` (no regression).
 - [x] Migrated remaining planner dialogs (`AddCity`, `AddActivity`, `DeleteCity`, `Settings`) to the shared `AppModal` shell and removed duplicated per-dialog focus/escape handling.
 - [x] Verified the expanded modal-shell rollout with full validation (`npm run build`, `npx -y react-doctor@latest . --verbose --diff`, `npm run updates:validate`); `react-doctor` improved from `91/158` to `91/157`.
+- [x] Extracted trip history presentation mapping (`historyModalItems`, `tripInfoHistoryItems`, history-open wiring) from `TripView` into `components/tripview/useTripHistoryPresentation.ts`, reducing `TripView.tsx` from `3203` lines to `3120`.
+- [x] Follow-up trip-page cleanup in `DetailsPanel` removed remaining default-array + index-key + prop-init lint hotspots; `react-doctor` improved from `91/157` to `93/153`.
 
 ## Validation checklist
 - [x] `npx vite build`

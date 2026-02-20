@@ -95,6 +95,8 @@ const loadAiService = async (): Promise<AiServiceModule> => {
     return aiServicePromise;
 };
 
+const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
+
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
     const trimmedAddition = addition.trim();
@@ -130,7 +132,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     onBatchUpdate,
     onDelete, 
     tripStartDate, 
-    tripItems = [],
+    tripItems = EMPTY_TRIP_ITEMS,
     routeMode = 'simple',
     routeStatus,
     onForceFill,
@@ -147,7 +149,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [pendingNotesProposal, setPendingNotesProposal] = useState<PendingCityNotesProposal | null>(null);
-  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(item);
+  const initialCachedItemRef = useRef<ITimelineItem | null>(item);
+  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(initialCachedItemRef.current);
   const [isDurationEditorOpen, setIsDurationEditorOpen] = useState(false);
   const [durationDraft, setDurationDraft] = useState<DurationDraft | null>(null);
   const [isCityEditorOpen, setIsCityEditorOpen] = useState(false);
@@ -172,7 +175,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [apiKeyError, setApiKeyError] = useState(false);
 
   // Custom Drawer State
-  const [isRendered, setIsRendered] = useState(isOpen);
+  const initialRenderedRef = useRef(isOpen);
+  const [isRendered, setIsRendered] = useState(initialRenderedRef.current);
   const [isVisible, setIsVisible] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -1066,17 +1070,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <div>
                                         <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palette colors</div>
                                         <div className="grid grid-cols-8 gap-1.5">
-                                            {activeCityPalette.colors.map((paletteColor, index) => {
+                                            {activeCityPalette.colors.map((paletteColor) => {
                                                 const normalizedSwatchHex = getHexFromColorClass(paletteColor).toLowerCase();
                                                 const isSelected = selectedCityColorHex?.toLowerCase() === normalizedSwatchHex;
                                                 return (
                                                     <button
-                                                        key={`${activeCityPalette.id}-color-${index}`}
+                                                        key={`${activeCityPalette.id}-color-${paletteColor}`}
                                                         onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
                                                         disabled={!canEdit}
                                                         className={`h-6 w-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
                                                         style={{ backgroundColor: paletteColor }}
-                                                        title={`Palette color ${index + 1}`}
+                                                        title="Palette color"
                                                     />
                                                 );
                                             })}

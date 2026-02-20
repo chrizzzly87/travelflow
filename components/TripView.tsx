@@ -5,7 +5,7 @@ import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, R
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, Loader2
+    ZoomIn, ZoomOut, Plane, History, Star, Info, Loader2
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -39,9 +39,13 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
+import {
+    ChangeTone,
+    getToneMeta,
+    stripHistoryPrefix,
+    useTripHistoryPresentation,
+} from './tripview/useTripHistoryPresentation';
 import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
-
-type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 
 interface ToastState {
     tone: ChangeTone;
@@ -108,73 +112,6 @@ const TripInfoModal = lazyWithRecovery('TripInfoModal', () => loadTripInfoModalM
 const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
     import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
 );
-
-const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
-
-const resolveChangeTone = (label: string): ChangeTone => {
-    const normalized = label.toLowerCase();
-
-    if (/\b(add|added|create|created)\b/.test(normalized)) return 'add';
-    if (/\b(remove|removed|delete|deleted)\b/.test(normalized)) return 'remove';
-    if (
-        /\b(update|updated|change|changed|rename|renamed|reschedule|rescheduled|reorder|reordered|adjust|adjusted|saved)\b/.test(normalized) ||
-        normalized.startsWith('visual:')
-    ) {
-        return 'update';
-    }
-
-    return 'info';
-};
-
-const getToneMeta = (tone: ChangeTone) => {
-    switch (tone) {
-        case 'add':
-            return {
-                label: 'Added',
-                iconClass: 'bg-emerald-100 text-emerald-700',
-                badgeClass: 'bg-emerald-100 text-emerald-700',
-                toastBorderClass: 'border-emerald-200',
-                toastTitleClass: 'text-emerald-700',
-                Icon: Plus,
-            };
-        case 'remove':
-            return {
-                label: 'Removed',
-                iconClass: 'bg-red-100 text-red-700',
-                badgeClass: 'bg-red-100 text-red-700',
-                toastBorderClass: 'border-red-200',
-                toastTitleClass: 'text-red-700',
-                Icon: Trash2,
-            };
-        case 'update':
-            return {
-                label: 'Updated',
-                iconClass: 'bg-accent-100 text-accent-700',
-                badgeClass: 'bg-accent-100 text-accent-700',
-                toastBorderClass: 'border-accent-200',
-                toastTitleClass: 'text-accent-700',
-                Icon: Pencil,
-            };
-        case 'neutral':
-            return {
-                label: 'Notice',
-                iconClass: 'bg-amber-100 text-amber-700',
-                badgeClass: 'bg-amber-100 text-amber-700',
-                toastBorderClass: 'border-amber-200',
-                toastTitleClass: 'text-amber-700',
-                Icon: Info,
-            };
-        default:
-            return {
-                label: 'Saved',
-                iconClass: 'bg-slate-100 text-slate-700',
-                badgeClass: 'bg-slate-100 text-slate-700',
-                toastBorderClass: 'border-slate-200',
-                toastTitleClass: 'text-slate-700',
-                Icon: Info,
-            };
-    }
-};
 
 const MIN_SIDEBAR_WIDTH = 300;
 const MIN_TIMELINE_HEIGHT = 200;
@@ -1326,26 +1263,18 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings, isTripLockedByExpiry]);
 
-    const historyModalItems = useMemo(() => {
-        return displayHistoryEntries.map((entry) => {
-            const tone = resolveChangeTone(entry.label);
-            return {
-                id: entry.id,
-                url: entry.url,
-                ts: entry.ts,
-                isCurrent: entry.url === currentUrl,
-                details: stripHistoryPrefix(entry.label),
-                tone,
-                meta: getToneMeta(tone),
-            };
-        });
-    }, [displayHistoryEntries, currentUrl]);
-
-    const openHistoryPanel = useCallback((source: 'desktop_header' | 'mobile_header' | 'trip_info') => {
-        trackEvent('app__trip_history--open', { source });
-        refreshHistory();
-        setIsHistoryOpen(true);
-    }, [refreshHistory, setIsHistoryOpen]);
+    const {
+        historyModalItems,
+        openHistoryPanel,
+        tripInfoHistoryItems,
+    } = useTripHistoryPresentation({
+        currentUrl,
+        displayHistoryEntries,
+        refreshHistory,
+        setIsHistoryOpen,
+        showAllHistory,
+        trackOpenHistory: (source) => trackEvent('app__trip_history--open', { source }),
+    });
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
         if (!onCommitState) return;
@@ -2151,18 +2080,6 @@ export const TripView: React.FC<TripViewProps> = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
-    const infoHistoryEntries = useMemo(() => {
-        return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
-    }, [displayHistoryEntries, showAllHistory]);
-    const tripInfoHistoryItems = useMemo(() => {
-        return infoHistoryEntries.map((entry) => ({
-            id: entry.id,
-            url: entry.url,
-            ts: entry.ts,
-            details: stripHistoryPrefix(entry.label),
-            isCurrent: entry.url === currentUrl,
-        }));
-    }, [infoHistoryEntries, currentUrl]);
 
     const timelineCanvas = (
         <TripTimelineCanvas

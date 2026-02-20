@@ -112,3 +112,5 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [x] [Improved] ⌨️ Add destination/activity, delete city, and settings dialogs now keep keyboard focus and close behavior consistent with the rest of the planner overlays.
 - [ ] [Internal] 🧱 Migrated the remaining planner dialogs onto the shared app-modal foundation to remove duplicated per-dialog focus/escape wiring.
 - [ ] [Internal] 🩺 Verified this modal pass with full build/update validation and improved `react-doctor` from `91/158` to `91/157`.
+- [ ] [Internal] 🧩 Extracted trip-history presentation and open-panel orchestration into a dedicated tripview hook so `TripView` keeps shrinking and history UI wiring stays isolated.
+- [ ] [Internal] 🩺 Cleaned remaining trip `DetailsPanel` lint hotspots (default array allocation, index-based swatch keys, prop-init state handling), improving `react-doctor` from `91/157` to `93/153`.
