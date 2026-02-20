@@ -91,6 +91,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] After CSS splitting, `/example/thailand-islands` transfer dropped to `~266.4 KiB` (`27` requests, score `96` in measured run).
 - [x] Follow-up Lighthouse after map-split showed stable transfer envelopes on key entry routes (`/` `~247.3 KiB`, `/create-trip` `~462.3 KiB`, `/example/thailand-islands` `~266.5 KiB`) with no payload regression from the chunk move.
 - [x] Follow-up Lighthouse after map-bootstrap gating stayed within prior transfer envelopes (`/` `~247.3 KiB`, `/create-trip` `~462.4 KiB`, `/example/thailand-islands` `~267.0 KiB`) while reducing early map-script pressure on trip-entry startup.
+- [x] Follow-up Lighthouse after warning/accessibility cleanup remained strong (`/` `98`, `/create-trip` `94`, `/example/thailand-islands` `97`) with transfer envelopes unchanged (`~247.4 KiB`, `~462.4 KiB`, `~267.3 KiB`).
+- [x] React-doctor cleanup pass reduced warning count from `215` to `206` and improved score from `89` to `90` by addressing low-risk planner accessibility/focus issues.
 - [x] Verified deferred stylesheet loading on non-critical route `/features` (`DeferredAppRoutes-*.css` requested at runtime), confirming style separation is active.
 - [x] Split `routes/TripRouteLoaders.tsx` into route-specific lazy modules (`TripLoaderRoute`, `SharedTripLoaderRoute`, `ExampleTripLoaderRoute`) so loader code is no longer bundled as one shared loader chunk.
 - [x] Verified route-loader chunk isolation in build output: `TripLoaderRoute` `~3.22 KB` raw (`~1.51 KB` gzip), `SharedTripLoaderRoute` `~4.06 KB` raw (`~1.87 KB` gzip), `ExampleTripLoaderRoute` `~5.02 KB` raw (`~2.15 KB` gzip).
@@ -156,6 +158,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Split Tailwind scanning/output between critical and deferred routes so entry CSS excludes non-critical/admin/page-class payload until deferred routes load.
 - [x] Split `ItineraryMap` from `TripView` into a lazy chunk to keep the core planner UI module smaller and easier to iterate independently.
 - [x] Defer map-script bootstrap until map container visibility + short delay (or first interaction), with a max-wait safety fallback.
+- [x] Resolve low-risk planner `react-doctor` findings (title edit semantics, keyboard-accessible resize handles, and modal focus management) without impacting route transfer budgets.
 
 ## Validation checklist
 - [x] `npx vite build`

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ActivityType, ITimelineItem, ITrip } from '../types';
 import { X, Sparkles, Check } from 'lucide-react';
 import { ALL_ACTIVITY_TYPES, getActivityColorByTypes, normalizeActivityTypes } from '../utils';
@@ -34,6 +34,7 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
     const [prompt, setPrompt] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [proposals, setProposals] = useState<any[]>([]);
+    const manualTitleInputRef = useRef<HTMLInputElement | null>(null);
 
     // Close on Escape Key
     useEffect(() => {
@@ -45,6 +46,16 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
+
+    useEffect(() => {
+        if (!isOpen || mode !== 'manual' || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            manualTitleInputRef.current?.focus();
+        });
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [isOpen, mode]);
 
     if (!isOpen) return null;
 
@@ -178,12 +189,12 @@ export const AddActivityModal: React.FC<AddActivityModalProps> = ({ isOpen, onCl
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
                                 <input 
+                                    ref={manualTitleInputRef}
                                     type="text" 
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     className="w-full p-2 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-500 outline-none"
                                     placeholder="e.g. Visit Louvre Museum"
-                                    autoFocus
                                 />
                             </div>
                             <div>

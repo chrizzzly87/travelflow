@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Star } from 'lucide-react';
 import { ICountryInfo } from '../types';
 import { CountryInfo } from './CountryInfo';
@@ -90,6 +90,18 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     countryInfo,
     isPaywallLocked,
 }) => {
+    const editTitleInputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+        if (!isOpen || !isEditingTitle || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            editTitleInputRef.current?.focus();
+        });
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [isEditingTitle, isOpen]);
+
     if (!isOpen) return null;
 
     return (
@@ -116,13 +128,13 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                             <div className="min-w-0 flex-1">
                                 {isEditingTitle ? (
                                     <input
+                                        ref={editTitleInputRef}
                                         value={editTitleValue}
                                         onChange={(e) => onEditTitleValueChange(e.target.value)}
                                         onBlur={onCommitTitleEdit}
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') onCommitTitleEdit();
                                         }}
-                                        autoFocus
                                         className="w-full font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
                                     />
                                 ) : (

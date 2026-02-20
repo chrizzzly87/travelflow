@@ -178,6 +178,7 @@ const MIN_TIMELINE_COLUMN_WIDTH = 420;
 const MIN_DETAILS_WIDTH = 360;
 const HARD_MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 440;
+const RESIZE_KEYBOARD_STEP = 16;
 const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
@@ -541,6 +542,7 @@ export const TripView: React.FC<TripViewProps> = ({
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
     });
     const mapViewportRef = useRef<HTMLDivElement | null>(null);
+    const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2210,6 +2212,33 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [detailsPanelVisible, detailsWidth, clampDetailsWidth]);
 
+    const handleSidebarResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        const reservedForDetails = detailsPanelVisible ? detailsWidth : 0;
+        const maxSidebar = window.innerWidth - reservedForDetails - MIN_MAP_WIDTH - (RESIZER_WIDTH * 2);
+        const boundedMax = Math.max(MIN_SIDEBAR_WIDTH, maxSidebar);
+        setSidebarWidth((prev) => Math.max(MIN_SIDEBAR_WIDTH, Math.min(boundedMax, prev + (direction * RESIZE_KEYBOARD_STEP))));
+    }, [detailsPanelVisible, detailsWidth]);
+
+    const handleDetailsResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        setDetailsWidth((prev) => clampDetailsWidth(prev + (direction * RESIZE_KEYBOARD_STEP)));
+    }, [clampDetailsWidth]);
+
+    const handleTimelineResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+        event.preventDefault();
+        const direction = event.key === 'ArrowUp' ? 1 : -1;
+        const maxTimelineHeight = window.innerHeight - MIN_BOTTOM_MAP_HEIGHT;
+        setTimelineHeight((prev) =>
+            Math.max(MIN_TIMELINE_HEIGHT, Math.min(maxTimelineHeight, prev + (direction * RESIZE_KEYBOARD_STEP)))
+        );
+    }, []);
+
     useEffect(() => {
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', stopResizing);
@@ -2347,6 +2376,16 @@ export const TripView: React.FC<TripViewProps> = ({
         setIsEditingTitle(true);
     }, [canManageTripMetadata, requireEdit, trip.title]);
 
+    useEffect(() => {
+        if (!isEditingTitle || isMobile || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            editTitleInputRef.current?.focus();
+        });
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [isEditingTitle, isMobile]);
+
     const handleCommitTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) {
             setIsEditingTitle(false);
@@ -2441,6 +2480,7 @@ export const TripView: React.FC<TripViewProps> = ({
                             <div className="flex flex-col leading-tight min-w-0">
                                 {!isMobile && isEditingTitle ? (
                                     <input
+                                        ref={editTitleInputRef}
                                         value={editTitleValue}
                                         onChange={e => setEditTitleValue(e.target.value)}
                                         onBlur={handleCommitTitleEdit}
@@ -2449,13 +2489,14 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 handleCommitTitleEdit();
                                             }
                                         }}
-                                        autoFocus
                                         className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
                                     />
-                                ) : (
-                                    <div
-                                        className={`flex items-center gap-2 ${!isMobile && canManageTripMetadata ? 'group cursor-pointer' : ''}`}
-                                        onClick={!isMobile && canManageTripMetadata ? handleStartTitleEdit : undefined}
+                                ) : !isMobile && canManageTripMetadata ? (
+                                    <button
+                                        type="button"
+                                        className="group flex items-center gap-2 cursor-pointer text-left"
+                                        onClick={handleStartTitleEdit}
+                                        aria-label="Edit trip title"
                                     >
                                         <h1
                                             className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
@@ -2463,9 +2504,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                         >
                                             {trip.title}
                                         </h1>
-                                        {!isMobile && canManageTripMetadata && (
-                                            <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        )}
+                                        <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <h1
+                                            className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
+                                            style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
+                                        >
+                                            {trip.title}
+                                        </h1>
                                     </div>
                                 )}
                                 {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
@@ -2861,9 +2909,15 @@ export const TripView: React.FC<TripViewProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group" onMouseDown={() => startResizing('sidebar')}>
+                                        <button
+                                            type="button"
+                                            className="w-1 bg-gray-100 hover:bg-accent-500 cursor-col-resize transition-colors z-30 flex items-center justify-center group appearance-none border-0 p-0"
+                                            onMouseDown={() => startResizing('sidebar')}
+                                            onKeyDown={handleSidebarResizeKeyDown}
+                                            aria-label="Resize timeline and map panels"
+                                        >
                                             <div className="h-8 w-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
+                                        </button>
 
                                         {detailsPanelVisible && (
                                             <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
@@ -2901,13 +2955,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                                         />
                                                     </Suspense>
                                                 )}
-                                                <div
-                                                    className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
+                                                <button
+                                                    type="button"
+                                                    className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
                                                     onMouseDown={(e) => startResizing('details', e.clientX)}
+                                                    onKeyDown={handleDetailsResizeKeyDown}
                                                     title="Resize details panel"
+                                                    aria-label="Resize details panel"
                                                 >
                                                     <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
-                                                </div>
+                                                </button>
                                             </div>
                                         )}
 
@@ -2970,9 +3027,15 @@ export const TripView: React.FC<TripViewProps> = ({
                                                 <MapDeferredFallback onLoadNow={enableMapBootstrap} />
                                             )}
                                         </div>
-                                        <div className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full" onMouseDown={() => startResizing('timeline-h')}>
+                                        <button
+                                            type="button"
+                                            className="h-1 bg-gray-100 hover:bg-accent-500 cursor-row-resize transition-colors z-30 flex justify-center items-center group w-full appearance-none border-0 p-0"
+                                            onMouseDown={() => startResizing('timeline-h')}
+                                            onKeyDown={handleTimelineResizeKeyDown}
+                                            aria-label="Resize timeline panel"
+                                        >
                                             <div className="w-12 h-1 group-hover:bg-accent-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
+                                        </button>
                                         <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                                 <div className="w-full h-full relative min-w-0">
@@ -3026,13 +3089,16 @@ export const TripView: React.FC<TripViewProps> = ({
                                                             />
                                                         </Suspense>
                                                     )}
-                                                    <div
-                                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors"
+                                                    <button
+                                                        type="button"
+                                                        className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
                                                         onMouseDown={(e) => startResizing('details', e.clientX)}
+                                                        onKeyDown={handleDetailsResizeKeyDown}
                                                         title="Resize details panel"
+                                                        aria-label="Resize details panel"
                                                     >
                                                         <div className="h-10 w-0.5 rounded-full bg-gray-200 group-hover:bg-accent-400 transition-colors" />
-                                                    </div>
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
