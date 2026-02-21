@@ -198,6 +198,9 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the extraction pass: desktop remained `100` (`FCP ~0.5 s`, `LCP ~0.6 s`, `TBT 0 ms`) and mobile improved to `89` (`FCP ~2.2 s`, `LCP ~3.5 s`, `TBT 0 ms`) with transfer stable at `~403 KiB` across `32` requests.
 - [x] Refactored shared/example route-loader effects to helper-based state application, eliminating the remaining route `setState`-in-effect warnings and improving `react-doctor` from `98/4` to `99/2` (only structural `TripView` advisories remain).
 - [x] Extracted release-notice readiness orchestration from `TripView` into `components/tripview/useReleaseNoticeReady.ts`, reducing `TripView` from `2615` to `2557` lines and lowering local planner state count from `24` to `23` while preserving the same interaction/idle/timer gating behavior.
+- [x] Extracted trip expiry/debug orchestration into `components/tripview/useTripExpiryLifecycle.ts` and moved header auth submit/login/logout orchestration into `components/tripview/useTripHeaderAuthAction.ts`, reducing `TripView` further from `2557` to `2434` lines and local planner state count from `23` to `20`.
+- [x] Follow-up `react-doctor` after expiry/header extraction stayed at `99/100` with warnings still limited to structural `TripView` size/state density (`2` warnings across `1` file).
+- [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the expiry/header extraction pass: desktop stayed `100` (`FCP ~0.5 s`, `LCP ~0.7 s`, `TBT 0 ms`) and mobile measured `93` (`FCP ~2.0 s`, `LCP ~3.0 s`, `TBT 0 ms`) with transfer still `~403 KiB` across `32` requests.
 
 ## Validation checklist
 - [x] `npx vite build`

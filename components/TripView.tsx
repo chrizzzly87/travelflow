@@ -21,14 +21,8 @@ import {
 import { DB_ENABLED } from '../config/db';
 import {
     buildPaywalledTripDisplay,
-    getDebugTripExpiredOverride,
-    getTripLifecycleState,
-    setDebugTripExpiredOverride,
-    shouldShowTripPaywall,
-    TRIP_EXPIRY_DEBUG_EVENT,
 } from '../config/paywall';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { APP_NAME } from '../config/appGlobals';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
@@ -37,6 +31,8 @@ import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
 import { useReleaseNoticeReady } from './tripview/useReleaseNoticeReady';
+import { useTripExpiryLifecycle } from './tripview/useTripExpiryLifecycle';
+import { useTripHeaderAuthAction } from './tripview/useTripHeaderAuthAction';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
 import { useTripShareLifecycle } from './tripview/useTripShareLifecycle';
@@ -54,10 +50,6 @@ interface ToastState {
     title: string;
     message: string;
 }
-
-type TripDebugWindow = Window & typeof globalThis & {
-    toggleExpired?: (force?: boolean) => boolean;
-};
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -130,7 +122,6 @@ const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
-const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
 const GENERATION_PROGRESS_MESSAGES = [
@@ -356,22 +347,16 @@ export const TripView: React.FC<TripViewProps> = ({
     const tripRef = useRef(trip);
     tripRef.current = trip;
     const isReleaseNoticeReady = useReleaseNoticeReady({ suppressReleaseNotice });
-    const [nowMs, setNowMs] = useState(() => Date.now());
-    const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
-    const tripExpiresAtMs = useMemo(() => {
-        if (!trip.tripExpiresAt) return null;
-        const parsed = Date.parse(trip.tripExpiresAt);
-        return Number.isFinite(parsed) ? parsed : null;
-    }, [trip.tripExpiresAt]);
-    const lifecycleState = useMemo(
-        () => getTripLifecycleState(trip, { nowMs, expiredOverride: expiredPreviewOverride }),
-        [trip, nowMs, expiredPreviewOverride]
-    );
-    const isTripExpired = lifecycleState === 'expired';
-    const isTripLockedByExpiry = useMemo(
-        () => shouldShowTripPaywall(trip, { lifecycleState }),
-        [trip, lifecycleState]
-    );
+    const {
+        tripExpiresAtMs,
+        lifecycleState,
+        isTripLockedByExpiry,
+        expirationLabel,
+        expirationRelativeLabel,
+    } = useTripExpiryLifecycle({
+        trip,
+        isTripDetailRoute,
+    });
     const isAdminFallbackView = adminAccess?.source === 'admin_fallback';
     const [adminOverrideEnabled, setAdminOverrideEnabled] = useState(false);
     const isTripLockedByArchive = (trip.status || 'active') === 'archived';
@@ -387,24 +372,6 @@ export const TripView: React.FC<TripViewProps> = ({
         [displayTrip.items]
     );
     const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
-    const expirationLabel = useMemo(() => {
-        if (!tripExpiresAtMs) return null;
-        const date = new Date(tripExpiresAtMs);
-        return date.toLocaleDateString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    }, [tripExpiresAtMs]);
-    const expirationRelativeLabel = useMemo(() => {
-        if (!tripExpiresAtMs) return null;
-        const diffMs = tripExpiresAtMs - nowMs;
-        const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
-        if (diffDays > 1) return `Expires in ${diffDays} days`;
-        if (diffDays === 1) return 'Expires tomorrow';
-        if (diffDays === 0) return 'Expires today';
-        return `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
-    }, [tripExpiresAtMs, nowMs]);
     const canEnableAdminOverride = isAdminFallbackView && Boolean(adminAccess?.canAdminWrite);
     const ownerUsersUrl = useMemo(() => {
         if (!isAdminFallbackView || !adminAccess?.ownerId) return null;
@@ -431,50 +398,23 @@ export const TripView: React.FC<TripViewProps> = ({
         });
     }, [location.hash, location.pathname, location.search, openLoginModal, trip.id]);
 
-    const [isHeaderAuthSubmitting, setIsHeaderAuthSubmitting] = useState(false);
-    const canUseAuthenticatedSession = isAuthenticated && !isAnonymous;
+    const {
+        canUseAuthenticatedSession,
+        isHeaderAuthSubmitting,
+        handleHeaderAuthAction,
+    } = useTripHeaderAuthAction({
+        tripId: trip.id,
+        isAuthenticated,
+        isAnonymous,
+        logout,
+        openLoginModal,
+        locationPathname: location.pathname,
+        locationSearch: location.search,
+        locationHash: location.hash,
+    });
     const prewarmTripInfoModal = useCallback(() => {
         void loadTripInfoModalModule().catch(() => undefined);
     }, []);
-
-    const handleHeaderAuthAction = useCallback(async () => {
-        if (isHeaderAuthSubmitting) return;
-
-        if (canUseAuthenticatedSession) {
-            setIsHeaderAuthSubmitting(true);
-            trackEvent('trip_view__auth--logout', { trip_id: trip.id });
-            try {
-                await logout();
-                if (typeof window !== 'undefined') {
-                    window.location.reload();
-                    return;
-                }
-            } finally {
-                setIsHeaderAuthSubmitting(false);
-            }
-            return;
-        }
-
-        trackEvent('trip_view__auth--login', { trip_id: trip.id });
-        openLoginModal({
-            source: 'trip_view_header',
-            nextPath: buildPathFromLocationParts({
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash,
-            }),
-            reloadOnSuccess: true,
-        });
-    }, [
-        canUseAuthenticatedSession,
-        isHeaderAuthSubmitting,
-        location.hash,
-        location.pathname,
-        location.search,
-        logout,
-        openLoginModal,
-        trip.id,
-    ]);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !trip.isExample) return;
@@ -813,72 +753,6 @@ export const TripView: React.FC<TripViewProps> = ({
     });
 
     useEffect(() => {
-        setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
-    }, [trip.id]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const syncOverride = (event: Event) => {
-            const detail = (event as CustomEvent<{ tripId?: string }>).detail;
-            if (detail?.tripId && detail.tripId !== trip.id) return;
-            setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
-        };
-        window.addEventListener(TRIP_EXPIRY_DEBUG_EVENT, syncOverride as EventListener);
-        return () => window.removeEventListener(TRIP_EXPIRY_DEBUG_EVENT, syncOverride as EventListener);
-    }, [trip.id]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const host = window as TripDebugWindow;
-
-        if (!isTripDetailRoute) {
-            if (host.toggleExpired) {
-                delete host.toggleExpired;
-            }
-            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-                detail: { available: false, expired: false },
-            }));
-            return;
-        }
-
-        const toggleExpired = (force?: boolean) => {
-            let nextExpired = false;
-            setExpiredPreviewOverride((prev) => {
-                const baseExpired = typeof prev === 'boolean' ? prev : isTripExpired;
-                nextExpired = typeof force === 'boolean' ? force : !baseExpired;
-                setDebugTripExpiredOverride(trip.id, nextExpired);
-                return nextExpired;
-            });
-            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-                detail: { available: true, expired: nextExpired },
-            }));
-            if (IS_DEV) {
-                console.info(
-                    `[${APP_NAME}] toggleExpired(${typeof force === 'boolean' ? force : 'toggle'}) -> ${nextExpired ? 'expired preview ON' : 'expired preview OFF'} for trip ${trip.id}`
-                );
-            }
-            return nextExpired;
-        };
-
-        host.toggleExpired = toggleExpired;
-        window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-            detail: {
-                available: true,
-                expired: typeof expiredPreviewOverride === 'boolean' ? expiredPreviewOverride : isTripExpired,
-            },
-        }));
-
-        return () => {
-            if (host.toggleExpired === toggleExpired) {
-                delete host.toggleExpired;
-            }
-            window.dispatchEvent(new CustomEvent(TRIP_EXPIRED_DEBUG_EVENT, {
-                detail: { available: false, expired: false },
-            }));
-        };
-    }, [trip.id, isTripExpired, isTripDetailRoute, expiredPreviewOverride]);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () => {
             setIsMobileViewport(window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH);
@@ -887,12 +761,6 @@ export const TripView: React.FC<TripViewProps> = ({
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    useEffect(() => {
-        if (!tripExpiresAtMs) return;
-        const interval = window.setInterval(() => setNowMs(Date.now()), 60_000);
-        return () => window.clearInterval(interval);
-    }, [tripExpiresAtMs]);
 
     useEffect(() => {
         const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
