@@ -9,7 +9,7 @@ import {
     type ExampleTripCard as ExampleTripCardType,
 } from '../../data/exampleTripCards';
 import type { ExampleTemplateMiniCalendar } from '../../data/exampleTripTemplates';
-import { getDestinationDisplayName } from '../../utils';
+import { getDestinationDisplayName } from '../../services/destinationService';
 import { getExampleCityLaneViewTransitionName, getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../../shared/viewTransitionNames';
 import { ProgressiveImage } from '../ProgressiveImage';
 import { buildBlurhashEndpointUrl, isImageCdnEnabled } from '../../utils/imageDelivery';

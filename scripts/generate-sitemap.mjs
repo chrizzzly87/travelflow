@@ -5,7 +5,10 @@ import { resolveSiteUrl } from '../config/site-url.mjs';
 const ROOT = process.cwd();
 const BLOG_DIR = path.join(ROOT, 'content', 'blog');
 const OUT_FILE = path.join(ROOT, 'public', 'sitemap.xml');
-const APP_FILE = path.join(ROOT, 'App.tsx');
+const ROUTE_CONFIG_FILES = [
+    path.join(ROOT, 'app', 'routes', 'DeferredAppRoutes.tsx'),
+    path.join(ROOT, 'App.tsx'),
+];
 const LOCALES_FILE = path.join(ROOT, 'config', 'locales.ts');
 
 const SITE_URL = resolveSiteUrl();
@@ -73,15 +76,29 @@ const readLocalesConfig = async () => {
     return { supportedLocales, defaultLocale };
 };
 
-const readIndexableMarketingPaths = async () => {
-    const raw = await fs.readFile(APP_FILE, 'utf8');
-    const configMatch = raw.match(MARKETING_ROUTE_CONFIG_REGEX);
-    if (!configMatch) {
-        throw new Error(`[sitemap:generate] Could not parse MARKETING_ROUTE_CONFIGS from ${APP_FILE}`);
+const readMarketingRouteConfigSource = async () => {
+    for (const filePath of ROUTE_CONFIG_FILES) {
+        try {
+            const raw = await fs.readFile(filePath, 'utf8');
+            const configMatch = raw.match(MARKETING_ROUTE_CONFIG_REGEX);
+            if (configMatch) {
+                return { filePath, configBody: configMatch[1] };
+            }
+        } catch {
+            // Try next candidate.
+        }
     }
 
+    throw new Error(
+        `[sitemap:generate] Could not parse MARKETING_ROUTE_CONFIGS from any source file (${ROUTE_CONFIG_FILES.join(', ')})`
+    );
+};
+
+const readIndexableMarketingPaths = async () => {
+    const { filePath, configBody } = await readMarketingRouteConfigSource();
+
     const uniquePaths = [];
-    for (const match of configMatch[1].matchAll(PATH_LITERAL_REGEX)) {
+    for (const match of configBody.matchAll(PATH_LITERAL_REGEX)) {
         const routePath = match[1];
         if (routePath.includes(':')) continue;
         if (NON_INDEXABLE_STATIC_PATHS.has(routePath)) continue;
@@ -90,7 +107,7 @@ const readIndexableMarketingPaths = async () => {
     }
 
     if (uniquePaths.length === 0) {
-        throw new Error(`[sitemap:generate] No indexable marketing paths extracted from ${APP_FILE}`);
+        throw new Error(`[sitemap:generate] No indexable marketing paths extracted from ${filePath}`);
     }
 
     return uniquePaths;

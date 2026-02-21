@@ -2,6 +2,10 @@ import React, { useEffect } from 'react';
 
 const SCRIPT_ID = 'tf-speculation-rules';
 
+interface SpeculationRulesManagerProps {
+    enabled?: boolean;
+}
+
 const isSpeculationRulesSupported = (): boolean => {
     if (typeof window === 'undefined') return false;
     if (typeof HTMLScriptElement === 'undefined') return false;
@@ -39,8 +43,9 @@ const speculationRules = {
     ],
 };
 
-export const SpeculationRulesManager: React.FC = () => {
+export const SpeculationRulesManager: React.FC<SpeculationRulesManagerProps> = ({ enabled = true }) => {
     useEffect(() => {
+        if (!enabled) return;
         if (!isSpeculationRulesEnabled()) return;
         if (!isSpeculationRulesSupported()) return;
 
@@ -59,7 +64,7 @@ export const SpeculationRulesManager: React.FC = () => {
                 node.parentNode.removeChild(node);
             }
         };
-    }, []);
+    }, [enabled]);
 
     return null;
 };

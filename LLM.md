@@ -17,6 +17,10 @@
 - Release notes in `content/updates/*.md` are always written in English and do not require EN/DE translation prompts or style sign-off unless explicitly requested.
 - For clickable marketing/planner UI updates, add `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` in the standard format unless explicitly excluded.
 - For locale changes, run `npm run i18n:validate` to enforce locale namespace parity and ICU placeholder syntax.
+- For React performance/refactor work, use `vercel-react-best-practices` as a focused checklist and apply only relevant rules.
+- After substantial React edits, run `npx -y react-doctor@latest . --verbose --diff`; fix blocking errors and prioritize warnings by impact.
+- Use `find-skills` only when existing workflows/skills do not clearly cover the requested capability.
+- Avoid overusing skills for routine edits that do not benefit from specialized guidance.
 
 ## Update entry policy
 - Use one release note file per worktree/feature, not multiple incremental files.

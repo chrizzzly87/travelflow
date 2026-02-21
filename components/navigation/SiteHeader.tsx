@@ -1,8 +1,8 @@
 import React, { Suspense, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AirplaneTilt, List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { MobileMenu } from './MobileMenu';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -15,7 +15,20 @@ import { preloadLocaleNamespaces } from '../../i18n';
 import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
-import { AccountMenu } from './AccountMenu';
+import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const MobileMenu = lazyWithRecovery('MobileMenu', () =>
+    import('./MobileMenu').then((module) => ({ default: module.MobileMenu }))
+);
+
+const AccountMenu = lazyWithRecovery('AccountMenu', () =>
+    import('./AccountMenu').then((module) => ({ default: module.AccountMenu }))
+);
 
 type HeaderVariant = 'solid' | 'glass';
 
@@ -23,6 +36,8 @@ interface SiteHeaderProps {
     variant?: HeaderVariant;
     /** When provided, "My Trips" opens this callback instead of navigating. */
     onMyTripsClick?: () => void;
+    /** Prewarm callback for explicit My Trips intent. */
+    onMyTripsIntent?: () => void;
     /** Hide the "Create Trip" CTA (e.g. when already on the create-trip page). */
     hideCreateTrip?: boolean;
 }
@@ -45,6 +60,7 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
 export const SiteHeader: React.FC<SiteHeaderProps> = ({
     variant = 'solid',
     onMyTripsClick,
+    onMyTripsIntent,
     hideCreateTrip = false,
 }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -192,6 +208,9 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                         handleNavClick('my_trips');
                                         onMyTripsClick();
                                     }}
+                                    onMouseEnter={onMyTripsIntent}
+                                    onFocus={onMyTripsIntent}
+                                    onTouchStart={onMyTripsIntent}
                                     className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
                                     {...navDebugAttributes('my_trips')}
                                 >
@@ -221,11 +240,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                 </div>
             </header>
 
-            <MobileMenu
-                isOpen={isMobileMenuOpen}
-                onClose={() => setIsMobileMenuOpen(false)}
-                onMyTripsClick={onMyTripsClick}
-            />
+            {isMobileMenuOpen && (
+                <Suspense fallback={null}>
+                    <MobileMenu
+                        isOpen={isMobileMenuOpen}
+                        onClose={() => setIsMobileMenuOpen(false)}
+                        onMyTripsClick={onMyTripsClick}
+                        onMyTripsIntent={onMyTripsIntent}
+                    />
+                </Suspense>
+            )}
         </>
     );
 };

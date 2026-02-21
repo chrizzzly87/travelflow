@@ -51,3 +51,32 @@ export const normalizeFlagCode = (value?: string | null): string | null => {
 export const stripLeadingFlagEmoji = (value: string): string => {
     return value.replace(LEADING_FLAG_EMOJI_REGEX, '').trim();
 };
+
+const SPECIAL_EMOJI_BY_FLAG_CODE: Record<string, string> = {
+    'gb-eng': '🏴',
+    'gb-sct': '🏴',
+    'gb-wls': '🏴',
+    'gb-zet': '🏴',
+};
+
+const codeToRegionalEmoji = (countryCode: string): string | null => {
+    if (!/^[a-z]{2}$/.test(countryCode)) return null;
+    const upper = countryCode.toUpperCase();
+    const [first, second] = upper.split('');
+    if (!first || !second) return null;
+    const firstIndicator = REGIONAL_INDICATOR_START + (first.charCodeAt(0) - ASCII_A);
+    const secondIndicator = REGIONAL_INDICATOR_START + (second.charCodeAt(0) - ASCII_A);
+    return String.fromCodePoint(firstIndicator, secondIndicator);
+};
+
+export const flagCodeToEmoji = (value?: string | null): string | null => {
+    const normalizedCode = normalizeFlagCode(value);
+    if (!normalizedCode) return null;
+
+    const special = SPECIAL_EMOJI_BY_FLAG_CODE[normalizedCode];
+    if (special) return special;
+
+    const countryCode = normalizedCode.split('-')[0];
+    if (!countryCode) return null;
+    return codeToRegionalEmoji(countryCode);
+};

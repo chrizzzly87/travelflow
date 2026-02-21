@@ -9,6 +9,12 @@
 6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
 7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
+## Skill usage policy
+- Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
+- Run `npx -y react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
+- Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
+- Avoid unnecessary skill runs for straightforward changes.
+
 ## Mandatory release note rule
 When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.
 

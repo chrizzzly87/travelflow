@@ -17,9 +17,11 @@ import {
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { FlagIcon } from '../components/flags/FlagIcon';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { useDbSync } from '../hooks/useDbSync';
 import { AppLanguage } from '../types';
-import { buildCreateTripUrl, getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../utils';
+import { buildCreateTripUrl } from '../utils';
+import { getDestinationOptionByName, resolveDestinationName, searchDestinationOptions } from '../services/destinationService';
 
 interface CreateTripSplitWorkspaceLabPageProps {
     onOpenManager: () => void;
@@ -275,29 +277,34 @@ export const CreateTripSplitWorkspaceLabPage: React.FC<CreateTripSplitWorkspaceL
 
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Pace</label>
-                                        <select
-                                            value={pace}
-                                            onChange={(event) => setPace(event.target.value as 'Relaxed' | 'Balanced' | 'Fast')}
-                                            className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
-                                        >
-                                            <option>Relaxed</option>
-                                            <option>Balanced</option>
-                                            <option>Fast</option>
-                                        </select>
+                                        <label htmlFor="split-workspace-pace" className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Pace</label>
+                                        <Select value={pace} onValueChange={(value) => setPace(value as 'Relaxed' | 'Balanced' | 'Fast')}>
+                                            <SelectTrigger id="split-workspace-pace" className="mt-2 w-full rounded-xl border-white/10 bg-white/5 text-sm text-slate-100 focus:border-cyan-300 focus:ring-cyan-300">
+                                                <span>{pace}</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {['Relaxed', 'Balanced', 'Fast'].map((option) => (
+                                                    <SelectItem key={`split-pace-${option}`} value={option}>
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Budget</label>
-                                        <select
-                                            value={budget}
-                                            onChange={(event) => setBudget(event.target.value as 'Low' | 'Medium' | 'High' | 'Luxury')}
-                                            className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
-                                        >
-                                            <option>Low</option>
-                                            <option>Medium</option>
-                                            <option>High</option>
-                                            <option>Luxury</option>
-                                        </select>
+                                        <label htmlFor="split-workspace-budget" className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Budget</label>
+                                        <Select value={budget} onValueChange={(value) => setBudget(value as 'Low' | 'Medium' | 'High' | 'Luxury')}>
+                                            <SelectTrigger id="split-workspace-budget" className="mt-2 w-full rounded-xl border-white/10 bg-white/5 text-sm text-slate-100 focus:border-cyan-300 focus:ring-cyan-300">
+                                                <span>{budget}</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {['Low', 'Medium', 'High', 'Luxury'].map((option) => (
+                                                    <SelectItem key={`split-budget-${option}`} value={option}>
+                                                        {option}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 

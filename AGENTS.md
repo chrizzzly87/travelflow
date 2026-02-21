@@ -15,6 +15,7 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
 - For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
 - Reuse existing shared components/hooks before creating new UI patterns. For confirmation/prompt flows, use the styled app dialog system (`useAppDialog` from `components/AppDialogProvider`) instead of native browser prompts.
+- Do not introduce native HTML `<select>` controls in product UI. Always use the shared styled Select (`components/ui/select`, shadcn/Radix) for dropdowns to keep visual and interaction behavior consistent across the app.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
 - Update/finalize that single release note shortly before opening the PR, once final scope is clear.
@@ -32,3 +33,9 @@ This repository uses markdown release files as the source of truth for product u
 
 ## Scope
 These instructions apply to all coding agents and LLM assistants working in this repo.
+
+## Skill usage policy
+- Use `vercel-react-best-practices` for React performance/refactor tasks to guide high-impact decisions, but apply only rules relevant to the current change.
+- Run `npx -y react-doctor@latest . --verbose --diff` after substantial React changes; treat reported errors as fix-before-merge and triage warnings by impact/scope.
+- Use `find-skills` only when current skills/workflows do not clearly cover the task and a capability discovery step is needed.
+- Avoid skill/tool churn: do not run unrelated skills for routine edits.
