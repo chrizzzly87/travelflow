@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { makeTrip } from '../helpers/tripFixtures';
 import { deleteTrip, getAllTrips, getTripById, saveTrip, setAllTrips } from '../../services/storageService';

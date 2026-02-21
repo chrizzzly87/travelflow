@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { appendHistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../../services/historyService';
 import { makeTrip } from '../helpers/tripFixtures';

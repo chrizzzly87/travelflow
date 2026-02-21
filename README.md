@@ -5,7 +5,7 @@ TravelFlow is a React + TypeScript + Vite app for generating and managing travel
 ## Requirements
 
 - Node.js 18+
-- pnpm 10+
+- pnpm 10+ (via Corepack)
 
 ## Local Setup
 
@@ -98,6 +98,12 @@ For UI styling, component behavior, and accessibility standards, use:
 
 - `docs/BRAND_CI_GUIDELINES.md`
 
+## Tech Stack Overview
+
+For the current architecture snapshot (frameworks, state management, data stack, analytics, testing status, and upgrade roadmap), use:
+
+- `docs/TECH_STACK.md`
+
 ## Paywall Guidelines
 
 For trip lifecycle state handling, lock behavior, and paywall rules, use:
@@ -123,14 +129,11 @@ The production output is generated in `dist/`.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
-## PNPM Scripts
+## Scripts
 
 All available `pnpm` commands in this repo:
 
 - `pnpm dev` — Start Vite dev server.
-- `pnpm test` — Run Vitest in watch mode.
-- `pnpm test:run` — Run the full Vitest suite once.
-- `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
 - `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
 - `pnpm preview` — Preview the production build locally.
 - `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
@@ -138,6 +141,11 @@ All available `pnpm` commands in this repo:
 - `pnpm blog:validate` — Validate blog markdown metadata/content.
 - `pnpm edge:validate` — Validate Netlify edge function setup and constraints.
 - `pnpm maps:generate` — Generate static trip map PNGs from template coordinates.
+- `pnpm test` — Run the full Vitest suite once.
+- `pnpm test:watch` — Run Vitest in watch mode.
+- `pnpm test:run` — Run the full Vitest suite once.
+- `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
+- `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
 - `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
 - `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
 - `pnpm inspirations:images:jobs` — Build inspiration image batch job file only.
