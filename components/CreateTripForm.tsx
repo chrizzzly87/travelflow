@@ -88,6 +88,7 @@ import {
 } from '../config/aiModelCatalog';
 import { isSimulatedLoggedIn } from '../services/simulatedLoginService';
 import { useAuth } from '../hooks/useAuth';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { createTripGenerationRequest, type QueuedTripGenerationPayload } from '../services/tripGenerationQueueService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 
@@ -380,6 +381,8 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const [isGuestAuthModalVisible, setIsGuestAuthModalVisible] = useState(false);
     const [isQueuePersisting, setIsQueuePersisting] = useState(false);
     const guestAuthTimerRef = useRef<number | null>(null);
+    const guestAuthModalRef = useRef<HTMLDivElement | null>(null);
+    const guestAuthContinueButtonRef = useRef<HTMLButtonElement | null>(null);
 
     // Classic state.
     const [startDate, setStartDate] = useState(defaultDates.startDate);
@@ -418,6 +421,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
     const wizardSearchRef = useRef<HTMLDivElement>(null);
     const wizardSearchDropdownRef = useRef<HTMLDivElement>(null);
     const [wizardSearchPosition, setWizardSearchPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+    useFocusTrap({
+        isActive: isGenerating && isGuestAuthModalVisible && !!queuedRequestId,
+        containerRef: guestAuthModalRef,
+        initialFocusRef: guestAuthContinueButtonRef,
+    });
 
     const destination = selectedCountries.join(', ');
     const destinationPrompt = selectedCountries.map((country) => getDestinationPromptLabel(country)).join(', ');
@@ -1020,10 +1029,16 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                 {isGuestAuthModalVisible && queuedRequestId && (
                     <div className="absolute inset-0 z-[1900] flex items-center justify-center p-4 sm:p-6">
                         <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]" />
-                        <div className="relative z-10 w-full max-w-md rounded-2xl border border-slate-100 bg-white shadow-2xl">
+                        <div
+                            ref={guestAuthModalRef}
+                            className="relative z-10 w-full max-w-md rounded-2xl border border-slate-100 bg-white shadow-2xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="queued-auth-modal-title"
+                        >
                             <div className="border-b border-slate-100 px-5 py-4">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">Continue with account</p>
-                                <h2 className="mt-1 text-lg font-bold text-slate-900">Unlock your generated trip</h2>
+                                <h2 id="queued-auth-modal-title" className="mt-1 text-lg font-bold text-slate-900">Unlock your generated trip</h2>
                                 <p className="mt-2 text-sm text-slate-600">
                                     Your trip request is queued. Sign in or register to start real AI generation and open the final itinerary instantly.
                                 </p>
@@ -1045,6 +1060,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     Not now
                                 </button>
                                 <button
+                                    ref={guestAuthContinueButtonRef}
                                     type="button"
                                     onClick={continueWithAuthForQueuedRequest}
                                     className="rounded-md bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"
@@ -1195,7 +1211,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 <CountrySelect value={destination} onChange={setCountriesFromString} disabled={isGenerating} />
 
                                 <div className="space-y-1.5 text-left">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</label>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</p>
                                     <div className="flex items-center gap-2 px-1">
                                         <Checkbox
                                             id="roundtrip"
@@ -1256,8 +1272,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 </div>
                                             )}
                                             <div className="col-span-2 space-y-1">
-                                                <label className="text-xs font-medium text-gray-500">Specific Cities (Optional)</label>
+                                                <label htmlFor="classic-specific-cities" className="text-xs font-medium text-gray-500">Specific Cities (Optional)</label>
                                                 <input
+                                                    id="classic-specific-cities"
                                                     type="text"
                                                     value={specificCities}
                                                     onChange={(event) => setSpecificCities(event.target.value)}
@@ -1266,8 +1283,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-medium text-gray-500">Budget</label>
+                                                <label htmlFor="classic-budget" className="text-xs font-medium text-gray-500">Budget</label>
                                                 <select
+                                                    id="classic-budget"
                                                     value={budget}
                                                     onChange={(event) => setBudget(event.target.value)}
                                                     className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
@@ -1279,8 +1297,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 </select>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-medium text-gray-500">Pace</label>
+                                                <label htmlFor="classic-pace" className="text-xs font-medium text-gray-500">Pace</label>
                                                 <select
+                                                    id="classic-pace"
                                                     value={pace}
                                                     onChange={(event) => setPace(event.target.value)}
                                                     className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
@@ -1291,8 +1310,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                                 </select>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-medium text-gray-500">Stops</label>
+                                                <label htmlFor="classic-stops" className="text-xs font-medium text-gray-500">Stops</label>
                                                 <input
+                                                    id="classic-stops"
                                                     type="number"
                                                     min="1"
                                                     max="20"
@@ -1307,11 +1327,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 </div>
 
                                 <div className="space-y-1.5 text-left">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                    <label htmlFor="classic-notes" className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                                         <AlignLeft size={14} className="text-accent-500" />
                                         Style & Preferences
                                     </label>
                                     <textarea
+                                        id="classic-notes"
                                         value={notes}
                                         onChange={(event) => setNotes(event.target.value)}
                                         placeholder="e.g. Foodie tour, hiking focus, kid friendly..."
@@ -1484,7 +1505,6 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     <div className="relative" ref={wizardSearchRef}>
                                         <div
                                             className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 min-h-[64px] flex flex-wrap items-start gap-2 focus-within:ring-2 focus-within:ring-accent-500 focus-within:bg-white"
-                                            onClick={openWizardSearch}
                                         >
                                             {selectedCountries.map((countryName) => (
                                                 <SeasonAwareCountryTag
@@ -1550,7 +1570,7 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                     </div>
 
                                     <div className="space-y-1.5 text-left">
-                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</label>
+                                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Route</p>
                                         <div className="flex items-center gap-2 px-1">
                                             <Checkbox
                                                 id="wizard-roundtrip"
@@ -1680,11 +1700,12 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         )}
 
                                         <div className="space-y-1.5 text-left pt-1">
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                                            <label htmlFor="wizard-notes" className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                                                 <AlignLeft size={14} className="text-accent-500" />
                                                 Extra Notes for AI (optional)
                                             </label>
                                             <textarea
+                                                id="wizard-notes"
                                                 value={wizardNotes}
                                                 onChange={(event) => setWizardNotes(event.target.value)}
                                                 placeholder="Anything else we should optimize for?"
@@ -1769,8 +1790,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                             {surpriseInputMode === 'month-duration' ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Month</label>
+                                        <label htmlFor="surprise-month" className="text-xs font-bold uppercase tracking-wider text-gray-500">Month</label>
                                         <select
+                                            id="surprise-month"
                                             value={surpriseMonth}
                                             onChange={(event) => setSurpriseMonth(Number(event.target.value))}
                                             className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
@@ -1781,8 +1803,9 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Duration (weeks)</label>
+                                        <label htmlFor="surprise-weeks" className="text-xs font-bold uppercase tracking-wider text-gray-500">Duration (weeks)</label>
                                         <select
+                                            id="surprise-weeks"
                                             value={surpriseWeeks}
                                             onChange={(event) => setSurpriseWeeks(Number(event.target.value))}
                                             className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"

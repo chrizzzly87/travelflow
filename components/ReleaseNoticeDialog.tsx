@@ -1,9 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { getLatestInAppRelease, getWebsiteVisibleItems, groupReleaseItemsByType } from '../services/releaseNotesService';
 import { ReleasePill } from './marketing/ReleasePill';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 const RELEASE_NOTICE_DISMISSED_KEY = 'tf_release_notice_dismissed_release_id';
 
@@ -13,6 +14,8 @@ export interface ReleaseNoticeDialogProps {
 
 export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enabled }) => {
     const latestInAppRelease = useMemo(() => getLatestInAppRelease(), []);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const dismissButtonRef = useRef<HTMLButtonElement | null>(null);
     const [dismissedReleaseId, setDismissedReleaseId] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
         try {
@@ -39,7 +42,15 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
         }
     }, [latestInAppRelease]);
 
-    if (!enabled || !latestInAppRelease || dismissedReleaseId === latestInAppRelease.id) {
+    const isNoticeOpen = enabled && Boolean(latestInAppRelease) && dismissedReleaseId !== latestInAppRelease.id;
+
+    useFocusTrap({
+        isActive: isNoticeOpen,
+        containerRef: dialogRef,
+        initialFocusRef: dismissButtonRef,
+    });
+
+    if (!isNoticeOpen || !latestInAppRelease) {
         return null;
     }
 
@@ -51,7 +62,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                 aria-label="Close release update"
                 onClick={dismissReleaseNotice}
             />
-            <div className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
+            <div ref={dialogRef} className="relative w-full max-w-lg rounded-3xl border border-accent-100 bg-white shadow-2xl">
                 <div className="rounded-t-3xl border-b border-slate-100 bg-gradient-to-r from-accent-50 to-accent-100 px-6 py-5">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-accent-700">
                         Latest release · {latestInAppRelease.version}
@@ -120,6 +131,7 @@ export const ReleaseNoticeDialog: React.FC<ReleaseNoticeDialogProps> = ({ enable
                         View full changelog
                     </Link>
                     <button
+                        ref={dismissButtonRef}
                         type="button"
                         onClick={dismissReleaseNotice}
                         className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700"

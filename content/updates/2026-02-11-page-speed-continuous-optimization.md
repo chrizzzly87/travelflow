@@ -89,3 +89,31 @@ summary: "Improved page speed and perceived navigation with lighter initial bund
 - [ ] [Internal] 🧩 Added a dedicated TripManager suspense shell plus first-frame trip hydration + async DB sync state handling to keep panel animation responsive under slow network/database conditions.
 - [ ] [Internal] 🔥 Added a follow-up performance TODO to prewarm the My Plans lazy chunk on explicit trigger intent (hover/focus/touchstart) after merge.
 - [ ] [Internal] 🧭 Documented the onboarding gate + guest queued-generation handoff contract in the Supabase runbook and added a deferred hardening backlog for future production rollout.
+- [ ] [Internal] 🚀 Implemented explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the My Plans lazy chunk so the first panel open resolves faster without increasing first-render payload.
+- [ ] [Internal] 🧱 Extracted TripView map bootstrap gating into a dedicated hook (`useDeferredMapBootstrap`) to isolate visibility/delay/interaction loading orchestration from the main trip render component.
+- [ ] [Internal] 📏 Captured a real non-redirecting `/trip/:id` Lighthouse baseline using a valid compressed trip URL to anchor further trip-page optimization work (`91` mobile / `100` desktop in local preview runs).
+- [ ] [Internal] 🩺 Reduced optimization lint debt in this pass (`react-doctor` `90` → `91`, warnings `209` → `203`) by addressing low-risk trip-flow findings and removing remaining inline timeline-render hotspots in `TripView`.
+- [x] [Improved] ⚡ Trip information now opens instantly with a lightweight loading shell instead of waiting for the modal bundle to finish loading.
+- [ ] [Internal] 🔥 Added explicit-intent prewarm (`hover`/`focus`/`touchstart`) for the lazy TripInfo modal chunk to reduce first-open latency without increasing initial payload.
+- [ ] [Internal] 🧩 Extracted TripView history and overlay orchestration into dedicated hooks to keep undo/redo, popstate, and modal state management out of the main component body.
+- [x] [Improved] ♿ Trip info, history, share, and add-activity dialogs now use stronger semantic modal and form patterns for better keyboard and assistive-technology behavior.
+- [ ] [Internal] 🩺 Cleared high-signal trip-modal accessibility warnings and reduced `react-doctor` warning count from `203` to `177` in this pass.
+- [x] [Improved] ⌨️ Keyboard tab navigation is now contained inside open dialogs and side panels so focus no longer jumps to background page content.
+- [ ] [Internal] ♿ Added a shared focus-trap hook across custom overlay surfaces and standardized backdrop layers to semantic button elements.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `177` to `175` while retaining score `91`.
+- [ ] [Internal] ♿ Converted remaining non-semantic destination-picker and print-calendar click targets to semantic controls and tightened label/input associations to remove those hotspots from accessibility linting.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `175` to `163` while retaining score `91`.
+- [ ] [Internal] 🧩 Extracted trip timeline-render orchestration into a dedicated `TripTimelineCanvas` module so `TripView` keeps shrinking without changing planner behavior.
+- [ ] [Internal] ♿ Converted `DetailsPanel` hotel-search rows and overlay backdrop to semantic controls and switched hotel-search list keys from indexes to stable IDs.
+- [ ] [Internal] 🩺 Follow-up accessibility linting improved `react-doctor` warnings from `163` to `158` while retaining score `91`.
+- [ ] [Internal] 📏 Captured fresh `/trip/:id` real-URL Lighthouse follow-up runs after this refactor cycle; desktop stayed at `100` while mobile remained in an expected variance band with transfer/TBT envelopes stable.
+- [x] [Improved] ♿ Trip share, history, and info overlays now use one consistent modal foundation with aligned close/focus/escape behavior.
+- [ ] [Internal] 🧩 Added a shared Radix-based app modal shell and migrated trip overlays (`TripInfo`, `TripShare`, `TripHistory`) to reduce duplicated overlay logic.
+- [x] [Improved] ⌨️ Add destination/activity, delete city, and settings dialogs now keep keyboard focus and close behavior consistent with the rest of the planner overlays.
+- [ ] [Internal] 🧱 Migrated the remaining planner dialogs onto the shared app-modal foundation to remove duplicated per-dialog focus/escape wiring.
+- [ ] [Internal] 🩺 Verified this modal pass with full build/update validation and improved `react-doctor` from `91/158` to `91/157`.
+- [ ] [Internal] 🧩 Extracted trip-history presentation and open-panel orchestration into a dedicated tripview hook so `TripView` keeps shrinking and history UI wiring stays isolated.
+- [ ] [Internal] 🩺 Cleaned remaining trip `DetailsPanel` lint hotspots (default array allocation, index-based swatch keys, prop-init state handling), improving `react-doctor` from `91/157` to `93/153`.
+- [ ] [Internal] ♿ Wired classic/wizard/surprise create-trip labels to explicit form controls to tighten accessibility semantics and improve `react-doctor` from `93/153` to `93/143`.
+- [x] [Improved] ⌨️ Login and queued-auth overlays now keep keyboard tab focus inside the modal so background controls are no longer reachable while authentication is open.
+- [ ] [Internal] ♿ Added focus-trap refs and dialog semantics to the auth modal and queued guest-auth overlay to standardize modal keyboard behavior with the rest of planner overlays.

@@ -55,6 +55,12 @@ interface CityDraft {
     countryCode?: string;
 }
 
+interface HotelSearchResult {
+    id: string;
+    name: string;
+    address: string;
+}
+
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
         id: 'expand-checklists',
@@ -88,6 +94,8 @@ const loadAiService = async (): Promise<AiServiceModule> => {
     }
     return aiServicePromise;
 };
+
+const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
 
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
@@ -124,7 +132,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     onBatchUpdate,
     onDelete, 
     tripStartDate, 
-    tripItems = [],
+    tripItems = EMPTY_TRIP_ITEMS,
     routeMode = 'simple',
     routeStatus,
     onForceFill,
@@ -141,7 +149,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [pendingNotesProposal, setPendingNotesProposal] = useState<PendingCityNotesProposal | null>(null);
-  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(item);
+  const initialCachedItemRef = useRef<ITimelineItem | null>(item);
+  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(initialCachedItemRef.current);
   const [isDurationEditorOpen, setIsDurationEditorOpen] = useState(false);
   const [durationDraft, setDurationDraft] = useState<DurationDraft | null>(null);
   const [isCityEditorOpen, setIsCityEditorOpen] = useState(false);
@@ -158,7 +167,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   // Search State for Hotels
   const [hotelQuery, setHotelQuery] = useState('');
   const [isSearchingHotels, setIsSearchingHotels] = useState(false);
-  const [hotelResults, setHotelResults] = useState<{name: string, address: string}[]>([]);
+  const [hotelResults, setHotelResults] = useState<HotelSearchResult[]>([]);
   
   // Places Service
   const [placesService, setPlacesService] = useState<any>(null);
@@ -166,7 +175,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [apiKeyError, setApiKeyError] = useState(false);
 
   // Custom Drawer State
-  const [isRendered, setIsRendered] = useState(isOpen);
+  const initialRenderedRef = useRef(isOpen);
+  const [isRendered, setIsRendered] = useState(initialRenderedRef.current);
   const [isVisible, setIsVisible] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -800,8 +810,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
               setIsSearchingHotels(false);
               if (status === (window as any).google.maps.places.PlacesServiceStatus.OK && results) {
                   setHotelResults(results.map(p => ({ 
-                      name: p.name, 
-                      address: p.formatted_address 
+                      id: typeof p.place_id === 'string' && p.place_id.trim().length > 0
+                          ? p.place_id
+                          : `${p.name || 'hotel'}-${p.formatted_address || ''}`,
+                      name: p.name || 'Hotel',
+                      address: p.formatted_address || '',
                   })).slice(0, 5));
               } else {
                   setHotelResults([]);
@@ -813,7 +826,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       }
   };
   
-  const selectHotelResult = (result: {name: string, address: string}) => {
+  const selectHotelResult = (result: HotelSearchResult) => {
       if (!canEdit) return;
       if (!displayItem) return;
       handleUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), { id: `hotel-${Date.now()}`, name: result.name, address: result.address }] });
@@ -1057,17 +1070,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <div>
                                         <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palette colors</div>
                                         <div className="grid grid-cols-8 gap-1.5">
-                                            {activeCityPalette.colors.map((paletteColor, index) => {
+                                            {activeCityPalette.colors.map((paletteColor) => {
                                                 const normalizedSwatchHex = getHexFromColorClass(paletteColor).toLowerCase();
                                                 const isSelected = selectedCityColorHex?.toLowerCase() === normalizedSwatchHex;
                                                 return (
                                                     <button
-                                                        key={`${activeCityPalette.id}-color-${index}`}
+                                                        key={`${activeCityPalette.id}-color-${paletteColor}`}
                                                         onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
                                                         disabled={!canEdit}
                                                         className={`h-6 w-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
                                                         style={{ backgroundColor: paletteColor }}
-                                                        title={`Palette color ${index + 1}`}
+                                                        title="Palette color"
                                                     />
                                                 );
                                             })}
@@ -1422,15 +1435,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 </div>
                                 {hotelResults.length > 0 && (
                                     <div className="mt-2 space-y-2">
-                                        {hotelResults.map((result, idx) => (
-                                            <div
-                                                key={idx}
+                                        {hotelResults.map((result) => (
+                                            <button
+                                                key={result.id}
+                                                type="button"
                                                 onClick={() => selectHotelResult(result)}
-                                                className={`bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                disabled={!canEdit}
+                                                className={`w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                             >
                                                 <div className="font-bold text-sm text-gray-800">{result.name}</div>
                                                 <div className="text-xs text-gray-500 truncate">{result.address}</div>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
@@ -1637,7 +1652,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   // Else Overlay mode (Portal)
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end pointer-events-none">
-        <div className={`absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={handleClosePanel} />
+        <button
+            type="button"
+            aria-label="Close details panel"
+            className={`absolute inset-0 border-0 p-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleClosePanel}
+        />
         <div 
             className={`bg-gray-100 shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto`}
             style={{ transform: window.innerWidth < 640 ? `translateY(${!isVisible ? '100%' : `${dragOffset}px`})` : `translateX(${!isVisible ? '110%' : '0%'})`, transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}

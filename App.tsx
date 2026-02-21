@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, IViewSettings } from './types';
@@ -43,7 +43,16 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const TripManager = lazyWithRecovery('TripManager', () => import('./components/TripManager').then((module) => ({ default: module.TripManager })));
+let tripManagerModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
+
+const loadTripManagerModule = (): Promise<{ default: React.ComponentType<any> }> => {
+    if (!tripManagerModulePromise) {
+        tripManagerModulePromise = import('./components/TripManager').then((module) => ({ default: module.TripManager }));
+    }
+    return tripManagerModulePromise;
+};
+
+const TripManager = lazyWithRecovery('TripManager', () => loadTripManagerModule());
 const SettingsModal = lazyWithRecovery('SettingsModal', () => import('./components/SettingsModal').then((module) => ({ default: module.SettingsModal })));
 const OnPageDebugger = lazyWithRecovery('OnPageDebugger', () => import('./components/OnPageDebugger').then((module) => ({ default: module.OnPageDebugger })));
 const NavigationPrefetchManager = lazyWithRecovery(
@@ -432,8 +441,17 @@ const AppContent: React.FC = () => {
         navigate(buildTripUrl(loadedTrip.id));
     };
 
+    const prewarmTripManager = useCallback(() => {
+        void loadTripManagerModule().catch(() => undefined);
+    }, []);
+
+    const openTripManager = useCallback(() => {
+        prewarmTripManager();
+        setIsManagerOpen(true);
+    }, [prewarmTripManager]);
+
     return (
-        <TripManagerProvider openTripManager={() => setIsManagerOpen(true)}>
+        <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>
@@ -450,7 +468,7 @@ const AppContent: React.FC = () => {
                 onUpdateTrip={handleUpdateTrip}
                 onCommitState={handleCommitState}
                 onViewSettingsChange={handleViewSettingsChange}
-                onOpenManager={() => setIsManagerOpen(true)}
+                onOpenManager={openTripManager}
                 onOpenSettings={() => setIsSettingsOpen(true)}
             />
 

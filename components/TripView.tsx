@@ -2,16 +2,14 @@ import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, laz
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
 import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
-import { Timeline } from './Timeline';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
     Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, Plus, History, Star, Trash2, Info, Loader2
+    ZoomIn, ZoomOut, Plane, History, Star, Info, Loader2
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
-import { HistoryEntry, findHistoryEntryByUrl, getHistoryEntries } from '../services/historyService';
 import {
     dbCreateShareLink,
     dbGetTrip,
@@ -37,8 +35,17 @@ import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
-
-type ChangeTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
+import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
+import { useTripOverlayController } from './tripview/useTripOverlayController';
+import { useTripHistoryController } from './tripview/useTripHistoryController';
+import {
+    ChangeTone,
+    getToneMeta,
+    stripHistoryPrefix,
+    useTripHistoryPresentation,
+} from './tripview/useTripHistoryPresentation';
+import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
 
 interface ToastState {
     tone: ChangeTone;
@@ -61,10 +68,6 @@ const ReleaseNoticeDialog = lazyWithRecovery('ReleaseNoticeDialog', () =>
 
 const PrintLayout = lazyWithRecovery('PrintLayout', () =>
     import('./PrintLayout').then((module) => ({ default: module.PrintLayout }))
-);
-
-const VerticalTimeline = lazyWithRecovery('VerticalTimeline', () =>
-    import('./VerticalTimeline').then((module) => ({ default: module.VerticalTimeline }))
 );
 
 const DetailsPanel = lazyWithRecovery('DetailsPanel', () =>
@@ -95,80 +98,20 @@ const TripHistoryModal = lazyWithRecovery('TripHistoryModal', () =>
     import('./TripHistoryModal').then((module) => ({ default: module.TripHistoryModal }))
 );
 
-const TripInfoModal = lazyWithRecovery('TripInfoModal', () =>
-    import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }))
-);
+let tripInfoModalModulePromise: Promise<{ default: React.ComponentType<any> }> | null = null;
+
+const loadTripInfoModalModule = (): Promise<{ default: React.ComponentType<any> }> => {
+    if (!tripInfoModalModulePromise) {
+        tripInfoModalModulePromise = import('./TripInfoModal').then((module) => ({ default: module.TripInfoModal }));
+    }
+    return tripInfoModalModulePromise;
+};
+
+const TripInfoModal = lazyWithRecovery('TripInfoModal', () => loadTripInfoModalModule());
 
 const ItineraryMap = lazyWithRecovery('ItineraryMap', () =>
     import('./ItineraryMap').then((module) => ({ default: module.ItineraryMap }))
 );
-
-const stripHistoryPrefix = (label: string) => label.replace(/^(Data|Visual):\s*/i, '').trim();
-
-const resolveChangeTone = (label: string): ChangeTone => {
-    const normalized = label.toLowerCase();
-
-    if (/\b(add|added|create|created)\b/.test(normalized)) return 'add';
-    if (/\b(remove|removed|delete|deleted)\b/.test(normalized)) return 'remove';
-    if (
-        /\b(update|updated|change|changed|rename|renamed|reschedule|rescheduled|reorder|reordered|adjust|adjusted|saved)\b/.test(normalized) ||
-        normalized.startsWith('visual:')
-    ) {
-        return 'update';
-    }
-
-    return 'info';
-};
-
-const getToneMeta = (tone: ChangeTone) => {
-    switch (tone) {
-        case 'add':
-            return {
-                label: 'Added',
-                iconClass: 'bg-emerald-100 text-emerald-700',
-                badgeClass: 'bg-emerald-100 text-emerald-700',
-                toastBorderClass: 'border-emerald-200',
-                toastTitleClass: 'text-emerald-700',
-                Icon: Plus,
-            };
-        case 'remove':
-            return {
-                label: 'Removed',
-                iconClass: 'bg-red-100 text-red-700',
-                badgeClass: 'bg-red-100 text-red-700',
-                toastBorderClass: 'border-red-200',
-                toastTitleClass: 'text-red-700',
-                Icon: Trash2,
-            };
-        case 'update':
-            return {
-                label: 'Updated',
-                iconClass: 'bg-accent-100 text-accent-700',
-                badgeClass: 'bg-accent-100 text-accent-700',
-                toastBorderClass: 'border-accent-200',
-                toastTitleClass: 'text-accent-700',
-                Icon: Pencil,
-            };
-        case 'neutral':
-            return {
-                label: 'Notice',
-                iconClass: 'bg-amber-100 text-amber-700',
-                badgeClass: 'bg-amber-100 text-amber-700',
-                toastBorderClass: 'border-amber-200',
-                toastTitleClass: 'text-amber-700',
-                Icon: Info,
-            };
-        default:
-            return {
-                label: 'Saved',
-                iconClass: 'bg-slate-100 text-slate-700',
-                badgeClass: 'bg-slate-100 text-slate-700',
-                toastBorderClass: 'border-slate-200',
-                toastTitleClass: 'text-slate-700',
-                Icon: Info,
-            };
-    }
-};
 
 const MIN_SIDEBAR_WIDTH = 300;
 const MIN_TIMELINE_HEIGHT = 200;
@@ -186,9 +129,6 @@ const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
-const MAP_BOOTSTRAP_DELAY_MS = 900;
-const MAP_BOOTSTRAP_MAX_WAIT_MS = 4000;
-const MAP_BOOTSTRAP_INTERSECTION_THRESHOLD = 0.01;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const IS_DEV = import.meta.env.DEV;
@@ -338,6 +278,67 @@ const MapDeferredFallback: React.FC<{ onLoadNow: () => void }> = ({ onLoadNow })
     </div>
 );
 
+const TRIP_INFO_FALLBACK_ROWS = [0, 1, 2];
+
+const TripInfoModalLoadingFallback: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: true,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
+
+    return (
+        <>
+            <button
+                type="button"
+                className="fixed inset-0 z-[1520] bg-black/40 backdrop-blur-sm"
+                onClick={onClose}
+                aria-label="Close"
+            />
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="trip-info-loading-title"
+                className="fixed inset-0 z-[1521] pointer-events-none flex items-end sm:items-center justify-center p-3 sm:p-4"
+            >
+                <div ref={dialogRef} className="pointer-events-auto bg-white rounded-t-2xl rounded-b-none sm:rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[84vh] sm:max-h-[88vh]">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                        <div>
+                            <h3 id="trip-info-loading-title" className="text-lg font-bold text-gray-900">Trip information</h3>
+                            <p className="text-xs text-gray-500">Plan details, destination info, and history.</p>
+                        </div>
+                        <button ref={closeButtonRef} type="button" onClick={onClose} className="px-2 py-1 rounded text-xs font-semibold text-gray-500 hover:bg-gray-100">
+                            Close
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                            <div className="h-5 w-44 rounded bg-gray-200" />
+                            <div className="h-3 w-64 rounded bg-gray-100" />
+                        </div>
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-3 animate-pulse">
+                            <div className="h-4 w-28 rounded bg-gray-200" />
+                            <div className="grid grid-cols-2 gap-2">
+                                {TRIP_INFO_FALLBACK_ROWS.map((row) => (
+                                    <div key={`trip-info-fallback-${row}`} className="h-14 rounded-lg bg-gray-100 border border-gray-100" />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="rounded-xl border border-gray-200 p-3 space-y-2 animate-pulse">
+                            <div className="h-4 w-20 rounded bg-gray-200" />
+                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                            <div className="h-10 rounded bg-gray-100 border border-gray-100" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
 export const TripView: React.FC<TripViewProps> = ({
     trip,
     onUpdateTrip,
@@ -401,10 +402,7 @@ export const TripView: React.FC<TripViewProps> = ({
         () => displayTrip.items.some((item) => item.loading),
         [displayTrip.items]
     );
-    const expectedCityLaneCount = useMemo(
-        () => displayTrip.items.filter((item) => item.type === 'city').length,
-        [displayTrip.items]
-    );
+    const expectedCityLaneCount = displayTrip.items.filter((item) => item.type === 'city').length;
     const expirationLabel = useMemo(() => {
         if (!tripExpiresAtMs) return null;
         const date = new Date(tripExpiresAtMs);
@@ -451,6 +449,9 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const [isHeaderAuthSubmitting, setIsHeaderAuthSubmitting] = useState(false);
     const canUseAuthenticatedSession = isAuthenticated && !isAnonymous;
+    const prewarmTripInfoModal = useCallback(() => {
+        void loadTripInfoModalModule().catch(() => undefined);
+    }, []);
 
     const handleHeaderAuthAction = useCallback(async () => {
         if (isHeaderAuthSubmitting) return;
@@ -527,21 +528,27 @@ export const TripView: React.FC<TripViewProps> = ({
         return 'planner';
     });
 
-    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-    const [isTripInfoOpen, setIsTripInfoOpen] = useState(false);
-    const [isTripInfoHistoryExpanded, setIsTripInfoHistoryExpanded] = useState(false);
-    const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
     const [toastState, setToastState] = useState<ToastState | null>(null);
-    const [showAllHistory, setShowAllHistory] = useState(false);
-    const [isMobileMapExpanded, setIsMobileMapExpanded] = useState(false);
-    const [isMapBootstrapEnabled, setIsMapBootstrapEnabled] = useState(false);
-    const [isMapViewportVisible, setIsMapViewportVisible] = useState(false);
-    const [hasMapBootstrapDelayElapsed, setHasMapBootstrapDelayElapsed] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
     });
-    const mapViewportRef = useRef<HTMLDivElement | null>(null);
+    const currentUrl = location.pathname + location.search;
+    const {
+        isHistoryOpen,
+        setIsHistoryOpen,
+        isTripInfoOpen,
+        isTripInfoHistoryExpanded,
+        setIsTripInfoHistoryExpanded,
+        isMobileMapExpanded,
+        setIsMobileMapExpanded,
+        openTripInfoModal,
+        closeTripInfoModal,
+    } = useTripOverlayController({
+        tripId: trip.id,
+        isMobileViewport,
+        prewarmTripInfoModal,
+    });
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
     const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
@@ -550,10 +557,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const suppressCommitRef = useRef(false);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
-    const lastNavActionRef = useRef<'undo' | 'redo' | null>(null);
-    const lastNavFromLabelRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
-    const currentUrlRef = useRef<string>('');
     const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
        if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
        if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'standard';
@@ -701,71 +705,24 @@ export const TripView: React.FC<TripViewProps> = ({
         const { label: actionLabel } = getToneMeta(tone);
         showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
     }, [showToast]);
-
-    const refreshHistory = useCallback(() => {
-        if (isExamplePreview) {
-            setHistoryEntries([]);
-            return;
-        }
-        setHistoryEntries(getHistoryEntries(trip.id));
-    }, [isExamplePreview, trip.id]);
-
-    const baseUrl = useMemo(() => {
-        if (location.pathname.startsWith('/trip/')) {
-            return `/trip/${encodeURIComponent(trip.id)}`;
-        }
-        if (location.pathname.startsWith('/s/')) {
-            return location.pathname;
-        }
-        return location.pathname;
-    }, [location.pathname, trip.id]);
-
-    const resolvedHistoryEntries = useMemo(() => {
-        const base = baseUrl;
-        const filtered = historyEntries.filter(entry => entry.url !== base);
-        const latestEntry: HistoryEntry = {
-            id: 'latest',
-            tripId: trip.id,
-            url: base,
-            label: 'Data: Latest version',
-            ts: typeof trip.updatedAt === 'number' ? trip.updatedAt : Date.now(),
-        };
-        return [latestEntry, ...filtered];
-    }, [historyEntries, baseUrl, trip.id, trip.updatedAt]);
-
-    useEffect(() => {
-        refreshHistory();
-    }, [refreshHistory]);
-
-    const getHistoryIndex = useCallback((url: string) => {
-        const idx = resolvedHistoryEntries.findIndex(entry => entry.url === url);
-        return idx >= 0 ? idx : null;
-    }, [resolvedHistoryEntries]);
-
-    const getHistoryEntryForAction = useCallback((action: 'undo' | 'redo') => {
-        if (resolvedHistoryEntries.length === 0) return null;
-        const currentIndex = getHistoryIndex(currentUrlRef.current);
-        const baseIndex = currentIndex ?? 0;
-        const nextIndex = action === 'undo' ? baseIndex + 1 : baseIndex - 1;
-        if (nextIndex < 0 || nextIndex >= resolvedHistoryEntries.length) return null;
-        return resolvedHistoryEntries[nextIndex];
-    }, [resolvedHistoryEntries, getHistoryIndex]);
-
-    const navigateHistory = useCallback((action: 'undo' | 'redo') => {
-        const target = getHistoryEntryForAction(action);
-        if (!target) {
-            showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
-                tone: 'neutral',
-                title: action === 'undo' ? 'Undo' : 'Redo',
-            });
-            return;
-        }
-        suppressCommitRef.current = true;
-        lastNavActionRef.current = action;
-        lastNavFromLabelRef.current = null;
-        navigate(target.url, { replace: true });
-        showToast(stripHistoryPrefix(target.label), { tone: 'neutral', title: action === 'undo' ? 'Undo' : 'Redo' });
-    }, [getHistoryEntryForAction, navigate, showToast]);
+    const {
+        showAllHistory,
+        setShowAllHistory,
+        refreshHistory,
+        navigateHistory,
+        formatHistoryTime,
+        displayHistoryEntries,
+    } = useTripHistoryController({
+        tripId: trip.id,
+        tripUpdatedAt: typeof trip.updatedAt === 'number' ? trip.updatedAt : undefined,
+        locationPathname: location.pathname,
+        currentUrl,
+        isExamplePreview,
+        navigate,
+        suppressCommitRef,
+        stripHistoryPrefix,
+        showToast,
+    });
 
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
@@ -773,8 +730,6 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const markUserEdit = useCallback(() => {
         suppressCommitRef.current = false;
-        lastNavActionRef.current = null;
-        lastNavFromLabelRef.current = null;
     }, []);
 
     const debugHistory = useCallback((message: string, data?: any) => {
@@ -911,12 +866,6 @@ export const TripView: React.FC<TripViewProps> = ({
     }, [trip.id]);
 
     useEffect(() => {
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
-    }, [trip.id]);
-
-    useEffect(() => {
         if (typeof window === 'undefined') return;
         try {
             window.localStorage.setItem(getShareLinksStorageKey(trip.id), JSON.stringify(shareUrlsByMode));
@@ -975,12 +924,6 @@ export const TripView: React.FC<TripViewProps> = ({
             canceled = true;
         };
     }, [canShare, isTripLockedByExpiry, trip.id]);
-
-    const currentUrl = location.pathname + location.search;
-
-    useEffect(() => {
-        currentUrlRef.current = currentUrl;
-    }, [currentUrl]);
 
     useEffect(() => {
         setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
@@ -1063,13 +1006,6 @@ export const TripView: React.FC<TripViewProps> = ({
         const interval = window.setInterval(() => setNowMs(Date.now()), 60_000);
         return () => window.clearInterval(interval);
     }, [tripExpiresAtMs]);
-
-    useEffect(() => {
-        if (isMobileViewport) return;
-        setIsMobileMapExpanded(false);
-        setIsTripInfoOpen(false);
-        setIsTripInfoHistoryExpanded(false);
-    }, [isMobileViewport]);
 
     useEffect(() => {
         const cityIdSet = new Set(trip.items.filter(item => item.type === 'city').map(item => item.id));
@@ -1327,140 +1263,18 @@ export const TripView: React.FC<TripViewProps> = ({
         }
     }, [copyToClipboard, showToast, trip.id, shareMode, trip, currentViewSettings, isTripLockedByExpiry]);
 
-    const formatHistoryTime = useCallback((ts: number) => {
-        const diffMs = Date.now() - ts;
-        const absMs = Math.abs(diffMs);
-        const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-        const sec = Math.round(absMs / 1000);
-        if (sec < 60) return rtf.format(-sec, 'second');
-        const min = Math.round(sec / 60);
-        if (min < 60) return rtf.format(-min, 'minute');
-        const hrs = Math.round(min / 60);
-        if (hrs < 24) return rtf.format(-hrs, 'hour');
-        const days = Math.round(hrs / 24);
-        if (days < 7) return rtf.format(-days, 'day');
-        return new Date(ts).toLocaleString();
-    }, []);
-
-    const displayHistoryEntries = useMemo(() => {
-        if (isExamplePreview) return [];
-        if (showAllHistory) return resolvedHistoryEntries;
-        const seen = new Set<string>();
-        return resolvedHistoryEntries.filter(entry => {
-            if (seen.has(entry.label)) return false;
-            seen.add(entry.label);
-            return true;
-        });
-    }, [isExamplePreview, resolvedHistoryEntries, showAllHistory]);
-
-    const historyModalItems = useMemo(() => {
-        return displayHistoryEntries.map((entry) => {
-            const tone = resolveChangeTone(entry.label);
-            return {
-                id: entry.id,
-                url: entry.url,
-                ts: entry.ts,
-                isCurrent: entry.url === currentUrl,
-                details: stripHistoryPrefix(entry.label),
-                tone,
-                meta: getToneMeta(tone),
-            };
-        });
-    }, [displayHistoryEntries, currentUrl]);
-
-    useEffect(() => {
-        if (isHistoryOpen) refreshHistory();
-    }, [isHistoryOpen, refreshHistory]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handleHistoryUpdate = (event: Event) => {
-            const detail = (event as CustomEvent).detail as { tripId?: string };
-            if (!detail || detail.tripId !== trip.id) return;
-            refreshHistory();
-        };
-        if (typeof window === 'undefined') return;
-        window.addEventListener('tf:history', handleHistoryUpdate);
-        return () => window.removeEventListener('tf:history', handleHistoryUpdate);
-    }, [isExamplePreview, trip.id, refreshHistory]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return;
-            if (isHistoryOpen) {
-                setIsHistoryOpen(false);
-                return;
-            }
-            if (isTripInfoOpen) {
-                setIsTripInfoOpen(false);
-                return;
-            }
-            if (isMobileMapExpanded) {
-                setIsMobileMapExpanded(false);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isHistoryOpen, isTripInfoOpen, isMobileMapExpanded]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement | null;
-            const isEditable = !!target && (
-                target.tagName === 'INPUT' ||
-                target.tagName === 'TEXTAREA' ||
-                (target as HTMLElement).isContentEditable
-            );
-            if (isEditable) return;
-
-            const isMeta = e.metaKey || e.ctrlKey;
-            if (!isMeta) return;
-
-            if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                navigateHistory('undo');
-            } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
-                e.preventDefault();
-                navigateHistory('redo');
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [trip.id, navigateHistory, isExamplePreview]);
-
-    useEffect(() => {
-        if (isExamplePreview) return;
-        const handlePopState = () => {
-            const nextPath = window.location.pathname;
-            const nextUrl = nextPath + window.location.search;
-            const expectedTripPrefix = `/trip/${encodeURIComponent(trip.id)}`;
-            const isTripRoute = nextPath.startsWith('/trip/');
-            const isShareRoute = nextPath.startsWith('/s/');
-            if ((!isTripRoute && !isShareRoute) || (isTripRoute && !nextPath.startsWith(expectedTripPrefix))) {
-                navigate(currentUrlRef.current || '/', { replace: true });
-                showToast('Reached start of history', { tone: 'neutral', title: 'Undo' });
-                return;
-            }
-            suppressCommitRef.current = true;
-            const entry = findHistoryEntryByUrl(trip.id, nextUrl);
-            const prevIdx = getHistoryIndex(currentUrlRef.current);
-            const nextIdx = getHistoryIndex(nextUrl);
-            const inferredAction = (prevIdx !== null && nextIdx !== null)
-                ? (nextIdx > prevIdx ? 'undo' : 'redo')
-                : null;
-            if (entry) {
-                showToast(stripHistoryPrefix(entry.label), {
-                    tone: 'neutral',
-                    title: inferredAction === 'redo' ? 'Redo' : 'Undo',
-                });
-            }
-            lastNavActionRef.current = null;
-            lastNavFromLabelRef.current = null;
-        };
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [trip.id, showToast, navigate, getHistoryIndex, isExamplePreview]);
+    const {
+        historyModalItems,
+        openHistoryPanel,
+        tripInfoHistoryItems,
+    } = useTripHistoryPresentation({
+        currentUrl,
+        displayHistoryEntries,
+        refreshHistory,
+        setIsHistoryOpen,
+        showAllHistory,
+        trackOpenHistory: (source) => trackEvent('app__trip_history--open', { source }),
+    });
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
         if (!onCommitState) return;
@@ -2064,6 +1878,11 @@ export const TripView: React.FC<TripViewProps> = ({
     }, [selectedItemId, trip.items, isHistoryOpen, addActivityState.isOpen, isAddCityModalOpen, handleDeleteItem, requireEdit]);
 
     // Modal Handlers
+    const handleOpenAddCity = useCallback(() => {
+        if (!requireEdit()) return;
+        setIsAddCityModalOpen(true);
+    }, [requireEdit]);
+
     const handleOpenAddActivity = (dayOffset: number) => {
          if (!requireEdit()) return;
          // Find city at this time
@@ -2250,124 +2069,36 @@ export const TripView: React.FC<TripViewProps> = ({
 
     const isMobile = isMobileViewport;
     const effectiveLayoutMode: 'vertical' | 'horizontal' = isMobile ? 'vertical' : layoutMode;
+    const {
+        mapViewportRef,
+        isMapBootstrapEnabled,
+        enableMapBootstrap,
+    } = useDeferredMapBootstrap({
+        viewMode,
+        effectiveLayoutMode,
+        isMobile,
+        isMobileMapExpanded,
+    });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
-    const infoHistoryEntries = useMemo(() => {
-        return showAllHistory ? displayHistoryEntries : displayHistoryEntries.slice(0, 8);
-    }, [displayHistoryEntries, showAllHistory]);
-    const tripInfoHistoryItems = useMemo(() => {
-        return infoHistoryEntries.map((entry) => ({
-            id: entry.id,
-            url: entry.url,
-            ts: entry.ts,
-            details: stripHistoryPrefix(entry.label),
-            isCurrent: entry.url === currentUrl,
-        }));
-    }, [infoHistoryEntries, currentUrl]);
-    const enableMapBootstrap = useCallback(() => {
-        setIsMapBootstrapEnabled(true);
-    }, []);
 
-    useEffect(() => {
-        if (isMapBootstrapEnabled || hasMapBootstrapDelayElapsed || typeof window === 'undefined') return;
-        const timer = window.setTimeout(() => {
-            setHasMapBootstrapDelayElapsed(true);
-        }, MAP_BOOTSTRAP_DELAY_MS);
-        return () => window.clearTimeout(timer);
-    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled) return;
-        if (hasMapBootstrapDelayElapsed && isMapViewportVisible) {
-            setIsMapBootstrapEnabled(true);
-        }
-    }, [hasMapBootstrapDelayElapsed, isMapBootstrapEnabled, isMapViewportVisible]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
-        const forceEnableTimer = window.setTimeout(() => {
-            setIsMapBootstrapEnabled(true);
-        }, MAP_BOOTSTRAP_MAX_WAIT_MS);
-        return () => window.clearTimeout(forceEnableTimer);
-    }, [isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined') return;
-        const handleInteraction = () => setIsMapBootstrapEnabled(true);
-        const interactionEvents: Array<keyof WindowEventMap> = ['pointerdown', 'keydown', 'touchstart'];
-        interactionEvents.forEach((eventName) => {
-            window.addEventListener(eventName, handleInteraction);
-        });
-        return () => {
-            interactionEvents.forEach((eventName) => {
-                window.removeEventListener(eventName, handleInteraction);
-            });
-        };
-    }, [isMapBootstrapEnabled]);
-
-    useEffect(() => {
-        if (isMapBootstrapEnabled || typeof window === 'undefined' || viewMode !== 'planner') return;
-        const mapContainer = mapViewportRef.current;
-        if (!mapContainer) return;
-        if (typeof window.IntersectionObserver !== 'function') {
-            setIsMapViewportVisible(true);
-            return;
-        }
-
-        const observer = new window.IntersectionObserver(
-            (entries) => {
-                const mapIsVisible = entries.some((entry) => entry.isIntersecting || entry.intersectionRatio > 0);
-                if (mapIsVisible) {
-                    setIsMapViewportVisible(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold: MAP_BOOTSTRAP_INTERSECTION_THRESHOLD }
-        );
-
-        observer.observe(mapContainer);
-        return () => observer.disconnect();
-    }, [effectiveLayoutMode, isMapBootstrapEnabled, isMobile, isMobileMapExpanded, viewMode]);
-
-    const renderTimelineCanvas = () => {
-        if (timelineView === 'vertical') {
-            return (
-                <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>
-                    <VerticalTimeline
-                        trip={displayTrip}
-                        onUpdateItems={handleUpdateItems}
-                        onSelect={handleTimelineSelect}
-                        selectedItemId={selectedItemId}
-                        selectedCityIds={selectedCityIds}
-                        readOnly={!canEdit}
-                        onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                        onAddActivity={handleOpenAddActivity}
-                        onForceFill={handleForceFill}
-                        onSwapSelectedCities={handleReverseSelectedCities}
-                        pixelsPerDay={pixelsPerDay}
-                        enableExampleSharedTransition={useExampleSharedTransition}
-                    />
-                </Suspense>
-            );
-        }
-
-        return (
-            <Timeline
-                trip={displayTrip}
-                onUpdateItems={handleUpdateItems}
-                onSelect={handleTimelineSelect}
-                selectedItemId={selectedItemId}
-                selectedCityIds={selectedCityIds}
-                readOnly={!canEdit}
-                onAddCity={() => { if (!requireEdit()) return; setIsAddCityModalOpen(true); }}
-                onAddActivity={handleOpenAddActivity}
-                onForceFill={handleForceFill}
-                onSwapSelectedCities={handleReverseSelectedCities}
-                routeStatusById={routeStatusById}
-                pixelsPerDay={pixelsPerDay}
-                enableExampleSharedTransition={useExampleSharedTransition}
-            />
-        );
-    };
+    const timelineCanvas = (
+        <TripTimelineCanvas
+            timelineView={timelineView}
+            trip={displayTrip}
+            onUpdateItems={handleUpdateItems}
+            onSelect={handleTimelineSelect}
+            selectedItemId={selectedItemId}
+            selectedCityIds={selectedCityIds}
+            readOnly={!canEdit}
+            onAddCity={handleOpenAddCity}
+            onAddActivity={handleOpenAddActivity}
+            onForceFill={handleForceFill}
+            onSwapSelectedCities={handleReverseSelectedCities}
+            routeStatusById={routeStatusById}
+            pixelsPerDay={pixelsPerDay}
+            enableExampleSharedTransition={useExampleSharedTransition}
+        />
+    );
 
     const handleStartTitleEdit = useCallback(() => {
         if (!canManageTripMetadata) return;
@@ -2550,7 +2281,10 @@ export const TripView: React.FC<TripViewProps> = ({
                         </button>
                         <button
                             type="button"
-                            onClick={() => setIsTripInfoOpen(true)}
+                            onClick={openTripInfoModal}
+                            onMouseEnter={prewarmTripInfoModal}
+                            onFocus={prewarmTripInfoModal}
+                            onTouchStart={prewarmTripInfoModal}
                             className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                             aria-label="Trip information"
                         >
@@ -2565,8 +2299,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                 </div>
                                 <button
                                     onClick={() => {
-                                        trackEvent('app__trip_history--open', { source: 'desktop_header' });
-                                        setIsHistoryOpen(true);
+                                        openHistoryPanel('desktop_header');
                                     }}
                                     className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                                     aria-label="History"
@@ -2605,8 +2338,7 @@ export const TripView: React.FC<TripViewProps> = ({
                             <button
                                 type="button"
                                 onClick={() => {
-                                    trackEvent('app__trip_history--open', { source: 'mobile_header' });
-                                    setIsHistoryOpen(true);
+                                    openHistoryPanel('mobile_header');
                                 }}
                                 className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
                                 aria-label="History"
@@ -2839,7 +2571,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     onTouchEnd={handleTimelineTouchEnd}
                                     onTouchCancel={handleTimelineTouchEnd}
                                 >
-                                    {renderTimelineCanvas()}
+                                    {timelineCanvas}
                                     <div className="absolute top-3 right-3 z-40 flex gap-2">
                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -2893,7 +2625,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                             <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                                 <div className="flex-1 w-full overflow-hidden relative min-w-0">
-                                                    {renderTimelineCanvas()}
+                                                    {timelineCanvas}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -3039,7 +2771,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                         <div style={{ height: timelineHeight }} className="w-full bg-white border-t border-gray-200 z-20 shrink-0 relative flex flex-row">
                                             <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                                 <div className="w-full h-full relative min-w-0">
-                                                    {renderTimelineCanvas()}
+                                                    {timelineCanvas}
                                                     <div className="absolute top-4 right-4 z-40 flex gap-2">
                                                         <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
                                                             <button onClick={() => setZoomLevel(z => clampZoomLevel(z - 0.1))} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
@@ -3179,10 +2911,10 @@ export const TripView: React.FC<TripViewProps> = ({
                      )}
 
                     {isTripInfoOpen && (
-                        <Suspense fallback={null}>
+                        <Suspense fallback={<TripInfoModalLoadingFallback onClose={closeTripInfoModal} />}>
                             <TripInfoModal
                                 isOpen={isTripInfoOpen}
-                                onClose={() => setIsTripInfoOpen(false)}
+                                onClose={closeTripInfoModal}
                                 tripTitle={trip.title}
                                 isEditingTitle={isEditingTitle}
                                 editTitleValue={editTitleValue}
@@ -3205,13 +2937,13 @@ export const TripView: React.FC<TripViewProps> = ({
                                 onHistoryRedo={() => navigateHistory('redo')}
                                 infoHistoryItems={tripInfoHistoryItems}
                                 onGoToHistoryEntry={(url) => {
-                                    setIsTripInfoOpen(false);
+                                    closeTripInfoModal();
                                     suppressCommitRef.current = true;
                                     navigate(url);
                                 }}
                                 onOpenFullHistory={() => {
-                                    setIsTripInfoOpen(false);
-                                    setIsHistoryOpen(true);
+                                    closeTripInfoModal();
+                                    openHistoryPanel('trip_info');
                                 }}
                                 formatHistoryTime={formatHistoryTime}
                                 countryInfo={displayTrip.countryInfo}
@@ -3255,7 +2987,6 @@ export const TripView: React.FC<TripViewProps> = ({
                                 onToggleShowAllHistory={() => setShowAllHistory(v => !v)}
                                 onGo={(item) => {
                                     setIsHistoryOpen(false);
-                                    lastNavActionRef.current = null;
                                     suppressCommitRef.current = true;
                                     navigate(item.url);
                                     showToast(item.details, { tone: item.tone, title: 'Opened from history' });

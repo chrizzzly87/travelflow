@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X, MapPin, Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Search, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useGoogleMaps } from './GoogleMapsLoader';
+import { AppModal } from './ui/app-modal';
 
 interface AddCityModalProps {
     isOpen: boolean;
@@ -15,28 +16,29 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
     
     const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<any>(null); // google.maps.places.Autocomplete
+    const cityInputId = 'add-city-input';
     
     const { isLoaded } = useGoogleMaps();
 
-    // Handle Esc Key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (isOpen && e.key === 'Escape') {
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+    const resetModalState = useCallback(() => {
+        setInputValue('');
+        setError(null);
+        setIsManualMode(false);
+    }, []);
+
+    const handleClose = useCallback(() => {
+        resetModalState();
+        onClose();
+    }, [onClose, resetModalState]);
 
     useEffect(() => {
-        if (isOpen) {
-            setInputValue('');
-            setError(null);
-            setIsManualMode(false);
-            // Focus input
-            setTimeout(() => inputRef.current?.focus(), 100);
-        }
+        if (!isOpen || typeof window === 'undefined') return;
+        const rafId = window.requestAnimationFrame(() => {
+            inputRef.current?.focus();
+        });
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
     }, [isOpen]);
 
     // Init Autocomplete
@@ -70,96 +72,85 @@ export const AddCityModal: React.FC<AddCityModalProps> = ({ isOpen, onClose, onA
         const lng = place.geometry.location.lng();
         
         onAdd(name, lat, lng);
-        onClose();
+        handleClose();
     };
 
     const handleManualSubmit = () => {
         if (inputValue.trim()) {
             onAdd(inputValue.trim(), 48.8566, 2.3522); 
-            onClose();
+            handleClose();
         }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Escape') onClose();
+        if (e.key === 'Escape') handleClose();
         if (e.key === 'Enter') {
             handleManualSubmit();
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[1300] flex items-center justify-center p-4"
-            onClick={onClose}
+        <AppModal
+            isOpen={isOpen}
+            onClose={handleClose}
+            title="Add New Destination"
+            closeLabel="Close add destination dialog"
+            size="sm"
+            mobileSheet={false}
+            bodyClassName="p-6"
+            headerClassName="bg-gray-50 p-4"
+            onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                inputRef.current?.focus();
+            }}
         >
             <style>{`.pac-container { z-index: 99999 !important; }`}</style>
             
-            <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        <MapPin size={20} className="text-accent-600" />
-                        Add New Destination
-                    </h3>
-                    <button
-                        onClick={onClose}
-                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500" aria-label="Close"
-                    >
-                        <X size={20} />
-                    </button>
+            {error && (
+                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 p-3 text-sm text-yellow-700">
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                    <div>{error}</div>
                 </div>
-
-                <div className="p-6">
-                    {error && (
-                         <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-lg text-sm text-yellow-700 flex items-start gap-2 mb-4">
-                            <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
-                            <div>{error}</div>
+            )}
+            
+            <div className="space-y-4">
+                <div>
+                    <label htmlFor={cityInputId} className="mb-2 block text-xs font-bold uppercase text-gray-500">
+                        {isManualMode ? "City Name" : "Search City"}
+                    </label>
+                    <div className="relative">
+                        <input 
+                            id={cityInputId}
+                            ref={inputRef}
+                            type="text" 
+                            value={inputValue}
+                            onChange={e => setInputValue(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-4 text-gray-800 outline-none placeholder-gray-400 focus:ring-2 focus:ring-accent-500"
+                            placeholder="e.g. Kyoto, Japan"
+                        />
+                        <div className="absolute left-3 top-3.5 text-gray-400">
+                            {!isLoaded && !isManualMode ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                         </div>
-                    )}
-                    
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                                {isManualMode ? "City Name" : "Search City"}
-                            </label>
-                            <div className="relative">
-                                <input 
-                                    ref={inputRef}
-                                    type="text" 
-                                    value={inputValue}
-                                    onChange={e => setInputValue(e.target.value)}
-                                    onKeyDown={handleKeyDown}
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-accent-500 outline-none text-gray-800 placeholder-gray-400"
-                                    placeholder="e.g. Kyoto, Japan"
-                                    autoFocus
-                                />
-                                <div className="absolute left-3 top-3.5 text-gray-400">
-                                    {!isLoaded && !isManualMode ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
-                                </div>
-                                
-                                {isManualMode && (
-                                    <button 
-                                        onClick={handleManualSubmit}
-                                        className="absolute right-2 top-2 p-1.5 bg-accent-600 text-white rounded-lg hover:bg-accent-700 transition-colors"
-                                        disabled={!inputValue.trim()} aria-label="Add destination"
-                                    >
-                                        <ArrowRight size={16} />
-                                    </button>
-                                )}
-                            </div>
-                            <p className="text-xs text-gray-400 mt-2">
-                                {!isLoaded
-                                    ? "Loading Map services..."
-                                    : "Start typing to search. Select from the dropdown to add."}
-                            </p>
-                        </div>
+                        
+                        {isManualMode && (
+                            <button 
+                                type="button"
+                                onClick={handleManualSubmit}
+                                className="absolute right-2 top-2 rounded-lg bg-accent-600 p-1.5 text-white transition-colors hover:bg-accent-700"
+                                disabled={!inputValue.trim()} aria-label="Add destination"
+                            >
+                                <ArrowRight size={16} />
+                            </button>
+                        )}
                     </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                        {!isLoaded
+                            ? "Loading Map services..."
+                            : "Start typing to search. Select from the dropdown to add."}
+                    </p>
                 </div>
             </div>
-        </div>
+        </AppModal>
     );
 };

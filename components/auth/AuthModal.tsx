@@ -15,6 +15,7 @@ import {
     getLastUsedOAuthProvider,
     setPendingOAuthProvider,
 } from '../../services/authUiPreferencesService';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import { normalizeAppLanguage } from '../../utils';
 import { SocialProviderIcon } from './SocialProviderIcon';
 
@@ -109,6 +110,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
     const hasHandledSuccessRef = useRef(false);
+    const dialogRef = useRef<HTMLDivElement | null>(null);
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useFocusTrap({
+        isActive: isOpen,
+        containerRef: dialogRef,
+        initialFocusRef: closeButtonRef,
+    });
 
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
 
@@ -287,7 +296,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }}
                 aria-label="Close authentication modal"
             />
-            <div className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div
+                ref={dialogRef}
+                className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Authentication modal"
+            >
                 <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
                     <div className="min-w-0">
                         <p className="text-xs font-semibold uppercase tracking-wide text-accent-600">{t('hero.eyebrow')}</p>
@@ -295,6 +310,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         <p className="mt-1 text-sm text-slate-600">{t('hero.description')}</p>
                     </div>
                     <button
+                        ref={closeButtonRef}
                         type="button"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         onClick={() => {

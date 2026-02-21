@@ -86,12 +86,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
     };
 
     useEffect(() => {
-        if (prefetchedTemplateCard) {
-            setTemplateCard(prefetchedTemplateCard);
-        }
-    }, [prefetchedTemplateCard, templateId]);
-
-    useEffect(() => {
         if (!templateId) {
             setTemplateFactory(null);
             setTemplateCard(prefetchedTemplateCard ?? null);

@@ -100,6 +100,15 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Removed conditional hook execution in `NavigationPrefetchManager` by keeping hooks always mounted and gating behavior internally with `isPrefetchActive`.
 - [x] Removed `TripView` admin-override state reset effect and moved reset semantics to keyed `TripView` mounting in the trip loader route.
 - [x] Re-ran `react-doctor` after these changes: score improved from `86` to `89` and blocking errors dropped from `4` to `0`.
+- [x] Ran `/trip/:id` Lighthouse against a valid non-redirecting trip URL (`/trip/<compressed-state>`) and captured fresh baselines in `tmp/perf/trip-real-url-baseline-mobile.json` and `tmp/perf/trip-real-url-baseline.json`.
+- [x] New `/trip/:id` valid-URL baseline (mobile profile): score `91`, `FCP ~2040 ms`, `LCP ~3172 ms`, `TBT ~17 ms`, transfer `~390.4 KiB`, `31` requests.
+- [x] New `/trip/:id` valid-URL baseline (desktop profile): score `100`, `FCP ~511 ms`, `LCP ~734 ms`, `TBT 0 ms`, transfer `~390.4 KiB`, `31` requests.
+- [x] Fresh follow-up real-URL `/trip/:id` Lighthouse runs after latest TripView/react-doctor cleanup (2026-02-20): desktop remained `100` (`FCP ~0.5 s`, `LCP ~0.7 s`, `TBT 0 ms`) with transfer `~394 KiB` (`32` requests); mobile runs measured `87` and `82` (`FCP ~2.3-2.6 s`, `LCP ~3.6-4.2 s`, `TBT 0 ms`) at the same transfer envelope (`~394 KiB`, `32` requests), indicating expected mobile variance with no blocking-time regression.
+- [x] Extracted trip map bootstrap orchestration from `TripView` into `components/tripview/useDeferredMapBootstrap.ts` (visibility/delay/interaction/max-wait gates unchanged) to reduce `TripView` complexity and keep map-loading logic isolated.
+- [x] Follow-up `react-doctor` passes after trip refactor + history-open/timeline-render cleanup improved score from `90` to `91` and reduced warnings from `209` to `203`.
+- [x] Added a `TripInfoModal` suspense loading shell + intent prewarm (`hover`/`focus`/`touchstart`) so the modal opens immediately while its lazy chunk resolves in the background.
+- [x] Extracted trip history + overlay orchestration from `TripView` into focused hooks (`useTripHistoryController`, `useTripOverlayController`), reducing `TripView.tsx` from `3418` to `3232` lines while keeping undo/redo, popstate, and escape behavior intact.
+- [x] Cleared remaining high-signal `react-doctor` accessibility issues in trip-focused modals (`TripInfoModal`, `TripHistoryModal`, `TripShareModal`, `AddActivityModal`), reducing project warning count from `203` to `177` in the latest pass.
 
 ## Phase 1: Critical path isolation
 - [x] Keep `vite.config.ts` without manual chunk overrides (current best first-load result).
@@ -159,7 +168,23 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Split `ItineraryMap` from `TripView` into a lazy chunk to keep the core planner UI module smaller and easier to iterate independently.
 - [x] Defer map-script bootstrap until map container visibility + short delay (or first interaction), with a max-wait safety fallback.
 - [x] Resolve low-risk planner `react-doctor` findings (title edit semantics, keyboard-accessible resize handles, and modal focus management) without impacting route transfer budgets.
-- [ ] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
+- [x] Prewarm the lazy `TripManager` chunk on explicit My Plans trigger intent (`hover`/`focus`/`touchstart`) to reduce first-open latency without adding first-render payload.
+- [x] Extract history/overlay orchestration from `TripView` into dedicated hooks to continue shrinking the main planner component.
+- [x] Resolve high-signal trip-modal `react-doctor` accessibility findings with semantic dialog/backdrop and label-control associations.
+- [x] Added a shared focus-trap hook and wired it into custom dialogs/overlays/sidepanels (`TripInfo`, `TripHistory`, `TripShare`, `AddActivity`, `AddCity`, `DeleteCity`, `Settings`, release notice, mobile menu, My Plans panel) so keyboard focus stays inside open overlays.
+- [x] Follow-up `react-doctor` after focus-trap rollout improved from `91/177` to `91/175` by removing remaining modal/overlay accessibility regressions introduced during the pass.
+- [x] Replaced remaining clickable non-semantic wrappers in destination pickers and print-calendar interactions with semantic controls (buttons + explicit label/input associations), removing those surfaces from `react-doctor` high-signal accessibility findings.
+- [x] Follow-up `react-doctor` after the semantic-control pass improved warnings from `175` to `163` (score held at `91`) while reducing flagged files from `24` to `22`.
+- [x] Extracted timeline-render orchestration from `TripView` into `components/tripview/TripTimelineCanvas.tsx`, reducing `TripView.tsx` from `3244` lines to `3203` lines while preserving timeline behavior and warning counts (`react-doctor` stayed `91/163`).
+- [x] Cleared remaining trip `DetailsPanel` non-semantic click targets (hotel search results + overlay backdrop) and replaced index-based hotel-result keys with stable identifiers, reducing `react-doctor` warnings from `163` to `158` while keeping score at `91`.
+- [x] Added a shared Radix-based `AppModal` shell (`components/ui/app-modal.tsx`) and migrated `TripInfoModal`, `TripShareModal`, and `TripHistoryModal` to the unified modal primitive for consistent ESC/backdrop close + focus management behavior.
+- [x] Verified modal-shell migration with full build + `react-doctor`; score/warnings remained stable at `91/158` (no regression).
+- [x] Migrated remaining planner dialogs (`AddCity`, `AddActivity`, `DeleteCity`, `Settings`) to the shared `AppModal` shell and removed duplicated per-dialog focus/escape handling.
+- [x] Verified the expanded modal-shell rollout with full validation (`npm run build`, `npx -y react-doctor@latest . --verbose --diff`, `npm run updates:validate`); `react-doctor` improved from `91/158` to `91/157`.
+- [x] Extracted trip history presentation mapping (`historyModalItems`, `tripInfoHistoryItems`, history-open wiring) from `TripView` into `components/tripview/useTripHistoryPresentation.ts`, reducing `TripView.tsx` from `3203` lines to `3120`.
+- [x] Follow-up trip-page cleanup in `DetailsPanel` removed remaining default-array + index-key + prop-init lint hotspots; `react-doctor` improved from `91/157` to `93/153`.
+- [x] Fixed label/control associations in `CreateTripForm` (classic, wizard, and surprise modes), reducing form-a11y lint debt and improving `react-doctor` from `93/153` to `93/143`.
+- [x] Added shared focus-trap enforcement to the global auth login/register modal and queued guest-auth overlay so keyboard tab focus no longer escapes into background page content.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -184,4 +209,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: run `/trip/:id` measurements against a valid non-redirecting trip URL and start extracting `TripView` orchestration (map/bootstrap/history) into focused hooks to keep performance work and maintenance tractable.
+- Next highest-impact target: continue `TripView` structural extraction by moving remaining modal/item wiring and history presentation mapping out of the main render body, then re-measure `/trip/:id` with fresh Lighthouse baselines.
