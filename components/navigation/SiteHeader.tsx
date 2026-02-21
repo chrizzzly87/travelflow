@@ -1,4 +1,3 @@
-import React, { Suspense, useMemo, useState } from 'react';
 import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AirplaneTilt, List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
