@@ -186,6 +186,10 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Follow-up trip-page cleanup in `DetailsPanel` removed remaining default-array + index-key + prop-init lint hotspots; `react-doctor` improved from `91/157` to `93/153`.
 - [x] Fixed label/control associations in `CreateTripForm` (classic, wizard, and surprise modes), reducing form-a11y lint debt and improving `react-doctor` from `93/153` to `93/143`.
 - [x] Added shared focus-trap enforcement to the global auth login/register modal and queued guest-auth overlay so keyboard tab focus no longer escapes into background page content.
+- [x] Cleared the current blocking `react-doctor` errors on blog routes by removing conditional hook flow in `BlogPostPage` and replacing locale-derived filter reset effects in `BlogPage` with locale-scoped state.
+- [x] Extracted repeated selected-item/details wiring in `TripView` into shared computed panel content (`selectedDetailItem`, `selectedRouteStatus`, `detailsPanelContent`), reducing `TripView.tsx` from `3120` to `3064` lines and lowering the emitted `TripView` chunk from `114.88 KiB` to `113.33 KiB` (gzip stable at `~32.38 KiB`).
+- [x] Follow-up `react-doctor` on changed files reported `98/100` with only structural TripView warnings remaining (`useState` density + component size), with no new accessibility or hook-order regressions.
+- [x] Re-ran Lighthouse against the valid `/trip/<compressed-state>` URL after the extraction pass (strict preview mode): desktop stayed `100` (`FCP ~520 ms`, `LCP ~749 ms`, `TBT 0 ms`), and mobile stayed in expected variance at `87` (`FCP/LCP ~2933 ms`, `TBT 0 ms`), with transfer `~402.5 KiB` across `32` requests.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -210,4 +214,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: continue `TripView` structural extraction by moving remaining modal/item wiring and history presentation mapping out of the main render body, then re-measure `/trip/:id` with fresh Lighthouse baselines.
+- Next highest-impact target: continue `TripView` structural extraction by moving modal stack/paywall overlay orchestration into dedicated components/hooks, then re-measure `/trip/:id` and `/` with fresh Lighthouse baselines.

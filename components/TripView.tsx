@@ -2171,6 +2171,49 @@ export const TripView: React.FC<TripViewProps> = ({
         pinchStartZoomRef.current = null;
     }, []);
 
+    const selectedDetailItem = useMemo(
+        () => displayTrip.items.find((item) => item.id === selectedItemId) ?? null,
+        [displayTrip.items, selectedItemId]
+    );
+    const selectedRouteStatus = useMemo(
+        () => (selectedItemId ? routeStatusById[selectedItemId] : undefined),
+        [routeStatusById, selectedItemId]
+    );
+    const detailsPanelContent = showSelectedCitiesPanel ? (
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
+            <SelectedCitiesPanel
+                selectedCities={selectedCitiesInTimeline}
+                onClose={clearSelection}
+                onApplyOrder={applySelectedCityOrder}
+                onReverse={handleReverseSelectedCities}
+                timelineView={timelineView}
+                readOnly={!canEdit}
+            />
+        </Suspense>
+    ) : (
+        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
+            <DetailsPanel
+                item={selectedDetailItem}
+                isOpen={!!selectedItemId}
+                onClose={clearSelection}
+                onUpdate={handleUpdateItem}
+                onBatchUpdate={handleBatchItemUpdate}
+                onDelete={handleDeleteItem}
+                tripStartDate={trip.startDate}
+                tripItems={displayTrip.items}
+                routeMode={routeMode}
+                routeStatus={selectedRouteStatus}
+                onForceFill={handleForceFill}
+                forceFillMode={selectedCityForceFill?.mode}
+                forceFillLabel={selectedCityForceFill?.label}
+                variant="sidebar"
+                readOnly={!canEdit}
+                cityColorPaletteId={cityColorPaletteId}
+                onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
+            />
+        </Suspense>
+    );
+
     const activeToastMeta = toastState ? getToneMeta(toastState.tone) : null;
 
     if (viewMode === 'print') {
@@ -2653,40 +2696,7 @@ export const TripView: React.FC<TripViewProps> = ({
 
                                         {detailsPanelVisible && (
                                             <div style={{ width: detailsWidth }} className="h-full bg-white border-r border-gray-200 z-20 shrink-0 relative overflow-hidden">
-                                                {showSelectedCitiesPanel ? (
-                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
-                                                        <SelectedCitiesPanel
-                                                            selectedCities={selectedCitiesInTimeline}
-                                                            onClose={clearSelection}
-                                                            onApplyOrder={applySelectedCityOrder}
-                                                            onReverse={handleReverseSelectedCities}
-                                                            timelineView={timelineView}
-                                                            readOnly={!canEdit}
-                                                        />
-                                                    </Suspense>
-                                                ) : (
-                                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
-                                                        <DetailsPanel
-                                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                                            isOpen={!!selectedItemId}
-                                                            onClose={clearSelection}
-                                                            onUpdate={handleUpdateItem}
-                                                            onBatchUpdate={handleBatchItemUpdate}
-                                                            onDelete={handleDeleteItem}
-                                                            tripStartDate={trip.startDate}
-                                                            tripItems={displayTrip.items}
-                                                            routeMode={routeMode}
-                                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                            onForceFill={handleForceFill}
-                                                            forceFillMode={selectedCityForceFill?.mode}
-                                                            forceFillLabel={selectedCityForceFill?.label}
-                                                            variant="sidebar"
-                                                            readOnly={!canEdit}
-                                                            cityColorPaletteId={cityColorPaletteId}
-                                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                                        />
-                                                    </Suspense>
-                                                )}
+                                                {detailsPanelContent}
                                                 <button
                                                     type="button"
                                                     className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
@@ -2787,40 +2797,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                             </div>
                                             {detailsPanelVisible && (
                                                 <div style={{ width: detailsWidth }} className="h-full bg-white border-l border-gray-200 overflow-hidden relative">
-                                                    {showSelectedCitiesPanel ? (
-                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
-                                                            <SelectedCitiesPanel
-                                                                selectedCities={selectedCitiesInTimeline}
-                                                                onClose={clearSelection}
-                                                                onApplyOrder={applySelectedCityOrder}
-                                                                onReverse={handleReverseSelectedCities}
-                                                                timelineView={timelineView}
-                                                                readOnly={!canEdit}
-                                                            />
-                                                        </Suspense>
-                                                    ) : (
-                                                        <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
-                                                            <DetailsPanel
-                                                                item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                                                isOpen={!!selectedItemId}
-                                                                onClose={clearSelection}
-                                                                onUpdate={handleUpdateItem}
-                                                                onBatchUpdate={handleBatchItemUpdate}
-                                                                onDelete={handleDeleteItem}
-                                                                tripStartDate={trip.startDate}
-                                                                tripItems={displayTrip.items}
-                                                                routeMode={routeMode}
-                                                                routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                                                onForceFill={handleForceFill}
-                                                                forceFillMode={selectedCityForceFill?.mode}
-                                                                forceFillLabel={selectedCityForceFill?.label}
-                                                                variant="sidebar"
-                                                                readOnly={!canEdit}
-                                                                cityColorPaletteId={cityColorPaletteId}
-                                                                onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                                            />
-                                                        </Suspense>
-                                                    )}
+                                                    {detailsPanelContent}
                                                     <button
                                                         type="button"
                                                         className="absolute top-0 right-0 h-full w-2 cursor-col-resize z-30 flex items-center justify-center group hover:bg-accent-50/60 transition-colors appearance-none border-0 bg-transparent p-0"
@@ -2847,40 +2824,7 @@ export const TripView: React.FC<TripViewProps> = ({
                                     if (!open) clearSelection();
                                 }}
                             >
-                                {showSelectedCitiesPanel ? (
-                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading selection panel...</div>}>
-                                        <SelectedCitiesPanel
-                                            selectedCities={selectedCitiesInTimeline}
-                                            onClose={clearSelection}
-                                            onApplyOrder={applySelectedCityOrder}
-                                            onReverse={handleReverseSelectedCities}
-                                            timelineView={timelineView}
-                                            readOnly={!canEdit}
-                                        />
-                                    </Suspense>
-                                ) : (
-                                    <Suspense fallback={<div className="h-full flex items-center justify-center text-xs text-gray-500">Loading details...</div>}>
-                                        <DetailsPanel
-                                            item={displayTrip.items.find(i => i.id === selectedItemId) || null}
-                                            isOpen={!!selectedItemId}
-                                            onClose={clearSelection}
-                                            onUpdate={handleUpdateItem}
-                                            onBatchUpdate={handleBatchItemUpdate}
-                                            onDelete={handleDeleteItem}
-                                            tripStartDate={trip.startDate}
-                                            tripItems={displayTrip.items}
-                                            routeMode={routeMode}
-                                            routeStatus={selectedItemId ? routeStatusById[selectedItemId] : undefined}
-                                            onForceFill={handleForceFill}
-                                            forceFillMode={selectedCityForceFill?.mode}
-                                            forceFillLabel={selectedCityForceFill?.label}
-                                            variant="sidebar"
-                                            readOnly={!canEdit}
-                                            cityColorPaletteId={cityColorPaletteId}
-                                            onCityColorPaletteChange={canEdit ? handleCityColorPaletteChange : undefined}
-                                        />
-                                    </Suspense>
-                                )}
+                                {detailsPanelContent}
                             </TripDetailsDrawer>
                         </Suspense>
                     )}
