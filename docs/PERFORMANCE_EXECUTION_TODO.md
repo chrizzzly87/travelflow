@@ -29,7 +29,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Entry CSS now has `0` inlined `data:image` payloads (SVGs emitted as external assets).
 - [x] `App.tsx` reduced from `1076` lines to `411` lines by extracting route/prefetch/bootstrap modules.
 - [x] `SiteHeader` now dynamically imports `MobileMenu` and `AccountMenu`; the heavy select implementation is no longer in the header initial-load graph.
-- [x] Removed global `flagpack` stylesheet import and switched `FlagIcon` rendering to emoji, eliminating the large flag SVG manifest from initial CSS output.
+- [x] A previous perf pass removed global `flagpack` stylesheet import and switched `FlagIcon` rendering to emoji to cut CSS payload.
+- [x] Product UX requirement now restores Flagpack real flags in language/destination selects; re-baseline perf impact in the next measurement pass.
 - [x] `MobileMenu` now defers admin navigation config loading via dynamic import; admin metadata is no longer statically bundled into shared menu code.
 
 ## Route perf check snapshot (Lighthouse, local preview, mobile profile)

@@ -111,7 +111,7 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
             description="Plan details, destination info, and history."
             closeLabel="Close trip information dialog"
             size="lg"
-            mobileSheet
+            mobileSheet={false}
             contentClassName="max-h-[84vh] sm:max-h-[88vh] sm:max-w-xl"
             bodyClassName="flex-1 space-y-4 overflow-y-auto p-4"
         >
