@@ -83,4 +83,14 @@ describe('services/destinationService', () => {
     const unfiltered = searchDestinationOptions('', { limit: 3 });
     expect(unfiltered).toHaveLength(3);
   });
+
+  it('supports alias-based excludes and unknown prompt fallbacks', () => {
+    const aliasMatch = searchDestinationOptions('fraser');
+    expect(aliasMatch.some((item) => item.name === "K'gari")).toBe(true);
+
+    const excludedByAlias = searchDestinationOptions('fraser', { excludeNames: ['Fraser Island'] });
+    expect(excludedByAlias.some((item) => item.name === "K'gari")).toBe(false);
+
+    expect(getDestinationPromptLabel('Unknown Place', 'en')).toBe('Unknown Place');
+  });
 });

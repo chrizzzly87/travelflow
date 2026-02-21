@@ -51,4 +51,51 @@ describe('services/storageService', () => {
     expect(getTripById('x')).toBeUndefined();
     expect(getTripById('y')).toBeDefined();
   });
+
+  it('handles malformed and non-array persisted payloads safely', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+    getItemSpy.mockReturnValueOnce('{invalid-json');
+    expect(getAllTrips()).toEqual([]);
+    getItemSpy.mockRestore();
+
+    window.localStorage.setItem('travelflow_trips_v1', JSON.stringify({ trip: 'not-array' }));
+    expect(getAllTrips()).toEqual([]);
+    consoleSpy.mockRestore();
+  });
+
+  it('normalizes fallback fields and status defaults from persisted payload', () => {
+    window.localStorage.setItem(
+      'travelflow_trips_v1',
+      JSON.stringify([
+        { id: 'arch', title: 'Archived', items: [], status: 'archived', tripExpiresAt: '2026-01-01T00:00:00Z' },
+        { id: 'fallback', title: 'Fallback', items: [], status: 'weird', isFavorite: 0, tripExpiresAt: 1234 },
+      ])
+    );
+
+    const all = getAllTrips();
+    const archived = all.find((trip) => trip.id === 'arch');
+    const fallback = all.find((trip) => trip.id === 'fallback');
+
+    expect(archived?.status).toBe('archived');
+    expect(archived?.tripExpiresAt).toBe('2026-01-01T00:00:00Z');
+    expect(fallback?.status).toBe('active');
+    expect(fallback?.tripExpiresAt).toBeNull();
+    expect(fallback?.isFavorite).toBe(false);
+  });
+
+  it('swallows quota/storage write failures for save/delete/set-all', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+
+    expect(() => saveTrip(makeTrip({ id: 'quota-trip' }))).not.toThrow();
+    expect(() => deleteTrip('quota-trip')).not.toThrow();
+    expect(() => setAllTrips([makeTrip({ id: 'quota-replace' })])).not.toThrow();
+    expect(consoleSpy).toHaveBeenCalled();
+
+    setItemSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
 });

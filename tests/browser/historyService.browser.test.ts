@@ -59,4 +59,39 @@ describe('services/historyService', () => {
     expect(entries.length).toBeLessThanOrEqual(200);
     expect(entries[0].url).toBe(`/trip/${tripId}?v=219`);
   });
+
+  it('returns empty history for malformed storage payloads', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    window.localStorage.setItem('travelflow_history_v1', '{bad-json');
+    expect(getHistoryEntries('trip-bad')).toEqual([]);
+    consoleSpy.mockRestore();
+  });
+
+  it('filters by encoded trip prefix and returns null for missing lookups', () => {
+    const tripId = 'trip/encoded';
+    appendHistoryEntry(tripId, `/trip/${encodeURIComponent(tripId)}?v=1`, 'encoded', { ts: 1 });
+    appendHistoryEntry(tripId, `/trip/${tripId}?v=2`, 'wrong-shape', { ts: 2 });
+
+    const entries = getHistoryEntries(tripId);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].url).toBe(`/trip/${encodeURIComponent(tripId)}?v=1`);
+    expect(findHistoryEntryByUrl(tripId, '/trip/missing')).toBeNull();
+  });
+
+  it('swallows storage write failures while still emitting history events', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota');
+    });
+    const listener = vi.fn();
+    window.addEventListener('tf:history', listener as EventListener);
+
+    expect(() => appendHistoryEntry('trip-write-fail', '/trip/trip-write-fail?v=1', 'v1', { ts: 1 })).not.toThrow();
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener('tf:history', listener as EventListener);
+    setItemSpy.mockRestore();
+    consoleSpy.mockRestore();
+  });
 });
