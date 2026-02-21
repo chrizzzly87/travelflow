@@ -7,6 +7,7 @@
 - Read `docs/I18N_PAGE_WORKFLOW.md` before adding/updating localized pages, route strategy, or translation resources.
 - Read `docs/UX_COPY_GUIDELINES.md` before editing marketing/planner copy or CTA text.
 - Read `docs/ANALYTICS_CONVENTION.md` before adding/updating analytics events.
+- For manual Netlify CLI previews, use the env-safe deploy command documented in `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md` (`dotenv-cli`), not shell `source`.
 - Use ICU placeholder syntax in locale strings (`{name}`), never legacy `{{name}}` placeholders.
 - For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and explicitly decide namespace placement (`common/pages/legal` vs route/feature namespace).
 - Keep code changes aligned with existing architecture and route stability.

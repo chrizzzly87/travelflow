@@ -94,3 +94,4 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [ ] [Internal] 🧭 Updated agent copy/i18n rules so admin workspace text is English-only by default and exempt from EN/DE sign-off prompts.
 - [ ] [Internal] 🧩 Standardized admin destructive confirmations on the shared styled app dialog (`useAppDialog`) and documented prompt-component reuse in repo guidelines.
 - [ ] [Internal] 🧪 Added a local Vite proxy plus `dev:netlify` workflow so admin identity actions (`invite`, `create`, `hard delete`) can be tested reliably in development.
+- [ ] [Internal] 📘 Documented an env-safe Netlify CLI deploy workflow (`dotenv-cli`) in the LLM/deploy guides so preview builds include required `VITE_SUPABASE_*` keys.
