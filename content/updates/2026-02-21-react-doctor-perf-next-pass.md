@@ -14,3 +14,4 @@ summary: "Follow-up fixes target React Doctor blockers and next trip-page perfor
 - [ ] [Internal] 🩺 Cleared the current React Doctor blocking errors on blog routes by removing a conditional hook path and replacing locale-derived filter reset effects with locale-scoped state.
 - [ ] [Internal] 🧩 Reduced duplicated trip-detail wiring in the planner by centralizing selected-item panel rendering paths, shrinking the core trip view bundle while keeping behavior unchanged.
 - [ ] [Internal] 📊 Captured a fresh strict-preview Lighthouse baseline for a valid `/trip/:id` URL after the extraction pass to confirm transfer/request budgets remained stable.
+- [ ] [Internal] ⚙️ Removed redundant DB session bootstrap awaits in shared/example copy handlers because the downstream persistence calls already ensure session state.

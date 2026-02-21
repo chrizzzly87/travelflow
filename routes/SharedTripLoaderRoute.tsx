@@ -14,7 +14,6 @@ import {
     dbGetTripVersion,
     dbUpdateSharedTrip,
     dbUpsertTrip,
-    ensureDbSession,
 } from '../services/dbApi';
 import { appendHistoryEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
@@ -228,7 +227,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         }
         saveTrip(cloned);
         if (DB_ENABLED) {
-            await ensureDbSession();
             await dbUpsertTrip(cloned, viewSettings);
             await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
             createLocalHistoryEntry(navigate, cloned, viewSettings, 'Data: Copied trip', undefined, Date.now());

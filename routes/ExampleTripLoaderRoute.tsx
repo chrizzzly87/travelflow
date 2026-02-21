@@ -9,7 +9,6 @@ import {
     dbCanCreateTrip,
     dbCreateTripVersion,
     dbUpsertTrip,
-    ensureDbSession,
 } from '../services/dbApi';
 import { saveTrip } from '../services/storageService';
 import {
@@ -244,7 +243,6 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         });
 
         if (DB_ENABLED) {
-            await ensureDbSession();
             await dbUpsertTrip(cloned, viewSettings);
             await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
         }

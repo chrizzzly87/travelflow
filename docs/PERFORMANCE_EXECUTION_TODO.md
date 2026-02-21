@@ -190,6 +190,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extracted repeated selected-item/details wiring in `TripView` into shared computed panel content (`selectedDetailItem`, `selectedRouteStatus`, `detailsPanelContent`), reducing `TripView.tsx` from `3120` to `3064` lines and lowering the emitted `TripView` chunk from `114.88 KiB` to `113.33 KiB` (gzip stable at `~32.38 KiB`).
 - [x] Follow-up `react-doctor` on changed files reported `98/100` with only structural TripView warnings remaining (`useState` density + component size), with no new accessibility or hook-order regressions.
 - [x] Re-ran Lighthouse against the valid `/trip/<compressed-state>` URL after the extraction pass (strict preview mode): desktop stayed `100` (`FCP ~520 ms`, `LCP ~749 ms`, `TBT 0 ms`), and mobile stayed in expected variance at `87` (`FCP/LCP ~2933 ms`, `TBT 0 ms`), with transfer `~402.5 KiB` across `32` requests.
+- [x] Removed redundant explicit `ensureDbSession()` calls from shared/example copy flows (`dbUpsertTrip` + `dbCreateTripVersion` already enforce session), trimming a serial await in each path and clearing the `react-doctor` sequential-await warning there.
 
 ## Validation checklist
 - [x] `npx vite build`
