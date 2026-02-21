@@ -13,4 +13,5 @@ summary: "Localized pages now keep navigation, language switching, and account e
 ## Changes
 - [x] [Fixed] 🌐 Localized pages now consistently keep the full top navigation visible after switching languages.
 - [x] [Fixed] 🇩🇪 The language picker and account entry controls now stay intact across supported locales, including mobile navigation.
+- [x] [Fixed] 🎛️ The language picker now uses the styled flag dropdown again instead of the plain system select list.
 - [ ] [Internal] 🧩 Deferred styling sources now include shared navigation and banner components so responsive visibility rules remain synchronized.
