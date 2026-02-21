@@ -479,6 +479,28 @@ const parseOverrideDraft = (value: string): Record<string, unknown> => {
     return parsed as Record<string, unknown>;
 };
 
+const normalizeOverrideRecord = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return value as Record<string, unknown>;
+};
+
+const toStableComparableJson = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map((entry) => toStableComparableJson(entry));
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort((a, b) => a.localeCompare(b))
+            .reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = toStableComparableJson((value as Record<string, unknown>)[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<string, unknown>): boolean => (
+    JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
+);
+
 const rolePillClass = (role: 'admin' | 'user') => (
     role === 'admin'
         ? 'border-accent-300 bg-accent-50 text-accent-900'
@@ -1394,6 +1416,8 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             const parsedOverrides = parseOverrideDraft(overrideDraft);
+            const currentOverrides = normalizeOverrideRecord(selectedUser.entitlements_override);
+            const shouldUpdateOverrides = !areOverrideRecordsEqual(parsedOverrides, currentOverrides);
             await adminUpdateUserProfile(selectedUser.user_id, {
                 firstName: profileDraft.firstName,
                 lastName: profileDraft.lastName,
@@ -1406,7 +1430,9 @@ export const AdminUsersPage: React.FC = () => {
                 systemRole: profileDraft.role,
                 tierKey: tierDraft,
             });
-            await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            if (shouldUpdateOverrides) {
+                await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            }
             setMessage('User updated.');
             await loadUsers();
         } catch (error) {

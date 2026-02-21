@@ -572,16 +572,14 @@ export const AdminTripsPage: React.FC = () => {
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <a
-                                            href={`/trip/${encodeURIComponent(trip.trip_id)}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            title="Open trip in a new tab"
-                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                        <button
+                                            type="button"
+                                            onClick={() => openTripDrawer(trip.trip_id)}
+                                            title="Open trip details drawer"
+                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
                                         >
                                             <span className="truncate">{trip.title || trip.trip_id}</span>
-                                            <ArrowSquareOut size={12} />
-                                        </a>
+                                        </button>
                                         <div className="text-xs text-slate-500">
                                             <CopyableUuid
                                                 value={trip.trip_id}
@@ -589,14 +587,6 @@ export const AdminTripsPage: React.FC = () => {
                                                 hintClassName="text-[9px]"
                                             />
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => openTripDrawer(trip.trip_id)}
-                                            className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 hover:border-accent-300 hover:text-accent-700"
-                                            title="Open trip details drawer"
-                                        >
-                                            Open drawer
-                                        </button>
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-600">
                                         <button
