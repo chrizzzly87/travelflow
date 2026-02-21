@@ -1,4 +1,5 @@
 import type { AppLanguage } from '../types';
+import { normalizeLocale } from '../config/locales';
 import { dbUpsertUserSettings } from './dbService';
 import { supabase } from './supabaseClient';
 
@@ -32,13 +33,7 @@ export interface UpdateUserProfilePayload {
 }
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
-    if (
-        value === 'en' || value === 'es' || value === 'de' || value === 'fr' || value === 'pt'
-        || value === 'ru' || value === 'it' || value === 'pl' || value === 'ko'
-    ) {
-        return value;
-    }
-    return 'en';
+    return normalizeLocale(typeof value === 'string' ? value : null);
 };
 
 const normalizeGender = (value: unknown): ProfileGender => {

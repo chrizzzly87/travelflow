@@ -1,0 +1,31 @@
+{
+  "title": "Settings",
+  "tabs": {
+    "layout": "Layout",
+    "appearance": "Appearance",
+    "language": "Language"
+  },
+  "layout": {
+    "timelineOrientation": "Timeline Orientation",
+    "horizontal": "Horizontal",
+    "horizontalDescription": "Classic Gantt-style view. Best for visualizing duration overlaps.",
+    "vertical": "Vertical",
+    "verticalDescription": "Mobile-friendly list view. Scrolly and easier to read on small screens."
+  },
+  "appearance": {
+    "mapTiles": "Map Tiles",
+    "minimal": "Minimal",
+    "minimalDescription": "Clean & Focused",
+    "standard": "Standard",
+    "standardDescription": "Google Default",
+    "dark": "Dark",
+    "darkDescription": "Night Mode",
+    "satellite": "Satellite",
+    "satelliteDescription": "Aerial View"
+  },
+  "language": {
+    "noteTitle": "Map language",
+    "noteDescription": "Map labels follow this setting.",
+    "appLanguage": "App Language"
+  }
+}

@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n';
+import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
+import { extractLocaleFromPath, isToolRoute } from './config/routes';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -50,6 +52,20 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
+}
+
+if (typeof window !== 'undefined') {
+  const localeFromPath = extractLocaleFromPath(window.location.pathname);
+  let storedLocale = DEFAULT_LOCALE;
+  try {
+    storedLocale = normalizeLocale(window.localStorage.getItem('tf_app_language'));
+  } catch {
+    storedLocale = DEFAULT_LOCALE;
+  }
+  const initialLocale = isToolRoute(window.location.pathname)
+    ? localeFromPath ?? storedLocale
+    : localeFromPath ?? DEFAULT_LOCALE;
+  applyDocumentLocale(initialLocale);
 }
 
 const root = ReactDOM.createRoot(rootElement);

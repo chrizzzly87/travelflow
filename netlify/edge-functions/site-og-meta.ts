@@ -7,9 +7,22 @@ const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
-const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko"] as const;
+const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"] as const;
 type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 const DEFAULT_LOCALE: SupportedLocale = "en";
+const LOCALE_DIR_MAP: Record<SupportedLocale, "ltr" | "rtl"> = {
+  en: "ltr",
+  es: "ltr",
+  de: "ltr",
+  fr: "ltr",
+  pt: "ltr",
+  ru: "ltr",
+  it: "ltr",
+  pl: "ltr",
+  ko: "ltr",
+  fa: "rtl",
+  ur: "rtl",
+};
 
 interface AlternateLink {
   hreflang: string;
@@ -874,7 +887,7 @@ const buildMetadata = (url: URL): Metadata => {
     robots: page.robots || "index,follow,max-image-preview:large",
     alternateLinks,
     htmlLang: effectiveLocale,
-    htmlDir: "ltr",
+    htmlDir: LOCALE_DIR_MAP[effectiveLocale] || "ltr",
   };
 };
 

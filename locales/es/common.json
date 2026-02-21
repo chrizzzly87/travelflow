@@ -31,7 +31,9 @@
     "pt": "Português",
     "es": "Español",
     "pl": "Polski",
-    "ko": "한국어"
+    "ko": "한국어",
+    "fa": "فارسی",
+    "ur": "اردو"
   },
   "buttons": {
     "startPlanning": "Empezar a planificar",

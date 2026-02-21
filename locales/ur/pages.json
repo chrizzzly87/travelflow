@@ -1,0 +1,107 @@
+{
+  "inspirations": {
+    "hero": {
+      "pill": "Trip Inspirations",
+      "title": "Where will you go next?",
+      "description": "Not sure where to start? Browse curated trip ideas by theme, month, country, or upcoming festivals. Click any itinerary to use it as a starting point."
+    },
+    "searchPlaceholder": "Search destinations, festivals, countries...",
+    "searchResultLabel": "{count} results",
+    "noResults": "No results found for \"{query}\". Try a different keyword.",
+    "searchSections": {
+      "destinations": "Destinations",
+      "eventsFestivals": "Events & Festivals",
+      "weekendGetaways": "Weekend Getaways"
+    },
+    "jumpTo": "Jump to",
+    "quickStart": "Quick start",
+    "sections": {
+      "byTheme": "By Theme",
+      "byMonth": "By Month",
+      "byCountry": "By Country",
+      "eventsFestivals": "Events & Festivals",
+      "weekendGetaways": "Weekend Getaways",
+      "bestTimeTitle": "Best Time to Travel",
+      "browseCountryTitle": "Browse by Country",
+      "upcomingFestivalsTitle": "Upcoming Events & Festivals",
+      "weekendTitle": "Spontaneous Weekend Getaways"
+    },
+    "links": {
+      "allThemes": "All themes",
+      "monthGuide": "Month guide",
+      "allCountries": "All countries",
+      "allEvents": "All events",
+      "viewAllEvents": "View all {count} events",
+      "allGetaways": "All getaways"
+    },
+    "stats": {
+      "curatedDestinations": "Curated destinations",
+      "countriesCovered": "Countries covered",
+      "festivalsEvents": "Festivals & events",
+      "weekendGetaways": "Weekend getaways"
+    },
+    "bottomCta": {
+      "title": "Feeling inspired?",
+      "description": "Pick a destination and let our AI turn it into a day-by-day plan in seconds.",
+      "button": "Start Planning Now"
+    },
+    "subpages": {
+      "backToInspirations": "Back to Inspirations",
+      "comingSoon": "Coming soon",
+      "themes": {
+        "pill": "Travel Themes",
+        "title": "Travel by Theme",
+        "description": "Whether you crave adrenaline-fueled adventures, immersive food trails, or serene photography escapes, find curated trip ideas that match your travel style.",
+        "comingSoonDescription": "Full theme pages with detailed itineraries, packing lists, and insider tips are on the way."
+      },
+      "bestTime": {
+        "pill": "Best Time to Travel",
+        "title": "When to Go Where",
+        "description": "Every destination has a sweet spot - the month when weather, crowds, and prices align. Use our month-by-month guide to pick the ideal time for your next trip.",
+        "comingSoonDescription": "Detailed seasonal guides with weather data, peak-season alerts, and budget tips for every month are on the way."
+      },
+      "countries": {
+        "pill": "Browse by Country",
+        "title": "Explore Destinations by Country",
+        "description": "From Japan's cherry blossoms to Portugal's coastal charm, dive into country-specific travel guides with best-month recommendations and local tips.",
+        "comingSoonDescription": "In-depth country profiles with visa info, budget breakdowns, and curated multi-city routes are on the way."
+      },
+      "festivals": {
+        "pill": "Events & Festivals",
+        "title": "Plan Your Trip Around a Festival",
+        "description": "The world's greatest celebrations deserve more than a last-minute flight. Discover upcoming festivals by date and build your itinerary around the event.",
+        "comingSoonDescription": "Detailed festival guides with schedules, accommodation tips, and day-by-day itinerary suggestions are on the way."
+      },
+      "weekendGetaways": {
+        "pill": "Weekend Getaways",
+        "title": "Quick Escapes for Busy Travelers",
+        "description": "You do not need two weeks off for an unforgettable trip. These short getaway ideas are built for spontaneous adventures.",
+        "comingSoonDescription": "Weekend itinerary templates with train or flight options, budget estimates, and packing checklists are on the way."
+      },
+      "country": {
+        "notFoundTitle": "Country not found",
+        "notFoundDescription": "We do not have inspiration data for \"{country}\" yet.",
+        "pill": "Country Guide",
+        "title": "Travel to {country}",
+        "description": "Everything you need to plan your trip to {country} - best months to visit, popular itineraries, and travel tips.",
+        "comingSoonDescription": "Detailed guides for {country} - including city breakdowns, cultural tips, visa information, and curated multi-day itineraries - are on the way.",
+        "cta": "Plan a trip to {country}"
+      }
+    }
+  },
+  "updates": {
+    "title": "News & Updates"
+  },
+  "shareUnavailable": {
+    "title": "This shared trip is no longer available",
+    "description": "The link may have expired or was deactivated by the trip owner. Please ask for a fresh link or create your own trip to continue planning.",
+    "backToHomepage": "Back to homepage",
+    "createNewTrip": "Create new trip"
+  },
+  "notFound": {
+    "headline": "Looks like this page is already on vacation!",
+    "planCta": "Plan yours",
+    "missingPrompt": "Think this page should exist and we missed it?",
+    "contactCta": "Contact us"
+  }
+}

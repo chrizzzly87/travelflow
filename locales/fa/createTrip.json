@@ -1,0 +1,182 @@
+{
+  "destination": {
+    "title": "Destination",
+    "searchPlaceholder": "Search country or island",
+    "noMatches": "No matching destination",
+    "islandOf": "Island of {country}",
+    "pinAsStart": "Set {destination} as your starting point",
+    "removeDestination": "Remove {destination}",
+    "idealTravelTime": "Ideal travel time",
+    "roundTrip": {
+      "title": "Return to start",
+      "description": "Finish the route where you begin."
+    },
+    "routeLock": {
+      "title": "Fixed route",
+      "description": "Keep destination order and enable drag-and-drop sorting."
+    }
+  },
+  "dates": {
+    "title": "Dates",
+    "mode": {
+      "exact": "Exact dates",
+      "flex": "Flexible window"
+    },
+    "summary": "Draft timeframe: {days} days total.",
+    "labels": {
+      "start": "Start",
+      "end": "End",
+      "selectDate": "Select date",
+      "selectStartDate": "Select start date",
+      "selectEndDate": "Select end date",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
+    },
+    "flexWindow": {
+      "weeksLabel": "Trip length (weeks)",
+      "rangeLabel": "Preferred time range",
+      "options": {
+        "spring": "Spring window",
+        "summer": "Summer window",
+        "autumn": "Autumn window",
+        "winter": "Winter window",
+        "shoulder": "Shoulder season"
+      }
+    }
+  },
+  "traveler": {
+    "title": "Traveler setup",
+    "options": {
+      "solo": "Solo",
+      "couple": "Couple",
+      "friends": "Friends",
+      "family": "Family"
+    },
+    "settings": {
+      "optionalDetails": "Optional details",
+      "helper": "These inputs are optional and only improve how trip suggestions are tailored.",
+      "gender": "Gender (optional)",
+      "notSpecified": "Not specified",
+      "genderFemale": "Female",
+      "genderMale": "Male",
+      "genderNonBinary": "Non-binary",
+      "genderPreferNot": "Prefer not to say",
+      "age": "Age (optional)",
+      "agePlaceholder": "e.g. 31",
+      "comfortMode": "Comfort mode",
+      "comfortOptions": {
+        "social": "Social",
+        "balanced": "Balanced",
+        "private": "Private"
+      },
+      "travelerA": "Traveler A (optional)",
+      "travelerB": "Traveler B (optional)",
+      "occasion": "Occasion (optional)",
+      "occasionOptions": {
+        "none": "No special occasion",
+        "honeymoon": "Honeymoon",
+        "anniversary": "Anniversary",
+        "cityBreak": "City break"
+      },
+      "groupSize": "Group size",
+      "groupEnergy": "Group energy",
+      "energyOptions": {
+        "chill": "Chill",
+        "mixed": "Mixed",
+        "full-send": "Full send"
+      },
+      "adults": "Adults",
+      "children": "Children",
+      "babies": "Babies",
+      "summaryHint": "Optional details",
+      "open": "Edit {traveler} settings",
+      "title": "Customize {traveler} preferences",
+      "description": "Add optional details to refine generated suggestions for this traveler setup.",
+      "mobileDescription": "Optional details to improve planning relevance.",
+      "done": "Done"
+    }
+  },
+  "style": {
+    "title": "Trip style",
+    "empty": "No style selected",
+    "options": {
+      "culture": "Culture",
+      "food": "Food",
+      "nature": "Nature",
+      "beaches": "Beaches",
+      "nightlife": "Nightlife",
+      "remoteWork": "Remote work"
+    }
+  },
+  "transport": {
+    "title": "Transport preferences",
+    "options": {
+      "auto": "Automatic",
+      "plane": "Plane",
+      "car": "Car",
+      "train": "Train",
+      "bus": "Bus",
+      "cycle": "Cycle",
+      "walk": "Walk",
+      "camper": "Camper"
+    },
+    "camperDisabled": "Camper is visible for preview but currently disabled in this version.",
+    "overrideHint": "Custom transport choices differ from the automatic default shown in generation."
+  },
+  "previewOnly": {
+    "title": "Preview-only",
+    "global": "These controls are visible for preview only. Generation currently uses fixed defaults: Solo traveler, style = everything except remote work, transport = Automatic.",
+    "traveler": "Preview only for now: traveler setup is shown, but generation uses the fixed Solo traveler default.",
+    "style": "Preview only for now: style choices are shown, but generation uses the fixed “everything except remote work” default.",
+    "transport": "Preview only for now: transport choices are shown, but generation uses the fixed Automatic default."
+  },
+  "notes": {
+    "title": "Special notes",
+    "hint": "Keep it short: mention must-haves like mobility, food focus, or comfort level.",
+    "placeholder": "Optional notes for the planner"
+  },
+  "snapshot": {
+    "title": "Trip snapshot",
+    "destinations": "Destinations",
+    "emptyDestinations": "Add destinations to preview your route.",
+    "days": "{days} days",
+    "avgPerStop": "Avg {days} per stop",
+    "addDestinations": "Add destinations to calculate averages",
+    "previewOnly": "Preview only",
+    "style": "Style",
+    "transport": "Transport",
+    "start": "Start",
+    "startEnd": "Start & End"
+  },
+  "mobileSnapshot": {
+    "title": "Trip snapshot",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details",
+    "days": "Days",
+    "traveler": "Traveler",
+    "style": "Style",
+    "transport": "Transport"
+  },
+  "cta": {
+    "label": "Create my trip",
+    "loading": "Creating..."
+  },
+  "errors": {
+    "destinationRequired": "Add at least one destination before creating your trip.",
+    "genericGenerate": "Trip generation failed. Please try again."
+  },
+  "prefillBadge": "Pre-filled from: {label}",
+  "labsBanner": {
+    "title": "Need to test other create-trip concepts?",
+    "description": "Direct lab routes for regression checks and side-by-side experiments.",
+    "links": {
+      "legacy": "Classic Legacy form",
+      "classicCard": "Classic Card route",
+      "splitWorkspace": "Split Workspace experiment",
+      "journeyArchitect": "Journey Architect experiment",
+      "designV1": "Design Variant V1",
+      "designV2": "Design Variant V2",
+      "designV3": "Design Variant V3"
+    }
+  }
+}
