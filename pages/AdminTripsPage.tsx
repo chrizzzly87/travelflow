@@ -249,7 +249,11 @@ export const AdminTripsPage: React.FC = () => {
         if (selectedVisibleTrips.length === 0) return;
         const confirmed = await confirmDialog({
             title: 'Soft delete selected trips',
-            message: `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
+            message: [
+                `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
+                '',
+                'Archived trips stay in the database and can be restored later.',
+            ].join('\n'),
             confirmLabel: 'Archive',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -274,7 +278,12 @@ export const AdminTripsPage: React.FC = () => {
         if (selectedVisibleTrips.length === 0) return;
         const confirmed = await confirmDialog({
             title: 'Hard delete selected trips',
-            message: `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
+            message: [
+                `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
+                '',
+                'This is permanent and removes all linked versions/shares/collaborators for those trips.',
+                'This cannot be undone.',
+            ].join('\n'),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -403,7 +412,10 @@ export const AdminTripsPage: React.FC = () => {
                 </article>
             </section>
 
-            <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section
+                className={`relative mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+                aria-busy={isSaving}
+            >
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -474,7 +486,10 @@ export const AdminTripsPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {visibleTrips.map((trip) => (
-                                <tr key={trip.trip_id} className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                <tr
+                                    key={trip.trip_id}
+                                    className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50/90 ring-1 ring-inset ring-accent-200/80' : 'hover:bg-slate-50'}`}
+                                >
                                     <td className="px-3 py-2 align-middle">
                                         <Checkbox
                                             checked={selectedTripIds.has(trip.trip_id)}
@@ -567,6 +582,14 @@ export const AdminTripsPage: React.FC = () => {
                 </div>
                 {isSaving && (
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
+                )}
+                {isSaving && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                            <SpinnerGap size={13} className="animate-spin" />
+                            Applying changes...
+                        </span>
+                    </div>
                 )}
             </section>
 

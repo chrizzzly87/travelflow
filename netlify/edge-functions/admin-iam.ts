@@ -118,54 +118,90 @@ const clearHardDeleteBlockingReferences = async (
   userId: string,
 ): Promise<string[]> => {
   const encodedUserId = encodeURIComponent(userId);
-  const cleanupErrors = await Promise.all([
-    serviceRoleMutate(config, `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { created_by: null },
+  const cleanupSteps: Array<{
+    label: string;
+    path: string;
+    options: { method: "PATCH" | "DELETE"; body?: Record<string, unknown> };
+  }> = [
+    {
+      label: "trip_versions.created_by -> null",
+      path: `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { created_by: null } },
+    },
+    {
+      label: "trip_shares.created_by -> null",
+      path: `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { created_by: null } },
+    },
+    {
+      label: "profiles.role_updated_by -> null",
+      path: `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { role_updated_by: null } },
+    },
+    {
+      label: "profiles.disabled_by -> null",
+      path: `/rest/v1/profiles?disabled_by=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { disabled_by: null } },
+    },
+    {
+      label: "admin_user_roles.assigned_by -> null",
+      path: `/rest/v1/admin_user_roles?assigned_by=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { assigned_by: null } },
+    },
+    {
+      label: "auth_flow_logs.user_id -> null",
+      path: `/rest/v1/auth_flow_logs?user_id=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { user_id: null } },
+    },
+    {
+      label: "trip_generation_requests.requested_by_anon_id -> null",
+      path: `/rest/v1/trip_generation_requests?requested_by_anon_id=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { requested_by_anon_id: null } },
+    },
+    {
+      label: "trip_generation_requests.owner_user_id -> null",
+      path: `/rest/v1/trip_generation_requests?owner_user_id=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { owner_user_id: null } },
+    },
+    {
+      label: "admin_audit_logs.actor_user_id -> null",
+      path: `/rest/v1/admin_audit_logs?actor_user_id=eq.${encodedUserId}`,
+      options: { method: "PATCH", body: { actor_user_id: null } },
+    },
+    {
+      label: "trip_collaborators delete",
+      path: `/rest/v1/trip_collaborators?user_id=eq.${encodedUserId}`,
+      options: { method: "DELETE" },
+    },
+    {
+      label: "admin_user_roles delete",
+      path: `/rest/v1/admin_user_roles?user_id=eq.${encodedUserId}`,
+      options: { method: "DELETE" },
+    },
+    {
+      label: "owned trips delete",
+      path: `/rest/v1/trips?owner_id=eq.${encodedUserId}`,
+      options: { method: "DELETE" },
+    },
+  ];
+
+  const cleanupErrors = await Promise.all(
+    cleanupSteps.map(async (step) => {
+      const message = await serviceRoleMutate(config, step.path, step.options);
+      if (!message) return null;
+      return `${step.label}: ${message}`;
     }),
-    serviceRoleMutate(config, `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { created_by: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { role_updated_by: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/profiles?disabled_by=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { disabled_by: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/admin_user_roles?assigned_by=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { assigned_by: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/auth_flow_logs?user_id=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { user_id: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?requested_by_anon_id=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { requested_by_anon_id: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?owner_user_id=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { owner_user_id: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/admin_audit_logs?actor_user_id=eq.${encodedUserId}`, {
-      method: "PATCH",
-      body: { actor_user_id: null },
-    }),
-    serviceRoleMutate(config, `/rest/v1/trip_collaborators?user_id=eq.${encodedUserId}`, {
-      method: "DELETE",
-    }),
-    serviceRoleMutate(config, `/rest/v1/admin_user_roles?user_id=eq.${encodedUserId}`, {
-      method: "DELETE",
-    }),
-    serviceRoleMutate(config, `/rest/v1/trips?owner_id=eq.${encodedUserId}`, {
-      method: "DELETE",
-    }),
-  ]);
+  );
   return cleanupErrors.filter((message): message is string => Boolean(message && message.trim()));
+};
+
+const summarizeCleanupErrors = (cleanupErrors: string[]): string => {
+  if (cleanupErrors.length === 0) return "";
+  const maxItems = 3;
+  const visible = cleanupErrors.slice(0, maxItems).join(" | ");
+  const remaining = cleanupErrors.length - maxItems;
+  if (remaining <= 0) return visible;
+  return `${visible} | +${remaining} more cleanup failure${remaining === 1 ? "" : "s"}`;
 };
 
 const supabaseFetch = async (
@@ -379,12 +415,13 @@ export default async (request: Request): Promise<Response> => {
         const baseError = retryDeleteError === initialDeleteError
           ? retryDeleteError
           : `${initialDeleteError} Retry failed: ${retryDeleteError}`;
+        const cleanupSummary = summarizeCleanupErrors(cleanupErrors);
         const cleanupNote = cleanupErrors.length > 0
-          ? ` Cleanup attempted, but ${cleanupErrors.length} cleanup step${cleanupErrors.length === 1 ? "" : "s"} failed.`
+          ? ` Cleanup attempted, but ${cleanupErrors.length} cleanup step${cleanupErrors.length === 1 ? "" : "s"} failed: ${cleanupSummary}.`
           : "";
         return json(400, {
           ok: false,
-          error: `${baseError}${cleanupNote}`,
+          error: `${baseError}${cleanupNote} If this user owns trips you want to keep, transfer trips first, then retry hard delete.`,
         });
       }
     }

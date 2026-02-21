@@ -247,12 +247,20 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
 };
 
 const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus => {
+    const providerCandidates = [
+        ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
+        user.auth_provider || '',
+    ]
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+    const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
+    if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
+
     const explicit = (user.activation_status || '').trim().toLowerCase();
     if (explicit === 'activated' || explicit === 'invited' || explicit === 'pending' || explicit === 'anonymous') {
         return explicit;
     }
     if (explicit === 'pending_activation' || explicit === 'placeholder') return 'pending';
-    if (Boolean(user.is_anonymous)) return 'anonymous';
     if (!user.email && !user.last_sign_in_at) return 'pending';
     if (user.email && !user.last_sign_in_at) return 'invited';
     return 'activated';
@@ -1352,15 +1360,15 @@ export const AdminUsersPage: React.FC = () => {
         const confirmed = await confirmDialog({
             title: 'Hard delete user',
             message: [
-                `Hard-delete ${user.email || user.user_id}?`,
+                `Delete account: ${user.email || user.user_id}`,
                 '',
-                'This permanently deletes:',
-                '- Auth account',
-                '- Profile data',
-                `- ${tripLabel}`,
-                '- Related trip history, share links, and collaborator access for those trips',
+                'This is permanent. The following data will be removed:',
+                '• Auth account',
+                '• Profile data',
+                `• ${tripLabel}`,
+                '• Related trip history, share links, and collaborator access',
                 '',
-                sourceTripCount > 0 ? 'To preserve trips, cancel and use "Transfer trips + hard delete" in this drawer.' : '',
+                sourceTripCount > 0 ? 'Tip: To preserve trips, cancel and use "Transfer trips + hard delete" first.' : '',
                 sourceTripCount > 0 ? '' : '',
                 'This cannot be undone.',
             ].join('\n'),
@@ -1418,11 +1426,13 @@ export const AdminUsersPage: React.FC = () => {
             message: [
                 `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
                 '',
-                `This permanently deletes their auth accounts, profiles, and ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total.`,
-                'Related trip history, share links, and collaborator access for those trips are also permanently deleted.',
+                'This is permanent. The following data will be removed:',
+                `• Auth accounts + profiles for ${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'}`,
+                `• ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total`,
+                '• Related trip history, share links, and collaborator access',
                 '',
                 selectedTripCount > 0
-                    ? 'If trips should be preserved, cancel and use each user drawer action "Transfer trips + hard delete" first.'
+                    ? 'Tip: If trips should be preserved, cancel and use "Transfer trips + hard delete" in each user drawer first.'
                     : '',
                 selectedTripCount > 0 ? '' : '',
                 'This cannot be undone.',
@@ -1742,6 +1752,14 @@ export const AdminUsersPage: React.FC = () => {
                     {message}
                 </section>
             )}
+            {isSaving && (
+                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                    <span className="inline-flex items-center gap-2 font-medium">
+                        <SpinnerGap size={14} className="animate-spin" />
+                        Processing admin changes. Please wait...
+                    </span>
+                </section>
+            )}
 
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1793,7 +1811,10 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section
+                className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+                aria-busy={isSaving}
+            >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -1969,7 +1990,10 @@ export const AdminUsersPage: React.FC = () => {
                                 const isSelected = selectedUserIds.has(user.user_id);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
-                                    <tr key={user.user_id} className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                    <tr
+                                        key={user.user_id}
+                                        className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/90 ring-1 ring-inset ring-accent-200/80' : 'hover:bg-slate-50'}`}
+                                    >
                                         <td className="px-3 py-2 align-middle">
                                             <Checkbox
                                                 checked={isSelected}
@@ -2112,6 +2136,14 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                {isSaving && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                            <SpinnerGap size={13} className="animate-spin" />
+                            Applying changes...
+                        </span>
+                    </div>
+                )}
             </section>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
