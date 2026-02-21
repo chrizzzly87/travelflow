@@ -1284,30 +1284,33 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                             </div>
                                             <div className="space-y-1">
                                                 <label htmlFor="classic-budget" className="text-xs font-medium text-gray-500">Budget</label>
-                                                <select
-                                                    id="classic-budget"
-                                                    value={budget}
-                                                    onChange={(event) => setBudget(event.target.value)}
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
-                                                >
-                                                    <option>Low</option>
-                                                    <option>Medium</option>
-                                                    <option>High</option>
-                                                    <option>Luxury</option>
-                                                </select>
+                                                <Select value={budget} onValueChange={setBudget}>
+                                                    <SelectTrigger id="classic-budget" className="w-full border-gray-200 bg-gray-50 text-sm focus:ring-accent-500">
+                                                        <span>{budget}</span>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {['Low', 'Medium', 'High', 'Luxury'].map((option) => (
+                                                            <SelectItem key={`classic-budget-${option}`} value={option}>
+                                                                {option}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                             <div className="space-y-1">
                                                 <label htmlFor="classic-pace" className="text-xs font-medium text-gray-500">Pace</label>
-                                                <select
-                                                    id="classic-pace"
-                                                    value={pace}
-                                                    onChange={(event) => setPace(event.target.value)}
-                                                    className="w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
-                                                >
-                                                    <option>Relaxed</option>
-                                                    <option>Balanced</option>
-                                                    <option>Fast</option>
-                                                </select>
+                                                <Select value={pace} onValueChange={setPace}>
+                                                    <SelectTrigger id="classic-pace" className="w-full border-gray-200 bg-gray-50 text-sm focus:ring-accent-500">
+                                                        <span>{pace}</span>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {['Relaxed', 'Balanced', 'Fast'].map((option) => (
+                                                            <SelectItem key={`classic-pace-${option}`} value={option}>
+                                                                {option}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
                                             <div className="space-y-1">
                                                 <label htmlFor="classic-stops" className="text-xs font-medium text-gray-500">Stops</label>
@@ -1791,29 +1794,33 @@ export const CreateTripForm: React.FC<CreateTripFormProps> = ({ onTripGenerated,
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label htmlFor="surprise-month" className="text-xs font-bold uppercase tracking-wider text-gray-500">Month</label>
-                                        <select
-                                            id="surprise-month"
-                                            value={surpriseMonth}
-                                            onChange={(event) => setSurpriseMonth(Number(event.target.value))}
-                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
-                                        >
-                                            {MONTH_LABELS.map((label, index) => (
-                                                <option key={label} value={index + 1}>{label}</option>
-                                            ))}
-                                        </select>
+                                        <Select value={String(surpriseMonth)} onValueChange={(value) => setSurpriseMonth(Number(value))}>
+                                            <SelectTrigger id="surprise-month" className="mt-1 w-full border-gray-200 bg-gray-50 text-sm focus:ring-accent-500">
+                                                <span>{MONTH_LABELS[surpriseMonth - 1]}</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {MONTH_LABELS.map((label, index) => (
+                                                    <SelectItem key={`surprise-month-${label}`} value={String(index + 1)}>
+                                                        {label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     <div>
                                         <label htmlFor="surprise-weeks" className="text-xs font-bold uppercase tracking-wider text-gray-500">Duration (weeks)</label>
-                                        <select
-                                            id="surprise-weeks"
-                                            value={surpriseWeeks}
-                                            onChange={(event) => setSurpriseWeeks(Number(event.target.value))}
-                                            className="mt-1 w-full p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-accent-500 outline-none"
-                                        >
-                                            {[1, 2, 3, 4, 5, 6, 7, 8].map((week) => (
-                                                <option key={week} value={week}>{week} week{week > 1 ? 's' : ''}</option>
-                                            ))}
-                                        </select>
+                                        <Select value={String(surpriseWeeks)} onValueChange={(value) => setSurpriseWeeks(Number(value))}>
+                                            <SelectTrigger id="surprise-weeks" className="mt-1 w-full border-gray-200 bg-gray-50 text-sm focus:ring-accent-500">
+                                                <span>{surpriseWeeks} week{surpriseWeeks > 1 ? 's' : ''}</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[1, 2, 3, 4, 5, 6, 7, 8].map((week) => (
+                                                    <SelectItem key={`surprise-weeks-${week}`} value={String(week)}>
+                                                        {week} week{week > 1 ? 's' : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
                             ) : (

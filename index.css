@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@import "flagpack/dist/flagpack.css";
 
 @source "./**/*.{ts,tsx}";
 @source not "./app/routes/DeferredAppRoutes.tsx";

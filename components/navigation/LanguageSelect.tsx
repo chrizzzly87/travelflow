@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppLanguage } from '../../types';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../../config/locales';
-import { CaretDown } from '@phosphor-icons/react';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../ui/select';
 import { FlagIcon } from '../flags/FlagIcon';
 
 interface LanguageSelectProps {
@@ -17,37 +17,34 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = ({
     onChange,
     ariaLabel,
     triggerClassName,
-    contentAlign = 'end', // kept for backwards compatibility; native select ignores menu alignment.
+    contentAlign = 'end',
 }) => {
-    void contentAlign;
-
-    const triggerClasses = [
-        'relative inline-flex w-full items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900',
-        'outline-none ring-offset-white focus-within:ring-2 focus-within:ring-accent-500 focus-within:ring-offset-0',
-        triggerClassName || '',
-    ].join(' ').trim();
-
     return (
-        <label className={triggerClasses}>
-            <span className="pointer-events-none inline-flex min-w-0 items-center gap-2 pr-6">
-                <FlagIcon code={LOCALE_FLAGS[value]} size="sm" />
-                <span className="truncate">{LOCALE_LABELS[value]}</span>
-            </span>
-            <select
-                aria-label={ariaLabel}
-                className="absolute inset-0 h-full w-full cursor-pointer appearance-none bg-transparent text-transparent"
-                value={value}
-                onChange={(event) => onChange(normalizeLocale(event.target.value))}
+        <Select
+            value={value}
+            onValueChange={(nextValue) => onChange(normalizeLocale(nextValue))}
+        >
+            <SelectTrigger aria-label={ariaLabel} className={triggerClassName}>
+                <span className="inline-flex items-center gap-2 truncate">
+                    <FlagIcon code={LOCALE_FLAGS[value]} size="sm" />
+                    <span>{LOCALE_LABELS[value]}</span>
+                </span>
+            </SelectTrigger>
+            <SelectContent
+                side="bottom"
+                align={contentAlign}
+                sideOffset={8}
+                className="rounded-xl border-slate-200 bg-white p-1 shadow-xl"
             >
                 {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                    <option key={locale} value={locale}>
-                        {LOCALE_LABELS[locale]}
-                    </option>
+                    <SelectItem key={locale} value={locale} indicatorPosition="right" className="rounded-lg py-2.5">
+                        <span className="inline-flex items-center gap-2 font-medium">
+                            <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" />
+                            <span>{LOCALE_LABELS[locale]}</span>
+                        </span>
+                    </SelectItem>
                 ))}
-            </select>
-            <span className="pointer-events-none absolute inset-y-0 right-2 inline-flex items-center text-slate-500">
-                <CaretDown size={14} />
-            </span>
-        </label>
+            </SelectContent>
+        </Select>
     );
 };
