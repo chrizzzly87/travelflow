@@ -96,34 +96,76 @@ const buildServiceHeaders = (serviceRoleKey: string, extra?: Record<string, stri
   ...extra,
 });
 
-const serviceRolePatch = async (
+const serviceRoleMutate = async (
   config: { url: string; serviceRoleKey: string },
   path: string,
-  patch: Record<string, unknown>,
-): Promise<void> => {
+  options: { method: "PATCH" | "DELETE"; body?: Record<string, unknown> },
+): Promise<string | null> => {
   const response = await fetch(`${config.url}${path}`, {
-    method: "PATCH",
+    method: options.method,
     headers: buildServiceHeaders(config.serviceRoleKey, {
       Prefer: "return=minimal",
     }),
-    body: JSON.stringify(patch),
+    body: options.body ? JSON.stringify(options.body) : undefined,
   });
-  if (!response.ok) {
-    const payload = await safeJsonParse(response);
-    throw new Error(extractServiceError(payload, "Could not update user references before delete."));
-  }
+  if (response.ok) return null;
+  const payload = await safeJsonParse(response);
+  return extractServiceError(payload, "Cleanup request failed.");
 };
 
 const clearHardDeleteBlockingReferences = async (
   config: { url: string; serviceRoleKey: string },
   userId: string,
-): Promise<void> => {
+): Promise<string[]> => {
   const encodedUserId = encodeURIComponent(userId);
-  await Promise.all([
-    serviceRolePatch(config, `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`, { created_by: null }),
-    serviceRolePatch(config, `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`, { created_by: null }),
-    serviceRolePatch(config, `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`, { role_updated_by: null }),
+  const cleanupErrors = await Promise.all([
+    serviceRoleMutate(config, `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { created_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { created_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { role_updated_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/profiles?disabled_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { disabled_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_user_roles?assigned_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { assigned_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/auth_flow_logs?user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?requested_by_anon_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { requested_by_anon_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?owner_user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { owner_user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_audit_logs?actor_user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { actor_user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_collaborators?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_user_roles?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/trips?owner_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
   ]);
+  return cleanupErrors.filter((message): message is string => Boolean(message && message.trim()));
 };
 
 const supabaseFetch = async (
@@ -326,35 +368,23 @@ export default async (request: Request): Promise<Response> => {
 
     let response = await deleteAuthUser();
     if (!response.ok) {
-      const payload = await safeJsonParse(response);
-      const deleteError = extractServiceError(payload, "Could not delete user.");
-      const isForeignKeyDeleteFailure = /foreign key constraint/i.test(deleteError);
+      const initialPayload = await safeJsonParse(response);
+      const initialDeleteError = extractServiceError(initialPayload, "Could not delete user.");
+      const cleanupErrors = await clearHardDeleteBlockingReferences(config, userId);
+      response = await deleteAuthUser();
 
-      if (isForeignKeyDeleteFailure) {
-        try {
-          await clearHardDeleteBlockingReferences(config, userId);
-          response = await deleteAuthUser();
-        } catch (cleanupError) {
-          const cleanupMessage = cleanupError instanceof Error && cleanupError.message.trim()
-            ? cleanupError.message.trim()
-            : "Could not prepare user references for hard delete.";
-          return json(400, {
-            ok: false,
-            error: `Could not delete user due to linked records. ${cleanupMessage}`,
-          });
-        }
-
-        if (!response.ok) {
-          const retryPayload = await safeJsonParse(response);
-          return json(400, {
-            ok: false,
-            error: extractServiceError(retryPayload, "Could not delete user after cleaning linked records."),
-          });
-        }
-      } else {
+      if (!response.ok) {
+        const retryPayload = await safeJsonParse(response);
+        const retryDeleteError = extractServiceError(retryPayload, "Could not delete user after cleanup.");
+        const baseError = retryDeleteError === initialDeleteError
+          ? retryDeleteError
+          : `${initialDeleteError} Retry failed: ${retryDeleteError}`;
+        const cleanupNote = cleanupErrors.length > 0
+          ? ` Cleanup attempted, but ${cleanupErrors.length} cleanup step${cleanupErrors.length === 1 ? "" : "s"} failed.`
+          : "";
         return json(400, {
           ok: false,
-          error: deleteError,
+          error: `${baseError}${cleanupNote}`,
         });
       }
     }

@@ -56,6 +56,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🧹 Added trip-count cleanup filters in User Provisioning so admins can quickly isolate users with no trips and empty profile data before deletion.
 - [x] [Improved] 🔁 Added safer admin deletion flow with explicit hard-delete impact warnings and a transfer-before-delete option for preserving owned trips.
 - [x] [Fixed] 🧾 Improved bulk hard-delete reliability by showing per-user failure reasons and automatically clearing safe historical links that can block deletion.
+- [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
 - [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.

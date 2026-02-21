@@ -397,9 +397,10 @@ const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
 
 const summarizeBulkDeleteFailures = (details: string[]): string => {
     if (details.length === 0) return '';
-    const visible = details.slice(0, 3).join(' | ');
-    if (details.length <= 3) return visible;
-    return `${visible} | +${details.length - 3} more`;
+    const maxVisible = 5;
+    const visible = details.slice(0, maxVisible).map((detail) => `- ${detail}`).join('\n');
+    if (details.length <= maxVisible) return visible;
+    return `${visible}\n- +${details.length - maxVisible} more failure${details.length - maxVisible === 1 ? '' : 's'}`;
 };
 
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
@@ -965,15 +966,19 @@ export const AdminUsersPage: React.FC = () => {
         return `/admin/trips?q=${encodeURIComponent(token)}`;
     }, [selectedUser]);
 
-    const loadUsers = async () => {
+    const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
-        setErrorMessage(null);
+        if (!options.preserveErrorMessage) {
+            setErrorMessage(null);
+        }
         try {
             const rows = await adminListUsers({ limit: 500 });
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
+            if (!options.preserveErrorMessage) {
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
+            }
             setUsers((current) => (current.length > 0 ? current : []));
         } finally {
             setIsLoadingUsers(false);
@@ -1355,6 +1360,8 @@ export const AdminUsersPage: React.FC = () => {
                 `- ${tripLabel}`,
                 '- Related trip history, share links, and collaborator access for those trips',
                 '',
+                sourceTripCount > 0 ? 'To preserve trips, cancel and use "Transfer trips + hard delete" in this drawer.' : '',
+                sourceTripCount > 0 ? '' : '',
                 'This cannot be undone.',
             ].join('\n'),
             confirmLabel: 'Hard delete',
@@ -1414,6 +1421,10 @@ export const AdminUsersPage: React.FC = () => {
                 `This permanently deletes their auth accounts, profiles, and ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total.`,
                 'Related trip history, share links, and collaborator access for those trips are also permanently deleted.',
                 '',
+                selectedTripCount > 0
+                    ? 'If trips should be preserved, cancel and use each user drawer action "Transfer trips + hard delete" first.'
+                    : '',
+                selectedTripCount > 0 ? '' : '',
                 'This cannot be undone.',
             ].join('\n'),
             confirmLabel: 'Hard delete',
@@ -1429,6 +1440,7 @@ export const AdminUsersPage: React.FC = () => {
             const failedIndexes: number[] = [];
             const failedDetails: string[] = [];
             const deletedIds = new Set<string>();
+            let bulkErrorMessage: string | null = null;
 
             results.forEach((result, index) => {
                 const user = selectedVisibleUsers[index];
@@ -1453,15 +1465,15 @@ export const AdminUsersPage: React.FC = () => {
             if (failed > 0) {
                 const detailSummary = summarizeBulkDeleteFailures(failedDetails);
                 if (deleted === 0) {
-                    setErrorMessage(
+                    bulkErrorMessage = (
                         detailSummary
-                            ? `Could not hard-delete selected users. ${detailSummary}`
+                            ? `Could not hard-delete selected users.\n${detailSummary}`
                             : 'Could not hard-delete selected users.'
                     );
                 } else {
-                    setErrorMessage(
+                    bulkErrorMessage = (
                         detailSummary
-                            ? `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete. ${detailSummary}`
+                            ? `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.\n${detailSummary}`
                             : `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.`
                     );
                 }
@@ -1475,7 +1487,10 @@ export const AdminUsersPage: React.FC = () => {
                 setSelectedUserId(null);
                 setIsDetailOpen(false);
             }
-            await loadUsers();
+            await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
+            if (bulkErrorMessage) {
+                setErrorMessage(bulkErrorMessage);
+            }
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
         } finally {
@@ -1805,7 +1820,7 @@ export const AdminUsersPage: React.FC = () => {
                             }}
                         />
                         <AdminFilterMenu
-                            label="Trips"
+                            label="# Trips"
                             options={tripFilterOptions}
                             selectedValues={tripFilters}
                             onSelectedValuesChange={(next) => {
@@ -1850,6 +1865,10 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                <p className="mt-2 text-xs text-slate-500">
+                    Cleanup shortcut: use <span className="font-semibold text-slate-700"># Trips</span> and select
+                    <span className="font-semibold text-slate-700"> No trips + no profile data</span>.
+                </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                     <span className="text-xs font-semibold text-slate-700">
