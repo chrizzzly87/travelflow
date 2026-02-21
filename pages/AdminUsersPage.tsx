@@ -366,6 +366,7 @@ const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim(
 const getUserTotalTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.total_trips || 0));
 
 const getUserActiveTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.active_trips || 0));
+const isUserHardDeleteEligible = (user: AdminUserRecord): boolean => (user.account_status || 'active') !== 'deleted';
 
 const isUserTriplessAndNoData = (user: AdminUserRecord): boolean => {
     if (getUserTotalTrips(user) !== 0) return false;
@@ -1290,7 +1291,12 @@ export const AdminUsersPage: React.FC = () => {
         () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id)),
         [filteredUsers, selectedUserIds]
     );
-    const areAllVisibleUsersSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedUserIds.has(user.user_id));
+    const hardDeleteSelectableVisibleUsers = useMemo(
+        () => filteredUsers.filter((user) => isUserHardDeleteEligible(user)),
+        [filteredUsers]
+    );
+    const areAllVisibleUsersSelected = hardDeleteSelectableVisibleUsers.length > 0
+        && hardDeleteSelectableVisibleUsers.every((user) => selectedUserIds.has(user.user_id));
     const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
 
     useEffect(() => {
@@ -1305,6 +1311,23 @@ export const AdminUsersPage: React.FC = () => {
             const next = new Set<string>();
             current.forEach((userId) => {
                 if (allowed.has(userId)) {
+                    next.add(userId);
+                    return;
+                }
+                changed = true;
+            });
+            return changed ? next : current;
+        });
+    }, [filteredUsers]);
+
+    useEffect(() => {
+        setSelectedUserIds((current) => {
+            if (current.size === 0) return current;
+            const eligible = new Set(filteredUsers.filter((user) => isUserHardDeleteEligible(user)).map((user) => user.user_id));
+            let changed = false;
+            const next = new Set<string>();
+            current.forEach((userId) => {
+                if (eligible.has(userId)) {
                     next.add(userId);
                     return;
                 }
@@ -1330,6 +1353,10 @@ export const AdminUsersPage: React.FC = () => {
 
     const toggleUserSelection = (userId: string, checked: boolean) => {
         setSelectedUserIds((current) => {
+            const targetUser = filteredUsers.find((user) => user.user_id === userId);
+            if (checked && targetUser && !isUserHardDeleteEligible(targetUser)) {
+                return current;
+            }
             const next = new Set(current);
             if (checked) next.add(userId);
             else next.delete(userId);
@@ -1341,10 +1368,10 @@ export const AdminUsersPage: React.FC = () => {
         setSelectedUserIds((current) => {
             const next = new Set(current);
             if (!checked) {
-                filteredUsers.forEach((user) => next.delete(user.user_id));
+                hardDeleteSelectableVisibleUsers.forEach((user) => next.delete(user.user_id));
                 return next;
             }
-            filteredUsers.forEach((user) => next.add(user.user_id));
+            hardDeleteSelectableVisibleUsers.forEach((user) => next.add(user.user_id));
             return next;
         });
     };
@@ -1395,6 +1422,10 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleHardDelete = async (user: AdminUserRecord) => {
+        if (!isUserHardDeleteEligible(user)) {
+            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            return;
+        }
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
@@ -1453,10 +1484,16 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkHardDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
-        const selectedTripCount = selectedVisibleUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
+        const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
+        const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
+        if (hardDeleteUsers.length === 0) {
+            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            return;
+        }
+        const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
         const confirmed = await confirmDialog({
             title: 'Hard delete selected users',
-            message: buildBulkHardDeleteMessage(selectedVisibleUsers.length, selectedTripCount),
+            message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1466,14 +1503,14 @@ export const AdminUsersPage: React.FC = () => {
         setErrorMessage(null);
         setMessage(null);
         try {
-            const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
+            const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
             const failedIndexes: number[] = [];
             const failedDetails: string[] = [];
             const deletedIds = new Set<string>();
             let bulkErrorMessage: string | null = null;
 
             results.forEach((result, index) => {
-                const user = selectedVisibleUsers[index];
+                const user = hardDeleteUsers[index];
                 if (result.status === 'fulfilled') {
                     deletedIds.add(user.user_id);
                     return;
@@ -1486,14 +1523,17 @@ export const AdminUsersPage: React.FC = () => {
             const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
-                const deletedTripCount = selectedVisibleUsers
+                const deletedTripCount = hardDeleteUsers
                     .filter((_, index) => results[index]?.status === 'fulfilled')
                     .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
-                setMessage(
+                const deleteMessage = (
                     failed > 0
                         ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed). ${failed} failed.`
                         : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed).`
                 );
+                setMessage(skippedUsers > 0 ? `${deleteMessage} ${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.` : deleteMessage);
+            } else if (skippedUsers > 0) {
+                setMessage(`${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.`);
             }
             if (failed > 0) {
                 const detailSummary = summarizeBulkDeleteFailures(failedDetails);
@@ -1512,7 +1552,7 @@ export const AdminUsersPage: React.FC = () => {
                 }
             }
             if (failed > 0) {
-                setSelectedUserIds(new Set(failedIndexes.map((index) => selectedVisibleUsers[index].user_id)));
+                setSelectedUserIds(new Set(failedIndexes.map((index) => hardDeleteUsers[index].user_id)));
             } else {
                 setSelectedUserIds(new Set());
             }
@@ -1934,7 +1974,7 @@ export const AdminUsersPage: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => void handleBulkHardDeleteUsers()}
-                        disabled={isSaving || selectedVisibleUsers.length === 0}
+                        disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Trash size={12} />
@@ -2016,6 +2056,7 @@ export const AdminUsersPage: React.FC = () => {
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
                                 const isSelected = selectedUserIds.has(user.user_id);
+                                const isHardDeleteEligible = isUserHardDeleteEligible(user);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
                                     <tr
@@ -2025,8 +2066,9 @@ export const AdminUsersPage: React.FC = () => {
                                         <td className="px-3 py-2 align-middle">
                                             <Checkbox
                                                 checked={isSelected}
+                                                disabled={!isHardDeleteEligible}
                                                 onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
-                                                aria-label={`Select ${userName}`}
+                                                aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
                                             />
                                         </td>
                                         <td className="px-3 py-2">
@@ -2550,7 +2592,7 @@ export const AdminUsersPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => void handleHardDelete(selectedUser)}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
                                     className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                                 >
                                     <Trash size={13} />
