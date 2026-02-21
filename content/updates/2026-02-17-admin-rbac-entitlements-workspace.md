@@ -4,7 +4,7 @@ version: v0.50.0
 title: "Admin RBAC workspace + profile onboarding"
 date: 2026-02-17
 published_at: 2026-02-17T20:40:00Z
-status: draft
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Introduced a full admin operations workspace with safer trip overrides, deep-linked owner drawers, and bulk admin actions across users and trips."

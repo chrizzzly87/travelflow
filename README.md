@@ -98,6 +98,12 @@ For UI styling, component behavior, and accessibility standards, use:
 
 - `docs/BRAND_CI_GUIDELINES.md`
 
+## Tech Stack Overview
+
+For the current architecture snapshot (frameworks, state management, data stack, analytics, testing status, and upgrade roadmap), use:
+
+- `docs/TECH_STACK.md`
+
 ## Paywall Guidelines
 
 For trip lifecycle state handling, lock behavior, and paywall rules, use:
