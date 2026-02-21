@@ -177,6 +177,26 @@ export const BlogPostPage: React.FC = () => {
         setHasHeaderImageError(false);
     }, [post?.slug]);
 
+    const showEnglishContentNotice = post ? locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE : false;
+    const canonicalPath = post
+        ? showEnglishContentNotice
+            ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
+            : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })
+        : buildLocalizedMarketingPath('blog', locale);
+
+    useEffect(() => {
+        if (!post) return;
+        if (typeof document === 'undefined') return;
+        const canonicalHref = new URL(canonicalPath, window.location.origin).toString();
+        let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+        if (!canonicalLink) {
+            canonicalLink = document.createElement('link');
+            canonicalLink.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonicalLink);
+        }
+        canonicalLink.setAttribute('href', canonicalHref);
+    }, [canonicalPath, post]);
+
     if (!post) {
         return <Navigate to={buildLocalizedMarketingPath('home', locale)} replace />;
     }
@@ -187,22 +207,6 @@ export const BlogPostPage: React.FC = () => {
         year: 'numeric',
     });
     const contentLang = post.language;
-    const showEnglishContentNotice = locale !== DEFAULT_LOCALE && contentLang === DEFAULT_LOCALE;
-    const canonicalPath = showEnglishContentNotice
-        ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
-        : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
-
-    useEffect(() => {
-        if (typeof document === 'undefined') return;
-        const canonicalHref = new URL(canonicalPath, window.location.origin).toString();
-        let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-        if (!canonicalLink) {
-            canonicalLink = document.createElement('link');
-            canonicalLink.setAttribute('rel', 'canonical');
-            document.head.appendChild(canonicalLink);
-        }
-        canonicalLink.setAttribute('href', canonicalHref);
-    }, [canonicalPath]);
 
     return (
         <MarketingLayout>

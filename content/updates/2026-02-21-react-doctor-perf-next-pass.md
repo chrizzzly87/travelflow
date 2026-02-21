@@ -1,0 +1,14 @@
+---
+id: rel-2026-02-21-react-doctor-perf-next-pass
+version: v0.54.0
+title: "React doctor and trip performance follow-up"
+date: 2026-02-21
+published_at: 2026-02-21T10:30:00Z
+status: draft
+notify_in_app: false
+in_app_hours: 24
+summary: "Follow-up fixes target React Doctor blockers and next trip-page performance extraction work."
+---
+
+## Changes
+- [ ] [Internal] 🩺 Cleared the current React Doctor blocking errors on blog routes by removing a conditional hook path and replacing locale-derived filter reset effects with locale-scoped state.
