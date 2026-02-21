@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-18-og-font-latin-priority-fix
-version: v0.50.0
+version: v0.51.0
 title: "OG preview typography and shared-link resilience fixes"
 date: 2026-02-18
 published_at: 2026-02-18T14:30:00Z
-status: draft
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Fixed social preview typography fallbacks and restored rich trip previews when shared trip pages are opened from direct trip links."
