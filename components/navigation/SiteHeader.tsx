@@ -178,7 +178,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                                     />
                                 )}
                             >
-                                <AccountMenu email={access?.email || null} isAdmin={isAdmin} />
+                                <AccountMenu email={access?.email || null} userId={access?.userId || null} isAdmin={isAdmin} />
                             </Suspense>
                         ) : (
                             <NavLink

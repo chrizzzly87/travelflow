@@ -336,7 +336,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const value = useMemo<AuthContextValue>(() => {
-        const isAuthenticated = Boolean(session?.user && access && !access.isAnonymous);
+        const hasValidBoundAccess = Boolean(
+            session?.user
+            && access
+            && access.userId
+            && access.userId === session.user.id
+        );
+        const isAuthenticated = Boolean(
+            hasValidBoundAccess
+            && !access?.isAnonymous
+            && access?.accountStatus === 'active'
+        );
         const isAnonymous = Boolean(session?.user && access?.isAnonymous);
         const isAdmin = access?.role === 'admin';
         return {
