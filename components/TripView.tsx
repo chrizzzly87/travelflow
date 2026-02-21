@@ -7,15 +7,13 @@ import {
     Pencil, Share2, Route, Printer, Calendar, List,
     ZoomIn, ZoomOut, Plane, History, Star, Info, Loader2
 } from 'lucide-react';
-import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, applyViewSettingsToSearchParams, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
+import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import {
     dbCreateShareLink,
     dbGetTrip,
     dbListTripShares,
-    dbRevokeTripShares,
-    dbSetTripSharingEnabled,
     dbUpsertTrip,
     ensureDbSession,
     type DbTripAccessMetadata,
@@ -37,8 +35,11 @@ import { useAuth } from '../hooks/useAuth';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
+import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
+import { useTripShareLifecycle } from './tripview/useTripShareLifecycle';
+import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
 import {
     ChangeTone,
     getToneMeta,
@@ -127,7 +128,6 @@ const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
 const NEGATIVE_OFFSET_EPSILON = 0.001;
-const SHARE_LINK_STORAGE_PREFIX = 'tf_share_links:';
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const TRIP_EXPIRED_DEBUG_EVENT = 'tf:trip-expired-debug';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
@@ -148,8 +148,6 @@ interface ViewTransitionDebugDetail {
     reason?: string;
 }
 
-const getShareLinksStorageKey = (tripId: string) => `${SHARE_LINK_STORAGE_PREFIX}${tripId}`;
-
 const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean => (
     !event.defaultPrevented &&
     event.button === 0 &&
@@ -158,21 +156,6 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
     !event.ctrlKey &&
     !event.shiftKey
 );
-
-const readStoredShareLinks = (tripId: string): Partial<Record<ShareMode, string>> => {
-    if (typeof window === 'undefined') return {};
-    try {
-        const raw = window.localStorage.getItem(getShareLinksStorageKey(tripId));
-        if (!raw) return {};
-        const parsed = JSON.parse(raw) as Record<string, unknown>;
-        const links: Partial<Record<ShareMode, string>> = {};
-        if (typeof parsed.view === 'string' && parsed.view.trim().length > 0) links.view = parsed.view;
-        if (typeof parsed.edit === 'string' && parsed.edit.trim().length > 0) links.edit = parsed.edit;
-        return links;
-    } catch {
-        return {};
-    }
-};
 
 const parseTripStartDate = (value: string): Date => {
     if (!value) return new Date();
@@ -766,11 +749,20 @@ export const TripView: React.FC<TripViewProps> = ({
     const [addActivityState, setAddActivityState] = useState<{ isOpen: boolean, dayOffset: number, location: string }>({ isOpen: false, dayOffset: 0, location: '' });
     const [isAddCityModalOpen, setIsAddCityModalOpen] = useState(false);
 
-    const [isShareOpen, setIsShareOpen] = useState(false);
-    const [shareMode, setShareMode] = useState<ShareMode>('view');
-    const [shareUrlsByMode, setShareUrlsByMode] = useState<Partial<Record<ShareMode, string>>>(() => readStoredShareLinks(trip.id));
-    const [isGeneratingShare, setIsGeneratingShare] = useState(false);
-    const lastSyncedSharingLockRef = useRef<boolean | null>(null);
+    const {
+        isShareOpen,
+        setIsShareOpen,
+        shareMode,
+        setShareMode,
+        shareUrlsByMode,
+        setShareUrlsByMode,
+        isGeneratingShare,
+        setIsGeneratingShare,
+    } = useTripShareLifecycle({
+        tripId: trip.id,
+        canShare,
+        isTripLockedByExpiry,
+    });
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -780,48 +772,6 @@ export const TripView: React.FC<TripViewProps> = ({
             // ignore storage issues
         }
     }, []);
-
-    // Persistence
-    useEffect(() => { localStorage.setItem('tf_map_style', mapStyle); }, [mapStyle]);
-    useEffect(() => { localStorage.setItem('tf_route_mode', routeMode); }, [routeMode]);
-    useEffect(() => { localStorage.setItem('tf_layout_mode', layoutMode); }, [layoutMode]);
-    useEffect(() => { localStorage.setItem('tf_timeline_view', timelineView); }, [timelineView]);
-    useEffect(() => { localStorage.setItem('tf_city_names', String(showCityNames)); }, [showCityNames]);
-    useEffect(() => { localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2)); }, [zoomLevel]);
-
-    // Update URL with View State
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            const settings: IViewSettings = {
-                layoutMode,
-                timelineView,
-                mapStyle,
-                routeMode,
-                showCityNames,
-                zoomLevel,
-                sidebarWidth,
-                timelineHeight
-            };
-            
-            // Call parent handler if provided
-            if (onViewSettingsChange) {
-                onViewSettingsChange(settings);
-            }
-
-            // Also update local URL for immediate feedback (can be redundant if parent updates, but good for standalone)
-            // Actually, if parent updates URL, we might double update?
-            // If parent updates URL via navigate(), it might re-render us.
-            // Let's rely on parent if provided, otherwise fallback to local history replace.
-            if (!onViewSettingsChange) {
-                const url = new URL(window.location.href);
-                applyViewSettingsToSearchParams(url.searchParams, settings);
-                if (viewMode === 'print') url.searchParams.set('mode', 'print');
-                else url.searchParams.delete('mode');
-                window.history.replaceState({}, '', url.toString());
-            }
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [layoutMode, zoomLevel, viewMode, mapStyle, routeMode, timelineView, sidebarWidth, timelineHeight, showCityNames, onViewSettingsChange]);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
@@ -834,96 +784,32 @@ export const TripView: React.FC<TripViewProps> = ({
         timelineHeight
     }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
-    useEffect(() => {
-        if (!initialViewSettings) return;
-        const key = JSON.stringify(initialViewSettings);
-        const currentKey = JSON.stringify(currentViewSettings);
-        if (key === currentKey) {
-            appliedViewKeyRef.current = key;
-            return;
-        }
-        if (appliedViewKeyRef.current === key) return;
-
-        appliedViewKeyRef.current = key;
-        suppressCommitRef.current = true;
-        skipViewDiffRef.current = true;
-
-        if (initialViewSettings.mapStyle) setMapStyle(initialViewSettings.mapStyle);
-        if (initialViewSettings.routeMode) setRouteMode(initialViewSettings.routeMode);
-        if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
-        if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
-        if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
-        if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
-        if (typeof initialViewSettings.timelineHeight === 'number') setTimelineHeight(initialViewSettings.timelineHeight);
-        const desiredShowCityNames = initialViewSettings.showCityNames ?? true;
-        setShowCityNames(desiredShowCityNames);
-
-        prevViewRef.current = initialViewSettings;
-    }, [initialViewSettings, currentViewSettings]);
-
-    useEffect(() => {
-        setShareUrlsByMode(readStoredShareLinks(trip.id));
-    }, [trip.id]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.setItem(getShareLinksStorageKey(trip.id), JSON.stringify(shareUrlsByMode));
-        } catch (e) {
-            // ignore storage issues
-        }
-    }, [trip.id, shareUrlsByMode]);
-
-    useEffect(() => {
-        lastSyncedSharingLockRef.current = null;
-    }, [trip.id]);
-
-    useEffect(() => {
-        if (!canShare) return;
-        if (!DB_ENABLED) {
-            if (isTripLockedByExpiry) {
-                setIsShareOpen(false);
-                setShareUrlsByMode({});
-                if (typeof window !== 'undefined') {
-                    try {
-                        window.localStorage.removeItem(getShareLinksStorageKey(trip.id));
-                    } catch {
-                        // ignore storage issues
-                    }
-                }
-            }
-            return;
-        }
-
-        if (lastSyncedSharingLockRef.current === isTripLockedByExpiry) return;
-        lastSyncedSharingLockRef.current = isTripLockedByExpiry;
-
-        let canceled = false;
-        void (async () => {
-            await ensureDbSession();
-            if (canceled) return;
-
-            await dbSetTripSharingEnabled(trip.id, !isTripLockedByExpiry);
-            if (canceled) return;
-
-            if (isTripLockedByExpiry) {
-                setIsShareOpen(false);
-                setShareUrlsByMode({});
-                if (typeof window !== 'undefined') {
-                    try {
-                        window.localStorage.removeItem(getShareLinksStorageKey(trip.id));
-                    } catch {
-                        // ignore storage issues
-                    }
-                }
-                await dbRevokeTripShares(trip.id);
-            }
-        })();
-
-        return () => {
-            canceled = true;
-        };
-    }, [canShare, isTripLockedByExpiry, trip.id]);
+    useTripViewSettingsSync({
+        layoutMode,
+        timelineView,
+        mapStyle,
+        routeMode,
+        showCityNames,
+        zoomLevel,
+        sidebarWidth,
+        timelineHeight,
+        viewMode,
+        onViewSettingsChange,
+        initialViewSettings,
+        currentViewSettings,
+        setMapStyle,
+        setRouteMode,
+        setLayoutMode,
+        setTimelineView,
+        setZoomLevel,
+        setSidebarWidth,
+        setTimelineHeight,
+        setShowCityNames,
+        suppressCommitRef,
+        skipViewDiffRef,
+        appliedViewKeyRef,
+        prevViewRef,
+    });
 
     useEffect(() => {
         setExpiredPreviewOverride(getDebugTripExpiredOverride(trip.id));
@@ -1067,13 +953,16 @@ export const TripView: React.FC<TripViewProps> = ({
         }
         return displayTrip.title.replace(/^Planning\s+/i, '').replace(/\.\.\.$/, '').trim() || 'Destination';
     }, [displayTrip.items, displayTrip.title]);
-    const [generationProgressMessage, setGenerationProgressMessage] = useState(GENERATION_PROGRESS_MESSAGES[0]);
     const showGenerationOverlay = isTripDetailRoute
         && isLoadingPreview
         && !isAdminFallbackView
         && !isTripLockedByExpiry
         && !isTripLockedByArchive
         && (trip.status || 'active') === 'active';
+    const generationProgressMessage = useGenerationProgressMessage({
+        isActive: showGenerationOverlay,
+        messages: GENERATION_PROGRESS_MESSAGES,
+    });
     const shouldEnableReleaseNotice = isReleaseNoticeReady
         && !suppressReleaseNotice
         && !isAdmin
@@ -1137,20 +1026,6 @@ export const TripView: React.FC<TripViewProps> = ({
             clearTimers();
         };
     }, [suppressReleaseNotice]);
-
-    useEffect(() => {
-        if (!showGenerationOverlay) {
-            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
-            return;
-        }
-        let index = 0;
-        setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[0]);
-        const timer = window.setInterval(() => {
-            index = (index + 1) % GENERATION_PROGRESS_MESSAGES.length;
-            setGenerationProgressMessage(GENERATION_PROGRESS_MESSAGES[index]);
-        }, 2200);
-        return () => window.clearInterval(timer);
-    }, [showGenerationOverlay]);
 
     const forkMeta = useMemo(() => {
         if (trip.forkedFromShareToken) {

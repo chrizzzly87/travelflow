@@ -16,3 +16,5 @@ summary: "Follow-up fixes target React Doctor blockers and next trip-page perfor
 - [ ] [Internal] 📊 Captured a fresh strict-preview Lighthouse baseline for a valid `/trip/:id` URL after the extraction pass to confirm transfer/request budgets remained stable.
 - [ ] [Internal] ⚙️ Removed redundant DB session bootstrap awaits in shared/example copy handlers because the downstream persistence calls already ensure session state.
 - [ ] [Internal] 🧠 Consolidated shared/example trip loader route state into focused single objects, reducing state orchestration noise and improving React Doctor warning count on changed files.
+- [ ] [Internal] 🧭 Extracted trip share lifecycle and view-settings sync orchestration from the planner view into focused hooks to keep the core trip component smaller and easier to maintain.
+- [ ] [Internal] 📉 Re-ran strict-preview Lighthouse on the real `/trip/:id` URL after the hook extraction pass and confirmed stable transfer/request budgets with no first-load blocking-time regression.

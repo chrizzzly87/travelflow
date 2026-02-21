@@ -192,6 +192,10 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Re-ran Lighthouse against the valid `/trip/<compressed-state>` URL after the extraction pass (strict preview mode): desktop stayed `100` (`FCP ~520 ms`, `LCP ~749 ms`, `TBT 0 ms`), and mobile stayed in expected variance at `87` (`FCP/LCP ~2933 ms`, `TBT 0 ms`), with transfer `~402.5 KiB` across `32` requests.
 - [x] Removed redundant explicit `ensureDbSession()` calls from shared/example copy flows (`dbUpsertTrip` + `dbCreateTripVersion` already enforce session), trimming a serial await in each path and clearing the `react-doctor` sequential-await warning there.
 - [x] Consolidated `SharedTripLoaderRoute` and `ExampleTripLoaderRoute` to single route-state objects (instead of scattered parallel `useState`s), reducing route-loader orchestration complexity and dropping changed-file `react-doctor` warnings from `8` to `7` (`98/100` score held).
+- [x] Extracted trip share lifecycle orchestration out of `TripView` into `components/tripview/useTripShareLifecycle.ts` (share-modal state, localStorage share-link cache, and share-lock DB sync), reducing `TripView` warning surface without changing first-load lazy boundaries.
+- [x] Extracted `TripView` view-settings synchronization (localStorage persistence + URL sync + initial view-state application) into `components/tripview/useTripViewSettingsSync.ts` and moved generation-overlay progress rotation into `components/tripview/useGenerationProgressMessage.ts`, shrinking `TripView.tsx` from `2668` to `2615` lines.
+- [x] Follow-up `react-doctor` after the hook extraction pass improved changed-file warnings from `6` to `4` (score stayed `98/100`), leaving only route-loader effect-setState suggestions and structural `TripView` size/state-density guidance.
+- [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the extraction pass: desktop remained `100` (`FCP ~0.5 s`, `LCP ~0.6 s`, `TBT 0 ms`) and mobile improved to `89` (`FCP ~2.2 s`, `LCP ~3.5 s`, `TBT 0 ms`) with transfer stable at `~403 KiB` across `32` requests.
 
 ## Validation checklist
 - [x] `npx vite build`
