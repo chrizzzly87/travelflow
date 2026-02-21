@@ -16,15 +16,22 @@
 - For user-facing copy edits, ask the user for EN/DE style sign-off unless they explicitly opt out.
 - Release notes in `content/updates/*.md` are always written in English and do not require EN/DE translation prompts or style sign-off unless explicitly requested.
 - For clickable marketing/planner UI updates, add `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` in the standard format unless explicitly excluded.
-- For locale changes, run `npm run i18n:validate` to enforce locale namespace parity and ICU placeholder syntax.
+- For locale changes, run `pnpm i18n:validate` to enforce locale namespace parity and ICU placeholder syntax.
+- For behavioral code changes (business logic/service flow/data transforms), add or update Vitest coverage in the same PR.
+- For bug fixes, add a regression test that fails before the fix and passes after.
+- Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
+- Run `pnpm test:core` before final handoff for behavioral changes whenever feasible.
+- For PRs that add new files under `services/` or `config/`, include matching `tests/**` entries in the PR checklist/description.
+- For TripView/route-loader orchestration work, use `docs/TESTING_PHASE2_SCOPE.md` to scope component/hook regression tests.
 - For React performance/refactor work, use `vercel-react-best-practices` as a focused checklist and apply only relevant rules.
-- After substantial React edits, run `npx -y react-doctor@latest . --verbose --diff`; fix blocking errors and prioritize warnings by impact.
+- After substantial React edits, run `pnpm dlx react-doctor@latest . --verbose --diff`; fix blocking errors and prioritize warnings by impact.
 - Use `find-skills` only when existing workflows/skills do not clearly cover the requested capability.
 - Avoid overusing skills for routine edits that do not benefit from specialized guidance.
 
 ## Update entry policy
 - Use one release note file per worktree/feature, not multiple incremental files.
-- Finalize/update that single release note shortly before opening the PR.
+- Keep that single release note as `status: draft` during feature PR work.
+- After the PR lands on `main`, publish metadata in a follow-up update (`status: published`, next version, and post-merge/deploy `published_at` timestamp before 23:00 UTC).
 - User-facing items: `- [x] [Type] ...`
 - Internal-only items: `- [ ] [Internal] ...`
 - Prefix each change message with the emoji style defined in `docs/UPDATE_FORMAT.md`.

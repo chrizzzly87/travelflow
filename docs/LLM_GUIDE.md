@@ -97,8 +97,14 @@ This doc is a compact, structured overview of the app to help future agents make
 3. Keep localStorage default as fallback only.
 4. Ensure layout-specific changes handle both horizontal and vertical modes.
 5. Confirm selection and hover styles are visible against existing backgrounds.
-6. If behavior/features changed, update markdown release notes following `docs/UPDATE_FORMAT.md`.
-7. If publishing a new release entry, bump to a new strictly increasing `version`.
-8. Check direction safety and logical property usage (`inline`/`block`/`start`/`end`) for new UI; if unclear, ask for clarification before finalizing.
-9. For any user-facing copy changes, ask the user for style approval in EN/DE before finalizing unless they explicitly skip this step.
-10. For clickable marketing/planner UI changes, instrument `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` following `docs/ANALYTICS_CONVENTION.md`.
+6. For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` before handoff when feasible.
+7. For bug fixes, include a regression test that fails pre-fix and passes post-fix.
+8. Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
+9. If a PR adds files under `services/` or `config/`, include matching `tests/**` entries in the PR checklist/description.
+10. For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md`.
+11. If behavior/features changed, update markdown release notes following `docs/UPDATE_FORMAT.md`.
+12. Keep release notes in `status: draft` while the feature PR is open; publish metadata (`status`, version, `published_at`) after merge to `main`.
+13. If publishing a new release entry, bump to a new strictly increasing `version`.
+14. Check direction safety and logical property usage (`inline`/`block`/`start`/`end`) for new UI; if unclear, ask for clarification before finalizing.
+15. For any user-facing copy changes, ask the user for style approval in EN/DE before finalizing unless they explicitly skip this step.
+16. For clickable marketing/planner UI changes, instrument `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` following `docs/ANALYTICS_CONVENTION.md`.

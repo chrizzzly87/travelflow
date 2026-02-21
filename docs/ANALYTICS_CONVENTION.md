@@ -197,4 +197,4 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 2. Choose an `element` name that describes the widget.
 3. Decide: is the qualifier finite (< ~15 values) and stable? → use `--{detail}`. Otherwise → payload.
 4. Add a `trackEvent(...)` call and update the catalog table above.
-5. Run `npm run build` — the TypeScript type catches malformed names at compile time.
+5. Run `pnpm build` — the TypeScript type catches malformed names at compile time.

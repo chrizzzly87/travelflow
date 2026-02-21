@@ -5,7 +5,7 @@ TravelFlow is a React + TypeScript + Vite app for generating and managing travel
 ## Requirements
 
 - Node.js 18+
-- pnpm (via Corepack)
+- pnpm 10+ (via Corepack)
 
 ## Local Setup
 
@@ -52,7 +52,7 @@ pnpm dev
 For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
 
 ```bash
-npx netlify dev
+pnpm dlx netlify dev
 ```
 
 Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
@@ -141,8 +141,10 @@ All available `pnpm` commands in this repo:
 - `pnpm blog:validate` — Validate blog markdown metadata/content.
 - `pnpm edge:validate` — Validate Netlify edge function setup and constraints.
 - `pnpm maps:generate` — Generate static trip map PNGs from template coordinates.
-- `pnpm test` — Run unit/component tests via Vitest.
+- `pnpm test` — Run the full Vitest suite once.
 - `pnpm test:watch` — Run Vitest in watch mode.
+- `pnpm test:run` — Run the full Vitest suite once.
+- `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
 - `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
 - `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
 - `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
@@ -271,7 +273,7 @@ Sitemap behavior:
 
 1. Run the app through Netlify (Edge Functions only run through Netlify Dev):
    ```bash
-   npx netlify dev
+   pnpm dlx netlify dev
    ```
 2. Open the playground:
    - `http://localhost:8888/api/og/playground`

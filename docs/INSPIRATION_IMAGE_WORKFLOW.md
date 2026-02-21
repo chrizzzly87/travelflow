@@ -30,7 +30,7 @@ Use the same shared style profile from `inspirationImageGenerationProfile`:
 Use this command to rebuild all inspiration card images locally:
 
 ```bash
-npm run build:images
+pnpm build:images
 ```
 
 What it does:
@@ -42,16 +42,16 @@ What it does:
 
 Optional flags:
 
-- `npm run build:images -- --concurrency=3`
-- `npm run build:images -- --keep-jobs`
-- `npm run build:images -- --dry-run`
+- `pnpm build:images -- --concurrency=3`
+- `pnpm build:images -- --keep-jobs`
+- `pnpm build:images -- --dry-run`
 
 ## Manual generation steps
 
 1. Build the JSONL jobs file from card metadata:
 
 ```bash
-npm run inspirations:images:jobs
+pnpm inspirations:images:jobs
 ```
 
 This writes:
@@ -86,4 +86,4 @@ When adding a new inspiration card:
 
 1. Add a new entry to `destinationCardMedia` or `festivalCardMedia`.
 2. Set a realistic `keyLocation` and scene grounded in the actual country/city context.
-3. Re-run `npm run inspirations:images:jobs` and generate the new assets.
+3. Re-run `pnpm inspirations:images:jobs` and generate the new assets.
