@@ -299,9 +299,29 @@ const callAdminIdentityApi = async (
         body: JSON.stringify(body),
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const responseText = await response.text().catch(() => '');
+    const payload = responseText
+        ? (() => {
+            try {
+                return JSON.parse(responseText);
+            } catch {
+                return {};
+            }
+        })()
+        : {};
     if (!response.ok || payload?.ok === false) {
-        const errorMessage = typeof payload?.error === 'string' ? payload.error : 'Admin identity API request failed.';
+        const payloadError =
+            typeof payload?.error === 'string'
+                ? payload.error
+                : typeof payload?.message === 'string'
+                    ? payload.message
+                    : payload?.error && typeof payload.error === 'object' && typeof payload.error.message === 'string'
+                        ? payload.error.message
+                        : null;
+        const fallbackText = responseText.trim();
+        const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const reason = payloadError || normalizedFallback || response.statusText || 'Admin identity API request failed.';
+        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
     return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
