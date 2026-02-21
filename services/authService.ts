@@ -199,10 +199,15 @@ const hasNonAnonymousIdentity = (session: Session | null): boolean => {
 };
 
 const getAnonymousFlag = (session: Session | null): boolean => {
-    if (session?.user?.email || session?.user?.phone) return false;
+    const user = session?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
+    if (!user) return false;
+    if (user.is_anonymous === true) return true;
+
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
+    const providers = getMetadataProviders(session);
+    if (metadata?.is_anonymous === true || providers.includes('anonymous')) return true;
     if (hasNonAnonymousIdentity(session)) return false;
-    return Boolean(metadata?.is_anonymous === true || getMetadataProviders(session).includes('anonymous'));
+    return false;
 };
 
 const defaultAccessContext = (session: Session | null): UserAccessContext => ({
@@ -323,7 +328,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
         return {
             userId: resolvedUserId,
             email: row.email || authUser.email || session.user.email || metadataEmail || null,
-            isAnonymous: getAnonymousFlag(session),
+            isAnonymous: Boolean(row.is_anonymous === true) || getAnonymousFlag(session),
             role,
             tierKey,
             entitlements: (row.entitlements || FREE_ENTITLEMENTS) as UserAccessContext['entitlements'],
