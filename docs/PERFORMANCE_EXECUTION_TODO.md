@@ -1,6 +1,6 @@
 # Performance Execution TODO
 
-Last updated: 2026-02-20
+Last updated: 2026-02-21
 Owner: Codex + @chrizzzly
 Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure clarity.
 
@@ -186,6 +186,23 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Follow-up trip-page cleanup in `DetailsPanel` removed remaining default-array + index-key + prop-init lint hotspots; `react-doctor` improved from `91/157` to `93/153`.
 - [x] Fixed label/control associations in `CreateTripForm` (classic, wizard, and surprise modes), reducing form-a11y lint debt and improving `react-doctor` from `93/153` to `93/143`.
 - [x] Added shared focus-trap enforcement to the global auth login/register modal and queued guest-auth overlay so keyboard tab focus no longer escapes into background page content.
+- [x] Cleared the current blocking `react-doctor` errors on blog routes by removing conditional hook flow in `BlogPostPage` and replacing locale-derived filter reset effects in `BlogPage` with locale-scoped state.
+- [x] Extracted repeated selected-item/details wiring in `TripView` into shared computed panel content (`selectedDetailItem`, `selectedRouteStatus`, `detailsPanelContent`), reducing `TripView.tsx` from `3120` to `3064` lines and lowering the emitted `TripView` chunk from `114.88 KiB` to `113.33 KiB` (gzip stable at `~32.38 KiB`).
+- [x] Follow-up `react-doctor` on changed files reported `98/100` with only structural TripView warnings remaining (`useState` density + component size), with no new accessibility or hook-order regressions.
+- [x] Re-ran Lighthouse against the valid `/trip/<compressed-state>` URL after the extraction pass (strict preview mode): desktop stayed `100` (`FCP ~520 ms`, `LCP ~749 ms`, `TBT 0 ms`), and mobile stayed in expected variance at `87` (`FCP/LCP ~2933 ms`, `TBT 0 ms`), with transfer `~402.5 KiB` across `32` requests.
+- [x] Removed redundant explicit `ensureDbSession()` calls from shared/example copy flows (`dbUpsertTrip` + `dbCreateTripVersion` already enforce session), trimming a serial await in each path and clearing the `react-doctor` sequential-await warning there.
+- [x] Consolidated `SharedTripLoaderRoute` and `ExampleTripLoaderRoute` to single route-state objects (instead of scattered parallel `useState`s), reducing route-loader orchestration complexity and dropping changed-file `react-doctor` warnings from `8` to `7` (`98/100` score held).
+- [x] Extracted trip share lifecycle orchestration out of `TripView` into `components/tripview/useTripShareLifecycle.ts` (share-modal state, localStorage share-link cache, and share-lock DB sync), reducing `TripView` warning surface without changing first-load lazy boundaries.
+- [x] Extracted `TripView` view-settings synchronization (localStorage persistence + URL sync + initial view-state application) into `components/tripview/useTripViewSettingsSync.ts` and moved generation-overlay progress rotation into `components/tripview/useGenerationProgressMessage.ts`, shrinking `TripView.tsx` from `2668` to `2615` lines.
+- [x] Follow-up `react-doctor` after the hook extraction pass improved changed-file warnings from `6` to `4` (score stayed `98/100`), leaving only route-loader effect-setState suggestions and structural `TripView` size/state-density guidance.
+- [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the extraction pass: desktop remained `100` (`FCP ~0.5 s`, `LCP ~0.6 s`, `TBT 0 ms`) and mobile improved to `89` (`FCP ~2.2 s`, `LCP ~3.5 s`, `TBT 0 ms`) with transfer stable at `~403 KiB` across `32` requests.
+- [x] Refactored shared/example route-loader effects to helper-based state application, eliminating the remaining route `setState`-in-effect warnings and improving `react-doctor` from `98/4` to `99/2` (only structural `TripView` advisories remain).
+- [x] Extracted release-notice readiness orchestration from `TripView` into `components/tripview/useReleaseNoticeReady.ts`, reducing `TripView` from `2615` to `2557` lines and lowering local planner state count from `24` to `23` while preserving the same interaction/idle/timer gating behavior.
+- [x] Extracted trip expiry/debug orchestration into `components/tripview/useTripExpiryLifecycle.ts` and moved header auth submit/login/logout orchestration into `components/tripview/useTripHeaderAuthAction.ts`, reducing `TripView` further from `2557` to `2434` lines and local planner state count from `23` to `20`.
+- [x] Follow-up `react-doctor` after expiry/header extraction stayed at `99/100` with warnings still limited to structural `TripView` size/state density (`2` warnings across `1` file).
+- [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the expiry/header extraction pass: desktop stayed `100` (`FCP ~0.5 s`, `LCP ~0.7 s`, `TBT 0 ms`) and mobile measured `93` (`FCP ~2.0 s`, `LCP ~3.0 s`, `TBT 0 ms`) with transfer still `~403 KiB` across `32` requests.
+- [x] Extracted additional TripView structure into dedicated modules: `useTripLayoutControlsState`, `TripViewHeader`, `TripViewStatusBanners`, `TripViewHudOverlays`, `useTripEditModalState`, and `useTripAdminOverrideState`, reducing local `TripView` state count from `20` to `8` and line count from `2434` to `1997`.
+- [x] Follow-up `react-doctor` after this structural pass still reports only the same two advisory warnings (TripView state/size guidance) at `99/100`, confirming no new hook-order or accessibility regressions were introduced.
 
 ## Validation checklist
 - [x] `npx vite build`
@@ -210,4 +227,4 @@ npx netlify deploy --build --json
 - Do not re-enable eager speculation/prefetch on first render.
 - Keep admin optimization goals independent from marketing/page-entry goals.
 - If a change regresses first-load, revert that change and capture before/after numbers in this file.
-- Next highest-impact target: continue `TripView` structural extraction by moving remaining modal/item wiring and history presentation mapping out of the main render body, then re-measure `/trip/:id` with fresh Lighthouse baselines.
+- Next highest-impact target: continue `TripView` structural extraction by moving modal stack/paywall overlay orchestration into dedicated components/hooks, then re-measure `/trip/:id` and `/` with fresh Lighthouse baselines.

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
@@ -101,9 +101,11 @@ export const BlogPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
-    const [languageFilter, setLanguageFilter] = useState<BlogLanguageFilter>(() =>
-        supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly'
+    const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
+    const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
+        () => ({ locale, filter: defaultLanguageFilter })
     );
+    const languageFilter = languageFilterState.locale === locale ? languageFilterState.filter : defaultLanguageFilter;
     const postLocales = useMemo<AppLanguage[]>(() => {
         if (!supportsMixedLanguage) return [DEFAULT_LOCALE];
         if (languageFilter === 'nativeOnly') return [locale];
@@ -113,10 +115,6 @@ export const BlogPage: React.FC = () => {
     const posts = useMemo(() => getPublishedBlogPostsForLocales(postLocales), [postLocales]);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-
-    useEffect(() => {
-        setLanguageFilter(supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly');
-    }, [supportsMixedLanguage, locale]);
 
     const allTags = useMemo(() => {
         const tagSet = new Set<string>();
@@ -189,7 +187,7 @@ export const BlogPage: React.FC = () => {
                     {supportsMixedLanguage && (
                         <div className="relative w-full md:w-72">
                             <GlobeHemisphereWest size={18} weight="duotone" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <Select value={languageFilter} onValueChange={(value) => setLanguageFilter(value as BlogLanguageFilter)}>
+                            <Select value={languageFilter} onValueChange={(value) => setLanguageFilterState({ locale, filter: value as BlogLanguageFilter })}>
                                 <SelectTrigger
                                     aria-label={t('index.languageFilterAriaLabel')}
                                     className="h-auto w-full rounded-xl border-slate-200 bg-white py-3 pl-10 pr-10 text-sm font-medium text-slate-800 shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow"

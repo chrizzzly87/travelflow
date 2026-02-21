@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
@@ -28,6 +28,24 @@ import {
 import type { ITrip, IViewSettings } from '../types';
 import type { CommitOptions, SharedTripLoaderRouteProps } from './tripRouteTypes';
 import { TripView } from '../components/TripView';
+
+type SharedTripSnapshotState = { hasNewer: boolean; latestUrl: string } | null;
+
+interface SharedTripRouteState {
+    shareMode: 'view' | 'edit';
+    allowCopy: boolean;
+    viewSettings: IViewSettings | undefined;
+    snapshotState: SharedTripSnapshotState;
+    sourceShareVersionId: string | null;
+}
+
+const createInitialSharedTripRouteState = (): SharedTripRouteState => ({
+    shareMode: 'view',
+    allowCopy: true,
+    viewSettings: undefined,
+    snapshotState: null,
+    sourceShareVersionId: null,
+});
 
 const createLocalHistoryEntry = (
     navigate: ReturnType<typeof useNavigate>,
@@ -59,11 +77,25 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const navigate = useNavigate();
     const { access } = useAuth();
     const lastLoadRef = useRef<string | null>(null);
-    const [shareMode, setShareMode] = useState<'view' | 'edit'>('view');
-    const [allowCopy, setAllowCopy] = useState(true);
-    const [viewSettings, setViewSettings] = useState<IViewSettings | undefined>(undefined);
-    const [snapshotState, setSnapshotState] = useState<{ hasNewer: boolean; latestUrl: string } | null>(null);
-    const [sourceShareVersionId, setSourceShareVersionId] = useState<string | null>(null);
+    const [routeState, setRouteState] = useState<SharedTripRouteState>(() => createInitialSharedTripRouteState());
+    const {
+        shareMode,
+        allowCopy,
+        viewSettings,
+        snapshotState,
+        sourceShareVersionId,
+    } = routeState;
+    const resetRouteState = useCallback(() => {
+        setRouteState((prev) => ({
+            ...prev,
+            viewSettings: undefined,
+            snapshotState: null,
+            sourceShareVersionId: null,
+        }));
+    }, []);
+    const applyRouteState = useCallback((next: SharedTripRouteState) => {
+        setRouteState(next);
+    }, []);
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
         if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
@@ -94,9 +126,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 return;
             }
 
-            setViewSettings(undefined);
-            setSnapshotState(null);
-            setSourceShareVersionId(null);
+            resetRouteState();
             await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
@@ -108,21 +138,30 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 return;
             }
 
-            setShareMode(shared.mode);
-            setAllowCopy(shared.allowCopy ?? true);
+            const baseRouteState: SharedTripRouteState = {
+                shareMode: shared.mode,
+                allowCopy: shared.allowCopy ?? true,
+                viewSettings: undefined,
+                snapshotState: null,
+                sourceShareVersionId: null,
+            };
 
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
                     const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(sharedVersion.trip, resolvedView);
-                    setSourceShareVersionId(sharedVersion.versionId);
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
-                    setSnapshotState({
-                        hasNewer: Boolean(latestVersionId && latestVersionId !== sharedVersion.versionId),
-                        latestUrl: buildShareUrl(token),
-                    });
+                    const nextState: SharedTripRouteState = {
+                        ...baseRouteState,
+                        viewSettings: resolvedView,
+                        sourceShareVersionId: sharedVersion.versionId,
+                        snapshotState: {
+                            hasNewer: Boolean(latestVersionId && latestVersionId !== sharedVersion.versionId),
+                            latestUrl: buildShareUrl(token),
+                        },
+                    };
+                    applyRouteState(nextState);
+                    onTripLoaded(sharedVersion.trip, resolvedView);
                     return;
                 }
 
@@ -133,13 +172,17 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
                     const resolvedView = version.view ?? version.trip.defaultView;
-                    setViewSettings(resolvedView);
+                    const nextState: SharedTripRouteState = {
+                        ...baseRouteState,
+                        viewSettings: resolvedView,
+                        sourceShareVersionId: versionId,
+                        snapshotState: {
+                            hasNewer: latestVersionMismatch || newerByTimestamp,
+                            latestUrl: buildShareUrl(token),
+                        },
+                    };
+                    applyRouteState(nextState);
                     onTripLoaded(version.trip, resolvedView);
-                    setSourceShareVersionId(versionId);
-                    setSnapshotState({
-                        hasNewer: latestVersionMismatch || newerByTimestamp,
-                        latestUrl: buildShareUrl(token),
-                    });
                     return;
                 }
             }
@@ -148,25 +191,32 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
                     const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                    setViewSettings(resolvedView);
+                    const nextState: SharedTripRouteState = {
+                        ...baseRouteState,
+                        viewSettings: resolvedView,
+                        sourceShareVersionId: isUuid(versionId) ? versionId : null,
+                        snapshotState: {
+                            hasNewer: true,
+                            latestUrl: buildShareUrl(token),
+                        },
+                    };
+                    applyRouteState(nextState);
                     onTripLoaded(localEntry.snapshot.trip, resolvedView);
-                    setSourceShareVersionId(isUuid(versionId) ? versionId : null);
-                    setSnapshotState({
-                        hasNewer: true,
-                        latestUrl: buildShareUrl(token),
-                    });
                     return;
                 }
             }
 
             const resolvedView = shared.view ?? shared.trip.defaultView;
-            setViewSettings(resolvedView);
+            applyRouteState({
+                ...baseRouteState,
+                viewSettings: resolvedView,
+                sourceShareVersionId: shared.latestVersionId ?? null,
+            });
             onTripLoaded(shared.trip, resolvedView);
-            setSourceShareVersionId(shared.latestVersionId ?? null);
         };
 
         void load();
-    }, [token, versionId, location.search, navigate, onTripLoaded]);
+    }, [applyRouteState, token, versionId, location.search, navigate, onTripLoaded, resetRouteState]);
 
     const handleCommitShared = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: CommitOptions) => {
         if (shareMode !== 'edit' || !token) return;
@@ -228,7 +278,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         }
         saveTrip(cloned);
         if (DB_ENABLED) {
-            await ensureDbSession();
             await dbUpsertTrip(cloned, viewSettings);
             await dbCreateTripVersion(cloned, viewSettings, 'Data: Copied trip');
             createLocalHistoryEntry(navigate, cloned, viewSettings, 'Data: Copied trip', undefined, Date.now());
@@ -246,7 +295,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
             onCommitState={handleCommitShared}
             onViewSettingsChange={(settings) => {
-                setViewSettings(settings);
+                setRouteState((prev) => ({ ...prev, viewSettings: settings }));
                 onViewSettingsChange(settings);
             }}
             onOpenManager={onOpenManager}

@@ -4,7 +4,7 @@ version: v0.53.0
 title: "Locale navigation recovery"
 date: 2026-02-21
 published_at: 2026-02-21T06:15:00Z
-status: draft
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Localized navigation, dropdown styling consistency, and example-trip info modal alignment are now stable across key user flows."
