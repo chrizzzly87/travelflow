@@ -59,6 +59,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
 - [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
 - [x] [Fixed] 🧾 Prevented a login recovery edge case that could silently switch active accounts into an anonymous "unknown user" state.
+- [x] [Fixed] 🔐 Fixed anonymous-session detection so the login modal no longer auto-closes by mistaking guest sessions for signed-in accounts.
 - [x] [Improved] 🧭 Removed forced profile-onboarding redirects so authenticated users can continue without mandatory completion detours.
 - [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
