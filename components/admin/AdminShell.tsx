@@ -158,7 +158,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     ));
 
     return (
-        <div className="min-h-dvh bg-slate-100 text-slate-900">
+        <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
             {isMobileSidebarOpen && (
                 <div
                     className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"
@@ -201,6 +201,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <div className="mt-3 border-t border-slate-200 pt-3">
                         <AccountMenu
                             email={access?.email || null}
+                            userId={access?.userId || null}
                             isAdmin
                             fullWidth
                             showLabel
@@ -241,6 +242,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 )}
                                 <AccountMenu
                                     email={access?.email || null}
+                                    userId={access?.userId || null}
                                     isAdmin
                                     compact={isSidebarCollapsed}
                                     showLabel={!isSidebarCollapsed}

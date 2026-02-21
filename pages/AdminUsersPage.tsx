@@ -45,6 +45,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 
@@ -92,6 +93,7 @@ const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
 };
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -247,12 +249,20 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
 };
 
 const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus => {
+    const providerCandidates = [
+        ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
+        user.auth_provider || '',
+    ]
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+    const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
+    if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
+
     const explicit = (user.activation_status || '').trim().toLowerCase();
     if (explicit === 'activated' || explicit === 'invited' || explicit === 'pending' || explicit === 'anonymous') {
         return explicit;
     }
     if (explicit === 'pending_activation' || explicit === 'placeholder') return 'pending';
-    if (Boolean(user.is_anonymous)) return 'anonymous';
     if (!user.email && !user.last_sign_in_at) return 'pending';
     if (user.email && !user.last_sign_in_at) return 'invited';
     return 'activated';
@@ -351,6 +361,15 @@ const getLoginSearchText = (user: AdminUserRecord): string => {
     return `${profile.providers.join(' ')} ${getLoginMethodSummary(user)}`.trim().toLowerCase();
 };
 
+const toProfileGenderDraft = (value: string | null | undefined): '' | 'female' | 'male' | 'non-binary' | 'prefer-not' => {
+    if (typeof value !== 'string') return '';
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+    return VALID_PROFILE_GENDERS.has(normalized)
+        ? (normalized as 'female' | 'male' | 'non-binary' | 'prefer-not')
+        : '';
+};
+
 const hasNonEmptyValue = (value: string | null | undefined): boolean => Boolean(value && value.trim().length > 0);
 const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
 const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim());
@@ -358,6 +377,7 @@ const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim(
 const getUserTotalTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.total_trips || 0));
 
 const getUserActiveTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.active_trips || 0));
+const isUserHardDeleteEligible = (user: AdminUserRecord): boolean => (user.account_status || 'active') !== 'deleted';
 
 const isUserTriplessAndNoData = (user: AdminUserRecord): boolean => {
     if (getUserTotalTrips(user) !== 0) return false;
@@ -403,6 +423,48 @@ const summarizeBulkDeleteFailures = (details: string[]): string => {
     return `${visible}\n- +${details.length - maxVisible} more failure${details.length - maxVisible === 1 ? '' : 's'}`;
 };
 
+const buildSingleHardDeleteMessage = (
+    userRef: string,
+    ownedTripCount: number
+): string => {
+    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
+    return [
+        `Account: ${userRef}`,
+        '',
+        'Permanent delete impact',
+        '• Auth account',
+        '• Profile record',
+        `• ${tripLabel}`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        ownedTripCount > 0 ? 'Trip ownership choices before confirm' : '',
+        ownedTripCount > 0 ? '• Cancel and use "Transfer trips + hard delete" to preserve trip ownership' : '',
+        ownedTripCount > 0 ? '• Continue hard delete to permanently remove those trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
+const buildBulkHardDeleteMessage = (
+    selectedUsers: number,
+    selectedTrips: number
+): string => {
+    return [
+        `Selected users: ${selectedUsers}`,
+        '',
+        'Permanent delete impact',
+        `• Auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}`,
+        `• ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        selectedTrips > 0 ? 'Trip ownership choices before confirm' : '',
+        selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
+        selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
     return JSON.stringify(value, null, 2);
@@ -416,6 +478,28 @@ const parseOverrideDraft = (value: string): Record<string, unknown> => {
     }
     return parsed as Record<string, unknown>;
 };
+
+const normalizeOverrideRecord = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return value as Record<string, unknown>;
+};
+
+const toStableComparableJson = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map((entry) => toStableComparableJson(entry));
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort((a, b) => a.localeCompare(b))
+            .reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = toStableComparableJson((value as Record<string, unknown>)[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<string, unknown>): boolean => (
+    JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
+);
 
 const rolePillClass = (role: 'admin' | 'user') => (
     role === 'admin'
@@ -999,7 +1083,7 @@ export const AdminUsersPage: React.FC = () => {
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
             username: selectedUser.username || '',
-            gender: (selectedUser.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+            gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
             preferredLanguage: selectedUser.preferred_language || 'en',
@@ -1016,7 +1100,7 @@ export const AdminUsersPage: React.FC = () => {
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
                     username: fullProfile.username || '',
-                    gender: (fullProfile.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+                    gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
                     preferredLanguage: fullProfile.preferred_language || 'en',
@@ -1240,7 +1324,12 @@ export const AdminUsersPage: React.FC = () => {
         () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id)),
         [filteredUsers, selectedUserIds]
     );
-    const areAllVisibleUsersSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedUserIds.has(user.user_id));
+    const hardDeleteSelectableVisibleUsers = useMemo(
+        () => filteredUsers.filter((user) => isUserHardDeleteEligible(user)),
+        [filteredUsers]
+    );
+    const areAllVisibleUsersSelected = hardDeleteSelectableVisibleUsers.length > 0
+        && hardDeleteSelectableVisibleUsers.every((user) => selectedUserIds.has(user.user_id));
     const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
 
     useEffect(() => {
@@ -1255,6 +1344,23 @@ export const AdminUsersPage: React.FC = () => {
             const next = new Set<string>();
             current.forEach((userId) => {
                 if (allowed.has(userId)) {
+                    next.add(userId);
+                    return;
+                }
+                changed = true;
+            });
+            return changed ? next : current;
+        });
+    }, [filteredUsers]);
+
+    useEffect(() => {
+        setSelectedUserIds((current) => {
+            if (current.size === 0) return current;
+            const eligible = new Set(filteredUsers.filter((user) => isUserHardDeleteEligible(user)).map((user) => user.user_id));
+            let changed = false;
+            const next = new Set<string>();
+            current.forEach((userId) => {
+                if (eligible.has(userId)) {
                     next.add(userId);
                     return;
                 }
@@ -1280,6 +1386,10 @@ export const AdminUsersPage: React.FC = () => {
 
     const toggleUserSelection = (userId: string, checked: boolean) => {
         setSelectedUserIds((current) => {
+            const targetUser = filteredUsers.find((user) => user.user_id === userId);
+            if (checked && targetUser && !isUserHardDeleteEligible(targetUser)) {
+                return current;
+            }
             const next = new Set(current);
             if (checked) next.add(userId);
             else next.delete(userId);
@@ -1291,10 +1401,10 @@ export const AdminUsersPage: React.FC = () => {
         setSelectedUserIds((current) => {
             const next = new Set(current);
             if (!checked) {
-                filteredUsers.forEach((user) => next.delete(user.user_id));
+                hardDeleteSelectableVisibleUsers.forEach((user) => next.delete(user.user_id));
                 return next;
             }
-            filteredUsers.forEach((user) => next.add(user.user_id));
+            hardDeleteSelectableVisibleUsers.forEach((user) => next.add(user.user_id));
             return next;
         });
     };
@@ -1306,6 +1416,8 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             const parsedOverrides = parseOverrideDraft(overrideDraft);
+            const currentOverrides = normalizeOverrideRecord(selectedUser.entitlements_override);
+            const shouldUpdateOverrides = !areOverrideRecordsEqual(parsedOverrides, currentOverrides);
             await adminUpdateUserProfile(selectedUser.user_id, {
                 firstName: profileDraft.firstName,
                 lastName: profileDraft.lastName,
@@ -1318,7 +1430,9 @@ export const AdminUsersPage: React.FC = () => {
                 systemRole: profileDraft.role,
                 tierKey: tierDraft,
             });
-            await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            if (shouldUpdateOverrides) {
+                await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            }
             setMessage('User updated.');
             await loadUsers();
         } catch (error) {
@@ -1345,25 +1459,16 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleHardDelete = async (user: AdminUserRecord) => {
+        if (!isUserHardDeleteEligible(user)) {
+            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            return;
+        }
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
-        const tripLabel = `${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'}`;
         const confirmed = await confirmDialog({
             title: 'Hard delete user',
-            message: [
-                `Hard-delete ${user.email || user.user_id}?`,
-                '',
-                'This permanently deletes:',
-                '- Auth account',
-                '- Profile data',
-                `- ${tripLabel}`,
-                '- Related trip history, share links, and collaborator access for those trips',
-                '',
-                sourceTripCount > 0 ? 'To preserve trips, cancel and use "Transfer trips + hard delete" in this drawer.' : '',
-                sourceTripCount > 0 ? '' : '',
-                'This cannot be undone.',
-            ].join('\n'),
+            message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1374,7 +1479,11 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             await adminHardDeleteUser(user.user_id);
-            setMessage('User permanently deleted.');
+            setMessage(
+                sourceTripCount > 0
+                    ? `User permanently deleted. ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were removed with this hard delete.`
+                    : 'User permanently deleted.'
+            );
             setIsDetailOpen(false);
             setSelectedUserId(null);
             await loadUsers();
@@ -1412,21 +1521,16 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkHardDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
-        const selectedTripCount = selectedVisibleUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
+        const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
+        const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
+        if (hardDeleteUsers.length === 0) {
+            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            return;
+        }
+        const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
         const confirmed = await confirmDialog({
             title: 'Hard delete selected users',
-            message: [
-                `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
-                '',
-                `This permanently deletes their auth accounts, profiles, and ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total.`,
-                'Related trip history, share links, and collaborator access for those trips are also permanently deleted.',
-                '',
-                selectedTripCount > 0
-                    ? 'If trips should be preserved, cancel and use each user drawer action "Transfer trips + hard delete" first.'
-                    : '',
-                selectedTripCount > 0 ? '' : '',
-                'This cannot be undone.',
-            ].join('\n'),
+            message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1436,14 +1540,14 @@ export const AdminUsersPage: React.FC = () => {
         setErrorMessage(null);
         setMessage(null);
         try {
-            const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
+            const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
             const failedIndexes: number[] = [];
             const failedDetails: string[] = [];
             const deletedIds = new Set<string>();
             let bulkErrorMessage: string | null = null;
 
             results.forEach((result, index) => {
-                const user = selectedVisibleUsers[index];
+                const user = hardDeleteUsers[index];
                 if (result.status === 'fulfilled') {
                     deletedIds.add(user.user_id);
                     return;
@@ -1456,11 +1560,17 @@ export const AdminUsersPage: React.FC = () => {
             const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
-                setMessage(
+                const deletedTripCount = hardDeleteUsers
+                    .filter((_, index) => results[index]?.status === 'fulfilled')
+                    .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
+                const deleteMessage = (
                     failed > 0
-                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted. ${failed} failed.`
-                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed). ${failed} failed.`
+                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed).`
                 );
+                setMessage(skippedUsers > 0 ? `${deleteMessage} ${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.` : deleteMessage);
+            } else if (skippedUsers > 0) {
+                setMessage(`${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.`);
             }
             if (failed > 0) {
                 const detailSummary = summarizeBulkDeleteFailures(failedDetails);
@@ -1479,7 +1589,7 @@ export const AdminUsersPage: React.FC = () => {
                 }
             }
             if (failed > 0) {
-                setSelectedUserIds(new Set(failedIndexes.map((index) => selectedVisibleUsers[index].user_id)));
+                setSelectedUserIds(new Set(failedIndexes.map((index) => hardDeleteUsers[index].user_id)));
             } else {
                 setSelectedUserIds(new Set());
             }
@@ -1583,8 +1693,10 @@ export const AdminUsersPage: React.FC = () => {
                 message: [
                     `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
                     '',
-                    'If transfer succeeds, the source user will be hard-deleted permanently (auth account + profile).',
-                    'Transferred trips remain available under the new owner.',
+                    'Step 1: Transfer all owned trips to the target account.',
+                    'Step 2: Hard-delete the source user (auth + profile only).',
+                    '',
+                    'Result: trips remain accessible under the new owner.',
                 ].join('\n'),
                 confirmLabel: 'Transfer + hard delete',
                 cancelLabel: 'Cancel',
@@ -1608,7 +1720,10 @@ export const AdminUsersPage: React.FC = () => {
             try {
                 await adminHardDeleteUser(user.user_id);
                 setMessage(
-                    `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`
+                    [
+                        `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`,
+                        `Audit should show ${sourceTrips.length} "Transferred trip owner" entr${sourceTrips.length === 1 ? 'y' : 'ies'} and one "Hard-deleted user" entry.`,
+                    ].join(' ')
                 );
                 setIsDetailOpen(false);
                 setSelectedUserId(null);
@@ -1742,6 +1857,14 @@ export const AdminUsersPage: React.FC = () => {
                     {message}
                 </section>
             )}
+            {isSaving && (
+                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                    <span className="inline-flex items-center gap-2 font-medium">
+                        <SpinnerGap size={14} className="animate-spin" />
+                        Processing admin changes. Please wait...
+                    </span>
+                </section>
+            )}
 
             <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1793,7 +1916,10 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section
+                className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+                aria-busy={isSaving}
+            >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -1885,7 +2011,7 @@ export const AdminUsersPage: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => void handleBulkHardDeleteUsers()}
-                        disabled={isSaving || selectedVisibleUsers.length === 0}
+                        disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Trash size={12} />
@@ -1967,14 +2093,19 @@ export const AdminUsersPage: React.FC = () => {
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
                                 const isSelected = selectedUserIds.has(user.user_id);
+                                const isHardDeleteEligible = isUserHardDeleteEligible(user);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
-                                    <tr key={user.user_id} className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                    <tr
+                                        key={user.user_id}
+                                        className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50' : 'hover:bg-slate-50'}`}
+                                    >
                                         <td className="px-3 py-2 align-middle">
                                             <Checkbox
                                                 checked={isSelected}
+                                                disabled={!isHardDeleteEligible}
                                                 onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
-                                                aria-label={`Select ${userName}`}
+                                                aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
                                             />
                                         </td>
                                         <td className="px-3 py-2">
@@ -1986,7 +2117,16 @@ export const AdminUsersPage: React.FC = () => {
                                             >
                                                 <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                 <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                <div className="truncate text-[11px] text-slate-500">UUID: {user.user_id}</div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    UUID:{' '}
+                                                    <CopyableUuid
+                                                        value={user.user_id}
+                                                        focusable={false}
+                                                        className="align-middle"
+                                                        textClassName="max-w-[180px] truncate text-[11px]"
+                                                        hintClassName="text-[9px]"
+                                                    />
+                                                </div>
                                             </button>
                                         </td>
                                         <td className="px-3 py-2">
@@ -2112,6 +2252,14 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                {isSaving && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                            <SpinnerGap size={13} className="animate-spin" />
+                            Applying changes...
+                        </span>
+                    </div>
+                )}
             </section>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -2304,7 +2452,13 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="border-b border-slate-200 px-5 py-4">
                                 <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-slate-600">
-                                    {selectedUser.email || selectedUser.user_id}
+                                    {selectedUser.email || (
+                                        <CopyableUuid
+                                            value={selectedUser.user_id}
+                                            className="align-middle"
+                                            textClassName="max-w-[360px] truncate text-sm"
+                                        />
+                                    )}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-xs font-semibold text-slate-600">
@@ -2490,7 +2644,7 @@ export const AdminUsersPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => void handleHardDelete(selectedUser)}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
                                     className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                                 >
                                     <Trash size={13} />
@@ -2529,7 +2683,13 @@ export const AdminUsersPage: React.FC = () => {
                                                         >
                                                             {trip.title || trip.trip_id}
                                                         </a>
-                                                        <div className="text-[11px] text-slate-500">{trip.trip_id}</div>
+                                                        <div className="text-[11px] text-slate-500">
+                                                            <CopyableUuid
+                                                                value={trip.trip_id}
+                                                                textClassName="max-w-[300px] truncate text-[11px]"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -2557,7 +2717,17 @@ export const AdminUsersPage: React.FC = () => {
                                                             <SelectItem value="archived">Archived</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <span className="text-slate-500">Owner: {trip.owner_email || trip.owner_id}</span>
+                                                    <span className="text-slate-500">
+                                                        Owner:{' '}
+                                                        {trip.owner_email || (
+                                                            <CopyableUuid
+                                                                value={trip.owner_id}
+                                                                className="align-middle"
+                                                                textClassName="max-w-[280px] truncate text-xs"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        )}
+                                                    </span>
                                                 </div>
                                             </article>
                                         ))}
@@ -2570,7 +2740,10 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="mt-2 space-y-1 text-sm text-slate-700">
                                         <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
-                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                            <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
                                         <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
