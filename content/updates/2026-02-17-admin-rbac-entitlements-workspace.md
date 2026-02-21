@@ -62,6 +62,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🎯 Added field-level before/after change snapshots in audit entries so profile status, role, tier, and trip ownership edits are easier to review.
 - [x] [Fixed] 🔗 Cleaned up audit target controls so pills stay separate from action buttons, and added direct in-app drawer opening for both linked users and trips.
 - [x] [Fixed] 🚧 Added an explicit admin access-denied screen for signed-in non-admin accounts and hardened invalid `/admin/*` URL handling so admins recover back to dashboard routes.
+- [x] [Fixed] 🔄 Fixed an auth-loading deadlock that could leave admin routes blank after opening an invalid admin URL, so navigation now recovers normally.
 - [x] [Fixed] 🔐 Prevented login modal snap-close during delayed session restore by showing an explicit “restoring previous session” state and a manual continue action once ready.
 - [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
 - [x] [Fixed] 🧾 Prevented a login recovery edge case that could silently switch active accounts into an anonymous "unknown user" state.

@@ -283,6 +283,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             triggerBootstrap();
             return () => {
                 cancelled = true;
+                // React Strict Mode re-runs effects in dev. If a bootstrap run was
+                // cancelled during that cycle, allow the next effect pass to start it.
+                if (!hasBootstrappedRef.current) {
+                    isBootstrappingRef.current = false;
+                }
                 unsubscribe();
             };
         }
@@ -300,6 +305,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => {
             cancelled = true;
             clearDeferredBootstrapTriggers();
+            // React Strict Mode re-runs effects in dev. If a bootstrap run was
+            // cancelled during that cycle, allow the next effect pass to start it.
+            if (!hasBootstrappedRef.current) {
+                isBootstrappingRef.current = false;
+            }
             unsubscribe();
         };
     }, [logAuthStateEvent, refreshAccess]);
