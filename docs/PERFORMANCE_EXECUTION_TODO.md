@@ -191,6 +191,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Follow-up `react-doctor` on changed files reported `98/100` with only structural TripView warnings remaining (`useState` density + component size), with no new accessibility or hook-order regressions.
 - [x] Re-ran Lighthouse against the valid `/trip/<compressed-state>` URL after the extraction pass (strict preview mode): desktop stayed `100` (`FCP ~520 ms`, `LCP ~749 ms`, `TBT 0 ms`), and mobile stayed in expected variance at `87` (`FCP/LCP ~2933 ms`, `TBT 0 ms`), with transfer `~402.5 KiB` across `32` requests.
 - [x] Removed redundant explicit `ensureDbSession()` calls from shared/example copy flows (`dbUpsertTrip` + `dbCreateTripVersion` already enforce session), trimming a serial await in each path and clearing the `react-doctor` sequential-await warning there.
+- [x] Consolidated `SharedTripLoaderRoute` and `ExampleTripLoaderRoute` to single route-state objects (instead of scattered parallel `useState`s), reducing route-loader orchestration complexity and dropping changed-file `react-doctor` warnings from `8` to `7` (`98/100` score held).
 
 ## Validation checklist
 - [x] `npx vite build`

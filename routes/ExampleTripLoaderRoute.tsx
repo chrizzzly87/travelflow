@@ -25,6 +25,12 @@ type ExampleTripCardSummary = {
     title: string;
     countries: { name: string }[];
 };
+
+interface ExampleTemplateResourcesState {
+    templateFactory: ExampleTemplateFactory | null | undefined;
+    templateCard: ExampleTripCardSummary | null;
+}
+
 type ExampleTripPrefetchState = {
     useExampleSharedTransition?: boolean;
     prefetchedExampleTrip?: ITrip;
@@ -71,8 +77,11 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             countries: names.map((name) => ({ name })),
         };
     }, [prefetchedState, prefetchedTrip]);
-    const [templateFactory, setTemplateFactory] = useState<ExampleTemplateFactory | null | undefined>(undefined);
-    const [templateCard, setTemplateCard] = useState<ExampleTripCardSummary | null>(prefetchedTemplateCard);
+    const [templateResources, setTemplateResources] = useState<ExampleTemplateResourcesState>(() => ({
+        templateFactory: undefined,
+        templateCard: prefetchedTemplateCard,
+    }));
+    const { templateFactory, templateCard } = templateResources;
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
         if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
@@ -86,13 +95,18 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
 
     useEffect(() => {
         if (!templateId) {
-            setTemplateFactory(null);
-            setTemplateCard(prefetchedTemplateCard ?? null);
+            setTemplateResources({
+                templateFactory: null,
+                templateCard: prefetchedTemplateCard ?? null,
+            });
             return;
         }
 
         let cancelled = false;
-        setTemplateFactory(undefined);
+        setTemplateResources((prev) => ({
+            ...prev,
+            templateFactory: undefined,
+        }));
 
         const loadTemplateResources = async () => {
             try {
@@ -101,12 +115,16 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 const nextFactory = await loadExampleTemplateFactory(templateId);
                 if (cancelled) return;
                 const summary = getExampleTemplateSummary(templateId);
-                setTemplateFactory(() => nextFactory);
-                setTemplateCard((summary as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null);
+                setTemplateResources({
+                    templateFactory: nextFactory,
+                    templateCard: (summary as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null,
+                });
             } catch {
                 if (cancelled) return;
-                setTemplateFactory(null);
-                setTemplateCard(prefetchedTemplateCard ?? null);
+                setTemplateResources({
+                    templateFactory: null,
+                    templateCard: prefetchedTemplateCard ?? null,
+                });
             }
         };
 
