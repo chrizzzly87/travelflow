@@ -175,6 +175,7 @@ const CookiesPage = lazyWithRecovery('CookiesPage', () => import('./pages/Cookie
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('./pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('./pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
+const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('./pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
 const AdminWorkspaceRouter = lazyWithRecovery('AdminWorkspaceRouter', () => import('./pages/AdminWorkspaceRouter').then((module) => ({ default: module.AdminWorkspaceRouter })));
 const PricingPage = lazyWithRecovery('PricingPage', () => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
 const FaqPage = lazyWithRecovery('FaqPage', () => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
@@ -1183,10 +1184,19 @@ const AdminRoute: React.FC<{ children: React.ReactElement }> = ({ children }) =>
     const location = useLocation();
 
     if (isLoading) return <RouteLoadingFallback />;
-    if (!isAuthenticated || !isAdmin) {
+    if (!isAuthenticated) {
         return (
             <Navigate
                 to="/login"
+                replace
+                state={{ from: `${location.pathname}${location.search}` }}
+            />
+        );
+    }
+    if (!isAdmin) {
+        return (
+            <Navigate
+                to="/admin/access-denied"
                 replace
                 state={{ from: `${location.pathname}${location.search}` }}
             />
@@ -1686,6 +1696,14 @@ const AppContent: React.FC = () => {
                     element={renderWithSuspense(
                         <AuthenticatedRoute>
                             <ProfileSettingsPage />
+                        </AuthenticatedRoute>
+                    )}
+                />
+                <Route
+                    path="/admin/access-denied"
+                    element={renderWithSuspense(
+                        <AuthenticatedRoute>
+                            <AdminAccessDeniedPage />
                         </AuthenticatedRoute>
                     )}
                 />

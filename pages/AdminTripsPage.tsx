@@ -474,7 +474,10 @@ export const AdminTripsPage: React.FC = () => {
                         </thead>
                         <tbody>
                             {visibleTrips.map((trip) => (
-                                <tr key={trip.trip_id} className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
+                                <tr
+                                    key={trip.trip_id}
+                                    className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50' : 'hover:bg-slate-50'}`}
+                                >
                                     <td className="px-3 py-2 align-middle">
                                         <Checkbox
                                             checked={selectedTripIds.has(trip.trip_id)}

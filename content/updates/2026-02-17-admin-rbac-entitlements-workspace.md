@@ -57,6 +57,10 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🔁 Added safer admin deletion flow with explicit hard-delete impact warnings and a transfer-before-delete option for preserving owned trips.
 - [x] [Fixed] 🧾 Improved bulk hard-delete reliability by showing per-user failure reasons and automatically clearing safe historical links that can block deletion.
 - [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
+- [x] [Improved] ✅ Refined admin row selection UX with clearer selected-row highlighting, larger checkbox click targets, and in-table processing overlays during destructive actions.
+- [x] [Improved] 🧾 Upgraded audit history readability with clearer action aliases, colored action/target pills, and direct deep links into related user or trip details.
+- [x] [Improved] 🎯 Added field-level before/after change snapshots in audit entries so profile status, role, tier, and trip ownership edits are easier to review.
+- [x] [Fixed] 🚧 Added an explicit admin access-denied screen for signed-in non-admin accounts and hardened invalid `/admin/*` URL handling so admins recover back to dashboard routes.
 - [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
 - [x] [Fixed] 🧾 Prevented a login recovery edge case that could silently switch active accounts into an anonymous "unknown user" state.
 - [x] [Fixed] 🔐 Fixed anonymous-session detection so the login modal no longer auto-closes by mistaking guest sessions for signed-in accounts.
