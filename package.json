@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:netlify": "npx netlify dev --port 8888 --target-port 5173",
     "i18n:validate": "node scripts/validate-i18n.mjs",
     "updates:validate": "node scripts/validate-updates.mjs",
     "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",

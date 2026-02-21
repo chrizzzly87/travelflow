@@ -108,8 +108,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let unsubscribe: (() => void) = () => {};
 
         const isAnonymousSession = (value: Session | null): boolean => {
-            const metadata = value?.user?.app_metadata as Record<string, unknown> | undefined;
-            return Boolean(metadata?.is_anonymous === true);
+            const user = value?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
+            if (!user) return false;
+            if (user.is_anonymous === true) return true;
+            const metadata = user.app_metadata as Record<string, unknown> | undefined;
+            const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
+            const providersFromMetadata = Array.isArray(metadata?.providers)
+                ? metadata.providers
+                    .filter((entry): entry is string => typeof entry === 'string')
+                    .map((entry) => entry.trim().toLowerCase())
+                : [];
+            const providersFromIdentities = Array.isArray((user as { identities?: Array<{ provider?: string | null }> }).identities)
+                ? ((user as { identities?: Array<{ provider?: string | null }> }).identities || [])
+                    .map((identity) => (typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : ''))
+                    .filter(Boolean)
+                : [];
+            const providers = [provider, ...providersFromMetadata, ...providersFromIdentities].filter(Boolean);
+            if (metadata?.is_anonymous === true) return true;
+            return providers.includes('anonymous');
         };
 
         const isAuthDebugEnabled = (): boolean => {
@@ -336,7 +352,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const value = useMemo<AuthContextValue>(() => {
-        const isAuthenticated = Boolean(session?.user && access && !access.isAnonymous);
+        const hasValidBoundAccess = Boolean(
+            session?.user
+            && access
+            && access.userId
+            && access.userId === session.user.id
+        );
+        const isAuthenticated = Boolean(
+            hasValidBoundAccess
+            && !access?.isAnonymous
+            && access?.accountStatus === 'active'
+        );
         const isAnonymous = Boolean(session?.user && access?.isAnonymous);
         const isAdmin = access?.role === 'admin';
         return {

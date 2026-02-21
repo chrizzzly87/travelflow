@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ArrowRight,
     SpinnerGap as Loader2,
@@ -109,7 +109,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [lastUsedProvider, setLastUsedProviderState] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
+    const [sessionRestoreState, setSessionRestoreState] = useState<'idle' | 'restoring' | 'restored'>('idle');
     const hasHandledSuccessRef = useRef(false);
+    const hasInteractiveAttemptRef = useRef(false);
     const dialogRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -130,6 +132,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         [nextPath]
     );
 
+    const completeSuccessfulAuth = useCallback(
+        (
+            flow: 'interactive' | 'restored',
+            options?: { skipReload?: boolean }
+        ) => {
+            if (hasHandledSuccessRef.current) return;
+            hasHandledSuccessRef.current = true;
+            trackEvent('auth__modal--success', { source, flow });
+            onClose('success');
+
+            const target = nextPath || (typeof window !== 'undefined'
+                ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+                : '/create-trip');
+
+            if (reloadOnSuccess && !options?.skipReload) {
+                window.location.assign(target);
+                return;
+            }
+
+            navigate(target, { replace: true });
+        },
+        [navigate, nextPath, onClose, reloadOnSuccess, source]
+    );
+
     useEffect(() => {
         if (!isOpen) return;
         trackEvent('auth__modal--open', { source });
@@ -140,7 +166,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             setIsSubmitting(false);
             setErrorMessage(null);
             setInfoMessage(null);
+            setSessionRestoreState('idle');
             hasHandledSuccessRef.current = false;
+            hasInteractiveAttemptRef.current = false;
             return;
         }
 
@@ -161,39 +189,54 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }, []);
 
     useEffect(() => {
+        if (!isOpen || hasInteractiveAttemptRef.current) return;
+        if (isLoading) {
+            setSessionRestoreState('restoring');
+            return;
+        }
+        if (isAuthenticated && !isAnonymous) {
+            setSessionRestoreState('restored');
+            return;
+        }
+        setSessionRestoreState('idle');
+    }, [isAnonymous, isAuthenticated, isLoading, isOpen]);
+
+    useEffect(() => {
         if (!isOpen) return;
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
+            if (sessionRestoreState === 'restoring') return;
             event.preventDefault();
             trackEvent('auth__modal--close', { source, reason: 'escape' });
             onClose('escape');
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose, source]);
+    }, [isOpen, onClose, sessionRestoreState, source]);
 
     useEffect(() => {
         if (!isOpen || isLoading || hasHandledSuccessRef.current) return;
         if (!isAuthenticated || isAnonymous) return;
-
-        hasHandledSuccessRef.current = true;
-        trackEvent('auth__modal--success', { source });
-        onClose('success');
-
-        if (reloadOnSuccess) {
-            const target = nextPath || (typeof window !== 'undefined'
-                ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-                : '/create-trip');
-            window.location.assign(target);
+        if (!hasInteractiveAttemptRef.current) {
+            setSessionRestoreState('restored');
             return;
         }
+        completeSuccessfulAuth('interactive');
+    }, [completeSuccessfulAuth, isAnonymous, isAuthenticated, isLoading, isOpen]);
 
-        navigate(nextPath || '/create-trip', { replace: true });
-    }, [isAnonymous, isAuthenticated, isLoading, isOpen, navigate, nextPath, onClose, reloadOnSuccess, source]);
+    useEffect(() => {
+        if (!isOpen || sessionRestoreState !== 'restored' || hasHandledSuccessRef.current) return;
+        const timer = window.setTimeout(() => {
+            completeSuccessfulAuth('restored', { skipReload: true });
+        }, 2000);
+        return () => window.clearTimeout(timer);
+    }, [completeSuccessfulAuth, isOpen, sessionRestoreState]);
 
     if (!isOpen) return null;
+    const isRestoreBlocked = sessionRestoreState === 'restoring' || sessionRestoreState === 'restored';
 
     const handleModeChange = (nextMode: AuthMode) => {
+        if (isRestoreBlocked) return;
         setMode(nextMode);
         setErrorMessage(null);
         setInfoMessage(null);
@@ -202,12 +245,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (isRestoreBlocked) return;
         if (!email.trim() || !password.trim()) {
             setErrorMessage(t('errors.default'));
             return;
         }
         clearPendingOAuthProvider();
 
+        hasInteractiveAttemptRef.current = true;
+        setSessionRestoreState('idle');
         setIsSubmitting(true);
         setErrorMessage(null);
         setInfoMessage(null);
@@ -241,6 +287,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     };
 
     const handleOAuthLogin = async (provider: OAuthProviderId) => {
+        if (isRestoreBlocked) return;
+        hasInteractiveAttemptRef.current = true;
+        setSessionRestoreState('idle');
         setErrorMessage(null);
         setInfoMessage(null);
         setPendingOAuthProvider(provider);
@@ -256,6 +305,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     };
 
     const handlePasswordResetRequest = async (intent: 'forgot_password' | 'set_password') => {
+        if (isRestoreBlocked) return;
         const normalizedEmail = email.trim();
         if (!normalizedEmail) {
             setErrorMessage(t('errors.email_required_for_reset'));
@@ -291,6 +341,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 type="button"
                 className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]"
                 onClick={() => {
+                    if (sessionRestoreState === 'restoring') return;
                     trackEvent('auth__modal--close', { source, reason: 'backdrop' });
                     onClose('backdrop');
                 }}
@@ -314,9 +365,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         type="button"
                         className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         onClick={() => {
+                            if (sessionRestoreState === 'restoring') return;
                             trackEvent('auth__modal--close', { source, reason: 'dismiss' });
                             onClose('dismiss');
                         }}
+                        disabled={sessionRestoreState === 'restoring'}
                         aria-label="Close authentication modal"
                     >
                         <X size={16} />
@@ -324,119 +377,141 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className="px-5 py-4">
-                    <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
-                        <button
-                            type="button"
-                            onClick={() => handleModeChange('login')}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                        >
-                            {t('tabs.login')}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleModeChange('register')}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-                                mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-                            }`}
-                        >
-                            {t('tabs.register')}
-                        </button>
-                    </div>
+                    {sessionRestoreState === 'restoring' && (
+                        <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900" aria-live="polite">
+                            <span className="inline-flex items-center gap-2 font-semibold">
+                                <Loader2 size={14} className="animate-spin" />
+                                {t('states.restoringSession')}
+                            </span>
+                        </div>
+                    )}
+                    {sessionRestoreState === 'restored' && (
+                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" aria-live="polite">
+                            <p className="font-semibold">{t('states.sessionRestored')}</p>
+                        </div>
+                    )}
 
-                    <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit}>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.email')}</span>
-                            <input
-                                type="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(event) => setEmail(event.target.value)}
-                                required
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
-                            />
-                        </label>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.password')}</span>
-                            <input
-                                type="password"
-                                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                                value={password}
-                                onChange={(event) => setPassword(event.target.value)}
-                                required
-                                minLength={8}
-                                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
-                            />
-                        </label>
-                        {mode === 'login' && (
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-                                    <button
-                                        type="button"
-                                        onClick={() => void handlePasswordResetRequest('forgot_password')}
-                                        disabled={isSubmitting}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                        {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
-                                    >
-                                        {t('actions.forgotPassword')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => void handlePasswordResetRequest('set_password')}
-                                        disabled={isSubmitting}
-                                        className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
-                                        {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
-                                    >
-                                        {t('actions.setPasswordSocial')}
-                                    </button>
-                                </div>
-                                <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-                            {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
-                        </button>
-                    </form>
-
-                    <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-400">
-                        <span className="h-px flex-1 bg-slate-200" />
-                        {t('copy.oauthDivider')}
-                        <span className="h-px flex-1 bg-slate-200" />
-                    </div>
-
-                    <div className="space-y-2">
-                        {oauthButtons.map((item) => {
-                            const isLastUsed = lastUsedProvider === item.provider;
-                            return (
+                    {sessionRestoreState !== 'restored' && (
+                        <>
+                            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
                                 <button
-                                    key={item.provider}
                                     type="button"
-                                    onClick={() => void handleOAuthLogin(item.provider)}
-                                    disabled={isSubmitting}
-                                    className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                                        isLastUsed
-                                            ? 'border-slate-400 bg-white'
-                                            : 'border-slate-300 bg-white'
-                                    } ${item.buttonClassName}`}
+                                    onClick={() => handleModeChange('login')}
+                                    disabled={isSubmitting || isRestoreBlocked}
+                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                                        mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                    }`}
                                 >
-                                    <SocialProviderIcon provider={item.provider} size={18} />
-                                    <span>{t(item.labelKey)}</span>
-                                    {isLastUsed && (
-                                        <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm">
-                                            {t('copy.lastUsedTag')}
-                                        </span>
-                                    )}
+                                    {t('tabs.login')}
                                 </button>
-                            );
-                        })}
-                    </div>
+                                <button
+                                    type="button"
+                                    onClick={() => handleModeChange('register')}
+                                    disabled={isSubmitting || isRestoreBlocked}
+                                    className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                                        mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                                    }`}
+                                >
+                                    {t('tabs.register')}
+                                </button>
+                            </div>
+
+                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit}>
+                                <label className="block">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.email')}</span>
+                                    <input
+                                        type="email"
+                                        autoComplete="email"
+                                        value={email}
+                                        onChange={(event) => setEmail(event.target.value)}
+                                        disabled={isSubmitting || isRestoreBlocked}
+                                        required
+                                        className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                    />
+                                </label>
+                                <label className="block">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.password')}</span>
+                                    <input
+                                        type="password"
+                                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                                        value={password}
+                                        onChange={(event) => setPassword(event.target.value)}
+                                        disabled={isSubmitting || isRestoreBlocked}
+                                        required
+                                        minLength={8}
+                                        className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
+                                    />
+                                </label>
+                                {mode === 'login' && (
+                                    <div className="space-y-2">
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                                            <button
+                                                type="button"
+                                                onClick={() => void handlePasswordResetRequest('forgot_password')}
+                                                disabled={isSubmitting || isRestoreBlocked}
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                                {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'forgot_password' })}
+                                            >
+                                                {t('actions.forgotPassword')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handlePasswordResetRequest('set_password')}
+                                                disabled={isSubmitting || isRestoreBlocked}
+                                                className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                                {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'modal', intent: 'set_password' })}
+                                            >
+                                                {t('actions.setPasswordSocial')}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-slate-500">{t('copy.passwordResetHint')}</p>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting || isRestoreBlocked}
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                                    {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
+                                </button>
+                            </form>
+
+                            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wide text-slate-400">
+                                <span className="h-px flex-1 bg-slate-200" />
+                                {t('copy.oauthDivider')}
+                                <span className="h-px flex-1 bg-slate-200" />
+                            </div>
+
+                            <div className="space-y-2">
+                                {oauthButtons.map((item) => {
+                                    const isLastUsed = lastUsedProvider === item.provider;
+                                    return (
+                                        <button
+                                            key={item.provider}
+                                            type="button"
+                                            onClick={() => void handleOAuthLogin(item.provider)}
+                                            disabled={isSubmitting || isRestoreBlocked}
+                                            className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                                isLastUsed
+                                                    ? 'border-slate-400 bg-white'
+                                                    : 'border-slate-300 bg-white'
+                                            } ${item.buttonClassName}`}
+                                        >
+                                            <SocialProviderIcon provider={item.provider} size={18} />
+                                            <span>{t(item.labelKey)}</span>
+                                            {isLastUsed && (
+                                                <span className="pointer-events-none absolute -top-2 right-3 rounded-2xl border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 shadow-sm">
+                                                    {t('copy.lastUsedTag')}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
 
                     {errorMessage && (
                         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">

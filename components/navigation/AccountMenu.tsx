@@ -8,6 +8,7 @@ import { DEFAULT_LOCALE } from '../../config/locales';
 
 interface AccountMenuProps {
     email: string | null;
+    userId?: string | null;
     isAdmin: boolean;
     compact?: boolean;
     showLabel?: boolean;
@@ -18,9 +19,13 @@ interface AccountMenuProps {
 
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
 
-const computeInitial = (email: string | null): string => {
+const computeInitial = (email: string | null, userId?: string | null): string => {
     const normalized = (email || '').trim();
-    if (!normalized) return 'U';
+    if (!normalized) {
+        const fallback = (userId || '').trim();
+        if (fallback) return fallback.charAt(0).toUpperCase();
+        return 'U';
+    }
     return normalized.charAt(0).toUpperCase();
 };
 
@@ -39,6 +44,7 @@ const labelFromPath = (pathname: string): string => {
 
 export const AccountMenu: React.FC<AccountMenuProps> = ({
     email,
+    userId = null,
     isAdmin,
     compact = false,
     showLabel,
@@ -88,6 +94,14 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         navigate(buildLocalizedMarketingPath('home', locale));
     };
 
+    const accountIdentityLabel = useMemo(() => {
+        const normalizedEmail = (email || '').trim();
+        if (normalizedEmail) return normalizedEmail;
+        const normalizedUserId = (userId || '').trim();
+        if (normalizedUserId) return `User ${normalizedUserId.slice(0, 8)}`;
+        return 'Signed-in account';
+    }, [email, userId]);
+
     return (
         <div className={`relative ${className || ''}`.trim()} ref={containerRef}>
             <button
@@ -108,7 +122,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
             >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
-                    {computeInitial(email)}
+                    {computeInitial(email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{accountLabel}</span>}
                 <CaretDown size={14} />
@@ -126,7 +140,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     ].join(' ')}
                 >
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="truncate text-sm font-semibold text-slate-800">{email || 'Unknown user'}</div>
+                        <div className="truncate text-sm font-semibold text-slate-800">{accountIdentityLabel}</div>
                         <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
                     </div>
 

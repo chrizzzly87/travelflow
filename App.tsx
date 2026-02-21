@@ -14,7 +14,6 @@ import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/pro
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
     extractLocaleFromPath,
-    isOnboardingExemptPath,
     isToolRoute,
     stripLocalePrefix,
 } from './config/routes';
@@ -224,21 +223,11 @@ const AppContent: React.FC = () => {
         const strippedPath = stripLocalePrefix(location.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
         if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
-        if (isOnboardingExemptPath(strippedPath)) return;
 
         if (access.accountStatus !== 'active') {
             void logout();
             navigate('/login', { replace: true });
-            return;
         }
-
-        if (access.onboardingCompleted) return;
-        if (strippedPath === '/profile/onboarding') return;
-
-        navigate('/profile/onboarding', {
-            replace: true,
-            state: { from: `${location.pathname}${location.search}` },
-        });
     }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {

@@ -31,10 +31,8 @@ export interface DbAdminOverrideCommitResult {
 }
 
 let cachedUserId: string | null = null;
-let isReauthInFlight = false;
 let sessionPromise: Promise<string | null> | null = null;
 let lastAuthAttemptAt = 0;
-let lastReauthAt = 0;
 let debugAuthChecked = false;
 let authBlockedUntil = 0;
 
@@ -175,29 +173,58 @@ export const dbGetAccessToken = async (): Promise<string | null> => {
     return data?.session?.access_token ?? null;
 };
 
-const isRlsViolation = (error: { code?: string; message?: string } | null) => {
+type DbErrorLike = {
+    code?: string;
+    message?: string;
+    details?: string | null;
+    hint?: string | null;
+    constraint?: string | null;
+};
+
+const isRlsViolation = (error: DbErrorLike | null) => {
     if (!error) return false;
     if (error.code === '42501') return true;
     return typeof error.message === 'string' && /row-level security/i.test(error.message);
 };
 
-const forceAnonymousSession = async (): Promise<string | null> => {
-    if (!DB_ENABLED) return null;
-    if (isReauthInFlight) return cachedUserId;
-    const now = Date.now();
-    if (now - lastReauthAt < AUTH_COOLDOWN_MS) return cachedUserId;
-    lastReauthAt = now;
-    isReauthInFlight = true;
-    const client = requireSupabase();
-    try {
-        await client.auth.signOut();
-    } catch (e) {
-        console.warn('Supabase signOut failed during reauth', e);
-    }
-    cachedUserId = null;
-    const userId = await ensureDbSession();
-    isReauthInFlight = false;
-    return userId;
+const isMissingUserSettingsOwnerError = (error: DbErrorLike | null): boolean => {
+    if (!error || error.code !== '23503') return false;
+    const message = `${error.message || ''} ${error.details || ''} ${error.constraint || ''}`.toLowerCase();
+    return message.includes('user_settings_user_id_fkey')
+        || message.includes('key is not present in table \"users\"')
+        || message.includes('references auth.users');
+};
+
+const isAnonymousAuthSession = (
+    session: {
+        user?: {
+            email?: string | null;
+            phone?: string | null;
+            app_metadata?: Record<string, unknown> | null;
+            identities?: Array<{ provider?: string | null }> | null;
+        } | null;
+    } | null | undefined
+): boolean => {
+    const user = session?.user;
+    if (!user) return false;
+    if (user.email || user.phone) return false;
+
+    const metadata = user.app_metadata ?? {};
+    const provider = typeof metadata.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
+    const providersFromMetadata = Array.isArray(metadata.providers)
+        ? metadata.providers
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+        : [];
+    const providersFromIdentities = Array.isArray(user.identities)
+        ? user.identities
+            .map((identity) => (typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : ''))
+            .filter(Boolean)
+        : [];
+
+    const providers = [provider, ...providersFromMetadata, ...providersFromIdentities].filter(Boolean);
+    if (providers.some((value) => value !== 'anonymous')) return false;
+    return Boolean(metadata.is_anonymous === true || providers.includes('anonymous'));
 };
 
 const isLayoutModeValue = (value: unknown): value is IViewSettings['layoutMode'] =>
@@ -685,6 +712,28 @@ export const dbUpsertUserSettings = async (settings: IUserSettings) => {
 
     const { error } = await client.from('user_settings').upsert(payload, { onConflict: 'user_id' });
     if (error) {
+        if (isMissingUserSettingsOwnerError(error)) {
+            const { data: sessionData } = await client.auth.getSession();
+            const sessionUserId = sessionData?.session?.user?.id ?? null;
+            const sessionIsAnonymous = isAnonymousAuthSession(sessionData?.session ?? null);
+            debugLog('dbUpsertUserSettings:staleSessionRecover', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                sessionUserId,
+                sessionIsAnonymous,
+            });
+            // Avoid switching identity here. Missing owner references can happen
+            // for stale/deleted accounts; auto-fallback to anonymous creates
+            // confusing "unknown user" session flips while login is in flight.
+            if (!sessionIsAnonymous) {
+                console.error(
+                    'Failed to save user settings: authenticated account has no matching user owner row.',
+                    error
+                );
+            }
+            return;
+        }
         console.error('Failed to save user settings', error);
     }
 };
