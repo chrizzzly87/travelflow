@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowSquareOut, CopySimple, SpinnerGap, X } from '@phosphor-icons/react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListAuditLogs, type AdminAuditRecord } from '../services/adminService';
@@ -202,7 +202,7 @@ const resolveTargetHref = (log: AdminAuditRecord): string | null => {
         return `/admin/users?drawer=user&user=${encodeURIComponent(log.target_id)}`;
     }
     if (log.target_type === 'trip') {
-        return `/admin/trips?q=${encodeURIComponent(log.target_id)}`;
+        return `/admin/trips?drawer=trip&trip=${encodeURIComponent(log.target_id)}`;
     }
     if (log.target_type === 'tier') {
         return '/admin/tiers';
@@ -414,16 +414,22 @@ export const AdminAuditPage: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-2 text-xs text-slate-600">
                                             {targetHref ? (
-                                                <a
-                                                    href={targetHref}
-                                                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700 hover:border-accent-300 hover:text-accent-700"
-                                                    title={`Open ${targetLabel.toLowerCase()} details`}
-                                                >
-                                                    <span className={`rounded-full border px-1.5 py-0.5 ${getTargetPillClass(log.target_type)}`}>
+                                                <div className="inline-flex items-center gap-1.5">
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getTargetPillClass(log.target_type)}`}
+                                                        title={`Raw target type: ${log.target_type}`}
+                                                    >
                                                         {targetLabel}
                                                     </span>
-                                                    <ArrowSquareOut size={11} />
-                                                </a>
+                                                    <Link
+                                                        to={targetHref}
+                                                        className="inline-flex h-6 items-center gap-1 rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-700 hover:border-accent-300 hover:text-accent-700"
+                                                        title={`Open ${targetLabel.toLowerCase()} drawer`}
+                                                    >
+                                                        Open
+                                                        <ArrowSquareOut size={11} />
+                                                    </Link>
+                                                </div>
                                             ) : (
                                                 <span
                                                     className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getTargetPillClass(log.target_type)}`}
