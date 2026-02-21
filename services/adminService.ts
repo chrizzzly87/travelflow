@@ -73,6 +73,15 @@ const requireSupabase = () => {
     return supabase;
 };
 
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
+
+const normalizeProfileGender = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
+};
+
 export const adminListUsers = async (
     options: {
         limit?: number;
@@ -129,7 +138,7 @@ export const adminUpdateUserProfile = async (
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
         p_username: payload.username ?? null,
-        p_gender: payload.gender ?? null,
+        p_gender: normalizeProfileGender(payload.gender),
         p_country: payload.country ?? null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,

@@ -93,6 +93,7 @@ const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
 };
 const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -358,6 +359,15 @@ const getLoginMethodSummary = (user: AdminUserRecord): string => {
 const getLoginSearchText = (user: AdminUserRecord): string => {
     const profile = resolveUserLoginProfile(user);
     return `${profile.providers.join(' ')} ${getLoginMethodSummary(user)}`.trim().toLowerCase();
+};
+
+const toProfileGenderDraft = (value: string | null | undefined): '' | 'female' | 'male' | 'non-binary' | 'prefer-not' => {
+    if (typeof value !== 'string') return '';
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+    return VALID_PROFILE_GENDERS.has(normalized)
+        ? (normalized as 'female' | 'male' | 'non-binary' | 'prefer-not')
+        : '';
 };
 
 const hasNonEmptyValue = (value: string | null | undefined): boolean => Boolean(value && value.trim().length > 0);
@@ -1051,7 +1061,7 @@ export const AdminUsersPage: React.FC = () => {
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
             username: selectedUser.username || '',
-            gender: (selectedUser.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+            gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
             preferredLanguage: selectedUser.preferred_language || 'en',
@@ -1068,7 +1078,7 @@ export const AdminUsersPage: React.FC = () => {
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
                     username: fullProfile.username || '',
-                    gender: (fullProfile.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+                    gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
                     preferredLanguage: fullProfile.preferred_language || 'en',
