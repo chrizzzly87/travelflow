@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
@@ -82,6 +82,15 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         templateCard: prefetchedTemplateCard,
     }));
     const { templateFactory, templateCard } = templateResources;
+    const applyTemplateResources = useCallback((next: ExampleTemplateResourcesState) => {
+        setTemplateResources(next);
+    }, []);
+    const markTemplateFactoryLoading = useCallback(() => {
+        setTemplateResources((prev) => ({
+            ...prev,
+            templateFactory: undefined,
+        }));
+    }, []);
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
         if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
@@ -95,7 +104,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
 
     useEffect(() => {
         if (!templateId) {
-            setTemplateResources({
+            applyTemplateResources({
                 templateFactory: null,
                 templateCard: prefetchedTemplateCard ?? null,
             });
@@ -103,10 +112,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         }
 
         let cancelled = false;
-        setTemplateResources((prev) => ({
-            ...prev,
-            templateFactory: undefined,
-        }));
+        markTemplateFactoryLoading();
 
         const loadTemplateResources = async () => {
             try {
@@ -115,13 +121,13 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 const nextFactory = await loadExampleTemplateFactory(templateId);
                 if (cancelled) return;
                 const summary = getExampleTemplateSummary(templateId);
-                setTemplateResources({
+                applyTemplateResources({
                     templateFactory: nextFactory,
                     templateCard: (summary as ExampleTripCardSummary | undefined) ?? prefetchedTemplateCard ?? null,
                 });
             } catch {
                 if (cancelled) return;
-                setTemplateResources({
+                applyTemplateResources({
                     templateFactory: null,
                     templateCard: prefetchedTemplateCard ?? null,
                 });
@@ -133,7 +139,7 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [prefetchedTemplateCard, templateId]);
+    }, [applyTemplateResources, markTemplateFactoryLoading, prefetchedTemplateCard, templateId]);
 
     const templateCountries = useMemo(
         () => templateCard?.countries?.map((country) => country.name).filter(Boolean)

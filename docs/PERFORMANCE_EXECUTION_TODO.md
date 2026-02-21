@@ -196,6 +196,7 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extracted `TripView` view-settings synchronization (localStorage persistence + URL sync + initial view-state application) into `components/tripview/useTripViewSettingsSync.ts` and moved generation-overlay progress rotation into `components/tripview/useGenerationProgressMessage.ts`, shrinking `TripView.tsx` from `2668` to `2615` lines.
 - [x] Follow-up `react-doctor` after the hook extraction pass improved changed-file warnings from `6` to `4` (score stayed `98/100`), leaving only route-loader effect-setState suggestions and structural `TripView` size/state-density guidance.
 - [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the extraction pass: desktop remained `100` (`FCP ~0.5 s`, `LCP ~0.6 s`, `TBT 0 ms`) and mobile improved to `89` (`FCP ~2.2 s`, `LCP ~3.5 s`, `TBT 0 ms`) with transfer stable at `~403 KiB` across `32` requests.
+- [x] Refactored shared/example route-loader effects to helper-based state application, eliminating the remaining route `setState`-in-effect warnings and improving `react-doctor` from `98/4` to `99/2` (only structural `TripView` advisories remain).
 
 ## Validation checklist
 - [x] `npx vite build`
