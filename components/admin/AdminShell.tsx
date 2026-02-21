@@ -158,7 +158,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     ));
 
     return (
-        <div className="min-h-dvh bg-slate-100 text-slate-900">
+        <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
             {isMobileSidebarOpen && (
                 <div
                     className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"

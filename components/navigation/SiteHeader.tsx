@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
+import { AirplaneTilt, List, Folder, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
@@ -67,7 +67,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('common');
-    const { isAuthenticated, isAdmin, access } = useAuth();
+    const { isAuthenticated, isAdmin, access, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
@@ -105,6 +105,7 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
 
     const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
         handleNavClick('login');
+        if (isLoading) return;
         if (!isPlainLeftClick(event)) return;
 
         event.preventDefault();
@@ -180,6 +181,15 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             >
                                 <AccountMenu email={access?.email || null} userId={access?.userId || null} isAdmin={isAdmin} />
                             </Suspense>
+                        ) : isLoading ? (
+                            <span
+                                className={`${loginClass} cursor-wait items-center gap-2 opacity-70`}
+                                aria-disabled="true"
+                                aria-live="polite"
+                            >
+                                <Loader2 size={14} className="animate-spin" />
+                                {t('nav.login')}
+                            </span>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}

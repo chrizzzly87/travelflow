@@ -30,6 +30,19 @@ Optional compatibility keys:
 - If preview behaves differently from local `vite`, run `npx netlify dev` for local parity.
 - Missing env keys in Deploy Preview context can cause partial behavior (for example generation timeout/failure or OG/meta fallbacks).
 
+## Manual CLI deploy with env parity
+Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
+
+1. Link the worktree once:
+   - `npx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
+2. Build + deploy with `.env.local` safely parsed:
+   - `npx dotenv-cli -e .env.local -- npx netlify deploy --build --alias <alias-name>`
+3. Reuse the same alias to update an existing preview URL.
+
+Notes:
+- Do not use `source .env.local` for deployment commands; values containing special characters can fail shell parsing and silently skip env injection.
+- Never commit `.env.local` or copied secret values.
+
 ## Useful checks
 - PR checks:
   - `gh pr checks <PR_NUMBER>`

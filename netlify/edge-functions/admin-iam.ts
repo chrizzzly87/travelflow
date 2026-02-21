@@ -67,6 +67,12 @@ const extractBooleanRpcResult = (payload: any): boolean | null => {
   return null;
 };
 
+const toErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error.trim();
+  return "Unknown runtime error.";
+};
+
 const getAuthToken = (request: Request): string | null => {
   const raw = request.headers.get(AUTH_HEADER) || "";
   const match = raw.match(/^Bearer\s+(.+)$/i);
@@ -101,16 +107,20 @@ const serviceRoleMutate = async (
   path: string,
   options: { method: "PATCH" | "DELETE"; body?: Record<string, unknown> },
 ): Promise<string | null> => {
-  const response = await fetch(`${config.url}${path}`, {
-    method: options.method,
-    headers: buildServiceHeaders(config.serviceRoleKey, {
-      Prefer: "return=minimal",
-    }),
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  if (response.ok) return null;
-  const payload = await safeJsonParse(response);
-  return extractServiceError(payload, "Cleanup request failed.");
+  try {
+    const response = await fetch(`${config.url}${path}`, {
+      method: options.method,
+      headers: buildServiceHeaders(config.serviceRoleKey, {
+        Prefer: "return=minimal",
+      }),
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    if (response.ok) return null;
+    const payload = await safeJsonParse(response);
+    return extractServiceError(payload, `Cleanup request failed (status ${response.status}).`);
+  } catch (error) {
+    return `Cleanup request failed: ${toErrorMessage(error)}`;
+  }
 };
 
 const parseContentRangeCount = (value: string | null): number | null => {
@@ -158,90 +168,67 @@ const clearHardDeleteBlockingReferences = async (
   userId: string,
 ): Promise<string[]> => {
   const encodedUserId = encodeURIComponent(userId);
-  const cleanupSteps: Array<{
-    label: string;
-    path: string;
-    options: { method: "PATCH" | "DELETE"; body?: Record<string, unknown> };
-  }> = [
-    {
-      label: "trip_versions.created_by -> null",
-      path: `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { created_by: null } },
-    },
-    {
-      label: "trip_shares.created_by -> null",
-      path: `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { created_by: null } },
-    },
-    {
-      label: "profiles.role_updated_by -> null",
-      path: `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { role_updated_by: null } },
-    },
-    {
-      label: "profiles.disabled_by -> null",
-      path: `/rest/v1/profiles?disabled_by=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { disabled_by: null } },
-    },
-    {
-      label: "admin_user_roles.assigned_by -> null",
-      path: `/rest/v1/admin_user_roles?assigned_by=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { assigned_by: null } },
-    },
-    {
-      label: "auth_flow_logs.user_id -> null",
-      path: `/rest/v1/auth_flow_logs?user_id=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { user_id: null } },
-    },
-    {
-      label: "trip_generation_requests.requested_by_anon_id -> null",
-      path: `/rest/v1/trip_generation_requests?requested_by_anon_id=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { requested_by_anon_id: null } },
-    },
-    {
-      label: "trip_generation_requests.owner_user_id -> null",
-      path: `/rest/v1/trip_generation_requests?owner_user_id=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { owner_user_id: null } },
-    },
-    {
-      label: "admin_audit_logs.actor_user_id -> null",
-      path: `/rest/v1/admin_audit_logs?actor_user_id=eq.${encodedUserId}`,
-      options: { method: "PATCH", body: { actor_user_id: null } },
-    },
-    {
-      label: "trip_collaborators delete",
-      path: `/rest/v1/trip_collaborators?user_id=eq.${encodedUserId}`,
-      options: { method: "DELETE" },
-    },
-    {
-      label: "admin_user_roles delete",
-      path: `/rest/v1/admin_user_roles?user_id=eq.${encodedUserId}`,
-      options: { method: "DELETE" },
-    },
-    {
-      label: "owned trips delete",
-      path: `/rest/v1/trips?owner_id=eq.${encodedUserId}`,
-      options: { method: "DELETE" },
-    },
-  ];
-
-  const cleanupErrors = await Promise.all(
-    cleanupSteps.map(async (step) => {
-      const message = await serviceRoleMutate(config, step.path, step.options);
-      if (!message) return null;
-      return `${step.label}: ${message}`;
+  const cleanupErrors = await Promise.all([
+    serviceRoleMutate(config, `/rest/v1/trip_versions?created_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { created_by: null },
     }),
-  );
+    serviceRoleMutate(config, `/rest/v1/trip_shares?created_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { created_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/profiles?role_updated_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { role_updated_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/profiles?disabled_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { disabled_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_user_roles?assigned_by=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { assigned_by: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/auth_flow_logs?user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?requested_by_anon_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { requested_by_anon_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?owner_user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { owner_user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_audit_logs?actor_user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { actor_user_id: null },
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_collaborators?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/admin_user_roles?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/trips?owner_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/user_settings?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/subscriptions?user_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/ai_benchmark_sessions?owner_id=eq.${encodedUserId}`, {
+      method: "DELETE",
+    }),
+    serviceRoleMutate(config, `/rest/v1/trip_generation_requests?requested_by_user_id=eq.${encodedUserId}`, {
+      method: "PATCH",
+      body: { requested_by_user_id: null },
+    }),
+  ]);
   return cleanupErrors.filter((message): message is string => Boolean(message && message.trim()));
-};
-
-const summarizeCleanupErrors = (cleanupErrors: string[]): string => {
-  if (cleanupErrors.length === 0) return "";
-  const maxItems = 3;
-  const visible = cleanupErrors.slice(0, maxItems).join(" | ");
-  const remaining = cleanupErrors.length - maxItems;
-  if (remaining <= 0) return visible;
-  return `${visible} | +${remaining} more cleanup failure${remaining === 1 ? "" : "s"}`;
 };
 
 const supabaseFetch = async (
@@ -433,61 +420,67 @@ export default async (request: Request): Promise<Response> => {
   }
 
   if (action === "delete") {
-    const userId = typeof body.userId === "string" ? body.userId.trim() : "";
-    if (!userId) return json(400, { ok: false, error: "Missing userId for delete action." });
-    const [ownedTripsBeforeDelete, targetEmail] = await Promise.all([
-      getOwnedTripsCount(config, userId),
-      getAuthUserEmail(config, userId),
-    ]);
+    try {
+      const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+      if (!userId) return json(400, { ok: false, error: "Missing userId for delete action." });
+      const [ownedTripsBeforeDelete, targetEmail] = await Promise.all([
+        getOwnedTripsCount(config, userId),
+        getAuthUserEmail(config, userId),
+      ]);
 
-    const deleteAuthUser = async (): Promise<Response> =>
-      fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
-        method: "DELETE",
-        headers: buildServiceHeaders(config.serviceRoleKey),
-      });
-
-    let cleanupAttempted = false;
-    let cleanupErrors: string[] = [];
-    let response = await deleteAuthUser();
-    if (!response.ok) {
-      const initialPayload = await safeJsonParse(response);
-      const initialDeleteError = extractServiceError(initialPayload, "Could not delete user.");
-      cleanupAttempted = true;
-      cleanupErrors = await clearHardDeleteBlockingReferences(config, userId);
-      response = await deleteAuthUser();
-
-      if (!response.ok) {
-        const retryPayload = await safeJsonParse(response);
-        const retryDeleteError = extractServiceError(retryPayload, "Could not delete user after cleanup.");
-        const baseError = retryDeleteError === initialDeleteError
-          ? retryDeleteError
-          : `${initialDeleteError} Retry failed: ${retryDeleteError}`;
-        const cleanupSummary = summarizeCleanupErrors(cleanupErrors);
-        const cleanupNote = cleanupErrors.length > 0
-          ? ` Cleanup attempted, but ${cleanupErrors.length} cleanup step${cleanupErrors.length === 1 ? "" : "s"} failed: ${cleanupSummary}.`
-          : "";
-        return json(400, {
-          ok: false,
-          error: `${baseError}${cleanupNote} If this user owns trips you want to keep, transfer trips first, then retry hard delete.`,
+      const deleteAuthUser = async (): Promise<Response> =>
+        fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+          method: "DELETE",
+          headers: buildServiceHeaders(config.serviceRoleKey),
         });
-      }
-    }
 
-    await logAdminAction(config, authToken, {
-      action: "admin.user.hard_delete",
-      targetType: "user",
-      targetId: userId,
-      metadata: {
-        via: "admin-iam-edge",
-        target_email: targetEmail,
-        owned_trips_before_delete: ownedTripsBeforeDelete,
-        trip_impact: (ownedTripsBeforeDelete || 0) > 0 ? "owned_trips_deleted" : "no_owned_trips",
-        cleanup_attempted: cleanupAttempted,
-        cleanup_error_count: cleanupErrors.length,
-        delete_mode: cleanupAttempted ? "cleanup_then_auth_delete" : "auth_delete_only",
-      },
-    });
-    return json(200, { ok: true, data: { userId } });
+      let cleanupAttempted = false;
+      let cleanupErrors: string[] = [];
+      let response = await deleteAuthUser();
+      if (!response.ok) {
+        const initialPayload = await safeJsonParse(response);
+        const initialDeleteError = extractServiceError(initialPayload, `Could not delete user (status ${response.status}).`);
+        cleanupAttempted = true;
+        cleanupErrors = await clearHardDeleteBlockingReferences(config, userId);
+        response = await deleteAuthUser();
+
+        if (!response.ok) {
+          const retryPayload = await safeJsonParse(response);
+          const retryDeleteError = extractServiceError(retryPayload, `Could not delete user after cleanup (status ${response.status}).`);
+          const baseError = retryDeleteError === initialDeleteError
+            ? retryDeleteError
+            : `${initialDeleteError} Retry failed: ${retryDeleteError}`;
+          const cleanupNote = cleanupErrors.length > 0
+            ? ` Cleanup attempted, but ${cleanupErrors.length} cleanup step${cleanupErrors.length === 1 ? "" : "s"} failed.`
+            : "";
+          return json(400, {
+            ok: false,
+            error: `${baseError}${cleanupNote}`,
+          });
+        }
+      }
+
+      await logAdminAction(config, authToken, {
+        action: "admin.user.hard_delete",
+        targetType: "user",
+        targetId: userId,
+        metadata: {
+          via: "admin-iam-edge",
+          target_email: targetEmail,
+          owned_trips_before_delete: ownedTripsBeforeDelete,
+          trip_impact: (ownedTripsBeforeDelete || 0) > 0 ? "owned_trips_deleted" : "no_owned_trips",
+          cleanup_attempted: cleanupAttempted,
+          cleanup_error_count: cleanupErrors.length,
+          delete_mode: cleanupAttempted ? "cleanup_then_auth_delete" : "auth_delete_only",
+        },
+      });
+      return json(200, { ok: true, data: { userId } });
+    } catch (error) {
+      return json(500, {
+        ok: false,
+        error: `Hard delete runtime failure: ${toErrorMessage(error)}`,
+      });
+    }
   }
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";

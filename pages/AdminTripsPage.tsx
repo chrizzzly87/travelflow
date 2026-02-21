@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
@@ -288,11 +289,7 @@ export const AdminTripsPage: React.FC = () => {
         if (selectedVisibleTrips.length === 0) return;
         const confirmed = await confirmDialog({
             title: 'Soft delete selected trips',
-            message: [
-                `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
-                '',
-                'Archived trips stay in the database and can be restored later.',
-            ].join('\n'),
+            message: `Archive ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
             confirmLabel: 'Archive',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -317,12 +314,7 @@ export const AdminTripsPage: React.FC = () => {
         if (selectedVisibleTrips.length === 0) return;
         const confirmed = await confirmDialog({
             title: 'Hard delete selected trips',
-            message: [
-                `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}?`,
-                '',
-                'This is permanent and removes all linked versions/shares/collaborators for those trips.',
-                'This cannot be undone.',
-            ].join('\n'),
+            message: `Hard-delete ${selectedVisibleTrips.length} selected trip${selectedVisibleTrips.length === 1 ? '' : 's'}? This cannot be undone.`,
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -497,10 +489,7 @@ export const AdminTripsPage: React.FC = () => {
                 </article>
             </section>
 
-            <section
-                className={`relative mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
-                aria-busy={isSaving}
-            >
+            <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Trips</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -583,25 +572,21 @@ export const AdminTripsPage: React.FC = () => {
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <a
-                                            href={`/trip/${encodeURIComponent(trip.trip_id)}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            title="Open trip in a new tab"
-                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
-                                        >
-                                            <span className="truncate">{trip.title || trip.trip_id}</span>
-                                            <ArrowSquareOut size={12} />
-                                        </a>
-                                        <div className="text-xs text-slate-500">{trip.trip_id}</div>
                                         <button
                                             type="button"
                                             onClick={() => openTripDrawer(trip.trip_id)}
-                                            className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 hover:border-accent-300 hover:text-accent-700"
                                             title="Open trip details drawer"
+                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
                                         >
-                                            Open drawer
+                                            <span className="truncate">{trip.title || trip.trip_id}</span>
                                         </button>
+                                        <div className="text-xs text-slate-500">
+                                            <CopyableUuid
+                                                value={trip.trip_id}
+                                                textClassName="max-w-[320px] truncate text-xs"
+                                                hintClassName="text-[9px]"
+                                            />
+                                        </div>
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-600">
                                         <button
@@ -613,8 +598,13 @@ export const AdminTripsPage: React.FC = () => {
                                             <span className="block truncate text-sm text-slate-700 group-hover:text-accent-700 group-hover:underline">
                                                 {trip.owner_email || trip.owner_id}
                                             </span>
-                                            <span className="block truncate text-[11px] text-slate-500">
-                                                {trip.owner_id}
+                                            <span className="block text-[11px] text-slate-500">
+                                                <CopyableUuid
+                                                    value={trip.owner_id}
+                                                    focusable={false}
+                                                    textClassName="max-w-[260px] truncate text-[11px]"
+                                                    hintClassName="text-[9px]"
+                                                />
                                             </span>
                                         </button>
                                     </td>
@@ -676,14 +666,6 @@ export const AdminTripsPage: React.FC = () => {
                 {isSaving && (
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
                 )}
-                {isSaving && (
-                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
-                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-                            <SpinnerGap size={13} className="animate-spin" />
-                            Applying changes...
-                        </span>
-                    </div>
-                )}
             </section>
 
             <Drawer
@@ -724,10 +706,16 @@ export const AdminTripsPage: React.FC = () => {
                                 <section className="space-y-3 rounded-xl border border-slate-200 p-3">
                                     <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip metadata</h3>
                                     <div className="space-y-1 text-sm text-slate-700">
-                                        <div className="break-all"><span className="font-semibold text-slate-800">Trip ID:</span> {selectedTripForDrawer.trip_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">Trip ID:</span>{' '}
+                                            <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Status:</span> {selectedTripForDrawer.status}</div>
                                         <div><span className="font-semibold text-slate-800">Owner:</span> {selectedTripForDrawer.owner_email || selectedTripForDrawer.owner_id}</div>
-                                        <div className="break-all"><span className="font-semibold text-slate-800">Owner ID:</span> {selectedTripForDrawer.owner_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">Owner ID:</span>{' '}
+                                            <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Expires at:</span> {selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</div>
                                         <div><span className="font-semibold text-slate-800">Source:</span> {selectedTripForDrawer.source_kind || 'n/a'}</div>
                                         <div><span className="font-semibold text-slate-800">Created:</span> {new Date(selectedTripForDrawer.created_at).toLocaleString()}</div>
@@ -784,7 +772,11 @@ export const AdminTripsPage: React.FC = () => {
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
                             <h2 className="text-base font-black text-slate-900">Owner details</h2>
-                            <p className="truncate text-sm text-slate-600">{selectedOwnerId || 'No owner selected'}</p>
+                            <p className="truncate text-sm text-slate-600">
+                                {selectedOwnerId
+                                    ? <CopyableUuid value={selectedOwnerId} textClassName="max-w-[360px] truncate text-sm" />
+                                    : 'No owner selected'}
+                            </p>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {isLoadingOwnerProfile ? (
@@ -797,7 +789,10 @@ export const AdminTripsPage: React.FC = () => {
                                     <div className="space-y-1 text-sm text-slate-700">
                                         <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedOwnerProfile)}</div>
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedOwnerProfile.email || 'No email'}</div>
-                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedOwnerProfile.user_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                            <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Role:</span> {selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</div>
                                         <div><span className="font-semibold text-slate-800">Tier:</span> {selectedOwnerProfile.tier_key}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel(selectedOwnerProfile.account_status)}</div>

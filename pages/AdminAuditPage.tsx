@@ -15,6 +15,7 @@ import {
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
+import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { useAppDialog } from '../components/AppDialogProvider';
 
@@ -593,7 +594,13 @@ export const AdminAuditPage: React.FC = () => {
                                 return (
                                     <tr key={log.id} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
                                         <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-xs text-slate-700">{log.actor_email || log.actor_user_id || 'unknown'}</td>
+                                        <td className="px-3 py-2 text-xs text-slate-700">
+                                            {log.actor_email || (
+                                                log.actor_user_id
+                                                    ? <CopyableUuid value={log.actor_user_id} textClassName="max-w-[220px] truncate text-xs" hintClassName="text-[9px]" />
+                                                    : 'unknown'
+                                            )}
+                                        </td>
                                         <td className="px-3 py-2 text-xs">
                                             <span
                                                 className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}
@@ -638,9 +645,15 @@ export const AdminAuditPage: React.FC = () => {
                                                 )}
                                             </div>
                                             <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
-                                                <span className="max-w-[220px] truncate font-mono" title={log.target_id || 'n/a'}>
-                                                    {log.target_id || 'n/a'}
-                                                </span>
+                                                {log.target_id
+                                                    ? (
+                                                        <CopyableUuid
+                                                            value={log.target_id}
+                                                            textClassName="max-w-[220px] truncate text-[11px]"
+                                                            hintClassName="text-[9px]"
+                                                        />
+                                                    )
+                                                    : <span className="max-w-[220px] truncate font-mono">n/a</span>}
                                                 {log.target_id && (
                                                     <button
                                                         type="button"
@@ -745,7 +758,11 @@ export const AdminAuditPage: React.FC = () => {
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
                             <h2 className="text-base font-black text-slate-900">User details</h2>
-                            <p className="truncate text-sm text-slate-600">{userIdentity.email || userIdentity.userId}</p>
+                            <p className="truncate text-sm text-slate-600">
+                                {userIdentity.email || (
+                                    <CopyableUuid value={userIdentity.userId} textClassName="max-w-[360px] truncate text-sm" />
+                                )}
+                            </p>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {userDrawerError && (
@@ -764,7 +781,10 @@ export const AdminAuditPage: React.FC = () => {
                                         <div className="space-y-1 text-sm text-slate-700">
                                             <div><span className="font-semibold text-slate-800">Name:</span> {userIdentity.name || 'n/a'}</div>
                                             <div><span className="font-semibold text-slate-800">Email:</span> {userIdentity.email || 'No email'}</div>
-                                            <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {userIdentity.userId}</div>
+                                            <div className="break-all">
+                                                <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                                <CopyableUuid value={userIdentity.userId} textClassName="break-all text-sm" />
+                                            </div>
                                             <div><span className="font-semibold text-slate-800">Role:</span> {userIdentity.role || 'n/a'}</div>
                                             <div><span className="font-semibold text-slate-800">Tier:</span> {userIdentity.tier || 'n/a'}</div>
                                             <div>
@@ -837,7 +857,11 @@ export const AdminAuditPage: React.FC = () => {
                     <div className="flex h-full flex-col">
                         <div className="border-b border-slate-200 px-5 py-4">
                             <h2 className="text-base font-black text-slate-900">Trip details</h2>
-                            <p className="truncate text-sm text-slate-600">{tripIdentity.title || tripIdentity.tripId}</p>
+                            <p className="truncate text-sm text-slate-600">
+                                {tripIdentity.title || (
+                                    <CopyableUuid value={tripIdentity.tripId} textClassName="max-w-[360px] truncate text-sm" />
+                                )}
+                            </p>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4">
                             {tripDrawerError && (
@@ -854,10 +878,18 @@ export const AdminAuditPage: React.FC = () => {
                                     <section className="space-y-3 rounded-xl border border-slate-200 p-3">
                                         <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip metadata</h3>
                                         <div className="space-y-1 text-sm text-slate-700">
-                                            <div className="break-all"><span className="font-semibold text-slate-800">Trip ID:</span> {tripIdentity.tripId}</div>
+                                            <div className="break-all">
+                                                <span className="font-semibold text-slate-800">Trip ID:</span>{' '}
+                                                <CopyableUuid value={tripIdentity.tripId} textClassName="break-all text-sm" />
+                                            </div>
                                             <div><span className="font-semibold text-slate-800">Status:</span> {tripIdentity.status || 'n/a'}</div>
                                             <div><span className="font-semibold text-slate-800">Owner:</span> {tripIdentity.ownerEmail || tripIdentity.ownerId || 'n/a'}</div>
-                                            {tripIdentity.ownerId && <div className="break-all"><span className="font-semibold text-slate-800">Owner ID:</span> {tripIdentity.ownerId}</div>}
+                                            {tripIdentity.ownerId && (
+                                                <div className="break-all">
+                                                    <span className="font-semibold text-slate-800">Owner ID:</span>{' '}
+                                                    <CopyableUuid value={tripIdentity.ownerId} textClassName="break-all text-sm" />
+                                                </div>
+                                            )}
                                             <div><span className="font-semibold text-slate-800">Expires at:</span> {tripIdentity.expiresAt ? new Date(tripIdentity.expiresAt).toLocaleString() : 'Not set'}</div>
                                             <div><span className="font-semibold text-slate-800">Source:</span> {tripIdentity.sourceKind || 'n/a'}</div>
                                             <div><span className="font-semibold text-slate-800">Created:</span> {tripIdentity.createdAt ? new Date(tripIdentity.createdAt).toLocaleString() : 'n/a'}</div>

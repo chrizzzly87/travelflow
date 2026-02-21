@@ -73,6 +73,15 @@ const requireSupabase = () => {
     return supabase;
 };
 
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
+
+const normalizeProfileGender = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
+};
+
 export const adminListUsers = async (
     options: {
         limit?: number;
@@ -129,7 +138,7 @@ export const adminUpdateUserProfile = async (
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
         p_username: payload.username ?? null,
-        p_gender: payload.gender ?? null,
+        p_gender: normalizeProfileGender(payload.gender),
         p_country: payload.country ?? null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
@@ -299,9 +308,46 @@ const callAdminIdentityApi = async (
         body: JSON.stringify(body),
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const responseText = await response.text().catch(() => '');
+    const payload = responseText
+        ? (() => {
+            try {
+                return JSON.parse(responseText);
+            } catch {
+                return {};
+            }
+        })()
+        : {};
     if (!response.ok || payload?.ok === false) {
-        const errorMessage = typeof payload?.error === 'string' ? payload.error : 'Admin identity API request failed.';
+        const looksLikeViteNotFoundPage = response.status === 404
+            && /<\s*html|<\s*!doctype\s+html/i.test(responseText);
+        const payloadError =
+            typeof payload?.error === 'string'
+                ? payload.error
+                : typeof payload?.message === 'string'
+                    ? payload.message
+                    : payload?.error && typeof payload.error === 'object' && typeof payload.error.message === 'string'
+                        ? payload.error.message
+                        : null;
+        const fallbackText = responseText.trim();
+        const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
+            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            : null;
+        const looksLikeViteProxyFailure = import.meta.env.DEV
+            && response.status === 500
+            && !payloadError
+            && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
+        const devProxyFailureMessage = looksLikeViteProxyFailure
+            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `npm run dev:netlify` before testing delete/invite/create.'
+            : null;
+        const reason = payloadError
+            || devNotFoundMessage
+            || devProxyFailureMessage
+            || normalizedFallback
+            || response.statusText
+            || 'Admin identity API request failed.';
+        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
     return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
