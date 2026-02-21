@@ -2,10 +2,11 @@
   "name": "travelflow",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@10.18.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:netlify": "npx netlify dev --port 8888 --target-port 5173",
+    "dev:netlify": "pnpm dlx netlify dev --port 8888 --target-port 5173",
     "i18n:validate": "node scripts/validate-i18n.mjs",
     "updates:validate": "node scripts/validate-updates.mjs",
     "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",
@@ -21,8 +22,11 @@
     "build:blog-images": "tsx scripts/build-blog-images.ts",
     "blog:images:optimize": "tsx scripts/build-blog-images.ts --skip-generation",
     "build:image-placeholders": "tsx scripts/build-image-placeholders.ts",
-    "release:prepare": "npm run build:blog-images && npm run build",
-    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run build:image-placeholders && npm run i18n:validate && npm run plans:validate-sync && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:core": "vitest run --coverage --reporter=default",
+    "release:prepare": "pnpm build:blog-images && pnpm build",
+    "build": "pnpm test:core && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },
@@ -30,6 +34,7 @@
     "@google/genai": "latest",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-checkbox": "^1.2.3",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/supabase-js": "^2.49.1",
@@ -57,11 +62,14 @@
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "jsdom": "^26.0.0",
     "sharp": "^0.34.2",
     "tailwindcss": "^4.1.18",
     "terser": "^5.46.0",
     "tsx": "^4.19.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^2.1.8"
   }
 }

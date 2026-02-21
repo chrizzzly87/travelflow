@@ -51,11 +51,11 @@ Suggested extension shape:
 ## Tier Source Of Truth (V1)
 
 1. Product-tier defaults come from `config/planCatalog.ts`.
-2. Database plan seed should be generated from that file (`npm run plans:generate-seed`).
+2. Database plan seed should be generated from that file (`pnpm plans:generate-seed`).
 3. Pricing UI reads tier limits directly from `planCatalog` with no runtime DB request.
 4. If plan limits change, run:
-   - `npm run plans:generate-seed`
-   - `npm run plans:validate-sync`
+   - `pnpm plans:generate-seed`
+   - `pnpm plans:validate-sync`
 
 ## Debugging
 - Browser helper in trip view: `toggleExpired()`

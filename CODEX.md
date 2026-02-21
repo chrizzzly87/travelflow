@@ -11,7 +11,7 @@
 
 ## Skill usage policy
 - For React performance or refactor work, consult `vercel-react-best-practices` and apply only the rules that materially affect the task.
-- After substantial React changes, run `npx -y react-doctor@latest . --verbose --diff`; fix errors before merge and prioritize warnings by risk.
+- After substantial React changes, run `pnpm dlx react-doctor@latest . --verbose --diff`; fix errors before merge and prioritize warnings by risk.
 - Use `find-skills` only for targeted capability discovery when existing project workflows/skills are insufficient.
 - Do not overuse skills for routine edits that are already covered by current repo conventions.
 
@@ -34,8 +34,11 @@ Rules:
 - Do not finish a feature task without updating release markdown when relevant.
 
 ## Validation
-Run `npm run updates:validate` (or `npm run build`, which includes validation) before final handoff when possible.
-For locale changes, run `npm run i18n:validate` to enforce namespace parity and ICU placeholder syntax.
+Run `pnpm updates:validate` (or `pnpm build`, which includes validation) before final handoff when possible.
+For locale changes, run `pnpm i18n:validate` to enforce namespace parity and ICU placeholder syntax.
+For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` before final handoff when feasible.
+For bug fixes, include a regression test that fails pre-fix and passes post-fix.
+Docs-only, copy-only, and style-only edits are exempt from mandatory new tests.
 
 ## Direction-Safety Requirement
 - For new or updated UI components, check whether CSS logical properties are appropriate for direction safety (`inline`, `block`, `start`, `end`).

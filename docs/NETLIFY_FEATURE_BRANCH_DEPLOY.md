@@ -27,16 +27,16 @@ Optional compatibility keys:
 ## Common caveats
 - Deploy Preview is commit-based: no new preview build appears until branch changes are pushed.
 - Edge routes (`/api/*` via Netlify Edge Functions) only behave correctly in Netlify Preview/Production or `netlify dev`.
-- If preview behaves differently from local `vite`, run `npx netlify dev` for local parity.
+- If preview behaves differently from local `vite`, run `pnpm dlx netlify dev` for local parity.
 - Missing env keys in Deploy Preview context can cause partial behavior (for example generation timeout/failure or OG/meta fallbacks).
 
 ## Manual CLI deploy with env parity
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
 
 1. Link the worktree once:
-   - `npx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
+   - `pnpm dlx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
 2. Build + deploy with `.env.local` safely parsed:
-   - `npx dotenv-cli -e .env.local -- npx netlify deploy --build --alias <alias-name>`
+   - `pnpm dlx dotenv-cli -e .env.local -- pnpm dlx netlify deploy --build --alias <alias-name>`
 3. Reuse the same alias to update an existing preview URL.
 
 Notes:
