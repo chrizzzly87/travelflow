@@ -16,6 +16,7 @@ import {
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { FlagIcon } from '../components/flags/FlagIcon';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { useDbSync } from '../hooks/useDbSync';
 import { AppLanguage } from '../types';
 import { buildCreateTripUrl } from '../utils';
@@ -466,17 +467,19 @@ export const CreateTripJourneyArchitectLabPage: React.FC<CreateTripJourneyArchit
 
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <div>
-                                            <label className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Budget</label>
-                                            <select
-                                                value={budget}
-                                                onChange={(event) => setBudget(event.target.value as 'Low' | 'Medium' | 'High' | 'Luxury')}
-                                                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
-                                            >
-                                                <option>Low</option>
-                                                <option>Medium</option>
-                                                <option>High</option>
-                                                <option>Luxury</option>
-                                            </select>
+                                            <label htmlFor="journey-architect-budget" className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Budget</label>
+                                            <Select value={budget} onValueChange={(value) => setBudget(value as 'Low' | 'Medium' | 'High' | 'Luxury')}>
+                                                <SelectTrigger id="journey-architect-budget" className="mt-2 w-full rounded-xl border-slate-200 bg-slate-50 text-sm focus:border-accent-400 focus:ring-accent-400">
+                                                    <span>{budget}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Low', 'Medium', 'High', 'Luxury'].map((option) => (
+                                                        <SelectItem key={`journey-budget-${option}`} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
                                             <label className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">Travel brief</label>

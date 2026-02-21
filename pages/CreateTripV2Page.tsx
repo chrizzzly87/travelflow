@@ -23,6 +23,7 @@ import { CountryTag } from '../components/CountryTag';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { generateItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
@@ -611,21 +612,34 @@ export const CreateTripV2Page: React.FC<CreateTripV2PageProps> = ({ onTripGenera
                                     </div>
                                     <div className="grid grid-cols-3 gap-3">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Budget</label>
-                                            <select value={budget} onChange={(e) => setBudget(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400 outline-none">
-                                                <option>Budget</option>
-                                                <option>Medium</option>
-                                                <option>Premium</option>
-                                                <option>Luxury</option>
-                                            </select>
+                                            <label htmlFor="create-trip-v2-budget" className="block text-xs font-medium text-gray-600 mb-1">Budget</label>
+                                            <Select value={budget} onValueChange={setBudget}>
+                                                <SelectTrigger id="create-trip-v2-budget" className="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-accent-400 focus:ring-accent-400">
+                                                    <span>{budget}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Budget', 'Medium', 'Premium', 'Luxury'].map((option) => (
+                                                        <SelectItem key={`v2-budget-${option}`} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Pace</label>
-                                            <select value={pace} onChange={(e) => setPace(e.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400 outline-none">
-                                                <option>Relaxed</option>
-                                                <option>Balanced</option>
-                                                <option>Intensive</option>
-                                            </select>
+                                            <label htmlFor="create-trip-v2-pace" className="block text-xs font-medium text-gray-600 mb-1">Pace</label>
+                                            <Select value={pace} onValueChange={setPace}>
+                                                <SelectTrigger id="create-trip-v2-pace" className="w-full rounded-xl border-gray-200 bg-white text-sm focus:border-accent-400 focus:ring-accent-400">
+                                                    <span>{pace}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Relaxed', 'Balanced', 'Intensive'].map((option) => (
+                                                        <SelectItem key={`v2-pace-${option}`} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">Stops</label>

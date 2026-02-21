@@ -3,11 +3,13 @@ import { Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
-import { LOCALE_DROPDOWN_ORDER, LOCALE_LABELS, normalizeLocale } from '../config/locales';
+import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../config/locales';
 import type { AppLanguage } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentUserProfile, updateCurrentUserProfile, type ProfileGender } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { FlagIcon } from '../components/flags/FlagIcon';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 
 type Mode = 'settings' | 'onboarding';
 
@@ -45,6 +47,17 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
 
 const hasMissingRequiredField = (form: ProfileFormState): boolean =>
     REQUIRED_FIELDS.some((key) => !String(form[key] || '').trim());
+
+const PROFILE_GENDER_UNSPECIFIED = 'unspecified';
+type ProfileGenderSelectValue = Exclude<ProfileGender, ''> | typeof PROFILE_GENDER_UNSPECIFIED;
+
+const toProfileGenderSelectValue = (value: ProfileGender): ProfileGenderSelectValue => (
+    value === '' ? PROFILE_GENDER_UNSPECIFIED : value
+);
+
+const fromProfileGenderSelectValue = (value: ProfileGenderSelectValue): ProfileGender => (
+    value === PROFILE_GENDER_UNSPECIFIED ? '' : value
+);
 
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
@@ -200,19 +213,28 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         placeholder="Optional public handle"
                                     />
                                 </label>
-                                <label className="space-y-1">
+                                <label htmlFor="profile-gender-select" className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
-                                    <select
-                                        value={form.gender}
-                                        onChange={(event) => updateField('gender', event.target.value as ProfileGender)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                    <Select
+                                        value={toProfileGenderSelectValue(form.gender)}
+                                        onValueChange={(value) => updateField('gender', fromProfileGenderSelectValue(value as ProfileGenderSelectValue))}
                                     >
-                                        {PROFILE_GENDER_OPTIONS.map((option) => (
-                                            <option key={`gender-${option.value || 'empty'}`} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger id="profile-gender-select" className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                            <span>
+                                                {PROFILE_GENDER_OPTIONS.find((option) => option.value === form.gender)?.label ?? PROFILE_GENDER_OPTIONS[0].label}
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {PROFILE_GENDER_OPTIONS.map((option) => (
+                                                <SelectItem
+                                                    key={`gender-${option.value || PROFILE_GENDER_UNSPECIFIED}`}
+                                                    value={option.value === '' ? PROFILE_GENDER_UNSPECIFIED : option.value}
+                                                >
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </label>
                                 <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country *</span>
@@ -230,19 +252,29 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                     />
                                 </label>
-                                <label className="space-y-1 md:col-span-2">
+                                <label htmlFor="profile-language-select" className="space-y-1 md:col-span-2">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred language *</span>
-                                    <select
+                                    <Select
                                         value={form.preferredLanguage}
-                                        onChange={(event) => updateField('preferredLanguage', event.target.value as AppLanguage)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        onValueChange={(value) => updateField('preferredLanguage', value as AppLanguage)}
                                     >
-                                        {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                                            <option key={`profile-locale-${locale}`} value={locale}>
-                                                {LOCALE_LABELS[locale]}
-                                            </option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger id="profile-language-select" className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                            <span className="inline-flex items-center gap-2">
+                                                <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
+                                                <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {LOCALE_DROPDOWN_ORDER.map((locale) => (
+                                                <SelectItem key={`profile-locale-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
+                                                    <span className="inline-flex items-center gap-2">
+                                                        <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
+                                                        <span>{LOCALE_LABELS[locale]}</span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </label>
                             </div>
 

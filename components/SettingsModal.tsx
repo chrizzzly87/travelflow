@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Layout, Map, Globe, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AppLanguage, MapStyle } from '../types';
-import { LOCALE_DROPDOWN_ORDER, LOCALE_LABELS } from '../config/locales';
+import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS } from '../config/locales';
 import { AppModal } from './ui/app-modal';
+import { FlagIcon } from './flags/FlagIcon';
+import { Select, SelectContent, SelectItem, SelectTrigger } from './ui/select';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -175,18 +177,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 </div>
                                 <div>
                                      <label htmlFor={appLanguageSelectId} className="block text-sm font-bold text-gray-700 mb-1">{t('settings:language.appLanguage')}</label>
-                                     <select
-                                        id={appLanguageSelectId}
-                                        value={appLanguage}
-                                        onChange={(e) => onAppLanguageChange?.(e.target.value as AppLanguage)}
-                                        className="w-full p-2 border border-gray-300 rounded-lg bg-white"
-                                     >
-                                        {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                                            <option key={locale} value={locale}>
-                                                {LOCALE_LABELS[locale]}
-                                            </option>
-                                        ))}
-                                     </select>
+                                     <Select value={appLanguage} onValueChange={(value) => onAppLanguageChange?.(value as AppLanguage)}>
+                                        <SelectTrigger id={appLanguageSelectId} className="w-full border-gray-300 bg-white text-sm">
+                                            <span className="inline-flex items-center gap-2">
+                                                <FlagIcon code={LOCALE_FLAGS[appLanguage]} size="sm" className="shrink-0" />
+                                                <span>{LOCALE_LABELS[appLanguage]}</span>
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {LOCALE_DROPDOWN_ORDER.map((locale) => (
+                                                <SelectItem key={`settings-locale-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
+                                                    <span className="inline-flex items-center gap-2">
+                                                        <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
+                                                        <span>{LOCALE_LABELS[locale]}</span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                     </Select>
                                 </div>
                             </div>
                         )}

@@ -21,6 +21,7 @@ import { CountryTag } from '../components/CountryTag';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { MonthSeasonStrip } from '../components/MonthSeasonStrip';
 import { Checkbox } from '../components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { generateItinerary, generateWizardItinerary } from '../services/geminiService';
 import { ITimelineItem, ITrip, TripPrefillData } from '../types';
 import {
@@ -651,29 +652,34 @@ export const CreateTripV1Page: React.FC<CreateTripV1PageProps> = ({ onTripGenera
 
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Budget</label>
-                                            <select
-                                                value={budget}
-                                                onChange={(e) => setBudget(e.target.value)}
-                                                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent-400 focus:ring-1 focus:ring-accent-400 outline-none"
-                                            >
-                                                <option>Budget</option>
-                                                <option>Medium</option>
-                                                <option>Premium</option>
-                                                <option>Luxury</option>
-                                            </select>
+                                            <label htmlFor="create-trip-v1-budget" className="block text-xs font-medium text-gray-600 mb-1">Budget</label>
+                                            <Select value={budget} onValueChange={setBudget}>
+                                                <SelectTrigger id="create-trip-v1-budget" className="w-full rounded-xl border-gray-200 bg-white text-sm text-gray-900 focus:border-accent-400 focus:ring-accent-400">
+                                                    <span>{budget}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Budget', 'Medium', 'Premium', 'Luxury'].map((option) => (
+                                                        <SelectItem key={`v1-budget-${option}`} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-medium text-gray-600 mb-1">Pace</label>
-                                            <select
-                                                value={pace}
-                                                onChange={(e) => setPace(e.target.value)}
-                                                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-accent-400 focus:ring-1 focus:ring-accent-400 outline-none"
-                                            >
-                                                <option>Relaxed</option>
-                                                <option>Balanced</option>
-                                                <option>Intensive</option>
-                                            </select>
+                                            <label htmlFor="create-trip-v1-pace" className="block text-xs font-medium text-gray-600 mb-1">Pace</label>
+                                            <Select value={pace} onValueChange={setPace}>
+                                                <SelectTrigger id="create-trip-v1-pace" className="w-full rounded-xl border-gray-200 bg-white text-sm text-gray-900 focus:border-accent-400 focus:ring-accent-400">
+                                                    <span>{pace}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Relaxed', 'Balanced', 'Intensive'].map((option) => (
+                                                        <SelectItem key={`v1-pace-${option}`} value={option}>
+                                                            {option}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-medium text-gray-600 mb-1">Stops</label>
