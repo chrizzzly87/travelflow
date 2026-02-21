@@ -1,11 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Article, CopySimple, RocketLaunch, Sparkle, WarningCircle } from '@phosphor-icons/react';
-import { AppLanguage, ITrip, ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus, IViewSettings, ShareMode } from '../types';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AppLanguage, ITrip, ITimelineItem, MapColorMode, RouteStatus, IViewSettings, ShareMode } from '../types';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import {
-    Pencil, Share2, Route, Printer, Calendar, List,
-    ZoomIn, ZoomOut, Plane, History, Star, Info, Loader2
+    Calendar, List,
+    ZoomIn, ZoomOut
 } from 'lucide-react';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, applyCityPaletteToItems, buildRouteCacheKey, buildShareUrl, formatDistance, getActivityColorByTypes, getTimelineBounds, getTravelLegMetricsForItem, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeActivityTypes, normalizeCityColors, normalizeMapColorMode, reorderSelectedCities } from '../utils';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -22,7 +21,7 @@ import { DB_ENABLED } from '../config/db';
 import {
     buildPaywalledTripDisplay,
 } from '../config/paywall';
-import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { trackEvent } from '../services/analyticsService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
@@ -37,6 +36,9 @@ import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
 import { useTripShareLifecycle } from './tripview/useTripShareLifecycle';
 import { useTripViewSettingsSync } from './tripview/useTripViewSettingsSync';
+import { useTripAdminOverrideState } from './tripview/useTripAdminOverrideState';
+import { useTripEditModalState } from './tripview/useTripEditModalState';
+import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import {
     ChangeTone,
     getToneMeta,
@@ -44,6 +46,9 @@ import {
     useTripHistoryPresentation,
 } from './tripview/useTripHistoryPresentation';
 import { TripTimelineCanvas } from './tripview/TripTimelineCanvas';
+import { TripViewHeader } from './tripview/TripViewHeader';
+import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
+import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
 
 interface ToastState {
     tone: ChangeTone;
@@ -164,6 +169,13 @@ const formatTripDateValue = (date: Date): string => {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
+};
+
+const getPinchDistance = (touches: React.TouchList): number | null => {
+    if (touches.length < 2) return null;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.hypot(dx, dy);
 };
 
 const normalizeNegativeOffsetsForTrip = (
@@ -358,7 +370,7 @@ export const TripView: React.FC<TripViewProps> = ({
         isTripDetailRoute,
     });
     const isAdminFallbackView = adminAccess?.source === 'admin_fallback';
-    const [adminOverrideEnabled, setAdminOverrideEnabled] = useState(false);
+    const { adminOverrideEnabled, setAdminOverrideEnabled } = useTripAdminOverrideState();
     const isTripLockedByArchive = (trip.status || 'active') === 'archived';
     const isPaywallLocked = isTripLockedByExpiry && !isAdminFallbackView;
     const effectiveReadOnly = readOnly || (isAdminFallbackView && !adminOverrideEnabled);
@@ -482,70 +494,33 @@ export const TripView: React.FC<TripViewProps> = ({
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
-    const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
-       if (initialViewSettings?.mapStyle) return initialViewSettings.mapStyle;
-       if (typeof window !== 'undefined') return (localStorage.getItem('tf_map_style') as MapStyle) || 'standard';
-       return 'standard';
-    });
-    const [routeMode, setRouteMode] = useState<RouteMode>(() => {
-       if (initialViewSettings?.routeMode) return initialViewSettings.routeMode;
-       if (typeof window !== 'undefined') return (localStorage.getItem('tf_route_mode') as RouteMode) || 'simple';
-       return 'simple';
-    });
-    const [showCityNames, setShowCityNames] = useState<boolean>(() => {
-       if (initialViewSettings?.showCityNames !== undefined) return initialViewSettings.showCityNames;
-       if (typeof window !== 'undefined') {
-           const stored = localStorage.getItem('tf_city_names');
-           if (stored !== null) return stored === 'true';
-       }
-       return true;
-    });
-    // Layout State
-    const [layoutMode, setLayoutMode] = useState<'vertical' | 'horizontal'>(() => {
-        if (initialViewSettings) return initialViewSettings.layoutMode;
-        if (typeof window !== 'undefined') return (localStorage.getItem('tf_layout_mode') as 'vertical' | 'horizontal') || 'horizontal';
-        return 'horizontal';
-    });
-
-    const [timelineView, setTimelineView] = useState<'horizontal' | 'vertical'>(() => {
-        if (initialViewSettings) return initialViewSettings.timelineView;
-        if (typeof window !== 'undefined') return (localStorage.getItem('tf_timeline_view') as 'horizontal' | 'vertical') || 'horizontal';
-        return 'horizontal';
-    });
-
-    const [sidebarWidth, setSidebarWidth] = useState(() => {
-        if (initialViewSettings && initialViewSettings.sidebarWidth) return initialViewSettings.sidebarWidth;
-        if (typeof window !== 'undefined') return parseInt(localStorage.getItem('tf_sidebar_width') || '550', 10);
-        return 550;
-    });
-
-    const [timelineHeight, setTimelineHeight] = useState(() => {
-        if (initialViewSettings && initialViewSettings.timelineHeight) return initialViewSettings.timelineHeight;
-        if (typeof window !== 'undefined') return parseInt(localStorage.getItem('tf_timeline_height') || '400', 10);
-        return 400;
+    const {
+        layoutMode,
+        setLayoutMode,
+        timelineView,
+        setTimelineView,
+        mapStyle,
+        setMapStyle,
+        routeMode,
+        setRouteMode,
+        showCityNames,
+        setShowCityNames,
+        zoomLevel,
+        setZoomLevel,
+        sidebarWidth,
+        setSidebarWidth,
+        timelineHeight,
+        setTimelineHeight,
+        detailsWidth,
+        setDetailsWidth,
+    } = useTripLayoutControlsState({
+        initialViewSettings,
+        defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
     const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
-
-    const [detailsWidth, setDetailsWidth] = useState(() => {
-        if (typeof window !== 'undefined') {
-            const stored = parseInt(localStorage.getItem('tf_details_width') || `${DEFAULT_DETAILS_WIDTH}`, 10);
-            if (Number.isFinite(stored)) return stored;
-        }
-        return DEFAULT_DETAILS_WIDTH;
-    });
     const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
     const detailsResizeStartXRef = useRef(0);
     const detailsResizeStartWidthRef = useRef(detailsWidth);
-
-    // Zoom
-    const [zoomLevel, setZoomLevel] = useState(() => {
-        if (typeof initialViewSettings?.zoomLevel === 'number') return initialViewSettings.zoomLevel;
-        if (typeof window !== 'undefined') {
-            const stored = parseFloat(localStorage.getItem('tf_zoom_level') || '');
-            if (Number.isFinite(stored)) return stored;
-        }
-        return 1.0;
-    });
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -682,13 +657,14 @@ export const TripView: React.FC<TripViewProps> = ({
         (window as any).__tfOnCommit = (window as any).__tfOnCommit || null;
     }, []);
 
-    // Header State
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitleValue, setEditTitleValue] = useState('');
-
-    // Modals State
-    const [addActivityState, setAddActivityState] = useState<{ isOpen: boolean, dayOffset: number, location: string }>({ isOpen: false, dayOffset: 0, location: '' });
-    const [isAddCityModalOpen, setIsAddCityModalOpen] = useState(false);
+    const {
+        addActivityState,
+        setAddActivityState,
+        isAddCityModalOpen,
+        setIsAddCityModalOpen,
+    } = useTripEditModalState();
 
     const {
         isShareOpen,
@@ -1821,13 +1797,6 @@ export const TripView: React.FC<TripViewProps> = ({
         scheduleCommit(updatedTrip, currentViewSettings);
     }, [canManageTripMetadata, editTitleValue, trip, requireEdit, markUserEdit, setPendingLabel, safeUpdateTrip, scheduleCommit, currentViewSettings]);
 
-    const getPinchDistance = (touches: React.TouchList) => {
-        if (touches.length < 2) return null;
-        const dx = touches[0].clientX - touches[1].clientX;
-        const dy = touches[0].clientY - touches[1].clientY;
-        return Math.hypot(dx, dy);
-    };
-
     const handleTimelineTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
         if (!isMobile || event.touches.length !== 2) return;
         const distance = getPinchDistance(event.touches);
@@ -1921,364 +1890,69 @@ export const TripView: React.FC<TripViewProps> = ({
         <GoogleMapsLoader language={appLanguage} enabled={isMapBootstrapEnabled}>
             <div className="relative h-screen w-screen flex flex-col bg-gray-50 overflow-hidden text-gray-900 font-sans selection:bg-accent-100 selection:text-accent-900">
                 
-                {/* Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-30 shrink-0">
-                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                        <Link
-                            to="/"
-                            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                            title="Go to Homepage"
-                            aria-label="Go to Homepage"
-                        >
-                            <div className="w-8 h-8 bg-accent-600 rounded-lg flex items-center justify-center shadow-accent-200 shadow-lg transform rotate-3">
-                                <Plane className="text-white transform -rotate-3" size={18} fill="currentColor" />
-                            </div>
-                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Travel<span className="text-accent-600">Flow</span></span>
-                        </Link>
-                        <div className="h-6 w-px bg-gray-200 mx-2 hidden sm:block" />
-                        <div className="flex items-start gap-2 min-w-0">
-                            <div className="flex flex-col leading-tight min-w-0">
-                                {!isMobile && isEditingTitle ? (
-                                    <input
-                                        ref={editTitleInputRef}
-                                        value={editTitleValue}
-                                        onChange={e => setEditTitleValue(e.target.value)}
-                                        onBlur={handleCommitTitleEdit}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                handleCommitTitleEdit();
-                                            }
-                                        }}
-                                        className="font-bold text-lg text-gray-900 bg-transparent border-b-2 border-accent-500 outline-none pb-0.5"
-                                    />
-                                ) : !isMobile && canManageTripMetadata ? (
-                                    <button
-                                        type="button"
-                                        className="group flex items-center gap-2 cursor-pointer text-left"
-                                        onClick={handleStartTitleEdit}
-                                        aria-label="Edit trip title"
-                                    >
-                                        <h1
-                                            className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
-                                            style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
-                                        >
-                                            {trip.title}
-                                        </h1>
-                                        <Pencil size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </button>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <h1
-                                            className="font-bold text-lg text-gray-900 truncate max-w-[56vw] sm:max-w-md"
-                                            style={titleViewTransitionName ? ({ viewTransitionName: titleViewTransitionName } as React.CSSProperties) : undefined}
-                                        >
-                                            {trip.title}
-                                        </h1>
-                                    </div>
-                                )}
-                                {!isMobile && <div className="text-xs font-semibold text-accent-600 mt-0.5">{tripSummary}</div>}
-                            </div>
-                            {!isMobile && canManageTripMetadata && (
-                                <button
-                                    type="button"
-                                    onClick={handleToggleFavorite}
-                                    disabled={!canEdit}
-                                    className={`mt-0.5 p-1.5 rounded-lg transition-colors ${canEdit ? 'hover:bg-amber-50' : 'opacity-50 cursor-not-allowed'}`}
-                                    title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                    aria-label={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                                >
-                                    <Star
-                                        size={17}
-                                        className={trip.isFavorite ? 'text-amber-500 fill-amber-400' : 'text-gray-300 hover:text-amber-500'}
-                                    />
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                <TripViewHeader
+                    isMobile={isMobile}
+                    tripTitle={trip.title}
+                    tripSummary={tripSummary}
+                    titleViewTransitionName={titleViewTransitionName}
+                    isEditingTitle={isEditingTitle}
+                    editTitleValue={editTitleValue}
+                    onEditTitleValueChange={setEditTitleValue}
+                    onCommitTitleEdit={handleCommitTitleEdit}
+                    onStartTitleEdit={handleStartTitleEdit}
+                    editTitleInputRef={editTitleInputRef}
+                    canManageTripMetadata={canManageTripMetadata}
+                    canEdit={canEdit}
+                    isFavorite={trip.isFavorite}
+                    onToggleFavorite={handleToggleFavorite}
+                    onHeaderAuthAction={() => {
+                        void handleHeaderAuthAction();
+                    }}
+                    isHeaderAuthSubmitting={isHeaderAuthSubmitting}
+                    canUseAuthenticatedSession={canUseAuthenticatedSession}
+                    onOpenTripInfo={openTripInfoModal}
+                    onPrewarmTripInfo={prewarmTripInfoModal}
+                    onSetPrintMode={() => setViewMode('print')}
+                    onOpenHistoryPanel={openHistoryPanel}
+                    onOpenManager={onOpenManager}
+                    canShare={canShare}
+                    onShare={() => {
+                        void handleShare();
+                    }}
+                    isTripLockedByExpiry={isTripLockedByExpiry}
+                />
 
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void handleHeaderAuthAction();
-                            }}
-                            disabled={isHeaderAuthSubmitting}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                            aria-label={canUseAuthenticatedSession ? 'Logout' : 'Login'}
-                        >
-                            {canUseAuthenticatedSession ? 'Logout' : 'Login'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={openTripInfoModal}
-                            onMouseEnter={prewarmTripInfoModal}
-                            onFocus={prewarmTripInfoModal}
-                            onTouchStart={prewarmTripInfoModal}
-                            className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                            aria-label="Trip information"
-                        >
-                            <Info size={18} />
-                        </button>
-                        {!isMobile && (
-                            <>
-                                <div className="bg-gray-100 p-1 rounded-lg flex items-center mr-1">
-                                    <button onClick={() => setViewMode('print')} className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md" aria-label="Print view">
-                                        <Printer size={18} />
-                                    </button>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        openHistoryPanel('desktop_header');
-                                    }}
-                                    className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                                    aria-label="History"
-                                    {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'desktop_header' })}
-                                >
-                                    <History size={18} />
-                                </button>
-                            </>
-                        )}
-                        {!isMobile && (
-                            <button
-                                onClick={onOpenManager}
-                                className="flex items-center gap-2 rounded-lg font-medium p-2 text-gray-500 hover:bg-gray-100 text-sm"
-                                aria-label="My plans"
-                            >
-                                <Route size={18} />
-                                <span className="hidden lg:inline">My Plans</span>
-                            </button>
-                        )}
-                        {canShare && (
-                            <button
-                                onClick={handleShare}
-                                disabled={isTripLockedByExpiry}
-                                title={isTripLockedByExpiry ? 'Sharing is disabled for expired trips' : undefined}
-                                className={`rounded-lg shadow-sm flex items-center gap-2 text-sm font-medium ${isMobile ? 'p-2' : 'px-4 py-2'} ${
-                                    isTripLockedByExpiry
-                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        : 'bg-accent-600 text-white hover:bg-accent-700'
-                                }`}
-                            >
-                                <Share2 size={16} />
-                                <span className={isMobile ? 'sr-only' : 'hidden sm:inline'}>Share</span>
-                            </button>
-                        )}
-                        {isMobile && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    openHistoryPanel('mobile_header');
-                                }}
-                                className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg"
-                                aria-label="History"
-                                {...getAnalyticsDebugAttributes('app__trip_history--open', { source: 'mobile_header' })}
-                            >
-                                <History size={18} />
-                            </button>
-                        )}
-                        {isMobile && (
-                            <button
-                                onClick={onOpenManager}
-                                className="flex items-center gap-2 rounded-lg font-medium p-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                aria-label="My plans"
-                            >
-                                <Route size={18} />
-                                <span className="sr-only">My Plans</span>
-                            </button>
-                        )}
-                    </div>
-                </header>
-
-                {shareStatus && (
-                    <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
-                        <span>
-                            {shareStatus === 'view' ? 'View-only shared trip' : 'Shared trip · Editing enabled'}
-                        </span>
-                        {shareStatus === 'view' && onCopyTrip && (
-                            <button
-                                type="button"
-                                onClick={onCopyTrip}
-                                className="px-3 py-1 rounded-md bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
-                            >
-                                Copy trip
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {isAdminFallbackView && (
-                    <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-900 sm:px-6">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <p className="font-semibold">
-                                    {adminOverrideEnabled ? 'Admin override editing is enabled.' : 'Admin fallback view is read-only by default.'}
-                                </p>
-                                <p className="mt-1 text-[11px] text-indigo-800">
-                                    Owner: {adminAccess?.ownerEmail || 'No email'} · {adminAccess?.ownerId || 'Unknown user'}
-                                </p>
-                                {isTripLockedByArchive && (
-                                    <p className="mt-1 text-[11px] text-indigo-800">
-                                        This trip is archived and stays read-only here.
-                                    </p>
-                                )}
-                                {isTripLockedByExpiry && (
-                                    <p className="mt-1 text-[11px] text-indigo-800">
-                                        This trip is expired and stays read-only here.
-                                    </p>
-                                )}
-                                {!canEnableAdminOverride && (
-                                    <p className="mt-1 text-[11px] text-indigo-800">
-                                        You do not have trip write permission, so editing cannot be enabled.
-                                    </p>
-                                )}
-                                {hasLoadingItems && (
-                                    <p className="mt-1 text-[11px] text-indigo-800">
-                                        This trip has unfinished generation data, so some itinerary details may be missing.
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {ownerUsersUrl && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            trackEvent('trip_view__admin_owner--open_users', {
-                                                trip_id: trip.id,
-                                                owner_id: adminAccess?.ownerId || null,
-                                            });
-                                            navigate(ownerUsersUrl);
-                                        }}
-                                        className="rounded-md border border-indigo-300 bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-900 hover:bg-indigo-200"
-                                        {...getAnalyticsDebugAttributes('trip_view__admin_owner--open_users', {
-                                            trip_id: trip.id,
-                                            owner_id: adminAccess?.ownerId || null,
-                                        })}
-                                    >
-                                        Open owner drawer
-                                    </button>
-                                )}
-                                <div className="inline-flex items-center gap-2">
-                                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-800">
-                                        Enable editing
-                                    </span>
-                                    <label
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                            adminOverrideEnabled ? 'bg-indigo-600' : 'bg-indigo-300'
-                                        } ${canEnableAdminOverride ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
-                                        {...getAnalyticsDebugAttributes('trip_view__admin_override--toggle', {
-                                            trip_id: trip.id,
-                                            enabled: adminOverrideEnabled,
-                                        })}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={adminOverrideEnabled}
-                                            disabled={!canEnableAdminOverride}
-                                            onChange={(event) => {
-                                                if (!canEnableAdminOverride) return;
-                                                const checked = event.target.checked;
-                                                setAdminOverrideEnabled(checked);
-                                                trackEvent('trip_view__admin_override--toggle', {
-                                                    trip_id: trip.id,
-                                                    enabled: checked,
-                                                });
-                                            }}
-                                        />
-                                        <span
-                                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                                                adminOverrideEnabled ? 'translate-x-5' : 'translate-x-1'
-                                            }`}
-                                        />
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {shareSnapshotMeta && (
-                    <div className="px-4 sm:px-6 py-2 border-b border-accent-200 bg-accent-50 text-accent-900 text-xs flex items-center justify-between gap-3">
-                        <span>
-                            {shareSnapshotMeta.hasNewer
-                                ? 'You are viewing an older snapshot. This trip has newer updates.'
-                                : 'You are viewing a snapshot version of this shared trip.'}
-                        </span>
-                        {shareSnapshotMeta.hasNewer && (
-                            <button
-                                type="button"
-                                onClick={() => navigate(shareSnapshotMeta.latestUrl)}
-                                className="px-3 py-1 rounded-md bg-accent-100 text-accent-900 text-xs font-semibold hover:bg-accent-200"
-                            >
-                                Open latest
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {(tripExpiresAtMs || isTripLockedByExpiry) && !trip.isExample && (
-                    <div
-                        className={`px-4 sm:px-6 py-2 border-b text-xs flex items-center justify-between gap-3 ${
-                            isTripLockedByExpiry
-                                ? 'border-rose-200 bg-rose-50 text-rose-900'
-                                : 'border-sky-200 bg-sky-50 text-sky-900'
-                        }`}
-                    >
-                        <span>
-                            {isPaywallLocked
-                                ? `Trip preview paused${expirationLabel ? ` since ${expirationLabel}` : ''}. Reactivate to unlock full planning mode.`
-                                : isTripLockedByExpiry
-                                    ? `Trip expired${expirationLabel ? ` since ${expirationLabel}` : ''}. It stays read-only until reactivated.`
-                                : `${expirationRelativeLabel || 'Trip access is time-limited'}${expirationLabel ? ` · Ends ${expirationLabel}` : ''}.`}
-                        </span>
-                        {isPaywallLocked && (
-                            <Link
-                                to="/login"
-                                onClick={(event) => handlePaywallLoginClick(event, 'trip_paywall__strip--activate', 'trip_paywall_strip')}
-                                className="px-3 py-1 rounded-md bg-rose-100 text-rose-900 text-xs font-semibold hover:bg-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                            >
-                                Reactivate trip
-                            </Link>
-                        )}
-                    </div>
-                )}
-
-                {exampleTripBanner && (
-                    <div className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[1450] sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[420px]">
-                        <div className="rounded-2xl border border-accent-200 bg-white/95 px-4 py-3 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/85">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Example trip playground</p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900">Explore freely. Copy when you want to keep and edit.</p>
-                            <p className="mt-1 text-xs leading-relaxed text-slate-600">
-                                This itinerary is for illustration only and never saves changes.
-                                {exampleTripBanner.countries.length > 0 && (
-                                    <span> Country focus: {exampleTripBanner.countries.join(', ')}.</span>
-                                )}
-                            </p>
-                            <div className="mt-3 flex flex-wrap justify-end gap-2">
-                                {exampleTripBanner.onCreateSimilarTrip && (
-                                    <button
-                                        type="button"
-                                        onClick={exampleTripBanner.onCreateSimilarTrip}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                    >
-                                        <Sparkle size={14} weight="duotone" />
-                                        Create similar trip
-                                    </button>
-                                )}
-                                {onCopyTrip && (
-                                    <button
-                                        type="button"
-                                        onClick={onCopyTrip}
-                                        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                    >
-                                        <CopySimple size={14} weight="duotone" />
-                                        Copy trip
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
+                <TripViewStatusBanners
+                    shareStatus={shareStatus}
+                    onCopyTrip={onCopyTrip}
+                    isAdminFallbackView={isAdminFallbackView}
+                    adminOverrideEnabled={adminOverrideEnabled}
+                    canEnableAdminOverride={canEnableAdminOverride}
+                    ownerUsersUrl={ownerUsersUrl}
+                    ownerEmail={adminAccess?.ownerEmail}
+                    ownerId={adminAccess?.ownerId}
+                    isTripLockedByArchive={isTripLockedByArchive}
+                    isTripLockedByExpiry={isTripLockedByExpiry}
+                    hasLoadingItems={hasLoadingItems}
+                    onOpenOwnerDrawer={() => {
+                        if (!ownerUsersUrl) return;
+                        navigate(ownerUsersUrl);
+                    }}
+                    onAdminOverrideEnabledChange={setAdminOverrideEnabled}
+                    shareSnapshotMeta={shareSnapshotMeta}
+                    onOpenLatestSnapshot={() => {
+                        if (!shareSnapshotMeta?.latestUrl) return;
+                        navigate(shareSnapshotMeta.latestUrl);
+                    }}
+                    tripExpiresAtMs={tripExpiresAtMs}
+                    isExampleTrip={trip.isExample}
+                    isPaywallLocked={isPaywallLocked}
+                    expirationLabel={expirationLabel}
+                    expirationRelativeLabel={expirationRelativeLabel}
+                    onPaywallLoginClick={handlePaywallLoginClick}
+                    tripId={trip.id}
+                    exampleTripBanner={exampleTripBanner}
+                />
 
                 {/* Main Content */}
                 <main className="flex-1 relative overflow-hidden flex flex-col">
@@ -2626,122 +2300,23 @@ export const TripView: React.FC<TripViewProps> = ({
                         </Suspense>
                     )}
 
-                    {shareStatus === 'view' && onCopyTrip && (
-                        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-[1400]">
-                            <div className="rounded-2xl border border-amber-200 bg-amber-50/95 backdrop-blur px-4 py-3 shadow-lg text-amber-900 text-sm">
-                                <div className="font-semibold">View-only trip</div>
-                                <div className="text-xs text-amber-800 mt-1">
-                                    You can change visual settings, but edits to the itinerary are disabled.
-                                </div>
-                                <div className="mt-3 flex items-center justify-between gap-3">
-                                    <span className="text-[11px] text-amber-700">Copy to edit your own version.</span>
-                                    <button
-                                        type="button"
-                                        onClick={onCopyTrip}
-                                        className="px-3 py-1.5 rounded-lg bg-amber-200 text-amber-900 text-xs font-semibold hover:bg-amber-300"
-                                    >
-                                        Copy trip
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {isPaywallLocked && (
-                        <div className="fixed inset-0 z-[1490] flex items-end sm:items-center justify-center p-3 sm:p-4 pointer-events-none">
-                            <div className="pointer-events-auto w-full max-w-xl rounded-2xl bg-gradient-to-br from-accent-200/60 via-rose-100/70 to-amber-100/80 p-[1px] shadow-2xl">
-                                <div className="relative overflow-hidden rounded-[15px] border border-white/70 bg-white/95 px-5 py-5 backdrop-blur">
-                                    <div className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-accent-200/40 blur-2xl" />
-                                    <div className="pointer-events-none absolute -bottom-16 -left-10 h-44 w-44 rounded-full bg-rose-100/70 blur-2xl" />
-
-                                    <div className="relative flex items-start gap-3.5">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-700">Trip preview paused</p>
-                                            <div className="mt-1 text-lg font-semibold leading-tight text-slate-900">
-                                                Keep this plan alive and unlock every detail
-                                            </div>
-                                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                                                Continue where you left off with a free TravelFlow account.
-                                                You will regain full editing, destination names, and map routing instantly.
-                                            </p>
-                                        </div>
-                                        <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-accent-200 bg-accent-50 text-accent-700">
-                                            <WarningCircle size={20} weight="duotone" />
-                                        </span>
-                                    </div>
-                                    <div className="relative mt-4 flex flex-wrap justify-end gap-2">
-                                        <Link
-                                            to="/faq"
-                                            onClick={() => trackEvent('trip_paywall__overlay--faq', { trip_id: trip.id })}
-                                            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-accent-200 bg-white px-3 text-xs font-semibold text-accent-700 hover:bg-accent-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                        >
-                                            <Article size={14} weight="duotone" />
-                                            Visit FAQ
-                                        </Link>
-                                        <Link
-                                            to="/login"
-                                            onClick={(event) => handlePaywallLoginClick(event, 'trip_paywall__overlay--activate', 'trip_paywall_overlay')}
-                                            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent-600 px-3 text-xs font-semibold text-white hover:bg-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2"
-                                        >
-                                            <RocketLaunch size={14} weight="duotone" />
-                                            Reactivate trip
-                                        </Link>
-                                    </div>
-
-                                    <div className="relative mt-4 border-t border-slate-200 pt-3">
-                                        <p className="text-[11px] leading-relaxed text-slate-500">
-                                            {expirationLabel ? `Expired on ${expirationLabel}. ` : ''}
-                                            Preview mode stays visible, while advanced planning controls unlock after activation.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {showGenerationOverlay && (
-                        <div className="pointer-events-none absolute inset-0 z-[1800] flex items-center justify-center p-4 sm:p-6">
-                            <div className="w-full max-w-xl rounded-2xl border border-accent-100 bg-white/95 shadow-xl backdrop-blur-sm px-5 py-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-full bg-accent-100 text-accent-600 flex items-center justify-center shrink-0">
-                                        <Loader2 size={18} className="animate-spin" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-semibold text-accent-900 truncate">Planning your trip</div>
-                                        <div className="text-xs text-gray-600 truncate">{generationProgressMessage}</div>
-                                    </div>
-                                </div>
-                                <div className="mt-3 text-xs text-gray-500">
-                                    {loadingDestinationSummary} • {tripMeta.dateRange} • {tripMeta.totalDaysLabel} days
-                                </div>
-                                <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                                    <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                     {/* Toast */}
-                     {!suppressToasts && toastState && activeToastMeta && (
-                        <div className={`fixed bottom-6 right-6 z-[1600] w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border bg-white/95 shadow-2xl backdrop-blur px-4 py-3 ${activeToastMeta.toastBorderClass}`}>
-                            <div className="flex items-start gap-3">
-                                <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${activeToastMeta.iconClass}`}>
-                                    <activeToastMeta.Icon size={16} />
-                                </div>
-                                <div className="min-w-0">
-                                    <div className={`text-[11px] uppercase tracking-[0.08em] font-semibold ${activeToastMeta.toastTitleClass}`}>{toastState.title}</div>
-                                    <div className="text-sm font-semibold text-gray-900 leading-snug">{toastState.message}</div>
-                                </div>
-                                <button
-                                    onClick={() => setToastState(null)}
-                                    className="ml-auto text-xs text-gray-400 hover:text-gray-600"
-                                    aria-label="Dismiss notification"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        </div>
-                     )}
+                    <TripViewHudOverlays
+                        shareStatus={shareStatus}
+                        onCopyTrip={onCopyTrip}
+                        isPaywallLocked={isPaywallLocked}
+                        expirationLabel={expirationLabel}
+                        tripId={trip.id}
+                        onPaywallLoginClick={handlePaywallLoginClick}
+                        showGenerationOverlay={showGenerationOverlay}
+                        generationProgressMessage={generationProgressMessage}
+                        loadingDestinationSummary={loadingDestinationSummary}
+                        tripDateRange={tripMeta.dateRange}
+                        tripTotalDaysLabel={tripMeta.totalDaysLabel}
+                        suppressToasts={suppressToasts}
+                        toastState={toastState}
+                        activeToastMeta={activeToastMeta}
+                        onDismissToast={() => setToastState(null)}
+                    />
 
                 </main>
             </div>

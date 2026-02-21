@@ -22,3 +22,6 @@ summary: "Follow-up fixes target React Doctor blockers and next trip-page perfor
 - [ ] [Internal] 🧱 Moved release-notice readiness gating into a dedicated trip hook, further shrinking the planner component surface and keeping behavior unchanged.
 - [ ] [Internal] 🧩 Extracted trip expiry/debug and header-auth orchestration into dedicated trip hooks, significantly shrinking `TripView` while preserving planner behavior.
 - [ ] [Internal] 📈 Re-validated `/trip/:id` strict-preview Lighthouse after the latest structural pass and confirmed stable transfer with improved mobile variance in the measured run.
+- [ ] [Internal] 🧱 Continued the structural extraction pass by moving trip header/status/hud rendering and layout/modal/admin state orchestration into focused tripview components/hooks.
+- [ ] [Internal] 📉 Reduced `TripView` structural footprint further from `2434` to `1997` lines and from `20` to `8` local `useState` calls while preserving planner behavior.
+- [ ] [Internal] ✅ Re-ran full build validation and React Doctor (`99/100`), confirming no new blockers after the latest trip structure split.

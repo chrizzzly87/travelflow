@@ -1,6 +1,6 @@
 # Performance Execution TODO
 
-Last updated: 2026-02-20
+Last updated: 2026-02-21
 Owner: Codex + @chrizzzly
 Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure clarity.
 
@@ -201,6 +201,8 @@ Scope focus: first-load speed (`/`, `/trip/:id`), admin isolation, app structure
 - [x] Extracted trip expiry/debug orchestration into `components/tripview/useTripExpiryLifecycle.ts` and moved header auth submit/login/logout orchestration into `components/tripview/useTripHeaderAuthAction.ts`, reducing `TripView` further from `2557` to `2434` lines and local planner state count from `23` to `20`.
 - [x] Follow-up `react-doctor` after expiry/header extraction stayed at `99/100` with warnings still limited to structural `TripView` size/state density (`2` warnings across `1` file).
 - [x] Re-ran strict-preview Lighthouse for the valid `/trip/<compressed-state>` URL after the expiry/header extraction pass: desktop stayed `100` (`FCP ~0.5 s`, `LCP ~0.7 s`, `TBT 0 ms`) and mobile measured `93` (`FCP ~2.0 s`, `LCP ~3.0 s`, `TBT 0 ms`) with transfer still `~403 KiB` across `32` requests.
+- [x] Extracted additional TripView structure into dedicated modules: `useTripLayoutControlsState`, `TripViewHeader`, `TripViewStatusBanners`, `TripViewHudOverlays`, `useTripEditModalState`, and `useTripAdminOverrideState`, reducing local `TripView` state count from `20` to `8` and line count from `2434` to `1997`.
+- [x] Follow-up `react-doctor` after this structural pass still reports only the same two advisory warnings (TripView state/size guidance) at `99/100`, confirming no new hook-order or accessibility regressions were introduced.
 
 ## Validation checklist
 - [x] `npx vite build`
