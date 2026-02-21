@@ -15,3 +15,4 @@ summary: "Localized pages now keep navigation, language switching, and account e
 - [x] [Fixed] 🇩🇪 The language picker and account entry controls now stay intact across supported locales, including mobile navigation.
 - [x] [Fixed] 🎛️ The language picker now uses the styled flag dropdown again instead of the plain system select list.
 - [ ] [Internal] 🧩 Deferred styling sources now include shared navigation and banner components so responsive visibility rules remain synchronized.
+- [ ] [Internal] 📐 Added an AGENTS rule requiring shadcn/Radix Select usage for product dropdowns so new UI avoids native browser select styling drift.

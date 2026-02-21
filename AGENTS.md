@@ -15,6 +15,7 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
 - For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
 - Reuse existing shared components/hooks before creating new UI patterns. For confirmation/prompt flows, use the styled app dialog system (`useAppDialog` from `components/AppDialogProvider`) instead of native browser prompts.
+- Do not introduce native HTML `<select>` controls in product UI. Always use the shared styled Select (`components/ui/select`, shadcn/Radix) for dropdowns to keep visual and interaction behavior consistent across the app.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
 - Update/finalize that single release note shortly before opening the PR, once final scope is clear.
