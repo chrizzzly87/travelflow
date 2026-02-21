@@ -21,3 +21,4 @@ summary: "Introduces a pnpm-aligned Vitest regression layer for core business lo
 - [ ] [Internal] ✅ Added a PR template checklist and CI guard requiring `tests/**` checklist entries when new files are introduced in `services/` or `config/`.
 - [ ] [Internal] 🧭 Added a phase-2 testing scope doc for TripView and route-loader orchestration regression coverage.
 - [ ] [Internal] 🧱 Expanded regression coverage with additional malformed-input and storage-failure tests for destination lookup, flag normalization, trip storage, and trip history services.
+- [ ] [Internal] 🧪 Started phase-2 UI orchestration tests with TripView view-sync hooks and route-loader fallback/shared-state regression coverage.

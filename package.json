@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "@vitest/coverage-v8": "^2.1.8",
