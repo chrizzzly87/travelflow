@@ -53,6 +53,7 @@ type SortDirection = 'asc' | 'desc';
 type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
 type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 type UserLoginType = 'social' | 'password' | 'unknown';
+type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
 type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 
@@ -63,6 +64,7 @@ const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
+const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
 const SOCIAL_PROVIDER_VALUES: ReadonlyArray<SocialProviderFilter> = [
     'google',
     'facebook',
@@ -81,6 +83,15 @@ const SOCIAL_PROVIDER_OPTIONS: Array<{ value: SocialProviderFilter; label: strin
     { value: 'discord', label: 'Discord' },
     { value: 'other_social', label: 'Other social' },
 ];
+const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
+    no_trips_no_profile: 'No trips + no profile data',
+    no_trips: 'No trips',
+    one_to_two: '1-2 trips',
+    three_to_five: '3-5 trips',
+    six_plus: '6+ trips',
+};
+const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -338,6 +349,58 @@ const getLoginMethodSummary = (user: AdminUserRecord): string => {
 const getLoginSearchText = (user: AdminUserRecord): string => {
     const profile = resolveUserLoginProfile(user);
     return `${profile.providers.join(' ')} ${getLoginMethodSummary(user)}`.trim().toLowerCase();
+};
+
+const hasNonEmptyValue = (value: string | null | undefined): boolean => Boolean(value && value.trim().length > 0);
+const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
+const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim());
+
+const getUserTotalTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.total_trips || 0));
+
+const getUserActiveTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.active_trips || 0));
+
+const isUserTriplessAndNoData = (user: AdminUserRecord): boolean => {
+    if (getUserTotalTrips(user) !== 0) return false;
+    const hasProfileData = hasNonEmptyValue(user.email)
+        || hasNonEmptyValue(user.first_name)
+        || hasNonEmptyValue(user.last_name)
+        || hasNonEmptyValue(user.display_name)
+        || hasNonEmptyValue(user.username)
+        || hasNonEmptyValue(user.country)
+        || hasNonEmptyValue(user.city);
+    if (hasProfileData) return false;
+    if (hasNonEmptyValue(user.last_sign_in_at) || hasNonEmptyValue(user.onboarding_completed_at)) return false;
+    const loginProfile = resolveUserLoginProfile(user);
+    return !loginProfile.hasPassword && loginProfile.socialProviders.length === 0;
+};
+
+const matchesUserTripFilter = (user: AdminUserRecord, filter: UserTripFilter): boolean => {
+    const totalTrips = getUserTotalTrips(user);
+    if (filter === 'no_trips_no_profile') return isUserTriplessAndNoData(user);
+    if (filter === 'no_trips') return totalTrips === 0;
+    if (filter === 'one_to_two') return totalTrips >= 1 && totalTrips <= 2;
+    if (filter === 'three_to_five') return totalTrips >= 3 && totalTrips <= 5;
+    return totalTrips >= 6;
+};
+const getUserReferenceText = (user: AdminUserRecord): string => {
+    const name = getUserDisplayName(user);
+    const email = (user.email || '').trim();
+    if (email) return `${name} (${email})`;
+    return `${name} (${user.user_id})`;
+};
+
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message.trim()) return error.message.trim();
+    if (typeof error === 'string' && error.trim()) return error.trim();
+    return fallback;
+};
+
+const summarizeBulkDeleteFailures = (details: string[]): string => {
+    if (details.length === 0) return '';
+    const maxVisible = 5;
+    const visible = details.slice(0, maxVisible).map((detail) => `- ${detail}`).join('\n');
+    if (details.length <= maxVisible) return visible;
+    return `${visible}\n- +${details.length - maxVisible} more failure${details.length - maxVisible === 1 ? '' : 's'}`;
 };
 
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
@@ -719,7 +782,7 @@ const LoginTypeFilterMenu: React.FC<{
 };
 
 export const AdminUsersPage: React.FC = () => {
-    const { confirm: confirmDialog } = useAppDialog();
+    const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedUsers = useMemo(
         () => readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []),
@@ -752,6 +815,9 @@ export const AdminUsersPage: React.FC = () => {
     );
     const [socialProviderFilters, setSocialProviderFilters] = useState<SocialProviderFilter[]>(
         () => parseQueryMultiValue(searchParams.get('social'), SOCIAL_PROVIDER_VALUES)
+    );
+    const [tripFilters, setTripFilters] = useState<UserTripFilter[]>(
+        () => parseQueryMultiValue(searchParams.get('trips'), USER_TRIP_FILTER_VALUES)
     );
     const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
@@ -810,6 +876,9 @@ export const AdminUsersPage: React.FC = () => {
         ) {
             next.set('social', socialProviderFilters.join(','));
         }
+        if (tripFilters.length > 0 && tripFilters.length < USER_TRIP_FILTER_VALUES.length) {
+            next.set('trips', tripFilters.join(','));
+        }
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
@@ -837,6 +906,7 @@ export const AdminUsersPage: React.FC = () => {
         socialProviderFilters,
         statusFilters,
         tierFilters,
+        tripFilters,
     ]);
 
     useEffect(() => {
@@ -881,8 +951,8 @@ export const AdminUsersPage: React.FC = () => {
         [selectedUserId, users]
     );
     const selectedUserTripStats = useMemo(() => {
-        const fallbackTotal = Math.max(0, Number(selectedUser?.total_trips || 0));
-        const fallbackActive = Math.max(0, Number(selectedUser?.active_trips || 0));
+        const fallbackTotal = selectedUser ? getUserTotalTrips(selectedUser) : 0;
+        const fallbackActive = selectedUser ? getUserActiveTrips(selectedUser) : 0;
         if (isLoadingTrips) {
             return { total: fallbackTotal, active: fallbackActive };
         }
@@ -896,15 +966,19 @@ export const AdminUsersPage: React.FC = () => {
         return `/admin/trips?q=${encodeURIComponent(token)}`;
     }, [selectedUser]);
 
-    const loadUsers = async () => {
+    const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
-        setErrorMessage(null);
+        if (!options.preserveErrorMessage) {
+            setErrorMessage(null);
+        }
         try {
             const rows = await adminListUsers({ limit: 500 });
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
+            if (!options.preserveErrorMessage) {
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
+            }
             setUsers((current) => (current.length > 0 ? current : []));
         } finally {
             setIsLoadingUsers(false);
@@ -995,6 +1069,9 @@ export const AdminUsersPage: React.FC = () => {
                 }
                 if (!loginMatches) return false;
             }
+            if (tripFilters.length > 0 && !tripFilters.some((tripFilter) => matchesUserTripFilter(user, tripFilter))) {
+                return false;
+            }
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
@@ -1009,7 +1086,7 @@ export const AdminUsersPage: React.FC = () => {
         const getSortValue = (user: AdminUserRecord): string | number => {
             if (sortKey === 'name') return getUserDisplayName(user).toLowerCase();
             if (sortKey === 'email') return (user.email || '').toLowerCase();
-            if (sortKey === 'total_trips') return Number(user.total_trips || 0);
+            if (sortKey === 'total_trips') return getUserTotalTrips(user);
             if (sortKey === 'activation_status') return resolveActivationStatus(user);
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
@@ -1043,6 +1120,7 @@ export const AdminUsersPage: React.FC = () => {
         sortKey,
         statusFilters,
         tierFilters,
+        tripFilters,
         users,
     ]);
 
@@ -1109,6 +1187,14 @@ export const AdminUsersPage: React.FC = () => {
             value,
             label: getActivationStatusLabel(value),
             count: usersInDateRange.filter((user) => resolveActivationStatus(user) === value).length,
+        })),
+        [usersInDateRange]
+    );
+    const tripFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_TRIP_FILTER_VALUES.map((value) => ({
+            value,
+            label: USER_TRIP_FILTER_LABELS[value],
+            count: usersInDateRange.filter((user) => matchesUserTripFilter(user, value)).length,
         })),
         [usersInDateRange]
     );
@@ -1259,9 +1345,25 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleHardDelete = async (user: AdminUserRecord) => {
+        const sourceTripCount = selectedUser?.user_id === user.user_id
+            ? selectedUserTripStats.total
+            : getUserTotalTrips(user);
+        const tripLabel = `${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'}`;
         const confirmed = await confirmDialog({
             title: 'Hard delete user',
-            message: `Hard-delete ${user.email || user.user_id}? This permanently removes auth and profile data.`,
+            message: [
+                `Hard-delete ${user.email || user.user_id}?`,
+                '',
+                'This permanently deletes:',
+                '- Auth account',
+                '- Profile data',
+                `- ${tripLabel}`,
+                '- Related trip history, share links, and collaborator access for those trips',
+                '',
+                sourceTripCount > 0 ? 'To preserve trips, cancel and use "Transfer trips + hard delete" in this drawer.' : '',
+                sourceTripCount > 0 ? '' : '',
+                'This cannot be undone.',
+            ].join('\n'),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1310,9 +1412,21 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkHardDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
+        const selectedTripCount = selectedVisibleUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
         const confirmed = await confirmDialog({
             title: 'Hard delete selected users',
-            message: `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}? This cannot be undone.`,
+            message: [
+                `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
+                '',
+                `This permanently deletes their auth accounts, profiles, and ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total.`,
+                'Related trip history, share links, and collaborator access for those trips are also permanently deleted.',
+                '',
+                selectedTripCount > 0
+                    ? 'If trips should be preserved, cancel and use each user drawer action "Transfer trips + hard delete" first.'
+                    : '',
+                selectedTripCount > 0 ? '' : '',
+                'This cannot be undone.',
+            ].join('\n'),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1323,7 +1437,23 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
-            const failed = results.filter((result) => result.status === 'rejected').length;
+            const failedIndexes: number[] = [];
+            const failedDetails: string[] = [];
+            const deletedIds = new Set<string>();
+            let bulkErrorMessage: string | null = null;
+
+            results.forEach((result, index) => {
+                const user = selectedVisibleUsers[index];
+                if (result.status === 'fulfilled') {
+                    deletedIds.add(user.user_id);
+                    return;
+                }
+                failedIndexes.push(index);
+                const reason = getUnknownErrorMessage(result.reason, 'Unknown delete error.');
+                failedDetails.push(`${getUserReferenceText(user)}: ${reason}`);
+            });
+
+            const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
                 setMessage(
@@ -1332,17 +1462,166 @@ export const AdminUsersPage: React.FC = () => {
                         : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
                 );
             }
-            if (failed > 0 && deleted === 0) {
-                throw new Error('Could not hard-delete selected users.');
+            if (failed > 0) {
+                const detailSummary = summarizeBulkDeleteFailures(failedDetails);
+                if (deleted === 0) {
+                    bulkErrorMessage = (
+                        detailSummary
+                            ? `Could not hard-delete selected users.\n${detailSummary}`
+                            : 'Could not hard-delete selected users.'
+                    );
+                } else {
+                    bulkErrorMessage = (
+                        detailSummary
+                            ? `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.\n${detailSummary}`
+                            : `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.`
+                    );
+                }
             }
-            setSelectedUserIds(new Set());
-            if (selectedUserId && selectedVisibleUsers.some((user) => user.user_id === selectedUserId)) {
+            if (failed > 0) {
+                setSelectedUserIds(new Set(failedIndexes.map((index) => selectedVisibleUsers[index].user_id)));
+            } else {
+                setSelectedUserIds(new Set());
+            }
+            if (selectedUserId && deletedIds.has(selectedUserId)) {
                 setSelectedUserId(null);
                 setIsDetailOpen(false);
             }
-            await loadUsers();
+            await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
+            if (bulkErrorMessage) {
+                setErrorMessage(bulkErrorMessage);
+            }
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
+        const normalizedInput = rawInput.trim();
+        if (!normalizedInput) {
+            throw new Error('Enter a target user email or UUID.');
+        }
+        const normalizedLower = normalizedInput.toLowerCase();
+
+        const localMatches = users.filter((candidate) => {
+            const candidateEmail = (candidate.email || '').trim().toLowerCase();
+            if (candidate.user_id.toLowerCase() === normalizedLower) return true;
+            if (candidateEmail && candidateEmail === normalizedLower) return true;
+            return false;
+        });
+
+        if (localMatches.length > 1) {
+            throw new Error('Multiple local users matched that target. Enter a UUID instead.');
+        }
+        if (localMatches.length === 1) {
+            return localMatches[0];
+        }
+
+        if (isLikelyUserId(normalizedInput)) {
+            const profile = await adminGetUserProfile(normalizedInput);
+            if (profile) return profile;
+        }
+
+        if (isLikelyEmail(normalizedInput)) {
+            const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
+            const exactMatches = rows.filter((candidate) => (candidate.email || '').trim().toLowerCase() === normalizedLower);
+            if (exactMatches.length > 1) {
+                throw new Error('Multiple users found for that email. Enter a UUID instead.');
+            }
+            if (exactMatches.length === 1) {
+                return exactMatches[0];
+            }
+        }
+
+        throw new Error('Target user not found. Enter an existing user email or UUID.');
+    };
+
+    const handleTransferTripsAndHardDelete = async (user: AdminUserRecord) => {
+        const knownTripCount = selectedUser?.user_id === user.user_id
+            ? selectedUserTripStats.total
+            : getUserTotalTrips(user);
+        if (knownTripCount <= 0) {
+            setErrorMessage('No owned trips found to transfer.');
+            return;
+        }
+
+        const transferTargetInput = await promptDialog({
+            title: 'Transfer trips before hard delete',
+            message: 'Enter the target user email or UUID. All owned trips will move to this account before hard delete.',
+            label: 'Target user (email or UUID)',
+            placeholder: 'name@example.com or user UUID',
+            confirmLabel: 'Continue',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+            inputType: 'text',
+        });
+        if (transferTargetInput === null) return;
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const targetUser = await resolveTransferTargetUser(transferTargetInput);
+            if (targetUser.user_id === user.user_id) {
+                throw new Error('Target user must be different from the user being deleted.');
+            }
+
+            const targetStatus = (targetUser.account_status || 'active') as UserAccountStatus;
+            if (targetStatus !== 'active') {
+                throw new Error('Target user must be an active account.');
+            }
+
+            const sourceTrips = await adminListUserTrips(user.user_id, { status: 'all' });
+            if (sourceTrips.length === 0) {
+                throw new Error('No owned trips found to transfer. Reload and try again.');
+            }
+
+            const confirmed = await confirmDialog({
+                title: 'Confirm transfer and hard delete',
+                message: [
+                    `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
+                    '',
+                    'If transfer succeeds, the source user will be hard-deleted permanently (auth account + profile).',
+                    'Transferred trips remain available under the new owner.',
+                ].join('\n'),
+                confirmLabel: 'Transfer + hard delete',
+                cancelLabel: 'Cancel',
+                tone: 'danger',
+            });
+            if (!confirmed) return;
+
+            const transferResults = await Promise.allSettled(
+                sourceTrips.map((trip) => adminUpdateTrip(trip.trip_id, { ownerId: targetUser.user_id }))
+            );
+            const failedTransfers = transferResults.filter((result) => result.status === 'rejected');
+            if (failedTransfers.length > 0) {
+                const transferredCount = sourceTrips.length - failedTransfers.length;
+                throw new Error(
+                    transferredCount > 0
+                        ? `Transferred ${transferredCount}/${sourceTrips.length} trips. Hard delete was skipped because some transfers failed.`
+                        : 'Trip transfer failed. Hard delete was skipped.'
+                );
+            }
+
+            try {
+                await adminHardDeleteUser(user.user_id);
+                setMessage(
+                    `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`
+                );
+                setIsDetailOpen(false);
+                setSelectedUserId(null);
+                await loadUsers();
+            } catch (deleteError) {
+                await loadUsers();
+                const deleteMessage = deleteError instanceof Error ? deleteError.message : 'Could not hard-delete user after transfer.';
+                setErrorMessage(
+                    `Trips were transferred to ${getUserReferenceText(targetUser)}, but hard delete failed: ${deleteMessage} Retry hard delete for the source user if needed.`
+                );
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trips before hard delete.');
         } finally {
             setIsSaving(false);
         }
@@ -1417,6 +1696,7 @@ export const AdminUsersPage: React.FC = () => {
         setActivationFilters([]);
         setLoginTypeFilters([]);
         setSocialProviderFilters([]);
+        setTripFilters([]);
         setPage(1);
     };
 
@@ -1540,6 +1820,15 @@ export const AdminUsersPage: React.FC = () => {
                             }}
                         />
                         <AdminFilterMenu
+                            label="# Trips"
+                            options={tripFilterOptions}
+                            selectedValues={tripFilters}
+                            onSelectedValuesChange={(next) => {
+                                setTripFilters(next as UserTripFilter[]);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
                             label="Status"
                             options={statusFilterOptions}
                             selectedValues={statusFilters}
@@ -1576,6 +1865,10 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                <p className="mt-2 text-xs text-slate-500">
+                    Cleanup shortcut: use <span className="font-semibold text-slate-700"># Trips</span> and select
+                    <span className="font-semibold text-slate-700"> No trips + no profile data</span>.
+                </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                     <span className="text-xs font-semibold text-slate-700">
@@ -1674,6 +1967,7 @@ export const AdminUsersPage: React.FC = () => {
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
                                 const isSelected = selectedUserIds.has(user.user_id);
+                                const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
                                     <tr key={user.user_id} className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
                                         <td className="px-3 py-2 align-middle">
@@ -1725,11 +2019,16 @@ export const AdminUsersPage: React.FC = () => {
                                         </td>
                                         <td className="px-3 py-2 text-xs text-slate-600">
                                             <div className="font-semibold text-slate-800">
-                                                {Math.max(0, Number(user.total_trips || 0))} total
+                                                {getUserTotalTrips(user)} total
                                             </div>
                                             <div className="text-[11px] text-slate-500">
-                                                {Math.max(0, Number(user.active_trips || 0))} active
+                                                {getUserActiveTrips(user)} active
                                             </div>
+                                            {isTriplessNoData && (
+                                                <div className="text-[11px] font-semibold text-amber-700">
+                                                    No profile data
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-3 py-2">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
@@ -2197,6 +2496,16 @@ export const AdminUsersPage: React.FC = () => {
                                     <Trash size={13} />
                                     Hard delete
                                 </button>
+                                {selectedUserTripStats.total > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
+                                        disabled={isSaving || isLoadingTrips}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                                    >
+                                        Transfer trips + hard delete
+                                    </button>
+                                )}
                                 </section>
 
                                 <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
