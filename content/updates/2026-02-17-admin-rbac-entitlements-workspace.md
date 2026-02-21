@@ -53,6 +53,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🔐 Added login-type filtering in User Provisioning with social/username-password/unknown modes plus provider-level social selection.
 - [x] [Improved] 🪪 Upgraded login badges in the user table with provider-specific icons/colors and better multi-provider visibility.
 - [x] [Improved] 📈 Added per-user trip counters in User Provisioning and surfaced active/total trip totals directly in the user details header.
+- [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
 - [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
