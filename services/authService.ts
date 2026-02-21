@@ -121,6 +121,43 @@ const isLikelyStaleSessionError = (
     );
 };
 
+const isProfileQueryUnavailableError = (
+    error: { code?: string; message?: string } | null | undefined
+): boolean => {
+    if (!error) return false;
+    const normalizedCode = typeof error.code === 'string' ? error.code.trim().toLowerCase() : '';
+    const normalizedMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+    return normalizedCode === '42p01'
+        || normalizedCode === '42703'
+        || normalizedCode === '42501'
+        || normalizedMessage.includes('relation "profiles" does not exist')
+        || normalizedMessage.includes('permission denied for table profiles');
+};
+
+type ProfileBindingState = 'present' | 'missing' | 'unknown';
+const PROFILE_BINDING_RECHECK_DELAY_MS = 250;
+
+const readProfileBindingState = async (userId: string): Promise<ProfileBindingState> => {
+    if (!supabase) return 'unknown';
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+    if (error) {
+        if (isProfileQueryUnavailableError(error)) return 'unknown';
+        return 'unknown';
+    }
+    return data?.id ? 'present' : 'missing';
+};
+
+const resolveProfileBindingState = async (userId: string): Promise<ProfileBindingState> => {
+    const firstCheck = await readProfileBindingState(userId);
+    if (firstCheck !== 'missing') return firstCheck;
+    await new Promise((resolve) => setTimeout(resolve, PROFILE_BINDING_RECHECK_DELAY_MS));
+    return readProfileBindingState(userId);
+};
+
 const recoverLocalAuthState = async (): Promise<void> => {
     if (!supabase) return;
     try {
@@ -247,6 +284,13 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
     if (!authUser) {
         await recoverLocalAuthState();
         return defaultAccessContext(null);
+    }
+    if (!getAnonymousFlag(session)) {
+        const profileBindingState = await resolveProfileBindingState(authUser.id);
+        if (profileBindingState === 'missing') {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
     }
 
     try {
