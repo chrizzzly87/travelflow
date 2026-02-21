@@ -4,7 +4,7 @@ version: v0.50.0
 title: "Admin RBAC workspace + profile onboarding"
 date: 2026-02-17
 published_at: 2026-02-17T20:40:00Z
-status: draft
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Introduced a full admin operations workspace with safer trip overrides, deep-linked owner drawers, and bulk admin actions across users and trips."
@@ -53,6 +53,10 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🔐 Added login-type filtering in User Provisioning with social/username-password/unknown modes plus provider-level social selection.
 - [x] [Improved] 🪪 Upgraded login badges in the user table with provider-specific icons/colors and better multi-provider visibility.
 - [x] [Improved] 📈 Added per-user trip counters in User Provisioning and surfaced active/total trip totals directly in the user details header.
+- [x] [Improved] 🧹 Added trip-count cleanup filters in User Provisioning so admins can quickly isolate users with no trips and empty profile data before deletion.
+- [x] [Improved] 🔁 Added safer admin deletion flow with explicit hard-delete impact warnings and a transfer-before-delete option for preserving owned trips.
+- [x] [Fixed] 🧾 Improved bulk hard-delete reliability by showing per-user failure reasons and automatically clearing safe historical links that can block deletion.
+- [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
 - [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.

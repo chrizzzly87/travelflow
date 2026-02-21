@@ -46,6 +46,10 @@ This note captures open admin/user-management items that are intentionally defer
 
 ## What Was Just Finished (Reference)
 
+- User deletion operations:
+  - Added explicit hard-delete impact warnings and a transfer-before-delete flow in Admin Users.
+  - Added policy/runbook: `docs/ADMIN_USER_DELETION_POLICY.md`.
+
 - Trips table:
   - Direct trip link from first column.
   - Owner cell opens owner-info drawer.
