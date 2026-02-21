@@ -310,6 +310,8 @@ const callAdminIdentityApi = async (
         })()
         : {};
     if (!response.ok || payload?.ok === false) {
+        const looksLikeViteNotFoundPage = response.status === 404
+            && /<\s*html|<\s*!doctype\s+html/i.test(responseText);
         const payloadError =
             typeof payload?.error === 'string'
                 ? payload.error
@@ -320,7 +322,14 @@ const callAdminIdentityApi = async (
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
-        const reason = payloadError || normalizedFallback || response.statusText || 'Admin identity API request failed.';
+        const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
+            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            : null;
+        const reason = payloadError
+            || devNotFoundMessage
+            || normalizedFallback
+            || response.statusText
+            || 'Admin identity API request failed.';
         const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }

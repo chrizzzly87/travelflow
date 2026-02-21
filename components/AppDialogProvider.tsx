@@ -220,7 +220,7 @@ export const AppDialogProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                         </div>
                         <div className="px-5 py-4 space-y-3">
                             {descriptionText && (
-                                <p id="app-dialog-description" className="text-sm text-gray-600 leading-relaxed">
+                                <p id="app-dialog-description" className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                                     {descriptionText}
                                 </p>
                             )}

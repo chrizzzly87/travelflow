@@ -66,6 +66,13 @@ export default defineConfig(({ mode }) => {
         port: 5173,
         strictPort: false,
         host: '0.0.0.0',
+        proxy: {
+          '/api/internal/admin/iam': {
+            target: 'http://localhost:8888',
+            changeOrigin: true,
+            secure: false,
+          },
+        },
       },
       plugins: [react(), tailwindcss()],
       build: {

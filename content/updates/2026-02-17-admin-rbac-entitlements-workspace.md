@@ -58,6 +58,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Fixed] 🧾 Improved bulk hard-delete reliability by showing per-user failure reasons and automatically clearing safe historical links that can block deletion.
 - [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
 - [x] [Improved] ✅ Refined admin row selection UX with clearer selected-row highlighting, larger checkbox click targets, and in-table processing overlays during destructive actions.
+- [x] [Fixed] ✅ Restored admin checkbox pointer cursors and enlarged click targets after a checkbox component refactor regression.
 - [x] [Improved] 🧾 Upgraded audit history readability with clearer action aliases, colored action/target pills, and direct deep links into related user or trip details.
 - [x] [Improved] 🎯 Added field-level before/after change snapshots in audit entries so profile status, role, tier, and trip ownership edits are easier to review.
 - [x] [Fixed] 🔗 Cleaned up audit target controls so pills stay separate from action buttons, and added direct in-app drawer opening for both linked users and trips.
@@ -92,3 +93,4 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [ ] [Internal] 🧱 Added a dedicated admin-only hard-delete trip RPC with audit logging so permanent removals are tracked server-side.
 - [ ] [Internal] 🧭 Updated agent copy/i18n rules so admin workspace text is English-only by default and exempt from EN/DE sign-off prompts.
 - [ ] [Internal] 🧩 Standardized admin destructive confirmations on the shared styled app dialog (`useAppDialog`) and documented prompt-component reuse in repo guidelines.
+- [ ] [Internal] 🧪 Added a local Vite proxy plus `dev:netlify` workflow so admin identity actions (`invite`, `create`, `hard delete`) can be tested reliably in development.
