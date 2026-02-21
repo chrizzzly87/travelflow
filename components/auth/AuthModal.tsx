@@ -132,23 +132,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         [nextPath]
     );
 
-    const completeSuccessfulAuth = useCallback((flow: 'interactive' | 'restored') => {
-        if (hasHandledSuccessRef.current) return;
-        hasHandledSuccessRef.current = true;
-        trackEvent('auth__modal--success', { source, flow });
-        onClose('success');
+    const completeSuccessfulAuth = useCallback(
+        (
+            flow: 'interactive' | 'restored',
+            options?: { skipReload?: boolean }
+        ) => {
+            if (hasHandledSuccessRef.current) return;
+            hasHandledSuccessRef.current = true;
+            trackEvent('auth__modal--success', { source, flow });
+            onClose('success');
 
-        const target = nextPath || (typeof window !== 'undefined'
-            ? `${window.location.pathname}${window.location.search}${window.location.hash}`
-            : '/create-trip');
+            const target = nextPath || (typeof window !== 'undefined'
+                ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+                : '/create-trip');
 
-        if (reloadOnSuccess) {
-            window.location.assign(target);
-            return;
-        }
+            if (reloadOnSuccess && !options?.skipReload) {
+                window.location.assign(target);
+                return;
+            }
 
-        navigate(target, { replace: true });
-    }, [navigate, nextPath, onClose, reloadOnSuccess, source]);
+            navigate(target, { replace: true });
+        },
+        [navigate, nextPath, onClose, reloadOnSuccess, source]
+    );
 
     useEffect(() => {
         if (!isOpen) return;
@@ -217,6 +223,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
         completeSuccessfulAuth('interactive');
     }, [completeSuccessfulAuth, isAnonymous, isAuthenticated, isLoading, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || sessionRestoreState !== 'restored' || hasHandledSuccessRef.current) return;
+        const timer = window.setTimeout(() => {
+            completeSuccessfulAuth('restored', { skipReload: true });
+        }, 2000);
+        return () => window.clearTimeout(timer);
+    }, [completeSuccessfulAuth, isOpen, sessionRestoreState]);
 
     if (!isOpen) return null;
     const isRestoreBlocked = sessionRestoreState === 'restoring' || sessionRestoreState === 'restored';
@@ -321,10 +335,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(false);
     };
 
-    const handleContinueWithRestoredSession = () => {
-        completeSuccessfulAuth('restored');
-    };
-
     return (
         <div className="fixed inset-0 z-[21000] flex items-center justify-center p-4 sm:p-6">
             <button
@@ -378,14 +388,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {sessionRestoreState === 'restored' && (
                         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" aria-live="polite">
                             <p className="font-semibold">{t('states.sessionRestored')}</p>
-                            <button
-                                type="button"
-                                onClick={handleContinueWithRestoredSession}
-                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800"
-                            >
-                                <ArrowRight size={13} />
-                                {t('actions.continueSession')}
-                            </button>
                         </div>
                     )}
 

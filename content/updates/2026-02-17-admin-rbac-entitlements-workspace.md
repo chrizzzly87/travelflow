@@ -65,7 +65,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] ♻️ Added soft-deleted user recovery directly from the Audit user drawer, including snapshot fallback when live profile rows are missing.
 - [x] [Improved] 🧾 Expanded hard-delete traceability with clearer delete-impact prompts and hard-delete audit metadata that records owned-trip impact.
 - [x] [Fixed] 🚧 Added an explicit admin access-denied screen for signed-in non-admin accounts and hardened invalid `/admin/*` URL handling so admins recover back to dashboard routes.
-- [x] [Fixed] 🔐 Prevented login modal snap-close during delayed session restore by showing an explicit “restoring previous session” state and a manual continue action once ready.
+- [x] [Fixed] 🔐 Stabilized delayed session restore UX by auto-closing the login modal after recovery without hard-refresh, while temporarily disabling login actions until auth state is ready.
 - [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
 - [x] [Fixed] 🧾 Prevented a login recovery edge case that could silently switch active accounts into an anonymous "unknown user" state.
 - [x] [Fixed] 🔐 Fixed anonymous-session detection so the login modal no longer auto-closes by mistaking guest sessions for signed-in accounts.

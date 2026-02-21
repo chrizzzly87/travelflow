@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { X, AirplaneTilt } from '@phosphor-icons/react';
+import { X, AirplaneTilt, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
@@ -44,7 +44,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, isAdmin, logout } = useAuth();
+    const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     const activeLocale = useMemo<AppLanguage>(() => {
@@ -81,6 +81,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
 
     const handleLoginClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
         trackEvent('mobile_nav__login');
+        if (isLoading) return;
         if (!isPlainLeftClick(event)) {
             onClose();
             return;
@@ -273,6 +274,17 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     Logout
                                 </button>
                             </>
+                        ) : isLoading ? (
+                            <button
+                                type="button"
+                                disabled
+                                className="inline-flex w-full cursor-wait items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-500 opacity-80"
+                                aria-disabled="true"
+                                aria-live="polite"
+                            >
+                                <Loader2 size={16} className="animate-spin" />
+                                {t('nav.login')}
+                            </button>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}
