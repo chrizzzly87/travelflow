@@ -15,6 +15,8 @@ This repository uses markdown release files as the source of truth for product u
 - For bug fixes, add a regression test that fails on the pre-fix behavior and passes with the fix.
 - Docs-only, copy-only, and style-only changes are exempt from mandatory new tests.
 - For behavioral changes, run `pnpm test:core` before finalizing whenever feasible.
+- For PRs that add new files under `services/` or `config/`, include a corresponding `tests/**` entry in the PR checklist/description.
+- For TripView/route-loader orchestration work, follow `docs/TESTING_PHASE2_SCOPE.md` when planning component/hook regression coverage.
 - Release-note copy in `content/updates/*.md` is exempt from EN/DE style sign-off prompts; do not request bilingual sign-off for release notes unless the user explicitly asks for it.
 - Follow `docs/ANALYTICS_CONVENTION.md` for all new or changed analytics instrumentation.
 - For clickable UI on marketing/planner flows, add analytics using `trackEvent(...)` and `getAnalyticsDebugAttributes(...)` in the established format unless explicitly excluded.
@@ -22,7 +24,8 @@ This repository uses markdown release files as the source of truth for product u
 - Do not introduce native HTML `<select>` controls in product UI. Always use the shared styled Select (`components/ui/select`, shadcn/Radix) for dropdowns to keep visual and interaction behavior consistent across the app.
 - After completing any feature/fix/change, update `content/updates/*.md`.
 - Maintain exactly one release note file per worktree/feature. Do not create multiple incremental release-note files for the same work.
-- Update/finalize that single release note shortly before opening the PR, once final scope is clear.
+- Keep that single release note in `status: draft` throughout feature PR development.
+- After merge to `main`, publish metadata in a follow-up update: set `status: published`, assign the next version, and set `published_at` to the actual post-merge deploy/merge timestamp (before 23:00 UTC).
 - Use `[x]` for website-visible user-facing items.
 - Use `[ ]` for hidden internal items.
 - Keep technical identifiers out of visible items (no route paths, code symbols, endpoints, or environment keys in `[x]` lines).

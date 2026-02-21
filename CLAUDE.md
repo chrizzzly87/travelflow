@@ -20,7 +20,8 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 
 - Use the exact markdown format in `docs/UPDATE_FORMAT.md`.
 - Keep one release note file per worktree/feature. Do not create multiple step-by-step files for the same feature.
-- Finalize that single release note shortly before PR creation so it reflects the final shipped scope.
+- Keep that single release note as `status: draft` while the feature PR is open.
+- After merge to `main`, publish metadata in a follow-up update (`status: published`, next version, and `published_at` equal to the post-merge deploy/merge timestamp before 23:00 UTC).
 - Add user-facing items as `- [x] [Type] ...`.
 - Add internal/non-marketing items as `- [ ] [Internal] ...`.
 - Each change line must start with a **content-matching emoji** — pick an emoji that hints at what the specific change is about. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
@@ -37,6 +38,8 @@ Before finalizing, ensure all applicable code changes are represented in release
 - For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` whenever feasible.
 - For bug fixes, add a regression test proving the previous failure mode is covered.
 - Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
+- For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
+- For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
 
 ## Direction-Safety Requirement
 - For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.

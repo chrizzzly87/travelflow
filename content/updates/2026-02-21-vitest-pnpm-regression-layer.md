@@ -16,3 +16,7 @@ summary: "Introduces a pnpm-aligned Vitest regression layer for core business lo
 - [ ] [Internal] 🚦 Added a build gate so core regression coverage runs before deploy builds.
 - [ ] [Internal] 📦 Standardized the project workflow on pnpm commands and lockfile management for local, CI, and deploy paths.
 - [ ] [Internal] 📚 Updated agent/LLM guidance to require tests for behavioral changes and regression tests for bug fixes, with docs/copy/style-only exemptions.
+- [ ] [Internal] 🔍 Added a PR Quality GitHub Actions workflow that runs `pnpm test:core` and `pnpm build` on every pull request.
+- [ ] [Internal] 👥 Added CODEOWNERS review ownership for `tests/**` and `vitest.config.ts` changes.
+- [ ] [Internal] ✅ Added a PR template checklist and CI guard requiring `tests/**` checklist entries when new files are introduced in `services/` or `config/`.
+- [ ] [Internal] 🧭 Added a phase-2 testing scope doc for TripView and route-loader orchestration regression coverage.

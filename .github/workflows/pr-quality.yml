@@ -1,0 +1,67 @@
+name: PR Quality
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  pr-quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: New module guard (services/config => tests checklist entry)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags --prune --depth=1 origin "${BASE_REF}"
+
+          added_modules="$(git diff --name-only --diff-filter=A "origin/${BASE_REF}...HEAD" | grep -E '^(services|config)/' || true)"
+          if [ -z "${added_modules}" ]; then
+            echo "No new files added in services/ or config/."
+            exit 0
+          fi
+
+          echo "New services/config files detected:"
+          echo "${added_modules}"
+
+          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- '- \[x\] New module guard completed'; then
+            echo "PR checklist requirement missing: check '- [x] New module guard completed'."
+            exit 1
+          fi
+
+          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- 'tests/'; then
+            echo "PR description must include at least one corresponding tests/** path."
+            exit 1
+          fi
+
+          echo "New module guard checklist entry verified."
+
+      - name: Run core regression tests
+        run: pnpm test:core
+
+      - name: Run build gate
+        run: pnpm build

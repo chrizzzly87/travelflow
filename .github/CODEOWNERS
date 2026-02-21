@@ -1,0 +1,3 @@
+# Test harness ownership for regression-layer safety.
+/tests/ @chrizzzly87
+/vitest.config.ts @chrizzzly87
