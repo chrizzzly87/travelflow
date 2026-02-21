@@ -19,3 +19,4 @@ summary: "Follow-up fixes target React Doctor blockers and next trip-page perfor
 - [ ] [Internal] 🧭 Extracted trip share lifecycle and view-settings sync orchestration from the planner view into focused hooks to keep the core trip component smaller and easier to maintain.
 - [ ] [Internal] 📉 Re-ran strict-preview Lighthouse on the real `/trip/:id` URL after the hook extraction pass and confirmed stable transfer/request budgets with no first-load blocking-time regression.
 - [ ] [Internal] ✅ Cleared the remaining high-signal route-loader React Doctor warnings so only structural TripView size/state-density guidance remains (`99/100` current score).
+- [ ] [Internal] 🧱 Moved release-notice readiness gating into a dedicated trip hook, further shrinking the planner component surface and keeping behavior unchanged.

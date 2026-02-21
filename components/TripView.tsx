@@ -36,6 +36,7 @@ import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
 import { useGenerationProgressMessage } from './tripview/useGenerationProgressMessage';
+import { useReleaseNoticeReady } from './tripview/useReleaseNoticeReady';
 import { useTripOverlayController } from './tripview/useTripOverlayController';
 import { useTripHistoryController } from './tripview/useTripHistoryController';
 import { useTripShareLifecycle } from './tripview/useTripShareLifecycle';
@@ -354,7 +355,7 @@ export const TripView: React.FC<TripViewProps> = ({
     const titleViewTransitionName = getExampleTitleViewTransitionName(useExampleSharedTransition);
     const tripRef = useRef(trip);
     tripRef.current = trip;
-    const [isReleaseNoticeReady, setIsReleaseNoticeReady] = useState(false);
+    const isReleaseNoticeReady = useReleaseNoticeReady({ suppressReleaseNotice });
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [expiredPreviewOverride, setExpiredPreviewOverride] = useState<boolean | null>(() => getDebugTripExpiredOverride(trip.id));
     const tripExpiresAtMs = useMemo(() => {
@@ -968,64 +969,6 @@ export const TripView: React.FC<TripViewProps> = ({
         && !isAdmin
         && !isAdminFallbackView
         && !showGenerationOverlay;
-
-    useEffect(() => {
-        if (suppressReleaseNotice) return;
-        if (typeof window === 'undefined') return;
-
-        let resolved = false;
-        let timeoutId: number | null = null;
-        let idleId: number | null = null;
-
-        const removeInteractionListeners = () => {
-            window.removeEventListener('pointerdown', onTrigger, true);
-            window.removeEventListener('keydown', onTrigger, true);
-            window.removeEventListener('touchstart', onTrigger, true);
-        };
-
-        const clearTimers = () => {
-            if (timeoutId !== null) {
-                window.clearTimeout(timeoutId);
-                timeoutId = null;
-            }
-            if (idleId !== null && 'cancelIdleCallback' in window) {
-                (window as Window & { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
-                idleId = null;
-            }
-        };
-
-        const enableReleaseNotice = () => {
-            if (resolved) return;
-            resolved = true;
-            setIsReleaseNoticeReady(true);
-            removeInteractionListeners();
-            clearTimers();
-        };
-
-        const onTrigger = () => {
-            enableReleaseNotice();
-        };
-
-        window.addEventListener('pointerdown', onTrigger, true);
-        window.addEventListener('keydown', onTrigger, true);
-        window.addEventListener('touchstart', onTrigger, true);
-
-        timeoutId = window.setTimeout(enableReleaseNotice, 5000);
-
-        if ('requestIdleCallback' in window) {
-            idleId = (window as Window & {
-                requestIdleCallback: (cb: IdleRequestCallback, options?: IdleRequestOptions) => number;
-            }).requestIdleCallback(() => {
-                enableReleaseNotice();
-            }, { timeout: 4500 });
-        }
-
-        return () => {
-            resolved = true;
-            removeInteractionListeners();
-            clearTimers();
-        };
-    }, [suppressReleaseNotice]);
 
     const forkMeta = useMemo(() => {
         if (trip.forkedFromShareToken) {
