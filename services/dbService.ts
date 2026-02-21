@@ -175,10 +175,26 @@ export const dbGetAccessToken = async (): Promise<string | null> => {
     return data?.session?.access_token ?? null;
 };
 
-const isRlsViolation = (error: { code?: string; message?: string } | null) => {
+type DbErrorLike = {
+    code?: string;
+    message?: string;
+    details?: string | null;
+    hint?: string | null;
+    constraint?: string | null;
+};
+
+const isRlsViolation = (error: DbErrorLike | null) => {
     if (!error) return false;
     if (error.code === '42501') return true;
     return typeof error.message === 'string' && /row-level security/i.test(error.message);
+};
+
+const isMissingUserSettingsOwnerError = (error: DbErrorLike | null): boolean => {
+    if (!error || error.code !== '23503') return false;
+    const message = `${error.message || ''} ${error.details || ''} ${error.constraint || ''}`.toLowerCase();
+    return message.includes('user_settings_user_id_fkey')
+        || message.includes('key is not present in table \"users\"')
+        || message.includes('references auth.users');
 };
 
 const forceAnonymousSession = async (): Promise<string | null> => {
@@ -685,6 +701,27 @@ export const dbUpsertUserSettings = async (settings: IUserSettings) => {
 
     const { error } = await client.from('user_settings').upsert(payload, { onConflict: 'user_id' });
     if (error) {
+        if (isMissingUserSettingsOwnerError(error)) {
+            debugLog('dbUpsertUserSettings:staleSessionRecover', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+            });
+            const recoveredUserId = await forceAnonymousSession();
+            if (!recoveredUserId) {
+                console.error('Failed to recover session after stale user_settings owner reference', error);
+                return;
+            }
+            const retryPayload = {
+                ...payload,
+                user_id: recoveredUserId,
+            };
+            const retry = await client.from('user_settings').upsert(retryPayload, { onConflict: 'user_id' });
+            if (retry.error) {
+                console.error('Failed to save user settings after session recovery', retry.error);
+            }
+            return;
+        }
         console.error('Failed to save user settings', error);
     }
 };

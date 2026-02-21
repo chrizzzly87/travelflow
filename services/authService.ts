@@ -89,6 +89,19 @@ const clearSupabaseAuthStorage = (): void => {
     }
 };
 
+const isSessionNotFoundError = (error: { status?: number; code?: string; message?: string } | null | undefined): boolean => {
+    if (!error) return false;
+    const normalizedErrorCode = normalizeErrorCode(error).toLowerCase();
+    const normalizedMessage = typeof error.message === 'string'
+        ? error.message.toLowerCase()
+        : '';
+    return Boolean(
+        error.status === 403
+        || normalizedErrorCode.includes('session_not_found')
+        || normalizedMessage.includes('session from session_id claim in jwt does not exist')
+    );
+};
+
 const buildAuthFlow = (): AuthFlowContext => ({
     flowId: buildFlowId(),
     attemptId: buildFlowId(),
@@ -246,7 +259,21 @@ export const signInWithEmailPassword = async (
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'login_password', result: 'start', provider: 'password', email });
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const attemptSignIn = async () => supabase.auth.signInWithPassword({ email, password });
+    let { data, error } = await attemptSignIn();
+    let recoveredFromSessionNotFound = false;
+    if (error && isSessionNotFoundError(error)) {
+        clearSupabaseAuthStorage();
+        try {
+            await supabase.auth.signOut({ scope: 'local' });
+        } catch {
+            // best effort before retry
+        }
+        const retry = await attemptSignIn();
+        data = retry.data;
+        error = retry.error;
+        recoveredFromSessionNotFound = !retry.error;
+    }
     if (error) {
         await logAuthFlow({
             ...flow,
@@ -258,7 +285,14 @@ export const signInWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
-    await logAuthFlow({ ...flow, step: 'login_password', result: 'success', provider: 'password', email });
+    await logAuthFlow({
+        ...flow,
+        step: 'login_password',
+        result: 'success',
+        provider: 'password',
+        email,
+        metadata: recoveredFromSessionNotFound ? { recoveredFromSessionNotFound: true } : undefined,
+    });
     return { data, error: null, ...flow };
 };
 
@@ -380,17 +414,7 @@ export const signOut = async () => {
     await logAuthFlow({ ...flow, step: 'logout', result: 'start', provider: 'supabase' });
     const response = await supabase.auth.signOut({ scope: 'local' });
 
-    const normalizedErrorCode = normalizeErrorCode(response.error).toLowerCase();
-    const normalizedMessage = typeof response.error?.message === 'string'
-        ? response.error.message.toLowerCase()
-        : '';
-    const isSessionNotFound = Boolean(
-        response.error && (
-            response.error.status === 403 ||
-            normalizedErrorCode.includes('session_not_found') ||
-            normalizedMessage.includes('session from session_id claim in jwt does not exist')
-        )
-    );
+    const isSessionNotFound = isSessionNotFoundError(response.error || null);
 
     // Supabase can return 403 session_not_found when local client state still
     // has a stale session id. Clear local auth storage so the app can continue
