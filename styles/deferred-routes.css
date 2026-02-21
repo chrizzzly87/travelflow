@@ -2,6 +2,15 @@
 
 @source "../app/routes/DeferredAppRoutes.tsx";
 @source "../components/CreateTripForm.tsx";
+@source "../components/navigation/SiteHeader.tsx";
+@source "../components/navigation/LanguageSelect.tsx";
+@source "../components/navigation/MobileMenu.tsx";
+@source "../components/navigation/AccountMenu.tsx";
+@source "../components/navigation/LanguageSuggestionBanner.tsx";
+@source "../components/marketing/EarlyAccessBanner.tsx";
+@source "../components/marketing/TranslationNoticeBanner.tsx";
+@source "../components/marketing/SiteFooter.tsx";
+@source "../components/flags/FlagIcon.tsx";
 @source "../components/admin/**/*.tsx";
 @source "../pages/Admin*.tsx";
 @source "../pages/FeaturesPage.tsx";
