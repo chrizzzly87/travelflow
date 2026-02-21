@@ -23,3 +23,4 @@ summary: "Introduces a pnpm-aligned Vitest regression layer for core business lo
 - [ ] [Internal] 🧱 Expanded regression coverage with additional malformed-input and storage-failure tests for destination lookup, flag normalization, trip storage, and trip history services.
 - [ ] [Internal] 🧪 Started phase-2 UI orchestration tests with TripView view-sync hooks and route-loader fallback/shared-state regression coverage.
 - [ ] [Internal] 🧩 Extended phase-2 loader coverage with SharedTrip and ExampleTrip route tests for missing resource redirects, prefetch hydration, and copy/create orchestration callbacks.
+- [ ] [Internal] 🛂 Added phase-2 regression tests for shared-trip edit commits (history + db update) and example-trip limit-denied routing to pricing.

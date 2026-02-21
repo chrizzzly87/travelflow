@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { makeTrip } from '../../helpers/tripFixtures';
@@ -230,5 +230,68 @@ describe('routes/SharedTripLoaderRoute', () => {
     });
     expect(mocks.dbGetSharedTripVersion).not.toHaveBeenCalled();
     expect(latestTripViewProps()?.shareSnapshotMeta?.hasNewer).toBe(true);
+  });
+
+  it('commits in edit mode by appending local history and updating shared db state', async () => {
+    const baseView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineView: 'horizontal',
+      mapStyle: 'standard',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1,
+      sidebarWidth: 480,
+      timelineHeight: 320,
+    };
+    const sharedTrip = makeTrip({ id: 'shared-trip', defaultView: baseView, status: 'active' });
+    const updatedTrip = makeTrip({ id: 'shared-trip', title: 'Updated title', defaultView: baseView, status: 'active' });
+
+    mocks.dbGetSharedTrip.mockResolvedValue({
+      trip: sharedTrip,
+      view: baseView,
+      mode: 'edit',
+      allowCopy: true,
+      latestVersionId: 'latest-version-id',
+    });
+    mocks.dbUpdateSharedTrip.mockResolvedValue({
+      trip: updatedTrip,
+      view: baseView,
+      mode: 'edit',
+      allowCopy: true,
+      latestVersionId: 'latest-version-id',
+      versionId: 'v-new',
+    });
+
+    const props = makeRouteProps({ trip: sharedTrip });
+
+    render(React.createElement(SharedTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.shareStatus).toBe('edit');
+      expect(latestTripViewProps()?.onCommitState).toBeTypeOf('function');
+    });
+
+    await act(async () => {
+      latestTripViewProps().onCommitState(updatedTrip, baseView, {
+        label: 'Edited shared trip',
+        replace: true,
+      });
+    });
+
+    expect(mocks.navigate).toHaveBeenCalledWith('/s/share-token?v=generated-version-id', { replace: true });
+    expect(mocks.appendHistoryEntry).toHaveBeenCalledWith(
+      'shared-trip',
+      '/s/share-token?v=generated-version-id',
+      'Edited shared trip',
+      expect.objectContaining({
+        snapshot: {
+          trip: updatedTrip,
+          view: baseView,
+        },
+      })
+    );
+    await waitFor(() => {
+      expect(mocks.dbUpdateSharedTrip).toHaveBeenCalledWith('share-token', updatedTrip, baseView, 'Edited shared trip');
+    });
   });
 });

@@ -238,4 +238,41 @@ describe('routes/ExampleTripLoaderRoute', () => {
       country_count: 1,
     });
   });
+
+  it('blocks copy flow and routes to pricing when trip limit is reached', async () => {
+    mocks.dbCanCreateTrip.mockResolvedValue({
+      allowCreate: false,
+      activeTripCount: 5,
+      maxTripCount: 5,
+    });
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => undefined);
+
+    const activeTrip = makeTrip({
+      id: 'example-limit',
+      title: 'Example limit',
+      isExample: true,
+      exampleTemplateId: 'template-1',
+      exampleTemplateCountries: ['Iceland'],
+    });
+
+    const props = makeRouteProps({ trip: activeTrip });
+    render(React.createElement(ExampleTripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(latestTripViewProps()?.onCopyTrip).toBeTypeOf('function');
+    });
+
+    await act(async () => {
+      await latestTripViewProps().onCopyTrip();
+    });
+
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Trip limit reached (5/5)'));
+    expect(mocks.navigate).toHaveBeenCalledWith('/pricing');
+    expect(mocks.saveTrip).not.toHaveBeenCalled();
+    expect(mocks.dbUpsertTrip).not.toHaveBeenCalled();
+    expect(mocks.dbCreateTripVersion).not.toHaveBeenCalled();
+    expect(mocks.trackEvent).not.toHaveBeenCalledWith('example_trip__banner--copy_trip', expect.anything());
+
+    alertSpy.mockRestore();
+  });
 });
