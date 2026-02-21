@@ -61,6 +61,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] ✅ Refined admin row selection UX with clearer selected-row highlighting, larger checkbox click targets, and in-table processing overlays during destructive actions.
 - [x] [Fixed] ✅ Restored admin checkbox pointer cursors and enlarged click targets after a checkbox component refactor regression.
 - [x] [Improved] 🧾 Upgraded audit history readability with clearer action aliases, colored action/target pills, and direct deep links into related user or trip details.
+- [x] [Improved] 📋 Made user and trip UUIDs in admin tables/drawers click-to-select and copy-friendly, with lightweight inline copy feedback.
 - [x] [Improved] 🎯 Added field-level before/after change snapshots in audit entries so profile status, role, tier, and trip ownership edits are easier to review.
 - [x] [Fixed] 🔗 Cleaned up audit target controls so pills stay separate from action buttons, and added direct in-app drawer opening for both linked users and trips.
 - [x] [Improved] 🧩 Added native user/trip detail sidepanels directly inside Audit so target inspection no longer requires switching admin pages.

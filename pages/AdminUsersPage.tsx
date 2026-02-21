@@ -45,6 +45,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 
@@ -2080,7 +2081,16 @@ export const AdminUsersPage: React.FC = () => {
                                             >
                                                 <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                 <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                <div className="truncate text-[11px] text-slate-500">UUID: {user.user_id}</div>
+                                                <div className="text-[11px] text-slate-500">
+                                                    UUID:{' '}
+                                                    <CopyableUuid
+                                                        value={user.user_id}
+                                                        focusable={false}
+                                                        className="align-middle"
+                                                        textClassName="max-w-[180px] truncate text-[11px]"
+                                                        hintClassName="text-[9px]"
+                                                    />
+                                                </div>
                                             </button>
                                         </td>
                                         <td className="px-3 py-2">
@@ -2406,7 +2416,13 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="border-b border-slate-200 px-5 py-4">
                                 <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-slate-600">
-                                    {selectedUser.email || selectedUser.user_id}
+                                    {selectedUser.email || (
+                                        <CopyableUuid
+                                            value={selectedUser.user_id}
+                                            className="align-middle"
+                                            textClassName="max-w-[360px] truncate text-sm"
+                                        />
+                                    )}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-xs font-semibold text-slate-600">
@@ -2631,7 +2647,13 @@ export const AdminUsersPage: React.FC = () => {
                                                         >
                                                             {trip.title || trip.trip_id}
                                                         </a>
-                                                        <div className="text-[11px] text-slate-500">{trip.trip_id}</div>
+                                                        <div className="text-[11px] text-slate-500">
+                                                            <CopyableUuid
+                                                                value={trip.trip_id}
+                                                                textClassName="max-w-[300px] truncate text-[11px]"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -2659,7 +2681,17 @@ export const AdminUsersPage: React.FC = () => {
                                                             <SelectItem value="archived">Archived</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <span className="text-slate-500">Owner: {trip.owner_email || trip.owner_id}</span>
+                                                    <span className="text-slate-500">
+                                                        Owner:{' '}
+                                                        {trip.owner_email || (
+                                                            <CopyableUuid
+                                                                value={trip.owner_id}
+                                                                className="align-middle"
+                                                                textClassName="max-w-[280px] truncate text-xs"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        )}
+                                                    </span>
                                                 </div>
                                             </article>
                                         ))}
@@ -2672,7 +2704,10 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="mt-2 space-y-1 text-sm text-slate-700">
                                         <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
-                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                            <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
                                         <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>
