@@ -1224,23 +1224,12 @@ const AppContent: React.FC = () => {
         if (isAuthLoading) return;
         const strippedPath = stripLocalePrefix(location.pathname);
         const isAuthPath = strippedPath === '/login' || strippedPath === '/auth/reset-password';
-        if (!isAuthenticated || !access || isAuthPath) return;
-        const isRegisteredUser = Boolean(access.email) && !access.isAnonymous;
-        if (!isRegisteredUser) return;
+        if (!isAuthenticated || !access || access.isAnonymous || isAuthPath) return;
 
         if (access.accountStatus !== 'active') {
             void logout();
             navigate('/login', { replace: true });
-            return;
         }
-
-        if (access.onboardingCompleted) return;
-        if (strippedPath === '/profile/onboarding') return;
-
-        navigate('/profile/onboarding', {
-            replace: true,
-            state: { from: `${location.pathname}${location.search}` },
-        });
     }, [access, isAuthLoading, isAuthenticated, location.pathname, location.search, logout, navigate]);
 
     const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {

@@ -102,6 +102,35 @@ const isSessionNotFoundError = (error: { status?: number; code?: string; message
     );
 };
 
+const isLikelyStaleSessionError = (
+    error: { status?: number; code?: string; message?: string; details?: string | null } | null | undefined
+): boolean => {
+    if (!error) return false;
+    if (isSessionNotFoundError(error)) return true;
+    const normalizedCode = typeof error.code === 'string' ? error.code.trim().toLowerCase() : '';
+    const normalizedMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+    const normalizedDetails = typeof error.details === 'string' ? error.details.toLowerCase() : '';
+    const combined = `${normalizedMessage} ${normalizedDetails}`;
+    if (normalizedCode === 'pgrst301') return true;
+    return (
+        combined.includes('not authenticated')
+        || combined.includes('invalid jwt')
+        || combined.includes('jwt expired')
+        || combined.includes('user from sub claim in jwt does not exist')
+        || combined.includes('session from session_id claim in jwt does not exist')
+    );
+};
+
+const recoverLocalAuthState = async (): Promise<void> => {
+    if (!supabase) return;
+    try {
+        await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+        // best effort recovery
+    }
+    clearSupabaseAuthStorage();
+};
+
 const buildAuthFlow = (): AuthFlowContext => ({
     flowId: buildFlowId(),
     attemptId: buildFlowId(),
@@ -206,11 +235,39 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
     const session = sessionData?.session ?? null;
     if (!session) return defaultAccessContext(null);
 
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+        if (isLikelyStaleSessionError(authError)) {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
+        return defaultAccessContext(session);
+    }
+    const authUser = authData?.user;
+    if (!authUser) {
+        await recoverLocalAuthState();
+        return defaultAccessContext(null);
+    }
+
     try {
         const { data, error } = await supabase.rpc('get_current_user_access');
-        if (error) return defaultAccessContext(session);
+        if (error) {
+            if (isLikelyStaleSessionError(error)) {
+                await recoverLocalAuthState();
+                return defaultAccessContext(null);
+            }
+            return defaultAccessContext(session);
+        }
         const row = Array.isArray(data) ? data[0] : data;
         if (!row) return defaultAccessContext(session);
+
+        const resolvedUserId = row.user_id || session.user.id || authUser.id || null;
+        if (!resolvedUserId || resolvedUserId !== authUser.id) {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
+        const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
+        const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
 
         const role: SystemRole = row.system_role === 'admin' ? 'admin' : 'user';
         const tierKey: PlanTierKey = row.tier_key === 'tier_mid'
@@ -220,8 +277,8 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : 'tier_free';
 
         return {
-            userId: row.user_id || session.user.id,
-            email: row.email || session.user.email || null,
+            userId: resolvedUserId,
+            email: row.email || authUser.email || session.user.email || metadataEmail || null,
             isAnonymous: getAnonymousFlag(session),
             role,
             tierKey,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useMemo, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AirplaneTilt, List, Folder } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -155,7 +155,16 @@ export const SiteHeader: React.FC<SiteHeaderProps> = ({
                             />
                         </div>
                         {isAuthenticated ? (
-                            <AccountMenu email={access?.email || null} isAdmin={isAdmin} />
+                            <Suspense
+                                fallback={(
+                                    <span
+                                        className="hidden h-9 w-9 rounded-full border border-slate-200 bg-slate-100 sm:inline-flex"
+                                        aria-hidden="true"
+                                    />
+                                )}
+                            >
+                                <AccountMenu email={access?.email || null} userId={access?.userId || null} isAdmin={isAdmin} />
+                            </Suspense>
                         ) : (
                             <NavLink
                                 to={buildLocalizedMarketingPath('login', activeLocale)}

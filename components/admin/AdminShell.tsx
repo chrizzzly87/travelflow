@@ -201,6 +201,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <div className="mt-3 border-t border-slate-200 pt-3">
                         <AccountMenu
                             email={access?.email || null}
+                            userId={access?.userId || null}
                             isAdmin
                             fullWidth
                             showLabel
@@ -241,6 +242,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 )}
                                 <AccountMenu
                                     email={access?.email || null}
+                                    userId={access?.userId || null}
                                     isAdmin
                                     compact={isSidebarCollapsed}
                                     showLabel={!isSidebarCollapsed}
