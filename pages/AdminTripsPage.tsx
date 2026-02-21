@@ -103,13 +103,22 @@ export const AdminTripsPage: React.FC = () => {
     const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
     const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
     const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
+    const [selectedTripDrawerId, setSelectedTripDrawerId] = useState<string | null>(null);
+    const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
     const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
+    const handledDeepLinkedTripIdRef = useRef<string | null>(null);
     const deepLinkedOwnerId = useMemo(() => {
         const drawer = searchParams.get('drawer');
         const userId = searchParams.get('user');
         if (drawer !== 'user' || !userId) return null;
         return userId;
+    }, [searchParams]);
+    const deepLinkedTripId = useMemo(() => {
+        const drawer = searchParams.get('drawer');
+        const tripId = searchParams.get('trip');
+        if (drawer !== 'trip' || !tripId) return null;
+        return tripId;
     }, [searchParams]);
 
     useEffect(() => {
@@ -120,14 +129,30 @@ export const AdminTripsPage: React.FC = () => {
             next.set('status', statusFilters.join(','));
         }
         if (dateRange !== '30d') next.set('range', dateRange);
+        const drawerTripId = selectedTripDrawerId || deepLinkedTripId;
         const drawerOwnerId = selectedOwnerId || deepLinkedOwnerId;
-        if ((isOwnerDrawerOpen || deepLinkedOwnerId) && drawerOwnerId) {
+        if ((isTripDrawerOpen || deepLinkedTripId) && drawerTripId) {
+            next.set('trip', drawerTripId);
+            next.set('drawer', 'trip');
+        } else if ((isOwnerDrawerOpen || deepLinkedOwnerId) && drawerOwnerId) {
             next.set('user', drawerOwnerId);
             next.set('drawer', 'user');
         }
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [dateRange, deepLinkedOwnerId, isOwnerDrawerOpen, searchParams, searchValue, selectedOwnerId, setSearchParams, statusFilters]);
+    }, [
+        dateRange,
+        deepLinkedOwnerId,
+        deepLinkedTripId,
+        isOwnerDrawerOpen,
+        isTripDrawerOpen,
+        searchParams,
+        searchValue,
+        selectedOwnerId,
+        selectedTripDrawerId,
+        setSearchParams,
+        statusFilters,
+    ]);
 
     const loadTrips = async () => {
         setIsLoading(true);
@@ -182,6 +207,10 @@ export const AdminTripsPage: React.FC = () => {
         () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
         [selectedTripIds, visibleTrips]
     );
+    const selectedTripForDrawer = useMemo(
+        () => trips.find((trip) => trip.trip_id === selectedTripDrawerId) || null,
+        [selectedTripDrawerId, trips]
+    );
     const areAllVisibleTripsSelected = visibleTrips.length > 0 && visibleTrips.every((trip) => selectedTripIds.has(trip.trip_id));
     const isVisibleTripSelectionPartial = selectedVisibleTrips.length > 0 && !areAllVisibleTripsSelected;
 
@@ -220,8 +249,18 @@ export const AdminTripsPage: React.FC = () => {
     };
 
     const openOwnerDrawer = (ownerId: string) => {
+        setSelectedTripDrawerId(null);
+        setIsTripDrawerOpen(false);
         setSelectedOwnerId(ownerId);
         setIsOwnerDrawerOpen(true);
+    };
+
+    const openTripDrawer = (tripId: string) => {
+        setSelectedOwnerId(null);
+        setSelectedOwnerProfile(null);
+        setIsOwnerDrawerOpen(false);
+        setSelectedTripDrawerId(tripId);
+        setIsTripDrawerOpen(true);
     };
 
     const toggleTripSelection = (tripId: string, checked: boolean) => {
@@ -312,11 +351,57 @@ export const AdminTripsPage: React.FC = () => {
             return;
         }
         if (handledDeepLinkedOwnerIdRef.current !== deepLinkedOwnerId) {
+            setSelectedTripDrawerId(null);
+            setIsTripDrawerOpen(false);
             setSelectedOwnerId(deepLinkedOwnerId);
             setIsOwnerDrawerOpen(true);
             handledDeepLinkedOwnerIdRef.current = deepLinkedOwnerId;
         }
     }, [deepLinkedOwnerId]);
+
+    useEffect(() => {
+        if (!deepLinkedTripId) {
+            handledDeepLinkedTripIdRef.current = null;
+            return;
+        }
+        if (handledDeepLinkedTripIdRef.current !== deepLinkedTripId) {
+            setSelectedOwnerId(null);
+            setSelectedOwnerProfile(null);
+            setIsOwnerDrawerOpen(false);
+            setSelectedTripDrawerId(deepLinkedTripId);
+            setIsTripDrawerOpen(true);
+            handledDeepLinkedTripIdRef.current = deepLinkedTripId;
+        }
+
+        const hasTripInList = trips.some((trip) => trip.trip_id === deepLinkedTripId);
+        if (hasTripInList) return;
+
+        let active = true;
+        void adminListTrips({ search: deepLinkedTripId, limit: 20, status: 'all' })
+            .then((rows) => {
+                if (!active) return;
+                const exactMatch = rows.find((row) => row.trip_id === deepLinkedTripId);
+                if (!exactMatch) return;
+                setTrips((current) => {
+                    const exists = current.some((candidate) => candidate.trip_id === exactMatch.trip_id);
+                    const nextTrips = exists
+                        ? current.map((candidate) => (
+                            candidate.trip_id === exactMatch.trip_id ? { ...candidate, ...exactMatch } : candidate
+                        ))
+                        : [exactMatch, ...current];
+                    writeAdminCache(TRIPS_CACHE_KEY, nextTrips);
+                    return nextTrips;
+                });
+            })
+            .catch((error) => {
+                if (!active) return;
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load linked trip.');
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [deepLinkedTripId, trips]);
 
     useEffect(() => {
         setSelectedTripIds((current) => {
@@ -497,6 +582,14 @@ export const AdminTripsPage: React.FC = () => {
                                             <ArrowSquareOut size={12} />
                                         </a>
                                         <div className="text-xs text-slate-500">{trip.trip_id}</div>
+                                        <button
+                                            type="button"
+                                            onClick={() => openTripDrawer(trip.trip_id)}
+                                            className="mt-1 inline-flex items-center gap-1 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] font-semibold text-slate-700 hover:border-accent-300 hover:text-accent-700"
+                                            title="Open trip details drawer"
+                                        >
+                                            Open drawer
+                                        </button>
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-600">
                                         <button
@@ -572,6 +665,78 @@ export const AdminTripsPage: React.FC = () => {
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
                 )}
             </section>
+
+            <Drawer
+                open={isTripDrawerOpen}
+                onOpenChange={(open) => {
+                    setIsTripDrawerOpen(open);
+                    if (!open) {
+                        setSelectedTripDrawerId(null);
+                        if (searchParams.has('trip') || searchParams.get('drawer') === 'trip') {
+                            const next = new URLSearchParams(searchParams);
+                            next.delete('trip');
+                            next.delete('drawer');
+                            setSearchParams(next, { replace: true });
+                        }
+                    }
+                }}
+                direction="right"
+            >
+                <DrawerContent
+                    side="right"
+                    className="w-[min(96vw,560px)] p-0"
+                    accessibleTitle={selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'Trip details'}
+                    accessibleDescription="Inspect selected trip metadata and jump to related owner details."
+                >
+                    <div className="flex h-full flex-col">
+                        <div className="border-b border-slate-200 px-5 py-4">
+                            <h2 className="text-base font-black text-slate-900">Trip details</h2>
+                            <p className="truncate text-sm text-slate-600">
+                                {selectedTripForDrawer ? (selectedTripForDrawer.title || selectedTripForDrawer.trip_id) : 'No trip selected'}
+                            </p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4">
+                            {!selectedTripForDrawer ? (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                                    No trip found for the selected audit target.
+                                </div>
+                            ) : (
+                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
+                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip metadata</h3>
+                                    <div className="space-y-1 text-sm text-slate-700">
+                                        <div className="break-all"><span className="font-semibold text-slate-800">Trip ID:</span> {selectedTripForDrawer.trip_id}</div>
+                                        <div><span className="font-semibold text-slate-800">Status:</span> {selectedTripForDrawer.status}</div>
+                                        <div><span className="font-semibold text-slate-800">Owner:</span> {selectedTripForDrawer.owner_email || selectedTripForDrawer.owner_id}</div>
+                                        <div className="break-all"><span className="font-semibold text-slate-800">Owner ID:</span> {selectedTripForDrawer.owner_id}</div>
+                                        <div><span className="font-semibold text-slate-800">Expires at:</span> {selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</div>
+                                        <div><span className="font-semibold text-slate-800">Source:</span> {selectedTripForDrawer.source_kind || 'n/a'}</div>
+                                        <div><span className="font-semibold text-slate-800">Created:</span> {new Date(selectedTripForDrawer.created_at).toLocaleString()}</div>
+                                        <div><span className="font-semibold text-slate-800">Updated:</span> {new Date(selectedTripForDrawer.updated_at).toLocaleString()}</div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Open owner drawer
+                                        </button>
+                                        <a
+                                            href={`/trip/${encodeURIComponent(selectedTripForDrawer.trip_id)}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Open trip
+                                            <ArrowSquareOut size={12} />
+                                        </a>
+                                    </div>
+                                </section>
+                            )}
+                        </div>
+                    </div>
+                </DrawerContent>
+            </Drawer>
 
             <Drawer
                 open={isOwnerDrawerOpen}
