@@ -74,7 +74,7 @@ Write visible items from the user's perspective — focus on the benefit, not th
 2. Keep coding notes locally while implementing; avoid creating multiple incremental release files for one feature.
 3. Shortly before opening the PR, update/finalize that one release file with final shipped scope.
 4. When ready to publish, bump the version to the next release number and set:
-   - You can get the next merged/published version with `npm run updates:next-version`.
+   - You can get the next merged/published version with `pnpm updates:next-version`.
    - `status: published`
    - `published_at` to when the change actually reached `main` (prefer production deploy timestamp; otherwise use main PR merge timestamp)
    - `notify_in_app` as needed

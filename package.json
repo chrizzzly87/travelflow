@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.18.1",
   "scripts": {
     "dev": "vite",
     "dev:netlify": "npx netlify dev --port 8888 --target-port 5173",
@@ -21,10 +22,13 @@
     "build:blog-images": "tsx scripts/build-blog-images.ts",
     "blog:images:optimize": "tsx scripts/build-blog-images.ts --skip-generation",
     "build:image-placeholders": "tsx scripts/build-image-placeholders.ts",
-    "release:prepare": "npm run build:blog-images && npm run build",
-    "build": "npm run inspirations:images:optimize && npm run blog:images:optimize && npm run build:image-placeholders && npm run i18n:validate && npm run plans:validate-sync && npm run updates:validate && npm run blog:validate && npm run edge:validate && npm run sitemap:generate && vite build",
+    "release:prepare": "pnpm build:blog-images && pnpm build",
+    "build": "pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "preview": "vite preview",
-    "maps:generate": "tsx scripts/generate-trip-maps.ts"
+    "maps:generate": "tsx scripts/generate-trip-maps.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/genai": "latest",
@@ -54,14 +58,20 @@
     "vaul": "^0.9.9"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^28.1.0",
     "sharp": "^0.34.2",
     "tailwindcss": "^4.1.18",
     "terser": "^5.46.0",
     "tsx": "^4.19.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.0.18"
   }
 }
