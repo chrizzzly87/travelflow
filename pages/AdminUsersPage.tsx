@@ -411,6 +411,48 @@ const summarizeBulkDeleteFailures = (details: string[]): string => {
     return `${visible}\n- +${details.length - maxVisible} more failure${details.length - maxVisible === 1 ? '' : 's'}`;
 };
 
+const buildSingleHardDeleteMessage = (
+    userRef: string,
+    ownedTripCount: number
+): string => {
+    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
+    return [
+        `Account: ${userRef}`,
+        '',
+        'Permanent delete impact',
+        '• Auth account',
+        '• Profile record',
+        `• ${tripLabel}`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        ownedTripCount > 0 ? 'Trip ownership choices before confirm' : '',
+        ownedTripCount > 0 ? '• Cancel and use "Transfer trips + hard delete" to preserve trip ownership' : '',
+        ownedTripCount > 0 ? '• Continue hard delete to permanently remove those trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
+const buildBulkHardDeleteMessage = (
+    selectedUsers: number,
+    selectedTrips: number
+): string => {
+    return [
+        `Selected users: ${selectedUsers}`,
+        '',
+        'Permanent delete impact',
+        `• Auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}`,
+        `• ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        selectedTrips > 0 ? 'Trip ownership choices before confirm' : '',
+        selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
+        selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
     return JSON.stringify(value, null, 2);
@@ -1356,22 +1398,9 @@ export const AdminUsersPage: React.FC = () => {
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
-        const tripLabel = `${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'}`;
         const confirmed = await confirmDialog({
             title: 'Hard delete user',
-            message: [
-                `Delete account: ${user.email || user.user_id}`,
-                '',
-                'This is permanent. The following data will be removed:',
-                '• Auth account',
-                '• Profile data',
-                `• ${tripLabel}`,
-                '• Related trip history, share links, and collaborator access',
-                '',
-                sourceTripCount > 0 ? 'Tip: To preserve trips, cancel and use "Transfer trips + hard delete" first.' : '',
-                sourceTripCount > 0 ? '' : '',
-                'This cannot be undone.',
-            ].join('\n'),
+            message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1382,7 +1411,11 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             await adminHardDeleteUser(user.user_id);
-            setMessage('User permanently deleted.');
+            setMessage(
+                sourceTripCount > 0
+                    ? `User permanently deleted. ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were removed with this hard delete.`
+                    : 'User permanently deleted.'
+            );
             setIsDetailOpen(false);
             setSelectedUserId(null);
             await loadUsers();
@@ -1423,20 +1456,7 @@ export const AdminUsersPage: React.FC = () => {
         const selectedTripCount = selectedVisibleUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
         const confirmed = await confirmDialog({
             title: 'Hard delete selected users',
-            message: [
-                `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
-                '',
-                'This is permanent. The following data will be removed:',
-                `• Auth accounts + profiles for ${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'}`,
-                `• ${selectedTripCount} owned trip${selectedTripCount === 1 ? '' : 's'} in total`,
-                '• Related trip history, share links, and collaborator access',
-                '',
-                selectedTripCount > 0
-                    ? 'Tip: If trips should be preserved, cancel and use "Transfer trips + hard delete" in each user drawer first.'
-                    : '',
-                selectedTripCount > 0 ? '' : '',
-                'This cannot be undone.',
-            ].join('\n'),
+            message: buildBulkHardDeleteMessage(selectedVisibleUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1466,10 +1486,13 @@ export const AdminUsersPage: React.FC = () => {
             const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
+                const deletedTripCount = selectedVisibleUsers
+                    .filter((_, index) => results[index]?.status === 'fulfilled')
+                    .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
                 setMessage(
                     failed > 0
-                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted. ${failed} failed.`
-                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed). ${failed} failed.`
+                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed).`
                 );
             }
             if (failed > 0) {
@@ -1593,8 +1616,10 @@ export const AdminUsersPage: React.FC = () => {
                 message: [
                     `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
                     '',
-                    'If transfer succeeds, the source user will be hard-deleted permanently (auth account + profile).',
-                    'Transferred trips remain available under the new owner.',
+                    'Step 1: Transfer all owned trips to the target account.',
+                    'Step 2: Hard-delete the source user (auth + profile only).',
+                    '',
+                    'Result: trips remain accessible under the new owner.',
                 ].join('\n'),
                 confirmLabel: 'Transfer + hard delete',
                 cancelLabel: 'Cancel',
@@ -1618,7 +1643,10 @@ export const AdminUsersPage: React.FC = () => {
             try {
                 await adminHardDeleteUser(user.user_id);
                 setMessage(
-                    `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`
+                    [
+                        `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`,
+                        `Audit should show ${sourceTrips.length} "Transferred trip owner" entr${sourceTrips.length === 1 ? 'y' : 'ies'} and one "Hard-deleted user" entry.`,
+                    ].join(' ')
                 );
                 setIsDetailOpen(false);
                 setSelectedUserId(null);

@@ -113,6 +113,46 @@ const serviceRoleMutate = async (
   return extractServiceError(payload, "Cleanup request failed.");
 };
 
+const parseContentRangeCount = (value: string | null): number | null => {
+  if (!value) return null;
+  const match = value.match(/\/(\d+|\*)$/);
+  if (!match || match[1] === "*") return null;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getOwnedTripsCount = async (
+  config: { url: string; serviceRoleKey: string },
+  userId: string,
+): Promise<number | null> => {
+  const encodedUserId = encodeURIComponent(userId);
+  const response = await fetch(
+    `${config.url}/rest/v1/trips?owner_id=eq.${encodedUserId}&select=id&limit=1`,
+    {
+      method: "GET",
+      headers: buildServiceHeaders(config.serviceRoleKey, {
+        Prefer: "count=exact",
+      }),
+    },
+  );
+  if (!response.ok) return null;
+  return parseContentRangeCount(response.headers.get("content-range"));
+};
+
+const getAuthUserEmail = async (
+  config: { url: string; serviceRoleKey: string },
+  userId: string,
+): Promise<string | null> => {
+  const response = await fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+    method: "GET",
+    headers: buildServiceHeaders(config.serviceRoleKey),
+  });
+  if (!response.ok) return null;
+  const payload = await safeJsonParse(response);
+  const email = typeof payload?.user?.email === "string" ? payload.user.email.trim() : "";
+  return email || null;
+};
+
 const clearHardDeleteBlockingReferences = async (
   config: { url: string; serviceRoleKey: string },
   userId: string,
@@ -395,6 +435,10 @@ export default async (request: Request): Promise<Response> => {
   if (action === "delete") {
     const userId = typeof body.userId === "string" ? body.userId.trim() : "";
     if (!userId) return json(400, { ok: false, error: "Missing userId for delete action." });
+    const [ownedTripsBeforeDelete, targetEmail] = await Promise.all([
+      getOwnedTripsCount(config, userId),
+      getAuthUserEmail(config, userId),
+    ]);
 
     const deleteAuthUser = async (): Promise<Response> =>
       fetch(`${config.url}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
@@ -402,11 +446,14 @@ export default async (request: Request): Promise<Response> => {
         headers: buildServiceHeaders(config.serviceRoleKey),
       });
 
+    let cleanupAttempted = false;
+    let cleanupErrors: string[] = [];
     let response = await deleteAuthUser();
     if (!response.ok) {
       const initialPayload = await safeJsonParse(response);
       const initialDeleteError = extractServiceError(initialPayload, "Could not delete user.");
-      const cleanupErrors = await clearHardDeleteBlockingReferences(config, userId);
+      cleanupAttempted = true;
+      cleanupErrors = await clearHardDeleteBlockingReferences(config, userId);
       response = await deleteAuthUser();
 
       if (!response.ok) {
@@ -430,7 +477,15 @@ export default async (request: Request): Promise<Response> => {
       action: "admin.user.hard_delete",
       targetType: "user",
       targetId: userId,
-      metadata: { via: "admin-iam-edge" },
+      metadata: {
+        via: "admin-iam-edge",
+        target_email: targetEmail,
+        owned_trips_before_delete: ownedTripsBeforeDelete,
+        trip_impact: (ownedTripsBeforeDelete || 0) > 0 ? "owned_trips_deleted" : "no_owned_trips",
+        cleanup_attempted: cleanupAttempted,
+        cleanup_error_count: cleanupErrors.length,
+        delete_mode: cleanupAttempted ? "cleanup_then_auth_delete" : "auth_delete_only",
+      },
     });
     return json(200, { ok: true, data: { userId } });
   }
