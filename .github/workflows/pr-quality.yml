@@ -48,7 +48,7 @@ jobs:
           echo "New services/config files detected:"
           echo "${added_modules}"
 
-          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- '- \[x\] New module guard completed'; then
+          if ! printf '%s\n' "${PR_BODY}" | grep -Eq -- '- \[[xX]\] New module guard completed'; then
             echo "PR checklist requirement missing: check '- [x] New module guard completed'."
             exit 1
           fi
