@@ -3,6 +3,20 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import './i18n';
+import {
+  getCurrentBlogPostTransitionTarget,
+  getLastKnownBlogPostTransitionTarget,
+  isBlogRoutePath,
+  setPendingBlogTransitionTarget,
+  startBlogViewTransition,
+  supportsBlogViewTransitions,
+} from './shared/blogViewTransitions';
+
+declare global {
+  interface Window {
+    __tfBlogPopstateTransitionBound?: boolean;
+  }
+}
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -50,6 +64,21 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
+}
+
+if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
+  window.__tfBlogPopstateTransitionBound = true;
+  window.addEventListener('popstate', () => {
+    if (!supportsBlogViewTransitions()) return;
+    const toPathname = window.location.pathname;
+    if (!isBlogRoutePath(toPathname)) return;
+
+    const currentTarget = getCurrentBlogPostTransitionTarget() ?? getLastKnownBlogPostTransitionTarget();
+    if (!currentTarget) return;
+
+    setPendingBlogTransitionTarget(currentTarget);
+    startBlogViewTransition();
+  }, true);
 }
 
 const root = ReactDOM.createRoot(rootElement);

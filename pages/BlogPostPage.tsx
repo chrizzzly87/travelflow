@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, Link, useLocation, Navigate } from 'react-router-dom';
+import { flushSync } from 'react-dom';
+import { useParams, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, User, Tag, ArrowRight, Compass, Article } from '@phosphor-icons/react';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +12,15 @@ import { getBlogPostBySlugWithFallback, getPublishedBlogPostsForLocales } from '
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import type { Components } from 'react-markdown';
+import {
+    BLOG_VIEW_TRANSITION_CLASSES,
+    setCurrentBlogPostTransitionTarget,
+    getBlogPostViewTransitionNames,
+    isPrimaryUnmodifiedClick,
+    setPendingBlogTransitionTarget,
+    startBlogViewTransition,
+    supportsBlogViewTransitions,
+} from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
 const BLOG_HEADER_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/28 via-slate-900/10 to-transparent';
@@ -19,6 +29,26 @@ const BLOG_DEFERRED_SECTION_STYLE: React.CSSProperties = {
     contentVisibility: 'auto',
     containIntrinsicSize: '1px 720px',
 };
+
+let blogListRouteModulePromise: Promise<unknown> | null = null;
+
+const ensureBlogListRouteModule = (): Promise<unknown> => {
+    if (!blogListRouteModulePromise) {
+        blogListRouteModulePromise = import('./BlogPage');
+    }
+    return blogListRouteModulePromise;
+};
+
+const getBlogTransitionStyle = (
+    transitionName: string,
+    transitionClass: string,
+    transitionGroup?: string
+): React.CSSProperties =>
+    ({
+        viewTransitionName: transitionName,
+        ['viewTransitionClass' as any]: transitionClass,
+        ...(transitionGroup ? { ['viewTransitionGroup' as any]: transitionGroup } : {}),
+    } as React.CSSProperties);
 
 const toSlug = (text: string): string =>
     text
@@ -151,10 +181,17 @@ const useActiveHeading = (headingSlugs: string[]): string | null => {
 export const BlogPostPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const location = useLocation();
+    const navigate = useNavigate();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const { t } = useTranslation('blog');
+    const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
+    const blogPath = buildLocalizedMarketingPath('blog', locale);
 
     const post = useMemo(() => (slug ? getBlogPostBySlugWithFallback(slug, locale) : undefined), [locale, slug]);
+    const postTransitionNames = useMemo(
+        () => (post && viewTransitionsEnabled ? getBlogPostViewTransitionNames(post.language, post.slug) : null),
+        [post, viewTransitionsEnabled]
+    );
     const [hasHeaderImageError, setHasHeaderImageError] = useState(false);
 
     const relatedPosts = useMemo(() => {
@@ -182,7 +219,39 @@ export const BlogPostPage: React.FC = () => {
         ? showEnglishContentNotice
             ? buildLocalizedMarketingPath('blogPost', DEFAULT_LOCALE, { slug: post.slug })
             : buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })
-        : buildLocalizedMarketingPath('blog', locale);
+        : blogPath;
+
+    const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
+        event.preventDefault();
+        setPendingBlogTransitionTarget({ language: post.language, slug: post.slug });
+        try {
+            await ensureBlogListRouteModule();
+        } catch {
+            // Ignore preload errors and rely on router fallback behavior.
+        }
+        startBlogViewTransition(() => {
+            flushSync(() => {
+                navigate(blogPath);
+            });
+        });
+    }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!post || !viewTransitionsEnabled) {
+            setCurrentBlogPostTransitionTarget(null);
+            return;
+        }
+        setCurrentBlogPostTransitionTarget({ language: post.language, slug: post.slug });
+        return () => {
+            setCurrentBlogPostTransitionTarget(null);
+        };
+    }, [post, viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        void ensureBlogListRouteModule();
+    }, [viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!post) return;
@@ -212,10 +281,11 @@ export const BlogPostPage: React.FC = () => {
         <MarketingLayout>
             <div className="reading-progress-bar" />
 
-            <div className="pb-16 md:pb-24">
+            <div data-blog-route-kind="post" className="pb-16 md:pb-24">
                 <div className="pt-6 pb-4">
                     <Link
-                        to={buildLocalizedMarketingPath('blog', locale)}
+                        to={blogPath}
+                        onClick={handleBackToBlogClick}
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-accent-700 transition-colors"
                     >
                         <ArrowLeft size={14} weight="bold" />
@@ -231,80 +301,116 @@ export const BlogPostPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className={`relative mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
-                    {!hasHeaderImageError && (
-                        <>
-                            <ProgressiveImage
-                                src={post.images.header.sources.large}
-                                alt={post.images.header.alt}
-                                width={1536}
-                                height={1024}
-                                sizes={BLOG_HEADER_IMAGE_SIZES}
-                                srcSetWidths={[480, 768, 1024, 1536]}
-                                placeholderKey={post.images.header.sources.large}
-                                loading="eager"
-                                fetchPriority="high"
-                                onError={() => setHasHeaderImageError(true)}
-                                className="absolute inset-0 h-full w-full object-cover"
-                            />
-                            <div className={BLOG_HEADER_IMAGE_FADE} />
-                            <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
-                        </>
-                    )}
-                </div>
-
-                <div className="flex gap-10 lg:gap-14">
-                    <div className="min-w-0 flex-1 max-w-3xl">
-                        <article
-                            lang={contentLang}
-                            data-blog-content-lang={contentLang}
-                            translate={showEnglishContentNotice ? 'no' : undefined}
+                <div className="relative">
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute rounded-[1.75rem]"
+                        style={
+                            postTransitionNames
+                                ? ({
+                                    ...getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain'),
+                                    insetInline: 0,
+                                    insetBlockStart: 0,
+                                    blockSize: 'clamp(26rem, 58vh, 42rem)',
+                                } as React.CSSProperties)
+                                : undefined
+                        }
+                    />
+                    <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
+                        <div
+                            className="absolute inset-0 overflow-hidden rounded-2xl"
+                            style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                         >
-                            <h1
-                                className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
-                                style={{ fontFamily: 'var(--tf-font-heading)' }}
-                            >
-                                {post.title}
-                            </h1>
-
-                            <div lang={locale} className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                                <span className="inline-flex items-center gap-1.5">
-                                    <User size={14} weight="duotone" className="text-accent-400" />
-                                    {post.author}
-                                </span>
-                                <span>{formattedDate}</span>
-                                <span className="inline-flex items-center gap-1.5">
-                                    <Clock size={14} weight="duotone" className="text-accent-400" />
-                                    {t('index.readTime', { minutes: post.readingTimeMin })}
-                                </span>
-                            </div>
-
-                            <div className="mt-4 flex flex-wrap gap-1.5">
-                                {post.tags.map((tag) => (
-                                    <Link
-                                        key={tag}
-                                        to={buildLocalizedMarketingPath('blog', locale)}
-                                        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
-                                    >
-                                        <Tag size={10} weight="duotone" />
-                                        {tag}
-                                    </Link>
-                                ))}
-                            </div>
-
-                            <p className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600">
-                                {post.summary}
-                            </p>
-
-                            <div className="mt-10">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                                    {post.content}
-                                </ReactMarkdown>
-                            </div>
-                        </article>
+                            {!hasHeaderImageError && (
+                                <>
+                                    <ProgressiveImage
+                                        src={post.images.header.sources.large}
+                                        alt={post.images.header.alt}
+                                        width={1536}
+                                        height={1024}
+                                        sizes={BLOG_HEADER_IMAGE_SIZES}
+                                        srcSetWidths={[480, 768, 1024, 1536]}
+                                        placeholderKey={post.images.header.sources.large}
+                                        loading="eager"
+                                        fetchPriority="high"
+                                        onError={() => setHasHeaderImageError(true)}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                    <div className={BLOG_HEADER_IMAGE_FADE} />
+                                    <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
+                                </>
+                            )}
+                        </div>
                     </div>
+                    <div className="relative z-10 flex gap-10 lg:gap-14">
+                        <div className="min-w-0 flex-1 max-w-3xl">
+                            <article
+                                lang={contentLang}
+                                data-blog-content-lang={contentLang}
+                                translate={showEnglishContentNotice ? 'no' : undefined}
+                            >
+                                <h1
+                                    className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl"
+                                    style={
+                                        postTransitionNames
+                                            ? ({
+                                                fontFamily: 'var(--tf-font-heading)',
+                                                ...getBlogTransitionStyle(postTransitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title),
+                                            } as React.CSSProperties)
+                                            : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
+                                    }
+                                >
+                                    {post.title}
+                                </h1>
 
-                    <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
+                                <div
+                                    lang={locale}
+                                    className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500"
+                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.meta, BLOG_VIEW_TRANSITION_CLASSES.meta) : undefined}
+                                >
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <User size={14} weight="duotone" className="text-accent-400" />
+                                        {post.author}
+                                    </span>
+                                    <span>{formattedDate}</span>
+                                    <span className="inline-flex items-center gap-1.5">
+                                        <Clock size={14} weight="duotone" className="text-accent-400" />
+                                        {t('index.readTime', { minutes: post.readingTimeMin })}
+                                    </span>
+                                </div>
+
+                                <div
+                                    className="mt-4 flex flex-wrap gap-1.5"
+                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.pills, BLOG_VIEW_TRANSITION_CLASSES.pills) : undefined}
+                                >
+                                    {post.tags.map((tag) => (
+                                        <Link
+                                            key={tag}
+                                            to={buildLocalizedMarketingPath('blog', locale)}
+                                            className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 transition-colors"
+                                        >
+                                            <Tag size={10} weight="duotone" />
+                                            {tag}
+                                        </Link>
+                                    ))}
+                                </div>
+
+                                <p
+                                    className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600"
+                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.summary, BLOG_VIEW_TRANSITION_CLASSES.summary) : undefined}
+                                >
+                                    {post.summary}
+                                </p>
+
+                                <div className="mt-10">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                        {post.content}
+                                    </ReactMarkdown>
+                                </div>
+                            </article>
+                        </div>
+
+                        <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
                         <div className="sticky top-24 space-y-8">
                             {headings.length > 0 && (
                                 <nav>
@@ -396,6 +502,7 @@ export const BlogPostPage: React.FC = () => {
                             </div>
                         </div>
                     </aside>
+                </div>
                 </div>
 
                 {relatedPosts.length > 0 && (

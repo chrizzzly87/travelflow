@@ -164,21 +164,25 @@ export const getBlogImageAccentTint = (slug: string): string => {
     return BLOG_IMAGE_SEED_OVERRIDES[slug]?.accentTint || DEFAULT_ACCENT_TINT;
 };
 
-export const getBlogImageMedia = (slug: string, title: string, accentTint = getBlogImageAccentTint(slug)): BlogImageMedia => ({
-    card: {
-        alt: `Travel photo for blog card: ${title}`,
-        sources: createResponsiveSources(slug, 'card'),
-    },
-    header: {
-        alt: `Header travel photo: ${title}`,
-        sources: createResponsiveSources(slug, 'header'),
-    },
-    ogVertical: {
-        alt: `Social preview image for article: ${title}`,
-        source: createOgSource(slug),
-    },
-    accentTint,
-});
+export const getBlogImageMedia = (slug: string, title: string, accentTint = getBlogImageAccentTint(slug)): BlogImageMedia => {
+    const sharedLandscapeSources = createResponsiveSources(slug, 'card');
+
+    return {
+        card: {
+            alt: `Travel photo for blog card: ${title}`,
+            sources: sharedLandscapeSources,
+        },
+        header: {
+            alt: `Header travel photo: ${title}`,
+            sources: sharedLandscapeSources,
+        },
+        ogVertical: {
+            alt: `Social preview image for article: ${title}`,
+            source: createOgSource(slug),
+        },
+        accentTint,
+    };
+};
 
 export const buildBlogImageSeed = (context: BlogImageSeedContext): BlogImagePromptSeed => {
     const override = BLOG_IMAGE_SEED_OVERRIDES[context.slug] || {};
