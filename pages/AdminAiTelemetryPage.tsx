@@ -102,7 +102,6 @@ const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 5, label: 'Top 5' },
 ];
 
-const BAR_COLORS = ['blue', 'cyan', 'indigo', 'violet', 'fuchsia', 'emerald'];
 const DONUT_COLORS = ['blue', 'cyan', 'indigo', 'violet', 'fuchsia', 'rose', 'emerald', 'amber'];
 
 const formatDuration = (ms: number | null | undefined): string => {
@@ -283,38 +282,34 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const fastestBarListData = useMemo(() => {
-        return limitedFastest.map((model, index) => ({
+        return limitedFastest.map((model) => ({
             key: model.key,
             name: compactModelLabel(model.provider, model.model),
             value: model.averageLatencyMs || 0,
-            color: BAR_COLORS[index % BAR_COLORS.length],
         }));
     }, [limitedFastest]);
 
     const cheapestBarListData = useMemo(() => {
-        return limitedCheapest.map((model, index) => ({
+        return limitedCheapest.map((model) => ({
             key: model.key,
             name: compactModelLabel(model.provider, model.model),
             value: model.averageCostUsd || 0,
-            color: BAR_COLORS[index % BAR_COLORS.length],
         }));
     }, [limitedCheapest]);
 
     const bestValueBarListData = useMemo(() => {
-        return limitedBestValue.map((model, index) => ({
+        return limitedBestValue.map((model) => ({
             key: model.key,
             name: compactModelLabel(model.provider, model.model),
             value: model.costPerSecondUsd || 0,
-            color: BAR_COLORS[index % BAR_COLORS.length],
         }));
     }, [limitedBestValue]);
 
     const successRateBarListData = useMemo(() => {
-        return successRateLeaders.map((model, index) => ({
+        return successRateLeaders.map((model) => ({
             key: model.key,
             name: compactModelLabel(model.provider, model.model),
             value: model.successRate,
-            color: BAR_COLORS[index % BAR_COLORS.length],
         }));
     }, [successRateLeaders]);
 
@@ -388,11 +383,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
         return [...telemetryModels]
             .sort((left, right) => right.total - left.total)
             .slice(0, 12)
-            .map((row, index) => ({
+            .map((row) => ({
                 key: row.key,
                 name: compactModelLabel(row.provider, row.model),
                 value: row.total,
-                color: BAR_COLORS[index % BAR_COLORS.length],
             }));
     }, [telemetryModels]);
 
@@ -667,7 +661,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={latencyTrendChartData}
                                 index="Time"
                                 categories={['Avg latency (ms)']}
-                                colors={['amber']}
+                                colors={['blue']}
                                 yAxisWidth={56}
                                 valueFormatter={(value) => formatDuration(value)}
                                 connectNulls

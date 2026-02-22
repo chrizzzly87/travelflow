@@ -1,3 +1,5 @@
+@source inline("{dark:,}{bg,text,fill,stroke,border,ring}-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-500");
+
 @theme inline {
   --color-tremor-brand-faint: #eff6ff;
   --color-tremor-brand-muted: #bfdbfe;
