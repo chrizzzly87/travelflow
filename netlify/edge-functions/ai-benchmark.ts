@@ -473,6 +473,99 @@ const normalizeActivityTypes = (value: unknown): string[] => {
   return ACTIVITY_TYPES.filter((type) => accepted.has(type));
 };
 
+const COUNTRY_INFO_FIELD_KEYS = [
+  "currency",
+  "currencyCode",
+  "currencyName",
+  "exchangeRate",
+  "exchangeRateToEUR",
+  "languages",
+  "sockets",
+  "electricSockets",
+  "visaLink",
+  "visaInfoUrl",
+  "auswaertigesAmtLink",
+  "auswaertigesAmtUrl",
+] as const;
+
+const countryInfoHasSignalFields = (value: Record<string, unknown>): boolean => {
+  return COUNTRY_INFO_FIELD_KEYS.some((key) => hasOwn(value, key));
+};
+
+const collectCountryInfoEntries = (value: unknown): Record<string, unknown>[] => {
+  if (Array.isArray(value)) {
+    return value.filter(isRecord);
+  }
+  if (!isRecord(value)) return [];
+  if (countryInfoHasSignalFields(value)) {
+    return [value];
+  }
+  const nested = Object.values(value).filter(isRecord);
+  return nested.filter(countryInfoHasSignalFields);
+};
+
+const tokenizeCsvText = (value: string): string[] => {
+  return value
+    .split(/[|,;/]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+};
+
+const normalizeCountryInfoLanguages = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter(hasText).map((entry) => String(entry).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return tokenizeCsvText(value);
+  }
+  return [];
+};
+
+const collectCountryInfoLanguages = (entries: Record<string, unknown>[]): string[] => {
+  const values = new Set<string>();
+  entries.forEach((entry) => {
+    normalizeCountryInfoLanguages(entry.languages).forEach((language) => values.add(language));
+  });
+  return [...values];
+};
+
+const pickFirstCountryInfoText = (
+  entries: Record<string, unknown>[],
+  keys: readonly string[],
+): string | null => {
+  for (const entry of entries) {
+    for (const key of keys) {
+      const value = entry[key];
+      if (hasText(value)) return String(value).trim();
+    }
+  }
+  return null;
+};
+
+const collectCountryInfoText = (
+  entries: Record<string, unknown>[],
+  keys: readonly string[],
+): string[] => {
+  const values = new Set<string>();
+  entries.forEach((entry) => {
+    keys.forEach((key) => {
+      const value = entry[key];
+      if (hasText(value)) values.add(String(value).trim());
+    });
+  });
+  return [...values];
+};
+
+const pickCountryInfoExchangeRate = (entries: Record<string, unknown>[]): number | null => {
+  for (const entry of entries) {
+    const direct = Number(entry.exchangeRate);
+    if (Number.isFinite(direct)) return direct;
+    const fallback = Number(entry.exchangeRateToEUR);
+    if (Number.isFinite(fallback)) return fallback;
+  }
+  return null;
+};
+
 const getActivityColor = (activityTypes: string[]): string => {
   const first = activityTypes.find((value) => ACTIVITY_TYPES.includes(value as (typeof ACTIVITY_TYPES)[number]));
   return first ? ACTIVITY_TYPE_COLOR[first as (typeof ACTIVITY_TYPES)[number]] : ACTIVITY_TYPE_COLOR.general;
@@ -573,21 +666,37 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     errors.push("One or more cities have invalid coordinates");
   }
 
-  const countryInfo = isRecord(data.countryInfo) ? data.countryInfo : null;
-  const countryInfoPresent = !!countryInfo;
-  const countryInfoValid = !!countryInfo && (
-    (hasText(countryInfo.currency) || (hasText(countryInfo.currencyCode) && hasText(countryInfo.currencyName))) &&
-    (Number.isFinite(Number(countryInfo.exchangeRate)) || Number.isFinite(Number(countryInfo.exchangeRateToEUR))) &&
-    Array.isArray(countryInfo.languages) &&
-    (countryInfo.languages as unknown[]).some((entry) => hasText(entry)) &&
-    (hasText(countryInfo.electricSockets) || hasText(countryInfo.sockets)) &&
-    (hasText(countryInfo.visaInfoUrl) || hasText(countryInfo.visaLink)) &&
-    (hasText(countryInfo.auswaertigesAmtUrl) || hasText(countryInfo.auswaertigesAmtLink))
+  const countryInfoEntries = collectCountryInfoEntries(data.countryInfo);
+  const countryInfoPresent = countryInfoEntries.length > 0;
+  const countryInfoCurrencies = collectCountryInfoText(countryInfoEntries, ["currency"]);
+  const countryInfoCurrencyCodes = collectCountryInfoText(countryInfoEntries, ["currencyCode"]);
+  const countryInfoCurrencyNames = collectCountryInfoText(countryInfoEntries, ["currencyName"]);
+  const countryInfoLanguages = collectCountryInfoLanguages(countryInfoEntries);
+  const countryInfoExchangeRate = pickCountryInfoExchangeRate(countryInfoEntries);
+  const countryInfoSockets = pickFirstCountryInfoText(countryInfoEntries, ["electricSockets", "sockets"]);
+  const countryInfoVisa = pickFirstCountryInfoText(countryInfoEntries, ["visaInfoUrl", "visaLink"]);
+  const countryInfoAmt = pickFirstCountryInfoText(countryInfoEntries, ["auswaertigesAmtUrl", "auswaertigesAmtLink"]);
+  const countryInfoCanonicalObject = isRecord(data.countryInfo) && countryInfoHasSignalFields(data.countryInfo);
+  const countryInfoValid = countryInfoPresent && (
+    countryInfoCurrencies.length > 0 ||
+    (countryInfoCurrencyCodes.length > 0 && countryInfoCurrencyNames.length > 0)
+  ) && (
+    Number.isFinite(countryInfoExchangeRate)
+  ) && (
+    countryInfoLanguages.length > 0
+  ) && (
+    Boolean(countryInfoSockets)
+  ) && (
+    Boolean(countryInfoVisa)
+  ) && (
+    Boolean(countryInfoAmt)
   );
   if (!countryInfoPresent) {
     warnings.push("countryInfo is missing (non-blocking)");
   } else if (!countryInfoValid) {
     warnings.push("countryInfo is missing required fields or has invalid formatting (non-blocking)");
+  } else if (!countryInfoCanonicalObject) {
+    warnings.push("countryInfo uses non-canonical structure (array/map); normalized for validation (non-blocking)");
   }
 
   const markdownSectionsValid = cities.every((city) => {
@@ -1285,6 +1394,10 @@ const runGeneration = async (
     });
     const latencyMs = Date.now() - startedMs;
 
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
+
     if (!result.ok) {
       const details = JSON.stringify(result.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
@@ -1374,6 +1487,10 @@ const runGeneration = async (
       return;
     }
 
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
+
     const trip = buildTripFromModelData(
       modelData as Record<string, unknown>,
       toIsoDate(scenario.startDate),
@@ -1452,6 +1569,9 @@ const runGeneration = async (
     });
   } catch (error) {
     const latencyMs = Date.now() - startedMs;
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
     await persistRunTelemetry({
       status: "failed",
       latencyMs,
@@ -2449,6 +2569,45 @@ const buildCancelledRunPatch = (run: BenchmarkRunRow): Record<string, unknown> =
   };
 };
 
+const resolveRunLatencyMs = (run: BenchmarkRunRow): number => {
+  if (typeof run.latency_ms === "number" && Number.isFinite(run.latency_ms) && run.latency_ms >= 0) {
+    return run.latency_ms;
+  }
+  const startedMs = run.started_at ? Date.parse(run.started_at) : NaN;
+  if (!Number.isFinite(startedMs)) return 0;
+  return Math.max(0, Date.now() - startedMs);
+};
+
+const persistCancelledRunTelemetry = async (run: BenchmarkRunRow) => {
+  try {
+    await persistAiGenerationTelemetry({
+      source: "benchmark",
+      requestId: run.id,
+      provider: run.provider,
+      model: run.model,
+      status: "failed",
+      latencyMs: resolveRunLatencyMs(run),
+      httpStatus: 499,
+      errorCode: "BENCHMARK_RUN_CANCELLED",
+      errorMessage: CANCELLED_BY_USER_MESSAGE,
+      benchmarkSessionId: run.session_id,
+      benchmarkRunId: run.id,
+      metadata: {
+        reason: "cancelled_by_user",
+      },
+    });
+  } catch {
+    // Best-effort only.
+  }
+};
+
+export const __benchmarkValidationInternals = {
+  collectCountryInfoEntries,
+  collectCountryInfoLanguages,
+  pickCountryInfoExchangeRate,
+  resolveRunLatencyMs,
+};
+
 const handleCancel = async (
   request: Request,
   config: { url: string; anonKey: string },
@@ -2506,7 +2665,13 @@ const handleCancel = async (
   }
 
   const cancelResults = await Promise.all(
-    runsToCancel.map((run) => updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run))),
+    runsToCancel.map(async (run) => {
+      const updated = await updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run));
+      if (updated) {
+        await persistCancelledRunTelemetry(run);
+      }
+      return updated;
+    }),
   );
 
   const cancelledCount = cancelResults.filter(Boolean).length;

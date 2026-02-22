@@ -224,6 +224,9 @@ const BASE_ITINERARY_RULES_PROMPT = `
          ### Must Do (3-4 activities)
          Use - [ ] for all items to make them checkboxes.
       4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+         - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
+         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - languages MUST be an ARRAY of strings.
          - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
          - Valid example: "exchangeRate": 163
          - Invalid example: "exchangeRateToEUR": "1 EUR ≈ 160 JPY"
@@ -272,6 +275,10 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       8. travelSegments.duration must be NUMBER (hours), never a string with units.
       9. activities.duration must be NUMBER (days), never a string with units.
       10. countryInfo.exchangeRate must be NUMBER only (example valid: 163; invalid: "1 EUR ≈ 160 JPY").
+      11. Before finalizing your answer, run a self-check:
+         - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
+         - countryInfo is a single object and languages is an array.
+         - Return exactly one JSON object and nothing else.
     `;
 
 const buildIslandConstraintPrompt = (

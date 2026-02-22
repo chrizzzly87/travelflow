@@ -116,36 +116,76 @@ export const resolveTimeoutMs = (
   minMs = 1_000,
   maxMs = 180_000,
 ): number => {
-  const raw = Number(readEnv(envKey));
+  const rawValue = readEnv(envKey).trim();
+  if (!rawValue) return fallbackMs;
+  const raw = Number(rawValue);
   if (!Number.isFinite(raw)) return fallbackMs;
   return Math.max(minMs, Math.min(maxMs, Math.round(raw)));
+};
+
+const resolveIntegerEnv = (
+  envKey: string,
+  fallbackValue: number,
+  minValue: number,
+  maxValue: number,
+): number => {
+  const rawValue = readEnv(envKey).trim();
+  if (!rawValue) return fallbackValue;
+  const raw = Number(rawValue);
+  if (!Number.isFinite(raw)) return fallbackValue;
+  return Math.max(minValue, Math.min(maxValue, Math.round(raw)));
 };
 
 const clipText = (value: string, max = 1_200): string => {
   return value.length > max ? value.slice(0, max) : value;
 };
 
-const fetchWithTimeout = async (
+const PROVIDER_MAX_OUTPUT_TOKENS = resolveIntegerEnv("AI_PROVIDER_MAX_OUTPUT_TOKENS", 8_192, 1_024, 16_384);
+
+const isAbortError = (error: unknown): boolean => {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error && typeof error === "object" && "name" in error) {
+    return (error as { name?: string }).name === "AbortError";
+  }
+  return false;
+};
+
+const fetchWithTimeout = async <T>(
   url: string,
   init: RequestInit,
   timeoutMs: number,
-): Promise<Response> => {
+  consume: (response: Response) => Promise<T>,
+): Promise<T> => {
   const timeout = Math.max(1_000, Math.round(timeoutMs));
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeoutMessage = `Provider request timed out after ${timeout}ms.`;
 
   try {
-    return await fetch(url, {
-      ...init,
-      signal: controller.signal,
+    const operation = (async () => {
+      const response = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+      });
+      return await consume(response);
+    })();
+    const timeoutPromise = new Promise<T>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(timeoutMessage));
+      }, timeout);
     });
+
+    return await Promise.race([operation, timeoutPromise]);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error(`Provider request timed out after ${timeout}ms.`);
+    if (isAbortError(error) || (error instanceof Error && error.message === timeoutMessage)) {
+      throw new Error(timeoutMessage);
     }
     throw error;
   } finally {
-    clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 };
 
@@ -329,9 +369,9 @@ const generateWithGemini = async (
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  let response: Response;
+  let payload: unknown;
   try {
-    response = await fetchWithTimeout(
+    const result = await fetchWithTimeout(
       endpoint,
       {
         method: "POST",
@@ -342,12 +382,38 @@ const generateWithGemini = async (
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
             responseMimeType: "application/json",
+            maxOutputTokens: PROVIDER_MAX_OUTPUT_TOKENS,
             temperature: 0.2,
           },
         }),
       },
       timeoutMs,
+      async (response) => {
+        if (!response.ok) {
+          return {
+            ok: false as const,
+            status: response.status,
+            details: await response.text(),
+          };
+        }
+        return {
+          ok: true as const,
+          payload: await response.json(),
+        };
+      },
     );
+    if (!result.ok) {
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "Gemini generation request failed.",
+          code: "GEMINI_REQUEST_FAILED",
+          details: clipText(result.details),
+        },
+      };
+    }
+    payload = result.payload;
   } catch (error) {
     return {
       ok: false,
@@ -360,27 +426,15 @@ const generateWithGemini = async (
     };
   }
 
-  if (!response.ok) {
-    const details = await response.text();
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "Gemini generation request failed.",
-        code: "GEMINI_REQUEST_FAILED",
-        details: clipText(details),
-      },
-    };
-  }
-
-  const payload = await response.json();
-  const rawText = (payload?.candidates?.[0]?.content?.parts || [])
+  const rawText = ((payload as Record<string, unknown>)?.candidates as Array<Record<string, unknown>> | undefined)?.[0]
+    ?.content as { parts?: Array<{ text?: string }> } | undefined;
+  const joinedText = (rawText?.parts || [])
     .map((part: { text?: string }) => part?.text || "")
     .join("\n");
 
   let parsed: Record<string, unknown>;
   try {
-    parsed = extractJsonObject(rawText);
+    parsed = extractJsonObject(joinedText);
   } catch (error) {
     return {
       ok: false,
@@ -389,12 +443,12 @@ const generateWithGemini = async (
         error: "Gemini response could not be parsed as JSON itinerary payload.",
         code: "GEMINI_PARSE_FAILED",
         details: error instanceof Error ? error.message : "Unknown parsing error",
-        sample: rawText.slice(0, 800),
+        sample: joinedText.slice(0, 800),
       },
     };
   }
 
-  const usageMeta = payload?.usageMetadata || {};
+  const usageMeta = ((payload as Record<string, unknown>)?.usageMetadata || {}) as Record<string, unknown>;
   const promptTokens = Number(usageMeta.promptTokenCount);
   const completionTokens = Number(usageMeta.candidatesTokenCount);
   const totalTokens = Number(usageMeta.totalTokenCount);
@@ -484,9 +538,11 @@ const generateWithOpenAi = async (
     };
   };
 
-  let chatResponse: Response;
+  let chatResult:
+    | { ok: true; payload: unknown }
+    | { ok: false; status: number; details: string };
   try {
-    chatResponse = await fetchWithTimeout(
+    chatResult = await fetchWithTimeout(
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
@@ -508,6 +564,19 @@ const generateWithOpenAi = async (
         }),
       },
       timeoutMs,
+      async (response) => {
+        if (!response.ok) {
+          return {
+            ok: false as const,
+            status: response.status,
+            details: await response.text(),
+          };
+        }
+        return {
+          ok: true as const,
+          payload: await response.json(),
+        };
+      },
     );
   } catch (error) {
     return {
@@ -521,13 +590,13 @@ const generateWithOpenAi = async (
     };
   }
 
-  if (chatResponse.ok) {
-    const chatPayload = await chatResponse.json();
+  if (chatResult.ok) {
+    const chatPayload = chatResult.payload as Record<string, unknown>;
     const rawText = extractOpenAiText(chatPayload?.choices?.[0]?.message?.content);
     return parseOpenAiJson(rawText, chatPayload?.usage || {});
   }
 
-  const chatDetails = await chatResponse.text();
+  const chatDetails = chatResult.details;
   if (!isOpenAiChatEndpointModelMismatch(chatDetails)) {
     return {
       ok: false,
@@ -540,16 +609,17 @@ const generateWithOpenAi = async (
     };
   }
 
-  let responsesEndpointResponse: Response;
+  let responsesEndpointResult:
+    | { ok: true; payload: unknown }
+    | { ok: false; details: string };
   try {
-    responsesEndpointResponse = await fetchWithTimeout(
+    responsesEndpointResult = await fetchWithTimeout(
       "https://api.openai.com/v1/responses",
       {
         method: "POST",
         headers: openAiHeaders,
         body: JSON.stringify({
           model,
-          temperature: 0.2,
           input: [
             {
               role: "system",
@@ -560,10 +630,22 @@ const generateWithOpenAi = async (
               content: prompt,
             },
           ],
-          max_output_tokens: 8192,
+          max_output_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
         }),
       },
       timeoutMs,
+      async (response) => {
+        if (!response.ok) {
+          return {
+            ok: false as const,
+            details: await response.text(),
+          };
+        }
+        return {
+          ok: true as const,
+          payload: await response.json(),
+        };
+      },
     );
   } catch (error) {
     return {
@@ -577,20 +659,19 @@ const generateWithOpenAi = async (
     };
   }
 
-  if (!responsesEndpointResponse.ok) {
-    const responsesDetails = await responsesEndpointResponse.text();
+  if (!responsesEndpointResult.ok) {
     return {
       ok: false,
       status: 502,
       value: {
         error: "OpenAI generation request failed.",
         code: "OPENAI_REQUEST_FAILED",
-        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesDetails}`),
+        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesEndpointResult.details}`),
       },
     };
   }
 
-  const responsesPayload = await responsesEndpointResponse.json();
+  const responsesPayload = responsesEndpointResult.payload as Record<string, unknown>;
   const rawText = extractOpenAiResponsesText(responsesPayload);
   return parseOpenAiJson(rawText, responsesPayload?.usage || {});
 };
@@ -614,9 +695,9 @@ const generateWithAnthropic = async (
 
   const providerModel = resolveAnthropicModel(model);
 
-  let response: Response;
+  let payload: unknown;
   try {
-    response = await fetchWithTimeout(
+    const result = await fetchWithTimeout(
       "https://api.anthropic.com/v1/messages",
       {
         method: "POST",
@@ -627,7 +708,7 @@ const generateWithAnthropic = async (
         },
         body: JSON.stringify({
           model: providerModel,
-          max_tokens: 8192,
+          max_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
           temperature: 0.2,
           system: "Return only a valid JSON object. Do not include markdown fences.",
           messages: [
@@ -639,7 +720,33 @@ const generateWithAnthropic = async (
         }),
       },
       timeoutMs,
+      async (response) => {
+        if (!response.ok) {
+          return {
+            ok: false as const,
+            details: await response.text(),
+          };
+        }
+        return {
+          ok: true as const,
+          payload: await response.json(),
+        };
+      },
     );
+    if (!result.ok) {
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "Anthropic generation request failed.",
+          code: "ANTHROPIC_REQUEST_FAILED",
+          model,
+          providerModel,
+          details: clipText(result.details),
+        },
+      };
+    }
+    payload = result.payload;
   } catch (error) {
     return {
       ok: false,
@@ -652,23 +759,7 @@ const generateWithAnthropic = async (
     };
   }
 
-  if (!response.ok) {
-    const details = await response.text();
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "Anthropic generation request failed.",
-        code: "ANTHROPIC_REQUEST_FAILED",
-        model,
-        providerModel,
-        details: clipText(details),
-      },
-    };
-  }
-
-  const payload = await response.json();
-  const rawText = extractAnthropicText(payload?.content);
+  const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
 
   let parsed: Record<string, unknown>;
   try {
@@ -686,7 +777,7 @@ const generateWithAnthropic = async (
     };
   }
 
-  const usageMeta = payload?.usage || {};
+  const usageMeta = ((payload as Record<string, unknown>)?.usage || {}) as Record<string, unknown>;
   const promptTokens = Number(usageMeta.input_tokens);
   const completionTokens = Number(usageMeta.output_tokens);
   const totalTokens = Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
@@ -734,11 +825,14 @@ const generateWithOpenRouter = async (
   const appTitle = readEnv("OPENROUTER_APP_NAME") || "TravelFlow";
 
   let lastError: ProviderGenerationResult | null = null;
+  let forceStrictJson = false;
 
   for (let attempt = 1; attempt <= OPENROUTER_MAX_ATTEMPTS; attempt += 1) {
-    let response: Response;
+    let responseResult:
+      | { ok: true; payload: unknown }
+      | { ok: false; status: number; details: string };
     try {
-      response = await fetchWithTimeout(
+      responseResult = await fetchWithTimeout(
         OPENROUTER_URL,
         {
           method: "POST",
@@ -750,12 +844,15 @@ const generateWithOpenRouter = async (
           },
           body: JSON.stringify({
             model,
+            max_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
             temperature: 0.2,
             response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
-                content: "Return only a valid JSON object. Do not include markdown fences.",
+                content: forceStrictJson
+                  ? "Return exactly one minified JSON object that follows the requested schema. No prose, no markdown, no explanations."
+                  : "Return only a valid JSON object. Do not include markdown fences.",
               },
               {
                 role: "user",
@@ -765,6 +862,22 @@ const generateWithOpenRouter = async (
           }),
         },
         timeoutMs,
+        async (response) => {
+          if (!response.ok) {
+            const normalizedStatus = Number.isFinite(response.status) && response.status > 0
+              ? response.status
+              : 502;
+            return {
+              ok: false as const,
+              status: normalizedStatus,
+              details: await response.text(),
+            };
+          }
+          return {
+            ok: true as const,
+            payload: await response.json(),
+          };
+        },
       );
     } catch (error) {
       lastError = {
@@ -779,36 +892,32 @@ const generateWithOpenRouter = async (
       break;
     }
 
-    if (!response.ok) {
-      const details = await response.text();
-      const normalizedStatus = Number.isFinite(response.status) && response.status > 0
-        ? response.status
-        : 502;
+    if (!responseResult.ok) {
       lastError = {
         ok: false,
-        status: normalizedStatus,
+        status: responseResult.status,
         value: {
           error: "OpenRouter generation request failed.",
           code: "OPENROUTER_REQUEST_FAILED",
-          details: clipText(details),
+          details: clipText(responseResult.details),
           model,
         },
       };
 
-      if (attempt < OPENROUTER_MAX_ATTEMPTS && isOpenRouterRetryableStatus(normalizedStatus)) {
+      if (attempt < OPENROUTER_MAX_ATTEMPTS && isOpenRouterRetryableStatus(responseResult.status)) {
         continue;
       }
       return lastError;
     }
 
-    const payload = await response.json();
+    const payload = responseResult.payload as Record<string, unknown>;
     const rawText = extractOpenAiText(payload?.choices?.[0]?.message?.content);
 
     let parsed: Record<string, unknown>;
     try {
       parsed = extractJsonObject(rawText);
     } catch (error) {
-      return {
+      lastError = {
         ok: false,
         status: 502,
         value: {
@@ -818,6 +927,11 @@ const generateWithOpenRouter = async (
           sample: rawText.slice(0, 800),
         },
       };
+      if (attempt < OPENROUTER_MAX_ATTEMPTS) {
+        forceStrictJson = true;
+        continue;
+      }
+      return lastError;
     }
 
     const usageMeta = payload?.usage || {};

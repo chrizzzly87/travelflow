@@ -115,6 +115,10 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://api.openai.com/v1/chat/completions');
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
+    const responsesInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const responsesBody = JSON.parse(String(responsesInit.body));
+    expect(responsesBody).not.toHaveProperty('temperature');
+    expect(responsesBody.max_output_tokens).toBe(8192);
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -213,18 +217,26 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.data.title).toBe('Recovered');
   });
 
-  it('returns parse failure when openrouter content is not valid json object', async () => {
+  it('retries openrouter once on parse failure and succeeds on strict-json retry', async () => {
     stubDenoEnv({
       OPENROUTER_API_KEY: 'test-key',
     });
 
-    fetchMock.mockResolvedValueOnce(
-      jsonResponse({
-        model: 'openrouter/free',
-        choices: [{ message: { content: 'not-json' } }],
-        usage: {},
-      }),
-    );
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'openrouter/free',
+          choices: [{ message: { content: 'not-json' } }],
+          usage: {},
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'openrouter/free',
+          choices: [{ message: { content: '{"title":"Recovered after parse retry"}' } }],
+          usage: { prompt_tokens: 3, completion_tokens: 4, total_tokens: 7 },
+        }),
+      );
 
     const result = await generateProviderItinerary({
       prompt: '{"request":"demo"}',
@@ -233,9 +245,79 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       timeoutMs: 30_000,
     });
 
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryBody = JSON.parse(String((fetchMock.mock.calls[1] as [string, RequestInit])[1].body));
+    expect(retryBody.messages[0].content).toContain('Return exactly one minified JSON object');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.title).toBe('Recovered after parse retry');
+  });
+
+  it('returns parse failure when openrouter content is not valid json object', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'openrouter/free',
+          choices: [{ message: { content: 'not-json' } }],
+          usage: {},
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'openrouter/free',
+          choices: [{ message: { content: 'still-not-json' } }],
+          usage: {},
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"demo"}',
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.ok).toBe(false);
     if (!('status' in result)) return;
     expect(result.status).toBe(502);
     expect(result.value.code).toBe('OPENROUTER_PARSE_FAILED');
+  });
+
+  it('returns timeout when response parsing stalls after headers', async () => {
+    vi.useFakeTimers();
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => new Promise(() => {}),
+    } as unknown as Response);
+
+    const resultPromise = generateProviderItinerary({
+      prompt: '{"request":"demo"}',
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      timeoutMs: 1_000,
+    });
+
+    let result: Awaited<ReturnType<typeof generateProviderItinerary>>;
+    try {
+      await vi.advanceTimersByTimeAsync(1_000);
+      result = await resultPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(504);
+    expect(result.value.code).toBe('OPENROUTER_REQUEST_TIMEOUT');
   });
 });

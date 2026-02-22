@@ -169,7 +169,7 @@ interface ValidationCheckStats {
 }
 
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
-const BENCHMARK_PARALLEL_CONCURRENCY = 5;
+const BENCHMARK_PARALLEL_CONCURRENCY = 3;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_EFFECTIVE_DEFAULTS = {
     travelerSetup: 'solo',

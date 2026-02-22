@@ -82,3 +82,7 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] ☀️ Fixed telemetry light-mode rendering by switching Tailwind dark variants to class-based mode (no OS dark auto-override) and refined chart compositions/colors for clearer call, latency, cost, and provider/model insights.
 - [ ] [Internal] 🎨 Added explicit Tremor color-utility safelisting (`bg/fill/stroke/text` for chart palettes) and aligned telemetry bar lists to consistent Tremor-style blue tracks so chart/bar colors no longer fall back to black/gray.
 - [ ] [Internal] 🧭 Updated Netlify manual deploy guidance to prefer stable semantic aliases and added explicit post-deploy HTTP status checks for shared test links.
+- [ ] [Internal] 🛠️ Hardened provider runtime request handling so timeout budgets now cover both HTTP fetch and response-body parsing, reducing long-running stalled benchmark calls.
+- [ ] [Internal] 🔁 Updated OpenAI non-chat fallback calls to `v1/responses` without unsupported `temperature`, preventing immediate failures on newer reasoning model entries.
+- [ ] [Internal] 🛑 Improved benchmark cancellation flow to persist explicit cancellation telemetry and skip downstream trip-persistence side effects when a run is cancelled mid-flight.
+- [ ] [Internal] 🧾 Tightened itinerary contract guidance with an explicit canonical `countryInfo` shape and a pre-submit self-check, while normalizing array/map countryInfo variants during benchmark validation.
