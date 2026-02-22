@@ -8,6 +8,13 @@ import {
 } from "../edge-lib/ai-telemetry-aggregation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import {
+  BENCHMARK_DEFAULT_MODEL_IDS,
+  createSystemBenchmarkPresets,
+  normalizeBenchmarkPreferencesPayload,
+  type BenchmarkPreferencesPayload,
+} from "../../services/aiBenchmarkPreferencesService.ts";
+import { AI_MODEL_CATALOG } from "../../config/aiModelCatalog.ts";
 
 interface BenchmarkTarget {
   provider: string;
@@ -82,6 +89,15 @@ interface BenchmarkRunRow {
   created_at: string;
 }
 
+interface BenchmarkPreferencesRow {
+  owner_id: string;
+  model_targets: unknown;
+  presets: unknown;
+  selected_preset_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ValidationResult {
   schemaValid: boolean;
   checks: Record<string, unknown>;
@@ -114,6 +130,7 @@ const TELEMETRY_SOURCE_VALUES = new Set(["all", "create_trip", "benchmark"]);
 const TELEMETRY_WINDOW_MIN_HOURS = 1;
 const TELEMETRY_WINDOW_MAX_HOURS = 24 * 90;
 const TELEMETRY_WINDOW_DEFAULT_HOURS = 24 * 7;
+const BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS = 14;
 
 const CITY_COLORS = [
   "#f43f5e",
@@ -163,6 +180,11 @@ const ACTIVITY_TYPE_COLOR: Record<(typeof ACTIVITY_TYPES)[number], string> = {
 };
 
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
+const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
+  AI_MODEL_CATALOG
+    .filter((model) => model.availability === "active")
+    .map((model) => model.id),
+);
 
 const readEnv = (name: string): string => {
   try {
@@ -315,6 +337,18 @@ const isUuid = (value?: string | null): boolean => Boolean(value && UUID_REGEX.t
 const toIsoDate = (value?: string): string => {
   if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   return new Date().toISOString().slice(0, 10);
+};
+
+const addIsoDateDays = (isoDate: string, days: number): string => {
+  const parsed = Date.parse(`${isoDate}T00:00:00Z`);
+  if (!Number.isFinite(parsed)) return isoDate;
+  return new Date(parsed + (days * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+};
+
+const getBenchmarkPreferenceDefaultDates = (): { startDate: string; endDate: string } => {
+  const startDate = toIsoDate();
+  const endDate = addIsoDateDays(startDate, BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS);
+  return { startDate, endDate };
 };
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
@@ -1728,6 +1762,232 @@ const handleTelemetry = async (
   });
 };
 
+const normalizeBenchmarkPreferencesForStorage = (
+  value: unknown,
+  options: { defaultStartDate: string; defaultEndDate: string },
+): BenchmarkPreferencesPayload => {
+  const fallbackPresets = createSystemBenchmarkPresets(options.defaultStartDate, options.defaultEndDate);
+  return normalizeBenchmarkPreferencesPayload(value, {
+    fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
+    fallbackPresets,
+    defaultStartDate: options.defaultStartDate,
+    defaultEndDate: options.defaultEndDate,
+    allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
+  });
+};
+
+const toBenchmarkPreferencesRow = (value: unknown): BenchmarkPreferencesRow | null => {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.owner_id !== "string") return null;
+  return {
+    owner_id: row.owner_id,
+    model_targets: row.model_targets,
+    presets: row.presets,
+    selected_preset_id: typeof row.selected_preset_id === "string" ? row.selected_preset_id : null,
+    created_at: typeof row.created_at === "string" ? row.created_at : "",
+    updated_at: typeof row.updated_at === "string" ? row.updated_at : "",
+  };
+};
+
+const fetchBenchmarkPreferencesRow = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+  const params = new URLSearchParams();
+  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+  params.set("order", "updated_at.desc");
+  params.set("limit", "1");
+
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return {
+      row: null,
+      error: "Failed to load benchmark preferences",
+      details: details.slice(0, 600),
+      status: response.status,
+    };
+  }
+
+  const payload = await safeJsonParse(response);
+  const rows = Array.isArray(payload) ? payload : [];
+  return {
+    row: toBenchmarkPreferencesRow(rows[0]) || null,
+  };
+};
+
+const saveBenchmarkPreferencesRow = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+  payload: BenchmarkPreferencesPayload,
+  existingRow: BenchmarkPreferencesRow | null,
+): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+  const body = JSON.stringify([
+    {
+      model_targets: payload.modelTargets,
+      presets: payload.presets,
+      selected_preset_id: payload.selectedPresetId,
+    },
+  ]);
+
+  if (existingRow?.owner_id) {
+    const params = new URLSearchParams();
+    params.set("owner_id", `eq.${existingRow.owner_id}`);
+    params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+
+    const response = await supabaseFetch(
+      config,
+      authToken,
+      `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+      {
+        method: "PATCH",
+        headers: {
+          Prefer: "return=representation",
+        },
+        body,
+      },
+    );
+
+    if (!response.ok) {
+      const details = await response.text();
+      return {
+        row: null,
+        error: "Failed to update benchmark preferences",
+        details: details.slice(0, 600),
+        status: response.status,
+      };
+    }
+
+    const rows = await safeJsonParse(response);
+    return {
+      row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
+    };
+  }
+
+  const params = new URLSearchParams();
+  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=representation",
+      },
+      body,
+    },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return {
+      row: null,
+      error: "Failed to create benchmark preferences",
+      details: details.slice(0, 600),
+      status: response.status,
+    };
+  }
+
+  const rows = await safeJsonParse(response);
+  return {
+    row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
+  };
+};
+
+const handlePreferences = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response> => {
+  if (request.method !== "GET" && request.method !== "POST") {
+    return json(405, { error: "Method not allowed. Use GET or POST." });
+  }
+
+  const { startDate, endDate } = getBenchmarkPreferenceDefaultDates();
+
+  const existing = await fetchBenchmarkPreferencesRow(config, authToken);
+  if (existing.error) {
+    return json(existing.status === 403 ? 403 : 502, {
+      error: existing.error,
+      code: "BENCHMARK_PREFERENCES_FETCH_FAILED",
+      details: existing.details,
+    });
+  }
+
+  if (request.method === "GET") {
+    const normalized = normalizeBenchmarkPreferencesForStorage({
+      modelTargets: existing.row?.model_targets,
+      presets: existing.row?.presets,
+      selectedPresetId: existing.row?.selected_preset_id,
+    }, {
+      defaultStartDate: startDate,
+      defaultEndDate: endDate,
+    });
+
+    // Ensure first access has a persisted row in DB instead of local storage only.
+    if (!existing.row) {
+      const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, null);
+      if (saved.error) {
+        return json(502, {
+          error: saved.error,
+          code: "BENCHMARK_PREFERENCES_SAVE_FAILED",
+          details: saved.details,
+        });
+      }
+      return json(200, {
+        ok: true,
+        preferences: normalized,
+        updatedAt: saved.row?.updated_at || null,
+      });
+    }
+
+    return json(200, {
+      ok: true,
+      preferences: normalized,
+      updatedAt: existing.row.updated_at || null,
+    });
+  }
+
+  const body = (await safeJsonParse(request)) || {};
+  const normalized = normalizeBenchmarkPreferencesForStorage(body, {
+    defaultStartDate: startDate,
+    defaultEndDate: endDate,
+  });
+
+  const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, existing.row);
+  if (saved.error) {
+    return json(502, {
+      error: saved.error,
+      code: "BENCHMARK_PREFERENCES_SAVE_FAILED",
+      details: saved.details,
+    });
+  }
+
+  const persisted = normalizeBenchmarkPreferencesForStorage({
+    modelTargets: saved.row?.model_targets ?? normalized.modelTargets,
+    presets: saved.row?.presets ?? normalized.presets,
+    selectedPresetId: saved.row?.selected_preset_id ?? normalized.selectedPresetId,
+  }, {
+    defaultStartDate: startDate,
+    defaultEndDate: endDate,
+  });
+
+  return json(200, {
+    ok: true,
+    preferences: persisted,
+    updatedAt: saved.row?.updated_at || null,
+  });
+};
+
 const handleGetSession = async (
   request: Request,
   config: { url: string; anonKey: string },
@@ -2437,6 +2697,10 @@ export default async (request: Request, context?: EdgeContextLike) => {
   const pathname = new URL(request.url).pathname;
 
   try {
+    if (pathname.endsWith("/preferences")) {
+      return await handlePreferences(request, config, authToken);
+    }
+
     if (pathname.endsWith("/export")) {
       if (request.method !== "GET") {
         return json(405, { error: "Method not allowed. Use GET." });

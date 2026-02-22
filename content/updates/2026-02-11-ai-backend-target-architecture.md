@@ -68,3 +68,7 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 📈 Added Umami custom events for create-trip AI request success/failure and Gemini fallback outcomes to correlate UX and backend behavior.
 - [ ] [Internal] 🤖 Expanded Anthropic/OpenRouter model coverage with Claude Sonnet 4.6 plus curated OpenRouter additions (`GLM 5`, `DeepSeek V3.2`, `Grok 4.1 Fast`, `MiniMax M2.5`, `Kimi K2.5`).
 - [ ] [Internal] 🚚 Updated feature-branch Netlify deployment guidance to use `dotenv` local build + `netlify deploy --no-build` to prevent masked Supabase browser env values in auth testing.
+- [ ] [Internal] 🗄️ Added owner-scoped benchmark preferences persistence (`ai_benchmark_preferences`) plus `/api/internal/ai/benchmark/preferences` so admin model targets and benchmark presets are stored in DB instead of browser local storage.
+- [ ] [Internal] 🧩 Refactored `/admin/ai-benchmark` into a compact control surface with modal-based preset editing/creation and modal-based model target management using the global `AppModal` pattern.
+- [ ] [Internal] 📈 Added a fixed 7-day telemetry snapshot at the top of `/admin/ai-benchmark` (Tremor cards + charts) and auto-refresh telemetry reload when benchmark runs finish.
+- [ ] [Internal] 🧪 Added normalization tests for benchmark preference payload/model-target/preset handling to cover default preset generation and invalid-payload recovery.

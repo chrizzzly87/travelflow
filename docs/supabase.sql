@@ -135,6 +135,15 @@ create table if not exists public.ai_benchmark_runs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.ai_benchmark_preferences (
+  owner_id uuid primary key references auth.users on delete cascade default auth.uid(),
+  model_targets jsonb not null default '[]'::jsonb,
+  presets jsonb not null default '[]'::jsonb,
+  selected_preset_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.ai_generation_events (
   id uuid primary key default gen_random_uuid(),
   source text not null check (source in ('create_trip', 'benchmark')),
@@ -212,6 +221,7 @@ create index if not exists ai_benchmark_sessions_owner_created_idx on public.ai_
 create index if not exists ai_benchmark_runs_session_created_idx on public.ai_benchmark_runs(session_id, created_at asc);
 create index if not exists ai_benchmark_runs_session_status_idx on public.ai_benchmark_runs(session_id, status);
 create index if not exists ai_benchmark_runs_trip_id_idx on public.ai_benchmark_runs(trip_id);
+create index if not exists ai_benchmark_preferences_updated_at_idx on public.ai_benchmark_preferences(updated_at desc);
 create index if not exists ai_generation_events_created_idx on public.ai_generation_events(created_at desc);
 create index if not exists ai_generation_events_source_created_idx on public.ai_generation_events(source, created_at desc);
 create index if not exists ai_generation_events_provider_created_idx on public.ai_generation_events(provider, created_at desc);
@@ -485,6 +495,11 @@ create trigger set_ai_benchmark_sessions_updated_at
 before update on public.ai_benchmark_sessions
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_ai_benchmark_preferences_updated_at on public.ai_benchmark_preferences;
+create trigger set_ai_benchmark_preferences_updated_at
+before update on public.ai_benchmark_preferences
+for each row execute function public.set_updated_at();
+
 -- Trip version numbers
 create or replace function public.set_trip_version_number()
 returns trigger
@@ -517,6 +532,7 @@ alter table public.plans enable row level security;
 alter table public.subscriptions enable row level security;
 alter table public.ai_benchmark_sessions enable row level security;
 alter table public.ai_benchmark_runs enable row level security;
+alter table public.ai_benchmark_preferences enable row level security;
 alter table public.ai_generation_events enable row level security;
 
 -- Trips policies
@@ -720,6 +736,28 @@ using (
       and s.owner_id = auth.uid()
   )
 );
+
+-- AI benchmark preferences policies
+drop policy if exists "AI benchmark preferences owner read" on public.ai_benchmark_preferences;
+drop policy if exists "AI benchmark preferences owner insert" on public.ai_benchmark_preferences;
+drop policy if exists "AI benchmark preferences owner update" on public.ai_benchmark_preferences;
+drop policy if exists "AI benchmark preferences owner delete" on public.ai_benchmark_preferences;
+
+create policy "AI benchmark preferences owner read"
+on public.ai_benchmark_preferences for select
+using (owner_id = auth.uid());
+
+create policy "AI benchmark preferences owner insert"
+on public.ai_benchmark_preferences for insert
+with check (owner_id = auth.uid());
+
+create policy "AI benchmark preferences owner update"
+on public.ai_benchmark_preferences for update
+using (owner_id = auth.uid());
+
+create policy "AI benchmark preferences owner delete"
+on public.ai_benchmark_preferences for delete
+using (owner_id = auth.uid());
 
 -- Share RPC helpers
 create or replace function public.create_share_token(

@@ -8,12 +8,12 @@ import {
     CheckCircle,
     WarningCircle,
     HourglassHigh,
-    Play,
     Smiley,
     SmileyMeh,
     SmileySad,
     ArrowsDownUp,
     StopCircle,
+    X,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -24,18 +24,26 @@ import {
     sortAiModels,
 } from '../config/aiModelCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
+import {
+    BENCHMARK_DEFAULT_MODEL_IDS,
+    createSystemBenchmarkPresets,
+    normalizeBenchmarkMaskScenario,
+    normalizeBenchmarkPreferencesPayload,
+    type BenchmarkMaskScenario,
+    type BenchmarkPreferencesPayload,
+    type BenchmarkPresetConfig,
+} from '../services/aiBenchmarkPreferencesService';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { getDaysDifference, getDefaultTripDates } from '../utils';
 import { getDestinationPromptLabel, resolveDestinationName } from '../services/destinationService';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { AppModal } from '../components/ui/app-modal';
 import {
     Select,
     SelectContent,
-    SelectGroup,
     SelectItem,
-    SelectLabel,
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
@@ -156,9 +164,18 @@ interface AiTelemetryApiResponse extends BenchmarkApiResponse {
     availableProviders?: string[];
 }
 
-interface ModelSelectionRow {
+interface BenchmarkPreferencesApiResponse extends BenchmarkApiResponse {
+    preferences?: BenchmarkPreferencesPayload;
+    updatedAt?: string | null;
+}
+
+interface PresetEditorDraft {
+    mode: 'edit' | 'create';
     id: string;
-    modelId: string;
+    kind: 'system' | 'custom';
+    name: string;
+    description: string;
+    scenario: BenchmarkMaskScenario;
 }
 
 type SatisfactionRating = 'good' | 'medium' | 'bad';
@@ -175,14 +192,7 @@ interface ValidationCheckStats {
 }
 
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
-const MODEL_ROWS_STORAGE_KEY = 'tf_benchmark_model_rows_v1';
 const BENCHMARK_PARALLEL_CONCURRENCY = 5;
-const DEFAULT_BENCHMARK_MODEL_IDS = [
-    'gemini:gemini-3.1-pro-preview',
-    'gemini:gemini-3-pro-preview',
-    'openai:gpt-5.2-pro',
-    'anthropic:claude-sonnet-4.6',
-];
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const TELEMETRY_WINDOW_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 24, label: 'Last 24h' },
@@ -220,38 +230,6 @@ const SATISFACTION_META: Record<SatisfactionRating, { label: string; icon: React
         activeClass: 'border-rose-300 bg-rose-50 text-rose-700',
         idleClass: 'border-slate-300 bg-white text-slate-500 hover:bg-slate-50',
     },
-};
-
-const createSelectionRow = (modelId?: string): ModelSelectionRow => ({
-    id: crypto.randomUUID(),
-    modelId: modelId || getDefaultCreateTripModel().id,
-});
-
-const readStoredModelIds = (): string[] | null => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const raw = window.localStorage.getItem(MODEL_ROWS_STORAGE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return null;
-        const valid = parsed
-            .map((value) => (typeof value === 'string' ? value.trim() : ''))
-            .filter(Boolean)
-            .filter((value, index, array) => array.indexOf(value) === index)
-            .filter((value) => AI_MODEL_CATALOG.some((model) => model.id === value));
-        return valid.length > 0 ? valid : null;
-    } catch {
-        return null;
-    }
-};
-
-const getInitialModelIds = (): string[] => {
-    const stored = readStoredModelIds();
-    if (stored) return stored;
-
-    const defaults = DEFAULT_BENCHMARK_MODEL_IDS.filter((modelId) => AI_MODEL_CATALOG.some((model) => model.id === modelId));
-    if (defaults.length > 0) return defaults;
-    return [getDefaultCreateTripModel().id];
 };
 
 const parseDestinations = (value: string): string[] => {
@@ -484,7 +462,17 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
 
     const [modelFilter, setModelFilter] = useState('');
-    const [selectionRows, setSelectionRows] = useState<ModelSelectionRow[]>(() => getInitialModelIds().map((modelId) => createSelectionRow(modelId)));
+    const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
+        const defaults = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) =>
+            AI_MODEL_CATALOG.some((entry) => entry.id === modelId && entry.availability === 'active')
+        );
+        if (defaults.length > 0) return defaults;
+        return [getDefaultCreateTripModel().id];
+    });
+    const [modelModalOpen, setModelModalOpen] = useState(false);
+    const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
+    const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
+    const [preferencesLoaded, setPreferencesLoaded] = useState(false);
     const [hideFailedRuns, setHideFailedRuns] = useState(false);
     const [onlyWarningRuns, setOnlyWarningRuns] = useState(false);
     const [onlyUnratedRuns, setOnlyUnratedRuns] = useState(false);
@@ -514,15 +502,38 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
     const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
     const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
+    const [snapshotTelemetryLoading, setSnapshotTelemetryLoading] = useState(false);
+    const [snapshotTelemetryError, setSnapshotTelemetryError] = useState<string | null>(null);
+    const [snapshotTelemetrySummary, setSnapshotTelemetrySummary] = useState<AiTelemetrySummary | null>(null);
+    const [snapshotTelemetrySeries, setSnapshotTelemetrySeries] = useState<AiTelemetrySeriesPoint[]>([]);
+    const [snapshotTelemetryProviders, setSnapshotTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
+    const [presetConfigs, setPresetConfigs] = useState<BenchmarkPresetConfig[]>(() => createSystemBenchmarkPresets(defaultDates.startDate, defaultDates.endDate));
+    const [selectedPresetId, setSelectedPresetId] = useState(() => {
+        const presets = createSystemBenchmarkPresets(defaultDates.startDate, defaultDates.endDate);
+        return presets[0]?.id || '';
+    });
     const latestSessionBootstrapRef = useRef(false);
     const resultsSectionRef = useRef<HTMLElement | null>(null);
+    const hasPendingRunsRef = useRef(false);
 
     const sortedModels = useMemo(() => sortAiModels(AI_MODEL_CATALOG), []);
+    const activeModelIdSet = useMemo(() => new Set(sortedModels.filter((model) => model.availability === 'active').map((model) => model.id)), [sortedModels]);
+    const defaultPresets = useMemo(
+        () => createSystemBenchmarkPresets(defaultDates.startDate, defaultDates.endDate),
+        [defaultDates.endDate, defaultDates.startDate]
+    );
+    const defaultModelTargetIds = useMemo(() => {
+        const defaults = BENCHMARK_DEFAULT_MODEL_IDS.filter((modelId) => activeModelIdSet.has(modelId));
+        if (defaults.length > 0) return defaults;
+        const runtimeDefault = getDefaultCreateTripModel().id;
+        return activeModelIdSet.has(runtimeDefault) ? [runtimeDefault] : Array.from(activeModelIdSet).slice(0, 1);
+    }, [activeModelIdSet]);
 
     const filteredModels = useMemo(() => {
-        if (!modelFilter.trim()) return sortedModels;
+        const activeModels = sortedModels.filter((model) => model.availability === 'active');
+        if (!modelFilter.trim()) return activeModels;
         const token = modelFilter.trim().toLocaleLowerCase();
-        return sortedModels.filter((model) => {
+        return activeModels.filter((model) => {
             return (
                 model.providerLabel.toLocaleLowerCase().includes(token)
                 || model.label.toLocaleLowerCase().includes(token)
@@ -535,15 +546,19 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const selectedTargets = useMemo(() => {
         const seen = new Set<string>();
-        return selectionRows
-            .map((row) => AI_MODEL_CATALOG.find((model) => model.id === row.modelId))
+        return modelTargetIds
+            .map((modelId) => AI_MODEL_CATALOG.find((model) => model.id === modelId))
             .filter((model): model is NonNullable<typeof model> => Boolean(model && model.availability === 'active'))
             .filter((model) => {
                 if (seen.has(model.id)) return false;
                 seen.add(model.id);
                 return true;
             });
-    }, [selectionRows]);
+    }, [modelTargetIds]);
+    const selectedPreset = useMemo(
+        () => presetConfigs.find((preset) => preset.id === selectedPresetId) || null,
+        [presetConfigs, selectedPresetId]
+    );
 
     const providerOptions = useMemo(() => {
         const values = Array.from(new Set(runs.map((run) => run.provider).filter(Boolean)));
@@ -663,14 +678,81 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const benchmarkSessionParam = (searchParams.get('session') || '').trim();
 
+    const applyMaskScenario = useCallback((scenario: BenchmarkMaskScenario) => {
+        setDestinations(scenario.destinations);
+        setDateInputMode(scenario.dateInputMode);
+        setStartDate(scenario.startDate || defaultDates.startDate);
+        setEndDate(scenario.endDate || defaultDates.endDate);
+        setFlexWeeks(scenario.flexWeeks);
+        setFlexWindow(scenario.flexWindow);
+        setBudget(scenario.budget);
+        setPace(scenario.pace);
+        setSpecificCities(scenario.specificCities);
+        setNotes(scenario.notes);
+        setNumCities(typeof scenario.numCities === 'number' ? scenario.numCities : '');
+        setRoundTrip(scenario.roundTrip);
+        setRouteLock(scenario.routeLock);
+        setTravelerSetup(scenario.travelerSetup);
+        setTripStyleMask(scenario.tripStyleMask);
+        setTransportMask(scenario.transportMask);
+    }, [defaultDates.endDate, defaultDates.startDate]);
+
+    const readMaskScenario = useCallback((): BenchmarkMaskScenario => {
+        return normalizeBenchmarkMaskScenario({
+            destinations,
+            dateInputMode,
+            startDate,
+            endDate,
+            flexWeeks,
+            flexWindow,
+            budget,
+            pace,
+            specificCities,
+            notes,
+            numCities: typeof numCities === 'number' ? numCities : null,
+            roundTrip,
+            routeLock,
+            travelerSetup,
+            tripStyleMask,
+            transportMask,
+        }, {
+            defaultStartDate: defaultDates.startDate,
+            defaultEndDate: defaultDates.endDate,
+        });
+    }, [
+        budget,
+        dateInputMode,
+        defaultDates.endDate,
+        defaultDates.startDate,
+        destinations,
+        endDate,
+        flexWeeks,
+        flexWindow,
+        notes,
+        numCities,
+        pace,
+        routeLock,
+        roundTrip,
+        specificCities,
+        startDate,
+        travelerSetup,
+        transportMask,
+        tripStyleMask,
+    ]);
+
+    const normalizePreferencesForClient = useCallback((value: unknown): BenchmarkPreferencesPayload => {
+        return normalizeBenchmarkPreferencesPayload(value, {
+            fallbackPresets: defaultPresets,
+            defaultStartDate: defaultDates.startDate,
+            defaultEndDate: defaultDates.endDate,
+            fallbackModelIds: defaultModelTargetIds,
+            allowedModelIds: activeModelIdSet,
+        });
+    }, [activeModelIdSet, defaultDates.endDate, defaultDates.startDate, defaultModelTargetIds, defaultPresets]);
+
     useEffect(() => {
         void import('prismjs/themes/prism-tomorrow.css');
     }, []);
-
-    useEffect(() => {
-        const modelIds = selectionRows.map((row) => row.modelId);
-        window.localStorage.setItem(MODEL_ROWS_STORAGE_KEY, JSON.stringify(modelIds));
-    }, [selectionRows]);
 
     useEffect(() => {
         if (!hasPendingRuns) return;
@@ -681,6 +763,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     useEffect(() => {
         if (!isAuthenticated) {
             setAccessToken(null);
+            setPreferencesLoaded(false);
             return;
         }
         let cancelled = false;
@@ -730,6 +813,89 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
         return payload;
     }, [accessToken]);
+
+    const savePreferences = useCallback(async (
+        nextOverrides?: Partial<BenchmarkPreferencesPayload>,
+        options?: { silent?: boolean }
+    ): Promise<BenchmarkPreferencesPayload | null> => {
+        if (!accessToken) return null;
+
+        try {
+            const draft = normalizePreferencesForClient({
+                modelTargets: nextOverrides?.modelTargets ?? modelTargetIds,
+                presets: nextOverrides?.presets ?? presetConfigs,
+                selectedPresetId: nextOverrides?.selectedPresetId ?? selectedPresetId,
+            });
+
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/preferences', {
+                method: 'POST',
+                body: JSON.stringify(draft),
+            }) as BenchmarkPreferencesApiResponse;
+
+            const normalized = normalizePreferencesForClient(payload.preferences || draft);
+            setModelTargetIds(normalized.modelTargets);
+            setPresetConfigs(normalized.presets);
+            setSelectedPresetId(normalized.selectedPresetId);
+            if (!options?.silent) {
+                setMessage('Benchmark preferences saved.');
+            }
+            return normalized;
+        } catch (saveError) {
+            setError(saveError instanceof Error ? saveError.message : 'Failed to save benchmark preferences.');
+            return null;
+        }
+    }, [
+        accessToken,
+        fetchBenchmarkApi,
+        modelTargetIds,
+        normalizePreferencesForClient,
+        presetConfigs,
+        selectedPresetId,
+    ]);
+
+    const loadPreferences = useCallback(async () => {
+        if (!accessToken) return;
+
+        try {
+            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/preferences', {
+                method: 'GET',
+            }) as BenchmarkPreferencesApiResponse;
+
+            const normalized = normalizePreferencesForClient(payload.preferences || {});
+            setModelTargetIds(normalized.modelTargets);
+            setPresetConfigs(normalized.presets);
+            setSelectedPresetId(normalized.selectedPresetId);
+            const preset = normalized.presets.find((entry) => entry.id === normalized.selectedPresetId) || normalized.presets[0];
+            if (preset) {
+                applyMaskScenario(preset.scenario);
+            }
+        } catch (preferencesError) {
+            setError(preferencesError instanceof Error ? preferencesError.message : 'Failed to load benchmark preferences');
+            const fallback = normalizePreferencesForClient({});
+            setModelTargetIds(fallback.modelTargets);
+            setPresetConfigs(fallback.presets);
+            setSelectedPresetId(fallback.selectedPresetId);
+            const preset = fallback.presets.find((entry) => entry.id === fallback.selectedPresetId) || fallback.presets[0];
+            if (preset) {
+                applyMaskScenario(preset.scenario);
+            }
+        } finally {
+            setPreferencesLoaded(true);
+        }
+    }, [accessToken, applyMaskScenario, fetchBenchmarkApi, normalizePreferencesForClient]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+        setPreferencesLoaded(false);
+        void loadPreferences();
+    }, [accessToken, loadPreferences]);
+
+    useEffect(() => {
+        if (preferencesLoaded) return;
+        const preset = presetConfigs.find((entry) => entry.id === selectedPresetId) || presetConfigs[0];
+        if (!preset) return;
+        applyMaskScenario(preset.scenario);
+    }, [applyMaskScenario, preferencesLoaded, presetConfigs, selectedPresetId]);
 
     const loadSession = useCallback(async (sessionLookup: string) => {
         if (!sessionLookup) return;
@@ -887,10 +1053,47 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }
     }, [fetchBenchmarkApi, telemetryWindowHours, telemetrySource, telemetryProviderFilter]);
 
+    const loadTelemetrySnapshot = useCallback(async () => {
+        setSnapshotTelemetryLoading(true);
+        setSnapshotTelemetryError(null);
+        try {
+            const params = new URLSearchParams();
+            params.set('windowHours', String(24 * 7));
+            params.set('source', 'all');
+
+            const payload = await fetchBenchmarkApi(`/api/internal/ai/benchmark/telemetry?${params.toString()}`, {
+                method: 'GET',
+            }) as AiTelemetryApiResponse;
+
+            setSnapshotTelemetrySummary(payload.summary || null);
+            setSnapshotTelemetrySeries(Array.isArray(payload.series) ? payload.series : []);
+            setSnapshotTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
+        } catch (snapshotError) {
+            setSnapshotTelemetryError(snapshotError instanceof Error ? snapshotError.message : 'Failed to load 7-day telemetry snapshot');
+            setSnapshotTelemetrySummary(null);
+            setSnapshotTelemetrySeries([]);
+            setSnapshotTelemetryProviders([]);
+        } finally {
+            setSnapshotTelemetryLoading(false);
+        }
+    }, [fetchBenchmarkApi]);
+
+    const refreshTelemetryData = useCallback(async () => {
+        await Promise.all([
+            loadTelemetry(),
+            loadTelemetrySnapshot(),
+        ]);
+    }, [loadTelemetry, loadTelemetrySnapshot]);
+
     useEffect(() => {
         if (!accessToken) return;
         void loadTelemetry();
     }, [accessToken, loadTelemetry]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+        void loadTelemetrySnapshot();
+    }, [accessToken, loadTelemetrySnapshot]);
 
     const telemetryTimelineChartData = useMemo(() => {
         return telemetrySeries.map((point) => ({
@@ -913,6 +1116,35 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 Failures: row.failed,
             }));
     }, [telemetryProviders]);
+
+    const snapshotTimelineChartData = useMemo(() => {
+        return snapshotTelemetrySeries.map((point) => ({
+            Time: new Date(point.bucketStart).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+            }),
+            Success: point.success,
+            Failed: point.failed,
+        }));
+    }, [snapshotTelemetrySeries]);
+
+    const snapshotProviderChartData = useMemo(() => {
+        return snapshotTelemetryProviders
+            .slice(0, 6)
+            .map((row) => ({
+                Provider: row.provider,
+                Calls: row.total,
+            }));
+    }, [snapshotTelemetryProviders]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+        if (hasPendingRunsRef.current && !hasPendingRuns) {
+            void refreshTelemetryData();
+        }
+        hasPendingRunsRef.current = hasPendingRuns;
+    }, [accessToken, hasPendingRuns, refreshTelemetryData]);
 
     const buildScenario = useCallback(() => {
         const selectedDestinations = parseDestinations(destinations);
@@ -1069,6 +1301,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 setMessage(`Queued ${selected.length} target(s). Running in background...`);
             } else {
                 setMessage(`Executed ${selected.length} target(s).`);
+                void refreshTelemetryData();
             }
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
@@ -1088,7 +1321,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [accessToken, selectedTargets, runs, fetchBenchmarkApi, session, sessionName, buildScenario, searchParams, setSearchParams]);
+    }, [accessToken, selectedTargets, runs, fetchBenchmarkApi, session, sessionName, buildScenario, searchParams, setSearchParams, refreshTelemetryData]);
 
     const rerunTarget = useCallback(async (run: BenchmarkRun) => {
         await runBenchmark([
@@ -1307,20 +1540,125 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         }
     }, [confirmDialog, fetchBenchmarkApi, searchParams, session, setSearchParams]);
 
-    const addSelectionRow = useCallback(() => {
-        setSelectionRows((current) => [...current, createSelectionRow()]);
-    }, []);
+    const openModelPicker = useCallback(() => {
+        setModelFilter('');
+        setModelDraftIds(modelTargetIds);
+        setModelModalOpen(true);
+    }, [modelTargetIds]);
 
-    const removeSelectionRow = useCallback((rowId: string) => {
-        setSelectionRows((current) => {
-            if (current.length <= 1) return current;
-            return current.filter((row) => row.id !== rowId);
+    const toggleModelDraft = useCallback((modelId: string) => {
+        setModelDraftIds((current) => {
+            if (current.includes(modelId)) {
+                return current.filter((entry) => entry !== modelId);
+            }
+            return [...current, modelId];
         });
     }, []);
 
-    const updateSelectionRow = useCallback((rowId: string, modelId: string) => {
-        setSelectionRows((current) => current.map((row) => (row.id === rowId ? { ...row, modelId } : row)));
+    const saveModelDraft = useCallback(async () => {
+        const normalized = normalizePreferencesForClient({
+            modelTargets: modelDraftIds,
+            presets: presetConfigs,
+            selectedPresetId,
+        });
+        if (normalized.modelTargets.length === 0) {
+            setError('Select at least one model target.');
+            return;
+        }
+        setModelTargetIds(normalized.modelTargets);
+        setModelModalOpen(false);
+        await savePreferences({
+            modelTargets: normalized.modelTargets,
+        }, { silent: true });
+    }, [modelDraftIds, normalizePreferencesForClient, presetConfigs, savePreferences, selectedPresetId]);
+
+    const removeModelTarget = useCallback(async (modelId: string) => {
+        const next = modelTargetIds.filter((entry) => entry !== modelId);
+        if (next.length === 0) {
+            setError('At least one model target is required.');
+            return;
+        }
+        setModelTargetIds(next);
+        await savePreferences({ modelTargets: next }, { silent: true });
+    }, [modelTargetIds, savePreferences]);
+
+    const handlePresetSelection = useCallback(async (presetId: string) => {
+        const preset = presetConfigs.find((entry) => entry.id === presetId);
+        if (!preset) return;
+        setSelectedPresetId(preset.id);
+        applyMaskScenario(preset.scenario);
+        await savePreferences({
+            selectedPresetId: preset.id,
+        }, { silent: true });
+    }, [applyMaskScenario, presetConfigs, savePreferences]);
+
+    const openPresetEditor = useCallback((mode: 'edit' | 'create') => {
+        if (mode === 'create') {
+            const scenario = readMaskScenario();
+            setPresetEditor({
+                mode,
+                id: `custom-${crypto.randomUUID()}`,
+                kind: 'custom',
+                name: 'Custom benchmark preset',
+                description: 'Saved custom mask for repeat benchmark runs.',
+                scenario,
+            });
+            return;
+        }
+
+        const basePreset = selectedPreset || presetConfigs[0];
+        if (!basePreset) return;
+        setPresetEditor({
+            mode,
+            id: basePreset.id,
+            kind: basePreset.kind,
+            name: basePreset.name,
+            description: basePreset.description,
+            scenario: basePreset.scenario,
+        });
+    }, [presetConfigs, readMaskScenario, selectedPreset]);
+
+    const updatePresetDraftScenario = useCallback(<K extends keyof BenchmarkMaskScenario>(key: K, value: BenchmarkMaskScenario[K]) => {
+        setPresetEditor((current) => {
+            if (!current) return current;
+            return {
+                ...current,
+                scenario: {
+                    ...current.scenario,
+                    [key]: value,
+                },
+            };
+        });
     }, []);
+
+    const savePresetDraft = useCallback(async () => {
+        if (!presetEditor) return;
+        const normalizedScenario = normalizeBenchmarkMaskScenario(presetEditor.scenario, {
+            defaultStartDate: defaultDates.startDate,
+            defaultEndDate: defaultDates.endDate,
+        });
+        const normalizedName = presetEditor.name.trim() || 'Custom benchmark preset';
+        const normalizedDescription = presetEditor.description.trim();
+        const nextPreset: BenchmarkPresetConfig = {
+            id: presetEditor.id,
+            name: normalizedName,
+            description: normalizedDescription,
+            kind: presetEditor.mode === 'create' ? 'custom' : presetEditor.kind,
+            scenario: normalizedScenario,
+        };
+
+        const nextPresets = presetEditor.mode === 'create'
+            ? [...presetConfigs, nextPreset]
+            : presetConfigs.map((entry) => (entry.id === nextPreset.id ? nextPreset : entry));
+        setPresetConfigs(nextPresets);
+        setSelectedPresetId(nextPreset.id);
+        applyMaskScenario(nextPreset.scenario);
+        setPresetEditor(null);
+        await savePreferences({
+            presets: nextPresets,
+            selectedPresetId: nextPreset.id,
+        }, { silent: true });
+    }, [applyMaskScenario, defaultDates.endDate, defaultDates.startDate, presetConfigs, presetEditor, savePreferences]);
 
     const errorModalParsed = useMemo(() => {
         if (!errorModalRun) return null;
@@ -1395,16 +1733,103 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     </section>
                 )}
 
-                <section className="grid gap-4 lg:grid-cols-[minmax(320px,0.95fr)_minmax(480px,1.05fr)]">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                        <div className="flex items-center justify-between gap-2">
-                            <h2 className="text-lg font-bold text-slate-900">Create-trip benchmark mask</h2>
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900">7-day telemetry snapshot</h3>
+                            <p className="text-xs text-slate-500">
+                                Fast top-level view of provider reliability, latency, and cost over the last 7 days.
+                            </p>
                         </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                            Mirrors the new default create-trip form while preserving the current classic prompt contract.
-                        </p>
+                        <button
+                            type="button"
+                            onClick={() => void refreshTelemetryData()}
+                            disabled={snapshotTelemetryLoading || telemetryLoading}
+                            className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <ArrowClockwise size={14} className={snapshotTelemetryLoading || telemetryLoading ? 'animate-spin' : ''} />
+                            Refresh snapshot
+                        </button>
+                    </div>
 
-                        <div className="mt-4 grid grid-cols-1 gap-3">
+                    {snapshotTelemetryError && (
+                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                            {snapshotTelemetryError}
+                        </div>
+                    )}
+
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <Card>
+                            <Text>Total calls</Text>
+                            <Metric>{snapshotTelemetrySummary ? snapshotTelemetrySummary.total : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Success rate</Text>
+                            <Metric>{snapshotTelemetrySummary ? `${snapshotTelemetrySummary.successRate.toFixed(1)}%` : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Avg duration</Text>
+                            <Metric>{snapshotTelemetrySummary ? formatDuration(snapshotTelemetrySummary.averageLatencyMs) : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Total cost (est.)</Text>
+                            <Metric>{snapshotTelemetrySummary ? formatUsd(snapshotTelemetrySummary.totalCostUsd) : '—'}</Metric>
+                        </Card>
+                    </div>
+
+                    <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                        <Card>
+                            <Title>Call health trend</Title>
+                            {snapshotTimelineChartData.length > 0 ? (
+                                <AreaChart
+                                    className="mt-2 h-48"
+                                    data={snapshotTimelineChartData}
+                                    index="Time"
+                                    categories={['Success', 'Failed']}
+                                    colors={['emerald', 'rose']}
+                                    yAxisWidth={42}
+                                />
+                            ) : (
+                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                                    No telemetry rows in the last 7 days.
+                                </div>
+                            )}
+                        </Card>
+                        <Card>
+                            <Title>Top providers</Title>
+                            {snapshotProviderChartData.length > 0 ? (
+                                <BarChart
+                                    className="mt-2 h-48"
+                                    data={snapshotProviderChartData}
+                                    index="Provider"
+                                    categories={['Calls']}
+                                    colors={['sky']}
+                                    yAxisWidth={42}
+                                />
+                            ) : (
+                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                                    No provider usage in the last 7 days.
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </section>
+
+                <section className="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(520px,1.05fr)]">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Create-trip benchmark mask</h3>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Pick a preset and edit in modal so the results table stays in view.
+                                </p>
+                            </div>
+                            <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                                {preferencesLoaded ? 'DB sync ready' : 'Loading prefs...'}
+                            </span>
+                        </div>
+
+                        <div className="mt-3 space-y-3">
                             <label className="space-y-1 text-sm">
                                 <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Session name</span>
                                 <input
@@ -1415,242 +1840,61 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             </label>
 
                             <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations (comma separated)</span>
-                                <input
-                                    value={destinations}
-                                    onChange={(event) => setDestinations(event.target.value)}
-                                    placeholder="Portugal, Madeira"
-                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                />
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preset</span>
+                                <Select value={selectedPresetId} onValueChange={(value) => void handlePresetSelection(value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Choose benchmark preset" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {presetConfigs.map((preset) => (
+                                            <SelectItem key={preset.id} value={preset.id}>
+                                                {preset.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </label>
 
-                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Route controls</div>
-                                <label className="mb-2 inline-flex items-center gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={roundTrip}
-                                        onChange={(event) => setRoundTrip(event.target.checked)}
-                                    />
-                                    Return to start (round trip)
-                                </label>
-                                <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-                                    <input
-                                        type="checkbox"
-                                        checked={routeLock}
-                                        onChange={(event) => setRouteLock(event.target.checked)}
-                                    />
-                                    Route lock (UI-only, ignored in prompt)
-                                </label>
-                            </div>
-
-                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-                                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</div>
-                                <div className="mb-3 inline-flex rounded-md border border-slate-300 bg-white p-1">
-                                    <button
-                                        type="button"
-                                        onClick={() => setDateInputMode('exact')}
-                                        className={[
-                                            'rounded px-2 py-1 text-xs font-semibold transition-colors',
-                                            dateInputMode === 'exact' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-900',
-                                        ].join(' ')}
-                                    >
-                                        Exact dates
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setDateInputMode('flex')}
-                                        className={[
-                                            'rounded px-2 py-1 text-xs font-semibold transition-colors',
-                                            dateInputMode === 'flex' ? 'bg-accent-50 text-accent-800' : 'text-slate-600 hover:text-slate-900',
-                                        ].join(' ')}
-                                    >
-                                        Flexible window
-                                    </button>
+                            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-semibold text-slate-800">{selectedPreset?.name || 'Preset'}</span>
+                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] uppercase tracking-wide">
+                                        {selectedPreset?.kind || 'system'}
+                                    </span>
                                 </div>
-
-                                {dateInputMode === 'exact' ? (
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
-                                            <input
-                                                type="date"
-                                                value={startDate}
-                                                onChange={(event) => setStartDate(event.target.value)}
-                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                            />
-                                        </label>
-
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
-                                            <input
-                                                type="date"
-                                                value={endDate}
-                                                onChange={(event) => setEndDate(event.target.value)}
-                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                            />
-                                        </label>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip length (weeks)</span>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                max={8}
-                                                value={flexWeeks}
-                                                onChange={(event) => {
-                                                    const next = Number(event.target.value);
-                                                    const normalized = Number.isFinite(next) ? Math.min(8, Math.max(1, next)) : 1;
-                                                    setFlexWeeks(normalized);
-                                                }}
-                                                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                            />
-                                        </label>
-                                        <label className="space-y-1 text-sm">
-                                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preferred time range</span>
-                                            <Select value={flexWindow} onValueChange={(value) => setFlexWindow(value as typeof flexWindow)}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select time range" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="spring">Spring window</SelectItem>
-                                                    <SelectItem value="summer">Summer window</SelectItem>
-                                                    <SelectItem value="autumn">Autumn window</SelectItem>
-                                                    <SelectItem value="winter">Winter window</SelectItem>
-                                                    <SelectItem value="shoulder">Shoulder season</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </label>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
-                                    <Select value={budget} onValueChange={setBudget}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select budget" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Low">Low</SelectItem>
-                                            <SelectItem value="Medium">Medium</SelectItem>
-                                            <SelectItem value="High">High</SelectItem>
-                                            <SelectItem value="Luxury">Luxury</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </label>
-
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
-                                    <Select value={pace} onValueChange={setPace}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select pace" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Relaxed">Relaxed</SelectItem>
-                                            <SelectItem value="Balanced">Balanced</SelectItem>
-                                            <SelectItem value="Fast">Fast</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </label>
-                            </div>
-
-                            <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-amber-800">Preview-only controls (ignored in prompt)</div>
-                                <p className="mt-1 text-xs text-amber-700">
-                                    These fields mirror the new default create-trip UI but do not affect generation output yet.
+                                <p className="mt-1 text-[11px] text-slate-500">
+                                    {selectedPreset?.description || 'No description saved for this preset.'}
                                 </p>
-                                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
-                                        <Select value={travelerSetup} onValueChange={(value) => setTravelerSetup(value as typeof travelerSetup)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select traveler setup" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="solo">Solo</SelectItem>
-                                                <SelectItem value="couple">Couple</SelectItem>
-                                                <SelectItem value="friends">Friends</SelectItem>
-                                                <SelectItem value="family">Family</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
-                                        <Select value={tripStyleMask} onValueChange={(value) => setTripStyleMask(value as typeof tripStyleMask)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select trip style" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="everything_except_remote_work">Everything except remote work</SelectItem>
-                                                <SelectItem value="culture_focused">Culture focused</SelectItem>
-                                                <SelectItem value="food_focused">Food focused</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
-                                    <label className="space-y-1 text-sm">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport preference</span>
-                                        <Select value={transportMask} onValueChange={(value) => setTransportMask(value as typeof transportMask)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select transport preference" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="automatic">Automatic</SelectItem>
-                                                <SelectItem value="plane">Plane</SelectItem>
-                                                <SelectItem value="train">Train</SelectItem>
-                                                <SelectItem value="camper">Camper</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </label>
+                                <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
+                                        {destinations || 'No destinations'}
+                                    </span>
+                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
+                                        {dateInputMode === 'flex' ? `${flexWeeks} week flexible` : `${startDate} → ${endDate}`}
+                                    </span>
+                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{budget}</span>
+                                    <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">{pace}</span>
                                 </div>
-                                <div className="mt-2 text-[11px] text-amber-800">
-                                    Effective defaults: traveler = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.travelerSetup}</span>, style = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.tripStyle}</span>, transport = <span className="font-semibold">{BENCHMARK_EFFECTIVE_DEFAULTS.transportPreference}</span>.
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities (classic contract)</span>
-                                    <input
-                                        value={specificCities}
-                                        onChange={(event) => setSpecificCities(event.target.value)}
-                                        placeholder="Tokyo, Kyoto"
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                    />
-                                </label>
-
-                                <label className="space-y-1 text-sm">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops (classic contract)</span>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        max={20}
-                                        value={numCities}
-                                        onChange={(event) => setNumCities(event.target.value ? Number(event.target.value) : '')}
-                                        placeholder="Auto"
-                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                    />
-                                </label>
-                            </div>
-
-                            <label className="space-y-1 text-sm">
-                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests (comma separated)</span>
-                                <textarea
-                                    value={notes}
-                                    onChange={(event) => setNotes(event.target.value)}
-                                    rows={4}
-                                    className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                                />
-                            </label>
-
-                            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                                Total days sent to prompt: <span className="font-semibold text-slate-800">{dateInputMode === 'flex' ? Math.max(7, Math.round(flexWeeks) * 7) : getDaysDifference(startDate, endDate)}</span>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => openPresetEditor('edit')}
+                                    disabled={loading || cancelling}
+                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    Edit preset
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => openPresetEditor('create')}
+                                    disabled={loading || cancelling}
+                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <Plus size={14} />
+                                    New custom preset
+                                </button>
                                 <button
                                     type="button"
                                     onClick={openPromptPreview}
@@ -1665,17 +1909,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h2 className="text-lg font-bold text-slate-900">Model targets + execution</h2>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={addSelectionRow}
-                                    disabled={loading || hasPendingRuns || cancelling}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Plus size={14} />
-                                    Add model
-                                </button>
+                            <h3 className="text-lg font-bold text-slate-900">Model targets + execution</h3>
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -1718,86 +1953,43 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                             )}
                         </div>
 
-                        <input
-                            value={modelFilter}
-                            onChange={(event) => setModelFilter(event.target.value)}
-                            placeholder="Search models by provider, label, or model id"
-                            className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
-                        />
+                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model targets</div>
+                                <button
+                                    type="button"
+                                    onClick={openModelPicker}
+                                    disabled={loading || cancelling || hasPendingRuns}
+                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    <Plus size={14} />
+                                    Add models
+                                </button>
+                            </div>
 
-                        <div className="mt-3 space-y-2">
-                            {selectionRows.map((row) => {
-                                const selectedModel = AI_MODEL_CATALOG.find((item) => item.id === row.modelId) || getDefaultCreateTripModel();
-                                return (
-                                    <div key={row.id} className="rounded-md border border-slate-200 bg-white p-2">
-                                        <div className="mb-2 flex items-center justify-end">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => runBenchmark([{ provider: selectedModel.provider, model: selectedModel.model, label: selectedModel.label }])}
-                                                    disabled={loading || hasPendingRuns || cancelling}
-                                                    className="inline-flex items-center gap-1 rounded bg-accent-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                                >
-                                                    <Play size={12} weight="fill" />
-                                                    Run model
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeSelectionRow(row.id)}
-                                                    disabled={selectionRows.length <= 1 || loading || hasPendingRuns || cancelling}
-                                                    className="rounded border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <Select value={row.modelId} onValueChange={(value) => updateSelectionRow(row.id, value)}>
-                                            <SelectTrigger>
-                                                <span className="truncate text-left text-sm font-semibold text-slate-800">{selectedModel.label}</span>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(groupedModels).map(([providerLabel, models]) => (
-                                                    <SelectGroup key={providerLabel}>
-                                                        <SelectLabel>{providerLabel}</SelectLabel>
-                                                        {models.map((model) => (
-                                                            <SelectItem key={model.id} value={model.id}>
-                                                                <div className="flex w-full min-w-0 flex-col gap-0.5">
-                                                                    <div className="flex items-start gap-2">
-                                                                        <span className="min-w-0 flex-1 truncate font-medium text-slate-800">{model.label}</span>
-                                                                        <div className="ml-auto flex shrink-0 items-center gap-1">
-                                                                            {model.isPreferred && (
-                                                                                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
-                                                                                    Preferred
-                                                                                </span>
-                                                                            )}
-                                                                            {model.isCurrentRuntime && (
-                                                                                <span className="rounded-full border border-accent-200 bg-accent-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-700">
-                                                                                    Runtime
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                    <span className="text-[11px] text-slate-500">{model.model} • {model.estimatedCostPerQueryLabel}</span>
-                                                                </div>
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-
-                                        <div className="mt-2 grid grid-cols-1 gap-1 text-[11px] text-slate-600 sm:grid-cols-2">
-                                            <div>
-                                                <span className="font-semibold text-slate-700">Model:</span> {selectedModel.model}
-                                            </div>
-                                            <div>
-                                                <span className="font-semibold text-slate-700">Est. cost/query:</span> {selectedModel.estimatedCostPerQueryLabel}
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {selectedTargets.length === 0 && (
+                                    <div className="text-xs text-slate-500">No model target selected.</div>
+                                )}
+                                {selectedTargets.map((model) => (
+                                    <span
+                                        key={model.id}
+                                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] text-slate-700"
+                                    >
+                                        <span className="font-semibold">{model.label}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => void removeModelTarget(model.id)}
+                                            disabled={loading || cancelling || hasPendingRuns || selectedTargets.length <= 1}
+                                            className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                            aria-label={`Remove ${model.label}`}
+                                            title={`Remove ${model.label}`}
+                                        >
+                                            <X size={10} />
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
                         </div>
 
                         <div className="mt-2 text-[11px] text-slate-500">
@@ -2303,6 +2495,353 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </table>
                     </div>
                 </section>
+
+                <AppModal
+                    isOpen={modelModalOpen}
+                    onClose={() => setModelModalOpen(false)}
+                    title="Add model targets"
+                    description="Select the models to include in benchmark execution."
+                    size="lg"
+                    mobileSheet={false}
+                    footer={(
+                        <div className="flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setModelModalOpen(false)}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void saveModelDraft()}
+                                className="rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700"
+                            >
+                                Save models
+                            </button>
+                        </div>
+                    )}
+                >
+                    <div className="space-y-3">
+                        <input
+                            value={modelFilter}
+                            onChange={(event) => setModelFilter(event.target.value)}
+                            placeholder="Search provider, label, or model id"
+                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                        />
+                        <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+                            {Object.entries(groupedModels).map(([providerLabel, models]) => (
+                                <div key={providerLabel} className="space-y-1">
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{providerLabel}</div>
+                                    <div className="space-y-1">
+                                        {models.map((model) => {
+                                            const selected = modelDraftIds.includes(model.id);
+                                            const disabled = model.availability !== 'active';
+                                            return (
+                                                <button
+                                                    key={model.id}
+                                                    type="button"
+                                                    disabled={disabled}
+                                                    onClick={() => toggleModelDraft(model.id)}
+                                                    className={[
+                                                        'flex w-full items-center justify-between rounded-md border px-2 py-2 text-left text-xs',
+                                                        selected
+                                                            ? 'border-accent-300 bg-accent-50 text-accent-900'
+                                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                                                        disabled ? 'cursor-not-allowed opacity-50' : '',
+                                                    ].join(' ')}
+                                                >
+                                                    <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                                    <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </AppModal>
+
+                <AppModal
+                    isOpen={Boolean(presetEditor)}
+                    onClose={() => setPresetEditor(null)}
+                    title={presetEditor?.mode === 'create' ? 'Create custom preset' : 'Edit preset'}
+                    description="Compact benchmark mask editor. Saved presets are owner-scoped in DB."
+                    size="lg"
+                    mobileSheet={false}
+                    footer={(
+                        <div className="flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setPresetEditor(null)}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void savePresetDraft()}
+                                className="rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700"
+                            >
+                                Save preset
+                            </button>
+                        </div>
+                    )}
+                >
+                    {presetEditor && (
+                        <div className="grid grid-cols-1 gap-3">
+                            <label className="space-y-1 text-sm">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</span>
+                                <input
+                                    value={presetEditor.name}
+                                    onChange={(event) => setPresetEditor((current) => current ? { ...current, name: event.target.value } : current)}
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                />
+                            </label>
+
+                            <label className="space-y-1 text-sm">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Description</span>
+                                <input
+                                    value={presetEditor.description}
+                                    onChange={(event) => setPresetEditor((current) => current ? { ...current, description: event.target.value } : current)}
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                />
+                            </label>
+
+                            <label className="space-y-1 text-sm">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Destinations</span>
+                                <input
+                                    value={presetEditor.scenario.destinations}
+                                    onChange={(event) => updatePresetDraftScenario('destinations', event.target.value)}
+                                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                />
+                            </label>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Date mode</span>
+                                    <Select
+                                        value={presetEditor.scenario.dateInputMode}
+                                        onValueChange={(value) => updatePresetDraftScenario('dateInputMode', value as BenchmarkMaskScenario['dateInputMode'])}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Date mode" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="exact">Exact dates</SelectItem>
+                                            <SelectItem value="flex">Flexible window</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+
+                                {presetEditor.scenario.dateInputMode === 'flex' ? (
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex weeks</span>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={12}
+                                            value={presetEditor.scenario.flexWeeks}
+                                            onChange={(event) => {
+                                                const next = Number(event.target.value);
+                                                const normalized = Number.isFinite(next) ? Math.min(12, Math.max(1, Math.round(next))) : 1;
+                                                updatePresetDraftScenario('flexWeeks', normalized);
+                                            }}
+                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        />
+                                    </label>
+                                ) : (
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Start date</span>
+                                        <input
+                                            type="date"
+                                            value={presetEditor.scenario.startDate || defaultDates.startDate}
+                                            onChange={(event) => updatePresetDraftScenario('startDate', event.target.value)}
+                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        />
+                                    </label>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                {presetEditor.scenario.dateInputMode === 'exact' ? (
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">End date</span>
+                                        <input
+                                            type="date"
+                                            value={presetEditor.scenario.endDate || defaultDates.endDate}
+                                            onChange={(event) => updatePresetDraftScenario('endDate', event.target.value)}
+                                            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                        />
+                                    </label>
+                                ) : (
+                                    <label className="space-y-1 text-sm">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Flex window</span>
+                                        <Select
+                                            value={presetEditor.scenario.flexWindow}
+                                            onValueChange={(value) => updatePresetDraftScenario('flexWindow', value as BenchmarkMaskScenario['flexWindow'])}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Preferred time range" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="spring">Spring</SelectItem>
+                                                <SelectItem value="summer">Summer</SelectItem>
+                                                <SelectItem value="autumn">Autumn</SelectItem>
+                                                <SelectItem value="winter">Winter</SelectItem>
+                                                <SelectItem value="shoulder">Shoulder</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                )}
+
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Round trip</span>
+                                    <Select
+                                        value={presetEditor.scenario.roundTrip ? 'yes' : 'no'}
+                                        onValueChange={(value) => updatePresetDraftScenario('roundTrip', value === 'yes')}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Round trip" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="yes">Yes</SelectItem>
+                                            <SelectItem value="no">No</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Budget</span>
+                                    <Select value={presetEditor.scenario.budget} onValueChange={(value) => updatePresetDraftScenario('budget', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Budget" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Low">Low</SelectItem>
+                                            <SelectItem value="Medium">Medium</SelectItem>
+                                            <SelectItem value="High">High</SelectItem>
+                                            <SelectItem value="Luxury">Luxury</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pace</span>
+                                    <Select value={presetEditor.scenario.pace} onValueChange={(value) => updatePresetDraftScenario('pace', value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Pace" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Relaxed">Relaxed</SelectItem>
+                                            <SelectItem value="Balanced">Balanced</SelectItem>
+                                            <SelectItem value="Fast">Fast</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Specific cities</span>
+                                    <input
+                                        value={presetEditor.scenario.specificCities}
+                                        onChange={(event) => updatePresetDraftScenario('specificCities', event.target.value)}
+                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    />
+                                </label>
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Stops</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={20}
+                                        value={presetEditor.scenario.numCities ?? ''}
+                                        onChange={(event) => {
+                                            const next = event.target.value ? Number(event.target.value) : null;
+                                            updatePresetDraftScenario('numCities', Number.isFinite(next as number) ? (next as number) : null);
+                                        }}
+                                        className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Traveler setup</span>
+                                    <Select
+                                        value={presetEditor.scenario.travelerSetup}
+                                        onValueChange={(value) => updatePresetDraftScenario('travelerSetup', value as BenchmarkMaskScenario['travelerSetup'])}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Traveler setup" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="solo">Solo</SelectItem>
+                                            <SelectItem value="couple">Couple</SelectItem>
+                                            <SelectItem value="friends">Friends</SelectItem>
+                                            <SelectItem value="family">Family</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Trip style</span>
+                                    <Select
+                                        value={presetEditor.scenario.tripStyleMask}
+                                        onValueChange={(value) => updatePresetDraftScenario('tripStyleMask', value as BenchmarkMaskScenario['tripStyleMask'])}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Trip style" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="everything_except_remote_work">Everything except remote work</SelectItem>
+                                            <SelectItem value="culture_focused">Culture focused</SelectItem>
+                                            <SelectItem value="food_focused">Food focused</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                                <label className="space-y-1 text-sm">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Transport</span>
+                                    <Select
+                                        value={presetEditor.scenario.transportMask}
+                                        onValueChange={(value) => updatePresetDraftScenario('transportMask', value as BenchmarkMaskScenario['transportMask'])}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Transport" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="automatic">Automatic</SelectItem>
+                                            <SelectItem value="plane">Plane</SelectItem>
+                                            <SelectItem value="train">Train</SelectItem>
+                                            <SelectItem value="camper">Camper</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </label>
+                            </div>
+
+                            <label className="space-y-1 text-sm">
+                                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Notes/interests</span>
+                                <textarea
+                                    rows={3}
+                                    value={presetEditor.scenario.notes}
+                                    onChange={(event) => updatePresetDraftScenario('notes', event.target.value)}
+                                    className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent-500"
+                                />
+                            </label>
+
+                            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={presetEditor.scenario.routeLock}
+                                    onChange={(event) => updatePresetDraftScenario('routeLock', event.target.checked)}
+                                />
+                                Route lock (metadata only)
+                            </label>
+                        </div>
+                    )}
+                </AppModal>
 
                 {promptModal && (
                     <div
