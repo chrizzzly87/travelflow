@@ -242,6 +242,31 @@ const BASE_ITINERARY_RULES_PROMPT = `
       ${TRANSPORT_MODE_PROMPT_GUIDANCE.trim()}
     `;
 
+const BASE_ITINERARY_RULES_PROMPT_COMPACT = `
+      Return a concise list of consecutive cities/stops.
+      Important Rules for compact benchmark output:
+      1. Provide accurate Latitude and Longitude for each city/stop.
+      2. Treat multi-day excursions (like treks, cruises, jungle expeditions, or hikes) as separate 'cities/stops' with their own duration (days) and coordinates.
+      3. For EACH city description, you MUST include these exact markdown sections:
+         ### Must See
+         ### Must Try
+         ### Must Do
+         Use - [ ] checkboxes with exactly 1 bullet per heading. Keep each bullet 3-6 words.
+      4. Provide Country Info (Currency, Exchange Rate to EUR, Languages, Sockets, Visa Link, Auswärtiges Amt Link).
+         - countryInfo MUST be a single OBJECT (not an array, not a map keyed by country code).
+         - Required keys inside countryInfo: currency, exchangeRate, languages, sockets, visaLink, auswaertigesAmtLink.
+         - languages MUST be an ARRAY of strings.
+         - countryInfo.exchangeRate MUST be a NUMBER only (local currency units for 1 EUR).
+      5. For EVERY activity, you MUST return "activityTypes" as an array with 1-3 values ONLY from this list:
+         [${ACTIVITY_TYPES_PROMPT_LIST}]
+         Do not return unknown activity types and do not leave activityTypes empty.
+      6. For EVERY travel segment, you MUST return "transportMode" in lowercase from:
+         [${TRANSPORT_MODES_PROMPT_LIST}]
+      7. Follow strict duration formatting.
+         ${DURATION_PROMPT_GUIDANCE.trim()}
+      ${TRANSPORT_MODE_PROMPT_GUIDANCE.trim()}
+    `;
+
 const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
       Output contract requirements (must be strictly followed):
       1. Return ONLY a single JSON object. Do NOT return an array as top-level output.
@@ -286,15 +311,22 @@ const BENCHMARK_COMPACT_OUTPUT_PROMPT = `
       Benchmark compact-output mode:
       1. Keep the full JSON concise and valid even under strict timeout budgets.
       2. For EACH city.description, include all required markdown headings, but keep text short:
-         - exactly 2 checkbox bullets per heading.
+         - exactly 1 checkbox bullet per heading.
          - each bullet should be short (about 3-6 words; hard max 8 words).
-         - city.description must stay under 700 characters total.
+         - city.description must stay under 500 characters total.
       3. Keep travelSegments.description short and practical (hard max 60 characters).
       4. Keep activities concise:
-         - activities.description must be a single short sentence (hard max 120 characters, no line breaks).
+         - activities.description must be a single short sentence (hard max 90 characters, no line breaks).
       5. Keep tripTitle concise (hard max 80 characters).
       6. Prioritize valid complete JSON over extra detail.
     `;
+
+const buildItineraryRulesPrompt = (promptMode: GenerateOptions['promptMode'] | undefined): string => {
+    if (promptMode === 'benchmark_compact') {
+        return BASE_ITINERARY_RULES_PROMPT_COMPACT;
+    }
+    return BASE_ITINERARY_RULES_PROMPT;
+};
 
 const buildIslandConstraintPrompt = (
     selectedIslandNames: string[] | undefined,
@@ -595,6 +627,7 @@ export const generateItinerary = async (prompt: string, startDate?: string, opti
 
 export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOptions): string => {
     let detailedPrompt = `Plan a detailed travel itinerary for: ${prompt}. `;
+    const promptMode = options?.promptMode;
 
     if (options) {
         if (options.roundTrip) {
@@ -612,7 +645,7 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
         }
     }
 
-    detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
+    detailedPrompt += buildItineraryRulesPrompt(promptMode);
     detailedPrompt += STRICT_JSON_OBJECT_CONTRACT_PROMPT;
     return detailedPrompt;
 };

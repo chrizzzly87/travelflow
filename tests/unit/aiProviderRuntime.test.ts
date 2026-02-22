@@ -115,6 +115,46 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.data.tripTitle).toBe('Gemini retry');
   });
 
+  it('includes gemini finishReason metadata on repeated parse failures and enables ultra-compact retry mode', async () => {
+    stubDenoEnv({
+      GEMINI_API_KEY: 'gemini-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"tripTitle":"Cut' }] } }],
+          usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 22, totalTokenCount: 33 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"tripTitle":"Still cut' }] } }],
+          usageMetadata: { promptTokenCount: 44, candidatesTokenCount: 55, totalTokenCount: 99 },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-truncation"}',
+      provider: 'gemini',
+      model: 'gemini-3-flash-preview',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const retryBody = JSON.parse(String(retryInit.body));
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('TRUNCATION RECOVERY MODE');
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('Use at most 8 cities and at most 16 activities');
+
+    expect(result.ok).toBe(false);
+    if (!('status' in result)) return;
+    expect(result.status).toBe(502);
+    expect(result.value.code).toBe('GEMINI_PARSE_FAILED');
+    expect(result.value.details).toContain('Gemini finishReason=MAX_TOKENS');
+    expect(result.value.details).toContain('Likely truncated output');
+  });
+
   it('retries anthropic once with strict JSON instructions after parse failure', async () => {
     stubDenoEnv({
       ANTHROPIC_API_KEY: 'anthropic-key',

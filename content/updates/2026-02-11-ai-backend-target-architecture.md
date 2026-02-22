@@ -91,3 +91,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧩 Added compact benchmark prompt mode plus stricter Gemini/Anthropic parse-retry flow (time-budgeted retries + strict JSON retry instructions + 60s token budget cap) to reduce malformed JSON failures.
 - [ ] [Internal] ✂️ Tightened compact benchmark prompt caps with stricter max lengths for city/activity/travel descriptions and trip titles to reduce long-output parse/timeout risk.
 - [ ] [Internal] 🔁 Updated benchmark validation to accept terminal round-trip return cities with `days: 0` as a non-blocking warning, normalizing to one day during trip build.
+- [ ] [Internal] ⚡ Further optimized benchmark compact prompt rules (single checklist bullet per required section + compact base constraints) to lower 60s timeout and truncation risk.
+- [ ] [Internal] 🧪 Added Gemini/Anthropic parse diagnostics with provider finish-reason hints plus ultra-compact truncation-retry instructions for malformed long responses.

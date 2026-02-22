@@ -149,8 +149,23 @@ IMPORTANT RETRY INSTRUCTIONS:
 - Return exactly one valid JSON object and nothing else.
 - No markdown fences, no prose, no explanation.
 - Keep output compact to avoid truncation.
-- For each city description, include all required headings with concise checklist bullets.
+- Keep tripTitle at or below 80 characters.
+- Keep each city.description compact with one short checkbox bullet per required heading.
+- Keep travelSegments.description at or below 60 characters.
+- Keep activities.description at or below 90 characters.
 `.trim();
+
+const ULTRA_COMPACT_RETRY_INSTRUCTION = `
+TRUNCATION RECOVERY MODE:
+- Keep the JSON intentionally short to avoid token truncation.
+- Use at most 8 cities and at most 16 activities.
+- Prefer short practical text over narrative prose.
+`.trim();
+
+const isTokenLimitSignal = (value: unknown): boolean => {
+  if (typeof value !== "string") return false;
+  return /max[_\s-]?token|length/i.test(value);
+};
 
 const resolveOutputTokenBudget = (override?: number): number => {
   if (!Number.isFinite(override)) return PROVIDER_MAX_OUTPUT_TOKENS;
@@ -395,6 +410,7 @@ const generateWithGemini = async (
 
   const requestStartedAt = Date.now();
   let strictParseRetry = false;
+  let ultraCompactParseRetry = false;
 
   for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
     const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
@@ -410,8 +426,11 @@ const generateWithGemini = async (
       };
     }
 
+    const retryInstructions = ultraCompactParseRetry
+      ? `${STRICT_JSON_RETRY_INSTRUCTION}\n${ULTRA_COMPACT_RETRY_INSTRUCTION}`
+      : STRICT_JSON_RETRY_INSTRUCTION;
     const promptBody = strictParseRetry
-      ? `${prompt}\n\n${STRICT_JSON_RETRY_INSTRUCTION}`
+      ? `${prompt}\n\n${retryInstructions}`
       : prompt;
 
     let payload: unknown;
@@ -471,8 +490,9 @@ const generateWithGemini = async (
       };
     }
 
-    const rawText = ((payload as Record<string, unknown>)?.candidates as Array<Record<string, unknown>> | undefined)?.[0]
-      ?.content as { parts?: Array<{ text?: string }> } | undefined;
+    const firstCandidate = ((payload as Record<string, unknown>)?.candidates as Array<Record<string, unknown>> | undefined)?.[0];
+    const finishReason = typeof firstCandidate?.finishReason === "string" ? firstCandidate.finishReason : "";
+    const rawText = (firstCandidate?.content as { parts?: Array<{ text?: string }> } | undefined);
     const joinedText = (rawText?.parts || [])
       .map((part: { text?: string }) => part?.text || "")
       .join("\n");
@@ -483,15 +503,23 @@ const generateWithGemini = async (
     } catch (error) {
       if (attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
         strictParseRetry = true;
+        ultraCompactParseRetry = ultraCompactParseRetry || isTokenLimitSignal(finishReason);
         continue;
       }
+      const parseDetails = error instanceof Error ? error.message : "Unknown parsing error";
+      const detailsWithReason = finishReason
+        ? `${parseDetails} Gemini finishReason=${finishReason}.`
+        : parseDetails;
+      const details = ultraCompactParseRetry
+        ? `${detailsWithReason} Likely truncated output; compact retry constraints were applied.`
+        : detailsWithReason;
       return {
         ok: false,
         status: 502,
         value: {
           error: "Gemini response could not be parsed as JSON itinerary payload.",
           code: "GEMINI_PARSE_FAILED",
-          details: error instanceof Error ? error.message : "Unknown parsing error",
+          details,
           sample: joinedText.slice(0, 800),
         },
       };
@@ -789,6 +817,7 @@ const generateWithAnthropic = async (
 
   const requestStartedAt = Date.now();
   let strictParseRetry = false;
+  let ultraCompactParseRetry = false;
 
   for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
     const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
@@ -804,6 +833,9 @@ const generateWithAnthropic = async (
       };
     }
 
+    const retryInstructions = ultraCompactParseRetry
+      ? `${STRICT_JSON_RETRY_INSTRUCTION}\n${ULTRA_COMPACT_RETRY_INSTRUCTION}`
+      : STRICT_JSON_RETRY_INSTRUCTION;
     let payload: unknown;
     try {
       const result = await fetchWithTimeout(
@@ -826,7 +858,7 @@ const generateWithAnthropic = async (
               {
                 role: "user",
                 content: strictParseRetry
-                  ? `${prompt}\n\n${STRICT_JSON_RETRY_INSTRUCTION}`
+                  ? `${prompt}\n\n${retryInstructions}`
                   : prompt,
               },
             ],
@@ -872,6 +904,9 @@ const generateWithAnthropic = async (
       };
     }
 
+    const stopReason = typeof (payload as Record<string, unknown>)?.stop_reason === "string"
+      ? String((payload as Record<string, unknown>).stop_reason)
+      : "";
     const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
 
     let parsed: Record<string, unknown>;
@@ -880,15 +915,23 @@ const generateWithAnthropic = async (
     } catch (error) {
       if (attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
         strictParseRetry = true;
+        ultraCompactParseRetry = ultraCompactParseRetry || isTokenLimitSignal(stopReason);
         continue;
       }
+      const parseDetails = error instanceof Error ? error.message : "Unknown parsing error";
+      const detailsWithReason = stopReason
+        ? `${parseDetails} Anthropic stop_reason=${stopReason}.`
+        : parseDetails;
+      const details = ultraCompactParseRetry
+        ? `${detailsWithReason} Likely truncated output; compact retry constraints were applied.`
+        : detailsWithReason;
       return {
         ok: false,
         status: 502,
         value: {
           error: "Anthropic response could not be parsed as JSON itinerary payload.",
           code: "ANTHROPIC_PARSE_FAILED",
-          details: error instanceof Error ? error.message : "Unknown parsing error",
+          details,
           sample: rawText.slice(0, 800),
         },
       };
