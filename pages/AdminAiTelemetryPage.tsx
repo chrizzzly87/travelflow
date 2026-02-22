@@ -1,6 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowClockwise } from '@phosphor-icons/react';
-import { AreaChart, BarChart } from '@tremor/react';
+import {
+    AreaChart,
+    BarChart,
+    BarList,
+    Card,
+    DonutChart,
+    Grid,
+    LineChart,
+    Metric,
+    Subtitle,
+    Text,
+    Title,
+} from '@tremor/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
@@ -92,6 +104,8 @@ const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 5, label: 'Top 5' },
 ];
 
+const BAR_COLORS = ['emerald', 'sky', 'amber', 'violet', 'indigo', 'rose'];
+
 const formatDuration = (ms: number | null | undefined): string => {
     if (!Number.isFinite(ms)) return '—';
     const value = Number(ms);
@@ -104,11 +118,22 @@ const formatUsd = (value: number | null | undefined): string => {
     return `$${Number(value).toFixed(6)}`;
 };
 
+const formatPercent = (value: number | null | undefined): string => {
+    if (!Number.isFinite(value)) return '—';
+    return `${Number(value).toFixed(1)}%`;
+};
+
 const formatTimestamp = (value?: string | null): string => {
     if (!value) return '—';
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
+};
+
+const compactModelLabel = (provider: string, model: string): string => {
+    const combined = `${provider} / ${model}`;
+    if (combined.length <= 44) return combined;
+    return `${combined.slice(0, 41)}...`;
 };
 
 export const AdminAiTelemetryPage: React.FC = () => {
@@ -157,6 +182,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
         const headers = new Headers(init?.headers || {});
         headers.set('Content-Type', 'application/json');
         headers.set('Authorization', `Bearer ${accessToken}`);
+
         const response = await fetch(path, {
             ...init,
             headers,
@@ -169,9 +195,11 @@ export const AdminAiTelemetryPage: React.FC = () => {
         } catch {
             payload = { ok: response.ok, error: raw || undefined };
         }
+
         if (!response.ok) {
             throw new Error(payload.error || `Telemetry API request failed (${response.status})`);
         }
+
         return payload;
     }, [accessToken]);
 
@@ -225,7 +253,67 @@ export const AdminAiTelemetryPage: React.FC = () => {
         void loadTelemetry();
     }, [accessToken, loadTelemetry]);
 
-    const timelineChartData = useMemo(() => {
+    const successfulModels = useMemo(
+        () => telemetryModels.filter((row) => row.success > 0),
+        [telemetryModels],
+    );
+
+    const successRateLeaders = useMemo(() => {
+        return [...successfulModels]
+            .sort((left, right) => right.successRate - left.successRate || right.total - left.total)
+            .slice(0, rankLimit);
+    }, [rankLimit, successfulModels]);
+
+    const limitedFastest = useMemo(
+        () => fastestModels.filter((row) => row.success > 0).slice(0, rankLimit),
+        [fastestModels, rankLimit],
+    );
+    const limitedCheapest = useMemo(
+        () => cheapestModels.filter((row) => row.success > 0).slice(0, rankLimit),
+        [cheapestModels, rankLimit],
+    );
+    const limitedBestValue = useMemo(
+        () => bestValueModels.filter((row) => row.success > 0).slice(0, rankLimit),
+        [bestValueModels, rankLimit],
+    );
+
+    const fastestBarListData = useMemo(() => {
+        return limitedFastest.map((model, index) => ({
+            key: model.key,
+            name: compactModelLabel(model.provider, model.model),
+            value: model.averageLatencyMs || 0,
+            color: BAR_COLORS[index % BAR_COLORS.length],
+        }));
+    }, [limitedFastest]);
+
+    const cheapestBarListData = useMemo(() => {
+        return limitedCheapest.map((model, index) => ({
+            key: model.key,
+            name: compactModelLabel(model.provider, model.model),
+            value: model.averageCostUsd || 0,
+            color: BAR_COLORS[index % BAR_COLORS.length],
+        }));
+    }, [limitedCheapest]);
+
+    const bestValueBarListData = useMemo(() => {
+        return limitedBestValue.map((model, index) => ({
+            key: model.key,
+            name: compactModelLabel(model.provider, model.model),
+            value: model.costPerSecondUsd || 0,
+            color: BAR_COLORS[index % BAR_COLORS.length],
+        }));
+    }, [limitedBestValue]);
+
+    const successRateBarListData = useMemo(() => {
+        return successRateLeaders.map((model, index) => ({
+            key: model.key,
+            name: compactModelLabel(model.provider, model.model),
+            value: model.successRate,
+            color: BAR_COLORS[index % BAR_COLORS.length],
+        }));
+    }, [successRateLeaders]);
+
+    const callsTrendChartData = useMemo(() => {
         return telemetrySeries.map((point) => ({
             Time: new Date(point.bucketStart).toLocaleString([], {
                 month: 'short',
@@ -237,7 +325,40 @@ export const AdminAiTelemetryPage: React.FC = () => {
         }));
     }, [telemetrySeries]);
 
-    const providerChartData = useMemo(() => {
+    const successRateTrendChartData = useMemo(() => {
+        return telemetrySeries.map((point) => ({
+            Time: new Date(point.bucketStart).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+            }),
+            'Success rate': point.total > 0 ? Number(((point.success / point.total) * 100).toFixed(1)) : 0,
+        }));
+    }, [telemetrySeries]);
+
+    const latencyTrendChartData = useMemo(() => {
+        return telemetrySeries.map((point) => ({
+            Time: new Date(point.bucketStart).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+            }),
+            'Avg latency (ms)': point.averageLatencyMs || 0,
+        }));
+    }, [telemetrySeries]);
+
+    const costTrendChartData = useMemo(() => {
+        return telemetrySeries.map((point) => ({
+            Time: new Date(point.bucketStart).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+            }),
+            'Total cost (USD)': point.totalCostUsd,
+        }));
+    }, [telemetrySeries]);
+
+    const providerVolumeChartData = useMemo(() => {
         return telemetryProviders.slice(0, 10).map((row) => ({
             Provider: row.provider,
             Calls: row.total,
@@ -245,21 +366,34 @@ export const AdminAiTelemetryPage: React.FC = () => {
         }));
     }, [telemetryProviders]);
 
+    const providerShareChartData = useMemo(() => {
+        return telemetryProviders.slice(0, 8).map((row) => ({
+            Provider: row.provider,
+            Calls: row.total,
+        }));
+    }, [telemetryProviders]);
+
     const modelVolumeChartData = useMemo(() => {
         return telemetryModels.slice(0, 12).map((row) => ({
-            Model: `${row.provider}/${row.model}`,
+            Model: compactModelLabel(row.provider, row.model),
             Calls: row.total,
         }));
     }, [telemetryModels]);
 
-    const limitedFastest = useMemo(() => fastestModels.slice(0, rankLimit), [fastestModels, rankLimit]);
-    const limitedCheapest = useMemo(() => cheapestModels.slice(0, rankLimit), [cheapestModels, rankLimit]);
-    const limitedBestValue = useMemo(() => bestValueModels.slice(0, rankLimit), [bestValueModels, rankLimit]);
+    const failureRate = useMemo(() => {
+        if (!telemetrySummary) return null;
+        return Number((100 - telemetrySummary.successRate).toFixed(1));
+    }, [telemetrySummary]);
+
+    const successfulModelCoverage = useMemo(() => {
+        if (telemetryModels.length === 0) return null;
+        return Number(((successfulModels.length / telemetryModels.length) * 100).toFixed(1));
+    }, [successfulModels.length, telemetryModels.length]);
 
     return (
         <AdminShell
             title="AI Telemetry"
-            description="Deep telemetry across create-trip runtime and benchmark execution."
+            description="Operational telemetry dashboard for latency, reliability, and cost across benchmark/runtime calls."
             showGlobalSearch={false}
             showDateRange={false}
             actions={(
@@ -274,248 +408,366 @@ export const AdminAiTelemetryPage: React.FC = () => {
                 </button>
             )}
         >
-            {telemetryError && (
-                <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-                    {telemetryError}
-                </section>
-            )}
+            <div className="mx-auto w-full max-w-[1600px] space-y-4">
+                {telemetryError && (
+                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                        {telemetryError}
+                    </section>
+                )}
 
-            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total calls</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{telemetrySummary ? telemetrySummary.total : '—'}</p>
-                    <p className="mt-1 text-xs text-slate-500">Success: {telemetrySummary ? telemetrySummary.success : '—'}</p>
-                </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Success rate</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{telemetrySummary ? `${telemetrySummary.successRate.toFixed(1)}%` : '—'}</p>
-                    <p className="mt-1 text-xs text-slate-500">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</p>
-                </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Average duration</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</p>
-                    <p className="mt-1 text-xs text-slate-500">Across selected filter window</p>
-                </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total cost (est.)</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900">{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</p>
-                    <p className="mt-1 text-xs text-slate-500">Avg/call: {telemetrySummary ? formatUsd(telemetrySummary.averageCostUsd) : '—'}</p>
-                </article>
-            </section>
+                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <Title>Filters</Title>
+                    <Subtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</Subtitle>
 
-            <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                    <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
-                        <SelectTrigger className="h-8 w-[120px] text-xs">
-                            <SelectValue placeholder="Window" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {TELEMETRY_WINDOW_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={String(option.value)}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
-                        <SelectTrigger className="h-8 w-[150px] text-xs">
-                            <SelectValue placeholder="Source" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All sources</SelectItem>
-                            <SelectItem value="create_trip">Create-trip runtime</SelectItem>
-                            <SelectItem value="benchmark">Benchmark runs</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
-                        <SelectTrigger className="h-8 w-[160px] text-xs">
-                            <SelectValue placeholder="Provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All providers</SelectItem>
-                            {telemetryProviderOptions.map((provider) => (
-                                <SelectItem key={provider} value={provider}>{provider}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-
-                    <Select value={String(rankLimit)} onValueChange={(value) => setRankLimit(Number(value))}>
-                        <SelectTrigger className="h-8 w-[110px] text-xs">
-                            <SelectValue placeholder="Top X" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {RANK_LIMIT_OPTIONS.map((option) => (
-                                <SelectItem key={option.value} value={String(option.value)}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </section>
-
-            <section className="mt-4 grid gap-3 xl:grid-cols-3">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Top models by average speed</h2>
-                    <p className="mt-1 text-xs text-slate-500">Lower average duration is better.</p>
-                    <div className="mt-3 space-y-2">
-                        {limitedFastest.map((model, index) => (
-                            <div key={model.key} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                <div className="text-xs font-semibold text-slate-800">{index + 1}. {model.provider} / {model.model}</div>
-                                <div className="mt-0.5 text-[11px] text-slate-600">
-                                    {formatDuration(model.averageLatencyMs)} · {model.successRate.toFixed(1)}% success · {model.total} calls
-                                </div>
-                            </div>
-                        ))}
-                        {limitedFastest.length === 0 && (
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">No model speed data.</div>
-                        )}
-                    </div>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Top models by average cost</h2>
-                    <p className="mt-1 text-xs text-slate-500">Lower average cost per call is better.</p>
-                    <div className="mt-3 space-y-2">
-                        {limitedCheapest.map((model, index) => (
-                            <div key={model.key} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                <div className="text-xs font-semibold text-slate-800">{index + 1}. {model.provider} / {model.model}</div>
-                                <div className="mt-0.5 text-[11px] text-slate-600">
-                                    {formatUsd(model.averageCostUsd)} / call · {model.successRate.toFixed(1)}% success · {model.total} calls
-                                </div>
-                            </div>
-                        ))}
-                        {limitedCheapest.length === 0 && (
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">No model cost data.</div>
-                        )}
-                    </div>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Top models by cost/speed ratio</h2>
-                    <p className="mt-1 text-xs text-slate-500">Lower USD per second is better value.</p>
-                    <div className="mt-3 space-y-2">
-                        {limitedBestValue.map((model, index) => (
-                            <div key={model.key} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                <div className="text-xs font-semibold text-slate-800">{index + 1}. {model.provider} / {model.model}</div>
-                                <div className="mt-0.5 text-[11px] text-slate-600">
-                                    {formatUsd(model.costPerSecondUsd)} / sec · {formatDuration(model.averageLatencyMs)} · {formatUsd(model.averageCostUsd)}
-                                </div>
-                            </div>
-                        ))}
-                        {limitedBestValue.length === 0 && (
-                            <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-500">No model efficiency data.</div>
-                        )}
-                    </div>
-                </article>
-            </section>
-
-            <section className="mt-4 grid gap-3 xl:grid-cols-2">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Call trend</h2>
-                    <p className="mt-1 text-xs text-slate-500">Success/failure trend in the selected window.</p>
-                    {timelineChartData.length > 0 ? (
-                        <AreaChart
-                            className="mt-3 h-64"
-                            data={timelineChartData}
-                            index="Time"
-                            categories={['Success', 'Failed']}
-                            colors={['emerald', 'rose']}
-                            yAxisWidth={48}
-                        />
-                    ) : (
-                        <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                            No telemetry rows in the selected window.
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Window</p>
+                            <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Window" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TELEMETRY_WINDOW_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={String(option.value)}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
-                </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Provider breakdown</h2>
-                    <p className="mt-1 text-xs text-slate-500">Top providers by call volume and failure count.</p>
-                    {providerChartData.length > 0 ? (
-                        <BarChart
-                            className="mt-3 h-64"
-                            data={providerChartData}
-                            index="Provider"
-                            categories={['Calls', 'Failures']}
-                            colors={['sky', 'rose']}
-                            yAxisWidth={48}
-                        />
-                    ) : (
-                        <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                            No provider data for this filter set.
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Source</p>
+                            <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Source" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All sources</SelectItem>
+                                    <SelectItem value="create_trip">Create-trip runtime</SelectItem>
+                                    <SelectItem value="benchmark">Benchmark runs</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
-                </article>
-            </section>
 
-            <section className="mt-4 grid gap-3 xl:grid-cols-2">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Model call volume</h2>
-                    <p className="mt-1 text-xs text-slate-500">Most active provider/model combinations.</p>
-                    {modelVolumeChartData.length > 0 ? (
-                        <BarChart
-                            className="mt-3 h-64"
-                            data={modelVolumeChartData}
-                            index="Model"
-                            categories={['Calls']}
-                            colors={['indigo']}
-                            yAxisWidth={48}
-                        />
-                    ) : (
-                        <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                            No model data in this filter set.
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Provider</p>
+                            <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Provider" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All providers</SelectItem>
+                                    {telemetryProviderOptions.map((provider) => (
+                                        <SelectItem key={provider} value={provider}>{provider}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
-                </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Recent calls</h2>
-                    <p className="mt-1 text-xs text-slate-500">Latest request rows with status, duration, and errors.</p>
-                    <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-slate-200">
-                        <table className="min-w-full border-collapse text-left text-xs">
-                            <thead>
-                                <tr className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
-                                    <th className="px-2 py-1.5">Time</th>
-                                    <th className="px-2 py-1.5">Model</th>
-                                    <th className="px-2 py-1.5">Status</th>
-                                    <th className="px-2 py-1.5">Duration</th>
-                                    <th className="px-2 py-1.5">Cost</th>
-                                    <th className="px-2 py-1.5">Error</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {telemetryRecent.length === 0 && (
-                                    <tr>
-                                        <td colSpan={6} className="px-3 py-4 text-center text-slate-500">
-                                            {telemetryLoading ? 'Loading telemetry...' : 'No telemetry rows yet.'}
-                                        </td>
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Ranking size</p>
+                            <Select value={String(rankLimit)} onValueChange={(value) => setRankLimit(Number(value))}>
+                                <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder="Top X" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {RANK_LIMIT_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={String(option.value)}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">Action</p>
+                            <button
+                                type="button"
+                                onClick={() => void loadTelemetry()}
+                                disabled={telemetryLoading}
+                                className="inline-flex h-9 w-full items-center justify-center gap-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
+                                Refresh data
+                            </button>
+                        </div>
+                    </div>
+                </Card>
+
+                <Grid numItems={1} numItemsSm={2} numItemsLg={5} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Text>Total calls</Text>
+                        <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">Selected filter scope</Text>
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Text>Success rate</Text>
+                        <Metric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Text>Failure rate</Text>
+                        <Metric>{formatPercent(failureRate)}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">Quick reliability read</Text>
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Text>Avg duration</Text>
+                        <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">Across all calls</Text>
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Text>Total cost (est.)</Text>
+                        <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
+                        <Text className="mt-1 text-xs text-slate-500">
+                            Models with success: {formatPercent(successfulModelCoverage)}
+                        </Text>
+                    </Card>
+                </Grid>
+
+                <Grid numItems={1} numItemsMd={2} numItemsLg={4} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Top models by speed</Title>
+                        <Subtitle>Only models with successful calls are listed.</Subtitle>
+                        {fastestBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={fastestBarListData}
+                                sortOrder="ascending"
+                                valueFormatter={(value) => formatDuration(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No successful speed data.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Top models by cost</Title>
+                        <Subtitle>Average cost per successful call.</Subtitle>
+                        {cheapestBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={cheapestBarListData}
+                                sortOrder="ascending"
+                                valueFormatter={(value) => formatUsd(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No successful cost data.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Top models by value</Title>
+                        <Subtitle>Lower cost/second is better.</Subtitle>
+                        {bestValueBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={bestValueBarListData}
+                                sortOrder="ascending"
+                                valueFormatter={(value) => `${formatUsd(value)} / sec`}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No successful value data.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Top models by success rate</Title>
+                        <Subtitle>Success-rate ratio leaderboard.</Subtitle>
+                        {successRateBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={successRateBarListData}
+                                sortOrder="descending"
+                                valueFormatter={(value) => formatPercent(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No success-rate data.</Text>
+                        )}
+                    </Card>
+                </Grid>
+
+                <Grid numItems={1} numItemsLg={2} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Call trend</Title>
+                        <Subtitle>Success vs failed volume across the selected window.</Subtitle>
+                        {callsTrendChartData.length > 0 ? (
+                            <AreaChart
+                                className="mt-3 h-64"
+                                data={callsTrendChartData}
+                                index="Time"
+                                categories={['Success', 'Failed']}
+                                colors={['emerald', 'rose']}
+                                yAxisWidth={48}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No time-series call data for this filter set.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Success-rate trend</Title>
+                        <Subtitle>Ratio evolution over time (%).</Subtitle>
+                        {successRateTrendChartData.length > 0 ? (
+                            <LineChart
+                                className="mt-3 h-64"
+                                data={successRateTrendChartData}
+                                index="Time"
+                                categories={['Success rate']}
+                                colors={['indigo']}
+                                yAxisWidth={48}
+                                valueFormatter={(value) => formatPercent(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No success-rate trend data for this filter set.</Text>
+                        )}
+                    </Card>
+                </Grid>
+
+                <Grid numItems={1} numItemsLg={2} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Latency trend</Title>
+                        <Subtitle>Average latency by bucket.</Subtitle>
+                        {latencyTrendChartData.length > 0 ? (
+                            <LineChart
+                                className="mt-3 h-56"
+                                data={latencyTrendChartData}
+                                index="Time"
+                                categories={['Avg latency (ms)']}
+                                colors={['amber']}
+                                yAxisWidth={56}
+                                valueFormatter={(value) => formatDuration(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No latency trend data for this filter set.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Cost trend</Title>
+                        <Subtitle>Total estimated cost per bucket.</Subtitle>
+                        {costTrendChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-56"
+                                data={costTrendChartData}
+                                index="Time"
+                                categories={['Total cost (USD)']}
+                                colors={['sky']}
+                                yAxisWidth={56}
+                                valueFormatter={(value) => formatUsd(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No cost trend data for this filter set.</Text>
+                        )}
+                    </Card>
+                </Grid>
+
+                <Grid numItems={1} numItemsLg={2} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Provider breakdown</Title>
+                        <Subtitle>Calls and failures by provider.</Subtitle>
+                        {providerVolumeChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-64"
+                                data={providerVolumeChartData}
+                                index="Provider"
+                                categories={['Calls', 'Failures']}
+                                colors={['sky', 'rose']}
+                                yAxisWidth={48}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No provider breakdown in this filter set.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Provider share</Title>
+                        <Subtitle>Distribution of total call volume.</Subtitle>
+                        {providerShareChartData.length > 0 ? (
+                            <DonutChart
+                                className="mt-3 h-64"
+                                data={providerShareChartData}
+                                index="Provider"
+                                category="Calls"
+                                valueFormatter={(value) => `${value} calls`}
+                                colors={['indigo', 'sky', 'emerald', 'amber', 'rose', 'violet']}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No provider-share data in this filter set.</Text>
+                        )}
+                    </Card>
+                </Grid>
+
+                <Grid numItems={1} numItemsLg={2} className="gap-3">
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Model call volume</Title>
+                        <Subtitle>Most active provider/model combinations.</Subtitle>
+                        {modelVolumeChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-72"
+                                data={modelVolumeChartData}
+                                index="Model"
+                                categories={['Calls']}
+                                colors={['indigo']}
+                                yAxisWidth={48}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No model activity data in this filter set.</Text>
+                        )}
+                    </Card>
+
+                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <Title>Recent calls</Title>
+                        <Subtitle>Latest rows with status, duration, and error code.</Subtitle>
+
+                        <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border border-slate-200">
+                            <table className="min-w-full border-collapse text-left text-xs">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                                        <th className="px-2 py-1.5">Time</th>
+                                        <th className="px-2 py-1.5">Model</th>
+                                        <th className="px-2 py-1.5">Status</th>
+                                        <th className="px-2 py-1.5">Duration</th>
+                                        <th className="px-2 py-1.5">Cost</th>
+                                        <th className="px-2 py-1.5">Error</th>
                                     </tr>
-                                )}
-                                {telemetryRecent.map((row) => (
-                                    <tr key={row.id} className="border-b border-slate-100">
-                                        <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
-                                        <td className="px-2 py-1.5 text-slate-800">
-                                            <span className="font-semibold">{row.provider}</span> / {row.model}
-                                        </td>
-                                        <td className="px-2 py-1.5">
-                                            <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
-                                                {row.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.latency_ms)}</td>
-                                        <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.estimated_cost_usd)}</td>
-                                        <td className="px-2 py-1.5 text-slate-600">{row.error_code || '—'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </article>
-            </section>
+                                </thead>
+                                <tbody>
+                                    {telemetryRecent.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-3 py-4 text-center text-slate-500">
+                                                {telemetryLoading ? 'Loading telemetry...' : 'No telemetry rows yet.'}
+                                            </td>
+                                        </tr>
+                                    )}
+
+                                    {telemetryRecent.map((row) => (
+                                        <tr key={row.id} className="border-b border-slate-100">
+                                            <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
+                                            <td className="px-2 py-1.5 text-slate-800">
+                                                <span className="font-semibold">{row.provider}</span> / {row.model}
+                                            </td>
+                                            <td className="px-2 py-1.5">
+                                                <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
+                                                    {row.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.latency_ms)}</td>
+                                            <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.estimated_cost_usd)}</td>
+                                            <td className="px-2 py-1.5 text-slate-600">{row.error_code || '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card>
+                </Grid>
+            </div>
         </AdminShell>
     );
 };
