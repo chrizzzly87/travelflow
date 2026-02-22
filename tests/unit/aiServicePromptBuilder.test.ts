@@ -10,9 +10,11 @@ describe('services/aiService buildClassicItineraryPrompt', () => {
 
     expect(prompt).toContain('Benchmark compact-output mode');
     expect(prompt).toContain('Prioritize valid complete JSON over extra detail');
-    expect(prompt).toContain('city.description must stay under 700 characters total');
+    expect(prompt).toContain('city.description must stay under 500 characters total');
     expect(prompt).toContain('travelSegments.description short and practical (hard max 60 characters)');
-    expect(prompt).toContain('activities.description must be a single short sentence (hard max 120 characters');
+    expect(prompt).toContain('activities.description must be a single short sentence (hard max 90 characters');
+    expect(prompt).toContain('Use - [ ] checkboxes with exactly 1 bullet per heading');
+    expect(prompt).not.toContain('### Must See (3-4 items)');
   });
 
   it('does not add compact benchmark instructions for default mode', () => {
