@@ -34,7 +34,7 @@ Optional compatibility keys:
 ## Manual CLI deploy with env parity (mandatory for auth flows)
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
 
-Always inject env vars into the CLI build. Do not run `netlify deploy --build` without env injection.
+Always build locally with injected env, then deploy with `--no-build` to avoid CLI rebuild-time env masking.
 
 1. Link the worktree once:
    - `pnpm dlx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
@@ -43,15 +43,18 @@ Always inject env vars into the CLI build. Do not run `netlify deploy --build` w
    - Otherwise export from Netlify (CLI-compatible fallback):
      - `pnpm dlx netlify env:list --json > .netlify/.env.deploy.json`
      - `node -e "const fs=require('fs');const src='.netlify/.env.deploy.json';const dst='.netlify/.env.deploy';const data=JSON.parse(fs.readFileSync(src,'utf8'));const lines=Object.entries(data).map(([k,v])=>\`${k}=\${JSON.stringify(String(v))}\`);fs.writeFileSync(dst, lines.join('\\n')+'\\n');"`
-3. Build + deploy with env file safely parsed:
+3. Build locally with env file safely parsed:
    - `.env.local` path:
-     - `pnpm dlx dotenv-cli -e .env.local -- pnpm dlx netlify deploy --build --alias <alias-name>`
+     - `pnpm dlx dotenv-cli -e .env.local -- pnpm build`
    - Netlify-exported env path:
-     - `pnpm dlx dotenv-cli -e .netlify/.env.deploy -- pnpm dlx netlify deploy --build --alias <alias-name>`
-4. Reuse the same alias to update an existing preview URL.
+     - `pnpm dlx dotenv-cli -e .netlify/.env.deploy -- pnpm build`
+4. Deploy the prebuilt output without rebuilding:
+   - `pnpm dlx netlify deploy --no-build --dir=dist --alias <alias-name>`
+5. Reuse the same alias to update an existing preview URL.
 
 Notes:
 - Do not use `source .env.local` for deployment commands; values containing special characters can fail shell parsing and silently skip env injection.
+- Avoid `netlify deploy --build` for auth-sensitive checks in this repo. The CLI build path can resolve masked `VITE_SUPABASE_*` values and produce `Supabase auth is not configured`.
 - Never commit `.env.local` or pulled env files.
 - Symptom of missing env injection: login fails, `Supabase auth is not configured`, or JS chunk errors caused by bad runtime config.
 

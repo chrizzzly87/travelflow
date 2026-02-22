@@ -67,3 +67,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 📊 Added `/api/internal/ai/benchmark/telemetry` plus new admin dashboard telemetry cards/charts/filter controls for time window, source, and provider breakdown.
 - [ ] [Internal] 📈 Added Umami custom events for create-trip AI request success/failure and Gemini fallback outcomes to correlate UX and backend behavior.
 - [ ] [Internal] 🤖 Expanded Anthropic/OpenRouter model coverage with Claude Sonnet 4.6 plus curated OpenRouter additions (`GLM 5`, `DeepSeek V3.2`, `Grok 4.1 Fast`, `MiniMax M2.5`, `Kimi K2.5`).
+- [ ] [Internal] 🚚 Updated feature-branch Netlify deployment guidance to use `dotenv` local build + `netlify deploy --no-build` to prevent masked Supabase browser env values in auth testing.
