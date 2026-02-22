@@ -27,6 +27,8 @@ import {
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
+    getIsFirstBlogTransition,
+    waitForBlogTransitionTarget,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -93,13 +95,14 @@ const BlogCard: React.FC<{
         } catch {
             // Ignore preload errors and rely on router fallback behavior.
         }
-        startBlogViewTransition(() => {
+        startBlogViewTransition(async () => {
             flushSync(() => {
                 navigate(postPath, {
                     state: createBlogTransitionNavigationState('list', transitionTarget),
                 });
             });
             primeBlogTransitionSnapshot();
+            await waitForBlogTransitionTarget(transitionTarget, 'post');
         });
     }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
@@ -120,7 +123,7 @@ const BlogCard: React.FC<{
             <div
                 aria-hidden
                 className="pointer-events-none absolute inset-0 rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-slate-300 group-hover:shadow-lg"
-                style={transitionNames ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+                style={transitionNames && !getIsFirstBlogTransition() ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
             />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div

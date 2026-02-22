@@ -58,6 +58,7 @@ let pendingBlogTransitionTarget: BlogTransitionTarget | null = null;
 let currentBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let lastKnownBlogPostTransitionTarget: BlogTransitionTarget | null = null;
 let blogTransitionStateVersion = 0;
+let isFirstBlogTransition = true;
 const blogTransitionStateListeners = new Set<() => void>();
 
 export const getBlogPostViewTransitionNames = (
@@ -186,6 +187,8 @@ export const getLastKnownBlogPostTransitionTarget = (): BlogTransitionTarget | n
 
 export const getBlogTransitionStateVersion = (): number =>
     blogTransitionStateVersion;
+
+export const getIsFirstBlogTransition = (): boolean => isFirstBlogTransition;
 
 export const subscribeBlogTransitionState = (
     listener: () => void
@@ -435,27 +438,37 @@ export const waitForBlogTransitionTarget = async (
 
     await new Promise<void>((resolve) => {
         const settleAndResolve = () => {
+            const finish = () => {
+                window.setTimeout(() => {
+                    resolve();
+                }, 10);
+            };
+
+            const checkImageAndFinish = () => {
+                if (isFirstBlogTransition) {
+                    const names = getBlogPostViewTransitionNames(target.language, target.slug);
+                    const container = document.querySelector(`[style*="${names.image}"]`);
+                    const img = container?.tagName === 'IMG' ? container : container?.querySelector('img');
+                    if (img instanceof HTMLImageElement && typeof img.decode === 'function' && !img.complete) {
+                        void img.decode().catch(() => {}).finally(finish);
+                        return;
+                    }
+                }
+                finish();
+            };
+
             const fontSet = (document as Document & { fonts?: { status?: string; ready?: Promise<unknown> } }).fonts;
             const maybeReady = fontSet?.ready;
+
             if (fontSet?.status === 'loading' && maybeReady && typeof maybeReady.then === 'function') {
                 void Promise.race([
                     maybeReady,
-                    new Promise<void>((fontResolve) => window.setTimeout(fontResolve, 180)),
-                ]).finally(() => {
-                    window.requestAnimationFrame(() => {
-                        window.requestAnimationFrame(() => {
-                            resolve();
-                        });
-                    });
-                });
+                    new Promise<void>((fontResolve) => window.setTimeout(fontResolve, isFirstBlogTransition ? 400 : 180)),
+                ]).finally(checkImageAndFinish);
                 return;
             }
 
-            window.requestAnimationFrame(() => {
-                window.requestAnimationFrame(() => {
-                    resolve();
-                });
-            });
+            checkImageAndFinish();
         };
 
         const tick = () => {
@@ -470,7 +483,7 @@ export const waitForBlogTransitionTarget = async (
                 return;
             }
 
-            window.requestAnimationFrame(tick);
+            window.setTimeout(tick, 10);
         };
 
         tick();
@@ -505,13 +518,16 @@ export const startBlogViewTransition = (applyUpdate?: () => void | Promise<void>
 
         if (transition && typeof transition.finished?.finally === 'function') {
             void transition.finished.finally(() => {
+                isFirstBlogTransition = false;
                 clearScopedBlogTransitionState();
             });
             return;
         }
 
+        isFirstBlogTransition = false;
         clearScopedBlogTransitionState();
     } catch {
+        isFirstBlogTransition = false;
         applyUpdate?.();
         clearScopedBlogTransitionState();
     }

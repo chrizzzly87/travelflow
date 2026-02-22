@@ -22,6 +22,8 @@ import {
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
+    getIsFirstBlogTransition,
+    waitForBlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
@@ -233,13 +235,14 @@ export const BlogPostPage: React.FC = () => {
         } catch {
             // Ignore preload errors and rely on router fallback behavior.
         }
-        startBlogViewTransition(() => {
+        startBlogViewTransition(async () => {
             flushSync(() => {
                 navigate(blogPath, {
                     state: createBlogTransitionNavigationState('post', transitionTarget),
                 });
             });
             primeBlogTransitionSnapshot();
+            await waitForBlogTransitionTarget(transitionTarget, 'list');
         });
     }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
 
@@ -312,7 +315,7 @@ export const BlogPostPage: React.FC = () => {
                         aria-hidden
                         className="pointer-events-none absolute rounded-[1.75rem]"
                         style={
-                            postTransitionNames
+                            postTransitionNames && !getIsFirstBlogTransition()
                                 ? ({
                                     ...getBlogTransitionStyle(postTransitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain'),
                                     insetInline: 0,

@@ -11,6 +11,8 @@ import {
   setPendingBlogTransitionTarget,
   startBlogViewTransition,
   supportsBlogViewTransitions,
+  waitForBlogTransitionTarget,
+  isBlogListPath,
 } from './shared/blogViewTransitions';
 
 declare global {
@@ -78,8 +80,9 @@ if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
     if (!currentTarget) return;
 
     setPendingBlogTransitionTarget(currentTarget);
-    startBlogViewTransition(() => {
+    startBlogViewTransition(async () => {
       primeBlogTransitionSnapshot();
+      await waitForBlogTransitionTarget(currentTarget, isBlogListPath(toPathname) ? 'list' : 'post');
     });
   }, true);
 }
