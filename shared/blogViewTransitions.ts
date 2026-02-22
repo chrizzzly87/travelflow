@@ -126,6 +126,20 @@ export const getBlogTransitionNavigationState = (
     };
 };
 
+export const resolveBlogTransitionNavigationHint = (
+    value: unknown,
+    activeTransitionTarget: BlogTransitionTarget | null | undefined
+): BlogTransitionTarget | null => {
+    const navigationState = getBlogTransitionNavigationState(value);
+    if (!navigationState || navigationState.blogTransitionSource !== 'post' || !activeTransitionTarget) {
+        return null;
+    }
+
+    return isBlogTransitionTargetMatch(navigationState.blogTransitionTarget, activeTransitionTarget)
+        ? navigationState.blogTransitionTarget
+        : null;
+};
+
 export const primeBlogTransitionSnapshot = (): void => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     if (window.scrollX !== 0 || window.scrollY !== 0) {

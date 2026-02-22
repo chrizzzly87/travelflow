@@ -16,5 +16,6 @@ summary: "Adds smooth shared-element transitions between the blog list and artic
 - [x] [Improved] ✨ Transition choreography now keeps headline sizing more consistent, fades metadata quickly, and dissolves the temporary card layer faster.
 - [x] [Improved] 🖼️ Shared blog images now stay fully opaque during movement so reverse transitions no longer flash through a gray blend.
 - [x] [Improved] 🧭 Detail-to-list transitions now carry an explicit article target hint and prime the destination layout snapshot for more reliable first-run positioning.
+- [x] [Improved] 🧼 Blog transitions now ignore stale card hints when no active transition is running, preventing wrong article images from appearing mid-animation.
 - [x] [Improved] 🖼️ Blog list cards and article headers now use the same underlying photo source for each post.
 - [ ] [Internal] 🧩 Added feature-detected transition wiring, tuned shared-element animation rules, and regression coverage for transition helpers and media mapping.

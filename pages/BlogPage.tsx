@@ -22,6 +22,7 @@ import {
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
+    resolveBlogTransitionNavigationHint,
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
@@ -206,14 +207,15 @@ export const BlogPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
+    const activeTransitionTarget = viewTransitionsEnabled ? getPendingBlogTransitionTarget() : null;
     const transitionNavigationState = useMemo(
         () => getBlogTransitionNavigationState(location.state),
         [location.state]
     );
-    const transitionTargetHint = viewTransitionsEnabled &&
-        transitionNavigationState?.blogTransitionSource === 'post'
-        ? transitionNavigationState.blogTransitionTarget
-        : null;
+    const transitionTargetHint = useMemo(
+        () => resolveBlogTransitionNavigationHint(transitionNavigationState, activeTransitionTarget),
+        [activeTransitionTarget, transitionNavigationState]
+    );
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
     const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
     const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
@@ -231,8 +233,7 @@ export const BlogPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [, forceTransitionStateRefresh] = useState(0);
     const [suppressEntryAnimations] = useState(
-        () => viewTransitionsEnabled &&
-            (getPendingBlogTransitionTarget() !== null || transitionTargetHint !== null)
+        () => viewTransitionsEnabled && getPendingBlogTransitionTarget() !== null
     );
 
     const allTags = useMemo(() => {
@@ -272,14 +273,6 @@ export const BlogPage: React.FC = () => {
             forceTransitionStateRefresh((current) => current + 1);
         });
     }, [viewTransitionsEnabled]);
-
-    useEffect(() => {
-        if (!viewTransitionsEnabled || !transitionTargetHint) return;
-        if (isBlogTransitionTargetMatch(getPendingBlogTransitionTarget(), transitionTargetHint)) {
-            return;
-        }
-        setPendingBlogTransitionTarget(transitionTargetHint);
-    }, [transitionTargetHint, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!viewTransitionsEnabled) return;

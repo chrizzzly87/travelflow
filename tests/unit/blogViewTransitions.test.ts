@@ -16,6 +16,7 @@ import {
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
+    resolveBlogTransitionNavigationHint,
     subscribeBlogTransitionState,
     setCurrentBlogPostTransitionTarget,
     setPendingBlogTransitionTarget,
@@ -99,6 +100,28 @@ describe('shared/blogViewTransitions', () => {
         expect(getBlogTransitionNavigationState(state)).toEqual(state);
         expect(getBlogTransitionNavigationState({ blogTransitionSource: 'post' })).toBeNull();
         expect(getBlogTransitionNavigationState(null)).toBeNull();
+    });
+
+    it('resolves transition hint only during matching active post-to-list transitions', () => {
+        const state = createBlogTransitionNavigationState('post', {
+            language: 'en',
+            slug: 'how-to-plan-multi-city-trip',
+        });
+
+        expect(resolveBlogTransitionNavigationHint(state, null)).toBeNull();
+        expect(
+            resolveBlogTransitionNavigationHint(state, {
+                language: 'en',
+                slug: 'different-post',
+            })
+        ).toBeNull();
+        expect(
+            resolveBlogTransitionNavigationHint(
+                createBlogTransitionNavigationState('list', state.blogTransitionTarget),
+                state.blogTransitionTarget
+            )
+        ).toBeNull();
+        expect(resolveBlogTransitionNavigationHint(state, state.blogTransitionTarget)).toEqual(state.blogTransitionTarget);
     });
 
     it('matches transition targets with normalized language and slug tokens', () => {
