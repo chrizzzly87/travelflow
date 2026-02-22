@@ -39,6 +39,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
+import { AreaChart, BarChart, Card, Metric, Text, Title } from '@tremor/react';
 
 interface BenchmarkSession {
     id: string;
@@ -100,6 +101,61 @@ interface BenchmarkApiResponse {
     details?: string;
 }
 
+type TelemetrySourceFilter = 'all' | 'create_trip' | 'benchmark';
+
+interface AiTelemetrySummary {
+    total: number;
+    success: number;
+    failed: number;
+    successRate: number;
+    averageLatencyMs: number | null;
+    totalCostUsd: number;
+    averageCostUsd: number | null;
+}
+
+interface AiTelemetrySeriesPoint {
+    bucketStart: string;
+    total: number;
+    success: number;
+    failed: number;
+    averageLatencyMs: number | null;
+    totalCostUsd: number;
+}
+
+interface AiTelemetryProviderPoint {
+    provider: string;
+    total: number;
+    success: number;
+    failed: number;
+    averageLatencyMs: number | null;
+    totalCostUsd: number;
+}
+
+interface AiTelemetryRecentRow {
+    id: string;
+    created_at: string;
+    source: 'create_trip' | 'benchmark';
+    provider: string;
+    model: string;
+    status: 'success' | 'failed';
+    latency_ms: number | null;
+    estimated_cost_usd: number | null;
+    error_code: string | null;
+}
+
+interface AiTelemetryApiResponse extends BenchmarkApiResponse {
+    filters?: {
+        source?: TelemetrySourceFilter;
+        provider?: string;
+        windowHours?: number;
+    };
+    summary?: AiTelemetrySummary;
+    series?: AiTelemetrySeriesPoint[];
+    providers?: AiTelemetryProviderPoint[];
+    recent?: AiTelemetryRecentRow[];
+    availableProviders?: string[];
+}
+
 interface ModelSelectionRow {
     id: string;
     modelId: string;
@@ -122,12 +178,17 @@ const DEFAULT_SESSION_NAME = 'AI benchmark session';
 const MODEL_ROWS_STORAGE_KEY = 'tf_benchmark_model_rows_v1';
 const BENCHMARK_PARALLEL_CONCURRENCY = 5;
 const DEFAULT_BENCHMARK_MODEL_IDS = [
+    'gemini:gemini-3.1-pro-preview',
     'gemini:gemini-3-pro-preview',
-    'gemini:gemini-3-flash-preview',
-    'openai:gpt-5.2',
-    'anthropic:claude-sonnet-4.5',
+    'openai:gpt-5.2-pro',
+    'anthropic:claude-sonnet-4.6',
 ];
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
+const TELEMETRY_WINDOW_OPTIONS: Array<{ value: number; label: string }> = [
+    { value: 24, label: 'Last 24h' },
+    { value: 24 * 7, label: 'Last 7d' },
+    { value: 24 * 30, label: 'Last 30d' },
+];
 const BENCHMARK_EFFECTIVE_DEFAULTS = {
     travelerSetup: 'solo',
     tripStyle: 'everything_except_remote_work',
@@ -443,6 +504,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [session, setSession] = useState<BenchmarkSession | null>(null);
     const [runs, setRuns] = useState<BenchmarkRun[]>([]);
     const [summary, setSummary] = useState<BenchmarkSummary | null>(null);
+    const [telemetryWindowHours, setTelemetryWindowHours] = useState<number>(24 * 7);
+    const [telemetrySource, setTelemetrySource] = useState<TelemetrySourceFilter>('all');
+    const [telemetryProviderFilter, setTelemetryProviderFilter] = useState<string>('all');
+    const [telemetryLoading, setTelemetryLoading] = useState(false);
+    const [telemetryError, setTelemetryError] = useState<string | null>(null);
+    const [telemetrySummary, setTelemetrySummary] = useState<AiTelemetrySummary | null>(null);
+    const [telemetrySeries, setTelemetrySeries] = useState<AiTelemetrySeriesPoint[]>([]);
+    const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
+    const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
+    const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
     const latestSessionBootstrapRef = useRef(false);
     const resultsSectionRef = useRef<HTMLElement | null>(null);
 
@@ -778,6 +849,70 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             }
         };
     }, [accessToken, sessionLookup, hasPendingRuns, fetchBenchmarkApi]);
+
+    const loadTelemetry = useCallback(async () => {
+        setTelemetryLoading(true);
+        setTelemetryError(null);
+
+        try {
+            const params = new URLSearchParams();
+            params.set('windowHours', String(telemetryWindowHours));
+            params.set('source', telemetrySource);
+            if (telemetryProviderFilter !== 'all') {
+                params.set('provider', telemetryProviderFilter);
+            }
+
+            const payload = await fetchBenchmarkApi(`/api/internal/ai/benchmark/telemetry?${params.toString()}`, {
+                method: 'GET',
+            }) as AiTelemetryApiResponse;
+
+            setTelemetrySummary(payload.summary || null);
+            setTelemetrySeries(Array.isArray(payload.series) ? payload.series : []);
+            setTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
+            setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
+
+            const providerOptions = Array.isArray(payload.availableProviders) ? payload.availableProviders : [];
+            setTelemetryProviderOptions(providerOptions);
+            if (telemetryProviderFilter !== 'all' && !providerOptions.includes(telemetryProviderFilter)) {
+                setTelemetryProviderFilter('all');
+            }
+        } catch (telemetryLoadError) {
+            setTelemetryError(telemetryLoadError instanceof Error ? telemetryLoadError.message : 'Failed to load AI telemetry');
+            setTelemetrySummary(null);
+            setTelemetrySeries([]);
+            setTelemetryProviders([]);
+            setTelemetryRecent([]);
+        } finally {
+            setTelemetryLoading(false);
+        }
+    }, [fetchBenchmarkApi, telemetryWindowHours, telemetrySource, telemetryProviderFilter]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+        void loadTelemetry();
+    }, [accessToken, loadTelemetry]);
+
+    const telemetryTimelineChartData = useMemo(() => {
+        return telemetrySeries.map((point) => ({
+            Time: new Date(point.bucketStart).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+            }),
+            Success: point.success,
+            Failed: point.failed,
+        }));
+    }, [telemetrySeries]);
+
+    const telemetryProviderChartData = useMemo(() => {
+        return telemetryProviders
+            .slice(0, 10)
+            .map((row) => ({
+                Provider: row.provider,
+                Calls: row.total,
+                Failures: row.failed,
+            }));
+    }, [telemetryProviders]);
 
     const buildScenario = useCallback(() => {
         const selectedDestinations = parseDestinations(destinations);
@@ -1999,6 +2134,173 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </section>
+
+                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h3 className="text-base font-bold text-slate-900">AI call telemetry</h3>
+                            <p className="text-xs text-slate-500">
+                                Cross-provider call metrics across create-trip runtime and benchmark execution.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Select value={String(telemetryWindowHours)} onValueChange={(value) => setTelemetryWindowHours(Number(value))}>
+                                <SelectTrigger className="h-8 w-[120px] text-xs">
+                                    <SelectValue placeholder="Window" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TELEMETRY_WINDOW_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={String(option.value)}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={telemetrySource} onValueChange={(value) => setTelemetrySource(value as TelemetrySourceFilter)}>
+                                <SelectTrigger className="h-8 w-[150px] text-xs">
+                                    <SelectValue placeholder="Source" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All sources</SelectItem>
+                                    <SelectItem value="create_trip">Create-trip runtime</SelectItem>
+                                    <SelectItem value="benchmark">Benchmark runs</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={telemetryProviderFilter} onValueChange={setTelemetryProviderFilter}>
+                                <SelectTrigger className="h-8 w-[150px] text-xs">
+                                    <SelectValue placeholder="Provider" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All providers</SelectItem>
+                                    {telemetryProviderOptions.map((provider) => (
+                                        <SelectItem key={provider} value={provider}>
+                                            {provider}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <button
+                                type="button"
+                                onClick={() => void loadTelemetry()}
+                                disabled={telemetryLoading}
+                                className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <ArrowClockwise size={14} className={telemetryLoading ? 'animate-spin' : ''} />
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {telemetryError && (
+                        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                            {telemetryError}
+                        </div>
+                    )}
+
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <Card>
+                            <Text>Total calls</Text>
+                            <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Success rate</Text>
+                            <Metric>{telemetrySummary ? `${telemetrySummary.successRate.toFixed(1)}%` : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Avg duration</Text>
+                            <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
+                        </Card>
+                        <Card>
+                            <Text>Total est. cost</Text>
+                            <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
+                        </Card>
+                    </div>
+
+                    <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                        <Card>
+                            <Title>Calls over time</Title>
+                            <Text>Hourly buckets for success vs failed calls.</Text>
+                            {telemetryTimelineChartData.length > 0 ? (
+                                <AreaChart
+                                    className="mt-3 h-64"
+                                    data={telemetryTimelineChartData}
+                                    index="Time"
+                                    categories={['Success', 'Failed']}
+                                    colors={['emerald', 'rose']}
+                                    yAxisWidth={48}
+                                />
+                            ) : (
+                                <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
+                                    No telemetry rows in the selected filter window.
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card>
+                            <Title>Provider breakdown</Title>
+                            <Text>Top providers by total call volume (filtered window).</Text>
+                            {telemetryProviderChartData.length > 0 ? (
+                                <BarChart
+                                    className="mt-3 h-64"
+                                    data={telemetryProviderChartData}
+                                    index="Provider"
+                                    categories={['Calls', 'Failures']}
+                                    colors={['sky', 'rose']}
+                                    yAxisWidth={48}
+                                />
+                            ) : (
+                                <div className="mt-3 rounded border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
+                                    No provider data for this filter set.
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+                        <table className="min-w-full border-collapse text-left text-xs">
+                            <thead>
+                                <tr className="border-b border-slate-200 bg-slate-50 uppercase tracking-wide text-slate-500">
+                                    <th className="px-2 py-1.5">Time</th>
+                                    <th className="px-2 py-1.5">Source</th>
+                                    <th className="px-2 py-1.5">Provider / Model</th>
+                                    <th className="px-2 py-1.5">Status</th>
+                                    <th className="px-2 py-1.5">Duration</th>
+                                    <th className="px-2 py-1.5">Cost</th>
+                                    <th className="px-2 py-1.5">Error code</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {telemetryRecent.length === 0 && (
+                                    <tr>
+                                        <td colSpan={7} className="px-3 py-4 text-center text-slate-500">
+                                            {telemetryLoading ? 'Loading telemetry...' : 'No telemetry rows yet.'}
+                                        </td>
+                                    </tr>
+                                )}
+                                {telemetryRecent.map((row) => (
+                                    <tr key={row.id} className="border-b border-slate-100">
+                                        <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
+                                        <td className="px-2 py-1.5 text-slate-700">{row.source}</td>
+                                        <td className="px-2 py-1.5 text-slate-800">
+                                            <span className="font-semibold">{row.provider}</span> / {row.model}
+                                        </td>
+                                        <td className="px-2 py-1.5">
+                                            <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
+                                                {row.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.latency_ms)}</td>
+                                        <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.estimated_cost_usd)}</td>
+                                        <td className="px-2 py-1.5 text-slate-600">{row.error_code || '—'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </section>
 

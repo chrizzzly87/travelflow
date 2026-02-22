@@ -40,36 +40,67 @@ export interface ProviderGenerationOptions {
 export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
   gemini: new Set([
     "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
     "gemini-2.5-pro",
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
+    "gemini-3.1-pro-preview",
   ]),
   openai: new Set([
+    "gpt-5-nano",
     "gpt-5-mini",
     "gpt-5.2",
+    "gpt-5.2-pro",
   ]),
   anthropic: new Set([
+    "claude-haiku-4.5",
     "claude-sonnet-4.5",
+    "claude-sonnet-4.6",
     "claude-opus-4.6",
+    "claude-opus-4.1",
   ]),
-  openrouter: new Set(),
+  openrouter: new Set([
+    "openrouter/free",
+    "openai/gpt-oss-20b:free",
+    "qwen/qwen3-coder:free",
+    "z-ai/glm-5",
+    "deepseek/deepseek-v3.2",
+    "x-ai/grok-4.1-fast",
+    "minimax/minimax-m2.5",
+    "moonshotai/kimi-k2.5",
+  ]),
 };
 
 export const GEMINI_DEFAULT_MODEL = "gemini-3-pro-preview";
 
 const ANTHROPIC_MODEL_MAP: Record<string, string> = {
-  "claude-sonnet-4.5": "claude-sonnet-4-0",
-  "claude-opus-4.6": "claude-opus-4-0",
+  "claude-haiku-4.5": "claude-haiku-4-5",
+  "claude-sonnet-4.5": "claude-sonnet-4-5",
+  "claude-sonnet-4.6": "claude-sonnet-4-6",
+  "claude-opus-4.1": "claude-opus-4-1",
+  "claude-opus-4.6": "claude-opus-4-6",
+  // Backward-compat mapping for catalog/storage values from earlier drafts.
+  "claude-haiku-4-5": "claude-haiku-4-5",
+  "claude-sonnet-4-6": "claude-sonnet-4-6",
+  "claude-sonnet-4-5": "claude-sonnet-4-5",
+  "claude-opus-4-6": "claude-opus-4-6",
+  "claude-opus-4-1": "claude-opus-4-1",
   "claude-sonnet-4-0": "claude-sonnet-4-0",
   "claude-opus-4-0": "claude-opus-4-0",
 };
 
 const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number }> = {
   "gemini-2.5-flash": { input: 0.35, output: 1.05 },
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4 },
   "gemini-2.5-pro": { input: 3.5, output: 10.5 },
   "gemini-3-flash-preview": { input: 0.35, output: 1.05 },
   "gemini-3-pro-preview": { input: 3.5, output: 10.5 },
+  "gemini-3.1-pro-preview": { input: 4.0, output: 12.0 },
 };
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MAX_ATTEMPTS = 2;
+const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 export const readEnv = (name: string): string => {
   try {
@@ -194,6 +225,28 @@ const estimateGeminiCost = (
 
 const resolveAnthropicModel = (model: string): string => {
   return ANTHROPIC_MODEL_MAP[model] || model;
+};
+
+const isOpenRouterRetryableStatus = (status: number): boolean => {
+  return OPENROUTER_RETRYABLE_STATUS.has(status);
+};
+
+const toNumberOrUndefined = (value: unknown): number | undefined => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
+const parseOpenRouterEstimatedCost = (payload: unknown): number | undefined => {
+  if (!payload || typeof payload !== "object") return undefined;
+  const typed = payload as Record<string, unknown>;
+  const usage = typed.usage;
+  const usageRecord = usage && typeof usage === "object" ? (usage as Record<string, unknown>) : null;
+
+  const candidate = toNumberOrUndefined(typed.cost)
+    ?? toNumberOrUndefined(typed.total_cost)
+    ?? toNumberOrUndefined(usageRecord?.cost)
+    ?? toNumberOrUndefined(usageRecord?.total_cost);
+  return Number.isFinite(candidate) ? Number((candidate as number).toFixed(6)) : undefined;
 };
 
 export const ensureModelAllowed = (
@@ -562,7 +615,11 @@ const generateWithAnthropic = async (
   };
 };
 
-const generateWithOpenRouter = async (model: string): Promise<ProviderGenerationResult> => {
+const generateWithOpenRouter = async (
+  prompt: string,
+  model: string,
+  timeoutMs: number,
+): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENROUTER_API_KEY");
   if (!apiKey) {
     return {
@@ -575,12 +632,133 @@ const generateWithOpenRouter = async (model: string): Promise<ProviderGeneration
     };
   }
 
+  const origin = readEnv("SITE_URL") || readEnv("VITE_SITE_URL");
+  const appTitle = readEnv("OPENROUTER_APP_NAME") || "TravelFlow";
+
+  let lastError: ProviderGenerationResult | null = null;
+
+  for (let attempt = 1; attempt <= OPENROUTER_MAX_ATTEMPTS; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(
+        OPENROUTER_URL,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            ...(origin ? { "HTTP-Referer": origin } : {}),
+            ...(appTitle ? { "X-Title": appTitle } : {}),
+          },
+          body: JSON.stringify({
+            model,
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "Return only a valid JSON object. Do not include markdown fences.",
+              },
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+          }),
+        },
+        timeoutMs,
+      );
+    } catch (error) {
+      lastError = {
+        ok: false,
+        status: 504,
+        value: {
+          error: "OpenRouter generation request timed out.",
+          code: "OPENROUTER_REQUEST_TIMEOUT",
+          details: error instanceof Error ? error.message : "Unknown timeout error",
+        },
+      };
+      break;
+    }
+
+    if (!response.ok) {
+      const details = await response.text();
+      const normalizedStatus = Number.isFinite(response.status) && response.status > 0
+        ? response.status
+        : 502;
+      lastError = {
+        ok: false,
+        status: normalizedStatus,
+        value: {
+          error: "OpenRouter generation request failed.",
+          code: "OPENROUTER_REQUEST_FAILED",
+          details: clipText(details),
+          model,
+        },
+      };
+
+      if (attempt < OPENROUTER_MAX_ATTEMPTS && isOpenRouterRetryableStatus(normalizedStatus)) {
+        continue;
+      }
+      return lastError;
+    }
+
+    const payload = await response.json();
+    const rawText = extractOpenAiText(payload?.choices?.[0]?.message?.content);
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = extractJsonObject(rawText);
+    } catch (error) {
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenRouter response could not be parsed as JSON itinerary payload.",
+          code: "OPENROUTER_PARSE_FAILED",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          sample: rawText.slice(0, 800),
+        },
+      };
+    }
+
+    const usageMeta = payload?.usage || {};
+    const promptTokens = Number(usageMeta.prompt_tokens ?? usageMeta.input_tokens);
+    const completionTokens = Number(usageMeta.completion_tokens ?? usageMeta.output_tokens);
+    const totalTokens = Number(usageMeta.total_tokens);
+    const estimatedCostUsd = parseOpenRouterEstimatedCost(payload);
+    const providerModel = typeof payload?.model === "string" ? payload.model : undefined;
+
+    const usage: ProviderUsage = {
+      promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+      completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+      totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
+      estimatedCostUsd,
+    };
+
+    return {
+      ok: true,
+      value: {
+        data: parsed,
+        meta: {
+          provider: "openrouter",
+          model,
+          providerModel,
+          usage,
+        },
+      },
+    };
+  }
+
+  if (lastError) {
+    return lastError;
+  }
+
   return {
     ok: false,
-    status: 501,
+    status: 502,
     value: {
-      error: "OpenRouter backend adapter is not enabled yet in this runtime.",
-      code: "OPENROUTER_NOT_ENABLED",
+      error: "OpenRouter generation request failed.",
+      code: "OPENROUTER_REQUEST_FAILED",
       model,
     },
   };
@@ -610,5 +788,5 @@ export const generateProviderItinerary = async (
   if (provider === "anthropic") {
     return await generateWithAnthropic(options.prompt, model, options.timeoutMs);
   }
-  return await generateWithOpenRouter(model);
+  return await generateWithOpenRouter(options.prompt, model, options.timeoutMs);
 };

@@ -60,3 +60,10 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🚦 Increased benchmark parallel execution cap to 5 workers (with automatic queueing for additional selected models) and surfaced this directly in the model-selection UI.
 - [ ] [Internal] 💵 Added benchmark cost-display fallback to model-catalog estimates when exact provider `cost_usd` is unavailable, plus clarifying copy in the results section.
 - [ ] [Internal] 🧪 Downgraded `countryInfo` benchmark validation failures to non-blocking warnings, tightened AI prompt/schema guidance to require numeric `exchangeRate`, and hardened destination info UI to disable currency conversion when malformed exchange data is returned.
+- [ ] [Internal] 🛰️ Replaced the OpenRouter runtime stub with a real adapter call path (JSON extraction, usage/cost metadata capture, and transient 429/5xx retry handling) while keeping provider keys server-only.
+- [ ] [Internal] 🤖 Expanded the curated benchmark/runtime model catalog with newer Gemini/OpenAI/Anthropic entries plus curated OpenRouter free-model alternatives for broader comparison coverage.
+- [ ] [Internal] 🧪 Added regression tests for provider allowlist enforcement, OpenRouter runtime failure/retry behavior, and model-catalog default/sorting/grouping safeguards.
+- [ ] [Internal] 📡 Added persistent AI call telemetry (`ai_generation_events`) for runtime + benchmark execution, capturing provider/model/status/duration/token/cost/error metadata server-side.
+- [ ] [Internal] 📊 Added `/api/internal/ai/benchmark/telemetry` plus new admin dashboard telemetry cards/charts/filter controls for time window, source, and provider breakdown.
+- [ ] [Internal] 📈 Added Umami custom events for create-trip AI request success/failure and Gemini fallback outcomes to correlate UX and backend behavior.
+- [ ] [Internal] 🤖 Expanded Anthropic/OpenRouter model coverage with Claude Sonnet 4.6 plus curated OpenRouter additions (`GLM 5`, `DeepSeek V3.2`, `Grok 4.1 Fast`, `MiniMax M2.5`, `Kimi K2.5`).

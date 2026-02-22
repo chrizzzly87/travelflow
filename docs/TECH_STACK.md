@@ -67,8 +67,9 @@ Where pressure is now visible:
 | Area | Current choice | Notes |
 | --- | --- | --- |
 | App-side generation service | `services/aiService.ts` | Primary shaping/normalization layer for itinerary generation. |
-| Providers | Gemini + OpenAI + Anthropic (through edge provider runtime) | Allowlisted models in `netlify/edge-lib/ai-provider-runtime.ts`. |
+| Providers | Gemini + OpenAI + Anthropic + curated OpenRouter (through edge provider runtime) | Allowlisted models in `netlify/edge-lib/ai-provider-runtime.ts`. |
 | Model catalog | `config/aiModelCatalog.ts` | Runtime default currently points to `gemini-3-pro-preview`. |
+| AI telemetry | Supabase `ai_generation_events` + admin telemetry endpoint/charts | Captures provider/model/status/latency/cost trends across runtime + benchmark calls. |
 | SDK/deps | `@google/genai` + provider HTTP calls in edge runtime | Provider-specific key checks and timeout controls implemented. |
 
 ### Analytics and tracking
@@ -179,4 +180,3 @@ Recommendation:
 2. Week 2: add test baseline (critical service tests + a few Playwright smoke flows).
 3. Week 3+: introduce Zustand only for well-scoped shared state slices (not a full rewrite).
 4. Ongoing: add bundle budgets and error monitoring.
-

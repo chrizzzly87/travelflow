@@ -40,6 +40,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-switch": "^1.2.6",
     "@supabase/supabase-js": "^2.49.1",
+    "@tremor/react": "^3.18.7",
     "@types/google.maps": "^3.58.1",
     "blurhash": "^2.0.5",
     "flagpack": "^1.0.5",

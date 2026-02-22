@@ -18,10 +18,11 @@ At minimum, ensure these exist for Deploy Preview context (or all contexts):
 - `VITE_GOOGLE_MAPS_API_KEY`
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (required for AI telemetry persistence/reads)
 
 Optional compatibility keys:
 - `VITE_GEMINI_API_KEY` (fallback path)
-- `OPENROUTER_API_KEY` (reserved for future adapter)
+- `OPENROUTER_API_KEY` (required when testing curated OpenRouter models)
 - `AI_GENERATE_PROVIDER_TIMEOUT_MS` (override AI provider timeout; current sane default is handled in code)
 
 ## Common caveats

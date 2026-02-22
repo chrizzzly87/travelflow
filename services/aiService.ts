@@ -16,6 +16,7 @@ import {
     normalizeActivityTypes,
     generateTripId,
 } from "../utils";
+import { trackEvent } from "./analyticsService";
 
 /**
  * ==============================================================================
@@ -166,7 +167,7 @@ export interface GenerateOptions {
     selectedIslandNames?: string[];
     enforceIslandOnly?: boolean;
     aiTarget?: {
-        provider: 'gemini' | 'openai' | 'anthropic';
+        provider: 'gemini' | 'openai' | 'anthropic' | 'openrouter';
         model: string;
     };
 }
@@ -440,6 +441,11 @@ const generateItineraryFromPrompt = async (
     startDate?: string,
     options?: Pick<GenerateOptions, 'roundTrip' | 'aiTarget'>
 ): Promise<ITrip> => {
+  const requestStartedAtMs = Date.now();
+  const selectedProvider = options?.aiTarget?.provider || 'gemini';
+  const selectedModel = options?.aiTarget?.model || 'gemini-3-pro-preview';
+  let serverFailureTracked = false;
+
   try {
     const edgeResponse = await fetch('/api/ai/generate', {
         method: 'POST',
@@ -457,14 +463,26 @@ const generateItineraryFromPrompt = async (
 
     if (!edgeResponse.ok) {
         let message = 'Server-side generation failed.';
+        let errorCode: string | null = null;
         try {
             const payload = await edgeResponse.json();
             if (payload?.error && typeof payload.error === 'string') {
                 message = payload.error;
             }
+            if (payload?.code && typeof payload.code === 'string') {
+                errorCode = payload.code;
+            }
         } catch {
             // noop
         }
+        trackEvent('create_trip__ai_request--failed', {
+            provider: selectedProvider,
+            model: selectedModel,
+            status: edgeResponse.status,
+            duration_ms: Date.now() - requestStartedAtMs,
+            error_code: errorCode,
+        });
+        serverFailureTracked = true;
         throw new Error(message);
     }
 
@@ -472,7 +490,16 @@ const generateItineraryFromPrompt = async (
     const data = payload?.data || {};
     const provider = payload?.meta?.provider || options?.aiTarget?.provider || 'gemini';
     const model = payload?.meta?.model || options?.aiTarget?.model || 'gemini-3-pro-preview';
-    const normalizedProvider = provider === 'openai' || provider === 'anthropic' || provider === 'gemini'
+    const responseDurationMs = Number(payload?.meta?.durationMs);
+    trackEvent('create_trip__ai_request--success', {
+        provider,
+        model,
+        status: edgeResponse.status,
+        duration_ms: Number.isFinite(responseDurationMs) ? responseDurationMs : Date.now() - requestStartedAtMs,
+        request_id: typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : null,
+    });
+
+    const normalizedProvider = provider === 'openai' || provider === 'anthropic' || provider === 'gemini' || provider === 'openrouter'
         ? provider
         : 'gemini';
 
@@ -484,12 +511,23 @@ const generateItineraryFromPrompt = async (
         },
     });
   } catch (serverError) {
+    if (!serverFailureTracked) {
+        trackEvent('create_trip__ai_request--failed', {
+            provider: selectedProvider,
+            model: selectedModel,
+            status: 500,
+            duration_ms: Date.now() - requestStartedAtMs,
+            error_code: serverError instanceof Error ? serverError.name : 'UNKNOWN_SERVER_ERROR',
+        });
+    }
+
     const isGeminiFallbackAllowed = !options?.aiTarget || options.aiTarget.provider === 'gemini';
     if (!isGeminiFallbackAllowed) {
         console.error('AI Generation failed:', serverError);
         throw serverError;
     }
 
+    const fallbackStartedAtMs = Date.now();
     try {
         const apiKey = getGeminiApiKey();
         if (!apiKey) throw new Error('API Key is missing or invalid. Please check your environment configuration.');
@@ -507,8 +545,21 @@ const generateItineraryFromPrompt = async (
         });
 
         const data = JSON.parse(response.text || '{}');
+        trackEvent('create_trip__ai_request--fallback_success', {
+            provider: 'gemini',
+            model: selectedModel,
+            status: 200,
+            duration_ms: Date.now() - fallbackStartedAtMs,
+        });
         return buildTripFromModelData(data, startDate, options);
     } catch (fallbackError) {
+        trackEvent('create_trip__ai_request--fallback_failed', {
+            provider: 'gemini',
+            model: options?.aiTarget?.model || 'gemini-3-pro-preview',
+            status: 500,
+            duration_ms: Date.now() - fallbackStartedAtMs,
+            error_code: fallbackError instanceof Error ? fallbackError.name : 'UNKNOWN_FALLBACK_ERROR',
+        });
         console.error('AI Generation failed (server and fallback):', { serverError, fallbackError });
         throw fallbackError;
     }

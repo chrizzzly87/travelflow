@@ -5,14 +5,14 @@ Owner: TravelFlow engineering
 Last updated: 2026-02-11
 
 Current implementation status:
-1. `/api/ai/generate` is implemented for Gemini, OpenAI, and Anthropic allowlisted models.
-2. OpenRouter backend adapter is intentionally not enabled yet.
+1. `/api/ai/generate` is implemented for Gemini, OpenAI, Anthropic, and OpenRouter allowlisted models.
+2. OpenRouter backend adapter is enabled for curated free-model entries through the same provider runtime allowlist controls.
 3. `/api/internal/ai/benchmark` is implemented with Supabase-backed session/run persistence and real provider execution.
 4. `/api/internal/ai/benchmark/export` is implemented (`run` JSON export, `session` ZIP export, optional log bundle via `includeLogs=1`).
 5. `/api/internal/ai/benchmark/cleanup` is implemented for bulk deletion of benchmark-linked trips and benchmark rows.
 6. `/api/internal/ai/benchmark/rating` is implemented for persisted per-run satisfaction ranking updates (`good`, `medium`, `bad`).
 7. `/admin/ai-benchmark` now includes classic benchmark input, prompt preview generation, dynamic model matrix, rerun/test-all, persisted table, export/cleanup actions, persisted ranking controls, and model-level summary cards.
-8. Benchmark model-row selections in admin UI are persisted locally with default starter set (Gemini 3 Pro, Gemini 3 Flash, GPT-5.2, Claude Sonnet 4.5).
+8. Benchmark model-row selections in admin UI are persisted locally with default starter set (Gemini 3.1 Pro Preview, Gemini 3 Pro Preview, GPT-5.2 Pro, Claude Haiku 4.5).
 9. Benchmark table uses optimistic prefilled running rows with live latency feedback during test execution.
 10. Transport mode enum + normalization + prompt guidance now use a shared contract (`shared/transportModes.ts`) with update workflow documented in `docs/TRANSPORT_MODE_CONTRACT.md`.
 11. Benchmark validation now includes stricter field/format checks with blocking errors vs non-blocking warning separation and per-run validation detail modal support in `/admin/ai-benchmark`.
@@ -22,6 +22,7 @@ Current implementation status:
 15. Benchmark workers now call provider APIs directly (shared edge runtime) with a dedicated provider timeout budget (default 90s), avoiding nested `/api/ai/generate` edge timeout failures.
 16. Benchmark concurrency is capped at 5 parallel workers; extra selected model runs are queued automatically.
 17. Benchmark cost column now falls back to model-catalog estimates when exact provider `cost_usd` metadata is not available.
+18. Runtime + benchmark provider calls are now persisted in `ai_generation_events`, and `/api/internal/ai/benchmark/telemetry` powers filtered admin telemetry charts.
 
 ## 1) Confirmed decisions (2026-02-11)
 
@@ -120,23 +121,40 @@ This supports phased exposure and future tester-role gating without UI rewrites.
 1. `gemini` (default in create form)
 2. `openai`
 3. `anthropic`
-4. `openrouter` (only for selected free/experimental entries)
+4. `openrouter` (selected free + curated multi-vendor low-cost/popular entries)
 
 ## 6.2.1 Curated model allowlist (v1)
 
 Google Gemini:
 1. `gemini-2.5-flash`
-2. `gemini-2.5-pro`
-3. `gemini-3-flash-preview`
-4. `gemini-3-pro-preview` (current runtime default)
+2. `gemini-2.5-flash-lite`
+3. `gemini-2.5-pro`
+4. `gemini-3-flash-preview`
+5. `gemini-3-pro-preview` (current runtime default)
+6. `gemini-3.1-pro-preview`
 
 OpenAI:
-1. `gpt-5-mini`
-2. `gpt-5.2`
+1. `gpt-5-nano`
+2. `gpt-5-mini`
+3. `gpt-5.2`
+4. `gpt-5.2-pro`
 
 Anthropic:
-1. `claude-sonnet-4.5`
-2. `claude-opus-4.6`
+1. `claude-haiku-4.5`
+2. `claude-sonnet-4.5`
+3. `claude-sonnet-4.6`
+4. `claude-opus-4.6`
+5. `claude-opus-4.1`
+
+OpenRouter (curated):
+1. `openrouter/free`
+2. `openai/gpt-oss-20b:free`
+3. `qwen/qwen3-coder:free`
+4. `z-ai/glm-5`
+5. `deepseek/deepseek-v3.2`
+6. `x-ai/grok-4.1-fast`
+7. `minimax/minimax-m2.5`
+8. `moonshotai/kimi-k2.5`
 
 ## 6.3 Why OpenRouter in addition to direct providers
 

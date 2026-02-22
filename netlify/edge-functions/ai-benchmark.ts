@@ -1,5 +1,12 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode, parseTransportMode } from "../../shared/transportModes.ts";
+import {
+  buildAiTelemetrySeries,
+  summarizeAiTelemetry,
+  summarizeAiTelemetryByProvider,
+  type AiTelemetryRow,
+} from "../edge-lib/ai-telemetry-aggregation.ts";
+import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
 
 interface BenchmarkTarget {
@@ -103,6 +110,10 @@ const BENCHMARK_PROVIDER_TIMEOUT_MS = Math.max(
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
+const TELEMETRY_SOURCE_VALUES = new Set(["all", "create_trip", "benchmark"]);
+const TELEMETRY_WINDOW_MIN_HOURS = 1;
+const TELEMETRY_WINDOW_MAX_HOURS = 24 * 90;
+const TELEMETRY_WINDOW_DEFAULT_HOURS = 24 * 7;
 
 const CITY_COLORS = [
   "#f43f5e",
@@ -195,6 +206,15 @@ const getSupabaseConfig = () => {
   return { url, anonKey };
 };
 
+const getSupabaseServiceConfig = () => {
+  const url = readEnv("VITE_SUPABASE_URL").replace(/\/+$/, "");
+  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceRoleKey) {
+    return null;
+  }
+  return { url, serviceRoleKey };
+};
+
 const buildSupabaseHeaders = (authToken: string, anonKey: string, extra?: Record<string, string>) => ({
   "Content-Type": "application/json",
   apikey: anonKey,
@@ -222,6 +242,22 @@ const supabaseFetch = async (
     ...init,
     headers: {
       ...buildSupabaseHeaders(authToken, config.anonKey),
+      ...(init.headers || {}),
+    },
+  });
+};
+
+const supabaseServiceFetch = async (
+  config: { url: string; serviceRoleKey: string },
+  path: string,
+  init: RequestInit,
+): Promise<Response> => {
+  return fetch(`${config.url}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
       ...(init.headers || {}),
     },
   });
@@ -1162,6 +1198,45 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
+  const persistRunTelemetry = async (
+    input: {
+      status: "success" | "failed";
+      latencyMs: number;
+      httpStatus: number;
+      provider?: string;
+      model?: string;
+      providerModel?: string;
+      errorCode?: string;
+      errorMessage?: string;
+      usage?: ProviderUsage;
+      estimatedCostUsd?: number | null;
+      metadata?: Record<string, unknown>;
+    },
+  ) => {
+    try {
+      await persistAiGenerationTelemetry({
+        source: "benchmark",
+        requestId: run.id,
+        provider: input.provider || run.provider,
+        model: input.model || run.model,
+        providerModel: input.providerModel,
+        status: input.status,
+        latencyMs: input.latencyMs,
+        httpStatus: input.httpStatus,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        estimatedCostUsd: input.estimatedCostUsd ?? input.usage?.estimatedCostUsd,
+        promptTokens: input.usage?.promptTokens,
+        completionTokens: input.usage?.completionTokens,
+        totalTokens: input.usage?.totalTokens,
+        benchmarkSessionId: sessionId,
+        benchmarkRunId: run.id,
+        metadata: input.metadata,
+      });
+    } catch {
+      // Best-effort only: benchmark execution should not fail on telemetry persistence errors.
+    }
+  };
 
   try {
     const result = await generateProviderItinerary({
@@ -1170,17 +1245,29 @@ const runGeneration = async (
       model: run.model,
       timeoutMs: BENCHMARK_PROVIDER_TIMEOUT_MS,
     });
+    const latencyMs = Date.now() - startedMs;
 
     if (!result.ok) {
       const details = JSON.stringify(result.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: result.status,
+        providerModel: result.value.providerModel,
+        errorCode: result.value.code,
+        errorMessage: result.value.error,
+        metadata: {
+          reason: "provider_request_failed",
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         error_message: `Generation failed (${result.status}): ${formattedDetails}`,
       });
       return;
@@ -1190,13 +1277,27 @@ const runGeneration = async (
     const usage: ProviderUsage = result.value.meta?.usage || {};
 
     if (!modelData || typeof modelData !== "object") {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 200,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_OUTPUT_INVALID",
+        errorMessage: "Provider response did not include a valid data object",
+        metadata: {
+          reason: "invalid_data_object",
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         error_message: "Provider response did not include a valid data object",
       });
       return;
@@ -1204,13 +1305,28 @@ const runGeneration = async (
 
     const validation = validateModelData(modelData as Record<string, unknown>);
     if (!validation.schemaValid) {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 200,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_OUTPUT_VALIDATION_FAILED",
+        errorMessage: validation.errors.join("; ") || "Model output failed validation",
+        metadata: {
+          reason: "validation_failed",
+          validationErrorCount: validation.errors.length,
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         schema_valid: false,
         validation_checks: validation.checks,
         validation_errors: validation.errors,
@@ -1234,20 +1350,33 @@ const runGeneration = async (
 
     const persistedTrip = await persistTrip(config, authToken, trip, sessionId);
     if (!persistedTrip.tripId) {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 502,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_TRIP_PERSIST_FAILED",
+        errorMessage: persistedTrip.error || "Failed to persist generated trip",
+        metadata: {
+          reason: "trip_persist_failed",
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         error_message: persistedTrip.error || "Failed to persist generated trip",
       });
       return;
     }
 
     const finishedAt = new Date().toISOString();
-    const latencyMs = Date.now() - startedMs;
     const estimatedCostUsd = typeof usage.estimatedCostUsd === "number" ? usage.estimatedCostUsd : null;
 
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1269,14 +1398,39 @@ const runGeneration = async (
       trip_ai_meta: (trip.aiMeta as Record<string, unknown>) || null,
       error_message: null,
     });
+
+    await persistRunTelemetry({
+      status: "success",
+      latencyMs,
+      httpStatus: 200,
+      provider: result.value.meta.provider,
+      model: result.value.meta.model,
+      providerModel: result.value.meta.providerModel,
+      usage,
+      estimatedCostUsd,
+      metadata: {
+        reason: "completed",
+      },
+    });
   } catch (error) {
+    const latencyMs = Date.now() - startedMs;
+    await persistRunTelemetry({
+      status: "failed",
+      latencyMs,
+      httpStatus: 500,
+      errorCode: "BENCHMARK_RUN_UNEXPECTED_ERROR",
+      errorMessage: error instanceof Error ? error.message : "Unexpected benchmark run error",
+      metadata: {
+        reason: "unexpected_exception",
+      },
+    });
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
       return;
     }
     await updateRunRow(config, authToken, run.id, {
       status: "failed",
       finished_at: new Date().toISOString(),
-      latency_ms: Date.now() - startedMs,
+      latency_ms: latencyMs,
       error_message: error instanceof Error ? error.message : "Unexpected benchmark run error",
     });
   }
@@ -1454,6 +1608,124 @@ const formatRunFileName = (run: BenchmarkRunRow): string => {
 
 const formatRunLogFileName = (run: BenchmarkRunRow): string => {
   return formatRunFileName(run).replace(/\.json$/i, ".log.json");
+};
+
+const normalizeTelemetrySource = (value: string | null): "all" | "create_trip" | "benchmark" => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (!TELEMETRY_SOURCE_VALUES.has(normalized)) return "all";
+  if (normalized === "create_trip" || normalized === "benchmark") return normalized;
+  return "all";
+};
+
+const normalizeTelemetryWindowHours = (value: string | null): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return TELEMETRY_WINDOW_DEFAULT_HOURS;
+  return clampNumber(
+    Math.round(parsed),
+    TELEMETRY_WINDOW_MIN_HOURS,
+    TELEMETRY_WINDOW_MAX_HOURS,
+  );
+};
+
+const normalizeTelemetryProvider = (value: string | null): string | null => {
+  const normalized = (value || "").trim().toLowerCase();
+  return normalized ? normalized : null;
+};
+
+const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const typed = row as Record<string, unknown>;
+      const id = typeof typed.id === "string" ? typed.id : "";
+      const createdAt = typeof typed.created_at === "string" ? typed.created_at : "";
+      const source = typed.source === "benchmark" ? "benchmark" : typed.source === "create_trip" ? "create_trip" : null;
+      const provider = typeof typed.provider === "string" ? typed.provider : "";
+      const model = typeof typed.model === "string" ? typed.model : "";
+      const status = typed.status === "failed" ? "failed" : typed.status === "success" ? "success" : null;
+      if (!id || !createdAt || !source || !provider || !model || !status) return null;
+
+      return {
+        id,
+        created_at: createdAt,
+        source,
+        provider,
+        model,
+        status,
+        latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
+        estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
+        error_code: typeof typed.error_code === "string" ? typed.error_code : null,
+      } satisfies AiTelemetryRow;
+    })
+    .filter((row): row is AiTelemetryRow => Boolean(row));
+};
+
+const handleTelemetry = async (
+  request: Request,
+  _config: { url: string; anonKey: string },
+): Promise<Response> => {
+  const url = new URL(request.url);
+  const source = normalizeTelemetrySource(url.searchParams.get("source"));
+  const providerFilter = normalizeTelemetryProvider(url.searchParams.get("provider"));
+  const windowHours = normalizeTelemetryWindowHours(url.searchParams.get("windowHours"));
+  const sinceIso = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
+
+  const params = new URLSearchParams();
+  params.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code");
+  params.set("created_at", `gte.${sinceIso}`);
+  params.set("order", "created_at.desc");
+  params.set("limit", "2000");
+  if (source !== "all") {
+    params.set("source", `eq.${source}`);
+  }
+  if (providerFilter) {
+    params.set("provider", `eq.${providerFilter}`);
+  }
+
+  const serviceConfig = getSupabaseServiceConfig();
+  if (!serviceConfig) {
+    return json(503, {
+      error: "Supabase service config missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      code: "SUPABASE_SERVICE_CONFIG_MISSING",
+    });
+  }
+
+  const response = await supabaseServiceFetch(
+    serviceConfig,
+    `/rest/v1/ai_generation_events?${params.toString()}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return json(502, {
+      error: "Failed to load AI telemetry rows.",
+      code: "AI_TELEMETRY_FETCH_FAILED",
+      details: details.slice(0, 600),
+    });
+  }
+
+  const rows = toTelemetryRows(await safeJsonParse(response));
+  const providerOptions = Array.from(new Set(rows.map((row) => row.provider).filter(Boolean)))
+    .sort((left, right) => left.localeCompare(right));
+  const summary = summarizeAiTelemetry(rows);
+  const series = buildAiTelemetrySeries(rows, 60);
+  const providerSummary = summarizeAiTelemetryByProvider(rows);
+
+  return json(200, {
+    ok: true,
+    filters: {
+      source,
+      provider: providerFilter || "all",
+      windowHours,
+    },
+    summary,
+    series,
+    providers: providerSummary,
+    recent: rows.slice(0, 120),
+    availableProviders: providerOptions,
+  });
 };
 
 const handleGetSession = async (
@@ -2170,6 +2442,13 @@ export default async (request: Request, context?: EdgeContextLike) => {
         return json(405, { error: "Method not allowed. Use GET." });
       }
       return await handleExport(request, config, authToken);
+    }
+
+    if (pathname.endsWith("/telemetry")) {
+      if (request.method !== "GET") {
+        return json(405, { error: "Method not allowed. Use GET." });
+      }
+      return await handleTelemetry(request, config);
     }
 
     if (pathname.endsWith("/cleanup")) {
