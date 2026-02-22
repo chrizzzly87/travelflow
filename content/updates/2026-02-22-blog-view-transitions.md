@@ -21,3 +21,4 @@ summary: "Adds smooth shared-element transitions between the blog list and artic
 - [x] [Improved] ⚡ Transition timing is now tuned to a faster, production-like speed for normal browsing.
 - [x] [Improved] 🖼️ Blog list cards and article headers now use the same underlying photo source for each post.
 - [ ] [Internal] 🧩 Added feature-detected transition wiring, tuned shared-element animation rules, and regression coverage for transition helpers and media mapping.
+- [ ] [Internal] 📝 Added a detailed Issue #109 postmortem in docs with timeline, root causes, regressions, and a handoff checklist for follow-up AI debugging.
