@@ -74,3 +74,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧪 Added normalization tests for benchmark preference payload/model-target/preset handling to cover default preset generation and invalid-payload recovery.
 - [ ] [Internal] 🧭 Added a dedicated `/admin/ai-benchmark/telemetry` workspace route with richer filters, ranking cards (speed/cost/value), charts, and recent-call diagnostics.
 - [ ] [Internal] 🪶 Slimmed `/admin/ai-benchmark` telemetry into a lightweight 7-day quick-view (top fastest/cheapest/best-value model cards) plus direct deep-link to the full telemetry workspace.
+- [ ] [Internal] ✅ Changed telemetry model-ranking calculations to use successful calls only, so fastest/cheapest/value leaderboards no longer reward aborted/failed runs.
+- [ ] [Internal] 🔁 Added OpenAI runtime fallback from `v1/chat/completions` to `v1/responses` for non-chat model IDs to reduce `OPENAI_REQUEST_FAILED` errors on newer model entries.

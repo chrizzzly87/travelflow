@@ -218,9 +218,11 @@ export const summarizeAiTelemetryByModel = (rows: AiTelemetryRow[]): AiTelemetry
     total: number;
     success: number;
     failed: number;
-    latencySum: number;
-    latencyCount: number;
+    successLatencySum: number;
+    successLatencyCount: number;
     totalCost: number;
+    successCostSum: number;
+    successCostCount: number;
   }>();
 
   rows.forEach((row) => {
@@ -233,24 +235,31 @@ export const summarizeAiTelemetryByModel = (rows: AiTelemetryRow[]): AiTelemetry
       total: 0,
       success: 0,
       failed: 0,
-      latencySum: 0,
-      latencyCount: 0,
+      successLatencySum: 0,
+      successLatencyCount: 0,
       totalCost: 0,
+      successCostSum: 0,
+      successCostCount: 0,
     };
 
     current.total += 1;
-    if (row.status === "success") current.success += 1;
+    const isSuccess = row.status === "success";
+    if (isSuccess) current.success += 1;
     if (row.status === "failed") current.failed += 1;
 
     const latency = toFiniteNumber(row.latency_ms);
-    if (latency !== null && latency >= 0) {
-      current.latencySum += latency;
-      current.latencyCount += 1;
+    if (isSuccess && latency !== null && latency >= 0) {
+      current.successLatencySum += latency;
+      current.successLatencyCount += 1;
     }
 
     const cost = toFiniteNumber(row.estimated_cost_usd);
     if (cost !== null) {
       current.totalCost += cost;
+      if (isSuccess) {
+        current.successCostSum += cost;
+        current.successCostCount += 1;
+      }
     }
 
     modelMap.set(key, current);
@@ -258,10 +267,12 @@ export const summarizeAiTelemetryByModel = (rows: AiTelemetryRow[]): AiTelemetry
 
   return Array.from(modelMap.entries())
     .map(([key, value]) => {
-      const averageLatencyMs = value.latencyCount > 0
-        ? Math.round(value.latencySum / value.latencyCount)
+      const averageLatencyMs = value.successLatencyCount > 0
+        ? Math.round(value.successLatencySum / value.successLatencyCount)
         : null;
-      const averageCostUsd = value.total > 0 ? roundMoney(value.totalCost / value.total) : null;
+      const averageCostUsd = value.successCostCount > 0
+        ? roundMoney(value.successCostSum / value.successCostCount)
+        : null;
       const costPerSecondUsd = averageLatencyMs && averageLatencyMs > 0 && averageCostUsd !== null
         ? roundMoney(averageCostUsd / (averageLatencyMs / 1000))
         : null;
@@ -288,7 +299,7 @@ export const topTelemetryModelsBySpeed = (
 ): AiTelemetryModelPoint[] => {
   const safeLimit = Math.max(1, Math.round(limit));
   return rows
-    .filter((row) => row.averageLatencyMs !== null)
+    .filter((row) => row.success > 0 && row.averageLatencyMs !== null)
     .sort((left, right) => {
       const leftLatency = left.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
       const rightLatency = right.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
@@ -305,7 +316,7 @@ export const topTelemetryModelsByCost = (
 ): AiTelemetryModelPoint[] => {
   const safeLimit = Math.max(1, Math.round(limit));
   return rows
-    .filter((row) => row.averageCostUsd !== null)
+    .filter((row) => row.success > 0 && row.averageCostUsd !== null)
     .sort((left, right) => {
       const leftCost = left.averageCostUsd ?? Number.MAX_SAFE_INTEGER;
       const rightCost = right.averageCostUsd ?? Number.MAX_SAFE_INTEGER;
@@ -322,7 +333,7 @@ export const topTelemetryModelsByEfficiency = (
 ): AiTelemetryModelPoint[] => {
   const safeLimit = Math.max(1, Math.round(limit));
   return rows
-    .filter((row) => row.costPerSecondUsd !== null)
+    .filter((row) => row.success > 0 && row.costPerSecondUsd !== null)
     .sort((left, right) => {
       const leftValue = left.costPerSecondUsd ?? Number.MAX_SAFE_INTEGER;
       const rightValue = right.costPerSecondUsd ?? Number.MAX_SAFE_INTEGER;

@@ -78,6 +78,56 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.meta.providerModel).toBe('claude-sonnet-4-6');
   });
 
+  it('falls back to OpenAI responses endpoint for non-chat models', async () => {
+    stubDenoEnv({
+      OPENAI_API_KEY: 'openai-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            error: {
+              message: 'This is not a chat model and thus not supported in the v1/chat/completions endpoint. Did you mean to use v1/completions?',
+            },
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          output_text: '{"tripTitle":"OpenAI fallback","cities":[],"travelSegments":[],"activities":[]}',
+          usage: {
+            input_tokens: 321,
+            output_tokens: 654,
+            total_tokens: 975,
+          },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"openai-fallback"}',
+      provider: 'openai',
+      model: 'gpt-5.2',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://api.openai.com/v1/chat/completions');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://api.openai.com/v1/responses');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('OpenAI fallback');
+    expect(result.value.meta.provider).toBe('openai');
+    expect(result.value.meta.model).toBe('gpt-5.2');
+    expect(result.value.meta.usage).toEqual({
+      promptTokens: 321,
+      completionTokens: 654,
+      totalTokens: 975,
+    });
+  });
+
   it('returns key-missing error for openrouter requests without api key', async () => {
     stubDenoEnv({});
     const result = await generateProviderItinerary({

@@ -104,11 +104,11 @@ describe('netlify/edge-lib/ai-telemetry-aggregation', () => {
     expect(fastest[0]?.model).toBe('deepseek/deepseek-v3.2');
 
     const cheapest = topTelemetryModelsByCost(models, 3);
-    expect(cheapest[0]?.provider).toBe('openai');
-    expect(cheapest[0]?.averageCostUsd).toBe(0);
+    expect(cheapest[0]?.provider).toBe('openrouter');
+    expect(cheapest[0]?.averageCostUsd).toBe(0.004);
 
     const efficient = topTelemetryModelsByEfficiency(models, 3);
-    expect(efficient[0]?.provider).toBe('openai');
-    expect(efficient[0]?.costPerSecondUsd).toBe(0);
+    expect(efficient[0]?.provider).toBe('openrouter');
+    expect(efficient[0]?.costPerSecondUsd).toBeCloseTo(0.005714, 6);
   });
 });

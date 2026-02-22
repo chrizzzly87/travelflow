@@ -195,6 +195,38 @@ const extractOpenAiText = (content: unknown): string => {
     .join("\n");
 };
 
+const extractOpenAiResponsesText = (payload: unknown): string => {
+  if (!payload || typeof payload !== "object") return "";
+  const typed = payload as Record<string, unknown>;
+
+  if (typeof typed.output_text === "string") {
+    return typed.output_text;
+  }
+  if (Array.isArray(typed.output_text)) {
+    return typed.output_text
+      .map((entry) => (typeof entry === "string" ? entry : ""))
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const output = Array.isArray(typed.output) ? typed.output : [];
+  return output
+    .flatMap((entry) => {
+      if (!entry || typeof entry !== "object") return [];
+      const content = (entry as { content?: unknown }).content;
+      if (!Array.isArray(content)) return [];
+      return content.map((chunk) => {
+        if (!chunk || typeof chunk !== "object") return "";
+        const typedChunk = chunk as { text?: string; type?: string };
+        if (typeof typedChunk.text === "string") return typedChunk.text;
+        if (typedChunk.type === "output_text" && typeof typedChunk.text === "string") return typedChunk.text;
+        return "";
+      });
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
 const extractAnthropicText = (content: unknown): string => {
   if (!Array.isArray(content)) return "";
   return content
@@ -247,6 +279,13 @@ const parseOpenRouterEstimatedCost = (payload: unknown): number | undefined => {
     ?? toNumberOrUndefined(usageRecord?.cost)
     ?? toNumberOrUndefined(usageRecord?.total_cost);
   return Number.isFinite(candidate) ? Number((candidate as number).toFixed(6)) : undefined;
+};
+
+const isOpenAiChatEndpointModelMismatch = (details: string): boolean => {
+  const normalized = details.toLowerCase();
+  return normalized.includes("not a chat model")
+    || normalized.includes("v1/chat/completions")
+    || normalized.includes("did you mean to use v1/completions");
 };
 
 export const ensureModelAllowed = (
@@ -401,16 +440,57 @@ const generateWithOpenAi = async (
     };
   }
 
-  let response: Response;
+  const openAiHeaders = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const parseOpenAiJson = (rawText: string, usageMeta: unknown): ProviderGenerationResult => {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = extractJsonObject(rawText);
+    } catch (error) {
+      return {
+        ok: false,
+        status: 502,
+        value: {
+          error: "OpenAI response could not be parsed as JSON itinerary payload.",
+          code: "OPENAI_PARSE_FAILED",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          sample: rawText.slice(0, 800),
+        },
+      };
+    }
+
+    const usage = usageMeta && typeof usageMeta === "object" ? (usageMeta as Record<string, unknown>) : {};
+    const promptTokens = Number(usage.prompt_tokens ?? usage.input_tokens);
+    const completionTokens = Number(usage.completion_tokens ?? usage.output_tokens);
+    const totalTokens = Number(usage.total_tokens);
+
+    return {
+      ok: true,
+      value: {
+        data: parsed,
+        meta: {
+          provider: "openai",
+          model,
+          usage: {
+            promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+            completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+            totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
+          },
+        },
+      },
+    };
+  };
+
+  let chatResponse: Response;
   try {
-    response = await fetchWithTimeout(
+    chatResponse = await fetchWithTimeout(
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: openAiHeaders,
         body: JSON.stringify({
           model,
           temperature: 0.2,
@@ -441,60 +521,78 @@ const generateWithOpenAi = async (
     };
   }
 
-  if (!response.ok) {
-    const details = await response.text();
+  if (chatResponse.ok) {
+    const chatPayload = await chatResponse.json();
+    const rawText = extractOpenAiText(chatPayload?.choices?.[0]?.message?.content);
+    return parseOpenAiJson(rawText, chatPayload?.usage || {});
+  }
+
+  const chatDetails = await chatResponse.text();
+  if (!isOpenAiChatEndpointModelMismatch(chatDetails)) {
     return {
       ok: false,
       status: 502,
       value: {
         error: "OpenAI generation request failed.",
         code: "OPENAI_REQUEST_FAILED",
-        details: clipText(details),
+        details: clipText(chatDetails),
       },
     };
   }
 
-  const payload = await response.json();
-  const rawText = extractOpenAiText(payload?.choices?.[0]?.message?.content);
-
-  let parsed: Record<string, unknown>;
+  let responsesEndpointResponse: Response;
   try {
-    parsed = extractJsonObject(rawText);
+    responsesEndpointResponse = await fetchWithTimeout(
+      "https://api.openai.com/v1/responses",
+      {
+        method: "POST",
+        headers: openAiHeaders,
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          input: [
+            {
+              role: "system",
+              content: "Return only a valid JSON object. Do not include markdown fences.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          max_output_tokens: 8192,
+        }),
+      },
+      timeoutMs,
+    );
   } catch (error) {
+    return {
+      ok: false,
+      status: 504,
+      value: {
+        error: "OpenAI generation request timed out.",
+        code: "OPENAI_REQUEST_TIMEOUT",
+        details: error instanceof Error ? error.message : "Unknown timeout error",
+      },
+    };
+  }
+
+  if (!responsesEndpointResponse.ok) {
+    const responsesDetails = await responsesEndpointResponse.text();
     return {
       ok: false,
       status: 502,
       value: {
-        error: "OpenAI response could not be parsed as JSON itinerary payload.",
-        code: "OPENAI_PARSE_FAILED",
-        details: error instanceof Error ? error.message : "Unknown parsing error",
-        sample: rawText.slice(0, 800),
+        error: "OpenAI generation request failed.",
+        code: "OPENAI_REQUEST_FAILED",
+        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesDetails}`),
       },
     };
   }
 
-  const usageMeta = payload?.usage || {};
-  const promptTokens = Number(usageMeta.prompt_tokens);
-  const completionTokens = Number(usageMeta.completion_tokens);
-  const totalTokens = Number(usageMeta.total_tokens);
-
-  const usage: ProviderUsage = {
-    promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
-    completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
-    totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
-  };
-
-  return {
-    ok: true,
-    value: {
-      data: parsed,
-      meta: {
-        provider: "openai",
-        model,
-        usage,
-      },
-    },
-  };
+  const responsesPayload = await responsesEndpointResponse.json();
+  const rawText = extractOpenAiResponsesText(responsesPayload);
+  return parseOpenAiJson(rawText, responsesPayload?.usage || {});
 };
 
 const generateWithAnthropic = async (
@@ -653,6 +751,7 @@ const generateWithOpenRouter = async (
           body: JSON.stringify({
             model,
             temperature: 0.2,
+            response_format: { type: "json_object" },
             messages: [
               {
                 role: "system",
