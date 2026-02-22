@@ -51,6 +51,10 @@ Always build locally with injected env, then deploy with `--no-build` to avoid C
 4. Deploy the prebuilt output without rebuilding:
    - `pnpm dlx netlify deploy --no-build --dir=dist --alias <alias-name>`
 5. Reuse the same alias to update an existing preview URL.
+6. Prefer a stable semantic alias (for example `codex-issue-103-104-openrouter`) rather than ephemeral worktree IDs (for example `af73-*`) to avoid stale/broken alias reuse.
+7. After deploy, verify status before sharing:
+   - `curl -s -o /dev/null -w '%{http_code}\n' https://<alias>--travelflowapp.netlify.app/`
+   - `curl -s -o /dev/null -w '%{http_code}\n' https://<alias>--travelflowapp.netlify.app/admin/ai-benchmark/telemetry`
 
 Notes:
 - Do not use `source .env.local` for deployment commands; values containing special characters can fail shell parsing and silently skip env injection.

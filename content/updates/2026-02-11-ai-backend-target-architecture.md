@@ -80,3 +80,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧩 Standardized telemetry card styling with a shared admin surface component, removed heavy/dark card outlines, and enabled explicit Tremor chart tooltips/legends for clearer hover diagnostics.
 - [ ] [Internal] 🧵 Restored Tremor style generation in deferred admin CSS by wiring package class scanning and official Tremor theme tokens, so telemetry charts/bar lists render with Tremor block visuals instead of fallback unstyled output.
 - [ ] [Internal] ☀️ Fixed telemetry light-mode rendering by switching Tailwind dark variants to class-based mode (no OS dark auto-override) and refined chart compositions/colors for clearer call, latency, cost, and provider/model insights.
+- [ ] [Internal] 🧭 Updated Netlify manual deploy guidance to prefer stable semantic aliases and added explicit post-deploy HTTP status checks for shared test links.
