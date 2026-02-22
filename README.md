@@ -28,7 +28,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 # Optional local fallback (browser-side Gemini path for non-Netlify dev)
 VITE_GEMINI_API_KEY=your_gemini_api_key_here
-# Future provider adapters / benchmark tooling
+# Optional provider adapters / benchmark tooling
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
@@ -226,10 +226,10 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions)
+   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions and AI telemetry persistence/reads)
    - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
    - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
-   - `OPENROUTER_API_KEY` (reserved for upcoming OpenRouter adapter)
+   - `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
 

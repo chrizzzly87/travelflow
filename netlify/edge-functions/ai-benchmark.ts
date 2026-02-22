@@ -1,6 +1,24 @@
 import { parseFlexibleDurationDays, parseFlexibleDurationHours } from "../../shared/durationParsing.ts";
 import { MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode, parseTransportMode } from "../../shared/transportModes.ts";
+import {
+  buildAiTelemetrySeries,
+  summarizeAiTelemetry,
+  summarizeAiTelemetryByModel,
+  summarizeAiTelemetryByProvider,
+  topTelemetryModelsByCost,
+  topTelemetryModelsByEfficiency,
+  topTelemetryModelsBySpeed,
+  type AiTelemetryRow,
+} from "../edge-lib/ai-telemetry-aggregation.ts";
+import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
 import { generateProviderItinerary, resolveTimeoutMs } from "../edge-lib/ai-provider-runtime.ts";
+import {
+  BENCHMARK_DEFAULT_MODEL_IDS,
+  createSystemBenchmarkPresets,
+  normalizeBenchmarkPreferencesPayload,
+  type BenchmarkPreferencesPayload,
+} from "../../services/aiBenchmarkPreferencesService.ts";
+import { AI_MODEL_CATALOG } from "../../config/aiModelCatalog.ts";
 
 interface BenchmarkTarget {
   provider: string;
@@ -23,6 +41,7 @@ interface BenchmarkRequestBody {
   targets?: BenchmarkTarget[];
   runCount?: number;
   concurrency?: number;
+  timeoutMs?: number;
 }
 
 interface EdgeContextLike {
@@ -75,11 +94,24 @@ interface BenchmarkRunRow {
   created_at: string;
 }
 
+interface BenchmarkPreferencesRow {
+  owner_id: string;
+  model_targets: unknown;
+  presets: unknown;
+  selected_preset_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ValidationResult {
   schemaValid: boolean;
   checks: Record<string, unknown>;
   errors: string[];
   warnings: string[];
+}
+
+interface ValidationOptions {
+  roundTrip?: boolean;
 }
 
 const JSON_HEADERS = {
@@ -96,13 +128,23 @@ const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
 const MAX_CONCURRENCY = 5;
 const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
-const BENCHMARK_PROVIDER_TIMEOUT_MS = Math.max(
-  90_000,
-  resolveTimeoutMs("AI_BENCHMARK_PROVIDER_TIMEOUT_MS", 90_000, 10_000, 180_000),
+const BENCHMARK_PROVIDER_TIMEOUT_MIN_MS = 20_000;
+const BENCHMARK_PROVIDER_TIMEOUT_MAX_MS = 180_000;
+const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs(
+  "AI_BENCHMARK_PROVIDER_TIMEOUT_MS",
+  60_000,
+  BENCHMARK_PROVIDER_TIMEOUT_MIN_MS,
+  BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
 );
+const BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS = 4_096;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
+const TELEMETRY_SOURCE_VALUES = new Set(["all", "create_trip", "benchmark"]);
+const TELEMETRY_WINDOW_MIN_HOURS = 1;
+const TELEMETRY_WINDOW_MAX_HOURS = 24 * 90;
+const TELEMETRY_WINDOW_DEFAULT_HOURS = 24 * 7;
+const BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS = 14;
 
 const CITY_COLORS = [
   "#f43f5e",
@@ -152,6 +194,11 @@ const ACTIVITY_TYPE_COLOR: Record<(typeof ACTIVITY_TYPES)[number], string> = {
 };
 
 const TRAVEL_COLOR = "bg-stone-800 border-stone-600 text-stone-100";
+const ACTIVE_BENCHMARK_MODEL_ID_SET = new Set(
+  AI_MODEL_CATALOG
+    .filter((model) => model.availability === "active")
+    .map((model) => model.id),
+);
 
 const readEnv = (name: string): string => {
   try {
@@ -195,6 +242,15 @@ const getSupabaseConfig = () => {
   return { url, anonKey };
 };
 
+const getSupabaseServiceConfig = () => {
+  const url = readEnv("VITE_SUPABASE_URL").replace(/\/+$/, "");
+  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !serviceRoleKey) {
+    return null;
+  }
+  return { url, serviceRoleKey };
+};
+
 const buildSupabaseHeaders = (authToken: string, anonKey: string, extra?: Record<string, string>) => ({
   "Content-Type": "application/json",
   apikey: anonKey,
@@ -222,6 +278,22 @@ const supabaseFetch = async (
     ...init,
     headers: {
       ...buildSupabaseHeaders(authToken, config.anonKey),
+      ...(init.headers || {}),
+    },
+  });
+};
+
+const supabaseServiceFetch = async (
+  config: { url: string; serviceRoleKey: string },
+  path: string,
+  init: RequestInit,
+): Promise<Response> => {
+  return fetch(`${config.url}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      apikey: config.serviceRoleKey,
+      Authorization: `Bearer ${config.serviceRoleKey}`,
       ...(init.headers || {}),
     },
   });
@@ -281,7 +353,29 @@ const toIsoDate = (value?: string): string => {
   return new Date().toISOString().slice(0, 10);
 };
 
+const addIsoDateDays = (isoDate: string, days: number): string => {
+  const parsed = Date.parse(`${isoDate}T00:00:00Z`);
+  if (!Number.isFinite(parsed)) return isoDate;
+  return new Date(parsed + (days * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+};
+
+const getBenchmarkPreferenceDefaultDates = (): { startDate: string; endDate: string } => {
+  const startDate = toIsoDate();
+  const endDate = addIsoDateDays(startDate, BENCHMARK_PREFERENCES_DEFAULT_DURATION_DAYS);
+  return { startDate, endDate };
+};
+
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
+
+const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return clampNumber(
+    Math.round(parsed),
+    BENCHMARK_PROVIDER_TIMEOUT_MIN_MS,
+    BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
+  );
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === "object" && !Array.isArray(value)
@@ -399,6 +493,99 @@ const normalizeActivityTypes = (value: unknown): string[] => {
   return ACTIVITY_TYPES.filter((type) => accepted.has(type));
 };
 
+const COUNTRY_INFO_FIELD_KEYS = [
+  "currency",
+  "currencyCode",
+  "currencyName",
+  "exchangeRate",
+  "exchangeRateToEUR",
+  "languages",
+  "sockets",
+  "electricSockets",
+  "visaLink",
+  "visaInfoUrl",
+  "auswaertigesAmtLink",
+  "auswaertigesAmtUrl",
+] as const;
+
+const countryInfoHasSignalFields = (value: Record<string, unknown>): boolean => {
+  return COUNTRY_INFO_FIELD_KEYS.some((key) => hasOwn(value, key));
+};
+
+const collectCountryInfoEntries = (value: unknown): Record<string, unknown>[] => {
+  if (Array.isArray(value)) {
+    return value.filter(isRecord);
+  }
+  if (!isRecord(value)) return [];
+  if (countryInfoHasSignalFields(value)) {
+    return [value];
+  }
+  const nested = Object.values(value).filter(isRecord);
+  return nested.filter(countryInfoHasSignalFields);
+};
+
+const tokenizeCsvText = (value: string): string[] => {
+  return value
+    .split(/[|,;/]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+};
+
+const normalizeCountryInfoLanguages = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter(hasText).map((entry) => String(entry).trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return tokenizeCsvText(value);
+  }
+  return [];
+};
+
+const collectCountryInfoLanguages = (entries: Record<string, unknown>[]): string[] => {
+  const values = new Set<string>();
+  entries.forEach((entry) => {
+    normalizeCountryInfoLanguages(entry.languages).forEach((language) => values.add(language));
+  });
+  return [...values];
+};
+
+const pickFirstCountryInfoText = (
+  entries: Record<string, unknown>[],
+  keys: readonly string[],
+): string | null => {
+  for (const entry of entries) {
+    for (const key of keys) {
+      const value = entry[key];
+      if (hasText(value)) return String(value).trim();
+    }
+  }
+  return null;
+};
+
+const collectCountryInfoText = (
+  entries: Record<string, unknown>[],
+  keys: readonly string[],
+): string[] => {
+  const values = new Set<string>();
+  entries.forEach((entry) => {
+    keys.forEach((key) => {
+      const value = entry[key];
+      if (hasText(value)) values.add(String(value).trim());
+    });
+  });
+  return [...values];
+};
+
+const pickCountryInfoExchangeRate = (entries: Record<string, unknown>[]): number | null => {
+  for (const entry of entries) {
+    const direct = Number(entry.exchangeRate);
+    if (Number.isFinite(direct)) return direct;
+    const fallback = Number(entry.exchangeRateToEUR);
+    if (Number.isFinite(fallback)) return fallback;
+  }
+  return null;
+};
+
 const getActivityColor = (activityTypes: string[]): string => {
   const first = activityTypes.find((value) => ACTIVITY_TYPES.includes(value as (typeof ACTIVITY_TYPES)[number]));
   return first ? ACTIVITY_TYPE_COLOR[first as (typeof ACTIVITY_TYPES)[number]] : ACTIVITY_TYPE_COLOR.general;
@@ -431,12 +618,15 @@ const normalizeCityColors = (items: Array<Record<string, unknown>>): Array<Recor
   });
 };
 
-const validateModelData = (data: Record<string, unknown>): ValidationResult => {
+const validateModelData = (data: Record<string, unknown>, options: ValidationOptions = {}): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   const cities = Array.isArray(data.cities) ? data.cities : [];
   const activities = Array.isArray(data.activities) ? data.activities : [];
   const travelSegments = Array.isArray(data.travelSegments) ? data.travelSegments : [];
+  const firstCity = cities.length > 0 && isRecord(cities[0]) ? (cities[0] as Record<string, unknown>) : null;
+  const firstCityName = firstCity && hasText(firstCity.name) ? normalizeCityName(String(firstCity.name)) : null;
+  let hasTerminalRoundTripZeroDayCity = false;
 
   const requiredTopLevelKeys = ["tripTitle", "cities", "travelSegments", "activities"];
   const topLevelContractValid = requiredTopLevelKeys.every((key) => hasOwn(data, key));
@@ -449,13 +639,28 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     errors.push("No cities returned");
   }
 
-  const cityRequiredFieldsValid = cities.every((city) => {
+  const cityRequiredFieldsValid = cities.every((city, index) => {
     if (!isRecord(city)) return false;
+    const daysValue = Number(city.days);
+    const isFiniteDays = Number.isFinite(daysValue);
+    const hasPositiveDays = isFiniteDays && daysValue > 0;
+    const isTerminalRoundTripZeroDayCity = Boolean(
+      options.roundTrip
+      && isFiniteDays
+      && daysValue === 0
+      && index === cities.length - 1
+      && index > 0
+      && firstCityName
+      && hasText(city.name)
+      && normalizeCityName(String(city.name)) === firstCityName,
+    );
+    if (isTerminalRoundTripZeroDayCity) {
+      hasTerminalRoundTripZeroDayCity = true;
+    }
     return (
       hasText(city.name) &&
       hasText(city.description) &&
-      Number.isFinite(Number(city.days)) &&
-      Number(city.days) > 0 &&
+      (hasPositiveDays || isTerminalRoundTripZeroDayCity) &&
       Number.isFinite(Number(city.lat)) &&
       Number.isFinite(Number(city.lng))
     );
@@ -490,6 +695,9 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
   if (!requiredFieldsValid) {
     errors.push("One or more entries are missing mandatory fields or have wrong field types");
   }
+  if (hasTerminalRoundTripZeroDayCity) {
+    warnings.push("Terminal round-trip city returned with 0 days; normalized to 1 day during trip build (non-blocking)");
+  }
 
   const cityCoordinatesValid = cities.every((city) => {
     if (!isRecord(city)) return false;
@@ -499,21 +707,37 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     errors.push("One or more cities have invalid coordinates");
   }
 
-  const countryInfo = isRecord(data.countryInfo) ? data.countryInfo : null;
-  const countryInfoPresent = !!countryInfo;
-  const countryInfoValid = !!countryInfo && (
-    (hasText(countryInfo.currency) || (hasText(countryInfo.currencyCode) && hasText(countryInfo.currencyName))) &&
-    (Number.isFinite(Number(countryInfo.exchangeRate)) || Number.isFinite(Number(countryInfo.exchangeRateToEUR))) &&
-    Array.isArray(countryInfo.languages) &&
-    (countryInfo.languages as unknown[]).some((entry) => hasText(entry)) &&
-    (hasText(countryInfo.electricSockets) || hasText(countryInfo.sockets)) &&
-    (hasText(countryInfo.visaInfoUrl) || hasText(countryInfo.visaLink)) &&
-    (hasText(countryInfo.auswaertigesAmtUrl) || hasText(countryInfo.auswaertigesAmtLink))
+  const countryInfoEntries = collectCountryInfoEntries(data.countryInfo);
+  const countryInfoPresent = countryInfoEntries.length > 0;
+  const countryInfoCurrencies = collectCountryInfoText(countryInfoEntries, ["currency"]);
+  const countryInfoCurrencyCodes = collectCountryInfoText(countryInfoEntries, ["currencyCode"]);
+  const countryInfoCurrencyNames = collectCountryInfoText(countryInfoEntries, ["currencyName"]);
+  const countryInfoLanguages = collectCountryInfoLanguages(countryInfoEntries);
+  const countryInfoExchangeRate = pickCountryInfoExchangeRate(countryInfoEntries);
+  const countryInfoSockets = pickFirstCountryInfoText(countryInfoEntries, ["electricSockets", "sockets"]);
+  const countryInfoVisa = pickFirstCountryInfoText(countryInfoEntries, ["visaInfoUrl", "visaLink"]);
+  const countryInfoAmt = pickFirstCountryInfoText(countryInfoEntries, ["auswaertigesAmtUrl", "auswaertigesAmtLink"]);
+  const countryInfoCanonicalObject = isRecord(data.countryInfo) && countryInfoHasSignalFields(data.countryInfo);
+  const countryInfoValid = countryInfoPresent && (
+    countryInfoCurrencies.length > 0 ||
+    (countryInfoCurrencyCodes.length > 0 && countryInfoCurrencyNames.length > 0)
+  ) && (
+    Number.isFinite(countryInfoExchangeRate)
+  ) && (
+    countryInfoLanguages.length > 0
+  ) && (
+    Boolean(countryInfoSockets)
+  ) && (
+    Boolean(countryInfoVisa)
+  ) && (
+    Boolean(countryInfoAmt)
   );
   if (!countryInfoPresent) {
     warnings.push("countryInfo is missing (non-blocking)");
   } else if (!countryInfoValid) {
     warnings.push("countryInfo is missing required fields or has invalid formatting (non-blocking)");
+  } else if (!countryInfoCanonicalObject) {
+    warnings.push("countryInfo uses non-canonical structure (array/map); normalized for validation (non-blocking)");
   }
 
   const markdownSectionsValid = cities.every((city) => {
@@ -1145,6 +1369,7 @@ const runGeneration = async (
   config: { url: string; anonKey: string },
   authToken: string,
   sessionId: string,
+  providerTimeoutMs: number,
 ): Promise<void> => {
   if (await hasRunBeenCancelled(config, authToken, run.id)) {
     return;
@@ -1162,26 +1387,84 @@ const runGeneration = async (
   }
 
   const startedMs = Date.now();
+  const persistRunTelemetry = async (
+    input: {
+      status: "success" | "failed";
+      latencyMs: number;
+      httpStatus: number;
+      provider?: string;
+      model?: string;
+      providerModel?: string;
+      errorCode?: string;
+      errorMessage?: string;
+      usage?: ProviderUsage;
+      estimatedCostUsd?: number | null;
+      metadata?: Record<string, unknown>;
+    },
+  ) => {
+    try {
+      await persistAiGenerationTelemetry({
+        source: "benchmark",
+        requestId: run.id,
+        provider: input.provider || run.provider,
+        model: input.model || run.model,
+        providerModel: input.providerModel,
+        status: input.status,
+        latencyMs: input.latencyMs,
+        httpStatus: input.httpStatus,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        estimatedCostUsd: input.estimatedCostUsd ?? input.usage?.estimatedCostUsd,
+        promptTokens: input.usage?.promptTokens,
+        completionTokens: input.usage?.completionTokens,
+        totalTokens: input.usage?.totalTokens,
+        benchmarkSessionId: sessionId,
+        benchmarkRunId: run.id,
+        metadata: input.metadata,
+      });
+    } catch {
+      // Best-effort only: benchmark execution should not fail on telemetry persistence errors.
+    }
+  };
 
   try {
     const result = await generateProviderItinerary({
       prompt: scenario.prompt,
       provider: run.provider,
       model: run.model,
-      timeoutMs: BENCHMARK_PROVIDER_TIMEOUT_MS,
+      timeoutMs: providerTimeoutMs,
+      maxOutputTokens: providerTimeoutMs <= 60_000 ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS : undefined,
     });
+    const latencyMs = Date.now() - startedMs;
+
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
 
     if (!result.ok) {
-      const details = JSON.stringify(result.value);
+      const failure = result;
+      const details = JSON.stringify(failure.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: failure.status,
+        providerModel: failure.value.providerModel,
+        errorCode: failure.value.code,
+        errorMessage: failure.value.error,
+        metadata: {
+          reason: "provider_request_failed",
+          timeoutMs: providerTimeoutMs,
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
-        error_message: `Generation failed (${result.status}): ${formattedDetails}`,
+        latency_ms: latencyMs,
+        error_message: `Generation failed (${failure.status}): ${formattedDetails}`,
       });
       return;
     }
@@ -1190,33 +1473,70 @@ const runGeneration = async (
     const usage: ProviderUsage = result.value.meta?.usage || {};
 
     if (!modelData || typeof modelData !== "object") {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 200,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_OUTPUT_INVALID",
+        errorMessage: "Provider response did not include a valid data object",
+        metadata: {
+          reason: "invalid_data_object",
+          timeoutMs: providerTimeoutMs,
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         error_message: "Provider response did not include a valid data object",
       });
       return;
     }
 
-    const validation = validateModelData(modelData as Record<string, unknown>);
+    const validation = validateModelData(modelData as Record<string, unknown>, {
+      roundTrip: scenario.roundTrip,
+    });
     if (!validation.schemaValid) {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 200,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_OUTPUT_VALIDATION_FAILED",
+        errorMessage: validation.errors.join("; ") || "Model output failed validation",
+        metadata: {
+          reason: "validation_failed",
+          validationErrorCount: validation.errors.length,
+          timeoutMs: providerTimeoutMs,
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         schema_valid: false,
         validation_checks: validation.checks,
         validation_errors: validation.errors,
         raw_output: modelData,
         error_message: `Model output failed validation: ${validation.errors.join("; ")}`,
       });
+      return;
+    }
+
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
       return;
     }
 
@@ -1234,20 +1554,34 @@ const runGeneration = async (
 
     const persistedTrip = await persistTrip(config, authToken, trip, sessionId);
     if (!persistedTrip.tripId) {
+      await persistRunTelemetry({
+        status: "failed",
+        latencyMs,
+        httpStatus: 502,
+        provider: result.value.meta.provider,
+        model: result.value.meta.model,
+        providerModel: result.value.meta.providerModel,
+        usage,
+        errorCode: "BENCHMARK_TRIP_PERSIST_FAILED",
+        errorMessage: persistedTrip.error || "Failed to persist generated trip",
+        metadata: {
+          reason: "trip_persist_failed",
+          timeoutMs: providerTimeoutMs,
+        },
+      });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
         return;
       }
       await updateRunRow(config, authToken, run.id, {
         status: "failed",
         finished_at: new Date().toISOString(),
-        latency_ms: Date.now() - startedMs,
+        latency_ms: latencyMs,
         error_message: persistedTrip.error || "Failed to persist generated trip",
       });
       return;
     }
 
     const finishedAt = new Date().toISOString();
-    const latencyMs = Date.now() - startedMs;
     const estimatedCostUsd = typeof usage.estimatedCostUsd === "number" ? usage.estimatedCostUsd : null;
 
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1269,14 +1603,44 @@ const runGeneration = async (
       trip_ai_meta: (trip.aiMeta as Record<string, unknown>) || null,
       error_message: null,
     });
+
+    await persistRunTelemetry({
+      status: "success",
+      latencyMs,
+      httpStatus: 200,
+      provider: result.value.meta.provider,
+      model: result.value.meta.model,
+      providerModel: result.value.meta.providerModel,
+      usage,
+      estimatedCostUsd,
+      metadata: {
+        reason: "completed",
+        timeoutMs: providerTimeoutMs,
+      },
+    });
   } catch (error) {
+    const latencyMs = Date.now() - startedMs;
+    if (await hasRunBeenCancelled(config, authToken, run.id)) {
+      return;
+    }
+    await persistRunTelemetry({
+      status: "failed",
+      latencyMs,
+      httpStatus: 500,
+      errorCode: "BENCHMARK_RUN_UNEXPECTED_ERROR",
+      errorMessage: error instanceof Error ? error.message : "Unexpected benchmark run error",
+      metadata: {
+        reason: "unexpected_exception",
+        timeoutMs: providerTimeoutMs,
+      },
+    });
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
       return;
     }
     await updateRunRow(config, authToken, run.id, {
       status: "failed",
       finished_at: new Date().toISOString(),
-      latency_ms: Date.now() - startedMs,
+      latency_ms: latencyMs,
       error_message: error instanceof Error ? error.message : "Unexpected benchmark run error",
     });
   }
@@ -1290,6 +1654,7 @@ const runWithConcurrency = async (
   authToken: string,
   sessionId: string,
   concurrency: number,
+  providerTimeoutMs: number,
 ) => {
   let cursor = 0;
   const workers: Array<Promise<void>> = [];
@@ -1299,7 +1664,7 @@ const runWithConcurrency = async (
       const currentIndex = cursor;
       cursor += 1;
       const run = runs[currentIndex];
-      await runGeneration(request, run, scenario, config, authToken, sessionId);
+      await runGeneration(request, run, scenario, config, authToken, sessionId, providerTimeoutMs);
     }
   };
 
@@ -1454,6 +1819,358 @@ const formatRunFileName = (run: BenchmarkRunRow): string => {
 
 const formatRunLogFileName = (run: BenchmarkRunRow): string => {
   return formatRunFileName(run).replace(/\.json$/i, ".log.json");
+};
+
+const normalizeTelemetrySource = (value: string | null): "all" | "create_trip" | "benchmark" => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (!TELEMETRY_SOURCE_VALUES.has(normalized)) return "all";
+  if (normalized === "create_trip" || normalized === "benchmark") return normalized;
+  return "all";
+};
+
+const normalizeTelemetryWindowHours = (value: string | null): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return TELEMETRY_WINDOW_DEFAULT_HOURS;
+  return clampNumber(
+    Math.round(parsed),
+    TELEMETRY_WINDOW_MIN_HOURS,
+    TELEMETRY_WINDOW_MAX_HOURS,
+  );
+};
+
+const normalizeTelemetryProvider = (value: string | null): string | null => {
+  const normalized = (value || "").trim().toLowerCase();
+  return normalized ? normalized : null;
+};
+
+const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const typed = row as Record<string, unknown>;
+      const id = typeof typed.id === "string" ? typed.id : "";
+      const createdAt = typeof typed.created_at === "string" ? typed.created_at : "";
+      const source = typed.source === "benchmark" ? "benchmark" : typed.source === "create_trip" ? "create_trip" : null;
+      const provider = typeof typed.provider === "string" ? typed.provider : "";
+      const model = typeof typed.model === "string" ? typed.model : "";
+      const status = typed.status === "failed" ? "failed" : typed.status === "success" ? "success" : null;
+      if (!id || !createdAt || !source || !provider || !model || !status) return null;
+
+      return {
+        id,
+        created_at: createdAt,
+        source,
+        provider,
+        model,
+        status,
+        latency_ms: Number.isFinite(Number(typed.latency_ms)) ? Number(typed.latency_ms) : null,
+        estimated_cost_usd: Number.isFinite(Number(typed.estimated_cost_usd)) ? Number(typed.estimated_cost_usd) : null,
+        error_code: typeof typed.error_code === "string" ? typed.error_code : null,
+      } satisfies AiTelemetryRow;
+    })
+    .filter((row): row is AiTelemetryRow => Boolean(row));
+};
+
+const handleTelemetry = async (
+  request: Request,
+  _config: { url: string; anonKey: string },
+): Promise<Response> => {
+  const url = new URL(request.url);
+  const source = normalizeTelemetrySource(url.searchParams.get("source"));
+  const providerFilter = normalizeTelemetryProvider(url.searchParams.get("provider"));
+  const windowHours = normalizeTelemetryWindowHours(url.searchParams.get("windowHours"));
+  const sinceIso = new Date(Date.now() - windowHours * 60 * 60 * 1000).toISOString();
+
+  const params = new URLSearchParams();
+  params.set("select", "id,created_at,source,provider,model,status,latency_ms,estimated_cost_usd,error_code");
+  params.set("created_at", `gte.${sinceIso}`);
+  params.set("order", "created_at.desc");
+  params.set("limit", "2000");
+  if (source !== "all") {
+    params.set("source", `eq.${source}`);
+  }
+  if (providerFilter) {
+    params.set("provider", `eq.${providerFilter}`);
+  }
+
+  const serviceConfig = getSupabaseServiceConfig();
+  if (!serviceConfig) {
+    return json(503, {
+      error: "Supabase service config missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+      code: "SUPABASE_SERVICE_CONFIG_MISSING",
+    });
+  }
+
+  const response = await supabaseServiceFetch(
+    serviceConfig,
+    `/rest/v1/ai_generation_events?${params.toString()}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return json(502, {
+      error: "Failed to load AI telemetry rows.",
+      code: "AI_TELEMETRY_FETCH_FAILED",
+      details: details.slice(0, 600),
+    });
+  }
+
+  const rows = toTelemetryRows(await safeJsonParse(response));
+  const providerOptions = Array.from(new Set(rows.map((row) => row.provider).filter(Boolean)))
+    .sort((left, right) => left.localeCompare(right));
+  const summary = summarizeAiTelemetry(rows);
+  const series = buildAiTelemetrySeries(rows, 60);
+  const providerSummary = summarizeAiTelemetryByProvider(rows);
+  const modelSummary = summarizeAiTelemetryByModel(rows);
+  const rankingLimit = 5;
+
+  return json(200, {
+    ok: true,
+    filters: {
+      source,
+      provider: providerFilter || "all",
+      windowHours,
+    },
+    summary,
+    series,
+    providers: providerSummary,
+    models: modelSummary,
+    rankings: {
+      fastest: topTelemetryModelsBySpeed(modelSummary, rankingLimit),
+      cheapest: topTelemetryModelsByCost(modelSummary, rankingLimit),
+      bestValue: topTelemetryModelsByEfficiency(modelSummary, rankingLimit),
+    },
+    recent: rows.slice(0, 120),
+    availableProviders: providerOptions,
+  });
+};
+
+const normalizeBenchmarkPreferencesForStorage = (
+  value: unknown,
+  options: { defaultStartDate: string; defaultEndDate: string },
+): BenchmarkPreferencesPayload => {
+  const fallbackPresets = createSystemBenchmarkPresets(options.defaultStartDate, options.defaultEndDate);
+  return normalizeBenchmarkPreferencesPayload(value, {
+    fallbackModelIds: BENCHMARK_DEFAULT_MODEL_IDS,
+    fallbackPresets,
+    defaultStartDate: options.defaultStartDate,
+    defaultEndDate: options.defaultEndDate,
+    allowedModelIds: ACTIVE_BENCHMARK_MODEL_ID_SET,
+  });
+};
+
+const toBenchmarkPreferencesRow = (value: unknown): BenchmarkPreferencesRow | null => {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  if (typeof row.owner_id !== "string") return null;
+  return {
+    owner_id: row.owner_id,
+    model_targets: row.model_targets,
+    presets: row.presets,
+    selected_preset_id: typeof row.selected_preset_id === "string" ? row.selected_preset_id : null,
+    created_at: typeof row.created_at === "string" ? row.created_at : "",
+    updated_at: typeof row.updated_at === "string" ? row.updated_at : "",
+  };
+};
+
+const fetchBenchmarkPreferencesRow = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+  const params = new URLSearchParams();
+  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+  params.set("order", "updated_at.desc");
+  params.set("limit", "1");
+
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+    { method: "GET" },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return {
+      row: null,
+      error: "Failed to load benchmark preferences",
+      details: details.slice(0, 600),
+      status: response.status,
+    };
+  }
+
+  const payload = await safeJsonParse(response);
+  const rows = Array.isArray(payload) ? payload : [];
+  return {
+    row: toBenchmarkPreferencesRow(rows[0]) || null,
+  };
+};
+
+const saveBenchmarkPreferencesRow = async (
+  config: { url: string; anonKey: string },
+  authToken: string,
+  payload: BenchmarkPreferencesPayload,
+  existingRow: BenchmarkPreferencesRow | null,
+): Promise<{ row: BenchmarkPreferencesRow | null; error?: string; details?: string; status?: number }> => {
+  const body = JSON.stringify([
+    {
+      model_targets: payload.modelTargets,
+      presets: payload.presets,
+      selected_preset_id: payload.selectedPresetId,
+    },
+  ]);
+
+  if (existingRow?.owner_id) {
+    const params = new URLSearchParams();
+    params.set("owner_id", `eq.${existingRow.owner_id}`);
+    params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+
+    const response = await supabaseFetch(
+      config,
+      authToken,
+      `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+      {
+        method: "PATCH",
+        headers: {
+          Prefer: "return=representation",
+        },
+        body,
+      },
+    );
+
+    if (!response.ok) {
+      const details = await response.text();
+      return {
+        row: null,
+        error: "Failed to update benchmark preferences",
+        details: details.slice(0, 600),
+        status: response.status,
+      };
+    }
+
+    const rows = await safeJsonParse(response);
+    return {
+      row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
+    };
+  }
+
+  const params = new URLSearchParams();
+  params.set("select", "owner_id,model_targets,presets,selected_preset_id,created_at,updated_at");
+
+  const response = await supabaseFetch(
+    config,
+    authToken,
+    `/rest/v1/ai_benchmark_preferences?${params.toString()}`,
+    {
+      method: "POST",
+      headers: {
+        Prefer: "return=representation",
+      },
+      body,
+    },
+  );
+
+  if (!response.ok) {
+    const details = await response.text();
+    return {
+      row: null,
+      error: "Failed to create benchmark preferences",
+      details: details.slice(0, 600),
+      status: response.status,
+    };
+  }
+
+  const rows = await safeJsonParse(response);
+  return {
+    row: toBenchmarkPreferencesRow(Array.isArray(rows) ? rows[0] : rows),
+  };
+};
+
+const handlePreferences = async (
+  request: Request,
+  config: { url: string; anonKey: string },
+  authToken: string,
+): Promise<Response> => {
+  if (request.method !== "GET" && request.method !== "POST") {
+    return json(405, { error: "Method not allowed. Use GET or POST." });
+  }
+
+  const { startDate, endDate } = getBenchmarkPreferenceDefaultDates();
+
+  const existing = await fetchBenchmarkPreferencesRow(config, authToken);
+  if (existing.error) {
+    return json(existing.status === 403 ? 403 : 502, {
+      error: existing.error,
+      code: "BENCHMARK_PREFERENCES_FETCH_FAILED",
+      details: existing.details,
+    });
+  }
+
+  if (request.method === "GET") {
+    const normalized = normalizeBenchmarkPreferencesForStorage({
+      modelTargets: existing.row?.model_targets,
+      presets: existing.row?.presets,
+      selectedPresetId: existing.row?.selected_preset_id,
+    }, {
+      defaultStartDate: startDate,
+      defaultEndDate: endDate,
+    });
+
+    // Ensure first access has a persisted row in DB instead of local storage only.
+    if (!existing.row) {
+      const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, null);
+      if (saved.error) {
+        return json(502, {
+          error: saved.error,
+          code: "BENCHMARK_PREFERENCES_SAVE_FAILED",
+          details: saved.details,
+        });
+      }
+      return json(200, {
+        ok: true,
+        preferences: normalized,
+        updatedAt: saved.row?.updated_at || null,
+      });
+    }
+
+    return json(200, {
+      ok: true,
+      preferences: normalized,
+      updatedAt: existing.row.updated_at || null,
+    });
+  }
+
+  const body = (await safeJsonParse(request)) || {};
+  const normalized = normalizeBenchmarkPreferencesForStorage(body, {
+    defaultStartDate: startDate,
+    defaultEndDate: endDate,
+  });
+
+  const saved = await saveBenchmarkPreferencesRow(config, authToken, normalized, existing.row);
+  if (saved.error) {
+    return json(502, {
+      error: saved.error,
+      code: "BENCHMARK_PREFERENCES_SAVE_FAILED",
+      details: saved.details,
+    });
+  }
+
+  const persisted = normalizeBenchmarkPreferencesForStorage({
+    modelTargets: saved.row?.model_targets ?? normalized.modelTargets,
+    presets: saved.row?.presets ?? normalized.presets,
+    selectedPresetId: saved.row?.selected_preset_id ?? normalized.selectedPresetId,
+  }, {
+    defaultStartDate: startDate,
+    defaultEndDate: endDate,
+  });
+
+  return json(200, {
+    ok: true,
+    preferences: persisted,
+    updatedAt: saved.row?.updated_at || null,
+  });
 };
 
 const handleGetSession = async (
@@ -1905,6 +2622,46 @@ const buildCancelledRunPatch = (run: BenchmarkRunRow): Record<string, unknown> =
   };
 };
 
+const resolveRunLatencyMs = (run: BenchmarkRunRow): number => {
+  if (typeof run.latency_ms === "number" && Number.isFinite(run.latency_ms) && run.latency_ms >= 0) {
+    return run.latency_ms;
+  }
+  const startedMs = run.started_at ? Date.parse(run.started_at) : NaN;
+  if (!Number.isFinite(startedMs)) return 0;
+  return Math.max(0, Date.now() - startedMs);
+};
+
+const persistCancelledRunTelemetry = async (run: BenchmarkRunRow) => {
+  try {
+    await persistAiGenerationTelemetry({
+      source: "benchmark",
+      requestId: run.id,
+      provider: run.provider,
+      model: run.model,
+      status: "failed",
+      latencyMs: resolveRunLatencyMs(run),
+      httpStatus: 499,
+      errorCode: "BENCHMARK_RUN_CANCELLED",
+      errorMessage: CANCELLED_BY_USER_MESSAGE,
+      benchmarkSessionId: run.session_id,
+      benchmarkRunId: run.id,
+      metadata: {
+        reason: "cancelled_by_user",
+      },
+    });
+  } catch {
+    // Best-effort only.
+  }
+};
+
+export const __benchmarkValidationInternals = {
+  collectCountryInfoEntries,
+  collectCountryInfoLanguages,
+  pickCountryInfoExchangeRate,
+  validateModelData,
+  resolveRunLatencyMs,
+};
+
 const handleCancel = async (
   request: Request,
   config: { url: string; anonKey: string },
@@ -1962,7 +2719,13 @@ const handleCancel = async (
   }
 
   const cancelResults = await Promise.all(
-    runsToCancel.map((run) => updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run))),
+    runsToCancel.map(async (run) => {
+      const updated = await updateRunRow(config, authToken, run.id, buildCancelledRunPatch(run));
+      if (updated) {
+        await persistCancelledRunTelemetry(run);
+      }
+      return updated;
+    }),
   );
 
   const cancelledCount = cancelResults.filter(Boolean).length;
@@ -2027,6 +2790,7 @@ const handleRun = async (
   const concurrency = Number.isFinite(concurrencyRaw)
     ? clampNumber(Math.round(concurrencyRaw), 1, MAX_CONCURRENCY)
     : Math.min(5, MAX_CONCURRENCY);
+  const providerTimeoutMs = normalizeBenchmarkTimeoutMs(body.timeoutMs) ?? BENCHMARK_PROVIDER_TIMEOUT_MS;
 
   let session: BenchmarkSessionRow | null = null;
   const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
@@ -2081,6 +2845,9 @@ const handleRun = async (
         request_payload: {
           scenario,
           target,
+          execution: {
+            timeoutMs: providerTimeoutMs,
+          },
         },
       });
     }
@@ -2104,6 +2871,7 @@ const handleRun = async (
     authToken,
     session.id,
     concurrency,
+    providerTimeoutMs,
   ).catch(async (error) => {
     const fallbackMessage = error instanceof Error ? error.message : "Background benchmark execution failed";
     await Promise.all(
@@ -2121,6 +2889,9 @@ const handleRun = async (
     return json(202, {
       ok: true,
       async: true,
+      execution: {
+        timeoutMs: providerTimeoutMs,
+      },
       session,
       runs: queuedRuns,
       summary: summarizeRuns(queuedRuns),
@@ -2132,6 +2903,9 @@ const handleRun = async (
   return json(200, {
     ok: true,
     async: false,
+    execution: {
+      timeoutMs: providerTimeoutMs,
+    },
     session,
     runs,
     summary: summarizeRuns(runs),
@@ -2165,11 +2939,22 @@ export default async (request: Request, context?: EdgeContextLike) => {
   const pathname = new URL(request.url).pathname;
 
   try {
+    if (pathname.endsWith("/preferences")) {
+      return await handlePreferences(request, config, authToken);
+    }
+
     if (pathname.endsWith("/export")) {
       if (request.method !== "GET") {
         return json(405, { error: "Method not allowed. Use GET." });
       }
       return await handleExport(request, config, authToken);
+    }
+
+    if (pathname.endsWith("/telemetry")) {
+      if (request.method !== "GET") {
+        return json(405, { error: "Method not allowed. Use GET." });
+      }
+      return await handleTelemetry(request, config);
     }
 
     if (pathname.endsWith("/cleanup")) {

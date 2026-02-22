@@ -4,6 +4,7 @@ import {
     AirplaneTilt,
     CaretLeft,
     CaretRight,
+    ChartLineUp,
     ChartPieSlice,
     Flask,
     List,
@@ -49,6 +50,7 @@ const persistSidebarCollapseState = (next: boolean): void => {
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'overview') return <ChartPieSlice size={16} weight="duotone" />;
+    if (icon === 'telemetry') return <ChartLineUp size={16} weight="duotone" />;
     if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
     if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
@@ -139,6 +141,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <NavLink
                         key={`${mode}-item-${item.id}`}
                         to={item.path}
+                        end={item.path === '/admin/ai-benchmark'}
                         title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
                         className={(nav) => mode === 'desktop'
                             ? buildDesktopNavClass(nav, isSidebarCollapsed)

@@ -42,6 +42,14 @@
   function = "ai-benchmark"
 
 [[edge_functions]]
+  path = "/api/internal/ai/benchmark/telemetry"
+  function = "ai-benchmark"
+
+[[edge_functions]]
+  path = "/api/internal/ai/benchmark/preferences"
+  function = "ai-benchmark"
+
+[[edge_functions]]
   path = "/api/internal/admin/iam"
   function = "admin-iam"
 

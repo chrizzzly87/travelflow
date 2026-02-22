@@ -190,6 +190,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__guest_queue--modal_open` | — | `{ request_id }` | `CreateTripForm.tsx` |
 | `create_trip__guest_queue--continue_auth` | — | `{ request_id }` | `CreateTripForm.tsx` |
 | `create_trip__guest_queue--dismiss` | — | `{ request_id }` | `CreateTripForm.tsx` |
+| `create_trip__ai_request--success` | — | `{ provider, model, status, duration_ms, request_id }` | `aiService.ts` |
+| `create_trip__ai_request--failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_success` | — | `{ provider, model, status, duration_ms }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
 
 ## Adding new events
 

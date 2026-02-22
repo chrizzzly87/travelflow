@@ -1,4 +1,7 @@
 @import "tailwindcss" source(none);
+@import "./tremor-theme.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @source "../app/routes/DeferredAppRoutes.tsx";
 @source "../components/CreateTripForm.tsx";
@@ -12,6 +15,7 @@
 @source "../components/marketing/SiteFooter.tsx";
 @source "../components/flags/FlagIcon.tsx";
 @source "../components/admin/**/*.tsx";
+@source "../node_modules/@tremor/react/dist/**/*.{js,cjs}";
 @source "../pages/Admin*.tsx";
 @source "../pages/FeaturesPage.tsx";
 @source "../pages/UpdatesPage.tsx";
