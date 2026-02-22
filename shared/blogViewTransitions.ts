@@ -10,6 +10,13 @@ export interface BlogTransitionTarget {
     slug: string;
 }
 
+export type BlogTransitionSource = 'list' | 'post';
+
+export interface BlogTransitionNavigationState {
+    blogTransitionSource: BlogTransitionSource;
+    blogTransitionTarget: BlogTransitionTarget;
+}
+
 const toTransitionToken = (value: string, fallback: string): string => {
     const normalized = value
         .toLowerCase()
@@ -67,12 +74,68 @@ export const getBlogPostViewTransitionNames = (
 const resolveTransitionTargetToken = (value: string, fallback: string): string =>
     toTransitionToken(value, fallback);
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+const isBlogTransitionSource = (value: unknown): value is BlogTransitionSource =>
+    value === 'list' || value === 'post';
+
+const isValidBlogTransitionTarget = (value: unknown): value is BlogTransitionTarget => {
+    if (!isRecord(value)) return false;
+    const language = value.language;
+    const slug = value.slug;
+    return typeof language === 'string' && language.trim().length > 0 &&
+        typeof slug === 'string' && slug.trim().length > 0;
+};
+
 const isSameTransitionTarget = (
     a: BlogTransitionTarget,
     b: BlogTransitionTarget
 ): boolean =>
     resolveTransitionTargetToken(a.language, 'lang') === resolveTransitionTargetToken(b.language, 'lang') &&
     resolveTransitionTargetToken(a.slug, 'post') === resolveTransitionTargetToken(b.slug, 'post');
+
+export const isBlogTransitionTargetMatch = (
+    a: BlogTransitionTarget | null | undefined,
+    b: BlogTransitionTarget | null | undefined
+): boolean => {
+    if (!a || !b) return false;
+    return isSameTransitionTarget(a, b);
+};
+
+export const createBlogTransitionNavigationState = (
+    source: BlogTransitionSource,
+    target: BlogTransitionTarget
+): BlogTransitionNavigationState => ({
+    blogTransitionSource: source,
+    blogTransitionTarget: target,
+});
+
+export const getBlogTransitionNavigationState = (
+    value: unknown
+): BlogTransitionNavigationState | null => {
+    if (!isRecord(value)) return null;
+    const source = value.blogTransitionSource;
+    const target = value.blogTransitionTarget;
+    if (!isBlogTransitionSource(source) || !isValidBlogTransitionTarget(target)) {
+        return null;
+    }
+    return {
+        blogTransitionSource: source,
+        blogTransitionTarget: target,
+    };
+};
+
+export const primeBlogTransitionSnapshot = (): void => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    if (window.scrollX !== 0 || window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+    }
+    void document.documentElement.getBoundingClientRect();
+    if (document.body) {
+        void document.body.getBoundingClientRect();
+    }
+};
 
 export const setPendingBlogTransitionTarget = (target: BlogTransitionTarget | null): void => {
     pendingBlogTransitionTarget = target;
@@ -88,7 +151,7 @@ export const isPendingBlogTransitionTarget = (
     slug: string
 ): boolean => {
     if (!pendingBlogTransitionTarget) return false;
-    return isSameTransitionTarget(pendingBlogTransitionTarget, { language, slug });
+    return isBlogTransitionTargetMatch(pendingBlogTransitionTarget, { language, slug });
 };
 
 export const setCurrentBlogPostTransitionTarget = (

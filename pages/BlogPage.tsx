@@ -14,14 +14,19 @@ import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import { AppLanguage } from '../types';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    createBlogTransitionNavigationState,
+    getBlogTransitionNavigationState,
     getPendingBlogTransitionTarget,
     getBlogPostViewTransitionNames,
+    isBlogTransitionTargetMatch,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    primeBlogTransitionSnapshot,
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
+    type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
@@ -54,16 +59,20 @@ const getBlogTransitionStyle = (
 const BlogCard: React.FC<{
     post: BlogPost;
     locale: AppLanguage;
+    transitionTargetHint: BlogTransitionTarget | null;
     viewTransitionsEnabled: boolean;
-}> = ({ post, locale, viewTransitionsEnabled }) => {
+}> = ({ post, locale, transitionTargetHint, viewTransitionsEnabled }) => {
     const { t } = useTranslation('blog');
     const navigate = useNavigate();
     const [isTransitionSource, setIsTransitionSource] = useState(false);
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
+    const matchesTransitionHint = transitionTargetHint
+        ? isBlogTransitionTargetMatch(transitionTargetHint, { language: post.language, slug: post.slug })
+        : false;
     const shouldAssignTransitionNames = viewTransitionsEnabled &&
-        (isTransitionSource || isPendingBlogTransitionTarget(post.language, post.slug));
+        (isTransitionSource || matchesTransitionHint || isPendingBlogTransitionTarget(post.language, post.slug));
     const transitionNames = shouldAssignTransitionNames
         ? getBlogPostViewTransitionNames(post.language, post.slug)
         : null;
@@ -71,7 +80,8 @@ const BlogCard: React.FC<{
     const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
-        setPendingBlogTransitionTarget({ language: post.language, slug: post.slug });
+        const transitionTarget = { language: post.language, slug: post.slug };
+        setPendingBlogTransitionTarget(transitionTarget);
         flushSync(() => {
             setIsTransitionSource(true);
         });
@@ -82,8 +92,11 @@ const BlogCard: React.FC<{
         }
         startBlogViewTransition(() => {
             flushSync(() => {
-                navigate(postPath);
+                navigate(postPath, {
+                    state: createBlogTransitionNavigationState('list', transitionTarget),
+                });
             });
+            primeBlogTransitionSnapshot();
         });
     }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
@@ -193,6 +206,14 @@ export const BlogPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
+    const transitionNavigationState = useMemo(
+        () => getBlogTransitionNavigationState(location.state),
+        [location.state]
+    );
+    const transitionTargetHint = viewTransitionsEnabled &&
+        transitionNavigationState?.blogTransitionSource === 'post'
+        ? transitionNavigationState.blogTransitionTarget
+        : null;
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
     const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
     const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
@@ -210,7 +231,8 @@ export const BlogPage: React.FC = () => {
     const [search, setSearch] = useState('');
     const [, forceTransitionStateRefresh] = useState(0);
     const [suppressEntryAnimations] = useState(
-        () => viewTransitionsEnabled && getPendingBlogTransitionTarget() !== null
+        () => viewTransitionsEnabled &&
+            (getPendingBlogTransitionTarget() !== null || transitionTargetHint !== null)
     );
 
     const allTags = useMemo(() => {
@@ -250,6 +272,14 @@ export const BlogPage: React.FC = () => {
             forceTransitionStateRefresh((current) => current + 1);
         });
     }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!viewTransitionsEnabled || !transitionTargetHint) return;
+        if (isBlogTransitionTargetMatch(getPendingBlogTransitionTarget(), transitionTargetHint)) {
+            return;
+        }
+        setPendingBlogTransitionTarget(transitionTargetHint);
+    }, [transitionTargetHint, viewTransitionsEnabled]);
 
     useEffect(() => {
         if (!viewTransitionsEnabled) return;
@@ -378,6 +408,7 @@ export const BlogPage: React.FC = () => {
                                 <BlogCard
                                     post={post}
                                     locale={locale}
+                                    transitionTargetHint={transitionTargetHint}
                                     viewTransitionsEnabled={viewTransitionsEnabled}
                                 />
                             </div>

@@ -7,6 +7,7 @@ import {
   getCurrentBlogPostTransitionTarget,
   getLastKnownBlogPostTransitionTarget,
   isBlogRoutePath,
+  primeBlogTransitionSnapshot,
   setPendingBlogTransitionTarget,
   startBlogViewTransition,
   supportsBlogViewTransitions,
@@ -77,7 +78,9 @@ if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
     if (!currentTarget) return;
 
     setPendingBlogTransitionTarget(currentTarget);
-    startBlogViewTransition();
+    startBlogViewTransition(() => {
+      primeBlogTransitionSnapshot();
+    });
   }, true);
 }
 

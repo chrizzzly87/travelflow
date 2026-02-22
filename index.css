@@ -555,19 +555,18 @@ h6,
 }
 
 @keyframes vt-blog-image-old {
-  0% {
+  from {
     opacity: 1;
   }
 
   to {
-    opacity: 0.3;
+    opacity: 1;
   }
 }
 
 @keyframes vt-blog-image-new {
-  0%,
-  14% {
-    opacity: 0;
+  from {
+    opacity: 1;
   }
 
   to {

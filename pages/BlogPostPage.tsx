@@ -14,9 +14,11 @@ import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import type { Components } from 'react-markdown';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    createBlogTransitionNavigationState,
     setCurrentBlogPostTransitionTarget,
     getBlogPostViewTransitionNames,
     isPrimaryUnmodifiedClick,
+    primeBlogTransitionSnapshot,
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
@@ -224,7 +226,8 @@ export const BlogPostPage: React.FC = () => {
     const handleBackToBlogClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
         event.preventDefault();
-        setPendingBlogTransitionTarget({ language: post.language, slug: post.slug });
+        const transitionTarget = { language: post.language, slug: post.slug };
+        setPendingBlogTransitionTarget(transitionTarget);
         try {
             await ensureBlogListRouteModule();
         } catch {
@@ -232,8 +235,11 @@ export const BlogPostPage: React.FC = () => {
         }
         startBlogViewTransition(() => {
             flushSync(() => {
-                navigate(blogPath);
+                navigate(blogPath, {
+                    state: createBlogTransitionNavigationState('post', transitionTarget),
+                });
             });
+            primeBlogTransitionSnapshot();
         });
     }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
 

@@ -3,15 +3,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
+    createBlogTransitionNavigationState,
     getBlogTransitionStateVersion,
+    getBlogTransitionNavigationState,
     getCurrentBlogPostTransitionTarget,
     getLastKnownBlogPostTransitionTarget,
     getBlogPostViewTransitionNames,
     getPendingBlogTransitionTarget,
+    isBlogTransitionTargetMatch,
     isBlogListDetailTransition,
     isBlogListPath,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
+    primeBlogTransitionSnapshot,
     subscribeBlogTransitionState,
     setCurrentBlogPostTransitionTarget,
     setPendingBlogTransitionTarget,
@@ -85,6 +89,31 @@ describe('shared/blogViewTransitions', () => {
             meta: 'blog-meta-transition',
             pills: 'blog-pills-transition',
         });
+    });
+
+    it('creates and parses blog transition navigation state payloads', () => {
+        const state = createBlogTransitionNavigationState('post', {
+            language: 'en',
+            slug: 'how-to-plan-multi-city-trip',
+        });
+        expect(getBlogTransitionNavigationState(state)).toEqual(state);
+        expect(getBlogTransitionNavigationState({ blogTransitionSource: 'post' })).toBeNull();
+        expect(getBlogTransitionNavigationState(null)).toBeNull();
+    });
+
+    it('matches transition targets with normalized language and slug tokens', () => {
+        expect(
+            isBlogTransitionTargetMatch(
+                { language: 'pt-BR', slug: 'weekend getaway' },
+                { language: 'pt-br', slug: 'weekend-getaway' }
+            )
+        ).toBe(true);
+        expect(
+            isBlogTransitionTargetMatch(
+                { language: 'en', slug: 'weekend-getaway' },
+                { language: 'de', slug: 'weekend-getaway' }
+            )
+        ).toBe(false);
     });
 
     it('tracks pending and current transition targets with normalized matching', () => {
@@ -187,6 +216,18 @@ describe('shared/blogViewTransitions', () => {
         startBlogViewTransition(applyUpdate);
         expect(startTransition).not.toHaveBeenCalled();
         expect(applyUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('primes blog transition snapshots with a deterministic layout read', () => {
+        const scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+        const rootLayoutReadSpy = vi.spyOn(document.documentElement, 'getBoundingClientRect');
+        const bodyLayoutReadSpy = vi.spyOn(document.body, 'getBoundingClientRect');
+
+        primeBlogTransitionSnapshot();
+
+        expect(rootLayoutReadSpy).toHaveBeenCalledTimes(1);
+        expect(bodyLayoutReadSpy).toHaveBeenCalledTimes(1);
+        expect(scrollToSpy).not.toHaveBeenCalled();
     });
 
     it('invokes document.startViewTransition with document binding', () => {
