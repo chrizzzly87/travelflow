@@ -77,6 +77,8 @@ const BlogCard: React.FC<{
     const transitionNames = shouldAssignTransitionNames
         ? getBlogPostViewTransitionNames(post.language, post.slug)
         : null;
+    const imageLoading = transitionNames ? 'eager' : 'lazy';
+    const imageFetchPriority = transitionNames ? 'high' : 'low';
     const postPath = buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
     const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
@@ -123,23 +125,27 @@ const BlogCard: React.FC<{
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
                     className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
-                    style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                 >
                     {showImage ? (
                         <>
-                            <ProgressiveImage
-                                src={post.images.card.sources.large}
-                                alt={post.images.card.alt}
-                                width={1536}
-                                height={1024}
-                                sizes={BLOG_CARD_IMAGE_SIZES}
-                                srcSetWidths={[480, 768, 1024, 1536]}
-                                placeholderKey={post.images.card.sources.large}
-                                loading="lazy"
-                                fetchPriority="low"
-                                onError={() => setHasImageError(true)}
-                                className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
-                            />
+                            <div
+                                className="absolute inset-0 overflow-hidden rounded-t-2xl"
+                                style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                            >
+                                <ProgressiveImage
+                                    src={post.images.card.sources.large}
+                                    alt={post.images.card.alt}
+                                    width={1536}
+                                    height={1024}
+                                    sizes={BLOG_CARD_IMAGE_SIZES}
+                                    srcSetWidths={[480, 768, 1024, 1536]}
+                                    placeholderKey={post.images.card.sources.large}
+                                    loading={imageLoading}
+                                    fetchPriority={imageFetchPriority}
+                                    onError={() => setHasImageError(true)}
+                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
+                                />
+                            </div>
                             <div className={BLOG_CARD_IMAGE_FADE} />
                             <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
                         </>

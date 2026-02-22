@@ -323,12 +323,12 @@ export const BlogPostPage: React.FC = () => {
                         }
                     />
                     <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
-                        <div
-                            className="absolute inset-0 overflow-hidden rounded-2xl"
-                            style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
-                        >
-                            {!hasHeaderImageError && (
-                                <>
+                        {!hasHeaderImageError && (
+                            <>
+                                <div
+                                    className="absolute inset-0 overflow-hidden rounded-2xl"
+                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                                >
                                     <ProgressiveImage
                                         src={post.images.header.sources.large}
                                         alt={post.images.header.alt}
@@ -342,11 +342,11 @@ export const BlogPostPage: React.FC = () => {
                                         onError={() => setHasHeaderImageError(true)}
                                         className="absolute inset-0 h-full w-full object-cover"
                                     />
-                                    <div className={BLOG_HEADER_IMAGE_FADE} />
-                                    <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
-                                </>
-                            )}
-                        </div>
+                                </div>
+                                <div className={BLOG_HEADER_IMAGE_FADE} />
+                                <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
+                            </>
+                        )}
                     </div>
                     <div className="relative z-10 flex gap-10 lg:gap-14">
                         <div className="min-w-0 flex-1 max-w-3xl">
