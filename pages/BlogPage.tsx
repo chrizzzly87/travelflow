@@ -27,6 +27,7 @@ import {
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
+    waitForBlogTransitionTarget,
     type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
@@ -97,7 +98,9 @@ const BlogCard: React.FC<{
                     state: createBlogTransitionNavigationState('list', transitionTarget),
                 });
             });
-            primeBlogTransitionSnapshot();
+            return waitForBlogTransitionTarget(transitionTarget, 'post', 280).finally(() => {
+                primeBlogTransitionSnapshot();
+            });
         });
     }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {

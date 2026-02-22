@@ -6,11 +6,13 @@ import './i18n';
 import {
   getCurrentBlogPostTransitionTarget,
   getLastKnownBlogPostTransitionTarget,
+  isBlogListPath,
   isBlogRoutePath,
   primeBlogTransitionSnapshot,
   setPendingBlogTransitionTarget,
   startBlogViewTransition,
   supportsBlogViewTransitions,
+  waitForBlogTransitionTarget,
 } from './shared/blogViewTransitions';
 
 declare global {
@@ -79,7 +81,10 @@ if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
 
     setPendingBlogTransitionTarget(currentTarget);
     startBlogViewTransition(() => {
-      primeBlogTransitionSnapshot();
+      const expectedRouteKind = isBlogListPath(toPathname) ? 'list' : 'post';
+      return waitForBlogTransitionTarget(currentTarget, expectedRouteKind, 280).finally(() => {
+        primeBlogTransitionSnapshot();
+      });
     });
   }, true);
 }
