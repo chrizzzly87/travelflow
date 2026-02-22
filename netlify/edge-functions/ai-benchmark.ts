@@ -3,7 +3,11 @@ import { MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode, parseTransportMode
 import {
   buildAiTelemetrySeries,
   summarizeAiTelemetry,
+  summarizeAiTelemetryByModel,
   summarizeAiTelemetryByProvider,
+  topTelemetryModelsByCost,
+  topTelemetryModelsByEfficiency,
+  topTelemetryModelsBySpeed,
   type AiTelemetryRow,
 } from "../edge-lib/ai-telemetry-aggregation.ts";
 import { persistAiGenerationTelemetry } from "../edge-lib/ai-generation-telemetry.ts";
@@ -1746,6 +1750,8 @@ const handleTelemetry = async (
   const summary = summarizeAiTelemetry(rows);
   const series = buildAiTelemetrySeries(rows, 60);
   const providerSummary = summarizeAiTelemetryByProvider(rows);
+  const modelSummary = summarizeAiTelemetryByModel(rows);
+  const rankingLimit = 5;
 
   return json(200, {
     ok: true,
@@ -1757,6 +1763,12 @@ const handleTelemetry = async (
     summary,
     series,
     providers: providerSummary,
+    models: modelSummary,
+    rankings: {
+      fastest: topTelemetryModelsBySpeed(modelSummary, rankingLimit),
+      cheapest: topTelemetryModelsByCost(modelSummary, rankingLimit),
+      bestValue: topTelemetryModelsByEfficiency(modelSummary, rankingLimit),
+    },
     recent: rows.slice(0, 120),
     availableProviders: providerOptions,
   });

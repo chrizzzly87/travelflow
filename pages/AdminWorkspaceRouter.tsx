@@ -9,6 +9,7 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
 
 const AdminDashboardPage = lazyWithRecovery('AdminDashboardPage', () => import('./AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const AdminAiBenchmarkPage = lazyWithRecovery('AdminAiBenchmarkPage', () => import('./AdminAiBenchmarkPage').then((module) => ({ default: module.AdminAiBenchmarkPage })));
+const AdminAiTelemetryPage = lazyWithRecovery('AdminAiTelemetryPage', () => import('./AdminAiTelemetryPage').then((module) => ({ default: module.AdminAiTelemetryPage })));
 const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })));
 const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
 const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
@@ -28,6 +29,7 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="tiers" element={<AdminTiersPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="ai-benchmark" element={<AdminAiBenchmarkPage />} />
+            <Route path="ai-benchmark/telemetry" element={<AdminAiTelemetryPage />} />
             <Route path="access" element={<Navigate to="/admin/users" replace />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>

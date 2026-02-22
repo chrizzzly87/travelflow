@@ -41,6 +41,20 @@ export interface AiTelemetryProviderPoint {
   totalCostUsd: number;
 }
 
+export interface AiTelemetryModelPoint {
+  provider: string;
+  model: string;
+  key: string;
+  total: number;
+  success: number;
+  failed: number;
+  successRate: number;
+  averageLatencyMs: number | null;
+  totalCostUsd: number;
+  averageCostUsd: number | null;
+  costPerSecondUsd: number | null;
+}
+
 const toFiniteNumber = (value: unknown): number | null => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
@@ -195,4 +209,126 @@ export const summarizeAiTelemetryByProvider = (rows: AiTelemetryRow[]): AiTeleme
       totalCostUsd: roundMoney(value.totalCost),
     }))
     .sort((left, right) => right.total - left.total || left.provider.localeCompare(right.provider));
+};
+
+export const summarizeAiTelemetryByModel = (rows: AiTelemetryRow[]): AiTelemetryModelPoint[] => {
+  const modelMap = new Map<string, {
+    provider: string;
+    model: string;
+    total: number;
+    success: number;
+    failed: number;
+    latencySum: number;
+    latencyCount: number;
+    totalCost: number;
+  }>();
+
+  rows.forEach((row) => {
+    const provider = row.provider || "unknown";
+    const model = row.model || "unknown";
+    const key = `${provider}:${model}`;
+    const current = modelMap.get(key) || {
+      provider,
+      model,
+      total: 0,
+      success: 0,
+      failed: 0,
+      latencySum: 0,
+      latencyCount: 0,
+      totalCost: 0,
+    };
+
+    current.total += 1;
+    if (row.status === "success") current.success += 1;
+    if (row.status === "failed") current.failed += 1;
+
+    const latency = toFiniteNumber(row.latency_ms);
+    if (latency !== null && latency >= 0) {
+      current.latencySum += latency;
+      current.latencyCount += 1;
+    }
+
+    const cost = toFiniteNumber(row.estimated_cost_usd);
+    if (cost !== null) {
+      current.totalCost += cost;
+    }
+
+    modelMap.set(key, current);
+  });
+
+  return Array.from(modelMap.entries())
+    .map(([key, value]) => {
+      const averageLatencyMs = value.latencyCount > 0
+        ? Math.round(value.latencySum / value.latencyCount)
+        : null;
+      const averageCostUsd = value.total > 0 ? roundMoney(value.totalCost / value.total) : null;
+      const costPerSecondUsd = averageLatencyMs && averageLatencyMs > 0 && averageCostUsd !== null
+        ? roundMoney(averageCostUsd / (averageLatencyMs / 1000))
+        : null;
+      return {
+        provider: value.provider,
+        model: value.model,
+        key,
+        total: value.total,
+        success: value.success,
+        failed: value.failed,
+        successRate: Number(((value.success / Math.max(1, value.total)) * 100).toFixed(2)),
+        averageLatencyMs,
+        totalCostUsd: roundMoney(value.totalCost),
+        averageCostUsd,
+        costPerSecondUsd,
+      } satisfies AiTelemetryModelPoint;
+    })
+    .sort((left, right) => right.total - left.total || left.key.localeCompare(right.key));
+};
+
+export const topTelemetryModelsBySpeed = (
+  rows: AiTelemetryModelPoint[],
+  limit = 5,
+): AiTelemetryModelPoint[] => {
+  const safeLimit = Math.max(1, Math.round(limit));
+  return rows
+    .filter((row) => row.averageLatencyMs !== null)
+    .sort((left, right) => {
+      const leftLatency = left.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
+      const rightLatency = right.averageLatencyMs ?? Number.MAX_SAFE_INTEGER;
+      if (leftLatency !== rightLatency) return leftLatency - rightLatency;
+      if (right.successRate !== left.successRate) return right.successRate - left.successRate;
+      return right.total - left.total;
+    })
+    .slice(0, safeLimit);
+};
+
+export const topTelemetryModelsByCost = (
+  rows: AiTelemetryModelPoint[],
+  limit = 5,
+): AiTelemetryModelPoint[] => {
+  const safeLimit = Math.max(1, Math.round(limit));
+  return rows
+    .filter((row) => row.averageCostUsd !== null)
+    .sort((left, right) => {
+      const leftCost = left.averageCostUsd ?? Number.MAX_SAFE_INTEGER;
+      const rightCost = right.averageCostUsd ?? Number.MAX_SAFE_INTEGER;
+      if (leftCost !== rightCost) return leftCost - rightCost;
+      if (right.successRate !== left.successRate) return right.successRate - left.successRate;
+      return right.total - left.total;
+    })
+    .slice(0, safeLimit);
+};
+
+export const topTelemetryModelsByEfficiency = (
+  rows: AiTelemetryModelPoint[],
+  limit = 5,
+): AiTelemetryModelPoint[] => {
+  const safeLimit = Math.max(1, Math.round(limit));
+  return rows
+    .filter((row) => row.costPerSecondUsd !== null)
+    .sort((left, right) => {
+      const leftValue = left.costPerSecondUsd ?? Number.MAX_SAFE_INTEGER;
+      const rightValue = right.costPerSecondUsd ?? Number.MAX_SAFE_INTEGER;
+      if (leftValue !== rightValue) return leftValue - rightValue;
+      if (right.successRate !== left.successRate) return right.successRate - left.successRate;
+      return right.total - left.total;
+    })
+    .slice(0, safeLimit);
 };

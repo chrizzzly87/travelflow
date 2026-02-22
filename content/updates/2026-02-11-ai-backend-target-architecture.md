@@ -72,3 +72,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧩 Refactored `/admin/ai-benchmark` into a compact control surface with modal-based preset editing/creation and modal-based model target management using the global `AppModal` pattern.
 - [ ] [Internal] 📈 Added a fixed 7-day telemetry snapshot at the top of `/admin/ai-benchmark` (Tremor cards + charts) and auto-refresh telemetry reload when benchmark runs finish.
 - [ ] [Internal] 🧪 Added normalization tests for benchmark preference payload/model-target/preset handling to cover default preset generation and invalid-payload recovery.
+- [ ] [Internal] 🧭 Added a dedicated `/admin/ai-benchmark/telemetry` workspace route with richer filters, ranking cards (speed/cost/value), charts, and recent-call diagnostics.
+- [ ] [Internal] 🪶 Slimmed `/admin/ai-benchmark` telemetry into a lightweight 7-day quick-view (top fastest/cheapest/best-value model cards) plus direct deep-link to the full telemetry workspace.
