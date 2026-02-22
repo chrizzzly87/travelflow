@@ -31,18 +31,29 @@ Optional compatibility keys:
 - If preview behaves differently from local `vite`, run `pnpm dlx netlify dev` for local parity.
 - Missing env keys in Deploy Preview context can cause partial behavior (for example generation timeout/failure or OG/meta fallbacks).
 
-## Manual CLI deploy with env parity
+## Manual CLI deploy with env parity (mandatory for auth flows)
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.
+
+Always inject env vars into the CLI build. Do not run `netlify deploy --build` without env injection.
 
 1. Link the worktree once:
    - `pnpm dlx netlify link --id 1abc3d37-f6af-4810-9097-489b2a282ac6`
-2. Build + deploy with `.env.local` safely parsed:
-   - `pnpm dlx dotenv-cli -e .env.local -- pnpm dlx netlify deploy --build --alias <alias-name>`
-3. Reuse the same alias to update an existing preview URL.
+2. Prepare an env file (pick one):
+   - If `.env.local` exists and is up to date, use it.
+   - Otherwise export from Netlify (CLI-compatible fallback):
+     - `pnpm dlx netlify env:list --json > .netlify/.env.deploy.json`
+     - `node -e "const fs=require('fs');const src='.netlify/.env.deploy.json';const dst='.netlify/.env.deploy';const data=JSON.parse(fs.readFileSync(src,'utf8'));const lines=Object.entries(data).map(([k,v])=>\`${k}=\${JSON.stringify(String(v))}\`);fs.writeFileSync(dst, lines.join('\\n')+'\\n');"`
+3. Build + deploy with env file safely parsed:
+   - `.env.local` path:
+     - `pnpm dlx dotenv-cli -e .env.local -- pnpm dlx netlify deploy --build --alias <alias-name>`
+   - Netlify-exported env path:
+     - `pnpm dlx dotenv-cli -e .netlify/.env.deploy -- pnpm dlx netlify deploy --build --alias <alias-name>`
+4. Reuse the same alias to update an existing preview URL.
 
 Notes:
 - Do not use `source .env.local` for deployment commands; values containing special characters can fail shell parsing and silently skip env injection.
-- Never commit `.env.local` or copied secret values.
+- Never commit `.env.local` or pulled env files.
+- Symptom of missing env injection: login fails, `Supabase auth is not configured`, or JS chunk errors caused by bad runtime config.
 
 ## Useful checks
 - PR checks:
