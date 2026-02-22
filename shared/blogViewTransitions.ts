@@ -4,6 +4,7 @@ type BlogRouteKind = 'list' | 'post' | 'other';
 const BLOG_VIEW_TRANSITION_PREFIX = 'blog-post';
 const BLOG_ROUTE_PATTERN = /^\/(?:[a-z]{2}\/)?blog(?:\/([^/?#]+))?\/?$/i;
 const BLOG_VIEW_TRANSITION_STYLE_ID = 'blog-view-transition-active';
+const BLOG_VIEW_TRANSITION_DURATION = '650ms';
 
 export interface BlogTransitionTarget {
     language: string;
@@ -204,7 +205,7 @@ const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget): string =
 ::view-transition-group(${names.summary}),
 ::view-transition-group(${names.meta}),
 ::view-transition-group(${names.pills}) {
-  animation-duration: 2s;
+  animation-duration: ${BLOG_VIEW_TRANSITION_DURATION};
   animation-timing-function: cubic-bezier(0.22, 0.82, 0.24, 1);
 }
 
@@ -273,51 +274,51 @@ const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget): string =
 }
 
 ::view-transition-old(${names.card}) {
-  animation: vt-blog-card-old 2s cubic-bezier(0.36, 0, 0.24, 1) both;
+  animation: vt-blog-card-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.36, 0, 0.24, 1) both;
 }
 
 ::view-transition-new(${names.card}) {
-  animation: vt-blog-card-new 2s cubic-bezier(0.18, 0.9, 0.22, 1) both;
+  animation: vt-blog-card-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.9, 0.22, 1) both;
 }
 
 ::view-transition-old(${names.image}) {
-  animation: vt-blog-image-old 2s cubic-bezier(0.32, 0, 0.2, 1) both;
+  animation: vt-blog-image-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.32, 0, 0.2, 1) both;
 }
 
 ::view-transition-new(${names.image}) {
-  animation: vt-blog-image-new 2s cubic-bezier(0.16, 0.86, 0.22, 1) both;
+  animation: vt-blog-image-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.16, 0.86, 0.22, 1) both;
 }
 
 ::view-transition-old(${names.title}) {
-  animation: vt-blog-title-old 2s cubic-bezier(0.3, 0, 0.2, 1) both;
+  animation: vt-blog-title-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.3, 0, 0.2, 1) both;
 }
 
 ::view-transition-new(${names.title}) {
-  animation: vt-blog-title-new 2s cubic-bezier(0.18, 0.9, 0.24, 1) both;
+  animation: vt-blog-title-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.9, 0.24, 1) both;
 }
 
 ::view-transition-old(${names.summary}) {
-  animation: vt-blog-summary-old 2s cubic-bezier(0.28, 0, 0.2, 1) both;
+  animation: vt-blog-summary-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
 }
 
 ::view-transition-new(${names.summary}) {
-  animation: vt-blog-summary-new 2s cubic-bezier(0.18, 0.88, 0.24, 1) both;
+  animation: vt-blog-summary-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
 }
 
 ::view-transition-old(${names.meta}) {
-  animation: vt-blog-meta-old 2s cubic-bezier(0.28, 0, 0.2, 1) both;
+  animation: vt-blog-meta-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
 }
 
 ::view-transition-new(${names.meta}) {
-  animation: vt-blog-meta-new 2s cubic-bezier(0.18, 0.88, 0.24, 1) both;
+  animation: vt-blog-meta-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
 }
 
 ::view-transition-old(${names.pills}) {
-  animation: vt-blog-pills-old 2s cubic-bezier(0.28, 0, 0.2, 1) both;
+  animation: vt-blog-pills-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
 }
 
 ::view-transition-new(${names.pills}) {
-  animation: vt-blog-pills-new 2s cubic-bezier(0.18, 0.88, 0.24, 1) both;
+  animation: vt-blog-pills-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
 }
 `;
 };

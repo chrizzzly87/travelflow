@@ -15,19 +15,15 @@ import { AppLanguage } from '../types';
 import {
     BLOG_VIEW_TRANSITION_CLASSES,
     createBlogTransitionNavigationState,
-    getBlogTransitionNavigationState,
     getPendingBlogTransitionTarget,
     getBlogPostViewTransitionNames,
-    isBlogTransitionTargetMatch,
     isPendingBlogTransitionTarget,
     isPrimaryUnmodifiedClick,
     primeBlogTransitionSnapshot,
-    resolveBlogTransitionNavigationHint,
     subscribeBlogTransitionState,
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
-    type BlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
@@ -60,25 +56,21 @@ const getBlogTransitionStyle = (
 const BlogCard: React.FC<{
     post: BlogPost;
     locale: AppLanguage;
-    transitionTargetHint: BlogTransitionTarget | null;
     viewTransitionsEnabled: boolean;
-}> = ({ post, locale, transitionTargetHint, viewTransitionsEnabled }) => {
+}> = ({ post, locale, viewTransitionsEnabled }) => {
     const { t } = useTranslation('blog');
     const navigate = useNavigate();
     const [isTransitionSource, setIsTransitionSource] = useState(false);
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
-    const matchesTransitionHint = transitionTargetHint
-        ? isBlogTransitionTargetMatch(transitionTargetHint, { language: post.language, slug: post.slug })
-        : false;
-    const shouldAssignTransitionNames = viewTransitionsEnabled &&
-        (isTransitionSource || matchesTransitionHint || isPendingBlogTransitionTarget(post.language, post.slug));
-    const transitionNames = shouldAssignTransitionNames
+    const transitionNames = viewTransitionsEnabled
         ? getBlogPostViewTransitionNames(post.language, post.slug)
         : null;
-    const imageLoading = transitionNames ? 'eager' : 'lazy';
-    const imageFetchPriority = transitionNames ? 'high' : 'low';
+    const isTransitionActiveForCard = viewTransitionsEnabled &&
+        (isTransitionSource || isPendingBlogTransitionTarget(post.language, post.slug));
+    const imageLoading = isTransitionActiveForCard ? 'eager' : 'lazy';
+    const imageFetchPriority = isTransitionActiveForCard ? 'high' : 'low';
     const postPath = buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
     const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
         if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
@@ -213,15 +205,6 @@ export const BlogPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
-    const activeTransitionTarget = viewTransitionsEnabled ? getPendingBlogTransitionTarget() : null;
-    const transitionNavigationState = useMemo(
-        () => getBlogTransitionNavigationState(location.state),
-        [location.state]
-    );
-    const transitionTargetHint = useMemo(
-        () => resolveBlogTransitionNavigationHint(transitionNavigationState, activeTransitionTarget),
-        [activeTransitionTarget, transitionNavigationState]
-    );
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
     const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
     const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
@@ -407,7 +390,6 @@ export const BlogPage: React.FC = () => {
                                 <BlogCard
                                     post={post}
                                     locale={locale}
-                                    transitionTargetHint={transitionTargetHint}
                                     viewTransitionsEnabled={viewTransitionsEnabled}
                                 />
                             </div>

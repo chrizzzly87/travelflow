@@ -298,7 +298,7 @@ describe('shared/blogViewTransitions', () => {
         startBlogViewTransition();
         const styleElement = document.getElementById('blog-view-transition-active');
         expect(styleElement).not.toBeNull();
-        expect(styleElement?.textContent).toContain('animation-duration: 2s;');
+        expect(styleElement?.textContent).toContain('animation-duration: 650ms;');
         expect(styleElement?.textContent).toContain('font-synthesis: none;');
         expect(getPendingBlogTransitionTarget()).toEqual({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
 
