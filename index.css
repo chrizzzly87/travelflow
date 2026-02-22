@@ -1,5 +1,6 @@
 @import "tailwindcss" source(none);
 @import "flagpack/dist/flagpack.css";
+@import "./styles/tremor-theme.css";
 
 @source "./**/*.{ts,tsx}";
 @source not "./app/routes/DeferredAppRoutes.tsx";
