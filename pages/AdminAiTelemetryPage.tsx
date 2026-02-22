@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowClockwise } from '@phosphor-icons/react';
+import { ArrowClockwise, ArrowLeft } from '@phosphor-icons/react';
 import {
     AreaChart,
     BarChart,
@@ -15,6 +15,14 @@ import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { useAuth } from '../hooks/useAuth';
+import {
+    buildFailureCodeBarListData,
+    buildProviderCostPerSuccessChartData,
+    buildProviderDonutEntries,
+    buildProviderModelDonutEntries,
+    buildProviderSuccessRateChartData,
+    type TelemetryDonutColor,
+} from '../services/adminAiTelemetryChartData';
 
 type TelemetrySourceFilter = 'all' | 'create_trip' | 'benchmark';
 
@@ -102,7 +110,16 @@ const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 5, label: 'Top 5' },
 ];
 
-const DONUT_COLORS = ['blue', 'cyan', 'indigo', 'violet', 'fuchsia', 'rose', 'emerald', 'amber'];
+const DONUT_COLOR_DOT_CLASS: Record<TelemetryDonutColor, string> = {
+    blue: 'bg-blue-500',
+    cyan: 'bg-cyan-500',
+    indigo: 'bg-indigo-500',
+    violet: 'bg-violet-500',
+    fuchsia: 'bg-fuchsia-500',
+    rose: 'bg-rose-500',
+    emerald: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+};
 
 const formatDuration = (ms: number | null | undefined): string => {
     if (!Number.isFinite(ms)) return '—';
@@ -159,6 +176,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [fastestModels, setFastestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [cheapestModels, setCheapestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [bestValueModels, setBestValueModels] = useState<AiTelemetryModelPoint[]>([]);
+    const [selectedProviderShare, setSelectedProviderShare] = useState<string | null>(null);
+    const [selectedModelShare, setSelectedModelShare] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -256,6 +275,15 @@ export const AdminAiTelemetryPage: React.FC = () => {
         if (!accessToken) return;
         void loadTelemetry();
     }, [accessToken, loadTelemetry]);
+
+    useEffect(() => {
+        if (!selectedProviderShare) return;
+        const providerStillVisible = telemetryProviders.some((row) => row.provider === selectedProviderShare);
+        if (!providerStillVisible) {
+            setSelectedProviderShare(null);
+            setSelectedModelShare(null);
+        }
+    }, [selectedProviderShare, telemetryProviders]);
 
     const successfulModels = useMemo(
         () => telemetryModels.filter((row) => row.success > 0),
@@ -369,15 +397,92 @@ export const AdminAiTelemetryPage: React.FC = () => {
         }));
     }, [telemetryProviders]);
 
-    const providerShareChartData = useMemo(() => {
-        return [...telemetryProviders]
-            .sort((left, right) => right.total - left.total)
-            .slice(0, 8)
-            .map((row) => ({
-            Provider: row.provider,
-            Calls: row.total,
+    const providerDonutEntries = useMemo(
+        () => buildProviderDonutEntries(telemetryProviders, 8),
+        [telemetryProviders],
+    );
+
+    const providerModelDonutEntries = useMemo(() => {
+        if (!selectedProviderShare) return [];
+        return buildProviderModelDonutEntries(telemetryModels, selectedProviderShare, 10);
+    }, [selectedProviderShare, telemetryModels]);
+
+    const activeDonutEntries = selectedProviderShare ? providerModelDonutEntries : providerDonutEntries;
+
+    useEffect(() => {
+        if (!selectedProviderShare || !selectedModelShare) return;
+        const modelStillVisible = providerModelDonutEntries.some((entry) => entry.model === selectedModelShare);
+        if (!modelStillVisible) {
+            setSelectedModelShare(null);
+        }
+    }, [providerModelDonutEntries, selectedModelShare, selectedProviderShare]);
+
+    const providerShareDonutData = useMemo(() => {
+        return activeDonutEntries.map((entry) => ({
+            Segment: entry.label,
+            Calls: entry.calls,
+            provider: entry.provider,
+            model: entry.model,
         }));
-    }, [telemetryProviders]);
+    }, [activeDonutEntries]);
+
+    const providerShareDonutColors = useMemo(
+        () => activeDonutEntries.map((entry) => entry.color),
+        [activeDonutEntries],
+    );
+
+    const providerSuccessRateChartData = useMemo(
+        () => buildProviderSuccessRateChartData(telemetryProviders, 8),
+        [telemetryProviders],
+    );
+
+    const providerCostPerSuccessChartData = useMemo(
+        () => buildProviderCostPerSuccessChartData(telemetryProviders, 8),
+        [telemetryProviders],
+    );
+
+    const failureCodeBarListData = useMemo(
+        () => buildFailureCodeBarListData(telemetryRecent, 8),
+        [telemetryRecent],
+    );
+
+    const selectedProviderStats = useMemo(() => {
+        if (!selectedProviderShare) return null;
+        return telemetryProviders.find((row) => row.provider === selectedProviderShare) || null;
+    }, [selectedProviderShare, telemetryProviders]);
+
+    const selectedModelStats = useMemo(() => {
+        if (!selectedProviderShare || !selectedModelShare) return null;
+        return telemetryModels.find((row) => row.provider === selectedProviderShare && row.model === selectedModelShare) || null;
+    }, [selectedModelShare, selectedProviderShare, telemetryModels]);
+
+    const handleProviderShareSliceSelect = useCallback((value: unknown) => {
+        if (!value || typeof value !== 'object') {
+            setSelectedModelShare(null);
+            return;
+        }
+        const payload = value as { provider?: unknown; model?: unknown };
+        const provider = typeof payload.provider === 'string' ? payload.provider : null;
+        const model = typeof payload.model === 'string' ? payload.model : null;
+
+        if (!provider || provider === 'other') return;
+
+        if (!selectedProviderShare) {
+            setSelectedProviderShare(provider);
+            setSelectedModelShare(null);
+            return;
+        }
+
+        if (selectedProviderShare !== provider) {
+            setSelectedProviderShare(provider);
+            setSelectedModelShare(null);
+            return;
+        }
+
+        if (model) {
+            setSelectedModelShare((current) => (current === model ? null : model));
+        }
+    }, [selectedProviderShare]);
 
     const modelVolumeBarListData = useMemo(() => {
         return [...telemetryModels]
@@ -722,20 +827,184 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     </AdminSurfaceCard>
 
                     <AdminSurfaceCard>
-                        <Title>Provider share</Title>
-                        <Subtitle>Distribution of total call volume.</Subtitle>
-                        {providerShareChartData.length > 0 ? (
-                            <DonutChart
-                                className="mt-3 h-64"
-                                data={providerShareChartData}
-                                index="Provider"
-                                category="Calls"
-                                valueFormatter={(value) => formatCallCount(value)}
-                                colors={DONUT_COLORS}
-                                showTooltip
-                            />
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <Title>Provider share</Title>
+                                <Subtitle>
+                                    {selectedProviderShare
+                                        ? `Model split inside ${selectedProviderShare}. Click a slice for details.`
+                                        : 'Distribution of total call volume. Click a provider slice to drill down.'}
+                                </Subtitle>
+                            </div>
+
+                            {selectedProviderShare && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedProviderShare(null);
+                                        setSelectedModelShare(null);
+                                    }}
+                                    className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    <ArrowLeft size={13} />
+                                    Providers
+                                </button>
+                            )}
+                        </div>
+
+                        {providerShareDonutData.length > 0 ? (
+                            <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,250px)]">
+                                <DonutChart
+                                    className="h-64"
+                                    data={providerShareDonutData}
+                                    index="Segment"
+                                    category="Calls"
+                                    label={selectedProviderShare ? `${selectedProviderShare} models` : 'Providers'}
+                                    valueFormatter={(value) => formatCallCount(value)}
+                                    colors={providerShareDonutColors}
+                                    showTooltip
+                                    onValueChange={handleProviderShareSliceSelect}
+                                />
+
+                                <div className="space-y-2">
+                                    <Text className="text-xs uppercase tracking-[0.1em] text-slate-500">
+                                        {selectedProviderShare ? 'Model legend' : 'Provider legend'}
+                                    </Text>
+
+                                    <div className="space-y-1.5">
+                                        {activeDonutEntries.map((entry) => {
+                                            const isSelected = Boolean(
+                                                selectedProviderShare &&
+                                                selectedModelShare &&
+                                                entry.model === selectedModelShare,
+                                            );
+                                            const isDisabled = !selectedProviderShare && entry.provider === 'other';
+                                            const dotClass = DONUT_COLOR_DOT_CLASS[entry.color];
+                                            return (
+                                                <button
+                                                    key={entry.key}
+                                                    type="button"
+                                                    disabled={isDisabled}
+                                                    onClick={() => {
+                                                        if (!selectedProviderShare) {
+                                                            if (entry.provider === 'other') return;
+                                                            setSelectedProviderShare(entry.provider);
+                                                            setSelectedModelShare(null);
+                                                            return;
+                                                        }
+                                                        if (!entry.model) {
+                                                            setSelectedModelShare(null);
+                                                            return;
+                                                        }
+                                                        setSelectedModelShare((current) => (current === entry.model ? null : entry.model));
+                                                    }}
+                                                    className={`flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs transition ${
+                                                        isSelected
+                                                            ? 'border-blue-300 bg-blue-50 text-blue-900'
+                                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                                                    } ${isDisabled ? 'cursor-not-allowed opacity-60' : ''}`}
+                                                >
+                                                    <span className="inline-flex min-w-0 items-center gap-2">
+                                                        <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
+                                                        <span className="truncate">{entry.label}</span>
+                                                    </span>
+                                                    <span className="ml-2 shrink-0 text-slate-500">
+                                                        {entry.calls.toLocaleString()} • {formatPercent(entry.sharePercent)}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider-share data in this filter set.</Text>
+                        )}
+
+                        {selectedProviderStats && (
+                            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                                <p className="font-semibold text-slate-900">
+                                    Provider details: <span className="font-bold">{selectedProviderStats.provider}</span>
+                                </p>
+                                <p className="mt-1">
+                                    Calls {selectedProviderStats.total.toLocaleString()} • Success {formatPercent(
+                                        selectedProviderStats.total > 0
+                                            ? (selectedProviderStats.success / selectedProviderStats.total) * 100
+                                            : null,
+                                    )} • Avg duration {formatDuration(selectedProviderStats.averageLatencyMs)} • Total cost {formatUsd(selectedProviderStats.totalCostUsd)}
+                                </p>
+                            </div>
+                        )}
+
+                        {selectedModelStats && (
+                            <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                                <p className="font-semibold">
+                                    Model details: {selectedModelStats.provider} / {selectedModelStats.model}
+                                </p>
+                                <p className="mt-1">
+                                    Calls {selectedModelStats.total.toLocaleString()} • Success {formatPercent(selectedModelStats.successRate)} • Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} • Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
+                                </p>
+                            </div>
+                        )}
+                    </AdminSurfaceCard>
+                </section>
+
+                <section className="grid gap-3 lg:grid-cols-3">
+                    <AdminSurfaceCard>
+                        <Title>Provider success rate</Title>
+                        <Subtitle>Top providers by successful call ratio.</Subtitle>
+                        {providerSuccessRateChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-56"
+                                data={providerSuccessRateChartData}
+                                index="Provider"
+                                categories={['Success rate']}
+                                colors={['emerald']}
+                                yAxisWidth={56}
+                                minValue={0}
+                                maxValue={100}
+                                valueFormatter={(value) => formatPercent(value)}
+                                showTooltip
+                                showLegend
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No provider success-rate data available.</Text>
+                        )}
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard>
+                        <Title>Provider cost per success</Title>
+                        <Subtitle>Average estimated cost per successful call.</Subtitle>
+                        {providerCostPerSuccessChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-56"
+                                data={providerCostPerSuccessChartData}
+                                index="Provider"
+                                categories={['Avg cost / success (USD)']}
+                                colors={['violet']}
+                                layout="horizontal"
+                                yAxisWidth={64}
+                                valueFormatter={(value) => formatUsd(value)}
+                                showTooltip
+                                showLegend
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No provider cost-per-success data available.</Text>
+                        )}
+                    </AdminSurfaceCard>
+
+                    <AdminSurfaceCard>
+                        <Title>Top failure codes</Title>
+                        <Subtitle>Most frequent recent error categories.</Subtitle>
+                        {failureCodeBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={failureCodeBarListData}
+                                sortOrder="descending"
+                                valueFormatter={(value) => formatCallCount(value)}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No recent failures in the selected filter scope.</Text>
                         )}
                     </AdminSurfaceCard>
                 </section>
