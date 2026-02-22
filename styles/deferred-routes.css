@@ -1,6 +1,8 @@
 @import "tailwindcss" source(none);
 @import "./tremor-theme.css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source "../app/routes/DeferredAppRoutes.tsx";
 @source "../components/CreateTripForm.tsx";
 @source "../components/navigation/SiteHeader.tsx";

@@ -5,7 +5,6 @@ import {
     BarChart,
     BarList,
     DonutChart,
-    LineChart,
     Metric,
     Subtitle,
     Text,
@@ -103,7 +102,8 @@ const RANK_LIMIT_OPTIONS: Array<{ value: number; label: string }> = [
     { value: 5, label: 'Top 5' },
 ];
 
-const BAR_COLORS = ['emerald', 'sky', 'amber', 'violet', 'indigo', 'rose'];
+const BAR_COLORS = ['blue', 'cyan', 'indigo', 'violet', 'fuchsia', 'emerald'];
+const DONUT_COLORS = ['blue', 'cyan', 'indigo', 'violet', 'fuchsia', 'rose', 'emerald', 'amber'];
 
 const formatDuration = (ms: number | null | undefined): string => {
     if (!Number.isFinite(ms)) return '—';
@@ -120,6 +120,12 @@ const formatUsd = (value: number | null | undefined): string => {
 const formatPercent = (value: number | null | undefined): string => {
     if (!Number.isFinite(value)) return '—';
     return `${Number(value).toFixed(1)}%`;
+};
+
+const formatCallCount = (value: number | null | undefined): string => {
+    if (!Number.isFinite(value)) return '0 calls';
+    const count = Math.max(0, Math.round(Number(value)));
+    return `${count.toLocaleString()} ${count === 1 ? 'call' : 'calls'}`;
 };
 
 const formatTimestamp = (value?: string | null): string => {
@@ -358,7 +364,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [telemetrySeries]);
 
     const providerVolumeChartData = useMemo(() => {
-        return telemetryProviders.slice(0, 10).map((row) => ({
+        return [...telemetryProviders]
+            .sort((left, right) => right.total - left.total)
+            .slice(0, 10)
+            .map((row) => ({
             Provider: row.provider,
             Calls: row.total,
             Failures: row.failed,
@@ -366,17 +375,25 @@ export const AdminAiTelemetryPage: React.FC = () => {
     }, [telemetryProviders]);
 
     const providerShareChartData = useMemo(() => {
-        return telemetryProviders.slice(0, 8).map((row) => ({
+        return [...telemetryProviders]
+            .sort((left, right) => right.total - left.total)
+            .slice(0, 8)
+            .map((row) => ({
             Provider: row.provider,
             Calls: row.total,
         }));
     }, [telemetryProviders]);
 
-    const modelVolumeChartData = useMemo(() => {
-        return telemetryModels.slice(0, 12).map((row) => ({
-            Model: compactModelLabel(row.provider, row.model),
-            Calls: row.total,
-        }));
+    const modelVolumeBarListData = useMemo(() => {
+        return [...telemetryModels]
+            .sort((left, right) => right.total - left.total)
+            .slice(0, 12)
+            .map((row, index) => ({
+                key: row.key,
+                name: compactModelLabel(row.provider, row.model),
+                value: row.total,
+                color: BAR_COLORS[index % BAR_COLORS.length],
+            }));
     }, [telemetryModels]);
 
     const failureRate = useMemo(() => {
@@ -596,13 +613,16 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Title>Call trend</Title>
                         <Subtitle>Success vs failed volume across the selected window.</Subtitle>
                         {callsTrendChartData.length > 0 ? (
-                            <AreaChart
+                            <BarChart
                                 className="mt-3 h-64"
                                 data={callsTrendChartData}
                                 index="Time"
                                 categories={['Success', 'Failed']}
                                 colors={['emerald', 'rose']}
-                                yAxisWidth={48}
+                                stack
+                                yAxisWidth={56}
+                                valueFormatter={(value) => formatCallCount(value)}
+                                startEndOnly={callsTrendChartData.length > 12}
                                 showTooltip
                                 showLegend
                             />
@@ -615,14 +635,19 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Title>Success-rate trend</Title>
                         <Subtitle>Ratio evolution over time (%).</Subtitle>
                         {successRateTrendChartData.length > 0 ? (
-                            <LineChart
+                            <AreaChart
                                 className="mt-3 h-64"
                                 data={successRateTrendChartData}
                                 index="Time"
                                 categories={['Success rate']}
-                                colors={['blue']}
-                                yAxisWidth={48}
+                                colors={['indigo']}
+                                yAxisWidth={56}
+                                minValue={0}
+                                maxValue={100}
                                 valueFormatter={(value) => formatPercent(value)}
+                                connectNulls
+                                showGradient
+                                startEndOnly={successRateTrendChartData.length > 12}
                                 showTooltip
                                 showLegend
                             />
@@ -637,7 +662,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Title>Latency trend</Title>
                         <Subtitle>Average latency by bucket.</Subtitle>
                         {latencyTrendChartData.length > 0 ? (
-                            <LineChart
+                            <AreaChart
                                 className="mt-3 h-56"
                                 data={latencyTrendChartData}
                                 index="Time"
@@ -645,7 +670,11 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 colors={['amber']}
                                 yAxisWidth={56}
                                 valueFormatter={(value) => formatDuration(value)}
+                                connectNulls
+                                showGradient
+                                startEndOnly={latencyTrendChartData.length > 12}
                                 showTooltip
+                                showLegend
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No latency trend data for this filter set.</Text>
@@ -656,14 +685,17 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         <Title>Cost trend</Title>
                         <Subtitle>Total estimated cost per bucket.</Subtitle>
                         {costTrendChartData.length > 0 ? (
-                            <BarChart
+                            <AreaChart
                                 className="mt-3 h-56"
                                 data={costTrendChartData}
                                 index="Time"
                                 categories={['Total cost (USD)']}
-                                colors={['cyan']}
+                                colors={['violet']}
                                 yAxisWidth={56}
                                 valueFormatter={(value) => formatUsd(value)}
+                                connectNulls
+                                showGradient
+                                startEndOnly={costTrendChartData.length > 12}
                                 showTooltip
                                 showLegend
                             />
@@ -684,7 +716,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 index="Provider"
                                 categories={['Calls', 'Failures']}
                                 colors={['blue', 'rose']}
+                                layout="horizontal"
                                 yAxisWidth={48}
+                                valueFormatter={(value) => formatCallCount(value)}
                                 showTooltip
                                 showLegend
                             />
@@ -702,8 +736,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={providerShareChartData}
                                 index="Provider"
                                 category="Calls"
-                                valueFormatter={(value) => `${value} calls`}
-                                colors={['blue', 'cyan', 'emerald', 'amber', 'rose', 'violet']}
+                                valueFormatter={(value) => formatCallCount(value)}
+                                colors={DONUT_COLORS}
                                 showTooltip
                             />
                         ) : (
@@ -716,15 +750,12 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     <AdminSurfaceCard>
                         <Title>Model call volume</Title>
                         <Subtitle>Most active provider/model combinations.</Subtitle>
-                        {modelVolumeChartData.length > 0 ? (
-                            <BarChart
-                                className="mt-3 h-72"
-                                data={modelVolumeChartData}
-                                index="Model"
-                                categories={['Calls']}
-                                colors={['blue']}
-                                yAxisWidth={48}
-                                showTooltip
+                        {modelVolumeBarListData.length > 0 ? (
+                            <BarList
+                                className="mt-3"
+                                data={modelVolumeBarListData}
+                                sortOrder="descending"
+                                valueFormatter={(value) => formatCallCount(value)}
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No model activity data in this filter set.</Text>
