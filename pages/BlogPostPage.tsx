@@ -22,7 +22,6 @@ import {
     setPendingBlogTransitionTarget,
     startBlogViewTransition,
     supportsBlogViewTransitions,
-    waitForBlogTransitionTarget,
 } from '../shared/blogViewTransitions';
 
 const BLOG_HEADER_IMAGE_SIZES = '(min-width: 1280px) 76rem, (min-width: 1024px) 88vw, 100vw';
@@ -240,9 +239,7 @@ export const BlogPostPage: React.FC = () => {
                     state: createBlogTransitionNavigationState('post', transitionTarget),
                 });
             });
-            return waitForBlogTransitionTarget(transitionTarget, 'list', 280).finally(() => {
-                primeBlogTransitionSnapshot();
-            });
+            primeBlogTransitionSnapshot();
         });
     }, [blogPath, navigate, post.language, post.slug, viewTransitionsEnabled]);
 
