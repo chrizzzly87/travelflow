@@ -89,3 +89,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧾 Tightened itinerary contract guidance with an explicit canonical `countryInfo` shape and a pre-submit self-check, while normalizing array/map countryInfo variants during benchmark validation.
 - [ ] [Internal] ⏱️ Added benchmark timeout controls in `/admin/ai-benchmark` (default 60s, bounded range) and threaded per-run timeout settings through benchmark execution metadata.
 - [ ] [Internal] 🧩 Added compact benchmark prompt mode plus stricter Gemini/Anthropic parse-retry flow (time-budgeted retries + strict JSON retry instructions + 60s token budget cap) to reduce malformed JSON failures.
+- [ ] [Internal] ✂️ Tightened compact benchmark prompt caps with stricter max lengths for city/activity/travel descriptions and trip titles to reduce long-output parse/timeout risk.
+- [ ] [Internal] 🔁 Updated benchmark validation to accept terminal round-trip return cities with `days: 0` as a non-blocking warning, normalizing to one day during trip build.

@@ -110,6 +110,10 @@ interface ValidationResult {
   warnings: string[];
 }
 
+interface ValidationOptions {
+  roundTrip?: boolean;
+}
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -614,12 +618,15 @@ const normalizeCityColors = (items: Array<Record<string, unknown>>): Array<Recor
   });
 };
 
-const validateModelData = (data: Record<string, unknown>): ValidationResult => {
+const validateModelData = (data: Record<string, unknown>, options: ValidationOptions = {}): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   const cities = Array.isArray(data.cities) ? data.cities : [];
   const activities = Array.isArray(data.activities) ? data.activities : [];
   const travelSegments = Array.isArray(data.travelSegments) ? data.travelSegments : [];
+  const firstCity = cities.length > 0 && isRecord(cities[0]) ? (cities[0] as Record<string, unknown>) : null;
+  const firstCityName = firstCity && hasText(firstCity.name) ? normalizeCityName(String(firstCity.name)) : null;
+  let hasTerminalRoundTripZeroDayCity = false;
 
   const requiredTopLevelKeys = ["tripTitle", "cities", "travelSegments", "activities"];
   const topLevelContractValid = requiredTopLevelKeys.every((key) => hasOwn(data, key));
@@ -632,13 +639,28 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
     errors.push("No cities returned");
   }
 
-  const cityRequiredFieldsValid = cities.every((city) => {
+  const cityRequiredFieldsValid = cities.every((city, index) => {
     if (!isRecord(city)) return false;
+    const daysValue = Number(city.days);
+    const isFiniteDays = Number.isFinite(daysValue);
+    const hasPositiveDays = isFiniteDays && daysValue > 0;
+    const isTerminalRoundTripZeroDayCity = Boolean(
+      options.roundTrip
+      && isFiniteDays
+      && daysValue === 0
+      && index === cities.length - 1
+      && index > 0
+      && firstCityName
+      && hasText(city.name)
+      && normalizeCityName(String(city.name)) === firstCityName,
+    );
+    if (isTerminalRoundTripZeroDayCity) {
+      hasTerminalRoundTripZeroDayCity = true;
+    }
     return (
       hasText(city.name) &&
       hasText(city.description) &&
-      Number.isFinite(Number(city.days)) &&
-      Number(city.days) > 0 &&
+      (hasPositiveDays || isTerminalRoundTripZeroDayCity) &&
       Number.isFinite(Number(city.lat)) &&
       Number.isFinite(Number(city.lng))
     );
@@ -672,6 +694,9 @@ const validateModelData = (data: Record<string, unknown>): ValidationResult => {
   const requiredFieldsValid = cityRequiredFieldsValid && travelRequiredFieldsValid && activityRequiredFieldsValid;
   if (!requiredFieldsValid) {
     errors.push("One or more entries are missing mandatory fields or have wrong field types");
+  }
+  if (hasTerminalRoundTripZeroDayCity) {
+    warnings.push("Terminal round-trip city returned with 0 days; normalized to 1 day during trip build (non-blocking)");
   }
 
   const cityCoordinatesValid = cities.every((city) => {
@@ -1475,7 +1500,9 @@ const runGeneration = async (
       return;
     }
 
-    const validation = validateModelData(modelData as Record<string, unknown>);
+    const validation = validateModelData(modelData as Record<string, unknown>, {
+      roundTrip: scenario.roundTrip,
+    });
     if (!validation.schemaValid) {
       await persistRunTelemetry({
         status: "failed",
@@ -2631,6 +2658,7 @@ export const __benchmarkValidationInternals = {
   collectCountryInfoEntries,
   collectCountryInfoLanguages,
   pickCountryInfoExchangeRate,
+  validateModelData,
   resolveRunLatencyMs,
 };
 

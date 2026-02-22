@@ -287,10 +287,13 @@ const BENCHMARK_COMPACT_OUTPUT_PROMPT = `
       1. Keep the full JSON concise and valid even under strict timeout budgets.
       2. For EACH city.description, include all required markdown headings, but keep text short:
          - exactly 2 checkbox bullets per heading.
-         - each bullet should be short (about 4-8 words).
-      3. Keep travelSegments.description short and practical.
-      4. Keep activities concise and avoid verbose paragraphs.
-      5. Prioritize valid complete JSON over extra detail.
+         - each bullet should be short (about 3-6 words; hard max 8 words).
+         - city.description must stay under 700 characters total.
+      3. Keep travelSegments.description short and practical (hard max 60 characters).
+      4. Keep activities concise:
+         - activities.description must be a single short sentence (hard max 120 characters, no line breaks).
+      5. Keep tripTitle concise (hard max 80 characters).
+      6. Prioritize valid complete JSON over extra detail.
     `;
 
 const buildIslandConstraintPrompt = (
