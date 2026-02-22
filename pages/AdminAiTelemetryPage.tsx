@@ -4,9 +4,7 @@ import {
     AreaChart,
     BarChart,
     BarList,
-    Card,
     DonutChart,
-    Grid,
     LineChart,
     Metric,
     Subtitle,
@@ -14,6 +12,7 @@ import {
     Title,
 } from '@tremor/react';
 import { AdminShell } from '../components/admin/AdminShell';
+import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { useAuth } from '../hooks/useAuth';
@@ -415,7 +414,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     </section>
                 )}
 
-                <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <AdminSurfaceCard>
                     <Title>Filters</Title>
                     <Subtitle>Keep this compact up top, then scroll down for deeper telemetry analysis.</Subtitle>
 
@@ -494,44 +493,44 @@ export const AdminAiTelemetryPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                </Card>
+                </AdminSurfaceCard>
 
-                <Grid numItems={1} numItemsSm={2} numItemsLg={5} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <AdminSurfaceCard>
                         <Text>Total calls</Text>
                         <Metric>{telemetrySummary ? telemetrySummary.total : '—'}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">Selected filter scope</Text>
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Text>Success rate</Text>
                         <Metric>{telemetrySummary ? formatPercent(telemetrySummary.successRate) : '—'}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">Failed: {telemetrySummary ? telemetrySummary.failed : '—'}</Text>
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Text>Failure rate</Text>
                         <Metric>{formatPercent(failureRate)}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">Quick reliability read</Text>
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Text>Avg duration</Text>
                         <Metric>{telemetrySummary ? formatDuration(telemetrySummary.averageLatencyMs) : '—'}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">Across all calls</Text>
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Text>Total cost (est.)</Text>
                         <Metric>{telemetrySummary ? formatUsd(telemetrySummary.totalCostUsd) : '—'}</Metric>
                         <Text className="mt-1 text-xs text-slate-500">
                             Models with success: {formatPercent(successfulModelCoverage)}
                         </Text>
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
 
-                <Grid numItems={1} numItemsMd={2} numItemsLg={4} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                    <AdminSurfaceCard>
                         <Title>Top models by speed</Title>
                         <Subtitle>Only models with successful calls are listed.</Subtitle>
                         {fastestBarListData.length > 0 ? (
@@ -544,9 +543,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No successful speed data.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Top models by cost</Title>
                         <Subtitle>Average cost per successful call.</Subtitle>
                         {cheapestBarListData.length > 0 ? (
@@ -559,9 +558,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No successful cost data.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Top models by value</Title>
                         <Subtitle>Lower cost/second is better.</Subtitle>
                         {bestValueBarListData.length > 0 ? (
@@ -574,9 +573,9 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No successful value data.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Top models by success rate</Title>
                         <Subtitle>Success-rate ratio leaderboard.</Subtitle>
                         {successRateBarListData.length > 0 ? (
@@ -589,11 +588,11 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No success-rate data.</Text>
                         )}
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
 
-                <Grid numItems={1} numItemsLg={2} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 lg:grid-cols-2">
+                    <AdminSurfaceCard>
                         <Title>Call trend</Title>
                         <Subtitle>Success vs failed volume across the selected window.</Subtitle>
                         {callsTrendChartData.length > 0 ? (
@@ -604,13 +603,15 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 categories={['Success', 'Failed']}
                                 colors={['emerald', 'rose']}
                                 yAxisWidth={48}
+                                showTooltip
+                                showLegend
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No time-series call data for this filter set.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Success-rate trend</Title>
                         <Subtitle>Ratio evolution over time (%).</Subtitle>
                         {successRateTrendChartData.length > 0 ? (
@@ -619,18 +620,20 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={successRateTrendChartData}
                                 index="Time"
                                 categories={['Success rate']}
-                                colors={['indigo']}
+                                colors={['blue']}
                                 yAxisWidth={48}
                                 valueFormatter={(value) => formatPercent(value)}
+                                showTooltip
+                                showLegend
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No success-rate trend data for this filter set.</Text>
                         )}
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
 
-                <Grid numItems={1} numItemsLg={2} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 lg:grid-cols-2">
+                    <AdminSurfaceCard>
                         <Title>Latency trend</Title>
                         <Subtitle>Average latency by bucket.</Subtitle>
                         {latencyTrendChartData.length > 0 ? (
@@ -642,13 +645,14 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 colors={['amber']}
                                 yAxisWidth={56}
                                 valueFormatter={(value) => formatDuration(value)}
+                                showTooltip
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No latency trend data for this filter set.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Cost trend</Title>
                         <Subtitle>Total estimated cost per bucket.</Subtitle>
                         {costTrendChartData.length > 0 ? (
@@ -657,18 +661,20 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={costTrendChartData}
                                 index="Time"
                                 categories={['Total cost (USD)']}
-                                colors={['sky']}
+                                colors={['cyan']}
                                 yAxisWidth={56}
                                 valueFormatter={(value) => formatUsd(value)}
+                                showTooltip
+                                showLegend
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No cost trend data for this filter set.</Text>
                         )}
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
 
-                <Grid numItems={1} numItemsLg={2} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 lg:grid-cols-2">
+                    <AdminSurfaceCard>
                         <Title>Provider breakdown</Title>
                         <Subtitle>Calls and failures by provider.</Subtitle>
                         {providerVolumeChartData.length > 0 ? (
@@ -677,15 +683,17 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={providerVolumeChartData}
                                 index="Provider"
                                 categories={['Calls', 'Failures']}
-                                colors={['sky', 'rose']}
+                                colors={['blue', 'rose']}
                                 yAxisWidth={48}
+                                showTooltip
+                                showLegend
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider breakdown in this filter set.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Provider share</Title>
                         <Subtitle>Distribution of total call volume.</Subtitle>
                         {providerShareChartData.length > 0 ? (
@@ -695,16 +703,17 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 index="Provider"
                                 category="Calls"
                                 valueFormatter={(value) => `${value} calls`}
-                                colors={['indigo', 'sky', 'emerald', 'amber', 'rose', 'violet']}
+                                colors={['blue', 'cyan', 'emerald', 'amber', 'rose', 'violet']}
+                                showTooltip
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider-share data in this filter set.</Text>
                         )}
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
 
-                <Grid numItems={1} numItemsLg={2} className="gap-3">
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <section className="grid gap-3 lg:grid-cols-2">
+                    <AdminSurfaceCard>
                         <Title>Model call volume</Title>
                         <Subtitle>Most active provider/model combinations.</Subtitle>
                         {modelVolumeChartData.length > 0 ? (
@@ -713,15 +722,16 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 data={modelVolumeChartData}
                                 index="Model"
                                 categories={['Calls']}
-                                colors={['indigo']}
+                                colors={['blue']}
                                 yAxisWidth={48}
+                                showTooltip
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No model activity data in this filter set.</Text>
                         )}
-                    </Card>
+                    </AdminSurfaceCard>
 
-                    <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <AdminSurfaceCard>
                         <Title>Recent calls</Title>
                         <Subtitle>Latest rows with status, duration, and error code.</Subtitle>
 
@@ -765,8 +775,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </Card>
-                </Grid>
+                    </AdminSurfaceCard>
+                </section>
             </div>
         </AdminShell>
     );

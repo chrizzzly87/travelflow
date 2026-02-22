@@ -77,3 +77,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] ✅ Changed telemetry model-ranking calculations to use successful calls only, so fastest/cheapest/value leaderboards no longer reward aborted/failed runs.
 - [ ] [Internal] 🔁 Added OpenAI runtime fallback from `v1/chat/completions` to `v1/responses` for non-chat model IDs to reduce `OPENAI_REQUEST_FAILED` errors on newer model entries.
 - [ ] [Internal] 🎨 Reworked the telemetry workspace with a compact filter strip, modern card wrappers, Tremor KPI cards, Tremor bar-list leaderboards, and deeper chart compositions for trend/provider/model analysis.
+- [ ] [Internal] 🧩 Standardized telemetry card styling with a shared admin surface component, removed heavy/dark card outlines, and enabled explicit Tremor chart tooltips/legends for clearer hover diagnostics.
