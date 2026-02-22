@@ -78,6 +78,81 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(result.value.meta.providerModel).toBe('claude-sonnet-4-6');
   });
 
+  it('retries gemini once with strict JSON instructions after parse failure', async () => {
+    stubDenoEnv({
+      GEMINI_API_KEY: 'gemini-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [{ content: { parts: [{ text: 'not-json' }] } }],
+          usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 22, totalTokenCount: 33 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [{ content: { parts: [{ text: '{"tripTitle":"Gemini retry","cities":[],"travelSegments":[],"activities":[]}' }] } }],
+          usageMetadata: { promptTokenCount: 44, candidatesTokenCount: 55, totalTokenCount: 99 },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"gemini-retry"}',
+      provider: 'gemini',
+      model: 'gemini-3-pro-preview',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const retryBody = JSON.parse(String(retryInit.body));
+    expect(retryBody.generationConfig.temperature).toBe(0);
+    expect(retryBody.contents?.[0]?.parts?.[0]?.text).toContain('IMPORTANT RETRY INSTRUCTIONS');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Gemini retry');
+  });
+
+  it('retries anthropic once with strict JSON instructions after parse failure', async () => {
+    stubDenoEnv({
+      ANTHROPIC_API_KEY: 'anthropic-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          content: [{ type: 'text', text: 'not-json' }],
+          usage: { input_tokens: 10, output_tokens: 20 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          content: [{ type: 'text', text: '{"tripTitle":"Anthropic retry","cities":[],"travelSegments":[],"activities":[]}' }],
+          usage: { input_tokens: 30, output_tokens: 40 },
+        }),
+      );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"anthropic-retry"}',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4.6',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const retryBody = JSON.parse(String(retryInit.body));
+    expect(retryBody.temperature).toBe(0);
+    expect(String(retryBody.system)).toContain('exactly one minified JSON object');
+    expect(retryBody.messages?.[0]?.content).toContain('IMPORTANT RETRY INSTRUCTIONS');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.data.tripTitle).toBe('Anthropic retry');
+  });
+
   it('falls back to OpenAI responses endpoint for non-chat models', async () => {
     stubDenoEnv({
       OPENAI_API_KEY: 'openai-key',
@@ -187,6 +262,34 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       totalTokens: 579,
       estimatedCostUsd: 0.000321,
     });
+  });
+
+  it('passes maxOutputTokens override through to provider requests', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        model: 'openrouter/free',
+        choices: [{ message: { content: '{"title":"Token override"}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+      }),
+    );
+
+    const result = await generateProviderItinerary({
+      prompt: '{"request":"demo"}',
+      provider: 'openrouter',
+      model: 'openrouter/free',
+      timeoutMs: 30_000,
+      maxOutputTokens: 2048,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const init = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const body = JSON.parse(String(init.body));
+    expect(body.max_tokens).toBe(2048);
+    expect(result.ok).toBe(true);
   });
 
   it('retries openrouter once on transient provider failure', async () => {

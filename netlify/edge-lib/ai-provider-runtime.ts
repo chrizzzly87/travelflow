@@ -35,6 +35,7 @@ export interface ProviderGenerationOptions {
   provider: string;
   model: string;
   timeoutMs: number;
+  maxOutputTokens?: number;
 }
 
 export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
@@ -101,6 +102,7 @@ const GEMINI_PRICING_PER_MILLION: Record<string, { input: number; output: number
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MAX_ATTEMPTS = 2;
 const OPENROUTER_RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+const PROVIDER_PARSE_RETRY_MAX_ATTEMPTS = 2;
 
 export const readEnv = (name: string): string => {
   try {
@@ -142,6 +144,27 @@ const clipText = (value: string, max = 1_200): string => {
 
 const PROVIDER_MAX_OUTPUT_TOKENS = resolveIntegerEnv("AI_PROVIDER_MAX_OUTPUT_TOKENS", 8_192, 1_024, 16_384);
 
+const STRICT_JSON_RETRY_INSTRUCTION = `
+IMPORTANT RETRY INSTRUCTIONS:
+- Return exactly one valid JSON object and nothing else.
+- No markdown fences, no prose, no explanation.
+- Keep output compact to avoid truncation.
+- For each city description, include all required headings with concise checklist bullets.
+`.trim();
+
+const resolveOutputTokenBudget = (override?: number): number => {
+  if (!Number.isFinite(override)) return PROVIDER_MAX_OUTPUT_TOKENS;
+  const parsed = Math.round(Number(override));
+  return Math.max(1_024, Math.min(16_384, parsed));
+};
+
+const resolveAttemptTimeoutMs = (requestStartedAt: number, totalTimeoutMs: number): number | null => {
+  const elapsed = Date.now() - requestStartedAt;
+  const remaining = Math.round(totalTimeoutMs - elapsed);
+  if (remaining <= 0) return null;
+  return Math.max(250, remaining);
+};
+
 const isAbortError = (error: unknown): boolean => {
   if (error instanceof DOMException && error.name === "AbortError") return true;
   if (error && typeof error === "object" && "name" in error) {
@@ -156,7 +179,7 @@ const fetchWithTimeout = async <T>(
   timeoutMs: number,
   consume: (response: Response) => Promise<T>,
 ): Promise<T> => {
-  const timeout = Math.max(1_000, Math.round(timeoutMs));
+  const timeout = Math.max(250, Math.round(timeoutMs));
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | null = null;
   const timeoutMessage = `Provider request timed out after ${timeout}ms.`;
@@ -354,6 +377,7 @@ const generateWithGemini = async (
   prompt: string,
   model: string,
   timeoutMs: number,
+  maxOutputTokens: number,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("GEMINI_API_KEY") || readEnv("VITE_GEMINI_API_KEY");
   if (!apiKey) {
@@ -369,110 +393,145 @@ const generateWithGemini = async (
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  let payload: unknown;
-  try {
-    const result = await fetchWithTimeout(
-      endpoint,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+  const requestStartedAt = Date.now();
+  let strictParseRetry = false;
+
+  for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
+    const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+    if (!attemptTimeoutMs) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "Gemini generation request timed out.",
+          code: "GEMINI_REQUEST_TIMEOUT",
+          details: `Provider request timed out after ${timeoutMs}ms.`,
         },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            maxOutputTokens: PROVIDER_MAX_OUTPUT_TOKENS,
-            temperature: 0.2,
+      };
+    }
+
+    const promptBody = strictParseRetry
+      ? `${prompt}\n\n${STRICT_JSON_RETRY_INSTRUCTION}`
+      : prompt;
+
+    let payload: unknown;
+    try {
+      const result = await fetchWithTimeout(
+        endpoint,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
-      },
-      timeoutMs,
-      async (response) => {
-        if (!response.ok) {
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: promptBody }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              maxOutputTokens: maxOutputTokens,
+              temperature: strictParseRetry ? 0 : 0.2,
+            },
+          }),
+        },
+        attemptTimeoutMs,
+        async (response) => {
+          if (!response.ok) {
+            return {
+              ok: false as const,
+              status: response.status,
+              details: await response.text(),
+            };
+          }
           return {
-            ok: false as const,
-            status: response.status,
-            details: await response.text(),
+            ok: true as const,
+            payload: await response.json(),
           };
-        }
+        },
+      );
+      if (!result.ok) {
         return {
-          ok: true as const,
-          payload: await response.json(),
+          ok: false,
+          status: 502,
+          value: {
+            error: "Gemini generation request failed.",
+            code: "GEMINI_REQUEST_FAILED",
+            details: clipText(result.details),
+          },
         };
-      },
-    );
-    if (!result.ok) {
+      }
+      payload = result.payload;
+    } catch (error) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "Gemini generation request timed out.",
+          code: "GEMINI_REQUEST_TIMEOUT",
+          details: error instanceof Error ? error.message : "Unknown timeout error",
+        },
+      };
+    }
+
+    const rawText = ((payload as Record<string, unknown>)?.candidates as Array<Record<string, unknown>> | undefined)?.[0]
+      ?.content as { parts?: Array<{ text?: string }> } | undefined;
+    const joinedText = (rawText?.parts || [])
+      .map((part: { text?: string }) => part?.text || "")
+      .join("\n");
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = extractJsonObject(joinedText);
+    } catch (error) {
+      if (attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
+        strictParseRetry = true;
+        continue;
+      }
       return {
         ok: false,
         status: 502,
         value: {
-          error: "Gemini generation request failed.",
-          code: "GEMINI_REQUEST_FAILED",
-          details: clipText(result.details),
+          error: "Gemini response could not be parsed as JSON itinerary payload.",
+          code: "GEMINI_PARSE_FAILED",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          sample: joinedText.slice(0, 800),
         },
       };
     }
-    payload = result.payload;
-  } catch (error) {
+
+    const usageMeta = ((payload as Record<string, unknown>)?.usageMetadata || {}) as Record<string, unknown>;
+    const promptTokens = Number(usageMeta.promptTokenCount);
+    const completionTokens = Number(usageMeta.candidatesTokenCount);
+    const totalTokens = Number(usageMeta.totalTokenCount);
+
+    const usage: ProviderUsage = {
+      promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+      completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+      totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
+      estimatedCostUsd: estimateGeminiCost(
+        model,
+        Number.isFinite(promptTokens) ? promptTokens : undefined,
+        Number.isFinite(completionTokens) ? completionTokens : undefined,
+      ),
+    };
+
     return {
-      ok: false,
-      status: 504,
+      ok: true,
       value: {
-        error: "Gemini generation request timed out.",
-        code: "GEMINI_REQUEST_TIMEOUT",
-        details: error instanceof Error ? error.message : "Unknown timeout error",
+        data: parsed,
+        meta: {
+          provider: "gemini",
+          model,
+          usage,
+        },
       },
     };
   }
-
-  const rawText = ((payload as Record<string, unknown>)?.candidates as Array<Record<string, unknown>> | undefined)?.[0]
-    ?.content as { parts?: Array<{ text?: string }> } | undefined;
-  const joinedText = (rawText?.parts || [])
-    .map((part: { text?: string }) => part?.text || "")
-    .join("\n");
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = extractJsonObject(joinedText);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "Gemini response could not be parsed as JSON itinerary payload.",
-        code: "GEMINI_PARSE_FAILED",
-        details: error instanceof Error ? error.message : "Unknown parsing error",
-        sample: joinedText.slice(0, 800),
-      },
-    };
-  }
-
-  const usageMeta = ((payload as Record<string, unknown>)?.usageMetadata || {}) as Record<string, unknown>;
-  const promptTokens = Number(usageMeta.promptTokenCount);
-  const completionTokens = Number(usageMeta.candidatesTokenCount);
-  const totalTokens = Number(usageMeta.totalTokenCount);
-
-  const usage: ProviderUsage = {
-    promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
-    completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
-    totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
-    estimatedCostUsd: estimateGeminiCost(
-      model,
-      Number.isFinite(promptTokens) ? promptTokens : undefined,
-      Number.isFinite(completionTokens) ? completionTokens : undefined,
-    ),
-  };
 
   return {
-    ok: true,
+    ok: false,
+    status: 502,
     value: {
-      data: parsed,
-      meta: {
-        provider: "gemini",
-        model,
-        usage,
-      },
+      error: "Gemini generation request failed.",
+      code: "GEMINI_REQUEST_FAILED",
     },
   };
 };
@@ -481,6 +540,7 @@ const generateWithOpenAi = async (
   prompt: string,
   model: string,
   timeoutMs: number,
+  maxOutputTokens: number,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENAI_API_KEY");
   if (!apiKey) {
@@ -538,6 +598,21 @@ const generateWithOpenAi = async (
     };
   };
 
+  const requestStartedAt = Date.now();
+
+  const chatTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+  if (!chatTimeoutMs) {
+    return {
+      ok: false,
+      status: 504,
+      value: {
+        error: "OpenAI generation request timed out.",
+        code: "OPENAI_REQUEST_TIMEOUT",
+        details: `Provider request timed out after ${timeoutMs}ms.`,
+      },
+    };
+  }
+
   let chatResult:
     | { ok: true; payload: unknown }
     | { ok: false; status: number; details: string };
@@ -563,7 +638,7 @@ const generateWithOpenAi = async (
           ],
         }),
       },
-      timeoutMs,
+      chatTimeoutMs,
       async (response) => {
         if (!response.ok) {
           return {
@@ -596,7 +671,8 @@ const generateWithOpenAi = async (
     return parseOpenAiJson(rawText, chatPayload?.usage || {});
   }
 
-  const chatDetails = chatResult.details;
+  const chatFailure = chatResult;
+  const chatDetails = chatFailure.details;
   if (!isOpenAiChatEndpointModelMismatch(chatDetails)) {
     return {
       ok: false,
@@ -612,6 +688,20 @@ const generateWithOpenAi = async (
   let responsesEndpointResult:
     | { ok: true; payload: unknown }
     | { ok: false; details: string };
+
+  const responsesTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+  if (!responsesTimeoutMs) {
+    return {
+      ok: false,
+      status: 504,
+      value: {
+        error: "OpenAI generation request timed out.",
+        code: "OPENAI_REQUEST_TIMEOUT",
+        details: `Provider request timed out after ${timeoutMs}ms.`,
+      },
+    };
+  }
+
   try {
     responsesEndpointResult = await fetchWithTimeout(
       "https://api.openai.com/v1/responses",
@@ -630,10 +720,10 @@ const generateWithOpenAi = async (
               content: prompt,
             },
           ],
-          max_output_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
+          max_output_tokens: maxOutputTokens,
         }),
       },
-      timeoutMs,
+      responsesTimeoutMs,
       async (response) => {
         if (!response.ok) {
           return {
@@ -660,13 +750,14 @@ const generateWithOpenAi = async (
   }
 
   if (!responsesEndpointResult.ok) {
+    const responsesFailure = responsesEndpointResult;
     return {
       ok: false,
       status: 502,
       value: {
         error: "OpenAI generation request failed.",
         code: "OPENAI_REQUEST_FAILED",
-        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesEndpointResult.details}`),
+        details: clipText(`chat_completions: ${chatDetails}\nresponses: ${responsesFailure.details}`),
       },
     };
   }
@@ -680,6 +771,7 @@ const generateWithAnthropic = async (
   prompt: string,
   model: string,
   timeoutMs: number,
+  maxOutputTokens: number,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("ANTHROPIC_API_KEY");
   if (!apiKey) {
@@ -695,111 +787,148 @@ const generateWithAnthropic = async (
 
   const providerModel = resolveAnthropicModel(model);
 
-  let payload: unknown;
-  try {
-    const result = await fetchWithTimeout(
-      "https://api.anthropic.com/v1/messages",
-      {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
+  const requestStartedAt = Date.now();
+  let strictParseRetry = false;
+
+  for (let attempt = 1; attempt <= PROVIDER_PARSE_RETRY_MAX_ATTEMPTS; attempt += 1) {
+    const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+    if (!attemptTimeoutMs) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "Anthropic generation request timed out.",
+          code: "ANTHROPIC_REQUEST_TIMEOUT",
+          details: `Provider request timed out after ${timeoutMs}ms.`,
         },
-        body: JSON.stringify({
-          model: providerModel,
-          max_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
-          temperature: 0.2,
-          system: "Return only a valid JSON object. Do not include markdown fences.",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        }),
-      },
-      timeoutMs,
-      async (response) => {
-        if (!response.ok) {
+      };
+    }
+
+    let payload: unknown;
+    try {
+      const result = await fetchWithTimeout(
+        "https://api.anthropic.com/v1/messages",
+        {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: providerModel,
+            max_tokens: maxOutputTokens,
+            temperature: strictParseRetry ? 0 : 0.2,
+            system: strictParseRetry
+              ? "Return exactly one minified JSON object. No prose, no markdown fences."
+              : "Return only a valid JSON object. Do not include markdown fences.",
+            messages: [
+              {
+                role: "user",
+                content: strictParseRetry
+                  ? `${prompt}\n\n${STRICT_JSON_RETRY_INSTRUCTION}`
+                  : prompt,
+              },
+            ],
+          }),
+        },
+        attemptTimeoutMs,
+        async (response) => {
+          if (!response.ok) {
+            return {
+              ok: false as const,
+              details: await response.text(),
+            };
+          }
           return {
-            ok: false as const,
-            details: await response.text(),
+            ok: true as const,
+            payload: await response.json(),
           };
-        }
+        },
+      );
+      if (!result.ok) {
         return {
-          ok: true as const,
-          payload: await response.json(),
+          ok: false,
+          status: 502,
+          value: {
+            error: "Anthropic generation request failed.",
+            code: "ANTHROPIC_REQUEST_FAILED",
+            model,
+            providerModel,
+            details: clipText(result.details),
+          },
         };
-      },
-    );
-    if (!result.ok) {
+      }
+      payload = result.payload;
+    } catch (error) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "Anthropic generation request timed out.",
+          code: "ANTHROPIC_REQUEST_TIMEOUT",
+          details: error instanceof Error ? error.message : "Unknown timeout error",
+        },
+      };
+    }
+
+    const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = extractJsonObject(rawText);
+    } catch (error) {
+      if (attempt < PROVIDER_PARSE_RETRY_MAX_ATTEMPTS) {
+        strictParseRetry = true;
+        continue;
+      }
       return {
         ok: false,
         status: 502,
         value: {
-          error: "Anthropic generation request failed.",
-          code: "ANTHROPIC_REQUEST_FAILED",
-          model,
-          providerModel,
-          details: clipText(result.details),
+          error: "Anthropic response could not be parsed as JSON itinerary payload.",
+          code: "ANTHROPIC_PARSE_FAILED",
+          details: error instanceof Error ? error.message : "Unknown parsing error",
+          sample: rawText.slice(0, 800),
         },
       };
     }
-    payload = result.payload;
-  } catch (error) {
+
+    const usageMeta = ((payload as Record<string, unknown>)?.usage || {}) as Record<string, unknown>;
+    const promptTokens = Number(usageMeta.input_tokens);
+    const completionTokens = Number(usageMeta.output_tokens);
+    const totalTokens = Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
+      ? promptTokens + completionTokens
+      : NaN;
+
+    const usage: ProviderUsage = {
+      promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
+      completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
+      totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
+    };
+
     return {
-      ok: false,
-      status: 504,
+      ok: true,
       value: {
-        error: "Anthropic generation request timed out.",
-        code: "ANTHROPIC_REQUEST_TIMEOUT",
-        details: error instanceof Error ? error.message : "Unknown timeout error",
+        data: parsed,
+        meta: {
+          provider: "anthropic",
+          model,
+          providerModel,
+          usage,
+        },
       },
     };
   }
-
-  const rawText = extractAnthropicText((payload as Record<string, unknown>)?.content);
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = extractJsonObject(rawText);
-  } catch (error) {
-    return {
-      ok: false,
-      status: 502,
-      value: {
-        error: "Anthropic response could not be parsed as JSON itinerary payload.",
-        code: "ANTHROPIC_PARSE_FAILED",
-        details: error instanceof Error ? error.message : "Unknown parsing error",
-        sample: rawText.slice(0, 800),
-      },
-    };
-  }
-
-  const usageMeta = ((payload as Record<string, unknown>)?.usage || {}) as Record<string, unknown>;
-  const promptTokens = Number(usageMeta.input_tokens);
-  const completionTokens = Number(usageMeta.output_tokens);
-  const totalTokens = Number.isFinite(promptTokens) && Number.isFinite(completionTokens)
-    ? promptTokens + completionTokens
-    : NaN;
-
-  const usage: ProviderUsage = {
-    promptTokens: Number.isFinite(promptTokens) ? promptTokens : undefined,
-    completionTokens: Number.isFinite(completionTokens) ? completionTokens : undefined,
-    totalTokens: Number.isFinite(totalTokens) ? totalTokens : undefined,
-  };
 
   return {
-    ok: true,
+    ok: false,
+    status: 502,
     value: {
-      data: parsed,
-      meta: {
-        provider: "anthropic",
-        model,
-        providerModel,
-        usage,
-      },
+      error: "Anthropic generation request failed.",
+      code: "ANTHROPIC_REQUEST_FAILED",
+      model,
+      providerModel,
     },
   };
 };
@@ -808,6 +937,7 @@ const generateWithOpenRouter = async (
   prompt: string,
   model: string,
   timeoutMs: number,
+  maxOutputTokens: number,
 ): Promise<ProviderGenerationResult> => {
   const apiKey = readEnv("OPENROUTER_API_KEY");
   if (!apiKey) {
@@ -826,8 +956,22 @@ const generateWithOpenRouter = async (
 
   let lastError: ProviderGenerationResult | null = null;
   let forceStrictJson = false;
+  const requestStartedAt = Date.now();
 
   for (let attempt = 1; attempt <= OPENROUTER_MAX_ATTEMPTS; attempt += 1) {
+    const attemptTimeoutMs = resolveAttemptTimeoutMs(requestStartedAt, timeoutMs);
+    if (!attemptTimeoutMs) {
+      return {
+        ok: false,
+        status: 504,
+        value: {
+          error: "OpenRouter generation request timed out.",
+          code: "OPENROUTER_REQUEST_TIMEOUT",
+          details: `Provider request timed out after ${timeoutMs}ms.`,
+        },
+      };
+    }
+
     let responseResult:
       | { ok: true; payload: unknown }
       | { ok: false; status: number; details: string };
@@ -844,7 +988,7 @@ const generateWithOpenRouter = async (
           },
           body: JSON.stringify({
             model,
-            max_tokens: PROVIDER_MAX_OUTPUT_TOKENS,
+            max_tokens: maxOutputTokens,
             temperature: 0.2,
             response_format: { type: "json_object" },
             messages: [
@@ -861,7 +1005,7 @@ const generateWithOpenRouter = async (
             ],
           }),
         },
-        timeoutMs,
+        attemptTimeoutMs,
         async (response) => {
           if (!response.ok) {
             const normalizedStatus = Number.isFinite(response.status) && response.status > 0
@@ -893,18 +1037,19 @@ const generateWithOpenRouter = async (
     }
 
     if (!responseResult.ok) {
+      const responseFailure = responseResult;
       lastError = {
         ok: false,
-        status: responseResult.status,
+        status: responseFailure.status,
         value: {
           error: "OpenRouter generation request failed.",
           code: "OPENROUTER_REQUEST_FAILED",
-          details: clipText(responseResult.details),
+          details: clipText(responseFailure.details),
           model,
         },
       };
 
-      if (attempt < OPENROUTER_MAX_ATTEMPTS && isOpenRouterRetryableStatus(responseResult.status)) {
+      if (attempt < OPENROUTER_MAX_ATTEMPTS && isOpenRouterRetryableStatus(responseFailure.status)) {
         continue;
       }
       return lastError;
@@ -934,7 +1079,9 @@ const generateWithOpenRouter = async (
       return lastError;
     }
 
-    const usageMeta = payload?.usage || {};
+    const usageMeta = payload?.usage && typeof payload.usage === "object"
+      ? (payload.usage as Record<string, unknown>)
+      : {};
     const promptTokens = Number(usageMeta.prompt_tokens ?? usageMeta.input_tokens);
     const completionTokens = Number(usageMeta.completion_tokens ?? usageMeta.output_tokens);
     const totalTokens = Number(usageMeta.total_tokens);
@@ -982,6 +1129,7 @@ export const generateProviderItinerary = async (
 ): Promise<ProviderGenerationResult> => {
   const provider = options.provider.trim().toLowerCase();
   const model = options.model.trim();
+  const maxOutputTokens = resolveOutputTokenBudget(options.maxOutputTokens);
 
   const allowlistError = ensureModelAllowed(provider, model);
   if (allowlistError) {
@@ -993,13 +1141,13 @@ export const generateProviderItinerary = async (
   }
 
   if (provider === "gemini") {
-    return await generateWithGemini(options.prompt, model, options.timeoutMs);
+    return await generateWithGemini(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
   if (provider === "openai") {
-    return await generateWithOpenAi(options.prompt, model, options.timeoutMs);
+    return await generateWithOpenAi(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
   if (provider === "anthropic") {
-    return await generateWithAnthropic(options.prompt, model, options.timeoutMs);
+    return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
-  return await generateWithOpenRouter(options.prompt, model, options.timeoutMs);
+  return await generateWithOpenRouter(options.prompt, model, options.timeoutMs, maxOutputTokens);
 };

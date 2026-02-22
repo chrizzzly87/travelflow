@@ -170,6 +170,9 @@ interface ValidationCheckStats {
 
 const DEFAULT_SESSION_NAME = 'AI benchmark session';
 const BENCHMARK_PARALLEL_CONCURRENCY = 3;
+const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
+const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
+const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_EFFECTIVE_DEFAULTS = {
     travelerSetup: 'solo',
@@ -432,6 +435,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [tripStyleMask, setTripStyleMask] = useState<'everything_except_remote_work' | 'culture_focused' | 'food_focused'>('everything_except_remote_work');
     const [transportMask, setTransportMask] = useState<'automatic' | 'plane' | 'train' | 'camper'>('automatic');
     const [sessionName, setSessionName] = useState(DEFAULT_SESSION_NAME);
+    const [benchmarkTimeoutSeconds, setBenchmarkTimeoutSeconds] = useState(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+    const [compactBenchmarkOutput, setCompactBenchmarkOutput] = useState(true);
 
     const [modelFilter, setModelFilter] = useState('');
     const [modelTargetIds, setModelTargetIds] = useState<string[]>(() => {
@@ -1071,6 +1076,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             roundTrip,
             totalDays,
             numCities: typeof numCities === 'number' ? numCities : undefined,
+            promptMode: compactBenchmarkOutput ? 'benchmark_compact' : 'default',
         };
 
         const prompt = buildClassicItineraryPrompt(destinationPrompt, options);
@@ -1096,6 +1102,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     tripStyle: tripStyleMask,
                     transportPreference: transportMask,
                 },
+                execution: {
+                    timeoutSeconds: benchmarkTimeoutSeconds,
+                    compactOutput: compactBenchmarkOutput,
+                },
             },
             metadata: {
                 ignored_inputs: {
@@ -1105,10 +1115,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     routeLock,
                 },
                 effective_defaults: BENCHMARK_EFFECTIVE_DEFAULTS,
+                execution: {
+                    timeoutSeconds: benchmarkTimeoutSeconds,
+                    compactOutput: compactBenchmarkOutput,
+                },
             },
         };
     }, [
+        benchmarkTimeoutSeconds,
         budget,
+        compactBenchmarkOutput,
         dateInputMode,
         destinations,
         endDate,
@@ -1137,6 +1153,12 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             model: model.model,
             label: model.label,
         }));
+
+        const timeoutSeconds = Math.max(
+            BENCHMARK_TIMEOUT_MIN_SECONDS,
+            Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(Number(benchmarkTimeoutSeconds) || BENCHMARK_TIMEOUT_DEFAULT_SECONDS))
+        );
+        const timeoutMs = timeoutSeconds * 1000;
 
         if (selected.length === 0) {
             setError('Please select at least one model target.');
@@ -1189,6 +1211,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                     targets: selected,
                     runCount: 1,
                     concurrency: BENCHMARK_PARALLEL_CONCURRENCY,
+                    timeoutMs,
                 }),
             });
 
@@ -1204,9 +1227,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
             const hasPending = nextRuns.some((run) => isRunActive(run));
             if (hasPending) {
-                setMessage(`Queued ${selected.length} target(s). Running in background...`);
+                setMessage(
+                    `Queued ${selected.length} target(s). Running in background (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
+                );
             } else {
-                setMessage(`Executed ${selected.length} target(s).`);
+                setMessage(
+                    `Executed ${selected.length} target(s) (${timeoutSeconds}s timeout, ${compactBenchmarkOutput ? 'compact' : 'standard'} output).`
+                );
                 void refreshTelemetryData();
             }
         } catch (runError) {
@@ -1227,7 +1254,20 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [accessToken, selectedTargets, runs, fetchBenchmarkApi, session, sessionName, buildScenario, searchParams, setSearchParams, refreshTelemetryData]);
+    }, [
+        accessToken,
+        benchmarkTimeoutSeconds,
+        compactBenchmarkOutput,
+        selectedTargets,
+        runs,
+        fetchBenchmarkApi,
+        session,
+        sessionName,
+        buildScenario,
+        searchParams,
+        setSearchParams,
+        refreshTelemetryData,
+    ]);
 
     const rerunTarget = useCallback(async (run: BenchmarkRun) => {
         await runBenchmark([
@@ -1830,6 +1870,39 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     ({selectedTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued with current selection)
                                 </span>
                             )}
+                        </div>
+
+                        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <label className="space-y-1 text-xs">
+                                <span className="font-semibold uppercase tracking-wide text-slate-500">Timeout (seconds)</span>
+                                <input
+                                    type="number"
+                                    min={BENCHMARK_TIMEOUT_MIN_SECONDS}
+                                    max={BENCHMARK_TIMEOUT_MAX_SECONDS}
+                                    step={5}
+                                    value={benchmarkTimeoutSeconds}
+                                    onChange={(event) => {
+                                        const parsed = Number(event.target.value);
+                                        if (!Number.isFinite(parsed)) {
+                                            setBenchmarkTimeoutSeconds(BENCHMARK_TIMEOUT_DEFAULT_SECONDS);
+                                            return;
+                                        }
+                                        setBenchmarkTimeoutSeconds(
+                                            Math.max(BENCHMARK_TIMEOUT_MIN_SECONDS, Math.min(BENCHMARK_TIMEOUT_MAX_SECONDS, Math.round(parsed)))
+                                        );
+                                    }}
+                                    className="h-8 w-full rounded-md border border-slate-300 bg-white px-2 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-accent-500"
+                                />
+                            </label>
+
+                            <label className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={compactBenchmarkOutput}
+                                    onChange={(event) => setCompactBenchmarkOutput(event.target.checked)}
+                                />
+                                Compact output (faster + more reliable JSON)
+                            </label>
                         </div>
 
                         <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">

@@ -87,3 +87,5 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🔁 Updated OpenAI non-chat fallback calls to `v1/responses` without unsupported `temperature`, preventing immediate failures on newer reasoning model entries.
 - [ ] [Internal] 🛑 Improved benchmark cancellation flow to persist explicit cancellation telemetry and skip downstream trip-persistence side effects when a run is cancelled mid-flight.
 - [ ] [Internal] 🧾 Tightened itinerary contract guidance with an explicit canonical `countryInfo` shape and a pre-submit self-check, while normalizing array/map countryInfo variants during benchmark validation.
+- [ ] [Internal] ⏱️ Added benchmark timeout controls in `/admin/ai-benchmark` (default 60s, bounded range) and threaded per-run timeout settings through benchmark execution metadata.
+- [ ] [Internal] 🧩 Added compact benchmark prompt mode plus stricter Gemini/Anthropic parse-retry flow (time-budgeted retries + strict JSON retry instructions + 60s token budget cap) to reduce malformed JSON failures.

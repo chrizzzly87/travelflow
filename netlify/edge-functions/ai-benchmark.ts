@@ -41,6 +41,7 @@ interface BenchmarkRequestBody {
   targets?: BenchmarkTarget[];
   runCount?: number;
   concurrency?: number;
+  timeoutMs?: number;
 }
 
 interface EdgeContextLike {
@@ -123,10 +124,15 @@ const AUTH_HEADER = "authorization";
 const MAX_RUN_COUNT = 3;
 const MAX_CONCURRENCY = 5;
 const CANCELLED_BY_USER_MESSAGE = "Cancelled by user.";
-const BENCHMARK_PROVIDER_TIMEOUT_MS = Math.max(
-  90_000,
-  resolveTimeoutMs("AI_BENCHMARK_PROVIDER_TIMEOUT_MS", 90_000, 10_000, 180_000),
+const BENCHMARK_PROVIDER_TIMEOUT_MIN_MS = 20_000;
+const BENCHMARK_PROVIDER_TIMEOUT_MAX_MS = 180_000;
+const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs(
+  "AI_BENCHMARK_PROVIDER_TIMEOUT_MS",
+  60_000,
+  BENCHMARK_PROVIDER_TIMEOUT_MIN_MS,
+  BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
 );
+const BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS = 4_096;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
@@ -356,6 +362,16 @@ const getBenchmarkPreferenceDefaultDates = (): { startDate: string; endDate: str
 };
 
 const clampNumber = (value: number, min: number, max: number): number => Math.max(min, Math.min(value, max));
+
+const normalizeBenchmarkTimeoutMs = (value: unknown): number | null => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return clampNumber(
+    Math.round(parsed),
+    BENCHMARK_PROVIDER_TIMEOUT_MIN_MS,
+    BENCHMARK_PROVIDER_TIMEOUT_MAX_MS,
+  );
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value) && typeof value === "object" && !Array.isArray(value)
@@ -1328,6 +1344,7 @@ const runGeneration = async (
   config: { url: string; anonKey: string },
   authToken: string,
   sessionId: string,
+  providerTimeoutMs: number,
 ): Promise<void> => {
   if (await hasRunBeenCancelled(config, authToken, run.id)) {
     return;
@@ -1390,7 +1407,8 @@ const runGeneration = async (
       prompt: scenario.prompt,
       provider: run.provider,
       model: run.model,
-      timeoutMs: BENCHMARK_PROVIDER_TIMEOUT_MS,
+      timeoutMs: providerTimeoutMs,
+      maxOutputTokens: providerTimeoutMs <= 60_000 ? BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS : undefined,
     });
     const latencyMs = Date.now() - startedMs;
 
@@ -1399,17 +1417,19 @@ const runGeneration = async (
     }
 
     if (!result.ok) {
-      const details = JSON.stringify(result.value);
+      const failure = result;
+      const details = JSON.stringify(failure.value);
       const formattedDetails = formatErrorDetailsForMessage(details, { maxLength: 5000 });
       await persistRunTelemetry({
         status: "failed",
         latencyMs,
-        httpStatus: result.status,
-        providerModel: result.value.providerModel,
-        errorCode: result.value.code,
-        errorMessage: result.value.error,
+        httpStatus: failure.status,
+        providerModel: failure.value.providerModel,
+        errorCode: failure.value.code,
+        errorMessage: failure.value.error,
         metadata: {
           reason: "provider_request_failed",
+          timeoutMs: providerTimeoutMs,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1419,7 +1439,7 @@ const runGeneration = async (
         status: "failed",
         finished_at: new Date().toISOString(),
         latency_ms: latencyMs,
-        error_message: `Generation failed (${result.status}): ${formattedDetails}`,
+        error_message: `Generation failed (${failure.status}): ${formattedDetails}`,
       });
       return;
     }
@@ -1440,6 +1460,7 @@ const runGeneration = async (
         errorMessage: "Provider response did not include a valid data object",
         metadata: {
           reason: "invalid_data_object",
+          timeoutMs: providerTimeoutMs,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1469,6 +1490,7 @@ const runGeneration = async (
         metadata: {
           reason: "validation_failed",
           validationErrorCount: validation.errors.length,
+          timeoutMs: providerTimeoutMs,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1517,6 +1539,7 @@ const runGeneration = async (
         errorMessage: persistedTrip.error || "Failed to persist generated trip",
         metadata: {
           reason: "trip_persist_failed",
+          timeoutMs: providerTimeoutMs,
         },
       });
       if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1565,6 +1588,7 @@ const runGeneration = async (
       estimatedCostUsd,
       metadata: {
         reason: "completed",
+        timeoutMs: providerTimeoutMs,
       },
     });
   } catch (error) {
@@ -1580,6 +1604,7 @@ const runGeneration = async (
       errorMessage: error instanceof Error ? error.message : "Unexpected benchmark run error",
       metadata: {
         reason: "unexpected_exception",
+        timeoutMs: providerTimeoutMs,
       },
     });
     if (await hasRunBeenCancelled(config, authToken, run.id)) {
@@ -1602,6 +1627,7 @@ const runWithConcurrency = async (
   authToken: string,
   sessionId: string,
   concurrency: number,
+  providerTimeoutMs: number,
 ) => {
   let cursor = 0;
   const workers: Array<Promise<void>> = [];
@@ -1611,7 +1637,7 @@ const runWithConcurrency = async (
       const currentIndex = cursor;
       cursor += 1;
       const run = runs[currentIndex];
-      await runGeneration(request, run, scenario, config, authToken, sessionId);
+      await runGeneration(request, run, scenario, config, authToken, sessionId, providerTimeoutMs);
     }
   };
 
@@ -2736,6 +2762,7 @@ const handleRun = async (
   const concurrency = Number.isFinite(concurrencyRaw)
     ? clampNumber(Math.round(concurrencyRaw), 1, MAX_CONCURRENCY)
     : Math.min(5, MAX_CONCURRENCY);
+  const providerTimeoutMs = normalizeBenchmarkTimeoutMs(body.timeoutMs) ?? BENCHMARK_PROVIDER_TIMEOUT_MS;
 
   let session: BenchmarkSessionRow | null = null;
   const sessionId = typeof body.sessionId === "string" ? body.sessionId.trim() : "";
@@ -2790,6 +2817,9 @@ const handleRun = async (
         request_payload: {
           scenario,
           target,
+          execution: {
+            timeoutMs: providerTimeoutMs,
+          },
         },
       });
     }
@@ -2813,6 +2843,7 @@ const handleRun = async (
     authToken,
     session.id,
     concurrency,
+    providerTimeoutMs,
   ).catch(async (error) => {
     const fallbackMessage = error instanceof Error ? error.message : "Background benchmark execution failed";
     await Promise.all(
@@ -2830,6 +2861,9 @@ const handleRun = async (
     return json(202, {
       ok: true,
       async: true,
+      execution: {
+        timeoutMs: providerTimeoutMs,
+      },
       session,
       runs: queuedRuns,
       summary: summarizeRuns(queuedRuns),
@@ -2841,6 +2875,9 @@ const handleRun = async (
   return json(200, {
     ok: true,
     async: false,
+    execution: {
+      timeoutMs: providerTimeoutMs,
+    },
     session,
     runs,
     summary: summarizeRuns(runs),

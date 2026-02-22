@@ -170,6 +170,7 @@ export interface GenerateOptions {
         provider: 'gemini' | 'openai' | 'anthropic' | 'openrouter';
         model: string;
     };
+    promptMode?: 'default' | 'benchmark_compact';
 }
 
 export interface WizardGenerateOptions {
@@ -279,6 +280,17 @@ const STRICT_JSON_OBJECT_CONTRACT_PROMPT = `
          - Every city.description contains all three headings: "### Must See", "### Must Try", "### Must Do".
          - countryInfo is a single object and languages is an array.
          - Return exactly one JSON object and nothing else.
+    `;
+
+const BENCHMARK_COMPACT_OUTPUT_PROMPT = `
+      Benchmark compact-output mode:
+      1. Keep the full JSON concise and valid even under strict timeout budgets.
+      2. For EACH city.description, include all required markdown headings, but keep text short:
+         - exactly 2 checkbox bullets per heading.
+         - each bullet should be short (about 4-8 words).
+      3. Keep travelSegments.description short and practical.
+      4. Keep activities concise and avoid verbose paragraphs.
+      5. Prioritize valid complete JSON over extra detail.
     `;
 
 const buildIslandConstraintPrompt = (
@@ -592,6 +604,9 @@ export const buildClassicItineraryPrompt = (prompt: string, options?: GenerateOp
         if (options.pace) detailedPrompt += ` Travel pace: ${options.pace}. `;
         if (options.interests && options.interests.length > 0) detailedPrompt += ` Focus on these interests: ${options.interests.join(", ")}. `;
         detailedPrompt += buildIslandConstraintPrompt(options.selectedIslandNames, options.enforceIslandOnly);
+        if (options.promptMode === 'benchmark_compact') {
+            detailedPrompt += BENCHMARK_COMPACT_OUTPUT_PROMPT;
+        }
     }
 
     detailedPrompt += BASE_ITINERARY_RULES_PROMPT;
