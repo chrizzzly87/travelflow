@@ -65,7 +65,7 @@
     "rightsExercise": "To exercise your rights, please contact us at:",
     "authorityTitle": "Supervisory Authority",
     "authorityText": "You have the right to lodge a complaint with a data protection supervisory authority regarding the processing of your personal data. In Germany, this is your respective state data protection officer.",
-    "lastUpdated": "Last updated: {{date}}"
+    "lastUpdated": "Last updated: {date}"
   },
   "terms": {
     "title": "Terms of Service",

@@ -65,7 +65,7 @@
     "rightsExercise": "Zur Ausübung Ihrer Rechte kontaktieren Sie uns bitte unter:",
     "authorityTitle": "Aufsichtsbehörde",
     "authorityText": "Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten zu beschweren. In Deutschland ist dies Ihr jeweiliger Landesdatenschutzbeauftragter.",
-    "lastUpdated": "Stand: {{date}}"
+    "lastUpdated": "Stand: {date}"
   },
   "terms": {
     "title": "Nutzungsbedingungen",
