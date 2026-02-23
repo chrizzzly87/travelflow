@@ -1053,14 +1053,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const showRouteDistance = routeMode === 'realistic';
   const supportsApproval = isCity || isActivity;
   const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
-  const isUncertainCity = isCity && displayItem.cityPlanStatus === 'uncertain';
-  const uncertainOptionLabel = isUncertainCity
-      ? (
-          (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
-              ? `Option ${(displayItem.cityPlanOptionIndex || 0) + 1}`
-              : 'Tentative stop'
-      )
-      : '';
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -1088,31 +1080,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       >
                           {displayItem.type}
                       </div>
-                      {isUncertainCity && (
-                        <div className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
-                            <AlertTriangle size={12} />
-                            <span>Uncertain{uncertainOptionLabel ? ` · ${uncertainOptionLabel}` : ''}</span>
-                        </div>
-                      )}
-                      {supportsApproval && (
-                        <label
-                            className={`inline-flex items-center gap-2 rounded-md border px-2 py-1 text-[11px] font-semibold ${
-                                isItemApproved
-                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                    : 'border-amber-200 bg-amber-50 text-amber-700'
-                            } ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
-                            title={isItemApproved ? 'Item approved' : 'Item needs approval'}
-                        >
-                            <Switch
-                                checked={isItemApproved}
-                                onCheckedChange={handleSetItemApproved}
-                                disabled={!canEdit}
-                                className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
-                                aria-label="Toggle item approval"
-                            />
-                            <span>{isItemApproved ? 'Approved' : 'Needs approval'}</span>
-                        </label>
-                      )}
                       {isCity && (
                         <div className="relative">
                             <button
@@ -1253,6 +1220,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
+             {supportsApproval && (
+                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+                    <Switch
+                        checked={isItemApproved}
+                        onCheckedChange={handleSetItemApproved}
+                        disabled={!canEdit}
+                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                        aria-label="Toggle item approval"
+                    />
+                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                </div>
+             )}
              
              <textarea 
                 value={displayItem.title} 

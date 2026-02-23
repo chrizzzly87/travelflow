@@ -179,7 +179,10 @@ export const Timeline: React.FC<TimelineProps> = ({
   );
   const connectorCities = React.useMemo(
       () => cities
-          .filter((city) => (cityStackLayout.get(city.id)?.stackIndex || 0) === 0)
+          .filter((city) => (
+              (cityStackLayout.get(city.id)?.stackIndex || 0) === 0
+              && city.isApproved !== false
+          ))
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [cities, cityStackLayout]
   );
@@ -853,14 +856,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
-                            const left = (fromEnd - visualStartOffset) * pixelsPerDay;
-                            const right = (toStart - visualStartOffset) * pixelsPerDay;
-                            const gapWidth = Math.max(10, right - left);
+                            const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
+                            const toX = (toStart - visualStartOffset) * pixelsPerDay;
+                            const segmentStart = Math.min(fromX, toX);
+                            const segmentEnd = Math.max(fromX, toX);
+                            const gapWidth = Math.max(2, segmentEnd - segmentStart);
+                            const isForward = fromX <= toX;
                             const travel = link.travelItem;
                             const mode = normalizeTransportMode(travel?.transportMode);
                             const isUnsetTransport = mode === 'na';
                             const isTinyTransferPill = pixelsPerDay <= 52;
-                            const showIconOnly = isTinyTransferPill && !isUnsetTransport;
                             let chipWidth: number;
                             if (isTinyTransferPill) {
                                 const compactMinWidth = isUnsetTransport ? 54 : 44;
@@ -872,48 +877,55 @@ export const Timeline: React.FC<TimelineProps> = ({
                                 chipWidth = Math.max(baseReadableWidth, gapWidth - 6);
                                 chipWidth = Math.min(maxReadableWidth, chipWidth);
                             }
-                            chipWidth = Math.max(24, chipWidth);
-                            const chipLeft = left + ((gapWidth - chipWidth) / 2);
+                            const maxChipWidth = Math.max(4, gapWidth - 2);
+                            chipWidth = Math.min(chipWidth, maxChipWidth);
+                            chipWidth = Math.max(4, chipWidth);
+                            const showIconOnly = chipWidth < 62;
+                            const chipLeft = segmentStart + ((gapWidth - chipWidth) / 2);
                             const chipRight = chipLeft + chipWidth;
                             const chipCenterY = Math.max(14, (travelLaneHeight / 2) - 2);
                             const chipTop = chipCenterY - 16;
                             const cityAttachY = cityBottomAnchorY ?? (chipTop - 14);
-                            const pillAnchorInset = Math.min(14, Math.max(8, chipWidth * 0.16));
-                            const cityAnchorInset = Math.min(16, Math.max(10, pillAnchorInset + 1));
-                            const leftPillAnchorX = chipLeft + pillAnchorInset;
-                            const rightPillAnchorX = chipRight - pillAnchorInset;
-                            const leftCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
-                                ? leftPillAnchorX
-                                : left - cityAnchorInset;
-                            const rightCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
-                                ? rightPillAnchorX
-                                : right + cityAnchorInset;
+                            const maxPillInset = Math.max(1, (chipWidth / 2) - 1);
+                            const pillAnchorInset = Math.min(maxPillInset, Math.max(1, chipWidth * 0.16));
+                            const cityAnchorInset = Math.min(16, Math.max(6, pillAnchorInset + 1));
+                            const fromPillAnchorX = isForward ? (chipLeft + pillAnchorInset) : (chipRight - pillAnchorInset);
+                            const toPillAnchorX = isForward ? (chipRight - pillAnchorInset) : (chipLeft + pillAnchorInset);
+                            const fromCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? fromPillAnchorX
+                                : (fromX + (isForward ? -cityAnchorInset : cityAnchorInset));
+                            const toCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? toPillAnchorX
+                                : (toX + (isForward ? cityAnchorInset : -cityAnchorInset));
                             const isSelected = travel && selectedItemId === travel.id;
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
                             const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
                             const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
-                            const leftPath = buildTransferConnectorPath(
-                                leftCityAnchorX,
+                            const showTransportIcon = !isUnsetTransport && chipWidth >= 14;
+                            const showTransportText = !showIconOnly || (isUnsetTransport && chipWidth >= 26);
+                            const pillPaddingClass = chipWidth < 28 ? 'px-0.5' : (showIconOnly ? 'px-1.5' : 'px-2');
+                            const fromPath = buildTransferConnectorPath(
+                                fromCityAnchorX,
                                 cityAttachY,
-                                leftPillAnchorX,
+                                fromPillAnchorX,
                                 chipTop + 1,
-                                Math.abs(leftPillAnchorX - leftCityAnchorX) < 18
+                                Math.abs(fromPillAnchorX - fromCityAnchorX) < 18
                             );
-                            const rightPath = buildTransferConnectorPath(
-                                rightCityAnchorX,
+                            const toPath = buildTransferConnectorPath(
+                                toCityAnchorX,
                                 cityAttachY,
-                                rightPillAnchorX,
+                                toPillAnchorX,
                                 chipTop + 1,
-                                Math.abs(rightCityAnchorX - rightPillAnchorX) < 18
+                                Math.abs(toCityAnchorX - toPillAnchorX) < 18
                             );
 
                             return (
                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none z-0">
                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
                                         <path
-                                            d={leftPath}
+                                            d={fromPath}
                                             fill="none"
                                             stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
@@ -923,7 +935,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             strokeOpacity={connectorOpacity}
                                         />
                                         <path
-                                            d={rightPath}
+                                            d={toPath}
                                             fill="none"
                                             stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
@@ -937,17 +949,17 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
-                                            ${showIconOnly ? 'justify-center gap-0 px-2' : 'gap-1.5 px-2'}
+                                            ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
                                         style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: 32 }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                         disabled={!travel && !canEdit}
                                     >
-                                        {!isUnsetTransport && (
+                                        {showTransportIcon && (
                                             <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                         )}
-                                        {!showIconOnly && (
+                                        {showTransportText && (
                                             <span className={`uppercase tracking-wider min-w-0 ${isUnsetTransport ? 'w-full text-center truncate' : 'truncate'}`}>{mode === 'na' ? 'N/A' : mode}</span>
                                         )}
                                         {!showIconOnly && !isUndefinedTransfer && durationHours !== null && chipWidth >= 100 && pixelsPerDay >= 95 && (

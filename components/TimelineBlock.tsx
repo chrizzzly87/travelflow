@@ -174,6 +174,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const selectedCityOutline = isCity && isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
       : '';
+  const isInactiveItem = item.isApproved === false;
   const cityBaseBackgroundHex = cityHex
       ? shiftHexColor(cityHex, isUncertainCity ? 104 : 88)
       : null;
@@ -181,9 +182,17 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const shouldUseWhiteCityText = cityBaseBackgroundHex
       ? getContrastTextColor(cityBaseBackgroundHex) === '#ffffff'
       : true;
+  const inactiveCityTextColor = cityHex
+      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.88)' : shiftHexColor(cityHex, -74))
+      : 'rgb(255 255 255 / 0.88)';
   const cityTextColor = cityHex
-      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.98)' : shiftHexColor(cityHex, -96))
+      ? (isInactiveItem
+          ? inactiveCityTextColor
+          : (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.98)' : shiftHexColor(cityHex, -96)))
       : 'rgb(255 255 255 / 0.98)';
+  const cityInactiveBorderColor = cityHex
+      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.5)' : shiftHexColor(cityHex, -54))
+      : 'rgb(255 255 255 / 0.5)';
   const mergedStyle: React.CSSProperties = cityHex && !isLoadingItem
       ? {
           ...style,
@@ -191,12 +200,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           backgroundColor: cityBaseBackgroundHex || undefined,
           backgroundImage: isUncertainCity
             ? `linear-gradient(155deg,
-                 color-mix(in oklab, ${cityHex} 30%, transparent) 0%,
+               color-mix(in oklab, ${cityHex} 30%, transparent) 0%,
                  color-mix(in oklab, ${cityHex} 44%, white 56%) 100%
                ),
                repeating-linear-gradient(-45deg,
-                 color-mix(in oklab, ${cityHex} 56%, white 44%) 0 7px,
-                 color-mix(in oklab, ${cityHex} 48%, white 52%) 7px 14px
+                 color-mix(in oklab, ${cityHex} 60%, white 40%) 0 7px,
+                 color-mix(in oklab, ${cityHex} 52%, white 48%) 7px 14px
                )`
             : `linear-gradient(155deg,
                  color-mix(in oklab, ${cityHex} 42%, white 58%) 0%,
@@ -204,10 +213,11 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                )`,
           backgroundOrigin: isUncertainCity ? 'padding-box, border-box' : undefined,
           backgroundClip: isUncertainCity ? 'padding-box, border-box' : undefined,
-          borderColor: isUncertainCity
-            ? 'transparent'
-            : (cityBorderHex || undefined),
-          borderWidth: 2,
+          borderColor: isInactiveItem
+            ? cityInactiveBorderColor
+            : (isUncertainCity ? 'transparent' : (cityBorderHex || undefined)),
+          borderStyle: isInactiveItem ? 'dashed' : 'solid',
+          borderWidth: isInactiveItem ? 1 : 2,
           color: cityTextColor,
           textShadow: shouldUseWhiteCityText
             ? '0 1px 2px rgb(15 23 42 / 0.32)'
@@ -216,7 +226,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
             selectedCityOutline,
             'inset 0 1px 0 rgb(255 255 255 / 0.32)',
           ].filter(Boolean).join(', '),
-          opacity: isUncertainCity ? 0.86 : 0.96,
+          opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.86 : 0.96),
       }
       : (selectedCityOutline
           ? { ...style, boxShadow: selectedCityOutline }

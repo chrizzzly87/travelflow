@@ -126,7 +126,10 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
   const connectorCities = React.useMemo(
       () => cities
-          .filter((city) => (cityStackLayout.get(city.id)?.stackIndex || 0) === 0)
+          .filter((city) => (
+              (cityStackLayout.get(city.id)?.stackIndex || 0) === 0
+              && city.isApproved !== false
+          ))
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [cities, cityStackLayout]
   );
@@ -680,17 +683,20 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          {travelLinks.map(link => {
                              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                              const toStart = link.toCity.startDateOffset;
-                             const top = (fromEnd - visualStartOffset) * pixelsPerDay;
-                             const bottom = (toStart - visualStartOffset) * pixelsPerDay;
-                             const height = Math.max(16, bottom - top);
-                             const mid = top + height / 2;
-                             const chipHeight = 36;
-                             const chipTop = Math.max(0, mid - chipHeight / 2);
+                             const fromY = (fromEnd - visualStartOffset) * pixelsPerDay;
+                             const toY = (toStart - visualStartOffset) * pixelsPerDay;
+                             const connectorTop = Math.min(fromY, toY);
+                             const connectorBottom = Math.max(fromY, toY);
+                             const connectorHeight = Math.max(4, connectorBottom - connectorTop);
+                             const chipHeight = Math.max(12, Math.min(36, connectorHeight - 2));
+                             const chipTop = connectorTop + ((connectorHeight - chipHeight) / 2);
                              const chipBottom = chipTop + chipHeight;
                              const travel = link.travelItem;
                              const mode = normalizeTransportMode(travel?.transportMode);
                              const isUnsetTransport = mode === 'na';
                              const isSelected = travel && selectedItemId === travel.id;
+                             const isCompactChip = chipHeight < 24;
+                             const isUltraCompactChip = chipHeight < 16;
                              const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                              const connectorWidth = 14;
                              const connectorGap = 4;
@@ -698,30 +704,30 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              return (
                                  <div key={link.id} className="absolute left-0 right-0">
                                      {/* Horizontal ticks from city column into travel column */}
-                                     <div className="absolute h-px bg-stone-200" style={{ top, left: -connectorWidth, width: connectorWidth }} />
-                                     <div className="absolute h-px bg-stone-200" style={{ top: bottom, left: -connectorWidth, width: connectorWidth }} />
+                                     <div className="absolute h-px bg-stone-200" style={{ top: fromY, left: -connectorWidth, width: connectorWidth }} />
+                                     <div className="absolute h-px bg-stone-200" style={{ top: toY, left: -connectorWidth, width: connectorWidth }} />
 
                                      {/* Connect chip top/bottom to city edge */}
                                      <div className="absolute h-px bg-stone-200" style={{ top: chipTop, left: -connectorWidth, width: connectorWidth - connectorGap }} />
                                      <div className="absolute h-px bg-stone-200" style={{ top: chipBottom, left: -connectorWidth, width: connectorWidth - connectorGap }} />
 
                                      {/* Main connection line between cities */}
-                                     <div className="absolute left-1/2 -translate-x-1/2 w-0.5 bg-stone-100" style={{ top, height }} />
+                                     <div className="absolute left-1/2 -translate-x-1/2 w-0.5 bg-stone-100" style={{ top: connectorTop, height: connectorHeight }} />
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                         className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-1 shadow-sm transition-colors
+                                         className={`absolute left-1/2 -translate-x-1/2 px-2 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-0.5 shadow-sm transition-colors
                                              ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
-                                         style={{ top: chipTop, height: chipHeight, width: 46 }}
+                                         style={{ top: chipTop, height: chipHeight, width: isCompactChip ? 40 : 46 }}
                                          title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                          disabled={!travel && !canEdit}
                                      >
-                                         {!isUnsetTransport && (
+                                         {!isUnsetTransport && !isUltraCompactChip && (
                                              <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                          )}
-                                         <span className="uppercase">{mode === 'na' ? 'N/A' : mode}</span>
-                                         {durationHours !== null && (
+                                         {!isUltraCompactChip && <span className="uppercase truncate">{mode === 'na' ? 'N/A' : mode}</span>}
+                                         {!isCompactChip && durationHours !== null && (
                                              <span className="text-[9px] font-normal text-gray-400">{durationHours}h</span>
                                          )}
                                      </button>
