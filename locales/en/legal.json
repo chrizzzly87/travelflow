@@ -1,54 +1,98 @@
 {
   "imprint": {
     "title": "Imprint",
-    "intro": "This legal imprint page is set up as a placeholder. Replace the fields below with your official business and contact details before production launch.",
-    "company": "Company:",
-    "companyValue": "TravelFlow (placeholder)",
+    "intro": "Information according to § 5 TMG (German Telemedia Act) and § 18 MStV:",
+    "operator": "Operator:",
+    "businessType": "(Small business according to § 19 UStG)",
     "address": "Address:",
-    "addressValue": "Replace with legal business address",
-    "email": "Email:",
-    "emailValue": "legal@travelflow.example",
-    "responsible": "Responsible person:",
-    "responsibleValue": "Replace with legal representative",
-    "vat": "VAT / registration:",
-    "vatValue": "Replace with required local registration identifiers"
+    "contact": "Contact:",
+    "responsibleContent": "Responsible for content according to § 18 Abs. 2 MStV:",
+    "responsibleNote": "According to German Interstate Media Treaty (MStV)",
+    "vat": "VAT ID:",
+    "euOdrTitle": "EU Dispute Resolution",
+    "euOdrText": "The European Commission provides a platform for online dispute resolution (ODR):",
+    "consumerDisputeTitle": "Consumer Dispute Resolution",
+    "consumerDisputeText": "We are not willing or obliged to participate in dispute resolution proceedings before a consumer arbitration board."
   },
   "privacy": {
     "title": "Privacy Policy",
-    "intro": "This policy placeholder exists so legal navigation is complete. Replace this with your approved privacy policy text before launch.",
-    "items": [
-      "What personal data is collected and why.",
-      "How long data is stored and where.",
-      "Lawful basis for processing and user rights.",
-      "Contact details for privacy requests and deletion."
-    ]
+    "intro": "This privacy policy informs you about the nature, scope and purpose of the processing of personal data on our website in accordance with Art. 13 GDPR.",
+    "controllerTitle": "Data Controller",
+    "controllerLabel": "Responsible for data processing:",
+    "contactLabel": "Contact:",
+    "sections": [
+      {
+        "title": "1. Data Collection and Processing",
+        "content": [
+          "When you visit our website, technical information is automatically collected (IP address, browser type, operating system, access time). This data is necessary for the technical provision of the website.",
+          "Legal basis: Art. 6 para. 1 lit. f GDPR (legitimate interest in providing a functional website)."
+        ]
+      },
+      {
+        "title": "2. Umami Analytics",
+        "content": [
+          "We use Umami Analytics, a privacy-friendly analytics tool. Umami is only activated if you select \"Accept all\" in the cookie banner.",
+          "Umami does not collect personal data and does not use cookies (only localStorage). IP addresses are anonymized.",
+          "Legal basis: Art. 6 para. 1 lit. a GDPR (your consent via the cookie banner).",
+          "You can revoke your consent at any time on the cookie page."
+        ]
+      },
+      {
+        "title": "3. Storage Duration",
+        "content": [
+          "Technical log data is stored for a maximum of 14 days.",
+          "Analytics data is stored anonymized and aggregated for statistical evaluation."
+        ]
+      },
+      {
+        "title": "4. Data Disclosure",
+        "content": [
+          "Your data will only be disclosed to third parties if this is required by law or you have expressly consented.",
+          "Hosting: Our website is hosted by [Hosting Provider]. The hoster processes technical data on our behalf (Art. 28 GDPR)."
+        ]
+      }
+    ],
+    "rightsTitle": "Your Rights under GDPR",
+    "rights": [
+      "Information about your stored data (Art. 15 GDPR)",
+      "Correction of incorrect data (Art. 16 GDPR)",
+      "Deletion of your data (Art. 17 GDPR)",
+      "Restriction of processing (Art. 18 GDPR)",
+      "Data portability (Art. 20 GDPR)",
+      "Objection to processing (Art. 21 GDPR)",
+      "Complaint to a supervisory authority (Art. 77 GDPR)"
+    ],
+    "rightsExercise": "To exercise your rights, please contact us at:",
+    "authorityTitle": "Supervisory Authority",
+    "authorityText": "You have the right to lodge a complaint with a data protection supervisory authority regarding the processing of your personal data. In Germany, this is your respective state data protection officer.",
+    "lastUpdated": "Last updated: {{date}}"
   },
   "terms": {
     "title": "Terms of Service",
-    "intro": "This terms page is a structural placeholder. Replace with your legal terms for account, billing, acceptable use, and liability limitations.",
+    "intro": "This page serves as a structural placeholder. Replace this with your legally valid terms of service before production launch.",
     "items": [
-      "Service scope and account responsibilities.",
-      "Subscription/paywall terms and billing policy.",
-      "Prohibited uses and suspension policy.",
-      "Warranty disclaimer and limitation of liability."
+      "Service scope and account usage terms",
+      "Subscription/payment terms",
+      "Prohibited use and suspension policy",
+      "Warranty disclaimer and limitation of liability"
     ]
   },
   "cookies": {
     "title": "Cookie Policy",
-    "intro": "TravelFlow stores consent preferences locally and only activates analytics after optional consent is granted.",
+    "intro": "TravelFlow stores your cookie preferences locally and only activates analytics after your consent.",
     "essential": "Essential storage (always active):",
-    "essentialValue": "tf_cookie_consent_choice_v1 in Local Storage to remember your banner selection.",
+    "essentialValue": "tf_cookie_consent_choice_v1 in Local Storage to remember your cookie banner selection.",
     "optional": "Optional analytics:",
-    "optionalValue": "Umami is loaded only when you choose Accept all in the cookie banner.",
+    "optionalValue": "Umami is loaded only when you choose \"Accept all\" in the cookie banner.",
     "mapping": "Consent mapping:",
-    "mappingValue": "Essential only keeps analytics disabled; Accept all enables analytics tracking.",
-    "notesTitle": "Analytics configuration notes",
+    "mappingValue": "\"Essential only\" keeps analytics disabled; \"Accept all\" enables analytics tracking.",
+    "notesTitle": "Analytics Configuration Notes",
     "notes": [
       "Tracker script URL is configured via VITE_UMAMI_SCRIPT_URL.",
       "Website identifier is configured via VITE_UMAMI_WEBSITE_ID.",
       "If you enable cookie-based analytics features in Umami later, list all resulting cookie names and durations here."
     ],
-    "manageTitle": "Manage analytics consent",
+    "manageTitle": "Manage Analytics Consent",
     "current": "Current preference:",
     "stateAll": "Accept all",
     "stateEssential": "Essential only",

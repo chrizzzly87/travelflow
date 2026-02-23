@@ -1,57 +1,101 @@
 {
   "imprint": {
     "title": "Impressum",
-    "intro": "This legal imprint page is set up as a placeholder. Replace the fields below with your official business and contact details before production launch.",
-    "company": "Company:",
-    "companyValue": "TravelFlow (placeholder)",
-    "address": "Address:",
-    "addressValue": "Replace with legal business address",
-    "email": "Email:",
-    "emailValue": "legal@travelflow.example",
-    "responsible": "Responsible person:",
-    "responsibleValue": "Replace with legal representative",
-    "vat": "VAT / registration:",
-    "vatValue": "Replace with required local registration identifiers"
+    "intro": "Angaben gemäß § 5 TMG und § 18 MStV:",
+    "operator": "Betreiber:",
+    "businessType": "(Kleingewerbe gemäß § 19 UStG)",
+    "address": "Anschrift:",
+    "contact": "Kontakt:",
+    "responsibleContent": "Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:",
+    "responsibleNote": "Gemäß Medienstaatsvertrag (MStV)",
+    "vat": "Umsatzsteuer-ID:",
+    "euOdrTitle": "EU-Streitschlichtung",
+    "euOdrText": "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:",
+    "consumerDisputeTitle": "Verbraucherstreitbeilegung",
+    "consumerDisputeText": "Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen."
   },
   "privacy": {
     "title": "Datenschutzerklärung",
-    "intro": "This policy placeholder exists so legal navigation is complete. Replace this with your approved privacy policy text before launch.",
-    "items": [
-      "What personal data is collected and why.",
-      "How long data is stored and where.",
-      "Lawful basis for processing and user rights.",
-      "Contact details for privacy requests and deletion."
-    ]
+    "intro": "Diese Datenschutzerklärung informiert Sie über Art, Umfang und Zweck der Verarbeitung personenbezogener Daten auf unserer Website gemäß Art. 13 DSGVO.",
+    "controllerTitle": "Verantwortlicher",
+    "controllerLabel": "Verantwortlich für die Datenverarbeitung:",
+    "contactLabel": "Kontakt:",
+    "sections": [
+      {
+        "title": "1. Datenerfassung und -verarbeitung",
+        "content": [
+          "Beim Besuch unserer Website werden automatisch technische Informationen erfasst (IP-Adresse, Browser-Typ, Betriebssystem, Zugriffszeitpunkt). Diese Daten sind notwendig für die technische Bereitstellung der Website.",
+          "Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Bereitstellung einer funktionsfähigen Website)."
+        ]
+      },
+      {
+        "title": "2. Umami Analytics",
+        "content": [
+          "Wir nutzen Umami Analytics, ein datenschutzfreundliches Analyse-Tool. Umami wird nur aktiviert, wenn Sie im Cookie-Banner \"Alle akzeptieren\" wählen.",
+          "Umami sammelt keine personenbezogenen Daten und verwendet keine Cookies (nur localStorage). IP-Adressen werden anonymisiert.",
+          "Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Ihre Einwilligung über den Cookie-Banner).",
+          "Sie können Ihre Einwilligung jederzeit auf der Cookie-Seite widerrufen."
+        ]
+      },
+      {
+        "title": "3. Speicherdauer",
+        "content": [
+          "Technische Log-Daten werden maximal 14 Tage gespeichert.",
+          "Analytics-Daten werden anonymisiert und aggregiert für statistische Auswertungen gespeichert."
+        ]
+      },
+      {
+        "title": "4. Weitergabe von Daten",
+        "content": [
+          "Eine Weitergabe Ihrer Daten an Dritte erfolgt nur, soweit dies gesetzlich vorgeschrieben ist oder Sie ausdrücklich eingewilligt haben.",
+          "Hosting: Unsere Website wird bei [Hosting-Anbieter] gehostet. Der Hoster verarbeitet technische Daten im Auftrag (Art. 28 DSGVO)."
+        ]
+      }
+    ],
+    "rightsTitle": "Ihre Rechte gemäß DSGVO",
+    "rights": [
+      "Auskunft über Ihre gespeicherten Daten (Art. 15 DSGVO)",
+      "Berichtigung unrichtiger Daten (Art. 16 DSGVO)",
+      "Löschung Ihrer Daten (Art. 17 DSGVO)",
+      "Einschränkung der Verarbeitung (Art. 18 DSGVO)",
+      "Datenübertragbarkeit (Art. 20 DSGVO)",
+      "Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)",
+      "Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)"
+    ],
+    "rightsExercise": "Zur Ausübung Ihrer Rechte kontaktieren Sie uns bitte unter:",
+    "authorityTitle": "Aufsichtsbehörde",
+    "authorityText": "Sie haben das Recht, sich bei einer Datenschutz-Aufsichtsbehörde über die Verarbeitung Ihrer personenbezogenen Daten zu beschweren. In Deutschland ist dies Ihr jeweiliger Landesdatenschutzbeauftragter.",
+    "lastUpdated": "Stand: {{date}}"
   },
   "terms": {
     "title": "Nutzungsbedingungen",
-    "intro": "This terms page is a structural placeholder. Replace with your legal terms for account, billing, acceptable use, and liability limitations.",
+    "intro": "Diese Seite dient als struktureller Platzhalter. Ersetzen Sie dies vor Produktivbetrieb mit Ihren rechtsgültigen Nutzungsbedingungen.",
     "items": [
-      "Service scope and account responsibilities.",
-      "Subscription/paywall terms and billing policy.",
-      "Prohibited uses and suspension policy.",
-      "Warranty disclaimer and limitation of liability."
+      "Leistungsumfang und Nutzungsbedingungen des Accounts",
+      "Abonnement-/Zahlungsbedingungen",
+      "Verbotene Nutzung und Sperrregelungen",
+      "Haftungsausschluss und Gewährleistung"
     ]
   },
   "cookies": {
     "title": "Cookie-Richtlinie",
-    "intro": "TravelFlow stores consent preferences locally and only activates analytics after optional consent is granted.",
-    "essential": "Essential storage (always active):",
-    "essentialValue": "tf_cookie_consent_choice_v1 in Local Storage to remember your banner selection.",
-    "optional": "Optional analytics:",
-    "optionalValue": "Umami is loaded only when you choose Accept all in the cookie banner.",
-    "mapping": "Consent mapping:",
-    "mappingValue": "Essential only keeps analytics disabled; Accept all enables analytics tracking.",
-    "notesTitle": "Analytics configuration notes",
+    "intro": "TravelFlow speichert Ihre Cookie-Präferenzen lokal und aktiviert Analytics nur nach Ihrer Zustimmung.",
+    "essential": "Essenzieller Speicher (immer aktiv):",
+    "essentialValue": "tf_cookie_consent_choice_v1 im Local Storage zur Speicherung Ihrer Auswahl im Cookie-Banner.",
+    "optional": "Optionale Analytics:",
+    "optionalValue": "Umami wird nur geladen, wenn Sie \"Alle akzeptieren\" im Cookie-Banner wählen.",
+    "mapping": "Zuordnung der Einwilligung:",
+    "mappingValue": "\"Nur essenzielle\" hält Analytics deaktiviert; \"Alle akzeptieren\" aktiviert Analytics-Tracking.",
+    "notesTitle": "Hinweise zur Analytics-Konfiguration",
     "notes": [
-      "Tracker script URL is configured via VITE_UMAMI_SCRIPT_URL.",
-      "Website identifier is configured via VITE_UMAMI_WEBSITE_ID.",
-      "If you enable cookie-based analytics features in Umami later, list all resulting cookie names and durations here."
+      "Tracker-Script-URL wird über VITE_UMAMI_SCRIPT_URL konfiguriert.",
+      "Website-Kennung wird über VITE_UMAMI_WEBSITE_ID konfiguriert.",
+      "Falls Sie später cookie-basierte Analytics-Features in Umami aktivieren, listen Sie hier alle resultierenden Cookie-Namen und -Laufzeiten auf."
     ],
-    "manageTitle": "Manage analytics consent",
-    "current": "Current preference:",
-    "stateAll": "Accept all",
-    "stateEssential": "Essential only",
-    "stateUnset": "Not set"
+    "manageTitle": "Analytics-Einwilligung verwalten",
+    "current": "Aktuelle Einstellung:",
+    "stateAll": "Alle akzeptieren",
+    "stateEssential": "Nur essenzielle",
+    "stateUnset": "Nicht gesetzt"
   }
 }
