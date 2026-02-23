@@ -137,7 +137,7 @@ const rules: PrefetchRule[] = [
         targets: [contactTarget],
     },
     {
-        match: (pathname) => pathname === '/imprint',
+        match: (pathname) => pathname === '/impressum' || pathname === '/imprint',
         targets: [imprintTarget],
     },
     {

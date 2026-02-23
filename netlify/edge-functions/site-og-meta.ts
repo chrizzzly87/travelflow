@@ -64,6 +64,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
   /^\/share-unavailable$/,
   /^\/login$/,
   /^\/contact$/,
+  /^\/impressum$/,
   /^\/imprint$/,
   /^\/privacy$/,
   /^\/terms$/,
@@ -107,9 +108,13 @@ const PAGE_META: Record<string, PageDefinition> = {
     title: "Contact",
     description: "Reach out to report translation issues or localization feedback for {{appName}}.",
   },
+  "/impressum": {
+    title: "Impressum",
+    description: "Legal notice and provider identification for {{appName}}.",
+  },
   "/imprint": {
     title: "Imprint",
-    description: "Legal and company information for {{appName}}.",
+    description: "Legal notice and provider identification for {{appName}}.",
   },
   "/privacy": {
     title: "Privacy Policy",
@@ -301,6 +306,15 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Контакты", description: "Сообщите об ошибках перевода или оставьте отзыв о локализации {{appName}}." },
     pt: { title: "Contacto", description: "Reporte erros de tradução ou partilhe feedback de localização sobre o {{appName}}." },
     pl: { title: "Kontakt", description: "Zgłoś błędy tłumaczenia lub prześlij opinię o lokalizacji {{appName}}." },
+  },
+  "/impressum": {
+    es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
+    de: { title: "Impressum", description: "Rechtliche Informationen und Unternehmensangaben zu {{appName}}." },
+    fr: { title: "Mentions légales", description: "Informations légales et sociétaires concernant {{appName}}." },
+    it: { title: "Note legali", description: "Informazioni legali e societarie su {{appName}}." },
+    ru: { title: "Реквизиты", description: "Юридическая и корпоративная информация о {{appName}}." },
+    pt: { title: "Aviso legal", description: "Informações legais e empresariais sobre o {{appName}}." },
+    pl: { title: "Informacje prawne", description: "Informacje prawne i firmowe dotyczące {{appName}}." },
   },
   "/imprint": {
     es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
