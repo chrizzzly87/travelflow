@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
@@ -11,6 +12,25 @@ import type { BlogPost } from '../services/blogService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
 import { AppLanguage } from '../types';
+import {
+    BLOG_VIEW_TRANSITION_CLASSES,
+    createBlogTransitionNavigationState,
+    getBlogTransitionNavigationState,
+    getPendingBlogTransitionTarget,
+    getBlogPostViewTransitionNames,
+    isBlogTransitionTargetMatch,
+    isPendingBlogTransitionTarget,
+    isPrimaryUnmodifiedClick,
+    primeBlogTransitionSnapshot,
+    resolveBlogTransitionNavigationHint,
+    subscribeBlogTransitionState,
+    setPendingBlogTransitionTarget,
+    startBlogViewTransition,
+    supportsBlogViewTransitions,
+    getIsFirstBlogTransition,
+    waitForBlogTransitionTarget,
+    type BlogTransitionTarget,
+} from '../shared/blogViewTransitions';
 
 const BLOG_CARD_IMAGE_SIZES = '(min-width: 1280px) 24vw, (min-width: 1024px) 30vw, (min-width: 640px) 46vw, 100vw';
 const BLOG_CARD_TRANSITION = 'transform-gpu will-change-transform transition-[transform,box-shadow,border-color] duration-300 ease-out motion-reduce:transition-none';
@@ -19,11 +39,72 @@ const BLOG_CARD_IMAGE_FADE = 'pointer-events-none absolute inset-0 bg-gradient-t
 const BLOG_CARD_IMAGE_PROGRESSIVE_BLUR = 'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-slate-950/12 backdrop-blur-md [mask-image:linear-gradient(to_top,black_0%,rgba(0,0,0,0.65)_44%,transparent_100%)]';
 type BlogLanguageFilter = 'nativeOnly' | 'englishOnly' | 'nativeAndEnglish';
 
-const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, locale }) => {
+let blogPostRouteModulePromise: Promise<unknown> | null = null;
+
+const ensureBlogPostRouteModule = (): Promise<unknown> => {
+    if (!blogPostRouteModulePromise) {
+        blogPostRouteModulePromise = import('./BlogPostPage');
+    }
+    return blogPostRouteModulePromise;
+};
+
+const getBlogTransitionStyle = (
+    transitionName: string,
+    transitionClass: string,
+    transitionGroup?: string
+): React.CSSProperties =>
+    ({
+        viewTransitionName: transitionName,
+        ['viewTransitionClass' as any]: transitionClass,
+        ...(transitionGroup ? { ['viewTransitionGroup' as any]: transitionGroup } : {}),
+    } as React.CSSProperties);
+
+const BlogCard: React.FC<{
+    post: BlogPost;
+    locale: AppLanguage;
+    transitionTargetHint: BlogTransitionTarget | null;
+    viewTransitionsEnabled: boolean;
+}> = ({ post, locale, transitionTargetHint, viewTransitionsEnabled }) => {
     const { t } = useTranslation('blog');
+    const navigate = useNavigate();
+    const [isTransitionSource, setIsTransitionSource] = useState(false);
     const [hasImageError, setHasImageError] = useState(false);
     const showImage = !hasImageError;
     const showEnglishBadge = locale !== DEFAULT_LOCALE && post.language === DEFAULT_LOCALE;
+    const matchesTransitionHint = transitionTargetHint
+        ? isBlogTransitionTargetMatch(transitionTargetHint, { language: post.language, slug: post.slug })
+        : false;
+    const shouldAssignTransitionNames = viewTransitionsEnabled &&
+        (isTransitionSource || matchesTransitionHint || isPendingBlogTransitionTarget(post.language, post.slug));
+    const transitionNames = shouldAssignTransitionNames
+        ? getBlogPostViewTransitionNames(post.language, post.slug)
+        : null;
+    const imageLoading = transitionNames ? 'eager' : 'lazy';
+    const imageFetchPriority = transitionNames ? 'high' : 'low';
+    const postPath = buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug });
+    const handleCardClick = useCallback(async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!viewTransitionsEnabled || !isPrimaryUnmodifiedClick(event)) return;
+        event.preventDefault();
+        const transitionTarget = { language: post.language, slug: post.slug };
+        setPendingBlogTransitionTarget(transitionTarget);
+        flushSync(() => {
+            setIsTransitionSource(true);
+        });
+        try {
+            await ensureBlogPostRouteModule();
+        } catch {
+            // Ignore preload errors and rely on router fallback behavior.
+        }
+        startBlogViewTransition(async () => {
+            flushSync(() => {
+                navigate(postPath, {
+                    state: createBlogTransitionNavigationState('list', transitionTarget),
+                });
+            });
+            primeBlogTransitionSnapshot();
+            await waitForBlogTransitionTarget(transitionTarget, 'post');
+        });
+    }, [navigate, post.language, post.slug, postPath, viewTransitionsEnabled]);
     const formattedDate = new Date(post.publishedAt).toLocaleDateString(localeToIntlLocale(locale), {
         month: 'short',
         day: 'numeric',
@@ -33,63 +114,98 @@ const BlogCard: React.FC<{ post: BlogPost; locale: AppLanguage }> = ({ post, loc
 
     return (
         <Link
-            to={buildLocalizedMarketingPath('blogPost', locale, { slug: post.slug })}
+            to={postPath}
+            onClick={handleCardClick}
             lang={cardLang}
             data-blog-card-lang={cardLang}
-            className={`group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5 hover:shadow-lg`}
+            className={`group relative flex flex-col overflow-hidden rounded-2xl ${BLOG_CARD_TRANSITION} hover:-translate-y-0.5`}
         >
-            <div className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}>
-                {showImage ? (
-                    <>
-                        <ProgressiveImage
-                            src={post.images.card.sources.large}
-                            alt={post.images.card.alt}
-                            width={1536}
-                            height={1024}
-                            sizes={BLOG_CARD_IMAGE_SIZES}
-                            srcSetWidths={[480, 768, 1024, 1536]}
-                            placeholderKey={post.images.card.sources.large}
-                            loading="lazy"
-                            fetchPriority="low"
-                            onError={() => setHasImageError(true)}
-                            className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
-                        />
-                        <div className={BLOG_CARD_IMAGE_FADE} />
-                        <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
-                    </>
-                ) : (
-                    <Article size={36} weight="duotone" className="text-slate-400/40" />
-                )}
-            </div>
-            <div className="flex flex-1 flex-col p-5">
-                <h3 className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2">
-                    {post.title}
-                </h3>
-                {showEnglishBadge && (
-                    <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                        <FlagIcon code="GB" size="sm" />
-                        {t('index.englishArticleNotice')}
-                    </p>
-                )}
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3">
-                    {post.summary}
-                </p>
-                <div className="mt-3 flex items-center gap-3 text-xs text-slate-400">
-                    <span className="inline-flex items-center gap-1">
-                        <Clock size={13} weight="duotone" className="text-accent-400" />
-                        {t('index.readTime', { minutes: post.readingTimeMin })}
-                    </span>
-                    <span>{formattedDate}</span>
+            <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-2xl border border-slate-200 bg-white shadow-sm transition-[box-shadow,border-color] duration-300 ease-out group-hover:border-slate-300 group-hover:shadow-lg"
+                style={transitionNames && !getIsFirstBlogTransition() ? getBlogTransitionStyle(transitionNames.card, BLOG_VIEW_TRANSITION_CLASSES.card, 'contain') : undefined}
+            />
+            <div className="relative z-10 flex flex-1 flex-col">
+                <div
+                    className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
+                    style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                >
+                    {showImage ? (
+                        <>
+                            <div
+                                className="absolute inset-0 overflow-hidden rounded-t-2xl"
+                            >
+                                <ProgressiveImage
+                                    src={post.images.card.sources.large}
+                                    alt={post.images.card.alt}
+                                    width={1536}
+                                    height={1024}
+                                    sizes={BLOG_CARD_IMAGE_SIZES}
+                                    srcSetWidths={[480, 768, 1024, 1536]}
+                                    placeholderKey={post.images.card.sources.large}
+                                    loading={imageLoading}
+                                    fetchPriority={imageFetchPriority}
+                                    onError={() => setHasImageError(true)}
+                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
+                                    skipFade={!!transitionNames}
+                                />
+                            </div>
+                            <div className={BLOG_CARD_IMAGE_FADE} />
+                            <div className={BLOG_CARD_IMAGE_PROGRESSIVE_BLUR} />
+                        </>
+                    ) : (
+                        <Article size={36} weight="duotone" className="text-slate-400/40" />
+                    )}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                    {post.tags.map((tag) => (
-                        <span
-                            key={tag}
-                            className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"
-                        >
-                            {tag}
+                <div
+                    className="flex flex-1 flex-col p-5 bg-white relative rounded-b-2xl"
+                    style={transitionNames ? getBlogTransitionStyle(`${transitionNames.card}-content`, BLOG_VIEW_TRANSITION_CLASSES.content) : undefined}
+                >
+                    <h3
+                        className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
+                        style={
+                            transitionNames
+                                ? ({
+                                    fontFamily: 'var(--tf-font-heading)',
+                                    ...getBlogTransitionStyle(transitionNames.title, BLOG_VIEW_TRANSITION_CLASSES.title),
+                                } as React.CSSProperties)
+                                : ({ fontFamily: 'var(--tf-font-heading)' } as React.CSSProperties)
+                        }
+                    >
+                        {post.title}
+                    </h3>
+                    {showEnglishBadge && (
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                            <FlagIcon code="GB" size="sm" />
+                            {t('index.englishArticleNotice')}
+                        </p>
+                    )}
+                    <p
+                        className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3"
+                    >
+                        {post.summary}
+                    </p>
+                    <div
+                        className="mt-3 flex items-center gap-3 text-xs text-slate-400"
+                    >
+                        <span className="inline-flex items-center gap-1">
+                            <Clock size={13} weight="duotone" className="text-accent-400" />
+                            {t('index.readTime', { minutes: post.readingTimeMin })}
                         </span>
-                    ))}
+                        <span>{formattedDate}</span>
+                    </div>
+                    <div
+                        className="mt-3 flex flex-wrap gap-1.5"
+                    >
+                        {post.tags.map((tag) => (
+                            <span
+                                key={tag}
+                                className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"
+                            >
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             </div>
         </Link>
@@ -100,6 +216,16 @@ export const BlogPage: React.FC = () => {
     const { t } = useTranslation('blog');
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
+    const viewTransitionsEnabled = useMemo(() => supportsBlogViewTransitions(), []);
+    const activeTransitionTarget = viewTransitionsEnabled ? getPendingBlogTransitionTarget() : null;
+    const transitionNavigationState = useMemo(
+        () => getBlogTransitionNavigationState(location.state),
+        [location.state]
+    );
+    const transitionTargetHint = useMemo(
+        () => resolveBlogTransitionNavigationHint(transitionNavigationState, activeTransitionTarget),
+        [activeTransitionTarget, transitionNavigationState]
+    );
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
     const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
     const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
@@ -115,6 +241,10 @@ export const BlogPage: React.FC = () => {
     const posts = useMemo(() => getPublishedBlogPostsForLocales(postLocales), [postLocales]);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
+    const [, forceTransitionStateRefresh] = useState(0);
+    const [suppressEntryAnimations] = useState(
+        () => viewTransitionsEnabled && getPendingBlogTransitionTarget() !== null
+    );
 
     const allTags = useMemo(() => {
         const tagSet = new Set<string>();
@@ -147,9 +277,24 @@ export const BlogPage: React.FC = () => {
     const showMixedLanguageNotice = supportsMixedLanguage && languageFilter !== 'nativeOnly';
     const localeDisplayName = t(`common:language.${locale}`, { defaultValue: locale.toUpperCase() });
 
+    useEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        return subscribeBlogTransitionState(() => {
+            forceTransitionStateRefresh((current) => current + 1);
+        });
+    }, [viewTransitionsEnabled]);
+
+    useEffect(() => {
+        if (!viewTransitionsEnabled) return;
+        void ensureBlogPostRouteModule();
+    }, [viewTransitionsEnabled]);
+
     return (
         <MarketingLayout>
-            <section className="pt-8 pb-8 md:pt-14 md:pb-12 animate-hero-entrance">
+            <section
+                data-blog-route-kind="list"
+                className={`pt-8 pb-8 md:pt-14 md:pb-12 ${suppressEntryAnimations ? '' : 'animate-hero-entrance'}`.trim()}
+            >
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-accent-700">
                     <Article size={14} weight="duotone" />
                     {t('index.pill')}
@@ -165,7 +310,10 @@ export const BlogPage: React.FC = () => {
                 </p>
             </section>
 
-            <section className="pb-4 animate-hero-stagger" style={{ '--stagger': '100ms' } as React.CSSProperties}>
+            <section
+                className={`pb-4 ${suppressEntryAnimations ? '' : 'animate-hero-stagger'}`.trim()}
+                style={{ '--stagger': '100ms' } as React.CSSProperties}
+            >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="relative w-full md:max-w-xl">
                         <MagnifyingGlass size={18} weight="duotone" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -214,7 +362,10 @@ export const BlogPage: React.FC = () => {
                 )}
             </section>
 
-            <section className="pb-8 animate-hero-stagger" style={{ '--stagger': '160ms' } as React.CSSProperties}>
+            <section
+                className={`pb-8 ${suppressEntryAnimations ? '' : 'animate-hero-stagger'}`.trim()}
+                style={{ '--stagger': '160ms' } as React.CSSProperties}
+            >
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setSelectedTag(null)}
@@ -253,8 +404,16 @@ export const BlogPage: React.FC = () => {
                 ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         {filteredPosts.map((post) => (
-                            <div key={`${post.language}:${post.slug}`} className="animate-scroll-fade-up">
-                                <BlogCard post={post} locale={locale} />
+                            <div
+                                key={`${post.language}:${post.slug}`}
+                                className={suppressEntryAnimations ? '' : 'animate-scroll-fade-up'}
+                            >
+                                <BlogCard
+                                    post={post}
+                                    locale={locale}
+                                    transitionTargetHint={transitionTargetHint}
+                                    viewTransitionsEnabled={viewTransitionsEnabled}
+                                />
                             </div>
                         ))}
                     </div>

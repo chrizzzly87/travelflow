@@ -59,6 +59,7 @@ export interface ProgressiveImageProps {
     placeholderBlurhash?: string;
     onError?: () => void;
     disableCdn?: boolean;
+    skipFade?: boolean;
 }
 
 export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
@@ -75,6 +76,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     placeholderBlurhash,
     onError,
     disableCdn = false,
+    skipFade = false,
 }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
@@ -135,7 +137,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                     {...fetchPriorityAttr}
                     width={width}
                     height={height}
-                    className={`${className || 'h-full w-full object-cover'} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    className={`${className || 'h-full w-full object-cover'} transition-opacity duration-300 ${isLoaded || skipFade ? 'opacity-100' : 'opacity-0'}`}
                     onLoad={() => setIsLoaded(true)}
                     onError={() => {
                         setHasError(true);
