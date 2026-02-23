@@ -213,7 +213,7 @@ const getTripDurationDays = (trip: ITrip): number => {
   return Math.max(1, Math.ceil(range.endOffset - range.startOffset));
 };
 
-const getTripCityStops = (trip: ITrip) =>
+export const getTripCityStops = (trip: ITrip) =>
   getTripCityItems(trip).map(item => ({
     id: item.id,
     title: item.title || item.location || 'City stop',
@@ -339,7 +339,7 @@ const getTripFlagCodes = (trip: ITrip): string[] => {
   return codes;
 };
 
-const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
+export const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
   const apiKey = getGoogleMapsApiKey();
   if (!apiKey) return null;
 
