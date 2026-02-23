@@ -3,7 +3,7 @@
  * 
  * ⚠️ MANDATORY: When adding new cookies:
  * 1. Add entry to this config with: name, purpose, duration, category
- * 2. Update locales/*/legal.json with cookie descriptions
+ * 2. Update locales legal.json files with cookie descriptions
  * 3. If category is 'analytics' or 'marketing': Update consent logic
  * 4. Verify GDPR compliance (data processing agreement if third-party)
  * 
