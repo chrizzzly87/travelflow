@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { addDays, buildCityOverlapLayout, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, buildApprovedCityRoute, buildCityOverlapLayout, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -125,13 +125,8 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const activities = trip.items.filter(i => i.type === 'activity');
   const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
   const connectorCities = React.useMemo(
-      () => cities
-          .filter((city) => (
-              (cityStackLayout.get(city.id)?.stackIndex || 0) === 0
-              && city.isApproved !== false
-          ))
-          .sort((a, b) => a.startDateOffset - b.startDateOffset),
-      [cities, cityStackLayout]
+      () => buildApprovedCityRoute(cities),
+      [cities]
   );
   const uncertainSlotColorByKey = React.useMemo(() => {
       const colorBySlot = new Map<string, string>();

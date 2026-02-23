@@ -446,10 +446,54 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
       if (displayItem.type === 'city') {
           if (checked) {
-              handleUpdate(displayItem.id, {
-                  isApproved: true,
-                  cityPlanStatus: 'confirmed',
+              const overlapEpsilon = 0.0001;
+              const targetStart = displayItem.startDateOffset;
+              const targetEnd = displayItem.startDateOffset + Math.max(0, displayItem.duration);
+              const fallbackGroupId = `city-option-${Number(displayItem.startDateOffset.toFixed(3))}`;
+
+              const conflictingSiblings = sortedCityItems.filter((entry) => {
+                  if (entry.id === displayItem.id) return false;
+                  if (entry.isApproved === false) return false;
+
+                  const entryStart = entry.startDateOffset;
+                  const entryEnd = entry.startDateOffset + Math.max(0, entry.duration);
+                  const overlaps = entryStart < (targetEnd - overlapEpsilon) && entryEnd > (targetStart + overlapEpsilon);
+                  if (!overlaps) return false;
+
+                  const sharesGroup = !!displayItem.cityPlanGroupId && entry.cityPlanGroupId === displayItem.cityPlanGroupId;
+                  const isTentativeOption = (
+                      displayItem.cityPlanStatus === 'uncertain' ||
+                      entry.cityPlanStatus === 'uncertain' ||
+                      !!displayItem.cityPlanGroupId ||
+                      !!entry.cityPlanGroupId
+                  );
+                  return sharesGroup || isTentativeOption;
               });
+
+              const approvedGroupId = displayItem.cityPlanGroupId || (conflictingSiblings.length > 0 ? fallbackGroupId : undefined);
+              const changes: Array<{ id: string; updates: Partial<ITimelineItem> }> = [
+                  {
+                      id: displayItem.id,
+                      updates: {
+                          isApproved: true,
+                          cityPlanStatus: 'confirmed',
+                          ...(approvedGroupId ? { cityPlanGroupId: approvedGroupId } : {}),
+                      },
+                  },
+              ];
+
+              conflictingSiblings.forEach((entry) => {
+                  changes.push({
+                      id: entry.id,
+                      updates: {
+                          isApproved: false,
+                          cityPlanStatus: 'uncertain',
+                          cityPlanGroupId: entry.cityPlanGroupId || approvedGroupId,
+                      },
+                  });
+              });
+
+              applyItemChanges(changes);
               return;
           }
 

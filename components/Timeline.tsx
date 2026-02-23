@@ -1,6 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
-import { addDays, buildCityOverlapLayout, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import {
+  addDays,
+  buildApprovedCityRoute,
+  buildCityOverlapLayout,
+  buildHorizontalTransferLaneLayout,
+  findTravelBetweenCities,
+  getHexFromColorClass,
+  getTimelineBounds,
+  TRAVEL_COLOR,
+  TRAVEL_EMPTY_COLOR
+} from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -29,6 +39,9 @@ const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
 // Small negative offset into the city edge so connectors visually "touch" without a seam.
 const TRANSFER_CONNECTOR_CITY_OVERLAP_PX = 2;
 const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'rounded';
+const TRANSFER_CHIP_HEIGHT_PX = 32;
+const TRANSFER_CHIP_ROW_GAP_PX = 10;
+const TRANSFER_LANE_VERTICAL_PADDING_PX = 4;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -115,7 +128,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   });
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
-  const [travelLaneHeight, setTravelLaneHeight] = useState<number>(40);
   const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
@@ -178,13 +190,8 @@ export const Timeline: React.FC<TimelineProps> = ({
       [maxCityStackCount]
   );
   const connectorCities = React.useMemo(
-      () => cities
-          .filter((city) => (
-              (cityStackLayout.get(city.id)?.stackIndex || 0) === 0
-              && city.isApproved !== false
-          ))
-          .sort((a, b) => a.startDateOffset - b.startDateOffset),
-      [cities, cityStackLayout]
+      () => buildApprovedCityRoute(cities),
+      [cities]
   );
   const uncertainSlotColorByKey = React.useMemo(() => {
       const colorBySlot = new Map<string, string>();
@@ -214,6 +221,62 @@ export const Timeline: React.FC<TimelineProps> = ({
           };
       });
   }, [connectorCities, trip.items]);
+
+  const transferChipLayoutById = React.useMemo(() => {
+      const layout = buildHorizontalTransferLaneLayout(
+          travelLinks.map((link) => {
+              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
+              const toStart = link.toCity.startDateOffset;
+              const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
+              const toX = (toStart - visualStartOffset) * pixelsPerDay;
+              const segmentStart = Math.min(fromX, toX);
+              const segmentEnd = Math.max(fromX, toX);
+              const gapWidth = Math.max(2, segmentEnd - segmentStart);
+              const travel = link.travelItem;
+              const mode = normalizeTransportMode(travel?.transportMode);
+              const isUnsetTransport = mode === 'na';
+              const isTinyTransferPill = pixelsPerDay <= 52;
+
+              const preferredWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 66 : 54)
+                  : (pixelsPerDay >= 120 ? 138 : (pixelsPerDay >= 90 ? 126 : 112));
+              const minWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 46 : 40)
+                  : (isUnsetTransport ? 84 : 74);
+              const maxWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 82 : 66)
+                  : (pixelsPerDay >= 120 ? 154 : (pixelsPerDay >= 90 ? 142 : 128));
+
+              return {
+                  id: link.id,
+                  centerX: segmentStart + (gapWidth / 2),
+                  preferredWidth,
+                  minWidth,
+                  maxWidth,
+              };
+          }),
+          { laneCollisionGap: 8 }
+      );
+
+      return new Map(layout.map((entry) => [entry.id, entry]));
+  }, [pixelsPerDay, travelLinks, visualStartOffset]);
+
+  const transferLaneRowCount = React.useMemo(() => {
+      let maxRowCount = 1;
+      transferChipLayoutById.forEach((layout) => {
+          maxRowCount = Math.max(maxRowCount, layout.laneCount);
+      });
+      return maxRowCount;
+  }, [transferChipLayoutById]);
+
+  const transferLaneHeightPx = React.useMemo(() => {
+      const rowCount = Math.max(1, transferLaneRowCount);
+      return (
+          (TRANSFER_LANE_VERTICAL_PADDING_PX * 2) +
+          (rowCount * TRANSFER_CHIP_HEIGHT_PX) +
+          ((rowCount - 1) * TRANSFER_CHIP_ROW_GAP_PX)
+      );
+  }, [transferLaneRowCount]);
 
   const getTransportIcon = (mode?: string) => {
       return <TransportModeIcon mode={mode} size={14} />;
@@ -595,9 +658,6 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (!travelLane) return;
 
     const updateMetrics = () => {
-      const measured = travelLane.clientHeight;
-      if (measured > 0) setTravelLaneHeight(measured);
-
       if (cityCardsRow) {
         const mainLaneCityCard = cityCardsRow.querySelector<HTMLElement>('[data-city-block="true"][data-city-stack-index="0"]');
         const cityRect = (mainLaneCityCard || cityCardsRow).getBoundingClientRect();
@@ -836,7 +896,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Travel Lane */}
-                 <div className="relative h-11 md:h-12 w-full group/travel z-10">
+                <div className="relative w-full group/travel z-10">
                     <div className="sticky left-0 mb-0.5 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
@@ -852,7 +912,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                         </button>
                     </div>
                     
-                    <div className="relative h-8 md:h-9 w-full overflow-visible" ref={travelLaneRef}>
+                    <div
+                        className="relative w-full overflow-visible"
+                        ref={travelLaneRef}
+                        style={{ height: `${transferLaneHeightPx}px` }}
+                    >
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
@@ -861,30 +925,18 @@ export const Timeline: React.FC<TimelineProps> = ({
                             const segmentStart = Math.min(fromX, toX);
                             const segmentEnd = Math.max(fromX, toX);
                             const gapWidth = Math.max(2, segmentEnd - segmentStart);
+                            const chipLayout = transferChipLayoutById.get(link.id);
                             const isForward = fromX <= toX;
                             const travel = link.travelItem;
                             const mode = normalizeTransportMode(travel?.transportMode);
                             const isUnsetTransport = mode === 'na';
-                            const isTinyTransferPill = pixelsPerDay <= 52;
-                            let chipWidth: number;
-                            if (isTinyTransferPill) {
-                                const compactMinWidth = isUnsetTransport ? 54 : 44;
-                                const compactMaxWidth = isUnsetTransport ? 72 : 56;
-                                chipWidth = Math.max(compactMinWidth, Math.min(compactMaxWidth, gapWidth - 8));
-                            } else {
-                                const baseReadableWidth = pixelsPerDay >= 120 ? 130 : (pixelsPerDay >= 90 ? 116 : 102);
-                                const maxReadableWidth = pixelsPerDay >= 120 ? 148 : (pixelsPerDay >= 90 ? 134 : 122);
-                                chipWidth = Math.max(baseReadableWidth, gapWidth - 6);
-                                chipWidth = Math.min(maxReadableWidth, chipWidth);
-                            }
-                            const maxChipWidth = Math.max(4, gapWidth - 2);
-                            chipWidth = Math.min(chipWidth, maxChipWidth);
-                            chipWidth = Math.max(4, chipWidth);
+                            const chipWidth = chipLayout?.chipWidth || Math.max(48, Math.min(120, gapWidth + 26));
                             const showIconOnly = chipWidth < 62;
-                            const chipLeft = segmentStart + ((gapWidth - chipWidth) / 2);
+                            const chipLeft = chipLayout?.chipLeft ?? (segmentStart + ((gapWidth - chipWidth) / 2));
+                            const chipLaneIndex = chipLayout?.laneIndex || 0;
                             const chipRight = chipLeft + chipWidth;
-                            const chipCenterY = Math.max(14, (travelLaneHeight / 2) - 2);
-                            const chipTop = chipCenterY - 16;
+                            const chipTop = TRANSFER_LANE_VERTICAL_PADDING_PX + (chipLaneIndex * (TRANSFER_CHIP_HEIGHT_PX + TRANSFER_CHIP_ROW_GAP_PX));
+                            const chipCenterY = chipTop + (TRANSFER_CHIP_HEIGHT_PX / 2);
                             const cityAttachY = cityBottomAnchorY ?? (chipTop - 14);
                             const maxPillInset = Math.max(1, (chipWidth / 2) - 1);
                             const pillAnchorInset = Math.min(maxPillInset, Math.max(1, chipWidth * 0.16));
@@ -952,7 +1004,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
-                                        style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: 32 }}
+                                        style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: TRANSFER_CHIP_HEIGHT_PX }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                         disabled={!travel && !canEdit}
                                     >
