@@ -707,7 +707,7 @@ export const AdminAuditPage: React.FC = () => {
                                                     <summary className="cursor-pointer font-semibold text-slate-700">
                                                         Metadata
                                                     </summary>
-                                                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-2 text-[10px] text-slate-600">
+                                                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
                                                         {JSON.stringify(log.metadata, null, 2)}
                                                     </pre>
                                                 </details>
@@ -825,7 +825,7 @@ export const AdminAuditPage: React.FC = () => {
                                     {Object.keys(selectedUserSnapshot).length > 0 && (
                                         <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
                                             <summary className="cursor-pointer font-semibold text-slate-700">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-2 text-[10px] text-slate-600">
+                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
                                                 {JSON.stringify(selectedUserSnapshot, null, 2)}
                                             </pre>
                                         </details>
@@ -934,7 +934,7 @@ export const AdminAuditPage: React.FC = () => {
                                     {Object.keys(selectedTripSnapshot).length > 0 && (
                                         <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-[11px] text-slate-600">
                                             <summary className="cursor-pointer font-semibold text-slate-700">Audit snapshot</summary>
-                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-2 text-[10px] text-slate-600">
+                                            <pre className="mt-2 max-h-44 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
                                                 {JSON.stringify(selectedTripSnapshot, null, 2)}
                                             </pre>
                                         </details>

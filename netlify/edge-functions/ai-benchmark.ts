@@ -1926,6 +1926,43 @@ const handleTelemetry = async (
   const modelSummary = summarizeAiTelemetryByModel(rows);
   const rankingLimit = 5;
 
+  const now = new Date();
+  const startOfMonthIso = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  let monthlyCostSeries: Array<{ date: string; cost: number }> = [];
+  try {
+    const monthlyParams = new URLSearchParams();
+    monthlyParams.set("select", "created_at,estimated_cost_usd");
+    monthlyParams.set("created_at", `gte.${startOfMonthIso}`);
+    monthlyParams.set("limit", "10000");
+
+    const monthlyResponse = await supabaseServiceFetch(
+      serviceConfig,
+      `/rest/v1/ai_generation_events?${monthlyParams.toString()}`,
+      { method: "GET" },
+    );
+
+    if (monthlyResponse.ok) {
+      const monthlyRows = await safeJsonParse(monthlyResponse);
+      const aggMap = new Map<string, number>();
+
+      if (Array.isArray(monthlyRows)) {
+        monthlyRows.forEach((row) => {
+          if (!row.created_at || typeof row.estimated_cost_usd !== "number") return;
+          const dateStr = row.created_at.split("T")[0]; // YYYY-MM-DD
+          const current = aggMap.get(dateStr) || 0;
+          aggMap.set(dateStr, current + row.estimated_cost_usd);
+        });
+      }
+
+      monthlyCostSeries = Array.from(aggMap.entries())
+        .map(([date, cost]) => ({ date, cost }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    }
+  } catch (err) {
+    // Ignore optionally.
+  }
+
   return json(200, {
     ok: true,
     filters: {
@@ -1937,6 +1974,7 @@ const handleTelemetry = async (
     series,
     providers: providerSummary,
     models: modelSummary,
+    monthlyCostSeries,
     rankings: {
       fastest: topTelemetryModelsBySpeed(modelSummary, rankingLimit),
       cheapest: topTelemetryModelsByCost(modelSummary, rankingLimit),

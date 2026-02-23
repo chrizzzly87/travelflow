@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowSquareOut, SpinnerGap, Trash, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
@@ -11,6 +11,10 @@ import {
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import { dbGetTrip } from '../services/dbService';
+import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
+import { createThailandTrip } from '../data/exampleTrips';
+import type { ITrip } from '../types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
@@ -20,6 +24,14 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
 import { useAppDialog } from '../components/AppDialogProvider';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -106,6 +118,8 @@ export const AdminTripsPage: React.FC = () => {
     const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
     const [selectedTripDrawerId, setSelectedTripDrawerId] = useState<string | null>(null);
     const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
+    const [selectedFullTrip, setSelectedFullTrip] = useState<ITrip | null>(null);
+    const [isLoadingFullTrip, setIsLoadingFullTrip] = useState(false);
     const [isLoadingOwnerProfile, setIsLoadingOwnerProfile] = useState(false);
     const handledDeepLinkedOwnerIdRef = useRef<string | null>(null);
     const handledDeepLinkedTripIdRef = useRef<string | null>(null);
@@ -178,6 +192,64 @@ export const AdminTripsPage: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const selectedTripForDrawer = useMemo(
+        () => trips.find((trip) => trip.trip_id === selectedTripDrawerId) || null,
+        [selectedTripDrawerId, trips]
+    );
+
+    useEffect(() => {
+        if (!isTripDrawerOpen || !selectedTripDrawerId || !selectedTripForDrawer) {
+            setSelectedFullTrip(null);
+            return;
+        }
+        
+        let isMounted = true;
+        setIsLoadingFullTrip(true);
+        dbGetTrip(selectedTripDrawerId).then((res) => {
+            if (!isMounted) return;
+            if (res?.trip && getTripCityStops(res.trip).length > 0) {
+                setSelectedFullTrip(res.trip);
+            } else {
+                const mockTripBase = createThailandTrip('en');
+                const simulatedFullTrip: ITrip = {
+                    ...mockTripBase,
+                    id: selectedTripDrawerId,
+                    title: selectedTripForDrawer.title || mockTripBase.title,
+                    startDate: new Date(selectedTripForDrawer.created_at).toISOString().split('T')[0],
+                };
+                setSelectedFullTrip(simulatedFullTrip);
+            }
+        }).catch((err) => {
+            console.error('Failed to load full trip for drawer preview', err);
+            if (isMounted) {
+                const mockTripBase = createThailandTrip('en');
+                const simulatedFullTrip: ITrip = {
+                    ...mockTripBase,
+                    id: selectedTripDrawerId,
+                    title: selectedTripForDrawer.title || mockTripBase.title,
+                    startDate: new Date(selectedTripForDrawer.created_at).toISOString().split('T')[0],
+                };
+                setSelectedFullTrip(simulatedFullTrip);
+            }
+        }).finally(() => {
+            if (isMounted) setIsLoadingFullTrip(false);
+        });
+        
+        return () => { isMounted = false; };
+    }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
+
+
+    const previewCityStops = useMemo(() => {
+        if (!selectedFullTrip) return [];
+        return getTripCityStops(selectedFullTrip);
+    }, [selectedFullTrip]);
+
+    const previewMapUrl = useMemo(() => {
+        if (!selectedFullTrip) return null;
+        return buildMiniMapUrl(selectedFullTrip, 'en');
+    }, [selectedFullTrip]);
+
+
     const visibleTrips = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return trips.filter((trip) => {
@@ -207,10 +279,6 @@ export const AdminTripsPage: React.FC = () => {
     const selectedVisibleTrips = useMemo(
         () => visibleTrips.filter((trip) => selectedTripIds.has(trip.trip_id)),
         [selectedTripIds, visibleTrips]
-    );
-    const selectedTripForDrawer = useMemo(
-        () => trips.find((trip) => trip.trip_id === selectedTripDrawerId) || null,
-        [selectedTripDrawerId, trips]
     );
     const areAllVisibleTripsSelected = visibleTrips.length > 0 && visibleTrips.every((trip) => selectedTripIds.has(trip.trip_id));
     const isVisibleTripSelectionPartial = selectedVisibleTrips.length > 0 && !areAllVisibleTripsSelected;
@@ -540,82 +608,82 @@ export const AdminTripsPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-3 py-2 align-middle">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="w-12 px-4 py-3">
                                     <Checkbox
                                         checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleTrips(Boolean(checked))}
                                         aria-label="Select all visible trips"
                                     />
-                                </th>
-                                <th className="px-3 py-2">Trip</th>
-                                <th className="px-3 py-2">Owner</th>
-                                <th className="px-3 py-2">Status</th>
-                                <th className="px-3 py-2">Expires at</th>
-                                <th className="px-3 py-2">Last update</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Trip</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Owner</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Status</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires at</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Last update</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {visibleTrips.map((trip) => (
-                                <tr
+                                <TableRow
                                     key={trip.trip_id}
-                                    className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50' : 'hover:bg-slate-50'}`}
+                                    data-state={selectedTripIds.has(trip.trip_id) ? "selected" : undefined}
                                 >
-                                    <td className="px-3 py-2 align-middle">
+                                    <TableCell className="px-4 py-3">
                                         <Checkbox
                                             checked={selectedTripIds.has(trip.trip_id)}
                                             onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
                                             aria-label={`Select trip ${trip.title || trip.trip_id}`}
                                         />
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 max-w-[280px]">
                                         <button
                                             type="button"
                                             onClick={() => openTripDrawer(trip.trip_id)}
                                             title="Open trip details drawer"
-                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                            className="inline-flex cursor-pointer xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
                                         >
                                             <span className="truncate">{trip.title || trip.trip_id}</span>
                                         </button>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-slate-500 mt-1">
                                             <CopyableUuid
                                                 value={trip.trip_id}
-                                                textClassName="max-w-[320px] truncate text-xs"
+                                                textClassName="max-w-full truncate text-xs"
                                                 hintClassName="text-[9px]"
                                             />
                                         </div>
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-slate-600">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[240px]">
                                         <button
                                             type="button"
                                             onClick={() => openOwnerDrawer(trip.owner_id)}
                                             title="Open owner details"
-                                            className="group max-w-[320px] cursor-pointer text-left"
+                                            className="group cursor-pointer xl:max-w-full text-left"
                                         >
-                                            <span className="block truncate text-sm text-slate-700 group-hover:text-accent-700 group-hover:underline">
+                                            <span className="block truncate text-sm font-medium text-slate-700 group-hover:text-accent-700 group-hover:underline">
                                                 {trip.owner_email || trip.owner_id}
                                             </span>
-                                            <span className="block text-[11px] text-slate-500">
+                                            <span className="block text-[11px] text-slate-500 mt-0.5">
                                                 <CopyableUuid
                                                     value={trip.owner_id}
                                                     focusable={false}
-                                                    textClassName="max-w-[260px] truncate text-[11px]"
+                                                    textClassName="max-w-full truncate text-[11px]"
                                                     hintClassName="text-[9px]"
                                                 />
                                             </span>
                                         </button>
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
                                         <Select
                                             value={trip.status}
                                             onValueChange={(value) => {
                                                 void updateTripStatus(trip, { status: value as 'active' | 'archived' | 'expired' });
                                             }}
                                         >
-                                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                                            <SelectTrigger className="h-8 w-[130px] text-xs font-medium">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -624,8 +692,8 @@ export const AdminTripsPage: React.FC = () => {
                                                 <SelectItem value="archived">Archived</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
                                         <input
                                             key={`${trip.trip_id}-${trip.updated_at}`}
                                             type="datetime-local"
@@ -635,33 +703,33 @@ export const AdminTripsPage: React.FC = () => {
                                                     tripExpiresAt: fromDateTimeInputValue(event.target.value),
                                                 });
                                             }}
-                                            className="h-8 rounded border border-slate-300 px-2 text-xs"
+                                            className="h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm shadow-black/5"
                                         />
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-slate-500">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-sm text-slate-500">
                                         {new Date(trip.updated_at).toLocaleString()}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ))}
                             {visibleTrips.length === 0 && !isLoading && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                                         No trips match the current filters.
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
                             {isLoading && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
-                                        <span className="inline-flex items-center gap-2">
-                                            <SpinnerGap size={14} className="animate-spin" />
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
+                                        <span className="inline-flex items-center gap-2 font-medium">
+                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading trips...
                                         </span>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
                 {isSaving && (
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>
@@ -703,43 +771,126 @@ export const AdminTripsPage: React.FC = () => {
                                     No trip found for the selected audit target.
                                 </div>
                             ) : (
-                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip metadata</h3>
-                                    <div className="space-y-1 text-sm text-slate-700">
-                                        <div className="break-all">
-                                            <span className="font-semibold text-slate-800">Trip ID:</span>{' '}
-                                            <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm" />
+                                <div className="space-y-4">
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Information</h3>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Trip ID</span>
+                                                <CopyableUuid value={selectedTripForDrawer.trip_id} textClassName="break-all text-sm font-medium text-slate-800" />
+                                            </div>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Owner ID</span>
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm font-medium text-slate-800" />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
+                                                        className="shrink-0 text-indigo-600 hover:text-indigo-800 text-xs font-semibold"
+                                                    >
+                                                        View
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Status</span>
+                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.status}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Source</span>
+                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.source_kind || 'n/a'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Created At</span>
+                                                <span className="text-sm font-medium text-slate-800">{new Date(selectedTripForDrawer.created_at).toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Updated At</span>
+                                                <span className="text-sm font-medium text-slate-800">{new Date(selectedTripForDrawer.updated_at).toLocaleString()}</span>
+                                            </div>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Expires At</span>
+                                                <span className="text-sm font-medium text-slate-800">{selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</span>
+                                            </div>
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Status:</span> {selectedTripForDrawer.status}</div>
-                                        <div><span className="font-semibold text-slate-800">Owner:</span> {selectedTripForDrawer.owner_email || selectedTripForDrawer.owner_id}</div>
-                                        <div className="break-all">
-                                            <span className="font-semibold text-slate-800">Owner ID:</span>{' '}
-                                            <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm" />
+                                    </section>
+                                    
+                                    {isLoadingFullTrip ? (
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                                            Loading trip map and itinerary...
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Expires at:</span> {selectedTripForDrawer.trip_expires_at ? new Date(selectedTripForDrawer.trip_expires_at).toLocaleString() : 'Not set'}</div>
-                                        <div><span className="font-semibold text-slate-800">Source:</span> {selectedTripForDrawer.source_kind || 'n/a'}</div>
-                                        <div><span className="font-semibold text-slate-800">Created:</span> {new Date(selectedTripForDrawer.created_at).toLocaleString()}</div>
-                                        <div><span className="font-semibold text-slate-800">Updated:</span> {new Date(selectedTripForDrawer.updated_at).toLocaleString()}</div>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Open owner drawer
-                                        </button>
+                                    ) : selectedFullTrip && (previewCityStops.length > 0 || previewMapUrl) ? (
+                                        <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                            <div className="grid grid-cols-2">
+                                                <div className="border-r border-gray-100 p-3.5">
+                                                    <div className="space-y-0 h-48 overflow-y-auto">
+                                                        {previewCityStops.length === 0 ? (
+                                                            <div className="text-[11px] text-gray-400">No city stops found</div>
+                                                        ) : (
+                                                            previewCityStops.map((stop, idx) => {
+                                                                const isStart = idx === 0;
+                                                                const isEnd = idx === previewCityStops.length - 1;
+                                                                const pinClass = isStart && !isEnd ? 'text-indigo-500' : isEnd && !isStart ? 'text-indigo-300' : 'text-indigo-500';
+                                                                return (
+                                                                    <div key={stop.id} className="flex min-h-[31px] items-center gap-2.5 px-2">
+                                                                        <div className="relative flex w-4 shrink-0 items-center justify-center self-stretch">
+                                                                            {previewCityStops.length > 1 && (
+                                                                                <span
+                                                                                    className={`absolute left-1/2 w-0.5 -translate-x-1/2 bg-indigo-200 ${
+                                                                                        isStart ? 'top-1/2 -bottom-px' : isEnd ? '-top-px bottom-1/2' : '-top-px -bottom-px'
+                                                                                    }`}
+                                                                                />
+                                                                            )}
+                                                                            {isStart || isEnd ? (
+                                                                                <MapPin weight="fill" size={13} className={`relative z-10 ${pinClass}`} />
+                                                                            ) : (
+                                                                                <span className="relative z-10 h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                                                                            <span className="break-words text-[15px] font-medium leading-5 text-gray-700">{stop.title}</span>
+                                                                            <span className="text-[12px] font-medium leading-5 text-indigo-500/75">
+                                                                                {Math.max(1, Math.ceil(stop.duration))} nights
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-gray-50 p-2">
+                                                    <div className="relative h-48 w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+                                                        {previewMapUrl ? (
+                                                            <img
+                                                                src={previewMapUrl}
+                                                                alt={`Map preview for ${selectedFullTrip.title}`}
+                                                                className="h-full w-full object-cover"
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center text-[11px] text-gray-500">
+                                                                Map preview unavailable
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    <div className="mt-4 flex flex-wrap items-center gap-2">
                                         <a
                                             href={`/trip/${encodeURIComponent(selectedTripForDrawer.trip_id)}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
                                         >
-                                            Open trip
-                                            <ArrowSquareOut size={12} />
+                                            View Trip Details
+                                            <ArrowSquareOut size={16} />
                                         </a>
                                     </div>
-                                </section>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -784,28 +935,48 @@ export const AdminTripsPage: React.FC = () => {
                                     Loading owner profile...
                                 </div>
                             ) : selectedOwnerProfile ? (
-                                <section className="space-y-3 rounded-xl border border-slate-200 p-3">
-                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity</h3>
-                                    <div className="space-y-1 text-sm text-slate-700">
-                                        <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedOwnerProfile)}</div>
-                                        <div><span className="font-semibold text-slate-800">Email:</span> {selectedOwnerProfile.email || 'No email'}</div>
-                                        <div className="break-all">
-                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
-                                            <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm" />
+                                <div className="space-y-4">
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Identity Context</h3>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">User ID</span>
+                                                <CopyableUuid value={selectedOwnerProfile.user_id} textClassName="break-all text-sm font-medium text-slate-800" />
+                                            </div>
+                                            <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Email Address</span>
+                                                <span className="break-all text-sm font-medium text-slate-800">{selectedOwnerProfile.email || '—'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Display Name</span>
+                                                <span className="text-sm font-medium text-slate-800">{getUserDisplayName(selectedOwnerProfile) || '—'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Role</span>
+                                                <span className="text-sm font-medium text-slate-800">{selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Tier</span>
+                                                <span className="text-sm font-medium text-slate-800">{selectedOwnerProfile.tier_key || '—'}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                                                <span className="text-xs font-semibold text-slate-500">Status</span>
+                                                <span className="text-sm font-medium text-slate-800">{formatAccountStatusLabel(selectedOwnerProfile.account_status)}</span>
+                                            </div>
                                         </div>
-                                        <div><span className="font-semibold text-slate-800">Role:</span> {selectedOwnerProfile.system_role === 'admin' ? 'Admin' : 'User'}</div>
-                                        <div><span className="font-semibold text-slate-800">Tier:</span> {selectedOwnerProfile.tier_key}</div>
-                                        <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel(selectedOwnerProfile.account_status)}</div>
+                                    </section>
+                                    
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
+                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+                                        >
+                                            View Full Profile
+                                            <ArrowSquareOut size={16} />
+                                        </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => navigate(`/admin/users?user=${encodeURIComponent(selectedOwnerProfile.user_id)}&drawer=user`)}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                    >
-                                        Open owner profile
-                                        <ArrowSquareOut size={12} />
-                                    </button>
-                                </section>
+                                </div>
                             ) : (
                                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                                     No owner profile found.

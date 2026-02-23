@@ -362,6 +362,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const value = useMemo<AuthContextValue>(() => {
+        // Development bypass for local admin testing
+        if (import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true') {
+            return {
+                session: {
+                    access_token: 'dev-bypass-token',
+                    refresh_token: 'dev-bypass-refresh-token',
+                    expires_in: 3600,
+                    expires_at: Math.floor(Date.now() / 1000) + 3600,
+                    token_type: 'bearer',
+                    user: {
+                        id: 'dev-admin-id',
+                        app_metadata: { provider: 'email', providers: ['email'] },
+                        user_metadata: {},
+                        aud: 'authenticated',
+                        created_at: new Date().toISOString(),
+                    } as any,
+                },
+                access: {
+                    userId: 'dev-admin-id',
+                    role: 'admin',
+                    accountStatus: 'active',
+                    isAnonymous: false,
+                    tierKey: 'free',
+                    entitlements: {},
+                } as any,
+                isLoading: false,
+                isAuthenticated: true,
+                isAnonymous: false,
+                isAdmin: true,
+                refreshAccess,
+                loginWithPassword,
+                registerWithPassword,
+                loginWithOAuth,
+                sendPasswordResetEmail,
+                updatePassword,
+                logout,
+            };
+        }
+
         const hasValidBoundAccess = Boolean(
             session?.user
             && access

@@ -88,6 +88,7 @@ interface AiTelemetryRecentRow {
 interface AiTelemetryApiResponse extends BenchmarkApiResponse {
     summary?: AiTelemetrySummary;
     series?: AiTelemetrySeriesPoint[];
+    monthlyCostSeries?: Array<{ date: string; cost: number }>;
     providers?: AiTelemetryProviderPoint[];
     models?: AiTelemetryModelPoint[];
     rankings?: {
@@ -169,6 +170,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryError, setTelemetryError] = useState<string | null>(null);
     const [telemetrySummary, setTelemetrySummary] = useState<AiTelemetrySummary | null>(null);
     const [telemetrySeries, setTelemetrySeries] = useState<AiTelemetrySeriesPoint[]>([]);
+    const [monthlyCostSeries, setMonthlyCostSeries] = useState<Array<{ date: string; cost: number }>>([]);
     const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
     const [telemetryModels, setTelemetryModels] = useState<AiTelemetryModelPoint[]>([]);
     const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
@@ -244,6 +246,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
             setTelemetrySummary(payload.summary || null);
             setTelemetrySeries(Array.isArray(payload.series) ? payload.series : []);
+            setMonthlyCostSeries(Array.isArray(payload.monthlyCostSeries) ? payload.monthlyCostSeries : []);
             setTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
             setTelemetryModels(Array.isArray(payload.models) ? payload.models : []);
             setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
@@ -260,6 +263,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryError(telemetryLoadError instanceof Error ? telemetryLoadError.message : 'Failed to load AI telemetry');
             setTelemetrySummary(null);
             setTelemetrySeries([]);
+            setMonthlyCostSeries([]);
             setTelemetryProviders([]);
             setTelemetryModels([]);
             setTelemetryRecent([]);
@@ -385,6 +389,20 @@ export const AdminAiTelemetryPage: React.FC = () => {
             'Total cost (USD)': point.totalCostUsd,
         }));
     }, [telemetrySeries]);
+
+    const monthlyCostChartData = useMemo(() => {
+        return monthlyCostSeries.map((point) => ({
+            Date: new Date(point.date).toLocaleDateString([], {
+                month: 'short',
+                day: 'numeric',
+            }),
+            'Cost (USD)': point.cost,
+        }));
+    }, [monthlyCostSeries]);
+
+    const currentMonthCostTotal = useMemo(() => {
+        return monthlyCostSeries.reduce((sum, item) => sum + item.cost, 0);
+    }, [monthlyCostSeries]);
 
     const providerVolumeChartData = useMemo(() => {
         return [...telemetryProviders]
@@ -804,7 +822,30 @@ export const AdminAiTelemetryPage: React.FC = () => {
                     </AdminSurfaceCard>
                 </section>
 
-                <section className="grid gap-3 lg:grid-cols-2">
+                <section className="mt-3">
+                    <AdminSurfaceCard>
+                        <Title>Total cost per day (Current Month)</Title>
+                        <Subtitle>Daily breakdown of API costs for the ongoing calendar month.</Subtitle>
+                        <Metric className="mt-2">{formatUsd(currentMonthCostTotal)}</Metric>
+                        {monthlyCostChartData.length > 0 ? (
+                            <BarChart
+                                className="mt-3 h-56"
+                                data={monthlyCostChartData}
+                                index="Date"
+                                categories={['Cost (USD)']}
+                                colors={['emerald']}
+                                yAxisWidth={56}
+                                valueFormatter={(value) => formatUsd(value)}
+                                showTooltip
+                                showLegend={false}
+                            />
+                        ) : (
+                            <Text className="mt-3 text-xs text-slate-500">No cost data available for the current month.</Text>
+                        )}
+                    </AdminSurfaceCard>
+                </section>
+
+                <section className="grid gap-3 lg:grid-cols-2 mt-3">
                     <AdminSurfaceCard>
                         <Title>Provider breakdown</Title>
                         <Subtitle>Calls and failures by provider.</Subtitle>

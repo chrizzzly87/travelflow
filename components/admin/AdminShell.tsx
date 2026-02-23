@@ -216,8 +216,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             </aside>
 
             <div className="flex min-h-dvh w-full">
-                <div className="relative hidden lg:block">
-                    <aside className={`flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
+                <div className="relative hidden lg:block z-50">
+                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
                             className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
@@ -259,7 +259,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -287,9 +287,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}
                             </div>
-                            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
+                            <div className="flex w-full flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 lg:w-auto lg:flex-nowrap mt-3 lg:mt-0">
                                 {showGlobalSearch && (
-                                    <>
+                                    <div className="w-full sm:w-auto flex-1 lg:flex-none">
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
                                         <input
                                             id="admin-global-search"
@@ -298,29 +298,35 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}
-                                            className="h-9 min-w-[180px] flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px] lg:flex-none"
+                                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px]"
                                         />
-                                    </>
+                                    </div>
                                 )}
                                 {showDateRange && (
-                                    <Select
-                                        value={dateRange}
-                                        onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
-                                        disabled={!onDateRangeChange}
-                                    >
-                                        <SelectTrigger className="h-9 w-[170px]">
-                                            <SelectValue placeholder="Date range" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {DATE_RANGE_OPTIONS.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="w-full sm:w-auto shrink-0">
+                                        <Select
+                                            value={dateRange}
+                                            onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
+                                            disabled={!onDateRangeChange}
+                                        >
+                                            <SelectTrigger className="h-9 w-full sm:w-[170px]">
+                                                <SelectValue placeholder="Date range" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DATE_RANGE_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
-                                {actions}
+                                {actions && (
+                                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2">
+                                        {actions}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </header>
