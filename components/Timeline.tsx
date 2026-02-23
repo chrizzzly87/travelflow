@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
-import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, buildCityOverlapLayout, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -165,6 +165,33 @@ export const Timeline: React.FC<TimelineProps> = ({
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
+  const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
+  const maxCityStackCount = React.useMemo(() => {
+      let maxCount = 1;
+      cityStackLayout.forEach((slot) => {
+          maxCount = Math.max(maxCount, Math.max(1, Math.floor(slot.stackCount || 1)));
+      });
+      return maxCount;
+  }, [cityStackLayout]);
+  const cityStackCountStyle = React.useMemo<React.CSSProperties>(
+      () => ({ '--tf-city-stack-count': maxCityStackCount }),
+      [maxCityStackCount]
+  );
+  const uncertainSlotColorByKey = React.useMemo(() => {
+      const colorBySlot = new Map<string, string>();
+      cities.forEach((city) => {
+          if (city.cityPlanStatus !== 'uncertain') return;
+          const stack = cityStackLayout.get(city.id);
+          const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+              ? `option-${city.cityPlanOptionIndex}`
+              : `stack-${stack?.stackIndex || 0}`;
+          const slotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+          if (!colorBySlot.has(slotKey)) {
+              colorBySlot.set(slotKey, getHexFromColorClass(city.color || ''));
+          }
+      });
+      return colorBySlot;
+  }, [cities, cityStackLayout]);
 
   const travelLinks = React.useMemo(() => {
       return cities.slice(0, -1).map((city, idx) => {
@@ -714,7 +741,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
                 
                 {/* Cities Lane */}
-                <div className="relative h-[4.5rem] md:h-20 w-full group/cities z-20">
+                <div className="relative w-full group/cities z-20">
                     {/* Lane Label */}
                     <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
@@ -729,8 +756,20 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <Plus size={14} />
                         </button>
                     </div>
-                    <div ref={cityCardsRowRef} className="relative h-[3.5rem] md:h-16 w-full">
+                    <div
+                        ref={cityCardsRowRef}
+                        className="relative w-full [--tf-city-slot-height:3.25rem] md:[--tf-city-slot-height:3.75rem] h-[calc((var(--tf-city-slot-height)*var(--tf-city-stack-count))+((var(--tf-city-stack-count)-1)*2px)+4px)]"
+                        style={cityStackCountStyle}
+                    >
                         {cities.map((city, index) => {
+                            const cityStack = cityStackLayout.get(city.id);
+                            const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+                                ? `option-${city.cityPlanOptionIndex}`
+                                : `stack-${cityStack?.stackIndex || 0}`;
+                            const uncertainSlotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+                            const cityVisualColorHex = city.cityPlanStatus === 'uncertain'
+                                ? uncertainSlotColorByKey.get(uncertainSlotKey)
+                                : undefined;
                             // Calculate Neighbors
                             const prev = index > 0 ? cities[index - 1] : null;
                             const next = index < cities.length - 1 ? cities[index + 1] : null;
@@ -777,6 +816,9 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
                                     viewTransitionName={getExampleCityLaneViewTransitionName(enableExampleSharedTransition, index)}
+                                    cityStackIndex={cityStack?.stackIndex || 0}
+                                    cityStackCount={cityStack?.stackCount || 1}
+                                    cityVisualColorHex={cityVisualColorHex}
                                 />
                             );
                         })}

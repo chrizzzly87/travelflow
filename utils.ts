@@ -224,6 +224,11 @@ export interface TimelineBounds {
     dayCount: number;
 }
 
+export interface CityOverlapLayoutSlot {
+    stackIndex: number;
+    stackCount: number;
+}
+
 export const getTimelineBounds = (
     items: ITimelineItem[],
     options: { minDays?: number } = {}
@@ -254,6 +259,73 @@ export const getTimelineBounds = (
         endOffset,
         dayCount: endOffset - startOffset,
     };
+};
+
+const CITY_OVERLAP_EPSILON = 0.0001;
+
+export const buildCityOverlapLayout = (
+    cityItems: ITimelineItem[]
+): Map<string, CityOverlapLayoutSlot> => {
+    const layout = new Map<string, CityOverlapLayoutSlot>();
+    if (!Array.isArray(cityItems) || cityItems.length === 0) return layout;
+
+    const sortedCities = [...cityItems]
+        .filter((item) => item.type === 'city')
+        .sort((a, b) => {
+            if (a.startDateOffset === b.startDateOffset) {
+                return b.duration - a.duration;
+            }
+            return a.startDateOffset - b.startDateOffset;
+        });
+
+    if (sortedCities.length === 0) return layout;
+
+    const laneEnds: number[] = [];
+    const laneByCityId = new Map<string, number>();
+    const componentByCityId = new Map<string, number>();
+    const componentLaneCount = new Map<number, number>();
+
+    let currentComponentId = 0;
+    let currentComponentMaxEnd = Number.NEGATIVE_INFINITY;
+
+    sortedCities.forEach((city) => {
+        const start = city.startDateOffset;
+        const end = city.startDateOffset + Math.max(0, city.duration);
+
+        const startsNewComponent = start >= (currentComponentMaxEnd - CITY_OVERLAP_EPSILON);
+        if (startsNewComponent) {
+            currentComponentId += 1;
+            currentComponentMaxEnd = end;
+            laneEnds.length = 0;
+        } else {
+            currentComponentMaxEnd = Math.max(currentComponentMaxEnd, end);
+        }
+
+        let laneIndex = laneEnds.findIndex((laneEnd) => laneEnd <= (start + CITY_OVERLAP_EPSILON));
+        if (laneIndex < 0) {
+            laneIndex = laneEnds.length;
+            laneEnds.push(end);
+        } else {
+            laneEnds[laneIndex] = end;
+        }
+
+        laneByCityId.set(city.id, laneIndex);
+        componentByCityId.set(city.id, currentComponentId);
+        componentLaneCount.set(
+            currentComponentId,
+            Math.max(componentLaneCount.get(currentComponentId) || 1, laneIndex + 1)
+        );
+    });
+
+    sortedCities.forEach((city) => {
+        const componentId = componentByCityId.get(city.id) || 1;
+        layout.set(city.id, {
+            stackIndex: laneByCityId.get(city.id) || 0,
+            stackCount: componentLaneCount.get(componentId) || 1,
+        });
+    });
+
+    return layout;
 };
 
 export const findTravelBetweenCities = (

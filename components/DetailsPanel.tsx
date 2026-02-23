@@ -440,6 +440,46 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [tripItems]
   );
+  const handleToggleCityUncertainty = () => {
+      if (!canEdit || !displayItem || displayItem.type !== 'city') return;
+
+      const isCurrentlyUncertain = displayItem.cityPlanStatus === 'uncertain';
+      if (isCurrentlyUncertain) {
+          handleUpdate(displayItem.id, {
+              cityPlanStatus: 'confirmed',
+              cityPlanGroupId: undefined,
+              cityPlanOptionIndex: undefined,
+          });
+          return;
+      }
+
+      const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
+      const defaultGroupId = `city-option-${normalizedStart}`;
+      const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
+      const siblingOptionIndexes = sortedCityItems
+          .filter(entry =>
+              entry.id !== displayItem.id
+              && entry.cityPlanStatus === 'uncertain'
+              && entry.cityPlanGroupId === nextGroupId
+          )
+          .map(entry => (
+              typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                  ? Number(entry.cityPlanOptionIndex)
+                  : -1
+          ));
+      const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+          ? Number(displayItem.cityPlanOptionIndex)
+          : undefined;
+      const nextOptionIndex = existingOptionIndex !== undefined
+          ? Math.max(0, Math.floor(existingOptionIndex))
+          : (Math.max(-1, ...siblingOptionIndexes) + 1);
+
+      handleUpdate(displayItem.id, {
+          cityPlanStatus: 'uncertain',
+          cityPlanGroupId: nextGroupId,
+          cityPlanOptionIndex: nextOptionIndex,
+      });
+  };
   const firstCityItem = sortedCityItems[0] || null;
   const lastCityItem = sortedCityItems.length > 1 ? sortedCityItems[sortedCityItems.length - 1] : null;
   const isRoundTripSequence = !!(
@@ -1002,6 +1042,14 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
+  const isUncertainCity = isCity && displayItem.cityPlanStatus === 'uncertain';
+  const uncertainOptionLabel = isUncertainCity
+      ? (
+          (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+              ? `Option ${(displayItem.cityPlanOptionIndex || 0) + 1}`
+              : 'Tentative stop'
+      )
+      : '';
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -1029,6 +1077,28 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       >
                           {displayItem.type}
                       </div>
+                      {isUncertainCity && (
+                        <div className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700">
+                            <AlertTriangle size={12} />
+                            <span>Uncertain{uncertainOptionLabel ? ` · ${uncertainOptionLabel}` : ''}</span>
+                        </div>
+                      )}
+                      {isCity && (
+                        <button
+                            type="button"
+                            onClick={handleToggleCityUncertainty}
+                            disabled={!canEdit}
+                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${
+                                isUncertainCity
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                    : 'border-amber-200 bg-amber-50 text-amber-700'
+                            } ${canEdit ? 'hover:brightness-95' : 'opacity-50 cursor-not-allowed'}`}
+                            title={isUncertainCity ? 'Mark stop as confirmed' : 'Mark stop as uncertain'}
+                        >
+                            <AlertTriangle size={12} />
+                            <span>{isUncertainCity ? 'Mark confirmed' : 'Mark uncertain'}</span>
+                        </button>
+                      )}
                       {isCity && (
                         <div className="relative">
                             <button
