@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-23-trip-city-panels-modern-uncertain-options
-version: v0.56.0
+version: v0.55.0
 title: "Modernized City Panels and Uncertain Stop Variants"
 date: 2026-02-23
-published_at: 2026-02-23T14:00:00Z
-status: draft
+published_at: 2026-02-23T20:23:09Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip city panels now use softer modern color blending and can visually represent tentative city options."
