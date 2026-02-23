@@ -20,3 +20,4 @@ summary: "Trip city panels now use softer modern color blending and can visually
 - [x] [Fixed] 🚉 Transfer chips no longer collapse into unreadable slivers; dense legs are packed into extra transfer lanes to avoid overlap.
 - [x] [New feature] 🧪 Added a new flexible Mediterranean example trip so teams can test uncertain city variants in a real itinerary.
 - [ ] [Internal] 🧱 Extended itinerary item metadata to support uncertain city status and grouped alternative options.
+- [ ] [Internal] 🛠️ Synced the workspace lockfile with package manifest updates so CI/Netlify installs run reliably with frozen lockfile mode.
