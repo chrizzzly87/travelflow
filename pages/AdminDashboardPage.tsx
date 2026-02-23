@@ -5,6 +5,7 @@ import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import { adminListTrips, adminListUsers, type AdminTripRecord, type AdminUserRecord } from '../services/adminService';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { Card, Metric, Text, Flex, Grid, ProgressBar, BarChart, DonutChart, Title } from '@tremor/react';
 
 const formatValue = (value: number): string => new Intl.NumberFormat().format(value);
 
@@ -103,15 +104,7 @@ export const AdminDashboardPage: React.FC = () => {
         };
     }, [scopedTrips, scopedUsers]);
 
-    const tripStatusBars = useMemo(() => {
-        const total = Math.max(scopedTrips.length, 1);
-        const toPct = (count: number): number => Math.round((count / total) * 100);
-        return [
-            { id: 'active', label: 'Active', count: metrics.activeTrips, pct: toPct(metrics.activeTrips), className: 'bg-emerald-500' },
-            { id: 'expired', label: 'Expired', count: metrics.expiredTrips, pct: toPct(metrics.expiredTrips), className: 'bg-amber-500' },
-            { id: 'archived', label: 'Archived', count: metrics.archivedTrips, pct: toPct(metrics.archivedTrips), className: 'bg-slate-500' },
-        ];
-    }, [metrics.activeTrips, metrics.archivedTrips, metrics.expiredTrips, scopedTrips.length]);
+
 
     return (
         <AdminShell
@@ -135,91 +128,106 @@ export const AdminDashboardPage: React.FC = () => {
                 </section>
             )}
 
-            <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
-                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <h3 className="tracking-tight text-sm font-medium">Total Users</h3>
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.totalUsers} /></div>
-                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Admins: <AdminCountUpNumber value={metrics.adminUsers} /></p>
-                    </div>
-                </article>
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
-                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <h3 className="tracking-tight text-sm font-medium">Active Users</h3>
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.activeUsers} /></div>
-                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Suspended: <AdminCountUpNumber value={metrics.disabledUsers} /></p>
-                    </div>
-                </article>
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
-                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <h3 className="tracking-tight text-sm font-medium">Total Trips</h3>
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.totalTrips} /></div>
-                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Active: <AdminCountUpNumber value={metrics.activeTrips} /></p>
-                    </div>
-                </article>
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
-                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
-                        <h3 className="tracking-tight text-sm font-medium">Expired Trips</h3>
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.expiredTrips} /></div>
-                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Lifecycle pressure</p>
-                    </div>
-                </article>
-            </section>
+            <Grid numItemsSm={2} numItemsLg={4} className="gap-6 mt-6">
+                <Card decoration="top" decorationColor="indigo">
+                    <Text>Total Users</Text>
+                    <Metric><AdminCountUpNumber value={metrics.totalUsers} /></Metric>
+                    <Flex className="mt-4">
+                        <Text>Active / Total</Text>
+                        <Text>{formatValue(metrics.activeUsers)} / {formatValue(metrics.totalUsers)}</Text>
+                    </Flex>
+                    <ProgressBar value={metrics.totalUsers ? (metrics.activeUsers / metrics.totalUsers) * 100 : 0} color="indigo" className="mt-2" />
+                </Card>
+                <Card decoration="top" decorationColor="emerald">
+                    <Text>Total Trips</Text>
+                    <Metric><AdminCountUpNumber value={metrics.totalTrips} /></Metric>
+                    <Flex className="mt-4">
+                        <Text>Active / Total</Text>
+                        <Text>{formatValue(metrics.activeTrips)} / {formatValue(metrics.totalTrips)}</Text>
+                    </Flex>
+                    <ProgressBar value={metrics.totalTrips ? (metrics.activeTrips / metrics.totalTrips) * 100 : 0} color="emerald" className="mt-2" />
+                </Card>
+                <Card decoration="top" decorationColor="amber">
+                    <Text>Expired Trips</Text>
+                    <Metric><AdminCountUpNumber value={metrics.expiredTrips} /></Metric>
+                    <Text className="mt-4">Lifecycle pressure point</Text>
+                </Card>
+                <Card decoration="top" decorationColor="slate">
+                    <Text>Suspended Users</Text>
+                    <Metric><AdminCountUpNumber value={metrics.disabledUsers} /></Metric>
+                    <Text className="mt-4">Accounts blocked or locked</Text>
+                </Card>
+            </Grid>
 
-            <section className="mt-4 grid gap-4 lg:grid-cols-2 lg:gap-8 xl:grid-cols-[1fr_1.5fr]">
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
-                    <div className="flex flex-col space-y-1.5 pb-4">
-                        <h3 className="font-semibold leading-none tracking-tight">Trip Status Mix</h3>
-                        <p className="text-sm text-muted-foreground text-slate-500">Distribution of trips by lifecycle state.</p>
-                    </div>
-                    <div className="space-y-4">
-                        {tripStatusBars.map((bar) => (
-                            <div key={bar.id} className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-slate-700">
-                                    <span className="font-medium">{bar.label}</span>
-                                    <span className="text-slate-500">{formatValue(bar.count)} ({bar.pct}%)</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                                    <div
-                                        className={`h-full ${bar.className}`}
-                                        style={{ width: `${bar.pct}%` }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </article>
+            <Grid numItemsLg={2} className="gap-6 mt-6">
+                <Card>
+                    <Title>Trips Created Over Time</Title>
+                    <BarChart
+                        className="mt-6 h-72"
+                        data={(() => {
+                            const days: Record<string, number> = {};
+                            scopedTrips.forEach((t) => {
+                                const d = new Date(t.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                days[d] = (days[d] || 0) + 1;
+                            });
+                            return Object.entries(days).map(([date, count]) => ({ date, 'Trips Created': count })).reverse().slice(0, 14).reverse();
+                        })()}
+                        index="date"
+                        categories={['Trips Created']}
+                        colors={['indigo']}
+                        yAxisWidth={48}
+                    />
+                </Card>
 
-                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                <Card>
+                    <Title>User Login Providers</Title>
+                    <div className="mt-6 flex h-72 items-center justify-center">
+                        <DonutChart
+                            data={(() => {
+                                const counts: Record<string, number> = {};
+                                scopedUsers.forEach((u) => {
+                                    const label = getLoginLabel(u);
+                                    counts[label] = (counts[label] || 0) + 1;
+                                });
+                                return Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+                            })()}
+                            category="value"
+                            index="name"
+                            colors={['indigo', 'cyan', 'amber', 'emerald', 'slate']}
+                            className="h-full w-full max-h-[240px]"
+                            showAnimation
+                        />
+                    </div>
+                </Card>
+            </Grid>
+
+            <section className="mt-6">
+                <Card>
                     <div className="flex flex-col space-y-1.5 pb-4">
                         <h3 className="font-semibold leading-none tracking-tight">Recent Users</h3>
-                        <p className="text-sm text-muted-foreground text-slate-500">Most recently created accounts with identity and sign-in context.</p>
+                        <p className="text-sm text-slate-500">Most recently created accounts with identity and sign-in context.</p>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-6 mt-4">
                         {(scopedUsers.slice(0, 6)).map((user) => (
-                            <div key={user.user_id} className="flex items-center">
-                                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9">
-                                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase">
+                            <a 
+                                key={user.user_id} 
+                                href={`/admin/users?user=${encodeURIComponent(user.user_id)}&drawer=user`}
+                                className="flex items-center group hover:bg-slate-50 p-2 -mx-2 rounded-lg transition-colors cursor-pointer"
+                            >
+                                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9 border border-transparent group-hover:border-slate-200 group-hover:shadow-sm transition-all">
+                                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase group-hover:bg-white transition-colors">
                                         {getUserName(user).charAt(0)}
                                     </span>
                                 </span>
                                 <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
-                                    <p className="text-sm font-medium leading-none truncate">{getUserName(user)}</p>
-                                    <p className="text-sm text-muted-foreground text-slate-500 truncate">{user.email || 'No email'}</p>
+                                    <p className="text-sm font-medium leading-none truncate group-hover:text-accent-700 transition-colors">{getUserName(user)}</p>
+                                    <p className="text-sm text-slate-500 truncate">{user.email || 'No email'}</p>
                                 </div>
                                 <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">
                                     <span className="text-sm font-medium text-slate-700">{getLoginLabel(user)}</span>
                                     <span className="text-xs text-slate-500 hidden sm:inline-block">{(user.last_sign_in_at ? `Visit ${new Date(user.last_sign_in_at).toLocaleDateString()}` : 'No sign-in yet')}</span>
                                 </div>
-                            </div>
+                            </a>
                         ))}
                         {scopedUsers.length === 0 && !isLoading && (
                             <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-500">
@@ -227,7 +235,7 @@ export const AdminDashboardPage: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </article>
+                </Card>
             </section>
         </AdminShell>
     );

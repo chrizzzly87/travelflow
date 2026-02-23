@@ -133,7 +133,9 @@ interface AiTelemetryModelPoint {
     costPerSecondUsd: number | null;
 }
 
-interface AiTelemetryApiResponse extends BenchmarkApiResponse {
+interface AiTelemetryApiResponse {
+    ok: boolean;
+    error?: string;
     summary?: AiTelemetrySummary;
     rankings?: {
         fastest?: AiTelemetryModelPoint[];
@@ -995,9 +997,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
             const payload = await fetchBenchmarkApi(`/api/internal/ai/benchmark/telemetry?${params.toString()}`, {
                 method: 'GET',
-            }) as AiTelemetryApiResponse;
+            }) as unknown as AiTelemetryApiResponse;
 
-            setSnapshotTelemetrySummary(payload.summary || null);
+            setSnapshotTelemetrySummary(payload.summary as unknown as AiTelemetrySummary || null);
             const fastest = Array.isArray(payload.rankings?.fastest) ? payload.rankings?.fastest[0] || null : null;
             const cheapest = Array.isArray(payload.rankings?.cheapest) ? payload.rankings?.cheapest[0] || null : null;
             const bestValue = Array.isArray(payload.rankings?.bestValue) ? payload.rankings?.bestValue[0] || null : null;

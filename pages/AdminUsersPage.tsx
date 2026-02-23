@@ -775,17 +775,20 @@ const LoginTypeFilterMenu: React.FC<{
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className={`inline-flex h-10 items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1`}
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50`}
                 aria-label="Filter by login type"
                 aria-expanded={isOpen}
             >
-                <div className="flex items-center gap-2">
-                    <Key size={14} className="text-muted-foreground" />
-                    <span className="font-medium text-slate-800">Login type</span>
-                    <span className="h-4 w-px bg-border mx-1" />
-                    <span className="max-w-[220px] truncate text-muted-foreground">{selectedLabelSummary}</span>
+                <Key size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />
+                <span>Login type</span>
+                
+                <div className="mx-2 flex h-4 items-center">
+                    <div className="h-full w-[1px] bg-slate-200" />
                 </div>
-                <CaretDown size={14} className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                
+                <span className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800 max-w-[220px] truncate">
+                    {selectedLabelSummary}
+                </span>
             </button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
@@ -803,25 +806,25 @@ const LoginTypeFilterMenu: React.FC<{
                     </div>
                     <div className="h-px bg-slate-100" />
                     <div className="space-y-0.5 p-1">
-                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
-                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
-                                    className="h-3 w-3"
+                                    className="h-4 w-4"
                                 />
-                            </span>
+                            </div>
                             <span>Username/password</span>
                             <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
                         </label>
-                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
-                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
-                                    className="h-3 w-3"
+                                    className="h-4 w-4"
                                 />
-                            </span>
+                            </div>
                             <span>Social</span>
                             <span className="ml-auto text-xs text-slate-500">{counts.social}</span>
                         </label>
@@ -834,15 +837,15 @@ const LoginTypeFilterMenu: React.FC<{
                                 return (
                                     <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="relative flex w-full cursor-default select-none items-center rounded-sm py-1 pl-6 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900 group"
                                     >
-                                        <span className="absolute left-0 flex h-3.5 w-3.5 items-center justify-center">
+                                        <div className="mr-2 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
-                                                className="h-3 w-3 rounded-[2px]"
+                                                className="h-3.5 w-3.5 rounded-[2px]"
                                             />
-                                        </span>
+                                        </div>
                                         <Icon size={12} className="mr-1.5 text-slate-500" />
                                         <span>{option.label}</span>
                                         <span className="ml-auto text-[10px] text-slate-500">{counts.socialProviders[option.value]}</span>
@@ -850,14 +853,14 @@ const LoginTypeFilterMenu: React.FC<{
                                 );
                             })}
                         </div>
-                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
-                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
-                                    className="h-3 w-3"
+                                    className="h-4 w-4"
                                 />
-                            </span>
+                            </div>
                             <span>Unknown</span>
                             <span className="ml-auto text-xs text-slate-500">{counts.unknown}</span>
                         </label>
@@ -2050,7 +2053,7 @@ export const AdminUsersPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="mt-3 overflow-x-auto rounded-xl border bg-card/50">
+                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
                     <Table>
                         <TableHeader className="bg-slate-50">
                             <TableRow>
