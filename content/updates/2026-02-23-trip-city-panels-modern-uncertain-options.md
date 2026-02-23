@@ -21,3 +21,4 @@ summary: "Trip city panels now use softer modern color blending and can visually
 - [x] [New feature] 🧪 Added a new flexible Mediterranean example trip so teams can test uncertain city variants in a real itinerary.
 - [ ] [Internal] 🧱 Extended itinerary item metadata to support uncertain city status and grouped alternative options.
 - [ ] [Internal] 🛠️ Synced the workspace lockfile with package manifest updates so CI/Netlify installs run reliably with frozen lockfile mode.
+- [ ] [Internal] 🧪 Updated PR quality checks to validate the PR head commit (same commit Netlify deploys) to catch lockfile drift before preview deploy.
