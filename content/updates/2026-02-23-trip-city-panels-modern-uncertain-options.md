@@ -15,5 +15,6 @@ summary: "Trip city panels now use softer modern color blending and can visually
 - [x] [New feature] 🪄 Tentative city options now render as semi-transparent striped cards so non-final stops are easy to spot.
 - [x] [Improved] 🧩 Overlapping city stays now stack into aligned lanes with tiny spacing, and city rows expand for extra overlaps while each card stays capped at the default height.
 - [x] [Improved] 🎯 Selected city cards and resize handles now have stronger focus/hover states for clearer editing feedback.
+- [x] [Improved] ✅ City and activity details now include an approval switch so tentative plan elements can be tracked without blocking edits.
 - [x] [New feature] 🧪 Added a new flexible Mediterranean example trip so teams can test uncertain city variants in a real itinerary.
 - [ ] [Internal] 🧱 Extended itinerary item metadata to support uncertain city status and grouped alternative options.

@@ -12,6 +12,7 @@ describe('example trip runtime factory', () => {
     const cityItems = (createdTrip?.items || []).filter((item) => item.type === 'city');
     const uncertainCities = cityItems.filter((item) => item.cityPlanStatus === 'uncertain');
     expect(uncertainCities).toHaveLength(2);
+    expect(uncertainCities.every((item) => item.isApproved === false)).toBe(true);
 
     const groupIds = Array.from(new Set(uncertainCities.map((item) => item.cityPlanGroupId)));
     expect(groupIds).toEqual(['mediterranean-middle-leg']);

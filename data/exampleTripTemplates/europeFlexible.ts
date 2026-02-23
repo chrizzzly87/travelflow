@@ -38,6 +38,7 @@ export const EUROPE_FLEXIBLE_TEMPLATE: Partial<ITrip> = {
             cityPlanStatus: 'uncertain',
             cityPlanGroupId: 'mediterranean-middle-leg',
             cityPlanOptionIndex: 0,
+            isApproved: false,
         },
         {
             id: 'city-palma-option',
@@ -52,6 +53,7 @@ export const EUROPE_FLEXIBLE_TEMPLATE: Partial<ITrip> = {
             cityPlanStatus: 'uncertain',
             cityPlanGroupId: 'mediterranean-middle-leg',
             cityPlanOptionIndex: 1,
+            isApproved: false,
         },
         {
             id: 'city-rome',

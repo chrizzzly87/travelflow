@@ -182,7 +182,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       ? getContrastTextColor(cityBaseBackgroundHex) === '#ffffff'
       : true;
   const cityTextColor = cityHex
-      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.98)' : shiftHexColor(cityHex, -68))
+      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.98)' : shiftHexColor(cityHex, -96))
       : 'rgb(255 255 255 / 0.98)';
   const mergedStyle: React.CSSProperties = cityHex && !isLoadingItem
       ? {
@@ -191,12 +191,12 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           backgroundColor: cityBaseBackgroundHex || undefined,
           backgroundImage: isUncertainCity
             ? `linear-gradient(155deg,
-                 color-mix(in oklab, ${cityHex} 34%, transparent) 0%,
-                 color-mix(in oklab, ${cityHex} 46%, white 54%) 100%
+                 color-mix(in oklab, ${cityHex} 30%, transparent) 0%,
+                 color-mix(in oklab, ${cityHex} 44%, white 56%) 100%
                ),
                repeating-linear-gradient(-45deg,
-                 color-mix(in oklab, ${cityHex} 86%, black 14%) 0 7px,
-                 color-mix(in oklab, ${cityHex} 38%, white 62%) 7px 14px
+                 color-mix(in oklab, ${cityHex} 56%, white 44%) 0 7px,
+                 color-mix(in oklab, ${cityHex} 48%, white 52%) 7px 14px
                )`
             : `linear-gradient(155deg,
                  color-mix(in oklab, ${cityHex} 42%, white 58%) 0%,
@@ -239,6 +239,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       onPointerDown={handlePointerDown}
       onClick={handleClick}
       data-tooltip={cityTooltipText}
+      data-city-block={isCity ? 'true' : undefined}
+      data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}
+      data-city-id={isCity ? item.id : undefined}
     >
       {/* Visual Buffers (Travel Only) */}
       {isTravel && (

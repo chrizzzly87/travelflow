@@ -177,6 +177,12 @@ export const Timeline: React.FC<TimelineProps> = ({
       () => ({ '--tf-city-stack-count': maxCityStackCount }),
       [maxCityStackCount]
   );
+  const connectorCities = React.useMemo(
+      () => cities
+          .filter((city) => (cityStackLayout.get(city.id)?.stackIndex || 0) === 0)
+          .sort((a, b) => a.startDateOffset - b.startDateOffset),
+      [cities, cityStackLayout]
+  );
   const uncertainSlotColorByKey = React.useMemo(() => {
       const colorBySlot = new Map<string, string>();
       cities.forEach((city) => {
@@ -194,8 +200,8 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [cities, cityStackLayout]);
 
   const travelLinks = React.useMemo(() => {
-      return cities.slice(0, -1).map((city, idx) => {
-          const nextCity = cities[idx + 1];
+      return connectorCities.slice(0, -1).map((city, idx) => {
+          const nextCity = connectorCities[idx + 1];
           const travelItem = findTravelBetweenCities(trip.items, city, nextCity);
           return {
               id: travelItem?.id || `travel-link-${city.id}-${nextCity.id}`,
@@ -204,7 +210,7 @@ export const Timeline: React.FC<TimelineProps> = ({
               travelItem
           };
       });
-  }, [cities, trip.items]);
+  }, [connectorCities, trip.items]);
 
   const getTransportIcon = (mode?: string) => {
       return <TransportModeIcon mode={mode} size={14} />;
@@ -590,7 +596,8 @@ export const Timeline: React.FC<TimelineProps> = ({
       if (measured > 0) setTravelLaneHeight(measured);
 
       if (cityCardsRow) {
-        const cityRect = cityCardsRow.getBoundingClientRect();
+        const mainLaneCityCard = cityCardsRow.querySelector<HTMLElement>('[data-city-block="true"][data-city-stack-index="0"]');
+        const cityRect = (mainLaneCityCard || cityCardsRow).getBoundingClientRect();
         const travelRect = travelLane.getBoundingClientRect();
         const anchorY =
           (cityRect.bottom - travelRect.top)

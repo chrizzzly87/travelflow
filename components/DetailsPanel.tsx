@@ -12,6 +12,7 @@ import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 import { FlagIcon } from './flags/FlagIcon';
+import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface DetailsPanelProps {
@@ -440,45 +441,53 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [tripItems]
   );
-  const handleToggleCityUncertainty = () => {
-      if (!canEdit || !displayItem || displayItem.type !== 'city') return;
+  const handleSetItemApproved = (checked: boolean) => {
+      if (!canEdit || !displayItem) return;
 
-      const isCurrentlyUncertain = displayItem.cityPlanStatus === 'uncertain';
-      if (isCurrentlyUncertain) {
+      if (displayItem.type === 'city') {
+          if (checked) {
+              handleUpdate(displayItem.id, {
+                  isApproved: true,
+                  cityPlanStatus: 'confirmed',
+              });
+              return;
+          }
+
+          const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
+          const defaultGroupId = `city-option-${normalizedStart}`;
+          const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
+          const siblingOptionIndexes = sortedCityItems
+              .filter(entry =>
+                  entry.id !== displayItem.id
+                  && entry.cityPlanStatus === 'uncertain'
+                  && entry.cityPlanGroupId === nextGroupId
+              )
+              .map(entry => (
+                  typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                      ? Number(entry.cityPlanOptionIndex)
+                      : -1
+              ));
+          const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+              ? Number(displayItem.cityPlanOptionIndex)
+              : undefined;
+          const nextOptionIndex = existingOptionIndex !== undefined
+              ? Math.max(0, Math.floor(existingOptionIndex))
+              : (Math.max(-1, ...siblingOptionIndexes) + 1);
+
           handleUpdate(displayItem.id, {
-              cityPlanStatus: 'confirmed',
-              cityPlanGroupId: undefined,
-              cityPlanOptionIndex: undefined,
+              isApproved: false,
+              cityPlanStatus: 'uncertain',
+              cityPlanGroupId: nextGroupId,
+              cityPlanOptionIndex: nextOptionIndex,
           });
           return;
       }
 
-      const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
-      const defaultGroupId = `city-option-${normalizedStart}`;
-      const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
-      const siblingOptionIndexes = sortedCityItems
-          .filter(entry =>
-              entry.id !== displayItem.id
-              && entry.cityPlanStatus === 'uncertain'
-              && entry.cityPlanGroupId === nextGroupId
-          )
-          .map(entry => (
-              typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
-                  ? Number(entry.cityPlanOptionIndex)
-                  : -1
-          ));
-      const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
-          ? Number(displayItem.cityPlanOptionIndex)
-          : undefined;
-      const nextOptionIndex = existingOptionIndex !== undefined
-          ? Math.max(0, Math.floor(existingOptionIndex))
-          : (Math.max(-1, ...siblingOptionIndexes) + 1);
-
-      handleUpdate(displayItem.id, {
-          cityPlanStatus: 'uncertain',
-          cityPlanGroupId: nextGroupId,
-          cityPlanOptionIndex: nextOptionIndex,
-      });
+      if (displayItem.type === 'activity') {
+          handleUpdate(displayItem.id, {
+              isApproved: checked,
+          });
+      }
   };
   const firstCityItem = sortedCityItems[0] || null;
   const lastCityItem = sortedCityItems.length > 1 ? sortedCityItems[sortedCityItems.length - 1] : null;
@@ -1042,6 +1051,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
+  const supportsApproval = isCity || isActivity;
+  const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
   const isUncertainCity = isCity && displayItem.cityPlanStatus === 'uncertain';
   const uncertainOptionLabel = isUncertainCity
       ? (
@@ -1083,21 +1094,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             <span>Uncertain{uncertainOptionLabel ? ` · ${uncertainOptionLabel}` : ''}</span>
                         </div>
                       )}
-                      {isCity && (
-                        <button
-                            type="button"
-                            onClick={handleToggleCityUncertainty}
-                            disabled={!canEdit}
-                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${
-                                isUncertainCity
+                      {supportsApproval && (
+                        <label
+                            className={`inline-flex items-center gap-2 rounded-md border px-2 py-1 text-[11px] font-semibold ${
+                                isItemApproved
                                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                     : 'border-amber-200 bg-amber-50 text-amber-700'
-                            } ${canEdit ? 'hover:brightness-95' : 'opacity-50 cursor-not-allowed'}`}
-                            title={isUncertainCity ? 'Mark stop as confirmed' : 'Mark stop as uncertain'}
+                            } ${canEdit ? '' : 'opacity-50 cursor-not-allowed'}`}
+                            title={isItemApproved ? 'Item approved' : 'Item needs approval'}
                         >
-                            <AlertTriangle size={12} />
-                            <span>{isUncertainCity ? 'Mark confirmed' : 'Mark uncertain'}</span>
-                        </button>
+                            <Switch
+                                checked={isItemApproved}
+                                onCheckedChange={handleSetItemApproved}
+                                disabled={!canEdit}
+                                className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                                aria-label="Toggle item approval"
+                            />
+                            <span>{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                        </label>
                       )}
                       {isCity && (
                         <div className="relative">

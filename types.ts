@@ -94,6 +94,7 @@ export interface ITimelineItem {
   cityPlanStatus?: CityPlanStatus;
   cityPlanGroupId?: string;
   cityPlanOptionIndex?: number;
+  isApproved?: boolean;
   
   // Specific properties
   transportMode?: TransportMode; 
