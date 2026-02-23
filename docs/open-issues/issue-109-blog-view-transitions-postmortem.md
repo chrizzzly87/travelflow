@@ -83,6 +83,20 @@
 - Title/text morph is improved but not pixel-perfect on first cold pass.
 - Popstate transition path remains more timing-sensitive than direct click path.
 
+## Resolved in Latest Sessions (Rounds 5-14)
+- **Progressive Blur Plop**: Restored native UA crossfades by removing `opacity: 1` keyframes.
+- **Morphing Glitches (Flash/Bloom)**: Removed `mix-blend-mode` plus-lighter hacks; tracking down and removing legacy `vt-blog-card-old` forced opacity animations.
+- **Directional Control**: Implemented direction-aware CSS generation for image crossfades.
+- **Global Layout**: Fixed sticky sidebar by changing `overflow-x-hidden` to `overflow-x-clip` in `<MarketingLayout>`.
+- **View Transition Specificity**: Blocked User-Agent stylesheets from fading out snapshots by applying `!important` to `animation: none` and `opacity`.
+- **Popstate Resync**: Explicitly tracked `window.location.pathname` over history changes to pass accurate source paths to `startBlogViewTransition`.
+- **Destructive Geometry Keyframes**: Removed hidden `@keyframes vt-blog-card-old` from `index.css` that shattered list-card layout.
+- **Z-Index Layering**: Fixed VT wrapper flying *over* the image by adjusting `content`, `card`, and `image` z-indexes with `!important`.
+- **Aspect-Ratio Independence**: Restored user's preferred detail image height, but hardened `object-fit: cover` directly onto `::view-transition-[old/new](.image)` to crop morphs rather than stretch them.
+- **Suppressing Ghost Crossfades**: Restored `display: none` isolation to `old`/`new` VT image layers based on direction to cleanly morph a single snapshot rectangle.
+- **Hardened Containment**: Added `overflow: hidden !important` on VT image layers so snapshots cannot bleed outside `1rem` rounded corners during morph flights.
+- **White Flash / Transparent Glitch**: Tightened `waitForBlogTransitionTarget` by adding an animation frame loop to guarantee `opacity-100` before GPU snapshot, and forced `display: none` on fast-loading Blurhash data URIs.
+
 ## Recommended Next Steps (For Next AI)
 
 1. Add one-time diagnostics for first transition only:

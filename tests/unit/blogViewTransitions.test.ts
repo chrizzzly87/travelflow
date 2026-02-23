@@ -64,9 +64,6 @@ describe('shared/blogViewTransitions', () => {
             card: 'blog-post-card-de-weekend-getaway-tips',
             image: 'blog-post-image-de-weekend-getaway-tips',
             title: 'blog-post-title-de-weekend-getaway-tips',
-            summary: 'blog-post-summary-de-weekend-getaway-tips',
-            meta: 'blog-post-meta-de-weekend-getaway-tips',
-            pills: 'blog-post-pills-de-weekend-getaway-tips',
         });
     });
 
@@ -75,9 +72,6 @@ describe('shared/blogViewTransitions', () => {
             card: 'blog-post-card-pt-br-post',
             image: 'blog-post-image-pt-br-post',
             title: 'blog-post-title-pt-br-post',
-            summary: 'blog-post-summary-pt-br-post',
-            meta: 'blog-post-meta-pt-br-post',
-            pills: 'blog-post-pills-pt-br-post',
         });
     });
 
@@ -86,9 +80,7 @@ describe('shared/blogViewTransitions', () => {
             card: 'blog-card-transition',
             image: 'blog-image-transition',
             title: 'blog-title-transition',
-            summary: 'blog-summary-transition',
-            meta: 'blog-meta-transition',
-            pills: 'blog-pills-transition',
+            content: 'blog-content-transition',
         });
     });
 
@@ -298,7 +290,7 @@ describe('shared/blogViewTransitions', () => {
         startBlogViewTransition();
         const styleElement = document.getElementById('blog-view-transition-active');
         expect(styleElement).not.toBeNull();
-        expect(styleElement?.textContent).toContain('animation-duration: 650ms;');
+        expect(styleElement?.textContent).toContain('animation-duration: 350ms;');
         expect(styleElement?.textContent).toContain('font-synthesis: none;');
         expect(getPendingBlogTransitionTarget()).toEqual({ language: 'en', slug: 'how-to-plan-multi-city-trip' });
 

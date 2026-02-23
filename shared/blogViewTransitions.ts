@@ -1,10 +1,10 @@
-type BlogViewTransitionPart = 'card' | 'image' | 'title' | 'summary' | 'meta' | 'pills';
+type BlogViewTransitionPart = 'card' | 'image' | 'title';
 type BlogRouteKind = 'list' | 'post' | 'other';
 
 const BLOG_VIEW_TRANSITION_PREFIX = 'blog-post';
 const BLOG_ROUTE_PATTERN = /^\/(?:[a-z]{2}\/)?blog(?:\/([^/?#]+))?\/?$/i;
 const BLOG_VIEW_TRANSITION_STYLE_ID = 'blog-view-transition-active';
-const BLOG_VIEW_TRANSITION_DURATION = '650ms';
+const BLOG_VIEW_TRANSITION_DURATION = '350ms';
 
 export interface BlogTransitionTarget {
     language: string;
@@ -40,18 +40,14 @@ export interface BlogPostViewTransitionNames {
     card: string;
     image: string;
     title: string;
-    summary: string;
-    meta: string;
-    pills: string;
+    content?: string;
 }
 
 export const BLOG_VIEW_TRANSITION_CLASSES = {
     card: 'blog-card-transition',
     image: 'blog-image-transition',
     title: 'blog-title-transition',
-    summary: 'blog-summary-transition',
-    meta: 'blog-meta-transition',
-    pills: 'blog-pills-transition',
+    content: 'blog-content-transition',
 } as const;
 
 let pendingBlogTransitionTarget: BlogTransitionTarget | null = null;
@@ -68,9 +64,6 @@ export const getBlogPostViewTransitionNames = (
     card: buildBlogPostViewTransitionName('card', language, slug),
     image: buildBlogPostViewTransitionName('image', language, slug),
     title: buildBlogPostViewTransitionName('title', language, slug),
-    summary: buildBlogPostViewTransitionName('summary', language, slug),
-    meta: buildBlogPostViewTransitionName('meta', language, slug),
-    pills: buildBlogPostViewTransitionName('pills', language, slug),
 });
 
 const resolveTransitionTargetToken = (value: string, fallback: string): string =>
@@ -199,50 +192,79 @@ export const subscribeBlogTransitionState = (
     };
 };
 
-const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget): string => {
+const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget, direction: 'list-to-post' | 'post-to-list'): string => {
     const names = getBlogPostViewTransitionNames(target.language, target.slug);
+    
+    const isListToPost = direction === 'list-to-post';
+    const imageIsolationCSS = isListToPost ? `
+/* List -> Post: hide the incoming slow-loading small thumb, show the new big image */
+::view-transition-old(${names.image}) { display: none !important; }
+::view-transition-new(${names.image}) { 
+  animation: none !important; 
+  opacity: 1 !important; 
+  mix-blend-mode: normal !important; 
+}
+` : `
+/* Post -> List: hide the incoming small thumb, hold onto the fading big old image */
+::view-transition-old(${names.image}) { 
+  animation: none !important; 
+  opacity: 1 !important; 
+  mix-blend-mode: normal !important; 
+}
+::view-transition-new(${names.image}) { display: none !important; }
+`;
+
     return `
 ::view-transition-group(${names.card}),
 ::view-transition-group(${names.image}),
-::view-transition-group(${names.title}),
-::view-transition-group(${names.summary}),
-::view-transition-group(${names.meta}),
-::view-transition-group(${names.pills}) {
+::view-transition-group(${names.title}) {
   animation-duration: ${BLOG_VIEW_TRANSITION_DURATION};
   animation-timing-function: cubic-bezier(0.22, 0.82, 0.24, 1);
 }
 
+::view-transition-group(${names.card}) { z-index: 10 !important; }
+::view-transition-group(${names.image}) { z-index: 20 !important; }
+::view-transition-group(${names.title}) { z-index: 30 !important; }
+
+::view-transition-old(${names.image}) img[src^="data:image/"],
+::view-transition-new(${names.image}) img[src^="data:image/"] { 
+  opacity: 0 !important; 
+  visibility: hidden !important; 
+}
+
+${names.content ? `
+::view-transition-group(${names.content}) { z-index: 15 !important; }
+::view-transition-old(${names.content}),
+::view-transition-new(${names.content}) {
+  animation-duration: ${BLOG_VIEW_TRANSITION_DURATION};
+  animation-timing-function: cubic-bezier(0.22, 0.82, 0.24, 1);
+  mix-blend-mode: normal;
+}
+::view-transition-old(${names.content}) { z-index: 1 !important; }
+::view-transition-new(${names.content}) { z-index: 3 !important; }
+` : ''}
+
 ::view-transition-old(${names.card}),
-::view-transition-new(${names.card}),
-::view-transition-old(${names.image}),
-::view-transition-new(${names.image}),
-::view-transition-old(${names.title}),
-::view-transition-new(${names.title}),
-::view-transition-old(${names.summary}),
-::view-transition-new(${names.summary}),
-::view-transition-old(${names.meta}),
-::view-transition-new(${names.meta}),
-::view-transition-old(${names.pills}),
-::view-transition-new(${names.pills}) {
+::view-transition-new(${names.card}) {
   mix-blend-mode: normal;
 }
 
 ::view-transition-old(${names.card}),
-::view-transition-old(${names.image}),
-::view-transition-old(${names.title}),
-::view-transition-old(${names.summary}),
-::view-transition-old(${names.meta}),
-::view-transition-old(${names.pills}) {
+::view-transition-old(${names.title}) {
   z-index: 1;
 }
 
-::view-transition-new(${names.card}),
-::view-transition-new(${names.image}),
-::view-transition-new(${names.title}),
-::view-transition-new(${names.summary}),
-::view-transition-new(${names.meta}),
-::view-transition-new(${names.pills}) {
+::view-transition-old(${names.image}) {
   z-index: 2;
+}
+
+::view-transition-new(${names.card}),
+::view-transition-new(${names.title}) {
+  z-index: 2;
+}
+
+::view-transition-new(${names.image}) {
+  z-index: 10;
 }
 
 ::view-transition-old(${names.card}),
@@ -253,87 +275,32 @@ const buildScopedBlogTransitionStyles = (target: BlogTransitionTarget): string =
 ::view-transition-old(${names.image}),
 ::view-transition-new(${names.image}) {
   transform-origin: center center;
-  overflow: clip;
-  width: 100%;
+  border-radius: 1rem;
   height: 100%;
+  width: 100%;
   object-fit: cover;
   object-position: center;
-}
-
-::view-transition-old(${names.title}),
-::view-transition-new(${names.title}),
-::view-transition-old(${names.summary}),
-::view-transition-new(${names.summary}),
-::view-transition-old(${names.meta}),
-::view-transition-new(${names.meta}),
-::view-transition-old(${names.pills}),
-::view-transition-new(${names.pills}) {
-  transform-origin: left top;
+  overflow: hidden !important;
 }
 
 ::view-transition-old(${names.title}),
 ::view-transition-new(${names.title}) {
+  transform-origin: left top;
   font-synthesis: none;
 }
 
-::view-transition-old(${names.card}) {
-  animation: vt-blog-card-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.36, 0, 0.24, 1) both;
-}
-
-::view-transition-new(${names.card}) {
-  animation: vt-blog-card-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.9, 0.22, 1) both;
-}
-
-::view-transition-old(${names.image}) {
-  animation: vt-blog-image-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.32, 0, 0.2, 1) both;
-}
-
-::view-transition-new(${names.image}) {
-  animation: vt-blog-image-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.16, 0.86, 0.22, 1) both;
-}
-
-::view-transition-old(${names.title}) {
-  animation: vt-blog-title-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.3, 0, 0.2, 1) both;
-}
-
-::view-transition-new(${names.title}) {
-  animation: vt-blog-title-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.9, 0.24, 1) both;
-}
-
-::view-transition-old(${names.summary}) {
-  animation: vt-blog-summary-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
-}
-
-::view-transition-new(${names.summary}) {
-  animation: vt-blog-summary-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
-}
-
-::view-transition-old(${names.meta}) {
-  animation: vt-blog-meta-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
-}
-
-::view-transition-new(${names.meta}) {
-  animation: vt-blog-meta-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
-}
-
-::view-transition-old(${names.pills}) {
-  animation: vt-blog-pills-old ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.28, 0, 0.2, 1) both;
-}
-
-::view-transition-new(${names.pills}) {
-  animation: vt-blog-pills-new ${BLOG_VIEW_TRANSITION_DURATION} cubic-bezier(0.18, 0.88, 0.24, 1) both;
-}
+${imageIsolationCSS}
 `;
 };
 
-const applyScopedBlogTransitionStyles = (): void => {
+const applyScopedBlogTransitionStyles = (direction: 'list-to-post' | 'post-to-list'): void => {
     if (typeof document === 'undefined') return;
     if (!pendingBlogTransitionTarget) return;
 
     const existingStyle = document.getElementById(BLOG_VIEW_TRANSITION_STYLE_ID) as HTMLStyleElement | null;
     const styleElement = existingStyle ?? document.createElement('style');
     styleElement.id = BLOG_VIEW_TRANSITION_STYLE_ID;
-    styleElement.textContent = buildScopedBlogTransitionStyles(pendingBlogTransitionTarget);
+    styleElement.textContent = buildScopedBlogTransitionStyles(pendingBlogTransitionTarget, direction);
     if (!existingStyle) {
         document.head.appendChild(styleElement);
     }
@@ -445,16 +412,24 @@ export const waitForBlogTransitionTarget = async (
             };
 
             const checkImageAndFinish = () => {
-                if (isFirstBlogTransition) {
-                    const names = getBlogPostViewTransitionNames(target.language, target.slug);
-                    const container = document.querySelector(`[style*="${names.image}"]`);
-                    const img = container?.tagName === 'IMG' ? container : container?.querySelector('img');
-                    if (img instanceof HTMLImageElement && typeof img.decode === 'function' && !img.complete) {
-                        void img.decode().catch(() => {}).finally(finish);
+                const names = getBlogPostViewTransitionNames(target.language, target.slug);
+                const container = document.querySelector(`[style*="${names.image}"]`);
+                const img = container?.tagName === 'IMG' ? container : container?.querySelector('img:not([aria-hidden="true"])');
+                
+                const ensureOpacity = () => {
+                    // Also wait for React to actually apply the opacity-100 class after load
+                    if (img && img.classList.contains('opacity-0')) {
+                        window.requestAnimationFrame(ensureOpacity);
                         return;
                     }
+                    finish();
+                };
+
+                if (img instanceof HTMLImageElement && typeof img.decode === 'function') {
+                    void img.decode().catch(() => {}).finally(ensureOpacity);
+                    return;
                 }
-                finish();
+                ensureOpacity();
             };
 
             const fontSet = (document as Document & { fonts?: { status?: string; ready?: Promise<unknown> } }).fonts;
@@ -490,7 +465,10 @@ export const waitForBlogTransitionTarget = async (
     });
 };
 
-export const startBlogViewTransition = (applyUpdate?: () => void | Promise<void>): void => {
+export const startBlogViewTransition = (
+    applyUpdate?: () => void | Promise<void>,
+    sourcePathnameOverride?: string
+): void => {
     if (!supportsBlogViewTransitions()) {
         applyUpdate?.();
         clearScopedBlogTransitionState();
@@ -509,7 +487,10 @@ export const startBlogViewTransition = (applyUpdate?: () => void | Promise<void>
         return;
     }
 
-    applyScopedBlogTransitionStyles();
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+    const sourceKind = resolveBlogRouteKind(sourcePathnameOverride || currentPath);
+    const direction = sourceKind === 'list' ? 'list-to-post' : 'post-to-list';
+    applyScopedBlogTransitionStyles(direction);
 
     try {
         const transition = startTransition.call(viewTransitionDocument, () => {

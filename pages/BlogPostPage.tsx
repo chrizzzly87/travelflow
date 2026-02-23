@@ -325,13 +325,12 @@ export const BlogPostPage: React.FC = () => {
                                 : undefined
                         }
                     />
-                    <div className={`relative z-10 mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}>
-                        {!hasHeaderImageError && (
+                    <div className="mb-8 h-52 overflow-hidden rounded-2xl md:h-72 lg:h-80 relative z-10"
+                        style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
+                    >
+                        {!hasHeaderImageError ? (
                             <>
-                                <div
-                                    className="absolute inset-0 overflow-hidden rounded-2xl"
-                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
-                                >
+                                <div className="absolute inset-0 overflow-hidden rounded-2xl">
                                     <ProgressiveImage
                                         src={post.images.header.sources.large}
                                         alt={post.images.header.alt}
@@ -343,15 +342,18 @@ export const BlogPostPage: React.FC = () => {
                                         loading="eager"
                                         fetchPriority="high"
                                         onError={() => setHasHeaderImageError(true)}
-                                        className="absolute inset-0 h-full w-full object-cover"
+                                        className={`absolute inset-0 h-full w-full object-cover ${hasHeaderImageError ? post.coverColor : 'bg-slate-100'}`}
+                                        skipFade={!!postTransitionNames}
                                     />
                                 </div>
                                 <div className={BLOG_HEADER_IMAGE_FADE} />
                                 <div className={BLOG_HEADER_IMAGE_PROGRESSIVE_BLUR} />
                             </>
+                        ) : (
+                            <div className={`absolute inset-0 rounded-2xl ${post.coverColor}`} />
                         )}
                     </div>
-                    <div className="relative z-10 flex gap-10 lg:gap-14">
+                    <div className="flex gap-10 lg:gap-14">
                         <div className="min-w-0 flex-1 max-w-3xl">
                             <article
                                 lang={contentLang}
@@ -375,7 +377,6 @@ export const BlogPostPage: React.FC = () => {
                                 <div
                                     lang={locale}
                                     className="mt-5 flex flex-wrap items-center gap-4 text-sm text-slate-500"
-                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.meta, BLOG_VIEW_TRANSITION_CLASSES.meta) : undefined}
                                 >
                                     <span className="inline-flex items-center gap-1.5">
                                         <User size={14} weight="duotone" className="text-accent-400" />
@@ -390,7 +391,6 @@ export const BlogPostPage: React.FC = () => {
 
                                 <div
                                     className="mt-4 flex flex-wrap gap-1.5"
-                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.pills, BLOG_VIEW_TRANSITION_CLASSES.pills) : undefined}
                                 >
                                     {post.tags.map((tag) => (
                                         <Link
@@ -406,7 +406,6 @@ export const BlogPostPage: React.FC = () => {
 
                                 <p
                                     className="mt-6 border-l-4 border-accent-200 pl-4 text-lg leading-relaxed text-slate-600"
-                                    style={postTransitionNames ? getBlogTransitionStyle(postTransitionNames.summary, BLOG_VIEW_TRANSITION_CLASSES.summary) : undefined}
                                 >
                                     {post.summary}
                                 </p>
@@ -419,7 +418,7 @@ export const BlogPostPage: React.FC = () => {
                             </article>
                         </div>
 
-                        <aside className="hidden lg:block w-64 shrink-0" style={BLOG_DEFERRED_SECTION_STYLE}>
+                        <aside className="hidden lg:block w-64 shrink-0">
                         <div className="sticky top-24 space-y-8">
                             {headings.length > 0 && (
                                 <nav>
@@ -436,6 +435,11 @@ export const BlogPostPage: React.FC = () => {
                                                     />
                                                     <a
                                                         href={`#${heading.slug}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            document.getElementById(heading.slug)?.scrollIntoView({ behavior: 'smooth' });
+                                                            window.history.pushState(null, '', `#${heading.slug}`);
+                                                        }}
                                                         className={`block py-1.5 pl-4 text-[13px] leading-snug transition-colors duration-200 ${
                                                             isActive
                                                                 ? 'font-semibold text-accent-700'

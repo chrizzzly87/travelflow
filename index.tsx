@@ -71,9 +71,20 @@ if (!rootElement) {
 
 if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
   window.__tfBlogPopstateTransitionBound = true;
+  
+  // Track the previous path manually so popstate can know what direction it is going.
+  let previousPathname = window.location.pathname;
+  
   window.addEventListener('popstate', () => {
-    if (!supportsBlogViewTransitions()) return;
+    if (!supportsBlogViewTransitions()) {
+      previousPathname = window.location.pathname;
+      return;
+    }
+    
     const toPathname = window.location.pathname;
+    const sourcePathname = previousPathname; // Capture before we update it
+    previousPathname = toPathname; 
+    
     if (!isBlogRoutePath(toPathname)) return;
 
     const currentTarget = getCurrentBlogPostTransitionTarget() ?? getLastKnownBlogPostTransitionTarget();
@@ -83,8 +94,23 @@ if (typeof window !== 'undefined' && !window.__tfBlogPopstateTransitionBound) {
     startBlogViewTransition(async () => {
       primeBlogTransitionSnapshot();
       await waitForBlogTransitionTarget(currentTarget, isBlogListPath(toPathname) ? 'list' : 'post');
-    });
+    }, sourcePathname);
   }, true);
+  
+  // Also intercept regular pushState/replaceState to keep previousPathname accurate
+  const originalPushState = window.history.pushState;
+  window.history.pushState = function (...args) {
+    const result = originalPushState.apply(this, args);
+    previousPathname = window.location.pathname;
+    return result;
+  };
+  
+  const originalReplaceState = window.history.replaceState;
+  window.history.replaceState = function (...args) {
+    const result = originalReplaceState.apply(this, args);
+    previousPathname = window.location.pathname;
+    return result;
+  };
 }
 
 const root = ReactDOM.createRoot(rootElement);

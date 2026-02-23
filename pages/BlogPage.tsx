@@ -128,12 +128,12 @@ const BlogCard: React.FC<{
             <div className="relative z-10 flex flex-1 flex-col">
                 <div
                     className={`relative aspect-[2/1] overflow-hidden rounded-t-2xl ${showImage ? 'bg-slate-100' : `${post.coverColor} flex items-center justify-center`}`}
+                    style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                 >
                     {showImage ? (
                         <>
                             <div
                                 className="absolute inset-0 overflow-hidden rounded-t-2xl"
-                                style={transitionNames ? getBlogTransitionStyle(transitionNames.image, BLOG_VIEW_TRANSITION_CLASSES.image, 'nearest') : undefined}
                             >
                                 <ProgressiveImage
                                     src={post.images.card.sources.large}
@@ -146,7 +146,8 @@ const BlogCard: React.FC<{
                                     loading={imageLoading}
                                     fetchPriority={imageFetchPriority}
                                     onError={() => setHasImageError(true)}
-                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100 group-hover:scale-[1.03]`}
+                                    className={`absolute inset-0 h-full w-full rounded-t-2xl object-cover ${BLOG_CARD_IMAGE_TRANSITION} scale-100`}
+                                    skipFade={!!transitionNames}
                                 />
                             </div>
                             <div className={BLOG_CARD_IMAGE_FADE} />
@@ -156,7 +157,10 @@ const BlogCard: React.FC<{
                         <Article size={36} weight="duotone" className="text-slate-400/40" />
                     )}
                 </div>
-                <div className="flex flex-1 flex-col p-5">
+                <div
+                    className="flex flex-1 flex-col p-5 bg-white relative rounded-b-2xl"
+                    style={transitionNames ? getBlogTransitionStyle(`${transitionNames.card}-content`, BLOG_VIEW_TRANSITION_CLASSES.content) : undefined}
+                >
                     <h3
                         className="text-base font-bold text-slate-900 group-hover:text-accent-700 transition-colors line-clamp-2"
                         style={
@@ -178,13 +182,11 @@ const BlogCard: React.FC<{
                     )}
                     <p
                         className="mt-2 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3"
-                        style={transitionNames ? getBlogTransitionStyle(transitionNames.summary, BLOG_VIEW_TRANSITION_CLASSES.summary) : undefined}
                     >
                         {post.summary}
                     </p>
                     <div
                         className="mt-3 flex items-center gap-3 text-xs text-slate-400"
-                        style={transitionNames ? getBlogTransitionStyle(transitionNames.meta, BLOG_VIEW_TRANSITION_CLASSES.meta) : undefined}
                     >
                         <span className="inline-flex items-center gap-1">
                             <Clock size={13} weight="duotone" className="text-accent-400" />
@@ -194,7 +196,6 @@ const BlogCard: React.FC<{
                     </div>
                     <div
                         className="mt-3 flex flex-wrap gap-1.5"
-                        style={transitionNames ? getBlogTransitionStyle(transitionNames.pills, BLOG_VIEW_TRANSITION_CLASSES.pills) : undefined}
                     >
                         {post.tags.map((tag) => (
                             <span
