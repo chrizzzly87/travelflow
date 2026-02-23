@@ -30,6 +30,28 @@ Optional compatibility keys:
 - Edge routes (`/api/*` via Netlify Edge Functions) only behave correctly in Netlify Preview/Production or `netlify dev`.
 - If preview behaves differently from local `vite`, run `pnpm dlx netlify dev` for local parity.
 - Missing env keys in Deploy Preview context can cause partial behavior (for example generation timeout/failure or OG/meta fallbacks).
+- Lockfile drift can fail preview checks quickly (for example stale `pnpm-lock.yaml` against `package.json`).
+
+## Incident note (2026-02-23)
+- Cause: preview deploys failed because branch lockfile state was stale for the branch head commit.
+- Symptom: Netlify checks (`Header rules`, `Redirect rules`, `Pages changed`) failed within seconds, before a normal deploy summary.
+- Fix applied:
+  - Synced `pnpm-lock.yaml` with `package.json`.
+  - Updated PR CI (`pr-quality`) to checkout `pull_request.head.sha` so it validates the same commit Netlify deploys.
+
+## Branch and PR hygiene standard
+1. Start each issue from the latest `main` in a dedicated feature branch.
+2. Keep branch scope to one issue/theme; avoid mixing unrelated work.
+3. Commit incrementally during the implementation (small, reviewable commits).
+4. Push branch updates continuously and keep one PR per feature branch.
+5. Resolve all failing checks before requesting final review or merge.
+6. If `main` moves significantly, rebase/merge `main` into the branch and rerun checks.
+
+## Fast pre-push checklist
+Run these from the feature branch before pushing:
+1. `pnpm install --frozen-lockfile`
+2. `pnpm test:core`
+3. `pnpm build`
 
 ## Manual CLI deploy with env parity (mandatory for auth flows)
 Use this when you need to push a draft deploy immediately (without waiting for Netlify PR checks), and the frontend requires `VITE_*` keys at build time.

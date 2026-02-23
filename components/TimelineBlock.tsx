@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ITimelineItem, ActivityType } from '../types';
+import { ITimelineItem } from '../types';
 import { getActivityColorByTypes, getContrastTextColor, getHexFromColorClass, isTailwindCityColorValue, pickPrimaryActivityType, shiftHexColor } from '../utils';
 import { Maximize, Minimize, ArrowLeftRight, ArrowUpDown } from 'lucide-react';
 import { ActivityTypeIcon } from './ActivityTypeVisuals';
@@ -25,6 +25,9 @@ interface TimelineBlockProps {
   vertical?: boolean;
   canEdit?: boolean;
   viewTransitionName?: string;
+  cityStackIndex?: number;
+  cityStackCount?: number;
+  cityVisualColorHex?: string;
 }
 
 export const TimelineBlock: React.FC<TimelineBlockProps> = ({
@@ -46,6 +49,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   vertical = false,
   canEdit = true,
   viewTransitionName,
+  cityStackIndex = 0,
+  cityStackCount = 1,
+  cityVisualColorHex,
 }) => {
   const isTravel = item.type === 'travel';
   const isEmptyTravel = item.type === 'travel-empty';
@@ -70,6 +76,15 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
     ? pickPrimaryActivityType(item.activityType)
     : undefined;
   const cityUsesClassColor = item.type === 'city' && isTailwindCityColorValue(item.color);
+  const cityPlanStatus = item.type === 'city' ? (item.cityPlanStatus || 'confirmed') : 'confirmed';
+  const isUncertainCity = item.type === 'city' && cityPlanStatus === 'uncertain';
+  const cityPlanOptionIndex = isUncertainCity
+    ? Math.max(0, Math.floor(item.cityPlanOptionIndex || 0))
+    : 0;
+  const normalizedCityStackCount = isCity ? Math.max(1, Math.floor(cityStackCount)) : 1;
+  const normalizedCityStackIndex = isCity
+    ? Math.min(normalizedCityStackCount - 1, Math.max(0, Math.floor(cityStackIndex)))
+    : 0;
   const resolvedColorClass =
     item.type === 'activity'
       ? getActivityColorByTypes(item.activityType)
@@ -77,7 +92,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ? (cityUsesClassColor ? item.color : 'border')
         : item.color;
   const cityHex = item.type === 'city'
-      ? getHexFromColorClass(item.color || '')
+      ? (cityVisualColorHex || getHexFromColorClass(item.color || ''))
       : null;
   const isCompactVerticalActivity = vertical && item.type === 'activity' && size >= 20 && size < 40;
   const compactVerticalTitleSize = Math.max(9, Math.min(11, size * 0.28));
@@ -97,6 +112,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
   const cityTooltipText = isCity && !vertical && !isLoadingItem
     ? `${cityTooltipTitle} • ${cityDurationFullLabel}`
     : undefined;
+  const shouldRotateVerticalCityLabel = isCity && vertical && normalizedCityStackCount > 1;
 
   const handlePointerDown = (e: React.PointerEvent) => {
       if (!canEdit) return;
@@ -116,27 +132,105 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       ? (isCity ? 'pointer' : (isEmptyTravel ? 'pointer' : 'grab'))
       : (isEmptyTravel ? 'not-allowed' : 'pointer');
 
-  const style: React.CSSProperties = vertical ? {
-      top: `${position}px`,
-      height: `${size}px`,
-      left: 0,
-      right: 0,
-      cursor: baseCursor,
-      touchAction: canEdit ? 'none' : undefined,
-  } : {
-      left: `${position}px`,
-      width: `${size}px`,
-      cursor: baseCursor,
-      touchAction: canEdit ? 'none' : undefined,
-  };
-  const mergedStyle: React.CSSProperties = cityHex
+  const cityInlineGapPx = isCity ? 2 : 0;
+  const cityInsetPx = isCity ? 2 : 0;
+  const cityStackGapPx = 2;
+  const citySlotHeightExpr = 'var(--tf-city-slot-height, 3.25rem)';
+  const style: React.CSSProperties = vertical
+      ? {
+          top: `${position}px`,
+          height: `${size}px`,
+          left: 0,
+          right: 0,
+          cursor: baseCursor,
+          touchAction: canEdit ? 'none' : undefined,
+      }
+      : {
+          left: `${position}px`,
+          width: `${size}px`,
+          cursor: baseCursor,
+          touchAction: canEdit ? 'none' : undefined,
+      };
+
+  if (isCity && vertical) {
+      if (normalizedCityStackCount > 1) {
+          const totalInlineGap = (cityInsetPx * 2) + (cityStackGapPx * (normalizedCityStackCount - 1));
+          const columnWidthExpr = `calc((100% - ${totalInlineGap}px) / ${normalizedCityStackCount})`;
+          style.left = `calc(${cityInsetPx}px + ${normalizedCityStackIndex} * (${columnWidthExpr} + ${cityStackGapPx}px))`;
+          style.width = columnWidthExpr;
+          style.right = undefined;
+      } else {
+          style.left = `${cityInsetPx}px`;
+          style.right = `${cityInsetPx}px`;
+      }
+  }
+
+  if (isCity && !vertical) {
+      style.left = `${position + (cityInlineGapPx / 2)}px`;
+      style.width = `${Math.max(6, size - cityInlineGapPx)}px`;
+      style.top = `calc(${cityInsetPx}px + ${normalizedCityStackIndex} * (${citySlotHeightExpr} + ${cityStackGapPx}px))`;
+      style.height = citySlotHeightExpr;
+  }
+  const selectedCityOutline = isCity && isSelected
+      ? '0 0 0 3px rgb(37 99 235 / 0.98)'
+      : '';
+  const isInactiveItem = item.isApproved === false;
+  const cityBaseBackgroundHex = cityHex
+      ? shiftHexColor(cityHex, isUncertainCity ? 104 : 88)
+      : null;
+  const cityBorderHex = cityHex ? shiftHexColor(cityHex, -20) : null;
+  const shouldUseWhiteCityText = cityBaseBackgroundHex
+      ? getContrastTextColor(cityBaseBackgroundHex) === '#ffffff'
+      : true;
+  const inactiveCityTextColor = cityHex
+      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.88)' : shiftHexColor(cityHex, -74))
+      : 'rgb(255 255 255 / 0.88)';
+  const cityTextColor = cityHex
+      ? (isInactiveItem
+          ? inactiveCityTextColor
+          : (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.98)' : shiftHexColor(cityHex, -96)))
+      : 'rgb(255 255 255 / 0.98)';
+  const cityInactiveBorderColor = cityHex
+      ? (shouldUseWhiteCityText ? 'rgb(255 255 255 / 0.5)' : shiftHexColor(cityHex, -54))
+      : 'rgb(255 255 255 / 0.5)';
+  const mergedStyle: React.CSSProperties = cityHex && !isLoadingItem
       ? {
           ...style,
-          backgroundColor: cityHex,
-          borderColor: shiftHexColor(cityHex, -20),
-          color: getContrastTextColor(cityHex),
+          // Fallback color for browsers that do not support color-mix.
+          backgroundColor: cityBaseBackgroundHex || undefined,
+          backgroundImage: isUncertainCity
+            ? `linear-gradient(155deg,
+               color-mix(in oklab, ${cityHex} 30%, transparent) 0%,
+                 color-mix(in oklab, ${cityHex} 44%, white 56%) 100%
+               ),
+               repeating-linear-gradient(-45deg,
+                 color-mix(in oklab, ${cityHex} 60%, white 40%) 0 7px,
+                 color-mix(in oklab, ${cityHex} 52%, white 48%) 7px 14px
+               )`
+            : `linear-gradient(155deg,
+                 color-mix(in oklab, ${cityHex} 42%, white 58%) 0%,
+                 color-mix(in oklab, ${cityHex} 60%, white 40%) 100%
+               )`,
+          backgroundOrigin: isUncertainCity ? 'padding-box, border-box' : undefined,
+          backgroundClip: isUncertainCity ? 'padding-box, border-box' : undefined,
+          borderColor: isInactiveItem
+            ? cityInactiveBorderColor
+            : (isUncertainCity ? 'transparent' : (cityBorderHex || undefined)),
+          borderStyle: isInactiveItem ? 'dashed' : 'solid',
+          borderWidth: isInactiveItem ? 1 : 2,
+          color: cityTextColor,
+          textShadow: shouldUseWhiteCityText
+            ? '0 1px 2px rgb(15 23 42 / 0.32)'
+            : '0 1px 0 rgb(255 255 255 / 0.28)',
+          boxShadow: [
+            selectedCityOutline,
+            'inset 0 1px 0 rgb(255 255 255 / 0.32)',
+          ].filter(Boolean).join(', '),
+          opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.86 : 0.96),
       }
-      : style;
+      : (selectedCityOutline
+          ? { ...style, boxShadow: selectedCityOutline }
+          : style);
   const finalStyle: React.CSSProperties = viewTransitionName
       ? { ...mergedStyle, viewTransitionName }
       : mergedStyle;
@@ -145,9 +239,8 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
     <div
       className={`absolute transition-all group flex flex-col justify-center select-none timeline-block-item
         ${isLoadingItem ? 'bg-slate-100 border-slate-200 text-slate-400 animate-pulse' : resolvedColorClass}
-        ${isCity ? 'opacity-80 rounded-sm border cursor-pointer' : 'rounded-lg border shadow-sm'} 
-        ${!vertical && isCity ? 'top-0 bottom-0' : ''}
-        ${isSelected ? 'ring-2 ring-offset-1 ring-accent-500 z-30 opacity-100' : 'z-10'}
+        ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'} 
+        ${isSelected ? 'z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
@@ -156,6 +249,9 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       onPointerDown={handlePointerDown}
       onClick={handleClick}
       data-tooltip={cityTooltipText}
+      data-city-block={isCity ? 'true' : undefined}
+      data-city-stack-index={isCity ? String(normalizedCityStackIndex) : undefined}
+      data-city-id={isCity ? item.id : undefined}
     >
       {/* Visual Buffers (Travel Only) */}
       {isTravel && (
@@ -212,7 +308,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
              <ActivityTypeIcon type={primaryActivityType || 'general'} size={14} className={`opacity-70 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`} />
         )}
 
-        {!isEmptyTravel && (
+        {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
             <span
                 className={`font-semibold select-none leading-tight 
                     ${isCompactVerticalActivity
@@ -237,6 +333,21 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
                         {item.departureTime}
                     </span>
                 )}
+            </span>
+        )}
+        {!isEmptyTravel && shouldRotateVerticalCityLabel && (
+            <span
+                className="font-semibold select-none text-[10px] whitespace-nowrap tracking-[0.03em]"
+                style={{
+                    writingMode: 'vertical-rl',
+                    textOrientation: 'mixed',
+                    transform: 'rotate(180deg)',
+                    lineHeight: 1.05,
+                    maxHeight: '100%',
+                }}
+            >
+                {isLoadingItem ? 'Loading city...' : item.title}
+                {cityPlanOptionIndex > 0 ? ` • Option ${cityPlanOptionIndex + 1}` : ''}
             </span>
         )}
 
@@ -299,7 +410,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600'}
+                ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
@@ -324,7 +435,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         >
             <div className={`rounded-full transition-colors shadow-sm flex items-center justify-center
                 ${vertical ? 'w-8 h-1.5' : 'h-8 w-1.5'}
-                ${isSelected ? 'bg-white border border-gray-300' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600'}
+                ${isSelected ? 'bg-white border border-accent-300 text-accent-500 group-hover/handle:bg-accent-500 group-hover/handle:text-white group-hover/handle:border-accent-600' : 'bg-white/80 border border-gray-200 group-hover/handle:bg-accent-500 group-hover/handle:border-accent-600 group-hover/handle:text-white'}
             `}>
                <div className={`flex gap-[2px] opacity-50 ${vertical ? 'flex-row' : 'flex-col'}`}>
                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>

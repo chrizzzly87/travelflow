@@ -13,6 +13,7 @@ export { PERU_TEMPLATE, createPeruTrip } from './peru';
 export { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 export { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 export { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
+export { EUROPE_FLEXIBLE_TEMPLATE, createEuropeFlexibleTrip } from './europeFlexible';
 export {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
@@ -27,6 +28,7 @@ import { PERU_TEMPLATE, createPeruTrip } from './peru';
 import { NEW_ZEALAND_TEMPLATE, createNewZealandTrip } from './newZealand';
 import { MOROCCO_TEMPLATE, createMoroccoTrip } from './morocco';
 import { ICELAND_TEMPLATE, createIcelandTrip } from './iceland';
+import { EUROPE_FLEXIBLE_TEMPLATE, createEuropeFlexibleTrip } from './europeFlexible';
 import {
     SOUTHEAST_ASIA_BACKPACKING_TEMPLATE,
     createSoutheastAsiaBackpackingTrip,
@@ -106,6 +108,12 @@ export const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateCo
         mapColorMode: 'trip',
         roundTrip: true,
     },
+    'europe-flex-options': {
+        paletteId: 'vibrant',
+        mapStyle: 'standard',
+        routeMode: 'simple',
+        mapColorMode: 'trip',
+    },
     'southeast-asia-backpacking': {
         paletteId: 'classic',
         mapStyle: 'minimal',
@@ -182,6 +190,7 @@ export const TRIP_TEMPLATES: Record<string, Partial<ITrip>> = {
     'new-zealand-wild': applyTemplateConfigToPartial('new-zealand-wild', NEW_ZEALAND_TEMPLATE),
     'morocco-medina': applyTemplateConfigToPartial('morocco-medina', MOROCCO_TEMPLATE),
     'iceland-ring': applyTemplateConfigToPartial('iceland-ring', ICELAND_TEMPLATE),
+    'europe-flex-options': applyTemplateConfigToPartial('europe-flex-options', EUROPE_FLEXIBLE_TEMPLATE),
     'southeast-asia-backpacking': applyTemplateConfigToPartial(
         'southeast-asia-backpacking',
         SOUTHEAST_ASIA_BACKPACKING_TEMPLATE
@@ -198,6 +207,7 @@ export const TRIP_FACTORIES: Record<string, (startDate: string) => ITrip> = {
     'new-zealand-wild': (startDate) => applyTemplateConfigToTrip('new-zealand-wild', createNewZealandTrip(startDate)),
     'morocco-medina': (startDate) => applyTemplateConfigToTrip('morocco-medina', createMoroccoTrip(startDate)),
     'iceland-ring': (startDate) => applyTemplateConfigToTrip('iceland-ring', createIcelandTrip(startDate)),
+    'europe-flex-options': (startDate) => applyTemplateConfigToTrip('europe-flex-options', createEuropeFlexibleTrip(startDate)),
     'southeast-asia-backpacking': (startDate) =>
         applyTemplateConfigToTrip('southeast-asia-backpacking', createSoutheastAsiaBackpackingTrip(startDate)),
 };

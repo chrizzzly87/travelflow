@@ -82,6 +82,12 @@ const EXAMPLE_TRIP_TEMPLATE_CONFIGS: Record<string, ExampleTripTemplateConfig> =
         mapColorMode: 'trip',
         roundTrip: true,
     },
+    'europe-flex-options': {
+        paletteId: 'vibrant',
+        mapStyle: 'standard',
+        routeMode: 'simple',
+        mapColorMode: 'trip',
+    },
     'southeast-asia-backpacking': {
         paletteId: 'classic',
         mapStyle: 'minimal',
@@ -128,6 +134,13 @@ const EXAMPLE_TEMPLATE_SUMMARIES: Record<string, ExampleTripTemplateSummary> = {
     'iceland-ring': {
         title: 'Ring Road Circuit',
         countries: [{ name: 'Iceland' }],
+    },
+    'europe-flex-options': {
+        title: 'Mediterranean Forked Itinerary',
+        countries: [
+            { name: 'Spain' },
+            { name: 'Italy' },
+        ],
     },
     'southeast-asia-backpacking': {
         title: 'Backpacking South East Asia',
@@ -216,6 +229,10 @@ export const loadExampleTemplateFactory = async (templateId: string): Promise<Ex
         case 'iceland-ring': {
             const module = await import('./iceland');
             return wrapFactory(templateId, module.createIcelandTrip);
+        }
+        case 'europe-flex-options': {
+            const module = await import('./europeFlexible');
+            return wrapFactory(templateId, module.createEuropeFlexibleTrip);
         }
         case 'southeast-asia-backpacking': {
             const module = await import('./southeastAsiaBackpacking');

@@ -12,6 +12,7 @@ import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 import { FlagIcon } from './flags/FlagIcon';
+import { Switch } from './ui/switch';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface DetailsPanelProps {
@@ -440,6 +441,98 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [tripItems]
   );
+  const handleSetItemApproved = (checked: boolean) => {
+      if (!canEdit || !displayItem) return;
+
+      if (displayItem.type === 'city') {
+          if (checked) {
+              const overlapEpsilon = 0.0001;
+              const targetStart = displayItem.startDateOffset;
+              const targetEnd = displayItem.startDateOffset + Math.max(0, displayItem.duration);
+              const fallbackGroupId = `city-option-${Number(displayItem.startDateOffset.toFixed(3))}`;
+
+              const conflictingSiblings = sortedCityItems.filter((entry) => {
+                  if (entry.id === displayItem.id) return false;
+                  if (entry.isApproved === false) return false;
+
+                  const entryStart = entry.startDateOffset;
+                  const entryEnd = entry.startDateOffset + Math.max(0, entry.duration);
+                  const overlaps = entryStart < (targetEnd - overlapEpsilon) && entryEnd > (targetStart + overlapEpsilon);
+                  if (!overlaps) return false;
+
+                  const sharesGroup = !!displayItem.cityPlanGroupId && entry.cityPlanGroupId === displayItem.cityPlanGroupId;
+                  const isTentativeOption = (
+                      displayItem.cityPlanStatus === 'uncertain' ||
+                      entry.cityPlanStatus === 'uncertain' ||
+                      !!displayItem.cityPlanGroupId ||
+                      !!entry.cityPlanGroupId
+                  );
+                  return sharesGroup || isTentativeOption;
+              });
+
+              const approvedGroupId = displayItem.cityPlanGroupId || (conflictingSiblings.length > 0 ? fallbackGroupId : undefined);
+              const changes: Array<{ id: string; updates: Partial<ITimelineItem> }> = [
+                  {
+                      id: displayItem.id,
+                      updates: {
+                          isApproved: true,
+                          cityPlanStatus: 'confirmed',
+                          ...(approvedGroupId ? { cityPlanGroupId: approvedGroupId } : {}),
+                      },
+                  },
+              ];
+
+              conflictingSiblings.forEach((entry) => {
+                  changes.push({
+                      id: entry.id,
+                      updates: {
+                          isApproved: false,
+                          cityPlanStatus: 'uncertain',
+                          cityPlanGroupId: entry.cityPlanGroupId || approvedGroupId,
+                      },
+                  });
+              });
+
+              applyItemChanges(changes);
+              return;
+          }
+
+          const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
+          const defaultGroupId = `city-option-${normalizedStart}`;
+          const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
+          const siblingOptionIndexes = sortedCityItems
+              .filter(entry =>
+                  entry.id !== displayItem.id
+                  && entry.cityPlanStatus === 'uncertain'
+                  && entry.cityPlanGroupId === nextGroupId
+              )
+              .map(entry => (
+                  typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                      ? Number(entry.cityPlanOptionIndex)
+                      : -1
+              ));
+          const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+              ? Number(displayItem.cityPlanOptionIndex)
+              : undefined;
+          const nextOptionIndex = existingOptionIndex !== undefined
+              ? Math.max(0, Math.floor(existingOptionIndex))
+              : (Math.max(-1, ...siblingOptionIndexes) + 1);
+
+          handleUpdate(displayItem.id, {
+              isApproved: false,
+              cityPlanStatus: 'uncertain',
+              cityPlanGroupId: nextGroupId,
+              cityPlanOptionIndex: nextOptionIndex,
+          });
+          return;
+      }
+
+      if (displayItem.type === 'activity') {
+          handleUpdate(displayItem.id, {
+              isApproved: checked,
+          });
+      }
+  };
   const firstCityItem = sortedCityItems[0] || null;
   const lastCityItem = sortedCityItems.length > 1 ? sortedCityItems[sortedCityItems.length - 1] : null;
   const isRoundTripSequence = !!(
@@ -1002,6 +1095,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
+  const supportsApproval = isCity || isActivity;
+  const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -1169,6 +1264,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
+             {supportsApproval && (
+                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+                    <Switch
+                        checked={isItemApproved}
+                        onCheckedChange={handleSetItemApproved}
+                        disabled={!canEdit}
+                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                        aria-label="Toggle item approval"
+                    />
+                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                </div>
+             )}
              
              <textarea 
                 value={displayItem.title} 

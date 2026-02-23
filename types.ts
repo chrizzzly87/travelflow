@@ -3,6 +3,7 @@ import type { TransportMode as CanonicalTransportMode } from './shared/transport
 
 export type ItemType = 'city' | 'activity' | 'travel' | 'travel-empty';
 export type TransportMode = CanonicalTransportMode;
+export type CityPlanStatus = 'confirmed' | 'uncertain';
 export type ActivityType = 
     'general' | 'food' | 'culture' | 'sightseeing' | 'relaxation' | 'nightlife' | 
     'sports' | 'hiking' | 'wildlife' | 'shopping' | 'adventure' | 'beach' | 'nature';
@@ -88,6 +89,12 @@ export interface ITimelineItem {
   cost?: string;
   countryCode?: string;
   countryName?: string;
+
+  // Optional city planning metadata for tentative/alternative stops.
+  cityPlanStatus?: CityPlanStatus;
+  cityPlanGroupId?: string;
+  cityPlanOptionIndex?: number;
+  isApproved?: boolean;
   
   // Specific properties
   transportMode?: TransportMode; 

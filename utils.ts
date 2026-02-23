@@ -224,6 +224,28 @@ export interface TimelineBounds {
     dayCount: number;
 }
 
+export interface CityOverlapLayoutSlot {
+    stackIndex: number;
+    stackCount: number;
+}
+
+export interface HorizontalTransferLaneInput {
+    id: string;
+    centerX: number;
+    preferredWidth: number;
+    minWidth?: number;
+    maxWidth?: number;
+}
+
+export interface HorizontalTransferLanePlacement {
+    id: string;
+    centerX: number;
+    chipLeft: number;
+    chipWidth: number;
+    laneIndex: number;
+    laneCount: number;
+}
+
 export const getTimelineBounds = (
     items: ITimelineItem[],
     options: { minDays?: number } = {}
@@ -254,6 +276,223 @@ export const getTimelineBounds = (
         endOffset,
         dayCount: endOffset - startOffset,
     };
+};
+
+const CITY_OVERLAP_EPSILON = 0.0001;
+const CITY_ROUTE_EPSILON = 0.0001;
+
+const getCityRouteOptionIndex = (city: ITimelineItem): number => {
+    if (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex)) {
+        return Math.max(0, Math.floor(city.cityPlanOptionIndex));
+    }
+    return Number.MAX_SAFE_INTEGER;
+};
+
+const compareCityRouteOrder = (a: ITimelineItem, b: ITimelineItem): number => {
+    if (a.startDateOffset !== b.startDateOffset) return a.startDateOffset - b.startDateOffset;
+    if (a.duration !== b.duration) return b.duration - a.duration;
+    const optionDelta = getCityRouteOptionIndex(a) - getCityRouteOptionIndex(b);
+    if (optionDelta !== 0) return optionDelta;
+    return a.id.localeCompare(b.id);
+};
+
+const pickCityRouteComponentWinner = (componentCities: ITimelineItem[]): ITimelineItem | null => {
+    if (componentCities.length === 0) return null;
+
+    const explicitApproved = componentCities.filter((city) => city.isApproved === true);
+    if (explicitApproved.length > 0) {
+        return [...explicitApproved].sort(compareCityRouteOrder)[0] || null;
+    }
+
+    const confirmed = componentCities.filter((city) => (city.cityPlanStatus || 'confirmed') !== 'uncertain');
+    if (confirmed.length > 0) {
+        return [...confirmed].sort(compareCityRouteOrder)[0] || null;
+    }
+
+    return [...componentCities].sort(compareCityRouteOrder)[0] || null;
+};
+
+export const buildCityOverlapLayout = (
+    cityItems: ITimelineItem[]
+): Map<string, CityOverlapLayoutSlot> => {
+    const layout = new Map<string, CityOverlapLayoutSlot>();
+    if (!Array.isArray(cityItems) || cityItems.length === 0) return layout;
+
+    const sortedCities = [...cityItems]
+        .filter((item) => item.type === 'city')
+        .sort((a, b) => {
+            if (a.startDateOffset === b.startDateOffset) {
+                return b.duration - a.duration;
+            }
+            return a.startDateOffset - b.startDateOffset;
+        });
+
+    if (sortedCities.length === 0) return layout;
+
+    const laneEnds: number[] = [];
+    const laneByCityId = new Map<string, number>();
+    const componentByCityId = new Map<string, number>();
+    const componentLaneCount = new Map<number, number>();
+
+    let currentComponentId = 0;
+    let currentComponentMaxEnd = Number.NEGATIVE_INFINITY;
+
+    sortedCities.forEach((city) => {
+        const start = city.startDateOffset;
+        const end = city.startDateOffset + Math.max(0, city.duration);
+
+        const startsNewComponent = start >= (currentComponentMaxEnd - CITY_OVERLAP_EPSILON);
+        if (startsNewComponent) {
+            currentComponentId += 1;
+            currentComponentMaxEnd = end;
+            laneEnds.length = 0;
+        } else {
+            currentComponentMaxEnd = Math.max(currentComponentMaxEnd, end);
+        }
+
+        let laneIndex = laneEnds.findIndex((laneEnd) => laneEnd <= (start + CITY_OVERLAP_EPSILON));
+        if (laneIndex < 0) {
+            laneIndex = laneEnds.length;
+            laneEnds.push(end);
+        } else {
+            laneEnds[laneIndex] = end;
+        }
+
+        laneByCityId.set(city.id, laneIndex);
+        componentByCityId.set(city.id, currentComponentId);
+        componentLaneCount.set(
+            currentComponentId,
+            Math.max(componentLaneCount.get(currentComponentId) || 1, laneIndex + 1)
+        );
+    });
+
+    sortedCities.forEach((city) => {
+        const componentId = componentByCityId.get(city.id) || 1;
+        layout.set(city.id, {
+            stackIndex: laneByCityId.get(city.id) || 0,
+            stackCount: componentLaneCount.get(componentId) || 1,
+        });
+    });
+
+    return layout;
+};
+
+export const buildApprovedCityRoute = (cityItems: ITimelineItem[]): ITimelineItem[] => {
+    const approvedCities = [...cityItems]
+        .filter((item) => item.type === 'city' && item.isApproved !== false)
+        .sort(compareCityRouteOrder);
+
+    if (approvedCities.length === 0) return [];
+
+    const route: ITimelineItem[] = [];
+    let componentCities: ITimelineItem[] = [];
+    let componentMaxEnd = Number.NEGATIVE_INFINITY;
+
+    const flushComponent = () => {
+        const winner = pickCityRouteComponentWinner(componentCities);
+        if (winner) route.push(winner);
+        componentCities = [];
+        componentMaxEnd = Number.NEGATIVE_INFINITY;
+    };
+
+    approvedCities.forEach((city) => {
+        const start = city.startDateOffset;
+        const end = city.startDateOffset + Math.max(0, city.duration);
+
+        if (componentCities.length === 0) {
+            componentCities.push(city);
+            componentMaxEnd = end;
+            return;
+        }
+
+        if (start < (componentMaxEnd - CITY_ROUTE_EPSILON)) {
+            componentCities.push(city);
+            componentMaxEnd = Math.max(componentMaxEnd, end);
+            return;
+        }
+
+        flushComponent();
+        componentCities.push(city);
+        componentMaxEnd = end;
+    });
+
+    flushComponent();
+
+    return route.sort(compareCityRouteOrder);
+};
+
+export const buildHorizontalTransferLaneLayout = (
+    inputs: HorizontalTransferLaneInput[],
+    options: { laneCollisionGap?: number } = {}
+): HorizontalTransferLanePlacement[] => {
+    const laneCollisionGap = Math.max(0, options.laneCollisionGap ?? 6);
+    const normalized = inputs
+        .map((input, index) => {
+            if (!input.id || !Number.isFinite(input.centerX) || !Number.isFinite(input.preferredWidth)) return null;
+
+            const minWidth = Math.max(6, Number.isFinite(input.minWidth) ? (input.minWidth as number) : 6);
+            const maxWidthCandidate = Number.isFinite(input.maxWidth) ? (input.maxWidth as number) : input.preferredWidth;
+            const maxWidth = Math.max(minWidth, maxWidthCandidate);
+            const clampedWidth = Math.min(maxWidth, Math.max(minWidth, input.preferredWidth));
+            const chipLeft = input.centerX - (clampedWidth / 2);
+
+            return {
+                index,
+                id: input.id,
+                centerX: input.centerX,
+                chipLeft,
+                chipWidth: clampedWidth,
+                chipRight: chipLeft + clampedWidth,
+            };
+        })
+        .filter((entry): entry is {
+            index: number;
+            id: string;
+            centerX: number;
+            chipLeft: number;
+            chipWidth: number;
+            chipRight: number;
+        } => !!entry);
+
+    if (normalized.length === 0) return [];
+
+    const ordered = [...normalized].sort((a, b) => {
+        if (a.chipLeft !== b.chipLeft) return a.chipLeft - b.chipLeft;
+        if (a.centerX !== b.centerX) return a.centerX - b.centerX;
+        return a.index - b.index;
+    });
+
+    const laneEndByIndex: number[] = [];
+    const laneByInputId = new Map<string, number>();
+
+    ordered.forEach((entry) => {
+        let laneIndex = -1;
+        for (let i = 0; i < laneEndByIndex.length; i += 1) {
+            if (entry.chipLeft >= (laneEndByIndex[i] + laneCollisionGap)) {
+                laneIndex = i;
+                break;
+            }
+        }
+
+        if (laneIndex < 0) {
+            laneIndex = laneEndByIndex.length;
+            laneEndByIndex.push(entry.chipRight);
+        } else {
+            laneEndByIndex[laneIndex] = entry.chipRight;
+        }
+
+        laneByInputId.set(entry.id, laneIndex);
+    });
+
+    const laneCount = Math.max(1, laneEndByIndex.length);
+    return normalized.map((entry) => ({
+        id: entry.id,
+        centerX: entry.centerX,
+        chipLeft: entry.chipLeft,
+        chipWidth: entry.chipWidth,
+        laneIndex: laneByInputId.get(entry.id) || 0,
+        laneCount,
+    }));
 };
 
 export const findTravelBetweenCities = (

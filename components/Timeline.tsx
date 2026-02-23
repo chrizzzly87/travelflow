@@ -1,6 +1,16 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState, RouteStatus } from '../types';
-import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import {
+  addDays,
+  buildApprovedCityRoute,
+  buildCityOverlapLayout,
+  buildHorizontalTransferLaneLayout,
+  findTravelBetweenCities,
+  getHexFromColorClass,
+  getTimelineBounds,
+  TRAVEL_COLOR,
+  TRAVEL_EMPTY_COLOR
+} from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -29,6 +39,9 @@ const TRANSFER_CONNECTOR_TOP_GAP_PX = 0;
 // Small negative offset into the city edge so connectors visually "touch" without a seam.
 const TRANSFER_CONNECTOR_CITY_OVERLAP_PX = 2;
 const TRANSFER_CONNECTOR_STYLE: 'straight' | 'rounded' = 'rounded';
+const TRANSFER_CHIP_HEIGHT_PX = 32;
+const TRANSFER_CHIP_ROW_GAP_PX = 10;
+const TRANSFER_LANE_VERTICAL_PADDING_PX = 4;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -115,7 +128,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   });
 
   const [hoverTravelStart, setHoverTravelStart] = useState<number | null>(null);
-  const [travelLaneHeight, setTravelLaneHeight] = useState<number>(40);
   const [cityBottomAnchorY, setCityBottomAnchorY] = useState<number | null>(null);
 
   const timelineBounds = React.useMemo(() => getTimelineBounds(trip.items), [trip.items]);
@@ -165,10 +177,41 @@ export const Timeline: React.FC<TimelineProps> = ({
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
+  const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
+  const maxCityStackCount = React.useMemo(() => {
+      let maxCount = 1;
+      cityStackLayout.forEach((slot) => {
+          maxCount = Math.max(maxCount, Math.max(1, Math.floor(slot.stackCount || 1)));
+      });
+      return maxCount;
+  }, [cityStackLayout]);
+  const cityStackCountStyle = React.useMemo<React.CSSProperties>(
+      () => ({ '--tf-city-stack-count': maxCityStackCount }),
+      [maxCityStackCount]
+  );
+  const connectorCities = React.useMemo(
+      () => buildApprovedCityRoute(cities),
+      [cities]
+  );
+  const uncertainSlotColorByKey = React.useMemo(() => {
+      const colorBySlot = new Map<string, string>();
+      cities.forEach((city) => {
+          if (city.cityPlanStatus !== 'uncertain') return;
+          const stack = cityStackLayout.get(city.id);
+          const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+              ? `option-${city.cityPlanOptionIndex}`
+              : `stack-${stack?.stackIndex || 0}`;
+          const slotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+          if (!colorBySlot.has(slotKey)) {
+              colorBySlot.set(slotKey, getHexFromColorClass(city.color || ''));
+          }
+      });
+      return colorBySlot;
+  }, [cities, cityStackLayout]);
 
   const travelLinks = React.useMemo(() => {
-      return cities.slice(0, -1).map((city, idx) => {
-          const nextCity = cities[idx + 1];
+      return connectorCities.slice(0, -1).map((city, idx) => {
+          const nextCity = connectorCities[idx + 1];
           const travelItem = findTravelBetweenCities(trip.items, city, nextCity);
           return {
               id: travelItem?.id || `travel-link-${city.id}-${nextCity.id}`,
@@ -177,7 +220,63 @@ export const Timeline: React.FC<TimelineProps> = ({
               travelItem
           };
       });
-  }, [cities, trip.items]);
+  }, [connectorCities, trip.items]);
+
+  const transferChipLayoutById = React.useMemo(() => {
+      const layout = buildHorizontalTransferLaneLayout(
+          travelLinks.map((link) => {
+              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
+              const toStart = link.toCity.startDateOffset;
+              const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
+              const toX = (toStart - visualStartOffset) * pixelsPerDay;
+              const segmentStart = Math.min(fromX, toX);
+              const segmentEnd = Math.max(fromX, toX);
+              const gapWidth = Math.max(2, segmentEnd - segmentStart);
+              const travel = link.travelItem;
+              const mode = normalizeTransportMode(travel?.transportMode);
+              const isUnsetTransport = mode === 'na';
+              const isTinyTransferPill = pixelsPerDay <= 52;
+
+              const preferredWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 66 : 54)
+                  : (pixelsPerDay >= 120 ? 138 : (pixelsPerDay >= 90 ? 126 : 112));
+              const minWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 46 : 40)
+                  : (isUnsetTransport ? 84 : 74);
+              const maxWidth = isTinyTransferPill
+                  ? (isUnsetTransport ? 82 : 66)
+                  : (pixelsPerDay >= 120 ? 154 : (pixelsPerDay >= 90 ? 142 : 128));
+
+              return {
+                  id: link.id,
+                  centerX: segmentStart + (gapWidth / 2),
+                  preferredWidth,
+                  minWidth,
+                  maxWidth,
+              };
+          }),
+          { laneCollisionGap: 8 }
+      );
+
+      return new Map(layout.map((entry) => [entry.id, entry]));
+  }, [pixelsPerDay, travelLinks, visualStartOffset]);
+
+  const transferLaneRowCount = React.useMemo(() => {
+      let maxRowCount = 1;
+      transferChipLayoutById.forEach((layout) => {
+          maxRowCount = Math.max(maxRowCount, layout.laneCount);
+      });
+      return maxRowCount;
+  }, [transferChipLayoutById]);
+
+  const transferLaneHeightPx = React.useMemo(() => {
+      const rowCount = Math.max(1, transferLaneRowCount);
+      return (
+          (TRANSFER_LANE_VERTICAL_PADDING_PX * 2) +
+          (rowCount * TRANSFER_CHIP_HEIGHT_PX) +
+          ((rowCount - 1) * TRANSFER_CHIP_ROW_GAP_PX)
+      );
+  }, [transferLaneRowCount]);
 
   const getTransportIcon = (mode?: string) => {
       return <TransportModeIcon mode={mode} size={14} />;
@@ -559,11 +658,9 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (!travelLane) return;
 
     const updateMetrics = () => {
-      const measured = travelLane.clientHeight;
-      if (measured > 0) setTravelLaneHeight(measured);
-
       if (cityCardsRow) {
-        const cityRect = cityCardsRow.getBoundingClientRect();
+        const mainLaneCityCard = cityCardsRow.querySelector<HTMLElement>('[data-city-block="true"][data-city-stack-index="0"]');
+        const cityRect = (mainLaneCityCard || cityCardsRow).getBoundingClientRect();
         const travelRect = travelLane.getBoundingClientRect();
         const anchorY =
           (cityRect.bottom - travelRect.top)
@@ -714,7 +811,7 @@ export const Timeline: React.FC<TimelineProps> = ({
             <div className="pt-3 pb-16 pl-8 pr-8 space-y-1 md:space-y-2 relative z-10">
                 
                 {/* Cities Lane */}
-                <div className="relative h-[4.5rem] md:h-20 w-full group/cities z-20">
+                <div className="relative w-full group/cities z-20">
                     {/* Lane Label */}
                     <div className="sticky left-0 mb-1 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
@@ -729,8 +826,20 @@ export const Timeline: React.FC<TimelineProps> = ({
                              <Plus size={14} />
                         </button>
                     </div>
-                    <div ref={cityCardsRowRef} className="relative h-[3.5rem] md:h-16 w-full">
+                    <div
+                        ref={cityCardsRowRef}
+                        className="relative w-full [--tf-city-slot-height:3.25rem] md:[--tf-city-slot-height:3.75rem] h-[calc((var(--tf-city-slot-height)*var(--tf-city-stack-count))+((var(--tf-city-stack-count)-1)*2px)+4px)]"
+                        style={cityStackCountStyle}
+                    >
                         {cities.map((city, index) => {
+                            const cityStack = cityStackLayout.get(city.id);
+                            const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+                                ? `option-${city.cityPlanOptionIndex}`
+                                : `stack-${cityStack?.stackIndex || 0}`;
+                            const uncertainSlotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+                            const cityVisualColorHex = city.cityPlanStatus === 'uncertain'
+                                ? uncertainSlotColorByKey.get(uncertainSlotKey)
+                                : undefined;
                             // Calculate Neighbors
                             const prev = index > 0 ? cities[index - 1] : null;
                             const next = index < cities.length - 1 ? cities[index + 1] : null;
@@ -777,6 +886,9 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     timelineStartOffset={visualStartOffset}
                                     canEdit={canEdit}
                                     viewTransitionName={getExampleCityLaneViewTransitionName(enableExampleSharedTransition, index)}
+                                    cityStackIndex={cityStack?.stackIndex || 0}
+                                    cityStackCount={cityStack?.stackCount || 1}
+                                    cityVisualColorHex={cityVisualColorHex}
                                 />
                             );
                         })}
@@ -784,7 +896,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                 </div>
 
                 {/* Travel Lane */}
-                 <div className="relative h-11 md:h-12 w-full group/travel z-10">
+                <div className="relative w-full group/travel z-10">
                     <div className="sticky left-0 mb-0.5 flex items-center justify-between z-20 w-64 pointer-events-auto">
                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest bg-white/80 pr-2 backdrop-blur-sm rounded">
                              Transfer
@@ -800,71 +912,72 @@ export const Timeline: React.FC<TimelineProps> = ({
                         </button>
                     </div>
                     
-                    <div className="relative h-8 md:h-9 w-full overflow-visible" ref={travelLaneRef}>
+                    <div
+                        className="relative w-full overflow-visible"
+                        ref={travelLaneRef}
+                        style={{ height: `${transferLaneHeightPx}px` }}
+                    >
                         {travelLinks.map(link => {
                             const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                             const toStart = link.toCity.startDateOffset;
-                            const left = (fromEnd - visualStartOffset) * pixelsPerDay;
-                            const right = (toStart - visualStartOffset) * pixelsPerDay;
-                            const gapWidth = Math.max(10, right - left);
+                            const fromX = (fromEnd - visualStartOffset) * pixelsPerDay;
+                            const toX = (toStart - visualStartOffset) * pixelsPerDay;
+                            const segmentStart = Math.min(fromX, toX);
+                            const segmentEnd = Math.max(fromX, toX);
+                            const gapWidth = Math.max(2, segmentEnd - segmentStart);
+                            const chipLayout = transferChipLayoutById.get(link.id);
+                            const isForward = fromX <= toX;
                             const travel = link.travelItem;
                             const mode = normalizeTransportMode(travel?.transportMode);
                             const isUnsetTransport = mode === 'na';
-                            const isTinyTransferPill = pixelsPerDay <= 52;
-                            const showIconOnly = isTinyTransferPill && !isUnsetTransport;
-                            let chipWidth: number;
-                            if (isTinyTransferPill) {
-                                const compactMinWidth = isUnsetTransport ? 54 : 44;
-                                const compactMaxWidth = isUnsetTransport ? 72 : 56;
-                                chipWidth = Math.max(compactMinWidth, Math.min(compactMaxWidth, gapWidth - 8));
-                            } else {
-                                const baseReadableWidth = pixelsPerDay >= 120 ? 130 : (pixelsPerDay >= 90 ? 116 : 102);
-                                const maxReadableWidth = pixelsPerDay >= 120 ? 148 : (pixelsPerDay >= 90 ? 134 : 122);
-                                chipWidth = Math.max(baseReadableWidth, gapWidth - 6);
-                                chipWidth = Math.min(maxReadableWidth, chipWidth);
-                            }
-                            chipWidth = Math.max(24, chipWidth);
-                            const chipLeft = left + ((gapWidth - chipWidth) / 2);
+                            const chipWidth = chipLayout?.chipWidth || Math.max(48, Math.min(120, gapWidth + 26));
+                            const showIconOnly = chipWidth < 62;
+                            const chipLeft = chipLayout?.chipLeft ?? (segmentStart + ((gapWidth - chipWidth) / 2));
+                            const chipLaneIndex = chipLayout?.laneIndex || 0;
                             const chipRight = chipLeft + chipWidth;
-                            const chipCenterY = Math.max(14, (travelLaneHeight / 2) - 2);
-                            const chipTop = chipCenterY - 16;
+                            const chipTop = TRANSFER_LANE_VERTICAL_PADDING_PX + (chipLaneIndex * (TRANSFER_CHIP_HEIGHT_PX + TRANSFER_CHIP_ROW_GAP_PX));
+                            const chipCenterY = chipTop + (TRANSFER_CHIP_HEIGHT_PX / 2);
                             const cityAttachY = cityBottomAnchorY ?? (chipTop - 14);
-                            const pillAnchorInset = Math.min(14, Math.max(8, chipWidth * 0.16));
-                            const cityAnchorInset = Math.min(16, Math.max(10, pillAnchorInset + 1));
-                            const leftPillAnchorX = chipLeft + pillAnchorInset;
-                            const rightPillAnchorX = chipRight - pillAnchorInset;
-                            const leftCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
-                                ? leftPillAnchorX
-                                : left - cityAnchorInset;
-                            const rightCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
-                                ? rightPillAnchorX
-                                : right + cityAnchorInset;
+                            const maxPillInset = Math.max(1, (chipWidth / 2) - 1);
+                            const pillAnchorInset = Math.min(maxPillInset, Math.max(1, chipWidth * 0.16));
+                            const cityAnchorInset = Math.min(16, Math.max(6, pillAnchorInset + 1));
+                            const fromPillAnchorX = isForward ? (chipLeft + pillAnchorInset) : (chipRight - pillAnchorInset);
+                            const toPillAnchorX = isForward ? (chipRight - pillAnchorInset) : (chipLeft + pillAnchorInset);
+                            const fromCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? fromPillAnchorX
+                                : (fromX + (isForward ? -cityAnchorInset : cityAnchorInset));
+                            const toCityAnchorX = TRANSFER_CONNECTOR_STYLE === 'straight'
+                                ? toPillAnchorX
+                                : (toX + (isForward ? cityAnchorInset : -cityAnchorInset));
                             const isSelected = travel && selectedItemId === travel.id;
                             const routeStatus = travel ? routeStatusById?.[travel.id] : undefined;
                             const isUndefinedTransfer = !travel || travel.type === 'travel-empty' || isUnsetTransport;
                             const shouldDashConnector = !travel || travel.type === 'travel-empty' || isUnsetTransport || routeStatus === 'failed';
                             const connectorOpacity = isUndefinedTransfer ? 0.45 : 1;
                             const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
-                            const leftPath = buildTransferConnectorPath(
-                                leftCityAnchorX,
+                            const showTransportIcon = !isUnsetTransport && chipWidth >= 14;
+                            const showTransportText = !showIconOnly || (isUnsetTransport && chipWidth >= 26);
+                            const pillPaddingClass = chipWidth < 28 ? 'px-0.5' : (showIconOnly ? 'px-1.5' : 'px-2');
+                            const fromPath = buildTransferConnectorPath(
+                                fromCityAnchorX,
                                 cityAttachY,
-                                leftPillAnchorX,
+                                fromPillAnchorX,
                                 chipTop + 1,
-                                Math.abs(leftPillAnchorX - leftCityAnchorX) < 18
+                                Math.abs(fromPillAnchorX - fromCityAnchorX) < 18
                             );
-                            const rightPath = buildTransferConnectorPath(
-                                rightCityAnchorX,
+                            const toPath = buildTransferConnectorPath(
+                                toCityAnchorX,
                                 cityAttachY,
-                                rightPillAnchorX,
+                                toPillAnchorX,
                                 chipTop + 1,
-                                Math.abs(rightCityAnchorX - rightPillAnchorX) < 18
+                                Math.abs(toCityAnchorX - toPillAnchorX) < 18
                             );
 
                             return (
                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none z-0">
                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
                                         <path
-                                            d={leftPath}
+                                            d={fromPath}
                                             fill="none"
                                             stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
@@ -874,7 +987,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                             strokeOpacity={connectorOpacity}
                                         />
                                         <path
-                                            d={rightPath}
+                                            d={toPath}
                                             fill="none"
                                             stroke="var(--color-gray-300)"
                                             strokeWidth={1.7}
@@ -888,17 +1001,17 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
-                                            ${showIconOnly ? 'justify-center gap-0 px-2' : 'gap-1.5 px-2'}
+                                            ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}
-                                        style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: 32 }}
+                                        style={{ left: chipLeft, width: chipWidth, top: chipCenterY, height: TRANSFER_CHIP_HEIGHT_PX }}
                                         title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                         disabled={!travel && !canEdit}
                                     >
-                                        {!isUnsetTransport && (
+                                        {showTransportIcon && (
                                             <span className="text-gray-500">{getTransportIcon(mode)}</span>
                                         )}
-                                        {!showIconOnly && (
+                                        {showTransportText && (
                                             <span className={`uppercase tracking-wider min-w-0 ${isUnsetTransport ? 'w-full text-center truncate' : 'truncate'}`}>{mode === 'na' ? 'N/A' : mode}</span>
                                         )}
                                         {!showIconOnly && !isUndefinedTransfer && durationHours !== null && chipWidth >= 100 && pixelsPerDay >= 95 && (
