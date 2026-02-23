@@ -79,7 +79,7 @@ const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement
     { path: '/login', element: <LoginPage /> },
     { path: '/auth/reset-password', element: <ResetPasswordPage /> },
     { path: '/contact', element: <ContactPage /> },
-    { path: '/imprint', element: <ImprintPage /> },
+    { path: '/impressum', element: <ImprintPage /> },
     { path: '/privacy', element: <PrivacyPage /> },
     { path: '/terms', element: <TermsPage /> },
     { path: '/cookies', element: <CookiesPage /> },
@@ -233,6 +233,15 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     />
                 ))
             )}
+
+            <Route path="/imprint" element={<Navigate to="/impressum" replace />} />
+            {LOCALIZED_MARKETING_LOCALES.map((locale) => (
+                <Route
+                    key={`marketing:${locale}:imprint-redirect`}
+                    path={`/${locale}/imprint`}
+                    element={<Navigate to={`/${locale}/impressum`} replace />}
+                />
+            ))}
 
             <Route
                 path="/create-trip/labs/classic-card"
