@@ -4,6 +4,7 @@ import {
     AppleLogo,
     ArrowSquareOut,
     ArrowsDownUp,
+    CaretDown,
     ChatCircleDots,
     ChartBarHorizontal,
     DiscordLogo,
@@ -42,6 +43,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
@@ -766,98 +775,111 @@ const LoginTypeFilterMenu: React.FC<{
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400"
+                className={`inline-flex h-10 items-center justify-between gap-2 whitespace-nowrap rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1`}
                 aria-label="Filter by login type"
                 aria-expanded={isOpen}
             >
-                <Key size={14} className="text-slate-500" />
-                <span>Login type</span>
-                <span className="h-4 w-px bg-slate-200" />
-                <span className="max-w-[220px] truncate text-slate-600">{selectedLabelSummary}</span>
+                <div className="flex items-center gap-2">
+                    <Key size={14} className="text-muted-foreground" />
+                    <span className="font-medium text-slate-800">Login type</span>
+                    <span className="h-4 w-px bg-border mx-1" />
+                    <span className="max-w-[220px] truncate text-muted-foreground">{selectedLabelSummary}</span>
+                </div>
+                <CaretDown size={14} className={`text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md animate-in fade-in-80"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <div className="px-2 py-1.5 text-xs font-medium text-slate-500">
                         Login type
                     </div>
-                    <div className="space-y-1 p-1.5">
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                    <div className="h-px bg-slate-100" />
+                    <div className="space-y-0.5 p-1">
+                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
+                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
+                                    className="h-3 w-3"
                                 />
-                                <span>Username/password</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.password}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                            </span>
+                            <span>Username/password</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
+                        </label>
+                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
+                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
+                                    className="h-3 w-3"
                                 />
-                                <span>Social</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.social}</span>
-                        </div>
-                        <div className={`ms-6 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-2 ${socialEnabled ? '' : 'opacity-75'}`}>
+                            </span>
+                            <span>Social</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.social}</span>
+                        </label>
+                        <div className={`ms-6 space-y-0.5 border-l-2 border-slate-100 pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
                             {SOCIAL_PROVIDER_OPTIONS.map((option) => {
                                 const checked = socialEnabled
                                     && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
                                 const definition = LOGIN_PILL_DEFINITIONS[option.value];
                                 const Icon = definition.icon;
                                 return (
-                                    <div
+                                    <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs text-slate-700 hover:bg-white"
+                                        className="relative flex w-full cursor-default select-none items-center rounded-sm py-1 pl-6 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900"
                                     >
-                                        <label className="inline-flex cursor-pointer items-center gap-2">
+                                        <span className="absolute left-0 flex h-3.5 w-3.5 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
+                                                className="h-3 w-3 rounded-[2px]"
                                             />
-                                            <Icon size={12} className="text-slate-500" />
-                                            {option.label}
-                                        </label>
-                                        <span className="text-[11px] font-semibold text-slate-500">{counts.socialProviders[option.value]}</span>
-                                    </div>
+                                        </span>
+                                        <Icon size={12} className="mr-1.5 text-slate-500" />
+                                        <span>{option.label}</span>
+                                        <span className="ml-auto text-[10px] text-slate-500">{counts.socialProviders[option.value]}</span>
+                                    </label>
                                 );
                             })}
                         </div>
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                        <label className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900">
+                            <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
+                                    className="h-3 w-3"
                                 />
-                                <span>Unknown</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.unknown}</span>
-                        </div>
+                            </span>
+                            <span>Unknown</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.unknown}</span>
+                        </label>
                     </div>
-                    <div className="border-t border-slate-100 p-1.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onSelectedLoginTypesChange([]);
-                                onSelectedSocialProvidersChange([]);
-                                setIsOpen(false);
-                            }}
-                            className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                        >
-                            Clear filters
-                        </button>
-                    </div>
+                    {selectedLoginTypeSet.size > 0 && (
+                        <>
+                            <div className="h-px bg-slate-100" />
+                            <div className="p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onSelectedLoginTypesChange([]);
+                                        onSelectedSocialProvidersChange([]);
+                                        setIsOpen(false);
+                                    }}
+                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>,
                 document.body
             )}
@@ -2028,66 +2050,66 @@ export const AdminUsersPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="mt-3 overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-3 py-2 align-middle">
+                <div className="mt-3 overflow-x-auto rounded-xl border bg-card/50">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="w-12 px-4 py-3">
                                     <Checkbox
                                         checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
                                         aria-label="Select all visible users"
                                     />
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('name')}>
                                         User <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('email')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('email')}>
                                         Login <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('total_trips')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('total_trips')}>
                                         Trips <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('activation_status')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('activation_status')}>
                                         Activation <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('system_role')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('system_role')}>
                                         Role <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('tier_key')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('tier_key')}>
                                         Tier <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('account_status')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('account_status')}>
                                         Status <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('last_sign_in_at')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('last_sign_in_at')}>
                                         Last visit <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('created_at')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('created_at')}>
                                         Created <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {pagedUsers.map((user) => {
                                 const userName = getUserDisplayName(user);
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
@@ -2096,40 +2118,40 @@ export const AdminUsersPage: React.FC = () => {
                                 const isHardDeleteEligible = isUserHardDeleteEligible(user);
                                 const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
-                                    <tr
+                                    <TableRow
                                         key={user.user_id}
-                                        className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50' : 'hover:bg-slate-50'}`}
+                                        data-state={isSelected ? "selected" : undefined}
                                     >
-                                        <td className="px-3 py-2 align-middle">
+                                        <TableCell className="px-4 py-3">
                                             <Checkbox
                                                 checked={isSelected}
                                                 disabled={!isHardDeleteEligible}
                                                 onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
                                                 aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
                                             />
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 max-w-[280px]">
                                             <button
                                                 type="button"
                                                 onClick={() => openUserDetail(user.user_id)}
                                                 title="Open details drawer"
-                                                className="group max-w-[280px] cursor-pointer text-left hover:text-accent-700"
+                                                className="group xl:max-w-full cursor-pointer text-left hover:text-accent-700"
                                             >
                                                 <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                 <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                <div className="text-[11px] text-slate-500">
+                                                <div className="text-[11px] text-slate-500 mt-0.5">
                                                     UUID:{' '}
                                                     <CopyableUuid
                                                         value={user.user_id}
                                                         focusable={false}
                                                         className="align-middle"
-                                                        textClassName="max-w-[180px] truncate text-[11px]"
+                                                        textClassName="max-w-full truncate text-[11px]"
                                                         hintClassName="text-[9px]"
                                                     />
                                                 </div>
                                             </button>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 {getLoginPills(user).map((pill) => {
                                                     const Icon = pill.icon;
@@ -2156,9 +2178,9 @@ export const AdminUsersPage: React.FC = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600">
-                                            <div className="font-semibold text-slate-800">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-600">
+                                            <div className="font-semibold text-slate-800 hover:text-accent-700">
                                                 {getUserTotalTrips(user)} total
                                             </div>
                                             <div className="text-[11px] text-slate-500">
@@ -2169,30 +2191,30 @@ export const AdminUsersPage: React.FC = () => {
                                                     No profile data
                                                 </div>
                                             )}
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
                                                 {getActivationStatusLabel(activationStatus)}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
                                                 {user.system_role === 'admin' ? 'Admin' : 'User'}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
                                                 {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
                                                 {formatAccountStatusLabel(accountStatus)}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(user.last_sign_in_at)}</td>
-                                        <td className="px-3 py-2 text-xs text-slate-500">{new Date(user.created_at).toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-right">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[120px] truncate">{formatTimestamp(user.last_sign_in_at)}</TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{new Date(user.created_at).toLocaleString()}</TableCell>
+                                        <TableCell className="px-4 py-3 text-right">
                                             <UserRowActionsMenu
                                                 disabled={isSaving}
                                                 isDeleted={accountStatus === 'deleted'}
@@ -2201,29 +2223,29 @@ export const AdminUsersPage: React.FC = () => {
                                                     void handleSoftDelete(user);
                                                 }}
                                             />
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 );
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
                                         No users match your filters.
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
                             {isLoadingUsers && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
-                                        <span className="inline-flex items-center gap-2">
-                                            <SpinnerGap size={14} className="animate-spin" />
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
+                                        <span className="inline-flex items-center gap-2 font-medium">
+                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading users...
                                         </span>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500">

@@ -135,43 +135,61 @@ export const AdminDashboardPage: React.FC = () => {
                 </section>
             )}
 
-            <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total users</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.totalUsers} /></p>
-                    <p className="mt-1 text-xs text-slate-500">Admins: <AdminCountUpNumber value={metrics.adminUsers} /></p>
+            <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <h3 className="tracking-tight text-sm font-medium">Total Users</h3>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.totalUsers} /></div>
+                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Admins: <AdminCountUpNumber value={metrics.adminUsers} /></p>
+                    </div>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">User health</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.activeUsers} /></p>
-                    <p className="mt-1 text-xs text-slate-500">Suspended: <AdminCountUpNumber value={metrics.disabledUsers} /></p>
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <h3 className="tracking-tight text-sm font-medium">Active Users</h3>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.activeUsers} /></div>
+                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Suspended: <AdminCountUpNumber value={metrics.disabledUsers} /></p>
+                    </div>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Total trips</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.totalTrips} /></p>
-                    <p className="mt-1 text-xs text-slate-500">Active: <AdminCountUpNumber value={metrics.activeTrips} /></p>
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <h3 className="tracking-tight text-sm font-medium">Total Trips</h3>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.totalTrips} /></div>
+                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Active: <AdminCountUpNumber value={metrics.activeTrips} /></p>
+                    </div>
                 </article>
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Lifecycle pressure</p>
-                    <p className="mt-2 text-3xl font-black text-slate-900"><AdminCountUpNumber value={metrics.expiredTrips} /></p>
-                    <p className="mt-1 text-xs text-slate-500">Expired trips</p>
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-row items-center justify-between pb-2 space-y-0">
+                        <h3 className="tracking-tight text-sm font-medium">Expired Trips</h3>
+                    </div>
+                    <div className="flex flex-col">
+                        <div className="text-2xl font-bold text-slate-900"><AdminCountUpNumber value={metrics.expiredTrips} /></div>
+                        <p className="text-xs text-muted-foreground text-slate-500 mt-1">Lifecycle pressure</p>
+                    </div>
                 </article>
             </section>
 
-            <section className="mt-4 grid gap-3 xl:grid-cols-[1.2fr_1fr]">
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Trip status mix</h2>
-                    <p className="mt-1 text-xs text-slate-500">Distribution of trips by lifecycle state.</p>
-                    <div className="mt-4 space-y-3">
+            <section className="mt-4 grid gap-4 lg:grid-cols-2 lg:gap-8 xl:grid-cols-[1fr_1.5fr]">
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-col space-y-1.5 pb-4">
+                        <h3 className="font-semibold leading-none tracking-tight">Trip Status Mix</h3>
+                        <p className="text-sm text-muted-foreground text-slate-500">Distribution of trips by lifecycle state.</p>
+                    </div>
+                    <div className="space-y-4">
                         {tripStatusBars.map((bar) => (
-                            <div key={bar.id} className="space-y-1">
-                                <div className="flex items-center justify-between text-xs text-slate-600">
-                                    <span>{bar.label}</span>
-                                    <span>{formatValue(bar.count)} ({bar.pct}%)</span>
+                            <div key={bar.id} className="space-y-2">
+                                <div className="flex items-center justify-between text-sm text-slate-700">
+                                    <span className="font-medium">{bar.label}</span>
+                                    <span className="text-slate-500">{formatValue(bar.count)} ({bar.pct}%)</span>
                                 </div>
-                                <div className="h-2 rounded-full bg-slate-100">
+                                <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
                                     <div
-                                        className={`h-2 rounded-full ${bar.className}`}
+                                        className={`h-full ${bar.className}`}
                                         style={{ width: `${bar.pct}%` }}
                                     />
                                 </div>
@@ -180,16 +198,26 @@ export const AdminDashboardPage: React.FC = () => {
                     </div>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="text-sm font-semibold text-slate-900">Recent users</h2>
-                    <p className="mt-1 text-xs text-slate-500">Most recently created accounts with identity and sign-in context.</p>
-                    <div className="mt-4 space-y-2">
+                <article className="rounded-xl border bg-card text-card-foreground shadow-sm bg-white p-6">
+                    <div className="flex flex-col space-y-1.5 pb-4">
+                        <h3 className="font-semibold leading-none tracking-tight">Recent Users</h3>
+                        <p className="text-sm text-muted-foreground text-slate-500">Most recently created accounts with identity and sign-in context.</p>
+                    </div>
+                    <div className="space-y-6">
                         {(scopedUsers.slice(0, 6)).map((user) => (
-                            <div key={user.user_id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                                <div className="truncate text-sm font-semibold text-slate-800">{getUserName(user)}</div>
-                                <div className="truncate text-xs text-slate-600">{user.email || 'No email'}</div>
-                                <div className="text-[11px] text-slate-500">
-                                    {getLoginLabel(user)} · {user.user_id} · {(user.last_sign_in_at ? `Last visit ${new Date(user.last_sign_in_at).toLocaleString()}` : 'No sign-in yet')}
+                            <div key={user.user_id} className="flex items-center">
+                                <span className="relative flex shrink-0 overflow-hidden rounded-full h-9 w-9">
+                                    <span className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold uppercase">
+                                        {getUserName(user).charAt(0)}
+                                    </span>
+                                </span>
+                                <div className="ml-4 space-y-1 w-full max-w-[200px] sm:max-w-none">
+                                    <p className="text-sm font-medium leading-none truncate">{getUserName(user)}</p>
+                                    <p className="text-sm text-muted-foreground text-slate-500 truncate">{user.email || 'No email'}</p>
+                                </div>
+                                <div className="ml-auto flex items-end flex-col gap-1 shrink-0 text-right font-medium">
+                                    <span className="text-sm font-medium text-slate-700">{getLoginLabel(user)}</span>
+                                    <span className="text-xs text-slate-500 hidden sm:inline-block">{(user.last_sign_in_at ? `Visit ${new Date(user.last_sign_in_at).toLocaleDateString()}` : 'No sign-in yet')}</span>
                                 </div>
                             </div>
                         ))}

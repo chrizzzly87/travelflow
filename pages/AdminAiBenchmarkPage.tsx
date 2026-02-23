@@ -47,6 +47,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 interface BenchmarkSession {
     id: string;
@@ -1239,11 +1240,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         } catch (runError) {
             setError(runError instanceof Error ? runError.message : 'Benchmark run failed');
             setRuns((current) => {
-                const next = current.map((run) => {
+                const next: BenchmarkRun[] = current.map((run) => {
                     if (!run.id.startsWith('optimistic-')) return run;
                     return {
                         ...run,
-                        status: 'failed',
+                        status: 'failed' as const,
                         finished_at: new Date().toISOString(),
                         error_message: 'Benchmark request failed before run completion.',
                     };

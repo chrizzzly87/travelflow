@@ -20,6 +20,14 @@ import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalC
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Checkbox } from '../components/ui/checkbox';
 import { useAppDialog } from '../components/AppDialogProvider';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -540,82 +548,82 @@ export const AdminTripsPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-3 py-2 align-middle">
+                <div className="overflow-x-auto rounded-xl border bg-card/50">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="w-12 px-4 py-3">
                                     <Checkbox
                                         checked={areAllVisibleTripsSelected ? true : (isVisibleTripSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleTrips(Boolean(checked))}
                                         aria-label="Select all visible trips"
                                     />
-                                </th>
-                                <th className="px-3 py-2">Trip</th>
-                                <th className="px-3 py-2">Owner</th>
-                                <th className="px-3 py-2">Status</th>
-                                <th className="px-3 py-2">Expires at</th>
-                                <th className="px-3 py-2">Last update</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Trip</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Owner</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Status</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires at</TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">Last update</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {visibleTrips.map((trip) => (
-                                <tr
+                                <TableRow
                                     key={trip.trip_id}
-                                    className={`border-b border-slate-100 align-top transition-colors ${selectedTripIds.has(trip.trip_id) ? 'bg-accent-50' : 'hover:bg-slate-50'}`}
+                                    data-state={selectedTripIds.has(trip.trip_id) ? "selected" : undefined}
                                 >
-                                    <td className="px-3 py-2 align-middle">
+                                    <TableCell className="px-4 py-3">
                                         <Checkbox
                                             checked={selectedTripIds.has(trip.trip_id)}
                                             onCheckedChange={(checked) => toggleTripSelection(trip.trip_id, Boolean(checked))}
                                             aria-label={`Select trip ${trip.title || trip.trip_id}`}
                                         />
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 max-w-[280px]">
                                         <button
                                             type="button"
                                             onClick={() => openTripDrawer(trip.trip_id)}
                                             title="Open trip details drawer"
-                                            className="inline-flex max-w-[360px] cursor-pointer items-center gap-1 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
+                                            className="inline-flex cursor-pointer xl:max-w-full items-center gap-1.5 truncate text-left text-sm font-semibold text-slate-800 hover:text-accent-700 hover:underline"
                                         >
                                             <span className="truncate">{trip.title || trip.trip_id}</span>
                                         </button>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-slate-500 mt-1">
                                             <CopyableUuid
                                                 value={trip.trip_id}
-                                                textClassName="max-w-[320px] truncate text-xs"
+                                                textClassName="max-w-full truncate text-xs"
                                                 hintClassName="text-[9px]"
                                             />
                                         </div>
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-slate-600">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[240px]">
                                         <button
                                             type="button"
                                             onClick={() => openOwnerDrawer(trip.owner_id)}
                                             title="Open owner details"
-                                            className="group max-w-[320px] cursor-pointer text-left"
+                                            className="group cursor-pointer xl:max-w-full text-left"
                                         >
-                                            <span className="block truncate text-sm text-slate-700 group-hover:text-accent-700 group-hover:underline">
+                                            <span className="block truncate text-sm font-medium text-slate-700 group-hover:text-accent-700 group-hover:underline">
                                                 {trip.owner_email || trip.owner_id}
                                             </span>
-                                            <span className="block text-[11px] text-slate-500">
+                                            <span className="block text-[11px] text-slate-500 mt-0.5">
                                                 <CopyableUuid
                                                     value={trip.owner_id}
                                                     focusable={false}
-                                                    textClassName="max-w-[260px] truncate text-[11px]"
+                                                    textClassName="max-w-full truncate text-[11px]"
                                                     hintClassName="text-[9px]"
                                                 />
                                             </span>
                                         </button>
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
                                         <Select
                                             value={trip.status}
                                             onValueChange={(value) => {
                                                 void updateTripStatus(trip, { status: value as 'active' | 'archived' | 'expired' });
                                             }}
                                         >
-                                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                                            <SelectTrigger className="h-8 w-[130px] text-xs font-medium">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -624,8 +632,8 @@ export const AdminTripsPage: React.FC = () => {
                                                 <SelectItem value="archived">Archived</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </td>
-                                    <td className="px-3 py-2">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
                                         <input
                                             key={`${trip.trip_id}-${trip.updated_at}`}
                                             type="datetime-local"
@@ -635,33 +643,33 @@ export const AdminTripsPage: React.FC = () => {
                                                     tripExpiresAt: fromDateTimeInputValue(event.target.value),
                                                 });
                                             }}
-                                            className="h-8 rounded border border-slate-300 px-2 text-xs"
+                                            className="h-8 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm shadow-black/5"
                                         />
-                                    </td>
-                                    <td className="px-3 py-2 text-xs text-slate-500">
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3 text-sm text-slate-500">
                                         {new Date(trip.updated_at).toLocaleString()}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ))}
                             {visibleTrips.length === 0 && !isLoading && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
                                         No trips match the current filters.
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
                             {isLoading && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={6}>
-                                        <span className="inline-flex items-center gap-2">
-                                            <SpinnerGap size={14} className="animate-spin" />
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
+                                        <span className="inline-flex items-center gap-2 font-medium">
+                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading trips...
                                         </span>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
                 {isSaving && (
                     <p className="mt-2 text-xs text-slate-500">Saving changes...</p>

@@ -216,8 +216,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             </aside>
 
             <div className="flex min-h-dvh w-full">
-                <div className="relative hidden lg:block">
-                    <aside className={`flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
+                <div className="relative hidden lg:block z-40">
+                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
                             className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
@@ -259,7 +259,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
