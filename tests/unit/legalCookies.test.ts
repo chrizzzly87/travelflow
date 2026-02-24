@@ -19,6 +19,8 @@ describe('lib/legal cookie registry', () => {
   it('resolves cookie helpers consistently', () => {
     expect(isCookieRegistered('tf_cookie_consent_choice_v1')).toBe(true);
     expect(getCookieByName('tf_cookie_consent_choice_v1')).toBeDefined();
+    expect(getCookieByName('umami.disabled')).toBeDefined();
+    expect(getCookieByName('umami.cache')).toBeUndefined();
     expect(isCookieRegistered('tf_share_links:trip_123')).toBe(true);
     expect(getCookieByName('tf_lazy_chunk_recovery:TripView')).toBeDefined();
     expect(getCookieByName('sb-abcde-auth-token')).toBeDefined();

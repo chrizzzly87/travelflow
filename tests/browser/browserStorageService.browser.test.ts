@@ -19,14 +19,14 @@ describe('services/browserStorageService', () => {
 
   it('blocks optional analytics storage when optional consent is not granted', () => {
     expect(writeLocalStorageItem(CONSENT_STORAGE_KEY, 'essential')).toBe(true);
-    expect(writeLocalStorageItem('umami.cache', '{"enabled":true}')).toBe(false);
-    expect(readLocalStorageItem('umami.cache')).toBeNull();
+    expect(writeLocalStorageItem('umami.disabled', '1')).toBe(false);
+    expect(readLocalStorageItem('umami.disabled')).toBeNull();
   });
 
   it('allows optional analytics storage when optional consent is granted', () => {
     expect(writeLocalStorageItem(CONSENT_STORAGE_KEY, 'all')).toBe(true);
-    expect(writeLocalStorageItem('umami.cache', '{"enabled":true}')).toBe(true);
-    expect(readLocalStorageItem('umami.cache')).toBe('{"enabled":true}');
+    expect(writeLocalStorageItem('umami.disabled', '1')).toBe(true);
+    expect(readLocalStorageItem('umami.disabled')).toBe('1');
   });
 
   it('blocks unknown unregistered keys', () => {
@@ -47,14 +47,14 @@ describe('services/browserStorageService', () => {
 
   it('purges optional keys while keeping essential keys intact', () => {
     expect(writeLocalStorageItem(CONSENT_STORAGE_KEY, 'all')).toBe(true);
-    expect(writeLocalStorageItem('umami.cache', '{"enabled":true}')).toBe(true);
+    expect(writeLocalStorageItem('umami.disabled', '1')).toBe(true);
     expect(writeLocalStorageItem('tf_share_links:trip-123', '{"view":"https://example"}')).toBe(true);
     expect(writeSessionStorageItem('tf_lazy_chunk_recovery:TripView', '1')).toBe(true);
 
     const removedCount = purgeOptionalBrowserStorage();
 
     expect(removedCount).toBeGreaterThan(0);
-    expect(readLocalStorageItem('umami.cache')).toBeNull();
+    expect(readLocalStorageItem('umami.disabled')).toBeNull();
     expect(readLocalStorageItem('tf_share_links:trip-123')).toBe('{"view":"https://example"}');
     expect(readSessionStorageItem('tf_lazy_chunk_recovery:TripView')).toBe('1');
   });

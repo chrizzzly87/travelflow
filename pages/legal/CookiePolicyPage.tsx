@@ -59,9 +59,13 @@ export const CookiePolicyPage: React.FC = () => {
                         Cookie & Local Storage Policy
                     </h1>
                     <p className="mt-4 text-base text-slate-700 md:text-lg">
-                        This registry lists every cookie or persistent storage entry set by Travelflow. Essential cookies are
-                        required for security and authentication. Optional categories are loaded only after you provide explicit
-                        consent via the banner or the controls below.
+                        This registry lists every first-party cookie or browser storage entry used by Travelflow and integrated
+                        scripts on this domain. Essential entries are required for security and authentication. Optional categories
+                        are loaded only after you provide explicit consent via the banner or the controls below.
+                    </p>
+                    <p className="mt-3 text-sm text-slate-600">
+                        Third-party services (for example Google Maps embeds) can set their own cookies on provider domains.
+                        Those third-party cookies are governed by the respective provider policies.
                     </p>
                     <p className="mt-4 text-sm text-slate-600">Last reviewed: {lastReviewed}</p>
                 </section>

@@ -406,12 +406,12 @@ export const COOKIE_REGISTRY: CookieRegistry = {
   ],
   analytics: [
     {
-      name: 'umami.cache',
-      purpose: 'Anonymous pageview/performance tracking cache in Umami.',
-      duration: 'Persistent',
+      name: 'umami.disabled',
+      purpose: 'Optional local opt-out flag read by Umami to disable analytics tracking in this browser.',
+      duration: 'Persistent (only if manually set)',
       provider: 'Umami (self-hosted)',
       storage: 'localStorage',
-      notes: 'Only used when optional analytics consent is granted.',
+      notes: 'Current Umami runtime does not create umami.cache.',
     },
   ],
   marketing: [],
