@@ -16,3 +16,4 @@ summary: "Not-approved activities now use the same subdued tentative styling lan
 - [x] [Fixed] 🧭 Vertical calendar transfers now render two clearly separated side-elbow connector lines that extend fully to city edges and route through a shared elbow trunk into the transport pill's top and bottom edge points.
 - [x] [Improved] 📐 Vertical calendar spacing now gives transfers a wider column with larger, easier-to-read pills and left-aligned transport icons while keeping fixed-width activity lanes for clearer overlaps.
 - [ ] [Internal] 🧩 Extended timeline block inactive styling logic so activity cards and city cards share the same modern color-mix rendering approach.
+- [ ] [Internal] 📝 Added an agent workflow rule to always author GitHub PR descriptions from real Markdown body files so formatting stays stable and readable.
