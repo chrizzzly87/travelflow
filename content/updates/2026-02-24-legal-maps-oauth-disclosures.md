@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-24-legal-maps-oauth-disclosures
-version: v0.59.0
+version: v0.57.0
 title: "Legal pages: Maps, OAuth, and analytics clarification"
 date: 2026-02-24
-published_at: 2026-02-24T13:35:00Z
-status: draft
+published_at: 2026-02-24T11:59:27Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Clarified legal disclosures for Google Maps, social login providers, and current analytics storage behavior."
