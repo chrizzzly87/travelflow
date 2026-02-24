@@ -173,6 +173,10 @@ const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
 export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 let routeCacheHydrated = false;
 
+const getRouteOutlineColor = (style?: MapStyle): string => {
+    return style === 'satellite' ? '#f8fafc' : '#0f172a';
+};
+
 export const filterHydratedRouteCacheEntries = (
     parsed: unknown,
     now: number,
@@ -484,8 +488,34 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return { lat: result.lat(), lng: result.lng() };
         };
 
+        const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
+            if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
+            const baseWeight = options.strokeWeight ?? 3;
+            const baseOpacity = options.strokeOpacity ?? 0.7;
+            const baseZIndex = options.zIndex ?? 30;
+            const outlineOpacity = baseOpacity > 0 ? Math.min(1, baseOpacity + 0.25) : 0.9;
+            const outline = new window.google.maps.Polyline({
+                ...options,
+                map: googleMapRef.current,
+                strokeColor: getRouteOutlineColor(activeStyle),
+                strokeOpacity: outlineOpacity,
+                strokeWeight: baseWeight + 3,
+                icons: undefined,
+                zIndex: baseZIndex - 1,
+            });
+            const main = new window.google.maps.Polyline({
+                ...options,
+                map: googleMapRef.current,
+                strokeOpacity: baseOpacity,
+                strokeWeight: baseWeight,
+                zIndex: baseZIndex,
+            });
+            routesRef.current.push(outline, main);
+            return { outline, main };
+        };
+
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
-            const line = new window.google.maps.Polyline({
+            return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
@@ -501,10 +531,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     },
                     offset: '50%'
                 }],
-                map: googleMapRef.current
+                zIndex: 40,
             });
-            routesRef.current.push(line);
-            return line;
         };
 
         const brandRouteColor = '#4f46e5';
@@ -894,7 +922,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          { icon: arrowIcon, offset: '50%' }
                        ]
                      : [{ icon: arrowIcon, offset: '50%' }];
-                 const line = new window.google.maps.Polyline({
+                 createRoutePolylinePair({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
                          { lat: end.coordinates.lat, lng: end.coordinates.lng }
@@ -905,9 +933,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      strokeWeight: 2,
                      clickable: false,
                      icons,
-                     map: googleMapRef.current
+                     zIndex: 35,
                  });
-                 routesRef.current.push(line);
 
                  const mid = {
                      lat: (start.coordinates.lat + end.coordinates.lat) / 2,
@@ -935,7 +962,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             drawRoutes();
         }
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled]); 
+    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled, activeStyle]); 
 
     // Pan to selected
     useEffect(() => {
