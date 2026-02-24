@@ -11,6 +11,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Netlify PR preview and feature-branch deploy workflow: `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 - For manual Netlify CLI draft deploys, follow `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`: build with `dotenv-cli`, then deploy with `netlify deploy --no-build --dir=dist`.
 - Browser storage disclosures and policy source: `lib/legal/cookies.config.ts` (cookies/localStorage/sessionStorage registry).
+- Storage Phase 2 migration tracker: `docs/STORAGE_POLICY_MIGRATION_CHECKLIST.md`.
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.

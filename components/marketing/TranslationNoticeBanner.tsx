@@ -5,13 +5,17 @@ import { useTranslation } from 'react-i18next';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+    readSessionStorageItem,
+    writeSessionStorageItem,
+} from '../../services/browserStorageService';
 
 const SESSION_DISMISS_KEY = 'tf_translation_notice_dismissed_session';
 
 const isDismissedForSession = (): boolean => {
     if (typeof window === 'undefined') return false;
     try {
-        return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === '1';
+        return readSessionStorageItem(SESSION_DISMISS_KEY) === '1';
     } catch {
         return false;
     }
@@ -30,7 +34,7 @@ export const TranslationNoticeBanner: React.FC = () => {
         trackEvent('i18n_notice__dismiss', { locale: activeLocale });
         if (typeof window === 'undefined') return;
         try {
-            window.sessionStorage.setItem(SESSION_DISMISS_KEY, '1');
+            writeSessionStorageItem(SESSION_DISMISS_KEY, '1');
         } catch {
             // ignore
         }
