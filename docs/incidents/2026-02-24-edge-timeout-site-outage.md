@@ -33,6 +33,8 @@ The primary blast radius came from a catch-all edge middleware route (`[[edge_fu
 - 2026-02-24 ~18:xx UTC: targeted marketing allowlist routes added for `site-og-meta` (including localized marketing prefixes), restoring OG coverage without global interception.
 - 2026-02-24 ~19:17 UTC: second outage signal observed on `/` with `site-og-meta` timeout crashes (`Upstream lookup timed out`), indicating route scope was still too broad/high-traffic.
 - 2026-02-24 ~19:xx UTC: remediation narrowed `site-og-meta` to blog-only routes and added edge fallback logic for upstream lookup failures.
+- 2026-02-24 ~19:38 UTC: follow-up reports showed intermittent `Upstream lookup timed out` on OG endpoints (`/api/og/site`, `/api/og/playground`) during the static OG rollout window.
+- 2026-02-24 ~19:xx UTC: additional hardening removed remote font-CDN fallback dependencies in OG image functions and enforced short font-fetch timeouts to avoid long edge waits on third-party upstreams.
 
 ## Root Cause
 The production site had a catch-all edge middleware route:
@@ -46,6 +48,7 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 - No hard CI guardrail preventing catch-all edge route declarations.
 - No synthetic uptime checks dedicated to core route health and image transform health.
 - No immediate alerting path for 5xx spikes on root/static endpoints.
+- Dynamic OG image endpoints depended on external font CDNs as fallback (`unpkg`, `fonts.gstatic.com`), which could stall edge rendering when upstream connectivity degraded.
 
 ## What Worked
 - Fast live repro via direct probes to both raw assets and transformed image URLs.
@@ -68,12 +71,16 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 - Added static-first `og:image` resolution with dynamic `/api/og/site` fallback when no static manifest entry is available.
 - Added CI validator rule that fails if `site-og-meta` is mapped outside the explicit safe-route allowlist.
 - Added build validation to guarantee manifest/asset coverage for all static OG route keys.
+- Removed remote font-CDN fallbacks from `/api/og/site` and `/api/og/trip` image rendering and limited font fetch waits with request-level timeouts.
+- Added regression test coverage for OG font URL resolution to ensure only local font assets are used.
 
 ### Planned follow-ups (high priority)
 - Add synthetic monitoring checks (every 1 minute):
   - `GET /`
   - `GET /favicon.ico`
   - `GET /.netlify/images?url=/images/blog/how-to-plan-multi-city-trip-card.webp&w=1024&q=66`
+  - `GET /api/og/site?title=Health&description=Health&path=/health`
+  - `GET /api/og/playground`
 - Alert on thresholds:
   - >=2 consecutive failures per endpoint
   - 5xx ratio above threshold in 5-minute window
