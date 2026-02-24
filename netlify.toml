@@ -81,10 +81,6 @@
   path = "/trip/*"
   function = "trip-og-meta"
 
-[[edge_functions]]
-  path = "/*"
-  function = "site-og-meta"
-
 [[redirects]]
   from = "/*"
   to = "/index.html"
