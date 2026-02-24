@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-24-trip-generation-background-feedback
-version: v0.59.0
+version: v0.60.0
 title: "Trip generation background feedback"
 date: 2026-02-24
-published_at: 2026-02-24T21:40:00Z
-status: draft
+published_at: 2026-02-24T20:21:10Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Adds background progress and completion signals so long-running trip generation stays clear even when users switch tabs."
