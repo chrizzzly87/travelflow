@@ -31,9 +31,12 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `components/tripview/useTripShareLifecycle.ts`
 - [x] `components/admin/adminLocalCache.ts`
 - [x] `components/marketing/EarlyAccessBanner.tsx`
+- [x] `components/TripManager.tsx` (country cache persistence)
+- [x] `components/ItineraryMap.tsx` (route cache persistence)
+- [x] `components/CountryInfo.tsx` (converter persistence)
+- [x] `components/TripView.tsx` (legacy cleanup key removal)
 
 ## Remaining Direct Storage Usage (Next Batches)
-- [ ] `components/TripManager.tsx` / `components/ItineraryMap.tsx` / `components/CountryInfo.tsx`
 - [ ] `components/admin/AdminShell.tsx` (shell state persistence)
 - [ ] `components/OnPageDebugger.tsx`
 
