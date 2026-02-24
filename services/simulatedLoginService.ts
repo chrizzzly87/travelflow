@@ -20,6 +20,10 @@ const dispatchSimulatedLoginEvent = (loggedIn: boolean) => {
 };
 
 export const isSimulatedLoggedIn = (): boolean => {
+    if (typeof window !== 'undefined') {
+        simulatedLoginOverride = readSimulatedLoginOverride();
+        return simulatedLoginOverride;
+    }
     if (simulatedLoginOverride === null) {
         simulatedLoginOverride = readSimulatedLoginOverride();
     }

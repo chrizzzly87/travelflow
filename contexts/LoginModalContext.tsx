@@ -12,6 +12,7 @@ import {
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { consumePendingOAuthProvider, setLastUsedOAuthProvider } from '../services/authUiPreferencesService';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface OpenLoginModalOptions {
     nextPath?: string;
@@ -41,7 +42,12 @@ const DEFAULT_MODAL_STATE: LoginModalState = {
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
 
-const AuthModal = React.lazy(() => import('../components/auth/AuthModal').then((module) => ({
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => React.lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const AuthModal = lazyWithRecovery('AuthModal', () => import('../components/auth/AuthModal').then((module) => ({
     default: module.AuthModal,
 })));
 

@@ -1,19 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowSquareOut, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, DotsThreeVertical, MapPin, SpinnerGap, Trash, X } from '@phosphor-icons/react';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
     adminGetUserProfile,
     adminHardDeleteTrip,
     adminListTrips,
+    adminListUsers,
     adminUpdateTrip,
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
-import { dbGetTrip } from '../services/dbService';
+import { dbGetTrip, dbUpsertTrip } from '../services/dbService';
 import { getTripCityStops, buildMiniMapUrl } from '../components/TripManager';
-import { createThailandTrip } from '../data/exampleTrips';
 import type { ITrip } from '../types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
@@ -32,6 +32,7 @@ import {
     TableHeader,
     TableRow,
 } from '../components/ui/table';
+import { generateTripId } from '../utils';
 
 const toDateTimeInputValue = (value: string | null): string => {
     if (!value) return '';
@@ -56,6 +57,8 @@ type TripStatus = 'active' | 'archived' | 'expired';
 
 const TRIPS_CACHE_KEY = 'admin.trips.cache.v1';
 const TRIP_STATUS_VALUES: readonly TripStatus[] = ['active', 'archived', 'expired'];
+const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
 const parseQueryMultiValue = <T extends string>(
     value: string | null,
@@ -83,6 +86,12 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     return user.user_id;
 };
 
+const getUserReferenceText = (user: AdminUserRecord): string => {
+    const name = getUserDisplayName(user);
+    const email = (user.email || '').trim();
+    return email ? `${name} (${email})` : `${name} (${user.user_id})`;
+};
+
 const formatAccountStatusLabel = (status: string | null | undefined): string => {
     const normalized = (status || 'active').toLowerCase();
     if (normalized === 'disabled') return 'Suspended';
@@ -90,8 +99,146 @@ const formatAccountStatusLabel = (status: string | null | undefined): string => 
     return 'Active';
 };
 
+const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
+const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim());
+
+const getTripLink = (tripId: string): string => `/trip/${encodeURIComponent(tripId)}`;
+
+const buildDuplicateTitle = (title: string | null): string => {
+    const baseTitle = title?.trim() || 'Untitled trip';
+    if (/^Copy of /i.test(baseTitle)) return baseTitle;
+    return `Copy of ${baseTitle}`;
+};
+
+const sanitizeFilenameSegment = (value: string): string => {
+    const normalized = value.replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-+|-+$/g, '');
+    return normalized || 'trip';
+};
+
+const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+};
+
+const TripRowActionsMenu: React.FC<{
+    trip: AdminTripRecord;
+    disabled: boolean;
+    onPreviewTrip: (trip: AdminTripRecord) => void;
+    onDuplicateTrip: (trip: AdminTripRecord) => void;
+    onTransferTrip: (trip: AdminTripRecord) => void;
+    onDownloadTripJson: (trip: AdminTripRecord) => void;
+    onSoftDeleteTrip: (trip: AdminTripRecord) => void;
+    onHardDeleteTrip: (trip: AdminTripRecord) => void;
+}> = ({
+    trip,
+    disabled,
+    onPreviewTrip,
+    onDuplicateTrip,
+    onTransferTrip,
+    onDownloadTripJson,
+    onSoftDeleteTrip,
+    onHardDeleteTrip,
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const isArchived = trip.status === 'archived';
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const onPointer = (event: PointerEvent) => {
+            if (!containerRef.current) return;
+            if (containerRef.current.contains(event.target as Node)) return;
+            setIsOpen(false);
+        };
+        const onEscape = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+            setIsOpen(false);
+        };
+        window.addEventListener('pointerdown', onPointer);
+        window.addEventListener('keydown', onEscape);
+        return () => {
+            window.removeEventListener('pointerdown', onPointer);
+            window.removeEventListener('keydown', onEscape);
+        };
+    }, [isOpen]);
+
+    const runAction = (callback: (trip: AdminTripRecord) => void) => {
+        setIsOpen(false);
+        callback(trip);
+    };
+
+    return (
+        <div className="relative" ref={containerRef}>
+            <button
+                type="button"
+                onClick={() => setIsOpen((current) => !current)}
+                disabled={disabled}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Open trip actions"
+            >
+                <DotsThreeVertical size={16} />
+            </button>
+            {isOpen && (
+                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[180px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
+                    <button
+                        type="button"
+                        onClick={() => runAction(onPreviewTrip)}
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        Preview trip
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => runAction(onDuplicateTrip)}
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        Duplicate trip
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => runAction(onTransferTrip)}
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        Transfer owner
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => runAction(onDownloadTripJson)}
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                        Download JSON
+                    </button>
+                    <div className="my-1 h-px bg-slate-100" />
+                    <button
+                        type="button"
+                        onClick={() => runAction(onSoftDeleteTrip)}
+                        className={`flex w-full items-center rounded-md px-3 py-2 text-left text-sm ${
+                            isArchived ? 'text-emerald-800 hover:bg-emerald-50' : 'text-amber-800 hover:bg-amber-50'
+                        }`}
+                    >
+                        {isArchived ? 'Restore trip' : 'Soft-delete trip'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => runAction(onHardDeleteTrip)}
+                        className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-rose-800 hover:bg-rose-50"
+                    >
+                        Hard delete trip
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 export const AdminTripsPage: React.FC = () => {
-    const { confirm: confirmDialog } = useAppDialog();
+    const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedTrips = useMemo(
@@ -113,6 +260,7 @@ export const AdminTripsPage: React.FC = () => {
     });
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
     const [selectedOwnerProfile, setSelectedOwnerProfile] = useState<AdminUserRecord | null>(null);
     const [isOwnerDrawerOpen, setIsOwnerDrawerOpen] = useState(false);
@@ -172,6 +320,7 @@ export const AdminTripsPage: React.FC = () => {
     const loadTrips = async () => {
         setIsLoading(true);
         setErrorMessage(null);
+        setDataSourceNotice(null);
         try {
             const rows = await adminListTrips({
                 limit: 600,
@@ -180,8 +329,15 @@ export const AdminTripsPage: React.FC = () => {
             setTrips(rows);
             writeAdminCache(TRIPS_CACHE_KEY, rows);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load trips.');
-            setTrips((current) => (current.length > 0 ? current : []));
+            const reason = error instanceof Error ? error.message : 'Could not load trips.';
+            setErrorMessage(reason);
+            const cachedRows = readAdminCache<AdminTripRecord[]>(TRIPS_CACHE_KEY, []);
+            if (cachedRows.length > 0) {
+                setTrips(cachedRows);
+                setDataSourceNotice(`Live admin trips failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+            } else {
+                setTrips([]);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -202,39 +358,22 @@ export const AdminTripsPage: React.FC = () => {
             setSelectedFullTrip(null);
             return;
         }
-        
+
         let isMounted = true;
         setIsLoadingFullTrip(true);
-        dbGetTrip(selectedTripDrawerId).then((res) => {
-            if (!isMounted) return;
-            if (res?.trip && getTripCityStops(res.trip).length > 0) {
-                setSelectedFullTrip(res.trip);
-            } else {
-                const mockTripBase = createThailandTrip('en');
-                const simulatedFullTrip: ITrip = {
-                    ...mockTripBase,
-                    id: selectedTripDrawerId,
-                    title: selectedTripForDrawer.title || mockTripBase.title,
-                    startDate: new Date(selectedTripForDrawer.created_at).toISOString().split('T')[0],
-                };
-                setSelectedFullTrip(simulatedFullTrip);
-            }
-        }).catch((err) => {
-            console.error('Failed to load full trip for drawer preview', err);
-            if (isMounted) {
-                const mockTripBase = createThailandTrip('en');
-                const simulatedFullTrip: ITrip = {
-                    ...mockTripBase,
-                    id: selectedTripDrawerId,
-                    title: selectedTripForDrawer.title || mockTripBase.title,
-                    startDate: new Date(selectedTripForDrawer.created_at).toISOString().split('T')[0],
-                };
-                setSelectedFullTrip(simulatedFullTrip);
-            }
-        }).finally(() => {
-            if (isMounted) setIsLoadingFullTrip(false);
-        });
-        
+        dbGetTrip(selectedTripDrawerId)
+            .then((res) => {
+                if (!isMounted) return;
+                setSelectedFullTrip(res?.trip || null);
+            })
+            .catch((err) => {
+                console.error('Failed to load full trip for drawer preview', err);
+                if (isMounted) setSelectedFullTrip(null);
+            })
+            .finally(() => {
+                if (isMounted) setIsLoadingFullTrip(false);
+            });
+
         return () => { isMounted = false; };
     }, [isTripDrawerOpen, selectedTripDrawerId, selectedTripForDrawer]);
 
@@ -308,6 +447,247 @@ export const AdminTripsPage: React.FC = () => {
             await loadTrips();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not update trip.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
+        const normalizedInput = rawInput.trim();
+        if (!normalizedInput) {
+            throw new Error('Enter a target user email or UUID.');
+        }
+        const normalizedLower = normalizedInput.toLowerCase();
+
+        if (isLikelyUserId(normalizedInput)) {
+            const profile = await adminGetUserProfile(normalizedInput);
+            if (profile) return profile;
+        }
+
+        if (isLikelyEmail(normalizedInput)) {
+            const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
+            const exactMatches = rows.filter((candidate) => (candidate.email || '').trim().toLowerCase() === normalizedLower);
+            if (exactMatches.length > 1) {
+                throw new Error('Multiple users found for that email. Enter a UUID instead.');
+            }
+            if (exactMatches.length === 1) {
+                return exactMatches[0];
+            }
+        }
+
+        const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
+        const idMatches = rows.filter((candidate) => candidate.user_id.toLowerCase() === normalizedLower);
+        if (idMatches.length > 1) {
+            throw new Error('Multiple users matched that UUID. Enter a more specific value.');
+        }
+        if (idMatches.length === 1) {
+            return idMatches[0];
+        }
+
+        throw new Error('Target user not found. Enter an existing user email or UUID.');
+    };
+
+    const handleOpenTripPreview = (trip: AdminTripRecord) => {
+        const href = getTripLink(trip.trip_id);
+        window.open(href, '_blank', 'noopener,noreferrer');
+    };
+
+    const handleTransferTrip = async (trip: AdminTripRecord) => {
+        const transferTargetInput = await promptDialog({
+            title: 'Transfer trip owner',
+            message: 'Enter the target user email or UUID for this trip.',
+            label: 'Target owner (email or UUID)',
+            placeholder: 'name@example.com or user UUID',
+            confirmLabel: 'Continue',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+            inputType: 'text',
+        });
+        if (transferTargetInput === null) return;
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const targetUser = await resolveTransferTargetUser(transferTargetInput);
+            if (targetUser.user_id === trip.owner_id) {
+                throw new Error('Target owner is already the current owner.');
+            }
+            const targetStatus = (targetUser.account_status || 'active').toLowerCase();
+            if (targetStatus !== 'active') {
+                throw new Error('Target user must be an active account.');
+            }
+
+            const confirmed = await confirmDialog({
+                title: 'Confirm transfer',
+                message: `Transfer this trip to ${getUserReferenceText(targetUser)}?`,
+                confirmLabel: 'Transfer',
+                cancelLabel: 'Cancel',
+                tone: 'danger',
+            });
+            if (!confirmed) return;
+
+            await adminUpdateTrip(trip.trip_id, { ownerId: targetUser.user_id });
+            setMessage(`Trip owner transferred to ${getUserReferenceText(targetUser)}.`);
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trip owner.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDuplicateTrip = async (trip: AdminTripRecord) => {
+        const transferTargetInput = await promptDialog({
+            title: 'Duplicate trip',
+            message: 'Optionally enter a target user email or UUID for the duplicated trip. Leave blank to keep ownership unchanged.',
+            label: 'Target owner (optional)',
+            placeholder: 'name@example.com or user UUID',
+            defaultValue: '',
+            confirmLabel: 'Duplicate',
+            cancelLabel: 'Cancel',
+            tone: 'default',
+            inputType: 'text',
+        });
+        if (transferTargetInput === null) return;
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const targetInput = transferTargetInput.trim();
+            const targetUser = targetInput ? await resolveTransferTargetUser(targetInput) : null;
+            if (targetUser) {
+                const targetStatus = (targetUser.account_status || 'active').toLowerCase();
+                if (targetStatus !== 'active') {
+                    throw new Error('Target user must be an active account.');
+                }
+            }
+
+            const result = await dbGetTrip(trip.trip_id);
+            if (!result?.trip) {
+                throw new Error('Could not load source trip data for duplication.');
+            }
+
+            const sourceTrip = result.trip;
+            const now = Date.now();
+            const duplicatedTripId = generateTripId();
+            const duplicatedTrip: ITrip = {
+                ...sourceTrip,
+                id: duplicatedTripId,
+                title: buildDuplicateTitle(sourceTrip.title || trip.title),
+                createdAt: now,
+                updatedAt: now,
+                status: 'active',
+                tripExpiresAt: null,
+                isFavorite: false,
+                sourceKind: 'duplicate_trip',
+                forkedFromTripId: trip.trip_id,
+            };
+
+            const upsertedTripId = await dbUpsertTrip(duplicatedTrip, result.view || undefined);
+            if (!upsertedTripId) {
+                throw new Error('Could not save duplicated trip.');
+            }
+
+            if (targetUser && targetUser.user_id !== trip.owner_id) {
+                await adminUpdateTrip(upsertedTripId, { ownerId: targetUser.user_id });
+                setMessage(`Trip duplicated and transferred to ${getUserReferenceText(targetUser)}.`);
+            } else {
+                setMessage('Trip duplicated.');
+            }
+
+            await loadTrips();
+            openTripDrawer(upsertedTripId);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not duplicate trip.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDownloadTripJson = async (trip: AdminTripRecord) => {
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const result = await dbGetTrip(trip.trip_id);
+            if (!result?.trip) {
+                throw new Error('Could not load trip JSON.');
+            }
+            const payload = {
+                exported_at: new Date().toISOString(),
+                trip_id: trip.trip_id,
+                owner_id: trip.owner_id,
+                owner_email: trip.owner_email,
+                title: trip.title,
+                status: trip.status,
+                trip_expires_at: trip.trip_expires_at,
+                trip: result.trip,
+                view: result.view,
+                access: result.access,
+            };
+            const fileName = `${sanitizeFilenameSegment(trip.title || 'trip')}-${sanitizeFilenameSegment(trip.trip_id)}.json`;
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+            downloadBlob(blob, fileName);
+            setMessage('Trip JSON downloaded.');
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not download trip JSON.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSoftDeleteTrip = async (trip: AdminTripRecord) => {
+        const nextStatus: TripStatus = trip.status === 'archived' ? 'active' : 'archived';
+        if (nextStatus === 'archived') {
+            const confirmed = await confirmDialog({
+                title: 'Soft delete trip',
+                message: `Archive ${trip.title || trip.trip_id}?`,
+                confirmLabel: 'Archive',
+                cancelLabel: 'Cancel',
+                tone: 'danger',
+            });
+            if (!confirmed) return;
+        }
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            await adminUpdateTrip(trip.trip_id, { status: nextStatus });
+            setMessage(nextStatus === 'archived' ? 'Trip archived.' : 'Trip restored.');
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not update trip status.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleHardDeleteTrip = async (trip: AdminTripRecord) => {
+        const confirmed = await confirmDialog({
+            title: 'Hard delete trip',
+            message: `Hard-delete ${trip.title || trip.trip_id}? This cannot be undone.`,
+            confirmLabel: 'Hard delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        if (!confirmed) return;
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            await adminHardDeleteTrip(trip.trip_id);
+            setMessage('Trip permanently deleted.');
+            if (selectedTripDrawerId === trip.trip_id) {
+                setIsTripDrawerOpen(false);
+                setSelectedTripDrawerId(null);
+            }
+            await loadTrips();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete trip.');
         } finally {
             setIsSaving(false);
         }
@@ -532,6 +912,11 @@ export const AdminTripsPage: React.FC = () => {
                     {errorMessage}
                 </section>
             )}
+            {dataSourceNotice && (
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {dataSourceNotice}
+                </section>
+            )}
             {message && (
                 <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                     {message}
@@ -624,6 +1009,7 @@ export const AdminTripsPage: React.FC = () => {
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Status</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Expires at</TableHead>
                                 <TableHead className="px-4 py-3 font-semibold text-slate-700">Last update</TableHead>
+                                <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -709,18 +1095,40 @@ export const AdminTripsPage: React.FC = () => {
                                     <TableCell className="px-4 py-3 text-sm text-slate-500">
                                         {new Date(trip.updated_at).toLocaleString()}
                                     </TableCell>
+                                    <TableCell className="px-4 py-3 text-right">
+                                        <TripRowActionsMenu
+                                            trip={trip}
+                                            disabled={isSaving}
+                                            onPreviewTrip={handleOpenTripPreview}
+                                            onDuplicateTrip={(candidate) => {
+                                                void handleDuplicateTrip(candidate);
+                                            }}
+                                            onTransferTrip={(candidate) => {
+                                                void handleTransferTrip(candidate);
+                                            }}
+                                            onDownloadTripJson={(candidate) => {
+                                                void handleDownloadTripJson(candidate);
+                                            }}
+                                            onSoftDeleteTrip={(candidate) => {
+                                                void handleSoftDeleteTrip(candidate);
+                                            }}
+                                            onHardDeleteTrip={(candidate) => {
+                                                void handleHardDeleteTrip(candidate);
+                                            }}
+                                        />
+                                    </TableCell>
                                 </TableRow>
                             ))}
                             {visibleTrips.length === 0 && !isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
                                         No trips match the current filters.
                                     </TableCell>
                                 </TableRow>
                             )}
                             {isLoading && (
                                 <TableRow>
-                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={6}>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={7}>
                                         <span className="inline-flex items-center gap-2 font-medium">
                                             <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading trips...
@@ -781,15 +1189,28 @@ export const AdminTripsPage: React.FC = () => {
                                             </div>
                                             <div className="col-span-full flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
                                                 <span className="text-xs font-semibold text-slate-500">Owner ID</span>
-                                                <div className="flex items-center justify-between gap-2">
+                                                <div className="flex flex-col gap-2">
                                                     <CopyableUuid value={selectedTripForDrawer.owner_id} textClassName="break-all text-sm font-medium text-slate-800" />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
-                                                        className="shrink-0 text-indigo-600 hover:text-indigo-800 text-xs font-semibold"
-                                                    >
-                                                        View
-                                                    </button>
+                                                    <span className="text-xs text-slate-600">{selectedTripForDrawer.owner_email || 'No owner email'}</span>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openOwnerDrawer(selectedTripForDrawer.owner_id)}
+                                                            className="shrink-0 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                        >
+                                                            View owner
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                void handleTransferTrip(selectedTripForDrawer);
+                                                            }}
+                                                            disabled={isSaving}
+                                                            className="shrink-0 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            Transfer owner
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col gap-1 rounded-lg border border-slate-100 bg-slate-50 p-3">
@@ -877,19 +1298,79 @@ export const AdminTripsPage: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                    ) : null}
+                                    ) : (
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+                                            Trip preview is unavailable for this record.
+                                        </div>
+                                    )}
 
-                                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                                        <a
-                                            href={`/trip/${encodeURIComponent(selectedTripForDrawer.trip_id)}`}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
-                                        >
-                                            View Trip Details
-                                            <ArrowSquareOut size={16} />
-                                        </a>
-                                    </div>
+                                    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Trip Actions</h3>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenTripPreview(selectedTripForDrawer)}
+                                                className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50"
+                                            >
+                                                Preview trip
+                                                <ArrowSquareOut size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleDownloadTripJson(selectedTripForDrawer);
+                                                }}
+                                                disabled={isSaving}
+                                                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Download JSON
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleDuplicateTrip(selectedTripForDrawer);
+                                                }}
+                                                disabled={isSaving}
+                                                className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-800 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Duplicate trip
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleTransferTrip(selectedTripForDrawer);
+                                                }}
+                                                disabled={isSaving}
+                                                className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Transfer owner
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleSoftDeleteTrip(selectedTripForDrawer);
+                                                }}
+                                                disabled={isSaving}
+                                                className={`inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                                                    selectedTripForDrawer.status === 'archived'
+                                                        ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                                        : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+                                                }`}
+                                            >
+                                                {selectedTripForDrawer.status === 'archived' ? 'Restore trip' : 'Soft-delete trip'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    void handleHardDeleteTrip(selectedTripForDrawer);
+                                                }}
+                                                disabled={isSaving}
+                                                className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                Hard delete
+                                            </button>
+                                        </div>
+                                    </section>
                                 </div>
                             )}
                         </div>

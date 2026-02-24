@@ -83,6 +83,11 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
     return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
 };
 
+export const shouldUseAdminMockData = (
+    isDevRuntime = import.meta.env.DEV,
+    simulatedLoginEnabled = isSimulatedLoggedIn()
+): boolean => isDevRuntime && simulatedLoginEnabled;
+
 export const adminListUsers = async (
     options: {
         limit?: number;
@@ -90,7 +95,7 @@ export const adminListUsers = async (
         search?: string;
     } = {}
 ): Promise<AdminUserRecord[]> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         const now = new Date();
         const mockUsers: AdminUserRecord[] = Array.from({ length: 15 }).map((_, i) => ({
             user_id: `mock-user-${i}`,
@@ -119,7 +124,7 @@ export const adminListUsers = async (
 };
 
 export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -132,7 +137,7 @@ export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey):
 };
 
 export const adminUpdateUserOverrides = async (userId: string, overrides: Record<string, unknown>): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -159,7 +164,7 @@ export const adminUpdateUserProfile = async (
         tierKey?: PlanTierKey | null;
     }
 ): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -181,7 +186,7 @@ export const adminUpdateUserProfile = async (
 };
 
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         const now = new Date();
         return {
             user_id: userId,
@@ -215,7 +220,7 @@ export const adminListTrips = async (
         status?: 'active' | 'archived' | 'expired' | 'all';
     } = {}
 ): Promise<AdminTripRecord[]> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         const now = new Date();
         const mockTrips: AdminTripRecord[] = Array.from({ length: 45 }).map((_, i) => ({
             trip_id: `mock-trip-${i}`,
@@ -248,7 +253,7 @@ export const adminListUserTrips = async (
     userId: string,
     options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
 ): Promise<AdminTripRecord[]> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         const now = new Date();
         return Array.from({ length: 3 }).map((_, i) => ({
             trip_id: `mock-trip-${i}`,
@@ -282,7 +287,7 @@ export const adminUpdateTrip = async (
         ownerId?: string | null;
     }
 ): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -300,7 +305,7 @@ export const adminUpdateTrip = async (
 };
 
 export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -315,7 +320,7 @@ export const adminUpdatePlanEntitlements = async (
     tierKey: PlanTierKey,
     entitlements: Record<string, unknown>
 ): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -330,7 +335,7 @@ export const adminUpdatePlanEntitlements = async (
 export const adminReapplyTierToUsers = async (
     tierKey: PlanTierKey
 ): Promise<{ affected_users: number; affected_trips: number }> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return { affected_users: 10, affected_trips: 15 };
     }
@@ -345,7 +350,7 @@ export const adminReapplyTierToUsers = async (
 };
 
 export const adminPreviewTierReapply = async (tierKey: PlanTierKey): Promise<AdminTierReapplyPreview> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return {
             affected_users: 100,
@@ -466,7 +471,7 @@ export const adminCreateUserInvite = async (payload: {
     tierKey?: PlanTierKey;
     redirectTo?: string;
 }): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -487,7 +492,7 @@ export const adminCreateUserDirect = async (payload: {
     lastName?: string;
     tierKey?: PlanTierKey;
 }): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
@@ -502,7 +507,7 @@ export const adminCreateUserDirect = async (payload: {
 };
 
 export const adminHardDeleteUser = async (userId: string): Promise<void> => {
-    if (isSimulatedLoggedIn()) {
+    if (shouldUseAdminMockData()) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }

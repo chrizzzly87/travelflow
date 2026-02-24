@@ -933,6 +933,7 @@ export const AdminUsersPage: React.FC = () => {
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -1077,6 +1078,7 @@ export const AdminUsersPage: React.FC = () => {
 
     const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
+        setDataSourceNotice(null);
         if (!options.preserveErrorMessage) {
             setErrorMessage(null);
         }
@@ -1085,10 +1087,17 @@ export const AdminUsersPage: React.FC = () => {
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
+            const reason = error instanceof Error ? error.message : 'Could not load users.';
             if (!options.preserveErrorMessage) {
-                setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
+                setErrorMessage(reason);
             }
-            setUsers((current) => (current.length > 0 ? current : []));
+            const cachedRows = readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []);
+            if (cachedRows.length > 0) {
+                setUsers(cachedRows);
+                setDataSourceNotice(`Live admin users failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+            } else {
+                setUsers([]);
+            }
         } finally {
             setIsLoadingUsers(false);
         }
@@ -1875,6 +1884,11 @@ export const AdminUsersPage: React.FC = () => {
             {errorMessage && (
                 <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                     {errorMessage}
+                </section>
+            )}
+            {dataSourceNotice && (
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {dataSourceNotice}
                 </section>
             )}
             {message && (
