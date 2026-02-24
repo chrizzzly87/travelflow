@@ -1,0 +1,86 @@
+# Incident Postmortem: Edge Timeout Site Outage (2026-02-24)
+
+## Summary
+On February 24, 2026, TravelFlow intermittently returned `502 Bad Gateway` for core routes (including `/`, `/favicon.ico`, and image paths). Netlify surfaced edge runtime crashes with the message `Upstream lookup timed out`.
+
+The primary blast radius came from a catch-all edge middleware route (`[[edge_functions]] path = "/*"`) that allowed upstream edge timeouts to impact nearly all requests.
+
+## Impact
+- User-visible impact: intermittent site unavailability and broken image delivery.
+- Affected routes observed during incident:
+  - `https://travelflowapp.netlify.app/`
+  - `https://travelflowapp.netlify.app/favicon.ico`
+  - `https://travelflowapp.netlify.app/.netlify/images?...`
+- Typical observed response: `502 Bad Gateway` after ~10s timeout window.
+
+## Detection
+- First signal: user reports from production behavior (blog images not loading, then global site 502s).
+- Netlify error page showed:
+  - `This edge function has crashed`
+  - `Upstream lookup timed out`
+- Request identifiers captured during incident:
+  - `01KJ8ATDR2T0BA5VBRHD1YE9SX`
+  - `01KJ8BHDDMCVGQRMWW42TBADJ5`
+  - `01KJ8BHQESZKDYE8WHQQMZZ7XS`
+
+## Timeline (UTC)
+- 2026-02-24 ~17:11 UTC: intermittent failures observed for Netlify image transform endpoint and production blog image loading.
+- 2026-02-24 ~17:35-17:36 UTC: repeated `502` on core paths (`/`, `/favicon.ico`) reported.
+- 2026-02-24 ~17:40 UTC: hotfix PR opened to remove global edge catch-all binding.
+- 2026-02-24 ~17:42 UTC: hotfix PR merged to `main`.
+- 2026-02-24 ~17:43 UTC: production recovered to `200` on core routes and image transform probes.
+- 2026-02-24 ~18:00 UTC: follow-up regression identified (blog pages returned default OG metadata because `site-og-meta` had no active marketing-route bindings after catch-all removal).
+- 2026-02-24 ~18:xx UTC: targeted marketing allowlist routes added for `site-og-meta` (including localized marketing prefixes), restoring OG coverage without global interception.
+
+## Root Cause
+The production site had a catch-all edge middleware route:
+
+- `[[edge_functions]] path = "/*"`
+- `function = "site-og-meta"`
+
+When upstream edge lookups timed out, this catch-all interception turned localized edge/runtime instability into broad user-visible availability failures.
+
+## Contributing Factors
+- No hard CI guardrail preventing catch-all edge route declarations.
+- No synthetic uptime checks dedicated to core route health and image transform health.
+- No immediate alerting path for 5xx spikes on root/static endpoints.
+
+## What Worked
+- Fast live repro via direct probes to both raw assets and transformed image URLs.
+- Rapid hotfix deployment by removing the catch-all edge route.
+- Preview environment validation confirmed fix behavior before merge.
+
+## What Did Not Work
+- Detection was user-driven, not monitor-driven.
+- The edge routing policy allowed a high blast-radius config in production.
+
+## Corrective Actions
+
+### Implemented immediately
+- Removed catch-all edge binding from production routing (`/* -> site-og-meta`).
+- Restored `site-og-meta` coverage using explicit route allowlists for marketing paths and locale-prefixed marketing URLs.
+- Added CI validator rule that fails if `netlify.toml` includes catch-all edge path `/*`.
+- Added explicit edge policy documentation forbidding catch-all bindings.
+
+### Planned follow-ups (high priority)
+- Add synthetic monitoring checks (every 1 minute):
+  - `GET /`
+  - `GET /favicon.ico`
+  - `GET /.netlify/images?url=/images/blog/how-to-plan-multi-city-trip-card.webp&w=1024&q=66`
+- Alert on thresholds:
+  - >=2 consecutive failures per endpoint
+  - 5xx ratio above threshold in 5-minute window
+- Route alerts to primary channel (Slack/email/pager).
+- Add a lightweight status/check dashboard section in runbook.
+
+## Prevention Policy (must keep)
+- No catch-all edge middleware routes in production.
+- Edge middleware must use explicit route allowlists with small blast radius.
+- Any edge routing change must include:
+  - CI validation pass (`pnpm edge:validate`)
+  - preview smoke probes for root/static/image-transform endpoints
+  - rollback plan in PR description
+
+## Ownership
+- Incident owner: Platform/infra maintainers.
+- Follow-up tracking: dedicated GitHub issue linked from this postmortem.
