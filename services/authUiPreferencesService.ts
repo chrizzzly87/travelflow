@@ -1,3 +1,9 @@
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
+
 export type OAuthProviderPreference = 'google' | 'apple' | 'facebook' | 'kakao';
 
 interface StoredOAuthPreference {
@@ -16,7 +22,7 @@ const isValidProvider = (value: unknown): value is OAuthProviderPreference => {
 export const getLastUsedOAuthProvider = (): OAuthProviderPreference | null => {
     if (typeof window === 'undefined') return null;
     try {
-        const raw = window.localStorage.getItem(LAST_OAUTH_PROVIDER_STORAGE_KEY);
+        const raw = readLocalStorageItem(LAST_OAUTH_PROVIDER_STORAGE_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw) as Partial<StoredOAuthPreference>;
         if (!isValidProvider(parsed.provider)) return null;
@@ -32,7 +38,7 @@ export const setLastUsedOAuthProvider = (provider: OAuthProviderPreference): voi
         provider,
         updatedAt: Date.now(),
     };
-    window.localStorage.setItem(LAST_OAUTH_PROVIDER_STORAGE_KEY, JSON.stringify(payload));
+    writeLocalStorageItem(LAST_OAUTH_PROVIDER_STORAGE_KEY, JSON.stringify(payload));
 };
 
 export const setPendingOAuthProvider = (provider: OAuthProviderPreference): void => {
@@ -41,18 +47,18 @@ export const setPendingOAuthProvider = (provider: OAuthProviderPreference): void
         provider,
         updatedAt: Date.now(),
     };
-    window.localStorage.setItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY, JSON.stringify(payload));
+    writeLocalStorageItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY, JSON.stringify(payload));
 };
 
 export const clearPendingOAuthProvider = (): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.removeItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY);
+    removeLocalStorageItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY);
 };
 
 export const consumePendingOAuthProvider = (): OAuthProviderPreference | null => {
     if (typeof window === 'undefined') return null;
     try {
-        const raw = window.localStorage.getItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY);
+        const raw = readLocalStorageItem(PENDING_OAUTH_PROVIDER_STORAGE_KEY);
         if (!raw) return null;
         const parsed = JSON.parse(raw) as Partial<StoredOAuthPreference>;
         if (!isValidProvider(parsed.provider)) {

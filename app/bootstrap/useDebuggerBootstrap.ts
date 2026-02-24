@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { readLocalStorageItem } from '../../services/browserStorageService';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from '../../services/simulatedLoginService';
 
 type AppDebugWindow = Window & typeof globalThis & {
@@ -26,7 +27,7 @@ const shouldEnableDebuggerOnBoot = (): boolean => {
         const params = new URLSearchParams(window.location.search);
         const debugParam = params.get('debug');
         if (debugParam === '1' || debugParam === 'true') return true;
-        return window.localStorage.getItem(DEBUG_AUTO_OPEN_STORAGE_KEY) === '1';
+        return readLocalStorageItem(DEBUG_AUTO_OPEN_STORAGE_KEY) === '1';
     } catch {
         return false;
     }
