@@ -3,8 +3,8 @@ id: rel-2026-02-24-contact-form-wizz-contact-alignment
 version: v0.59.0
 title: "Netlify contact form and Wizz contact alignment"
 date: 2026-02-24
-published_at: 2026-02-24T20:30:00Z
-status: draft
+published_at: 2026-02-24T20:11:42Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Contact now has a production-ready form flow with robust fallback and updated Wizz contact addresses."
