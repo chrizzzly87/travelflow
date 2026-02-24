@@ -1,5 +1,6 @@
 import { AppLanguage } from '../types';
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
+import { readLocalStorageItem, writeLocalStorageItem } from './browserStorageService';
 
 const APP_LANGUAGE_STORAGE_KEY = 'tf_app_language';
 const DEFAULT_APP_LANGUAGE: AppLanguage = DEFAULT_LOCALE;
@@ -22,10 +23,10 @@ export const buildTripUrl = (tripId: string, versionId?: string | null): string 
 
 export const getStoredAppLanguage = (): AppLanguage => {
     if (typeof window === 'undefined') return DEFAULT_APP_LANGUAGE;
-    return normalizeAppLanguage(window.localStorage.getItem(APP_LANGUAGE_STORAGE_KEY));
+    return normalizeAppLanguage(readLocalStorageItem(APP_LANGUAGE_STORAGE_KEY));
 };
 
 export const setStoredAppLanguage = (language: AppLanguage): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, normalizeAppLanguage(language));
+    writeLocalStorageItem(APP_LANGUAGE_STORAGE_KEY, normalizeAppLanguage(language));
 };

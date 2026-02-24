@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, isLocale } from './config/locales';
 import { APP_NAME } from './config/appGlobals';
+import { readLocalStorageItem, writeLocalStorageItem } from './services/browserStorageService';
 
 const localeModules = import.meta.glob('./locales/*/*.json');
 const preloadCache = new Set<string>();
@@ -31,7 +32,7 @@ const detectLocaleFromLocalStorage = (): string | null => {
     if (typeof window === 'undefined') return null;
 
     try {
-        return normalizeDetectedLocale(window.localStorage.getItem(LOCALE_STORAGE_KEY));
+        return normalizeDetectedLocale(readLocalStorageItem(LOCALE_STORAGE_KEY));
     } catch {
         return null;
     }
@@ -119,7 +120,7 @@ if (typeof window !== 'undefined') {
         const normalized = normalizeDetectedLocale(language);
         if (!normalized) return;
         try {
-            window.localStorage.setItem(LOCALE_STORAGE_KEY, normalized);
+            writeLocalStorageItem(LOCALE_STORAGE_KEY, normalized);
         } catch {
             // Ignore storage write failures (private mode/quota/security).
         }
