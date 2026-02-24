@@ -42,17 +42,17 @@ interface AdminShellProps {
     showDateRange?: boolean;
 }
 
-const SIDEBAR_COLLAPSE_STORAGE_KEY = 'tf_admin_sidebar_collapsed_v1';
-const DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY = 'tf_dev_admin_bypass_disabled';
+const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
+const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
 
 const getStoredSidebarCollapseState = (): boolean => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === '1';
+    return window.localStorage.getItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
 };
 
 const persistSidebarCollapseState = (next: boolean): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, next ? '1' : '0');
+    window.localStorage.setItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
 };
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
@@ -118,7 +118,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         }
 
         const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
-        const bypassDisabled = window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY) === '1';
+        const bypassDisabled = window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
         const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
         setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);
     }, [access?.userId]);
@@ -151,7 +151,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         if (typeof window === 'undefined') return;
 
         const handleStorage = (event: StorageEvent) => {
-            if (event.key && event.key !== SIMULATED_LOGIN_STORAGE_KEY && event.key !== DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY) {
+            if (event.key && event.key !== SIMULATED_LOGIN_STORAGE_KEY && event.key !== DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) {
                 return;
             }
             syncAdminRuntimeFlags();
