@@ -40,9 +40,9 @@ describe('edge validation utils', () => {
 
   it('detects disallowed site-og-meta route scope', () => {
     const entries = [
-      { path: '/blog', functionName: 'site-og-meta' },
-      { path: '/de/blog/*', functionName: 'site-og-meta' },
       { path: '/', functionName: 'site-og-meta' },
+      { path: '/example/*', functionName: 'site-og-meta' },
+      { path: '/de/features', functionName: 'site-og-meta' },
       { path: '/de/*', functionName: 'site-og-meta' },
       { path: '/trip/*', functionName: 'trip-og-meta' },
     ];
@@ -50,15 +50,26 @@ describe('edge validation utils', () => {
     const violations = findSiteOgMetaScopeViolations(entries);
     expect(violations).toEqual([
       {
-        path: '/',
-        functionName: 'site-og-meta',
-        reason: 'site-og-meta must only be mapped to blog routes. Found disallowed path "/".',
-      },
-      {
         path: '/de/*',
         functionName: 'site-og-meta',
-        reason: 'site-og-meta must only be mapped to blog routes. Found disallowed path "/de/*".',
+        reason: 'site-og-meta must only be mapped to approved static/example route allowlists. Found disallowed path "/de/*".',
       },
     ]);
+  });
+
+  it('passes approved site-og-meta allowlist routes', () => {
+    const entries = [
+      { path: '/', functionName: 'site-og-meta' },
+      { path: '/inspirations/*', functionName: 'site-og-meta' },
+      { path: '/blog/*', functionName: 'site-og-meta' },
+      { path: '/example/*', functionName: 'site-og-meta' },
+      { path: '/de', functionName: 'site-og-meta' },
+      { path: '/de/inspirations/*', functionName: 'site-og-meta' },
+      { path: '/de/blog/*', functionName: 'site-og-meta' },
+      { path: '/de/create-trip', functionName: 'site-og-meta' },
+      { path: '/trip/*', functionName: 'trip-og-meta' },
+    ];
+
+    expect(findSiteOgMetaScopeViolations(entries)).toEqual([]);
   });
 });

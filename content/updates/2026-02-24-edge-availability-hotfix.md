@@ -7,13 +7,13 @@ published_at: 2026-02-24T18:40:00Z
 status: draft
 notify_in_app: false
 in_app_hours: 24
-summary: "Stabilizes site availability while restoring targeted OG metadata routing for marketing pages."
+summary: "Stabilizes edge availability and restores reliable custom social previews across static pages, blog, and example trips."
 ---
 
 ## Changes
 - [x] [Fixed] 🛟 Restored reliable page and asset loading during intermittent edge timeout spikes.
-- [x] [Fixed] 🖼️ Restored blog and localized page social previews with targeted metadata routing instead of site-wide interception.
-- [x] [Fixed] 🧭 Removed metadata middleware from the homepage and core app entry flow to prevent repeat edge timeout crashes on `/`.
-- [ ] [Internal] 🧭 Disabled catch-all site-wide edge interception as an emergency availability mitigation while keeping targeted edge routes active.
-- [ ] [Internal] 🧱 Added explicit route allowlists for metadata middleware and blocked future catch-all edge bindings in validation.
-- [ ] [Internal] 🛡️ Added site-og-meta scope enforcement and middleware upstream-fallback handling to reduce future edge crash blast radius.
+- [x] [Fixed] 🖼️ Restored custom social previews for static pages, localized blog entries, and example trip pages.
+- [x] [Improved] ⚡ Switched static-page preview images to pre-generated assets for faster, more stable social-card delivery.
+- [ ] [Internal] 🧱 Added build-time static OG asset generation with deterministic hashed filenames plus manifest validation.
+- [ ] [Internal] 🛡️ Added explicit safe-route policy enforcement for metadata middleware and kept catch-all edge bindings blocked in CI.
+- [ ] [Internal] 🧭 Added static-first OG image lookup with dynamic image fallback and response tracing header (`x-travelflow-og-source`).

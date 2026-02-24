@@ -60,12 +60,14 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 
 ### Implemented immediately
 - Removed catch-all edge binding from production routing (`/* -> site-og-meta`).
-- Restored `site-og-meta` coverage using explicit route allowlists for marketing paths and locale-prefixed marketing URLs.
+- Restored `site-og-meta` coverage using explicit route allowlists for static marketing/legal routes, `/create-trip`, and `/example/*` (including locale-prefixed variants).
 - Added CI validator rule that fails if `netlify.toml` includes catch-all edge path `/*`.
 - Added explicit edge policy documentation forbidding catch-all bindings.
-- Restricted `site-og-meta` to blog-only routes to keep root/app navigation outside metadata middleware.
 - Added middleware fallback handling so `context.next()` timeouts no longer hard-crash the request path.
-- Added CI validator rule that fails if `site-og-meta` is mapped outside the blog route allowlist.
+- Added build-time static OG image generation with hashed filenames and manifest lookup.
+- Added static-first `og:image` resolution with dynamic `/api/og/site` fallback when no static manifest entry is available.
+- Added CI validator rule that fails if `site-og-meta` is mapped outside the explicit safe-route allowlist.
+- Added build validation to guarantee manifest/asset coverage for all static OG route keys.
 
 ### Planned follow-ups (high priority)
 - Add synthetic monitoring checks (every 1 minute):

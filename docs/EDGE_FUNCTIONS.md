@@ -10,7 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
-| `site-og-meta.ts` | `/blog`, `/blog/*`, `/es/blog`, `/es/blog/*`, `/de/blog`, `/de/blog/*`, `/fr/blog`, `/fr/blog/*`, `/pt/blog`, `/pt/blog/*`, `/ru/blog`, `/ru/blog/*`, `/it/blog`, `/it/blog/*`, `/pl/blog`, `/pl/blog/*`, `/ko/blog`, `/ko/blog/*` | Injects SEO & Open Graph meta tags into blog page HTML | Middleware |
+| `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
@@ -25,8 +25,11 @@ Shared helpers live in `netlify/edge-lib/`.
 ```
 Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
                          │
-                         ▼ (OG image URL points to)
-                    site-og-image.tsx
+                         ├─▶ static OG manifest lookup (`/images/og/site/generated/manifest.json`)
+                         │         │
+                         │         └─▶ `/images/og/site/generated/*.png` (preferred)
+                         │
+                         └─▶ fallback OG URL (`/api/og/site?...`) when no static match
 
 Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA index.html
                          │
@@ -59,9 +62,23 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 
 ### Site metadata scope policy
 
-- `site-og-meta` is restricted to blog routes only.
-- Do not map `site-og-meta` to `/`, locale catch-alls (for example `/de/*`), or broad app routes.
-- CI fails if `site-og-meta` is configured outside the explicit blog allowlist in `netlify.toml`.
+- `site-og-meta` must only be mapped to the explicit static/example allowlist in `netlify.toml`.
+- Allowed groups: `/`, static marketing pages, legal pages, `/blog*`, `/inspirations*`, `/create-trip`, `/example/*`, and locale-prefixed variants for active locales.
+- Forbidden: catch-all patterns, admin/profile/api routes, or broad locale catch-alls (for example `/de/*`).
+- CI fails if `site-og-meta` is configured outside the approved allowlist.
+
+## Static OG build workflow
+
+- Build-time generator: `pnpm og:site:build`
+  - Enumerates static OG targets from the shared metadata resolver.
+  - Writes hashed PNG assets to `public/images/og/site/generated/`.
+  - Writes `public/images/og/site/generated/manifest.json`.
+- Validator: `pnpm og:site:validate`
+  - Verifies full route coverage from resolver source.
+  - Verifies hash/path determinism and on-disk asset existence.
+- Build integration:
+  - `pnpm build` runs `og:site:build` and `og:site:validate` before `vite build`.
+- Generated assets are build artifacts and are intentionally not committed.
 
 ## Required environment variables
 
@@ -99,6 +116,7 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 |---|---|---|
 | `site-og-meta.ts` | `s-maxage=900, stale-while-revalidate=86400` | 15 min CDN, 1 day stale |
 | `site-og-image.tsx` | `s-maxage=43200, stale-while-revalidate=604800` | 12 hour CDN, 7 day stale |
+| `/images/og/site/generated/*` | `max-age=31536000, immutable` | Build-time generated static OG assets |
 | `trip-og-meta.ts` (shared) | `s-maxage=300, stale-while-revalidate=86400` | 5 min CDN, 1 day stale |
 | `trip-og-meta.ts` (private) | `s-maxage=120, stale-while-revalidate=3600` | 2 min CDN, 1 hour stale |
 | `trip-og-image.tsx` (versioned) | `s-maxage=31536000` | 1 year immutable |

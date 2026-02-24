@@ -74,11 +74,95 @@
   function = "site-og-image"
 
 [[edge_functions]]
+  path = "/"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
   path = "/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/example/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/updates"
   function = "site-og-meta"
 
 [[edge_functions]]
@@ -90,11 +174,131 @@
   function = "site-og-meta"
 
 [[edge_functions]]
+  path = "/es/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/es/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/de/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
   path = "/de/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/de/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/updates"
   function = "site-og-meta"
 
 [[edge_functions]]
@@ -106,11 +310,131 @@
   function = "site-og-meta"
 
 [[edge_functions]]
+  path = "/fr/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fr/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/pt/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
   path = "/pt/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pt/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/updates"
   function = "site-og-meta"
 
 [[edge_functions]]
@@ -122,11 +446,131 @@
   function = "site-og-meta"
 
 [[edge_functions]]
+  path = "/ru/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ru/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/it/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
   path = "/it/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/it/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/updates"
   function = "site-og-meta"
 
 [[edge_functions]]
@@ -138,11 +582,111 @@
   function = "site-og-meta"
 
 [[edge_functions]]
+  path = "/pl/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/pl/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/ko/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
   path = "/ko/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ko/create-trip"
   function = "site-og-meta"
 
 [[edge_functions]]
@@ -167,6 +711,11 @@
   for = "/images/blog/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000, s-maxage=31536000, stale-while-revalidate=2592000"
+
+[[headers]]
+  for = "/images/og/site/generated/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/fonts/*"
