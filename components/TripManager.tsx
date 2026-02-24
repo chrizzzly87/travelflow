@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
+import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
@@ -43,8 +44,30 @@ interface CountryMatch {
   name: string;
 }
 
+type CountryCacheStore = Record<string, { countryCode: string; countryName: string }>;
+
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
+
+export const readTripManagerCountryCache = (): CountryCacheStore => {
+  const raw = readLocalStorageItem(COUNTRY_CACHE_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as CountryCacheStore;
+  } catch {
+    return {};
+  }
+};
+
+export const writeTripManagerCountryCache = (cache: CountryCacheStore): void => {
+  try {
+    writeLocalStorageItem(COUNTRY_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore cache persistence failures
+  }
+};
 
 const TOOLTIP_CLEAN_STYLE = [
   'style=element:geometry|color:0xf9f9f9',
@@ -907,7 +930,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   const closeButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const closeHoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isEnrichingRef = React.useRef(false);
-  const countryCacheRef = React.useRef<Record<string, { countryCode: string; countryName: string }>>({});
+  const countryCacheRef = React.useRef<CountryCacheStore>({});
   const openLoadTokenRef = React.useRef(0);
 
   useFocusTrap({
@@ -938,24 +961,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, [cancelHoverClose]);
 
   React.useEffect(() => {
-    try {
-      const raw = localStorage.getItem(COUNTRY_CACHE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        countryCacheRef.current = parsed;
-      }
-    } catch {
-      countryCacheRef.current = {};
-    }
+    countryCacheRef.current = readTripManagerCountryCache();
   }, []);
 
   const persistCountryCache = React.useCallback(() => {
-    try {
-      localStorage.setItem(COUNTRY_CACHE_KEY, JSON.stringify(countryCacheRef.current));
-    } catch {
-      // ignore cache persistence failures
-    }
+    writeTripManagerCountryCache(countryCacheRef.current);
   }, []);
 
   const getCountryCacheKey = React.useCallback((lat: number, lng: number) => {

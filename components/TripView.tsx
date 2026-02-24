@@ -9,6 +9,7 @@ import {
     buildPaywalledTripDisplay,
 } from '../config/paywall';
 import { trackEvent } from '../services/analyticsService';
+import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
@@ -1023,11 +1024,7 @@ const useTripViewRender = ({
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        try {
-            window.localStorage.removeItem('tf_country_info_expanded');
-        } catch {
-            // ignore storage issues
-        }
+        removeLocalStorageItem('tf_country_info_expanded');
     }, []);
 
     const currentViewSettings: IViewSettings = useMemo(() => ({

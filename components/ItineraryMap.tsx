@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -167,24 +168,55 @@ type RouteCacheEntry = {
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
+export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
-const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 let routeCacheHydrated = false;
+
+export const filterHydratedRouteCacheEntries = (
+    parsed: unknown,
+    now: number,
+): Array<[string, RouteCacheEntry]> => {
+    if (!parsed || typeof parsed !== 'object') return [];
+    const entries = parsed as Record<string, RouteCacheEntry>;
+    return Object.entries(entries).filter(([, entry]) => {
+        if (!entry || !entry.updatedAt || !entry.status) return false;
+        if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return false;
+        if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return false;
+        return true;
+    });
+};
+
+export const buildPersistedRouteCachePayload = (
+    routeCache: Map<string, RouteCacheEntry>,
+    now: number,
+): Record<string, RouteCacheEntry> => {
+    const payload: Record<string, RouteCacheEntry> = {};
+    routeCache.forEach((entry, key) => {
+        if (!entry || !entry.updatedAt || !entry.status) return;
+        if (entry.status === 'failed') {
+            if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
+                payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
+            }
+            return;
+        }
+        if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
+            payload[key] = entry;
+        }
+    });
+    return payload;
+};
 
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
     routeCacheHydrated = true;
     try {
-        const raw = window.localStorage.getItem(ROUTE_STORAGE_KEY);
+        const raw = readLocalStorageItem(ROUTE_STORAGE_KEY);
         if (!raw) return;
-        const parsed = JSON.parse(raw) as Record<string, RouteCacheEntry>;
+        const parsed = JSON.parse(raw);
         const now = Date.now();
-        Object.entries(parsed).forEach(([key, entry]) => {
-            if (!entry || !entry.updatedAt || !entry.status) return;
-            if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return;
-            if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return;
+        filterHydratedRouteCacheEntries(parsed, now).forEach(([key, entry]) => {
             ROUTE_CACHE.set(key, entry);
         });
     } catch (e) {
@@ -196,20 +228,8 @@ const persistRouteCache = () => {
     if (typeof window === 'undefined') return;
     try {
         const now = Date.now();
-        const payload: Record<string, RouteCacheEntry> = {};
-        ROUTE_CACHE.forEach((entry, key) => {
-            if (!entry || !entry.updatedAt || !entry.status) return;
-            if (entry.status === 'failed') {
-                if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
-                    payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
-                }
-                return;
-            }
-            if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
-                payload[key] = entry;
-            }
-        });
-        window.localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
+        const payload = buildPersistedRouteCachePayload(ROUTE_CACHE, now);
+        writeLocalStorageItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
         console.warn('Failed to persist route cache', e);
     }
