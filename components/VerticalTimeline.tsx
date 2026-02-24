@@ -27,10 +27,13 @@ const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 0;
 const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
 const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 7;
 const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 8;
-const CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX = 6;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX = 10;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX = 34;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO = 0.14;
+const CITY_VERTICAL_CONNECTOR_CITY_SPREAD_BUFFER_PX = 24;
 const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
 const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
-const TRANSFER_PILL_ATTACH_INSET_PX = 0;
+const TRANSFER_PILL_ATTACH_INSET_PX = 5;
 const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
 
 const parseLocalTripDate = (value: string): Date | null => {
@@ -60,28 +63,7 @@ const buildVerticalConnectorPath = (
     return '';
   }
   if (Math.abs(endY - startY) < 0.5) return `M ${startX} ${startY} H ${endX}`;
-
-  const direction = endY >= startY ? 1 : -1;
-  const horizontalIn = trackX - startX;
-  const horizontalOut = endX - trackX;
-  if (horizontalIn <= 2 || horizontalOut <= 2) {
-    return `M ${startX} ${startY} H ${trackX} V ${endY} H ${endX}`;
-  }
-  const verticalSpan = Math.abs(endY - startY);
-  const cornerRadius = Math.max(
-    2,
-    Math.min(7, verticalSpan / 2, horizontalIn - 1, horizontalOut - 1)
-  );
-
-  const cornerStartX = trackX - cornerRadius;
-  const cornerEndY = endY - (direction * cornerRadius);
-  const afterCornerX = trackX + cornerRadius;
-  return `M ${startX} ${startY}
-    H ${cornerStartX}
-    Q ${trackX} ${startY} ${trackX} ${startY + (direction * cornerRadius)}
-    V ${cornerEndY}
-    Q ${trackX} ${endY} ${afterCornerX} ${endY}
-    H ${endX}`;
+  return `M ${startX} ${startY} H ${trackX} V ${endY} H ${endX}`;
 };
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
@@ -725,8 +707,6 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const rawFromBoundaryY = (fromEnd - visualStartOffset) * pixelsPerDay;
                              const rawToBoundaryY = (toStart - visualStartOffset) * pixelsPerDay;
                              const {
-                                 fromY,
-                                 toY,
                                  connectorTop,
                                  connectorHeight,
                              } = computeVerticalTransferConnectorAnchors(
@@ -754,19 +734,42 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const cityConnectorStartX = -CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX;
                              const chipLeft = (TRANSFER_LANE_WIDTH_PX - chipWidth) / 2;
                              const chipAttachX = chipLeft + TRANSFER_PILL_ATTACH_INSET_PX;
-                             const fromAbove = fromY <= toY;
                              const attachInsetPx = Math.max(2, Math.min(6, TRANSFER_PILL_EDGE_ATTACH_INSET_PX));
                              const upperAttachY = chipTop + attachInsetPx;
                              const lowerAttachY = chipBottom - attachInsetPx;
+                             const travelDirection = rawFromBoundaryY <= rawToBoundaryY ? 1 : -1;
+                             const fromCityHeightPx = Math.max(0, link.fromCity.duration * pixelsPerDay);
+                             const toCityHeightPx = Math.max(0, link.toCity.duration * pixelsPerDay);
+                             const fromCityExitInsetPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX,
+                                 Math.min(CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX, fromCityHeightPx * CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO)
+                             );
+                             const toCityExitInsetPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX,
+                                 Math.min(CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX, toCityHeightPx * CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO)
+                             );
+                             const rawFromCityExitY = rawFromBoundaryY - (travelDirection * fromCityExitInsetPx);
+                             const rawToCityExitY = rawToBoundaryY + (travelDirection * toCityExitInsetPx);
+                             const cityAnchorMinSeparationPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX,
+                                 Math.abs(lowerAttachY - upperAttachY) + CITY_VERTICAL_CONNECTOR_CITY_SPREAD_BUFFER_PX
+                             );
+                             const cityAnchors = computeVerticalTransferConnectorAnchors(
+                                 rawFromCityExitY,
+                                 rawToCityExitY,
+                                 totalHeight,
+                                 {
+                                     cityEdgeInsetPx: 0,
+                                     edgeGapPx: 0,
+                                     minSeparationPx: cityAnchorMinSeparationPx,
+                                 }
+                             );
+                             const fromAbove = cityAnchors.fromY <= cityAnchors.toY;
                              const fromAttachY = fromAbove ? upperAttachY : lowerAttachY;
                              const toAttachY = fromAbove ? lowerAttachY : upperAttachY;
-                             const trackBaseX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
-                             const upperTrackX = trackBaseX - (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
-                             const lowerTrackX = trackBaseX + (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
-                             const fromTrackX = fromAbove ? upperTrackX : lowerTrackX;
-                             const toTrackX = fromAbove ? lowerTrackX : upperTrackX;
-                             const fromPath = buildVerticalConnectorPath(cityConnectorStartX, fromY, fromTrackX, chipAttachX, fromAttachY);
-                             const toPath = buildVerticalConnectorPath(cityConnectorStartX, toY, toTrackX, chipAttachX, toAttachY);
+                             const trackX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
+                             const fromPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.fromY, trackX, chipAttachX, fromAttachY);
+                             const toPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.toY, trackX, chipAttachX, toAttachY);
                              const connectorOpacity = isUnsetTransport ? 0.52 : 1;
                              const shouldDashConnector = isUnsetTransport;
 
