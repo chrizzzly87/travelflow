@@ -25,11 +25,11 @@ describe('services/consentService', () => {
 
   it('purges optional storage when switching back to essential only', () => {
     saveConsent('all');
-    window.localStorage.setItem('umami.cache', '{"enabled":true}');
+    window.localStorage.setItem('umami.disabled', '1');
 
     saveConsent('essential');
 
-    expect(window.localStorage.getItem('umami.cache')).toBeNull();
+    expect(window.localStorage.getItem('umami.disabled')).toBeNull();
   });
 
   it('notifies subscribers on consent change', () => {
