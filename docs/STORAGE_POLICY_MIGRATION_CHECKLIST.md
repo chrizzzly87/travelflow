@@ -20,11 +20,11 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `components/marketing/TranslationNoticeBanner.tsx`
 - [x] `components/ReleaseNoticeDialog.tsx`
 - [x] `pages/UpdatesPage.tsx` (simulated-login debug read)
+- [x] `services/authService.ts` (Supabase wildcard/session cleanup path via registry-aware helper calls)
+- [x] `services/dbService.ts` (planner view preference writes)
 
 ## Remaining Direct Storage Usage (Next Batches)
-- [ ] `services/authService.ts` (Supabase wildcard/session cleanup path)
 - [ ] `services/consentState.ts` (consent bootstrap read path)
-- [ ] `services/dbService.ts` (planner view preference writes)
 - [ ] `services/storageService.ts` and `services/historyService.ts`
 - [ ] `components/tripview/*` persistence hooks
 - [ ] `components/TripManager.tsx` / `components/ItineraryMap.tsx` / `components/CountryInfo.tsx`

@@ -18,6 +18,7 @@ export interface CookieDefinition {
   duration: string;
   provider: string;
   storage?: 'cookie' | 'localStorage' | 'sessionStorage';
+  storageFallbacks?: Array<'localStorage' | 'sessionStorage'>;
   notes?: string;
 }
 
@@ -51,6 +52,7 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       duration: 'Session lifecycle (rotating)',
       provider: 'Supabase Auth',
       storage: 'localStorage',
+      storageFallbacks: ['sessionStorage'],
       notes: 'Can also appear in sessionStorage during OAuth edge cases; required for login persistence.',
     },
     {
@@ -59,6 +61,7 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       duration: 'Session lifecycle (rotating)',
       provider: 'Supabase Auth',
       storage: 'localStorage',
+      storageFallbacks: ['sessionStorage'],
       notes: 'Can also appear in sessionStorage during OAuth edge cases.',
     },
     {
@@ -67,6 +70,7 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       duration: 'Single OAuth flow',
       provider: 'Supabase Auth',
       storage: 'localStorage',
+      storageFallbacks: ['sessionStorage'],
       notes: 'May be stored in sessionStorage by Supabase internals during OAuth handshakes.',
     },
     {
@@ -468,6 +472,12 @@ export const validateCookieRegistry = (): { valid: boolean; errors: string[] } =
     if (!cookie.duration) errors.push(`Entry ${cookie.name} is missing duration`);
     if (!cookie.provider) errors.push(`Entry ${cookie.name} is missing provider`);
     if (!cookie.storage) errors.push(`Entry ${cookie.name} is missing storage medium`);
+    if (cookie.storage === 'cookie' && cookie.storageFallbacks && cookie.storageFallbacks.length > 0) {
+      errors.push(`Entry ${cookie.name} cannot define storageFallbacks when storage is cookie`);
+    }
+    if (cookie.storage && cookie.storage !== 'cookie' && cookie.storageFallbacks?.includes(cookie.storage)) {
+      errors.push(`Entry ${cookie.name} has duplicate storage fallback "${cookie.storage}"`);
+    }
   });
 
   return {

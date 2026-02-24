@@ -1,6 +1,10 @@
 import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, IViewSettings, IUserSettings, ShareMode } from '../types';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
+import {
+    readLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
 import { getAllTrips, setAllTrips } from './storageService';
 import { ANONYMOUS_TRIP_LIMIT, isTripExpiredByTimestamp } from '../config/productLimits';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from './simulatedLoginService';
@@ -43,7 +47,7 @@ const SESSION_POLL_ATTEMPTS = 6;
 const isDebugEnabled = () => {
     if (typeof window === 'undefined') return false;
     try {
-        if (window.localStorage.getItem('tf_debug_db') === '1') return true;
+        if (readLocalStorageItem('tf_debug_db') === '1') return true;
     } catch {
         // ignore
     }
@@ -990,12 +994,12 @@ export const dbCanCreateTrip = async (): Promise<{
 
 export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) => {
     if (!settings || typeof window === 'undefined') return;
-    if (settings.mapStyle) localStorage.setItem('tf_map_style', settings.mapStyle);
-    if (settings.routeMode) localStorage.setItem('tf_route_mode', settings.routeMode);
-    if (settings.layoutMode) localStorage.setItem('tf_layout_mode', settings.layoutMode);
-    if (settings.timelineView) localStorage.setItem('tf_timeline_view', settings.timelineView);
-    if (typeof settings.showCityNames === 'boolean') localStorage.setItem('tf_city_names', String(settings.showCityNames));
-    if (typeof settings.zoomLevel === 'number') localStorage.setItem('tf_zoom_level', settings.zoomLevel.toFixed(2));
-    if (typeof settings.sidebarWidth === 'number') localStorage.setItem('tf_sidebar_width', String(settings.sidebarWidth));
-    if (typeof settings.timelineHeight === 'number') localStorage.setItem('tf_timeline_height', String(settings.timelineHeight));
+    if (settings.mapStyle) writeLocalStorageItem('tf_map_style', settings.mapStyle);
+    if (settings.routeMode) writeLocalStorageItem('tf_route_mode', settings.routeMode);
+    if (settings.layoutMode) writeLocalStorageItem('tf_layout_mode', settings.layoutMode);
+    if (settings.timelineView) writeLocalStorageItem('tf_timeline_view', settings.timelineView);
+    if (typeof settings.showCityNames === 'boolean') writeLocalStorageItem('tf_city_names', String(settings.showCityNames));
+    if (typeof settings.zoomLevel === 'number') writeLocalStorageItem('tf_zoom_level', settings.zoomLevel.toFixed(2));
+    if (typeof settings.sidebarWidth === 'number') writeLocalStorageItem('tf_sidebar_width', String(settings.sidebarWidth));
+    if (typeof settings.timelineHeight === 'number') writeLocalStorageItem('tf_timeline_height', String(settings.timelineHeight));
 };

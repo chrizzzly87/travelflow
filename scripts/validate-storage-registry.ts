@@ -23,7 +23,7 @@ interface ExpectedStorageKey {
 
 interface RegistryEntry {
   name: string;
-  storage: CookieDefinition['storage'];
+  storage: 'cookie' | StorageMedium;
 }
 
 interface DynamicAllowlistRule {
@@ -109,10 +109,14 @@ const toRegistryEntries = (): RegistryEntry[] => [
   ...COOKIE_REGISTRY.essential,
   ...COOKIE_REGISTRY.analytics,
   ...COOKIE_REGISTRY.marketing,
-].map((entry) => ({
-  name: entry.name,
-  storage: entry.storage ?? 'cookie',
-}));
+].flatMap((entry) => {
+  const storage = entry.storage ?? 'cookie';
+  const fallbackStorages = entry.storageFallbacks ?? [];
+  return [
+    { name: entry.name, storage },
+    ...fallbackStorages.map((fallbackStorage) => ({ name: entry.name, storage: fallbackStorage })),
+  ];
+});
 
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
