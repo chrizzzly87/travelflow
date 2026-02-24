@@ -14,6 +14,7 @@ import { resolve, basename } from "node:path";
 import {
   findCatchAllEdgeEntries,
   parseEdgeFunctionEntries,
+  findSiteOgMetaScopeViolations,
 } from "./edge-validation-utils.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -61,6 +62,12 @@ for (const entry of catchAllEntries) {
       `Catch-all edge bindings are forbidden because upstream edge/runtime timeouts can take down the full site. ` +
       `Use explicit route allowlists for edge middleware.`
   );
+  errors++;
+}
+
+const siteOgMetaScopeViolations = findSiteOgMetaScopeViolations(edgeEntries);
+for (const violation of siteOgMetaScopeViolations) {
+  console.error(`ERROR: ${violation.reason}`);
   errors++;
 }
 

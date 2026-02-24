@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   findCatchAllEdgeEntries,
+  findSiteOgMetaScopeViolations,
   parseEdgeFunctionEntries,
 } from '../../scripts/edge-validation-utils.mjs';
 
@@ -35,5 +36,29 @@ describe('edge validation utils', () => {
 
     const catchAll = findCatchAllEdgeEntries(entries);
     expect(catchAll).toEqual([{ path: '/*', functionName: 'site-og-meta' }]);
+  });
+
+  it('detects disallowed site-og-meta route scope', () => {
+    const entries = [
+      { path: '/blog', functionName: 'site-og-meta' },
+      { path: '/de/blog/*', functionName: 'site-og-meta' },
+      { path: '/', functionName: 'site-og-meta' },
+      { path: '/de/*', functionName: 'site-og-meta' },
+      { path: '/trip/*', functionName: 'trip-og-meta' },
+    ];
+
+    const violations = findSiteOgMetaScopeViolations(entries);
+    expect(violations).toEqual([
+      {
+        path: '/',
+        functionName: 'site-og-meta',
+        reason: 'site-og-meta must only be mapped to blog routes. Found disallowed path "/".',
+      },
+      {
+        path: '/de/*',
+        functionName: 'site-og-meta',
+        reason: 'site-og-meta must only be mapped to blog routes. Found disallowed path "/de/*".',
+      },
+    ]);
   });
 });
