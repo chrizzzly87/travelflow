@@ -57,12 +57,44 @@
   },
   "contact": {
     "title": "Kontakt",
-    "description": "Użyj tej strony, aby zgłosić błędy tłumaczenia lub przesłać opinię o lokalizacji.",
-    "formStatusTitle": "Formularz kontaktowy wkrótce",
-    "formStatusBody": "Dedykowany formularz nie jest jeszcze dostępny. Na razie skontaktuj się z nami mailowo.",
-    "emailLabel": "E-mail",
-    "emailValue": "support@travelflow.app",
-    "responseNote": "Zwykle odpowiadamy w ciągu 2–3 dni roboczych.",
-    "backHome": "Wróć do strony głównej"
+    "description": "Skontaktuj się z nami w sprawie produktu, błędów, partnerstw lub tłumaczeń.",
+    "emailLabel": "Główny e-mail",
+    "emailValue": "contact@wizz.art",
+    "responseNote": "Zwykle odpowiadamy w ciągu 2-3 dni roboczych.",
+    "backHome": "Wróć do strony głównej",
+    "form": {
+      "title": "Wyślij nam wiadomość",
+      "reasonLabel": "Powód",
+      "reasonPlaceholder": "Wybierz powód",
+      "reasonOptions": {
+        "bugReport": "Zgłoszenie błędu",
+        "featureRequest": "Prośba o funkcję",
+        "billingAccount": "Płatności / konto",
+        "dataPrivacy": "Wniosek o dane/prywatność",
+        "partnership": "Współpraca",
+        "other": "Inne"
+      },
+      "nameLabel": "Imię (opcjonalnie)",
+      "namePlaceholder": "Twoje imię",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "ty@przyklad.pl",
+      "messageLabel": "Wiadomość",
+      "messagePlaceholder": "Napisz, jak możemy pomóc.",
+      "messageLimitHint": "Do {max} znaków.",
+      "privacyNote": "Używamy tych danych wyłącznie do obsługi i odpowiedzi na Twoje zgłoszenie.",
+      "submit": "Wyślij wiadomość",
+      "submitting": "Wysyłanie...",
+      "successTitle": "Wiadomość wysłana",
+      "successBody": "Dziękujemy, Twoja wiadomość została wysłana.",
+      "errorTitle": "Formularz jest chwilowo niedostępny",
+      "errorBody": "Nie udało się wysłać wiadomości przez formularz. Napisz do nas bezpośrednio e-mailem.",
+      "fallbackTitle": "Kontakt zapasowy przez e-mail",
+      "fallbackBody": "Jeśli limit formularza został osiągnięty lub wysyłka się nie powiedzie, napisz na:",
+      "fallbackCta": "Napisz na contact@wizz.art",
+      "validationReason": "Wybierz powód kontaktu.",
+      "validationEmail": "Wpisz poprawny adres e-mail.",
+      "validationMessage": "Wpisz wiadomość.",
+      "validationMessageLength": "Twoja wiadomość jest za długa. Maksymalnie {max} znaków."
+    }
   }
 }

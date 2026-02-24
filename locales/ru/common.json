@@ -59,12 +59,44 @@
   },
   "contact": {
     "title": "Контакты",
-    "description": "Используйте эту страницу, чтобы сообщить об ошибках перевода или оставить отзыв о локализации.",
-    "formStatusTitle": "Форма обратной связи скоро появится",
-    "formStatusBody": "Отдельная форма пока недоступна. Пока что свяжитесь с нами по электронной почте.",
-    "emailLabel": "E-mail",
-    "emailValue": "support@travelflow.app",
+    "description": "Свяжитесь с нами по вопросам продукта, багам, партнёрствам или переводам.",
+    "emailLabel": "Основной e-mail",
+    "emailValue": "contact@wizz.art",
     "responseNote": "Обычно мы отвечаем в течение 2-3 рабочих дней.",
-    "backHome": "Вернуться на главную"
+    "backHome": "Вернуться на главную",
+    "form": {
+      "title": "Отправить сообщение",
+      "reasonLabel": "Тема",
+      "reasonPlaceholder": "Выберите тему",
+      "reasonOptions": {
+        "bugReport": "Сообщить о баге",
+        "featureRequest": "Запрос функции",
+        "billingAccount": "Оплата / аккаунт",
+        "dataPrivacy": "Запрос данных/конфиденциальности",
+        "partnership": "Партнёрство",
+        "other": "Другое"
+      },
+      "nameLabel": "Имя (необязательно)",
+      "namePlaceholder": "Ваше имя",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "Сообщение",
+      "messagePlaceholder": "Расскажите, чем мы можем помочь.",
+      "messageLimitHint": "До {max} символов.",
+      "privacyNote": "Эти данные используются только для обработки и ответа на ваш запрос.",
+      "submit": "Отправить сообщение",
+      "submitting": "Отправка...",
+      "successTitle": "Сообщение отправлено",
+      "successBody": "Спасибо, ваше сообщение успешно отправлено.",
+      "errorTitle": "Форма сейчас недоступна",
+      "errorBody": "Не удалось отправить сообщение через форму. Напишите нам напрямую по e-mail.",
+      "fallbackTitle": "Резервный контакт по e-mail",
+      "fallbackBody": "Если лимит формы исчерпан или отправка не удалась, напишите нам на:",
+      "fallbackCta": "Написать на contact@wizz.art",
+      "validationReason": "Пожалуйста, выберите тему.",
+      "validationEmail": "Введите корректный e-mail.",
+      "validationMessage": "Введите сообщение.",
+      "validationMessageLength": "Сообщение слишком длинное. Максимум: {max} символов."
+    }
   }
 }

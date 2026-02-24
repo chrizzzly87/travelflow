@@ -5,6 +5,7 @@ export interface LegalEntityProfile {
   responsibleForContent: string;
   addressLines: string[];
   contactEmail: string;
+  additionalContactEmails?: string[];
   privacyEmail: string;
   phone?: string;
   vatId?: string;
@@ -51,7 +52,8 @@ export const LEGAL_PROFILE: LegalProfile = {
     representativeName: 'Christian Wisniewski',
     responsibleForContent: 'Christian Wisniewski',
     addressLines: ['Pinneberger Str. 17B', '22457 Hamburg', 'Germany'],
-    contactEmail: 'info@wizz.art',
+    contactEmail: 'contact@wizz.art',
+    additionalContactEmails: ['info@wizz.air'],
     privacyEmail: 'legal@wizz.art',
     phone: '',
     vatId: '',
