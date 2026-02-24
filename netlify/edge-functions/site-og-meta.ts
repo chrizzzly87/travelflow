@@ -880,23 +880,53 @@ const buildMetadata = (url: URL): Metadata => {
   };
 };
 
+const fetchSpaHtmlFallback = async (origin: string): Promise<Response | null> => {
+  try {
+    const response = await fetch(new URL("/index.html", origin).toString(), {
+      method: "GET",
+      headers: {
+        accept: "text/html,application/xhtml+xml",
+      },
+    });
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !contentType.includes("text/html")) return null;
+    return response;
+  } catch {
+    return null;
+  }
+};
+
 export default async (request: Request, context: { next: () => Promise<Response> }): Promise<Response> => {
   const url = new URL(request.url);
-  const baseResponse = await context.next();
-  const fallbackResponse = baseResponse.clone();
+  let baseResponse: Response | null = null;
+  let fallbackResponse: Response | null = null;
+  let usedSpaFallback = false;
+
+  try {
+    baseResponse = await context.next();
+    fallbackResponse = baseResponse.clone();
+  } catch {
+    // Availability first: if the routed lookup fails in edge middleware, load
+    // the SPA shell directly so we avoid returning a 502 crash page.
+    baseResponse = await fetchSpaHtmlFallback(url.origin);
+    if (baseResponse) {
+      fallbackResponse = baseResponse.clone();
+      usedSpaFallback = true;
+    }
+  }
+
+  if (!baseResponse) {
+    return new Response("Edge upstream timeout", {
+      status: 503,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    });
+  }
+
   const contentType = baseResponse.headers.get("content-type") || "";
-
-  if (
-    url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/s/") ||
-    url.pathname.startsWith("/trip/")
-  ) {
-    return baseResponse;
-  }
-
-  if (!contentType.includes("text/html")) {
-    return baseResponse;
-  }
+  if (!contentType.includes("text/html")) return baseResponse;
 
   try {
     const metadata = buildMetadata(url);
@@ -908,6 +938,9 @@ export default async (request: Request, context: { next: () => Promise<Response>
       "cache-control",
       shouldUseStrictToolHtmlCache(url.pathname) ? TOOL_APP_CACHE_CONTROL : SITE_CACHE_CONTROL,
     );
+    if (usedSpaFallback) {
+      headers.set("x-travelflow-edge-fallback", "spa-index");
+    }
     headers.delete("content-length");
     headers.delete("etag");
 
@@ -917,6 +950,6 @@ export default async (request: Request, context: { next: () => Promise<Response>
       headers,
     });
   } catch {
-    return fallbackResponse;
+    return fallbackResponse ?? baseResponse;
   }
 };

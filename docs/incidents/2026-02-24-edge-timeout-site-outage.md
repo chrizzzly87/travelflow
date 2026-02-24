@@ -31,6 +31,8 @@ The primary blast radius came from a catch-all edge middleware route (`[[edge_fu
 - 2026-02-24 ~17:43 UTC: production recovered to `200` on core routes and image transform probes.
 - 2026-02-24 ~18:00 UTC: follow-up regression identified (blog pages returned default OG metadata because `site-og-meta` had no active marketing-route bindings after catch-all removal).
 - 2026-02-24 ~18:xx UTC: targeted marketing allowlist routes added for `site-og-meta` (including localized marketing prefixes), restoring OG coverage without global interception.
+- 2026-02-24 ~19:17 UTC: second outage signal observed on `/` with `site-og-meta` timeout crashes (`Upstream lookup timed out`), indicating route scope was still too broad/high-traffic.
+- 2026-02-24 ~19:xx UTC: remediation narrowed `site-og-meta` to blog-only routes and added edge fallback logic for upstream lookup failures.
 
 ## Root Cause
 The production site had a catch-all edge middleware route:
@@ -61,6 +63,9 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 - Restored `site-og-meta` coverage using explicit route allowlists for marketing paths and locale-prefixed marketing URLs.
 - Added CI validator rule that fails if `netlify.toml` includes catch-all edge path `/*`.
 - Added explicit edge policy documentation forbidding catch-all bindings.
+- Restricted `site-og-meta` to blog-only routes to keep root/app navigation outside metadata middleware.
+- Added middleware fallback handling so `context.next()` timeouts no longer hard-crash the request path.
+- Added CI validator rule that fails if `site-og-meta` is mapped outside the blog route allowlist.
 
 ### Planned follow-ups (high priority)
 - Add synthetic monitoring checks (every 1 minute):

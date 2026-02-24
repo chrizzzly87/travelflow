@@ -10,7 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
-| `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/pricing`, `/faq`, `/share-unavailable`, `/login`, `/contact`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, plus localized prefixes `/{locale}` and `/{locale}/*` for `es,de,fr,pt,ru,it,pl,ko` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
+| `site-og-meta.ts` | `/blog`, `/blog/*`, `/es/blog`, `/es/blog/*`, `/de/blog`, `/de/blog/*`, `/fr/blog`, `/fr/blog/*`, `/pt/blog`, `/pt/blog/*`, `/ru/blog`, `/ru/blog/*`, `/it/blog`, `/it/blog/*`, `/pl/blog`, `/pl/blog/*`, `/ko/blog`, `/ko/blog/*` | Injects SEO & Open Graph meta tags into blog page HTML | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
@@ -23,7 +23,7 @@ Shared helpers live in `netlify/edge-lib/`.
 ## Architecture
 
 ```
-Marketing pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
+Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
                          │
                          ▼ (OG image URL points to)
                     site-og-image.tsx
@@ -56,6 +56,12 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Catch-all edge bindings are treated as a production availability risk because upstream timeouts can convert into full-site `502` incidents.
 - Use explicit path allowlists (for example: `/`, `/blog`, `/blog/*`, `/api/og/*`) and keep static/internal platform paths outside edge middleware.
 - CI fails if a catch-all edge binding is added.
+
+### Site metadata scope policy
+
+- `site-og-meta` is restricted to blog routes only.
+- Do not map `site-og-meta` to `/`, locale catch-alls (for example `/de/*`), or broad app routes.
+- CI fails if `site-og-meta` is configured outside the explicit blog allowlist in `netlify.toml`.
 
 ## Required environment variables
 

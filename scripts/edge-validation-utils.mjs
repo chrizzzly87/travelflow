@@ -22,3 +22,33 @@ export const parseEdgeFunctionEntries = (toml) => {
 
 export const findCatchAllEdgeEntries = (entries) =>
   entries.filter((entry) => entry.path.trim() === "/*");
+
+const SITE_OG_META_ALLOWED_PATHS = new Set([
+  "/blog",
+  "/blog/*",
+  "/es/blog",
+  "/es/blog/*",
+  "/de/blog",
+  "/de/blog/*",
+  "/fr/blog",
+  "/fr/blog/*",
+  "/pt/blog",
+  "/pt/blog/*",
+  "/ru/blog",
+  "/ru/blog/*",
+  "/it/blog",
+  "/it/blog/*",
+  "/pl/blog",
+  "/pl/blog/*",
+  "/ko/blog",
+  "/ko/blog/*",
+]);
+
+export const findSiteOgMetaScopeViolations = (entries) =>
+  entries
+    .filter((entry) => entry.functionName === "site-og-meta")
+    .filter((entry) => !SITE_OG_META_ALLOWED_PATHS.has(entry.path.trim()))
+    .map((entry) => ({
+      ...entry,
+      reason: `site-og-meta must only be mapped to blog routes. Found disallowed path "${entry.path}".`,
+    }));

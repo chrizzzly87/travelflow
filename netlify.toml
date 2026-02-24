@@ -74,30 +74,6 @@
   function = "site-og-image"
 
 [[edge_functions]]
-  path = "/"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/create-trip"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/features"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/inspirations"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/inspirations/*"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/updates"
-  function = "site-og-meta"
-
-[[edge_functions]]
   path = "/blog"
   function = "site-og-meta"
 
@@ -106,103 +82,67 @@
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/pricing"
+  path = "/es/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/faq"
+  path = "/es/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/share-unavailable"
+  path = "/de/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/login"
+  path = "/de/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/contact"
+  path = "/fr/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/imprint"
+  path = "/fr/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/privacy"
+  path = "/pt/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/terms"
+  path = "/pt/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/cookies"
+  path = "/ru/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/es"
+  path = "/ru/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/es/*"
+  path = "/it/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/de"
+  path = "/it/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/de/*"
+  path = "/pl/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/fr"
+  path = "/pl/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/fr/*"
+  path = "/ko/blog"
   function = "site-og-meta"
 
 [[edge_functions]]
-  path = "/pt"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/pt/*"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/ru"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/ru/*"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/it"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/it/*"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/pl"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/pl/*"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/ko"
-  function = "site-og-meta"
-
-[[edge_functions]]
-  path = "/ko/*"
+  path = "/ko/blog/*"
   function = "site-og-meta"
 
 [[edge_functions]]
