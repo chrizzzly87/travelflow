@@ -246,6 +246,20 @@ export interface HorizontalTransferLanePlacement {
     laneCount: number;
 }
 
+export interface VerticalTransferConnectorAnchorOptions {
+    cityEdgeInsetPx?: number;
+    edgeGapPx?: number;
+    minSeparationPx?: number;
+}
+
+export interface VerticalTransferConnectorAnchors {
+    fromY: number;
+    toY: number;
+    connectorTop: number;
+    connectorBottom: number;
+    connectorHeight: number;
+}
+
 export const getTimelineBounds = (
     items: ITimelineItem[],
     options: { minDays?: number } = {}
@@ -493,6 +507,58 @@ export const buildHorizontalTransferLaneLayout = (
         laneIndex: laneByInputId.get(entry.id) || 0,
         laneCount,
     }));
+};
+
+export const computeVerticalTransferConnectorAnchors = (
+    fromBoundaryY: number,
+    toBoundaryY: number,
+    totalHeight: number,
+    options: VerticalTransferConnectorAnchorOptions = {}
+): VerticalTransferConnectorAnchors => {
+    const cityEdgeInsetPx = Math.max(0, options.cityEdgeInsetPx ?? 4);
+    const edgeGapPx = Math.max(0, options.edgeGapPx ?? 1.5);
+    const minSeparationPx = Math.max(0, options.minSeparationPx ?? 5);
+    const safeTotalHeight = Number.isFinite(totalHeight) ? Math.max(0, totalHeight) : 0;
+    const direction = fromBoundaryY <= toBoundaryY ? 1 : -1;
+
+    const fromCityEdgeY = fromBoundaryY - (direction * cityEdgeInsetPx);
+    const toCityEdgeY = toBoundaryY + (direction * cityEdgeInsetPx);
+
+    let fromAnchorY = fromCityEdgeY + (direction * edgeGapPx);
+    let toAnchorY = toCityEdgeY - (direction * edgeGapPx);
+    const signedSeparation = (toAnchorY - fromAnchorY) * direction;
+    if (signedSeparation < minSeparationPx) {
+        const midpoint = (fromAnchorY + toAnchorY) / 2;
+        const halfMinSeparation = minSeparationPx / 2;
+        fromAnchorY = midpoint - (direction * halfMinSeparation);
+        toAnchorY = midpoint + (direction * halfMinSeparation);
+    }
+
+    let low = Math.min(fromAnchorY, toAnchorY);
+    let high = Math.max(fromAnchorY, toAnchorY);
+    if (low < 0) {
+        const delta = -low;
+        fromAnchorY += delta;
+        toAnchorY += delta;
+        low = 0;
+        high += delta;
+    }
+    if (high > safeTotalHeight) {
+        const delta = high - safeTotalHeight;
+        fromAnchorY -= delta;
+        toAnchorY -= delta;
+        low = Math.min(fromAnchorY, toAnchorY);
+        high = safeTotalHeight;
+    }
+
+    const clampY = (value: number): number => Math.max(0, Math.min(safeTotalHeight, value));
+    const fromY = clampY(fromAnchorY);
+    const toY = clampY(toAnchorY);
+    const connectorTop = Math.min(fromY, toY);
+    const connectorBottom = Math.max(fromY, toY);
+    const connectorHeight = Math.max(4, connectorBottom - connectorTop);
+
+    return { fromY, toY, connectorTop, connectorBottom, connectorHeight };
 };
 
 export const findTravelBetweenCities = (

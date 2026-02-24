@@ -133,13 +133,14 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       : (isEmptyTravel ? 'not-allowed' : 'pointer');
 
   const cityInlineGapPx = isCity ? 2 : 0;
+  const cityVerticalGapPx = isCity ? 8 : 0;
   const cityInsetPx = isCity ? 2 : 0;
   const cityStackGapPx = 2;
   const citySlotHeightExpr = 'var(--tf-city-slot-height, 3.25rem)';
   const style: React.CSSProperties = vertical
       ? {
-          top: `${position}px`,
-          height: `${size}px`,
+          top: `${position + (cityVerticalGapPx / 2)}px`,
+          height: `${Math.max(6, size - cityVerticalGapPx)}px`,
           left: 0,
           right: 0,
           cursor: baseCursor,
@@ -175,10 +176,30 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
       : '';
   const isInactiveItem = item.isApproved === false;
+  const isInactiveActivity = item.type === 'activity' && isInactiveItem;
   const cityBaseBackgroundHex = cityHex
       ? shiftHexColor(cityHex, isUncertainCity ? 104 : 88)
       : null;
   const cityBorderHex = cityHex ? shiftHexColor(cityHex, -20) : null;
+  const activityHex = item.type === 'activity'
+      ? getHexFromColorClass(resolvedColorClass || item.color || '')
+      : null;
+  const inactiveActivityBackgroundHex = activityHex ? shiftHexColor(activityHex, 18) : 'rgb(241 245 249 / 0.92)';
+  const inactiveActivityShouldUseWhiteText = activityHex
+      ? getContrastTextColor(inactiveActivityBackgroundHex) === '#ffffff'
+      : false;
+  const inactiveActivityTextHex = activityHex
+      ? (inactiveActivityShouldUseWhiteText ? '#ffffff' : shiftHexColor(activityHex, -96))
+      : '#334155';
+  const inactiveActivityBorderColor = activityHex
+      ? (inactiveActivityShouldUseWhiteText ? 'rgb(255 255 255 / 0.54)' : shiftHexColor(activityHex, -54))
+      : 'rgb(100 116 139 / 0.62)';
+  const inactiveActivityStripeLight = activityHex
+      ? `color-mix(in oklab, ${activityHex} 88%, white 12%)`
+      : 'rgb(226 232 240 / 0.9)';
+  const inactiveActivityStripeDark = activityHex
+      ? `color-mix(in oklab, ${activityHex} 80%, black 20%)`
+      : 'rgb(203 213 225 / 0.92)';
   const shouldUseWhiteCityText = cityBaseBackgroundHex
       ? getContrastTextColor(cityBaseBackgroundHex) === '#ffffff'
       : true;
@@ -228,9 +249,36 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
           ].filter(Boolean).join(', '),
           opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.86 : 0.96),
       }
+      : (isInactiveActivity && !isLoadingItem
+          ? {
+              ...style,
+              // Fallback color for browsers that do not support color-mix.
+              backgroundColor: inactiveActivityBackgroundHex,
+              backgroundImage: `linear-gradient(155deg,
+                    color-mix(in oklab, ${activityHex || '#94a3b8'} 82%, white 18%) 0%,
+                    color-mix(in oklab, ${activityHex || '#94a3b8'} 90%, white 10%) 100%
+                  ),
+                  repeating-linear-gradient(-45deg,
+                    ${inactiveActivityStripeDark} 0 8px,
+                    ${inactiveActivityStripeLight} 8px 16px
+                  )`,
+              backgroundOrigin: 'padding-box, padding-box',
+              backgroundClip: 'padding-box, padding-box',
+              borderColor: inactiveActivityBorderColor,
+              borderStyle: 'dashed',
+              borderWidth: 1.5,
+              color: inactiveActivityShouldUseWhiteText
+                  ? 'rgb(255 255 255 / 0.92)'
+                  : `color-mix(in oklab, ${inactiveActivityTextHex} 94%, black 6%)`,
+              textShadow: inactiveActivityShouldUseWhiteText
+                  ? '0 1px 1px rgb(15 23 42 / 0.28)'
+                  : '0 1px 0 rgb(255 255 255 / 0.18)',
+              boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.26)',
+              opacity: 0.88,
+          }
       : (selectedCityOutline
           ? { ...style, boxShadow: selectedCityOutline }
-          : style);
+          : style));
   const finalStyle: React.CSSProperties = viewTransitionName
       ? { ...mergedStyle, viewTransitionName }
       : mergedStyle;
@@ -242,6 +290,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         ${isCity ? 'rounded-md border-2 cursor-pointer backdrop-blur-[1px]' : 'rounded-lg border shadow-sm'} 
         ${isSelected ? 'z-30 opacity-100' : 'z-10'}
         ${(isTravel || isEmptyTravel) ? 'z-20' : 'overflow-hidden'}
+        ${isInactiveActivity ? 'border-dashed shadow-none' : ''}
         ${isUnsetTravelMode ? 'border-dashed border-slate-200 bg-slate-50/70 text-slate-500' : ''}
         ${isEmptyTravel ? (canEdit ? 'border-dashed cursor-pointer hover:bg-gray-50' : 'border-dashed cursor-not-allowed opacity-70') : ''}
       `}
@@ -305,7 +354,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
         )}
 
         {!isTravel && !isEmptyTravel && item.type === 'activity' && !isCompactVerticalActivity && (
-             <ActivityTypeIcon type={primaryActivityType || 'general'} size={14} className={`opacity-70 ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`} />
+             <ActivityTypeIcon type={primaryActivityType || 'general'} size={14} className={`${isInactiveActivity ? 'opacity-60' : 'opacity-70'} ${vertical && item.duration * pixelsPerDay >= 60 ? 'mb-1' : ''}`} />
         )}
 
         {!isEmptyTravel && !shouldRotateVerticalCityLabel && (
