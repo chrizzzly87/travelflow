@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-24-legal-pages-profile-and-consent-hardening
-version: v0.55.0
+version: v0.56.0
 title: "Legal pages and consent hardening"
 date: 2026-02-24
 published_at: 2026-02-24T07:56:00Z
