@@ -23,11 +23,14 @@ interface VerticalTimelineProps {
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 4;
-const CITY_VERTICAL_CONNECTOR_GAP_PX = 1.5;
-const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 5;
-const CITY_VERTICAL_CONNECTOR_SIDE_GAP_PX = 4;
-const CITY_VERTICAL_CONNECTOR_SPLIT_PX = 5;
+const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 2;
+const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
+const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 6;
+const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 2;
+const CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX = 6;
+const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 8;
+const TRANSFER_LANE_WIDTH_PX = 112; // Tailwind `w-28`
+const TRANSFER_PILL_ATTACH_INSET_PX = 2;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -43,6 +46,43 @@ const parseLocalTripDate = (value: string): Date | null => {
 
   const fallback = new Date(value);
   return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+const buildVerticalConnectorPath = (
+  startX: number,
+  startY: number,
+  trackX: number,
+  endX: number,
+  endY: number
+): string => {
+  if (!Number.isFinite(startX) || !Number.isFinite(startY) || !Number.isFinite(trackX) || !Number.isFinite(endX) || !Number.isFinite(endY)) {
+    return '';
+  }
+  if (Math.abs(endY - startY) < 0.5) return `M ${startX} ${startY} H ${endX}`;
+
+  const direction = endY > startY ? 1 : -1;
+  const horizontalIn = Math.max(0, trackX - startX);
+  const horizontalOut = Math.max(0, endX - trackX);
+  const verticalSpan = Math.abs(endY - startY);
+  const cornerRadius = Math.max(
+    1.5,
+    Math.min(
+      6,
+      verticalSpan * 0.28,
+      horizontalIn - 1,
+      horizontalOut - 1
+    )
+  );
+
+  const cornerStartX = trackX - cornerRadius;
+  const cornerEndY = endY - (direction * cornerRadius);
+  const afterCornerX = trackX + cornerRadius;
+  return `M ${startX} ${startY}
+    H ${cornerStartX}
+    Q ${trackX} ${startY} ${trackX} ${startY + (direction * cornerRadius)}
+    V ${cornerEndY}
+    Q ${trackX} ${endY} ${afterCornerX} ${endY}
+    H ${endX}`;
 };
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
@@ -706,45 +746,67 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const chipHeight = Math.max(30, Math.min(48, desiredChipHeight));
                              const unclampedChipTop = connectorTop + ((connectorHeight - chipHeight) / 2);
                              const chipTop = Math.max(0, Math.min(unclampedChipTop, Math.max(0, totalHeight - chipHeight)));
-                             const chipBottom = chipTop + chipHeight;
-                             const isForwardFlow = fromEnd <= toStart;
-                             const fromChipAttachY = isForwardFlow ? chipTop : chipBottom;
-                             const toChipAttachY = isForwardFlow ? chipBottom : chipTop;
-                             const fromStemTop = Math.min(fromY, fromChipAttachY);
-                             const fromStemHeight = Math.max(1, Math.abs(fromChipAttachY - fromY));
-                             const toStemTop = Math.min(toY, toChipAttachY);
-                             const toStemHeight = Math.max(1, Math.abs(toChipAttachY - toY));
                              const mode = normalizeTransportMode(travel?.transportMode);
                              const isUnsetTransport = mode === 'na';
                              const isSelected = travel && selectedItemId === travel.id;
                              const isCompactChip = chipHeight < 30;
                              const isUltraCompactChip = chipHeight < 22;
+                             const chipWidth = isCompactChip ? 66 : 86;
                              const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
-                             const fromTrackOffsetPx = isForwardFlow ? -CITY_VERTICAL_CONNECTOR_SPLIT_PX : CITY_VERTICAL_CONNECTOR_SPLIT_PX;
-                             const toTrackOffsetPx = -fromTrackOffsetPx;
-                             const fromTrackLeft = `calc(50% + ${fromTrackOffsetPx}px)`;
-                             const toTrackLeft = `calc(50% + ${toTrackOffsetPx}px)`;
-                             const fromTrackWidth = `max(1px, calc(50% + ${fromTrackOffsetPx}px - ${CITY_VERTICAL_CONNECTOR_SIDE_GAP_PX}px))`;
-                             const toTrackWidth = `max(1px, calc(50% + ${toTrackOffsetPx}px - ${CITY_VERTICAL_CONNECTOR_SIDE_GAP_PX}px))`;
+                             const cityConnectorStartX = -CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX;
+                             const chipLeft = (TRANSFER_LANE_WIDTH_PX - chipWidth) / 2;
+                             const chipAttachX = chipLeft + TRANSFER_PILL_ATTACH_INSET_PX;
+                             const fromAbove = fromY <= toY;
+                             const attachSpreadPx = Math.max(8, Math.min(14, Math.abs(toY - fromY)));
+                             const chipCenterY = chipTop + (chipHeight / 2);
+                             const upperAttachY = chipCenterY - (attachSpreadPx / 2);
+                             const lowerAttachY = chipCenterY + (attachSpreadPx / 2);
+                             const fromAttachY = fromAbove ? upperAttachY : lowerAttachY;
+                             const toAttachY = fromAbove ? lowerAttachY : upperAttachY;
+                             const trackBaseX = Math.max(cityConnectorStartX + 8, chipLeft - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
+                             const upperTrackX = trackBaseX - (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
+                             const lowerTrackX = trackBaseX + (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
+                             const fromTrackX = fromAbove ? upperTrackX : lowerTrackX;
+                             const toTrackX = fromAbove ? lowerTrackX : upperTrackX;
+                             const fromPath = buildVerticalConnectorPath(cityConnectorStartX, fromY, fromTrackX, chipAttachX, fromAttachY);
+                             const toPath = buildVerticalConnectorPath(cityConnectorStartX, toY, toTrackX, chipAttachX, toAttachY);
+                             const connectorOpacity = isUnsetTransport ? 0.52 : 1;
+                             const shouldDashConnector = isUnsetTransport;
 
                              return (
-                                 <div key={link.id} className="absolute left-0 right-0">
-                                     {/* Horizontal ticks from city column into travel column */}
-                                     <div className="absolute h-[1.5px] bg-slate-400" style={{ top: fromY, left: CITY_VERTICAL_CONNECTOR_SIDE_GAP_PX, width: fromTrackWidth }} />
-                                     <div className="absolute h-[1.5px] bg-slate-400" style={{ top: toY, left: CITY_VERTICAL_CONNECTOR_SIDE_GAP_PX, width: toTrackWidth }} />
-
-                                     {/* Vertical stems from city boundaries to pill attach points */}
-                                     <div className="absolute -translate-x-1/2 w-[1.5px] bg-slate-400" style={{ top: fromStemTop, left: fromTrackLeft, height: fromStemHeight }} />
-                                     <div className="absolute -translate-x-1/2 w-[1.5px] bg-slate-400" style={{ top: toStemTop, left: toTrackLeft, height: toStemHeight }} />
+                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
+                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                         <path
+                                             d={fromPath}
+                                             fill="none"
+                                             stroke="var(--color-slate-400)"
+                                             strokeWidth={1.7}
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                             strokeOpacity={connectorOpacity}
+                                         />
+                                         <path
+                                             d={toPath}
+                                             fill="none"
+                                             stroke="var(--color-slate-400)"
+                                             strokeWidth={1.7}
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                             strokeOpacity={connectorOpacity}
+                                         />
+                                     </svg>
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                         className={`absolute z-10 left-1/2 -translate-x-1/2 px-2 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-0.5 shadow-sm transition-colors
+                                         className={`absolute z-10 left-1/2 -translate-x-1/2 px-2 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-0.5 shadow-sm transition-colors pointer-events-auto
                                              ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
-                                         style={{ top: chipTop, height: chipHeight, width: isCompactChip ? 66 : 86 }}
+                                         style={{ top: chipTop, height: chipHeight, width: chipWidth }}
                                          title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                          disabled={!travel && !canEdit}
+                                         type="button"
                                      >
                                          {!isUnsetTransport && !isUltraCompactChip && (
                                              <span className="text-gray-500">{getTransportIcon(mode)}</span>

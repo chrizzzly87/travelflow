@@ -133,7 +133,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       : (isEmptyTravel ? 'not-allowed' : 'pointer');
 
   const cityInlineGapPx = isCity ? 2 : 0;
-  const cityVerticalGapPx = isCity ? 8 : 0;
+  const cityVerticalGapPx = isCity ? 4 : 0;
   const cityInsetPx = isCity ? 2 : 0;
   const cityStackGapPx = 2;
   const citySlotHeightExpr = 'var(--tf-city-slot-height, 3.25rem)';
