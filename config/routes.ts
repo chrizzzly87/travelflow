@@ -75,7 +75,6 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/auth\/reset-password$/,
     /^\/contact$/,
     /^\/imprint$/,
-    /^\/impressum$/,
     /^\/privacy$/,
     /^\/terms$/,
     /^\/cookies$/,
@@ -284,7 +283,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
     if (stripped === '/features') return ['common', 'features'];
     if (stripped === '/pricing') return ['common', 'pricing'];
     if (stripped.startsWith('/blog')) return ['common', 'blog'];
-    if (['/impressum', '/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
+    if (['/imprint', '/privacy', '/terms', '/cookies'].includes(stripped)) return ['common', 'legal'];
     if (stripped === '/faq') return ['common', 'wip'];
     if (stripped === '/login') return ['common', 'auth'];
     return ['common', 'pages'];

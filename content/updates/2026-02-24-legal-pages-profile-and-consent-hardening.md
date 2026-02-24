@@ -13,6 +13,6 @@ summary: "Legal disclosures and cookie consent flows are now cleaner, more consi
 ## Changes
 - [x] [Improved] ⚖️ Refined legal pages with a clearer structure for imprint, privacy, and cookie disclosures.
 - [x] [Improved] 🔒 Moved legal identity details into a dedicated typed profile file so updates happen in one place.
-- [x] [Fixed] 🧭 Kept the legal notice URL stable while preserving compatibility for existing links.
+- [x] [Fixed] 🧭 Kept the legal notice URL canonical in English for long-term consistency.
 - [x] [Improved] 🍪 Expanded cookie disclosure details and consent controls for better transparency.
 - [ ] [Internal] ✅ Added regression tests covering legal cookie registry helpers and legal-route canonical behavior.

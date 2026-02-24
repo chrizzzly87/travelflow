@@ -92,7 +92,7 @@ describe('config/routes', () => {
 
     expect(isLocalizedMarketingPath('/de/features')).toBe(true);
     expect(isLocalizedMarketingPath('/imprint')).toBe(true);
-    expect(isLocalizedMarketingPath('/impressum')).toBe(true);
+    expect(isLocalizedMarketingPath('/impressum')).toBe(false);
     expect(isLocalizedMarketingPath('/trip/abc')).toBe(false);
   });
 

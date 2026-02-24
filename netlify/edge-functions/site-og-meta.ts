@@ -64,7 +64,6 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
   /^\/share-unavailable$/,
   /^\/login$/,
   /^\/contact$/,
-  /^\/impressum$/,
   /^\/imprint$/,
   /^\/privacy$/,
   /^\/terms$/,
@@ -480,18 +479,6 @@ const normalizePath = (pathname: string): string => {
     ? withLeadingSlash.slice(0, -1)
     : withLeadingSlash;
   const segments = trimmed.split("/").filter(Boolean);
-
-  if (segments.length === 1 && segments[0] === "impressum") {
-    return "/imprint";
-  }
-
-  if (
-    segments.length === 2
-    && isSupportedLocale(segments[0])
-    && segments[1] === "impressum"
-  ) {
-    return `/${segments[0]}/imprint`;
-  }
 
   return trimmed;
 };

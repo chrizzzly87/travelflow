@@ -234,15 +234,6 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 ))
             )}
 
-            <Route path="/impressum" element={<Navigate to="/imprint" replace />} />
-            {LOCALIZED_MARKETING_LOCALES.map((locale) => (
-                <Route
-                    key={`marketing:${locale}:impressum-redirect`}
-                    path={`/${locale}/impressum`}
-                    element={<Navigate to={`/${locale}/imprint`} replace />}
-                />
-            ))}
-
             <Route
                 path="/create-trip/labs/classic-card"
                 element={
