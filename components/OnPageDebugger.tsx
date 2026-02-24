@@ -20,6 +20,11 @@ import {
     ANALYTICS_DEBUG_PAYLOAD_ATTR,
     ANALYTICS_DEBUG_SELECTOR,
 } from '../services/analyticsService';
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from '../services/browserStorageService';
 import { APP_NAME } from '../config/appGlobals';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
 import {
@@ -211,10 +216,9 @@ const readMetaSnapshot = (): MetaSnapshot => {
     };
 };
 
-const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
-    if (typeof window === 'undefined') return fallbackValue;
+export const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): boolean => {
     try {
-        const raw = window.localStorage.getItem(storageKey);
+        const raw = readLocalStorageItem(storageKey);
         if (raw === '1') return true;
         if (raw === '0') return false;
         return fallbackValue;
@@ -223,14 +227,13 @@ const readStoredDebuggerBoolean = (storageKey: string, fallbackValue: boolean): 
     }
 };
 
-const persistStoredDebuggerBoolean = (storageKey: string, value: boolean, fallbackValue: boolean): void => {
-    if (typeof window === 'undefined') return;
+export const persistStoredDebuggerBoolean = (storageKey: string, value: boolean, fallbackValue: boolean): void => {
     try {
         if (value === fallbackValue) {
-            window.localStorage.removeItem(storageKey);
+            removeLocalStorageItem(storageKey);
             return;
         }
-        window.localStorage.setItem(storageKey, value ? '1' : '0');
+        writeLocalStorageItem(storageKey, value ? '1' : '0');
     } catch {
         // Ignore storage access issues.
     }
