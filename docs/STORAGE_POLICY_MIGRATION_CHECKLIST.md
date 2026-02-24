@@ -29,12 +29,13 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `components/tripview/useTripViewSettingsSync.ts`
 - [x] `components/tripview/useTripCopyNoticeToast.ts`
 - [x] `components/tripview/useTripShareLifecycle.ts`
+- [x] `components/admin/adminLocalCache.ts`
+- [x] `components/marketing/EarlyAccessBanner.tsx`
 
 ## Remaining Direct Storage Usage (Next Batches)
 - [ ] `components/TripManager.tsx` / `components/ItineraryMap.tsx` / `components/CountryInfo.tsx`
-- [ ] `components/admin/*` cache utilities and shell state
+- [ ] `components/admin/AdminShell.tsx` (shell state persistence)
 - [ ] `components/OnPageDebugger.tsx`
-- [ ] `components/marketing/EarlyAccessBanner.tsx`
 
 ## Verification
 - Run `pnpm storage:validate`.
