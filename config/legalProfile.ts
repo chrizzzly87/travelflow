@@ -43,21 +43,16 @@ export interface LegalProfile {
 
 /**
  * Source of truth for legal identity/contact data displayed on imprint/privacy pages.
- * Replace placeholder values with real legal data before production launch.
  */
 export const LEGAL_PROFILE: LegalProfile = {
   entity: {
-    businessName: 'TravelFlow',
-    legalForm: 'Sole proprietorship (Kleingewerbe)',
-    representativeName: '[Replace with legal representative name]',
-    responsibleForContent: '[Replace with responsible person under Sec. 18 para. 2 MStV]',
-    addressLines: [
-      '[Replace with street and number]',
-      '[Replace with postal code and city]',
-      '[Replace with country]',
-    ],
-    contactEmail: '[Replace with legal contact email]',
-    privacyEmail: '[Replace with privacy contact email]',
+    businessName: 'WizzArt',
+    legalForm: 'Sole proprietorship (Einzelunternehmen)',
+    representativeName: 'Christian Wisniewski',
+    responsibleForContent: 'Christian Wisniewski',
+    addressLines: ['Pinneberger Str. 17B', '22457 Hamburg', 'Germany'],
+    contactEmail: 'info@wizz.art',
+    privacyEmail: 'legal@wizz.art',
     phone: '',
     vatId: '',
     registerCourt: '',
@@ -69,8 +64,8 @@ export const LEGAL_PROFILE: LegalProfile = {
     dataRegion: 'EU/US edge network',
   },
   supervision: {
-    authorityName: '[Replace with competent data protection authority]',
-    authorityWebsite: 'https://www.bfdi.bund.de/',
+    authorityName: 'Der Hamburgische Beauftragte für Datenschutz und Informationsfreiheit (HmbBfDI)',
+    authorityWebsite: 'https://datenschutz-hamburg.de/',
   },
   reviewDates: {
     privacyLastUpdated: '2026-02-24',
