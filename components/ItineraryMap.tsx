@@ -173,32 +173,37 @@ const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
 export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 let routeCacheHydrated = false;
 
-const ROUTE_OUTLINE_COLOR_BY_STYLE: Record<MapStyle, string> = {
-    minimal: '#0f172a',
-    standard: '#0f172a',
-    clean: '#0f172a',
-    dark: '#f8fafc',
-    satellite: '#f8fafc',
+const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
+const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+
+export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
+    return ROUTE_INNER_OUTLINE_COLOR;
 };
 
-export const getRouteOutlineColor = (style: MapStyle = 'standard'): string => {
-    return ROUTE_OUTLINE_COLOR_BY_STYLE[style];
+export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
+    return ROUTE_OUTER_OUTLINE_COLOR;
 };
 
 const buildOutlineIconSequences = (
     icons: google.maps.IconSequence[],
     outlineColor: string,
+    scaleBoost: number,
+    opacityFloor: number,
 ): google.maps.IconSequence[] => {
     return icons.map((sequence) => {
         const icon = sequence.icon;
         const baseScale = typeof icon.scale === 'number' ? icon.scale : 2.5;
+        const strokeOpacity = Math.max(icon.strokeOpacity ?? 0.9, opacityFloor);
+        const fillOpacity = Math.max(icon.fillOpacity ?? 0, opacityFloor - 0.1);
         return {
             ...sequence,
             icon: {
                 ...icon,
                 strokeColor: outlineColor,
-                strokeOpacity: Math.max(icon.strokeOpacity ?? 0.9, 0.95),
-                scale: baseScale + 1,
+                fillColor: outlineColor,
+                strokeOpacity,
+                fillOpacity,
+                scale: baseScale + scaleBoost,
             },
         };
     });
@@ -207,32 +212,47 @@ const buildOutlineIconSequences = (
 export const buildRoutePolylinePairOptions = (
     options: google.maps.PolylineOptions,
     style: MapStyle = 'standard',
-): { outlineOptions: google.maps.PolylineOptions; mainOptions: google.maps.PolylineOptions } => {
+): {
+    outerOutlineOptions: google.maps.PolylineOptions;
+    outlineOptions: google.maps.PolylineOptions;
+    mainOptions: google.maps.PolylineOptions;
+} => {
     const baseWeight = options.strokeWeight ?? 3;
     const baseOpacity = options.strokeOpacity ?? 0.7;
     const baseZIndex = options.zIndex ?? 30;
     const iconSequences = options.icons ?? [];
     const hasIconSequences = iconSequences.length > 0;
-    const isIconOnlyRoute = baseOpacity <= 0.05 && hasIconSequences;
-    const outlineColor = getRouteOutlineColor(style);
+    const visibleStroke = baseOpacity > 0.05;
+    const mainStrokeWeight = baseWeight + 1;
+    const innerOutlineColor = getRouteOutlineColor(style);
+    const outerOutlineColor = getRouteOuterOutlineColor(style);
+
+    const outerOutlineOptions: google.maps.PolylineOptions = {
+        ...options,
+        strokeColor: outerOutlineColor,
+        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.15, 0.65)) : 0,
+        strokeWeight: mainStrokeWeight + 5,
+        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, outerOutlineColor, 1.8, 0.85) : undefined,
+        zIndex: baseZIndex - 2,
+    };
 
     const outlineOptions: google.maps.PolylineOptions = {
         ...options,
-        strokeColor: outlineColor,
-        strokeOpacity: baseOpacity > 0.05 ? Math.min(1, Math.max(baseOpacity + 0.2, 0.45)) : 0,
-        strokeWeight: baseWeight + 2,
-        icons: isIconOnlyRoute ? buildOutlineIconSequences(iconSequences, outlineColor) : undefined,
+        strokeColor: innerOutlineColor,
+        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.08, 0.55)) : 0,
+        strokeWeight: mainStrokeWeight + 2,
+        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, innerOutlineColor, 1.1, 0.92) : undefined,
         zIndex: baseZIndex - 1,
     };
 
     const mainOptions: google.maps.PolylineOptions = {
         ...options,
         strokeOpacity: baseOpacity,
-        strokeWeight: baseWeight,
+        strokeWeight: mainStrokeWeight,
         zIndex: baseZIndex,
     };
 
-    return { outlineOptions, mainOptions };
+    return { outerOutlineOptions, outlineOptions, mainOptions };
 };
 
 export const filterHydratedRouteCacheEntries = (
@@ -548,7 +568,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
 
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
             if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
-            const { outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
+            const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
+            const outerOutline = new window.google.maps.Polyline({
+                ...outerOutlineOptions,
+                map: googleMapRef.current,
+            });
             const outline = new window.google.maps.Polyline({
                 ...outlineOptions,
                 map: googleMapRef.current,
@@ -557,8 +581,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                 ...mainOptions,
                 map: googleMapRef.current,
             });
-            routesRef.current.push(outline, main);
-            return { outline, main };
+            routesRef.current.push(outerOutline, outline, main);
+            return { outerOutline, outline, main };
         };
 
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
