@@ -6,6 +6,9 @@ This repository uses markdown release files as the source of truth for product u
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
+- Keep route slugs English-only for canonical URLs. Do not add localized slug aliases or compatibility redirects (for example `/impressum`) unless a dedicated issue explicitly requests it. Locale support is prefix-only (`/{locale}/...`) on top of English slugs.
+- Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.
+- Run `pnpm storage:validate` when browser storage keys are introduced or changed; do not merge storage keys that are not registered.
 - For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
 - For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.

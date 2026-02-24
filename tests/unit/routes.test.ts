@@ -17,6 +17,7 @@ import {
 describe('config/routes', () => {
   it('builds static and param routes', () => {
     expect(buildPath('home')).toBe('/');
+    expect(buildPath('imprint')).toBe('/imprint');
     expect(buildPath('blogPost', { slug: 'spring-guide' })).toBe('/blog/spring-guide');
     expect(buildPath('tripDetail', { tripId: 'abc 123' })).toBe('/trip/abc%20123');
   });
@@ -90,6 +91,8 @@ describe('config/routes', () => {
     expect(isToolRoute('/features')).toBe(false);
 
     expect(isLocalizedMarketingPath('/de/features')).toBe(true);
+    expect(isLocalizedMarketingPath('/imprint')).toBe(true);
+    expect(isLocalizedMarketingPath('/impressum')).toBe(false);
     expect(isLocalizedMarketingPath('/trip/abc')).toBe(false);
   });
 
