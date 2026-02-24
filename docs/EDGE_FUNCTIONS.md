@@ -31,6 +31,10 @@ Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.htm
                          │
                          └─▶ fallback OG URL (`/api/og/site?...`) when no static match
 
+Example template pages (`/example/*`) ──▶ site-og-meta.ts ──▶ force dynamic OG (`/api/og/trip?...`)
+                         │
+                         └─▶ skips static-site manifest so example previews match trip/share card layout
+
 Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA index.html
                          │
                          ▼ (OG image URL points to)

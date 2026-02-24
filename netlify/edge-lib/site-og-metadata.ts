@@ -56,6 +56,10 @@ interface PageDefinition {
   blogOgImagePath?: string;
   blogAccentTint?: string;
   blogTintIntensity?: number;
+  exampleTemplateId?: string;
+  exampleDurationDays?: number;
+  exampleCityCount?: number;
+  exampleMapImagePath?: string;
 }
 
 type LocalizedPageDefinition = Partial<
@@ -639,6 +643,10 @@ const getPageDefinition = (basePath: string, locale: SupportedLocale): PageDefin
         ogDescription: `Open the ${title} example trip template and customize your own itinerary in {{appName}}.`,
         pill: "EXAMPLE TRIP",
         robots: "index,follow,max-image-preview:large",
+        exampleTemplateId: templateId,
+        exampleDurationDays: card.durationDays,
+        exampleCityCount: card.cityCount,
+        exampleMapImagePath: card.mapImagePath,
       });
     }
   }
@@ -823,6 +831,31 @@ export const buildDynamicSiteOgImageUrl = (origin: string, params: SiteOgImagePa
   return ogImage.toString();
 };
 
+const buildExampleTripOgImageUrl = (
+  origin: string,
+  canonicalRoutePath: string,
+  page: PageDefinition,
+): string | null => {
+  if (!page.exampleTemplateId) return null;
+
+  const durationDays = page.exampleDurationDays ?? 0;
+  const cityCount = page.exampleCityCount ?? 0;
+  const titleWithDuration = durationDays > 0
+    ? `${durationDays}D ${page.title}`
+    : page.title;
+
+  const tripOgUrl = new URL("/api/og/trip", origin);
+  tripOgUrl.searchParams.set("title", titleWithDuration);
+  tripOgUrl.searchParams.set("weeks", durationDays > 0 ? `${durationDays} days` : "Sample itinerary");
+  tripOgUrl.searchParams.set("months", "Example template");
+  tripOgUrl.searchParams.set("distance", cityCount > 0 ? `${cityCount} cities` : "Template route");
+  tripOgUrl.searchParams.set("path", canonicalRoutePath);
+  if (page.exampleMapImagePath) {
+    tripOgUrl.searchParams.set("map", new URL(page.exampleMapImagePath, origin).toString());
+  }
+  return tripOgUrl.toString();
+};
+
 const parsePathInfo = (pathname: string): {
   normalizedPath: string;
   localeFromPath: SupportedLocale | null;
@@ -932,6 +965,9 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     ogImageParams.blog_tint_intensity = String(page.blogTintIntensity ?? 60);
   }
   const routeKey = buildSiteOgRouteKey(canonicalPath, canonicalSearch);
+  const canonicalRoutePath = canonicalPath + canonicalSearch;
+  const exampleTripOgImageUrl = buildExampleTripOgImageUrl(url.origin, canonicalRoutePath, page);
+  const ogImageUrl = exampleTripOgImageUrl ?? buildDynamicSiteOgImageUrl(url.origin, ogImageParams);
 
   return {
     routeKey,
@@ -942,7 +978,7 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     ogTitle: ogTitleFull,
     ogDescription: ogDescriptionRaw,
     canonicalUrl,
-    ogImageUrl: buildDynamicSiteOgImageUrl(url.origin, ogImageParams),
+    ogImageUrl,
     ogImageParams,
     ogLogoUrl: new URL("/favicon.svg", url.origin).toString(),
     robots: page.robots || "index,follow,max-image-preview:large",
