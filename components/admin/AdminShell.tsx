@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     AirplaneTilt,
@@ -16,6 +16,12 @@ import {
 } from '@phosphor-icons/react';
 import { APP_NAME } from '../../config/appGlobals';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+    SIMULATED_LOGIN_DEBUG_EVENT,
+    SIMULATED_LOGIN_STORAGE_KEY,
+    isSimulatedLoggedIn,
+    setSimulatedLoggedIn,
+} from '../../services/simulatedLoginService';
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
 import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
@@ -36,16 +42,17 @@ interface AdminShellProps {
     showDateRange?: boolean;
 }
 
-const SIDEBAR_COLLAPSE_STORAGE_KEY = 'tf_admin_sidebar_collapsed_v1';
+const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
+const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
 
 const getStoredSidebarCollapseState = (): boolean => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === '1';
+    return window.localStorage.getItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
 };
 
 const persistSidebarCollapseState = (next: boolean): void => {
     if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, next ? '1' : '0');
+    window.localStorage.setItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
 };
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
@@ -98,6 +105,28 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isSimulatedDebugLoginActive, setIsSimulatedDebugLoginActive] = useState<boolean>(() => isSimulatedLoggedIn());
+    const [isDevAdminBypassActive, setIsDevAdminBypassActive] = useState(false);
+
+    const syncAdminRuntimeFlags = useCallback(() => {
+        const simulatedDebugLogin = isSimulatedLoggedIn();
+        setIsSimulatedDebugLoginActive(simulatedDebugLogin);
+
+        if (typeof window === 'undefined') {
+            setIsDevAdminBypassActive(false);
+            return;
+        }
+
+        const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
+        const bypassDisabled = window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
+        const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
+        setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);
+    }, [access?.userId]);
+
+    const handleDisableSimulatedLogin = useCallback(() => {
+        setSimulatedLoggedIn(false);
+        syncAdminRuntimeFlags();
+    }, [syncAdminRuntimeFlags]);
 
     useEffect(() => {
         persistSidebarCollapseState(isSidebarCollapsed);
@@ -116,6 +145,27 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         window.addEventListener('keydown', onEscape);
         return () => window.removeEventListener('keydown', onEscape);
     }, [isMobileSidebarOpen]);
+
+    useEffect(() => {
+        syncAdminRuntimeFlags();
+        if (typeof window === 'undefined') return;
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key && event.key !== SIMULATED_LOGIN_STORAGE_KEY && event.key !== DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) {
+                return;
+            }
+            syncAdminRuntimeFlags();
+        };
+        const handleSimulatedDebugEvent = () => {
+            syncAdminRuntimeFlags();
+        };
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+        return () => {
+            window.removeEventListener('storage', handleStorage);
+            window.removeEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+        };
+    }, [syncAdminRuntimeFlags]);
 
     const emitMenuEvent = (id: string) => {
         trackEvent(`admin__menu--${id}`);
@@ -330,6 +380,34 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                             </div>
                         </div>
                     </header>
+
+                    {isSimulatedDebugLoginActive && (
+                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6">
+                            <p className="font-semibold">Debug simulated-login mode is active.</p>
+                            <p className="mt-1">
+                                Admin pages are showing mock data because the browser debug toggle is on (`{SIMULATED_LOGIN_STORAGE_KEY}=1`).
+                            </p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleDisableSimulatedLogin}
+                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-white px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                                >
+                                    Disable simulated login
+                                </button>
+                                <span className="text-xs text-amber-800">Reload data after disabling to confirm live backend records.</span>
+                            </div>
+                        </section>
+                    )}
+
+                    {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
+                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6">
+                            <p className="font-semibold">Dev admin bypass is active in this tab.</p>
+                            <p className="mt-1">
+                                This session uses the local dev-admin identity instead of your real account.
+                            </p>
+                        </section>
+                    )}
 
                     <div className="px-4 py-5 md:px-6 md:py-6">
                         {children}

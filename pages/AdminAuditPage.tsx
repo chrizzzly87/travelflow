@@ -249,6 +249,7 @@ export const AdminAuditPage: React.FC = () => {
     const [targetFilters, setTargetFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('target')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
     const [selectedUserLog, setSelectedUserLog] = useState<AdminAuditRecord | null>(null);
     const [selectedTripLog, setSelectedTripLog] = useState<AdminAuditRecord | null>(null);
@@ -276,6 +277,7 @@ export const AdminAuditPage: React.FC = () => {
     const loadLogs = async () => {
         setIsLoading(true);
         setErrorMessage(null);
+        setDataSourceNotice(null);
         try {
             const rows = await adminListAuditLogs({
                 limit: 400,
@@ -283,8 +285,15 @@ export const AdminAuditPage: React.FC = () => {
             setLogs(rows);
             writeAdminCache(AUDIT_CACHE_KEY, rows);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load audit logs.');
-            setLogs((current) => (current.length > 0 ? current : []));
+            const reason = error instanceof Error ? error.message : 'Could not load audit logs.';
+            setErrorMessage(reason);
+            const cachedRows = readAdminCache<AdminAuditRecord[]>(AUDIT_CACHE_KEY, []);
+            if (cachedRows.length > 0) {
+                setLogs(cachedRows);
+                setDataSourceNotice(`Live admin audit logs failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+            } else {
+                setLogs([]);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -533,6 +542,11 @@ export const AdminAuditPage: React.FC = () => {
             {errorMessage && (
                 <section className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                     {errorMessage}
+                </section>
+            )}
+            {dataSourceNotice && (
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {dataSourceNotice}
                 </section>
             )}
             {message && (

@@ -281,6 +281,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_dev_admin_bypass_disabled',
+      purpose: 'Session flag to disable dev-admin bypass after explicit logout in the current tab.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'sessionStorage',
+      notes: 'Debug-only session control; does not store account profile data.',
+    },
+    {
       name: 'admin.users.cache.v1',
       purpose: 'Caches admin users table data to reduce repeat fetches.',
       duration: 'Persistent (refreshable cache)',

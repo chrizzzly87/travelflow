@@ -83,6 +83,8 @@ const buildLoginRedirectUrl = (claimRequestId: string | null, nextPath: string):
     if (nextPath) redirectUrl.searchParams.set('next', nextPath);
     return redirectUrl.toString();
 };
+const LOGIN_PAGE_EMAIL_INPUT_ID = 'login-page-email';
+const LOGIN_PAGE_SECONDARY_INPUT_ID = 'login-page-secondary';
 
 export const LoginPage: React.FC = () => {
     const { t, i18n } = useTranslation('auth');
@@ -332,20 +334,38 @@ export const LoginPage: React.FC = () => {
                     </div>
 
                     <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit}>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.email')}</span>
+                        <div className="block">
+                            <label
+                                htmlFor={LOGIN_PAGE_EMAIL_INPUT_ID}
+                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                {t('labels.email')}
+                            </label>
                             <input
+                                id={LOGIN_PAGE_EMAIL_INPUT_ID}
+                                name="email"
                                 type="email"
                                 autoComplete="email"
+                                inputMode="email"
+                                autoCapitalize="none"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 value={email}
                                 onChange={(event) => setEmail(event.target.value)}
                                 required
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                             />
-                        </label>
-                        <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('labels.password')}</span>
+                        </div>
+                        <div className="block">
+                            <label
+                                htmlFor={LOGIN_PAGE_SECONDARY_INPUT_ID}
+                                className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                            >
+                                {t('labels.password')}
+                            </label>
                             <input
+                                id={LOGIN_PAGE_SECONDARY_INPUT_ID}
+                                name="password"
                                 type="password"
                                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                                 value={password}
@@ -354,7 +374,7 @@ export const LoginPage: React.FC = () => {
                                 minLength={8}
                                 className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-accent-500"
                             />
-                        </label>
+                        </div>
                         {mode === 'login' && (
                             <div className="space-y-2">
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
