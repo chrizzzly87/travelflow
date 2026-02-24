@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-24-route-outline-visibility
-version: v0.59.0
+version: v0.58.0
 title: "Adaptive route outlines for better map readability"
 date: 2026-02-24
-published_at: 2026-02-24T19:40:00Z
-status: draft
+published_at: 2026-02-24T19:35:35Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Trip map routes now render with dual-contrast outlines and thicker lines so leg paths stay readable across all map backgrounds."
