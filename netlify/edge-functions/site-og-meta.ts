@@ -1,7 +1,6 @@
 import {
   SITE_CACHE_CONTROL,
   TOOL_APP_CACHE_CONTROL,
-  buildDynamicSiteOgImageUrl,
   buildSiteOgMetadata,
   injectMetaTags,
   shouldUseStrictToolHtmlCache,
@@ -78,6 +77,14 @@ const resolveOgImageUrl = async (
   origin: string,
   metadata: SiteOgMetadata,
 ): Promise<{ ogImageUrl: string; source: "static" | "dynamic" }> => {
+  const prefersDynamicTripCard = metadata.canonicalPath.startsWith("/example/");
+  if (prefersDynamicTripCard) {
+    return {
+      ogImageUrl: metadata.ogImageUrl,
+      source: "dynamic",
+    };
+  }
+
   const manifest = await loadStaticManifest(origin);
   const manifestEntry = manifest?.entries?.[metadata.routeKey];
 
@@ -92,7 +99,7 @@ const resolveOgImageUrl = async (
   }
 
   return {
-    ogImageUrl: buildDynamicSiteOgImageUrl(origin, metadata.ogImageParams),
+    ogImageUrl: metadata.ogImageUrl,
     source: "dynamic",
   };
 };

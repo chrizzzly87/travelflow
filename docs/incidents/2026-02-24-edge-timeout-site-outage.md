@@ -35,6 +35,8 @@ The primary blast radius came from a catch-all edge middleware route (`[[edge_fu
 - 2026-02-24 ~19:xx UTC: remediation narrowed `site-og-meta` to blog-only routes and added edge fallback logic for upstream lookup failures.
 - 2026-02-24 ~19:38 UTC: follow-up reports showed intermittent `Upstream lookup timed out` on OG endpoints (`/api/og/site`, `/api/og/playground`) during the static OG rollout window.
 - 2026-02-24 ~19:xx UTC: additional hardening removed remote font-CDN fallback dependencies in OG image functions and enforced short font-fetch timeouts to avoid long edge waits on third-party upstreams.
+- 2026-02-24 ~20:xx UTC: follow-up QA reported degraded `/example/*` OG card quality (layout mismatch versus trip/share previews) because static-site renderer output was being used for example routes.
+- 2026-02-24 ~20:xx UTC: remediation switched `/example/*` OG images to trip-card rendering (`/api/og/trip` with template overrides), bypassing static-site image usage for those routes.
 
 ## Root Cause
 The production site had a catch-all edge middleware route:
@@ -58,6 +60,7 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 ## What Did Not Work
 - Detection was user-driven, not monitor-driven.
 - The edge routing policy allowed a high blast-radius config in production.
+- Static site-style OG rendering for example templates did not match expected trip preview quality.
 
 ## Corrective Actions
 
@@ -73,6 +76,7 @@ When upstream edge lookups timed out, this catch-all interception turned localiz
 - Added build validation to guarantee manifest/asset coverage for all static OG route keys.
 - Removed remote font-CDN fallbacks from `/api/og/site` and `/api/og/trip` image rendering and limited font fetch waits with request-level timeouts.
 - Added regression test coverage for OG font URL resolution to ensure only local font assets are used.
+- Updated `/example/*` OG behavior to use trip-style OG rendering so example templates match trip/share social card presentation.
 
 ### Planned follow-ups (high priority)
 - Add synthetic monitoring checks (every 1 minute):

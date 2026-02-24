@@ -45,6 +45,9 @@ describe('site OG metadata resolver', () => {
     expect(exampleMeta.canonicalPath).toBe('/example/thailand-islands');
     expect(exampleMeta.pageTitle).toContain('Temples');
     expect(exampleMeta.ogDescription).toContain('example trip template');
+    expect(exampleMeta.ogImageUrl).toContain('/api/og/trip?');
+    expect(exampleMeta.ogImageUrl).toContain('title=26D+Temples+%26+Beaches');
+    expect(exampleMeta.ogImageUrl).toContain('map=https%3A%2F%2Ftravelflowapp.netlify.app%2Fimages%2Ftrip-maps%2Fthailand-islands.png');
   });
 });
 
