@@ -23,6 +23,15 @@ describe('services/consentService', () => {
     expect(readStoredConsent()).toBe('essential');
   });
 
+  it('purges optional storage when switching back to essential only', () => {
+    saveConsent('all');
+    window.localStorage.setItem('umami.cache', '{"enabled":true}');
+
+    saveConsent('essential');
+
+    expect(window.localStorage.getItem('umami.cache')).toBeNull();
+  });
+
   it('notifies subscribers on consent change', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeToConsentChanges(listener);

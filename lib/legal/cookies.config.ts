@@ -33,6 +33,9 @@ const matchesRegistryName = (registeredName: string, keyName: string): boolean =
   return new RegExp(pattern).test(keyName);
 };
 
+export const doesRegistryNameMatch = (registeredName: string, keyName: string): boolean =>
+  matchesRegistryName(registeredName, keyName);
+
 export const COOKIE_REGISTRY: CookieRegistry = {
   essential: [
     {
@@ -428,6 +431,16 @@ export const isCookieRegistered = (cookieName: string): boolean =>
 
 export const getCookieByName = (cookieName: string): CookieDefinition | undefined =>
   getAllCookies().find((cookie) => matchesRegistryName(cookie.name, cookieName));
+
+export const getCookieCategoryByName = (cookieName: string): CookieCategory | null => {
+  const categories: CookieCategory[] = ['essential', 'analytics', 'marketing'];
+  for (const category of categories) {
+    if (COOKIE_REGISTRY[category].some((cookie) => matchesRegistryName(cookie.name, cookieName))) {
+      return category;
+    }
+  }
+  return null;
+};
 
 export const validateCookieRegistry = (): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
