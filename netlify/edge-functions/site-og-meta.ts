@@ -109,7 +109,7 @@ const PAGE_META: Record<string, PageDefinition> = {
   },
   "/imprint": {
     title: "Imprint",
-    description: "Legal and company information for {{appName}}.",
+    description: "Legal notice and provider identification for {{appName}}.",
   },
   "/privacy": {
     title: "Privacy Policy",
@@ -475,10 +475,12 @@ const isSupportedLocale = (value?: string | null): value is SupportedLocale => {
 const normalizePath = (pathname: string): string => {
   const raw = pathname || "/";
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
-  if (withLeadingSlash.length > 1 && withLeadingSlash.endsWith("/")) {
-    return withLeadingSlash.slice(0, -1);
-  }
-  return withLeadingSlash;
+  const trimmed = withLeadingSlash.length > 1 && withLeadingSlash.endsWith("/")
+    ? withLeadingSlash.slice(0, -1)
+    : withLeadingSlash;
+  const segments = trimmed.split("/").filter(Boolean);
+
+  return trimmed;
 };
 
 const matchesPrefix = (pathname: string, prefix: string): boolean => {

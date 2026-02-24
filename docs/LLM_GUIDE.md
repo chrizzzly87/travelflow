@@ -10,6 +10,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Analytics naming and instrumentation format: `docs/ANALYTICS_CONVENTION.md`.
 - Netlify PR preview and feature-branch deploy workflow: `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
 - For manual Netlify CLI draft deploys, follow `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`: build with `dotenv-cli`, then deploy with `netlify deploy --no-build --dir=dist`.
+- Browser storage disclosures and policy source: `lib/legal/cookies.config.ts` (cookies/localStorage/sessionStorage registry).
 
 **Project Overview**
 - App type: Single-page travel planner with timeline + map + print/list views.
@@ -90,6 +91,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - Changes to timeline resizing can introduce drift if not based on drag start snapshot.
 - Map pins should always reflect city color and selection state.
 - Transport icons and lines should stay aligned with travel items.
+- Do not introduce browser storage keys without registering them in `lib/legal/cookies.config.ts`.
 
 **Agent Checklist for UI Changes**
 1. Update `IViewSettings` if new view state is added.
@@ -108,3 +110,4 @@ This doc is a compact, structured overview of the app to help future agents make
 14. Check direction safety and logical property usage (`inline`/`block`/`start`/`end`) for new UI; if unclear, ask for clarification before finalizing.
 15. For any user-facing copy changes, ask the user for style approval in EN/DE before finalizing unless they explicitly skip this step.
 16. For clickable marketing/planner UI changes, instrument `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` following `docs/ANALYTICS_CONVENTION.md`.
+17. For any cookie/localStorage/sessionStorage change, update `lib/legal/cookies.config.ts` and run `pnpm storage:validate`.
