@@ -14,5 +14,5 @@ summary: "Not-approved activities now use the same subdued tentative styling lan
 - [x] [Improved] 🎨 Not-approved activities now keep stronger color contrast while still using a subtle lower-opacity appearance to signal tentative status.
 - [x] [Improved] 🪄 Not-approved activities now show subtle diagonal stripes with a clearer dashed border so tentative items remain easy to spot.
 - [x] [Fixed] 🧭 Vertical calendar transfers now render two clearly separated rounded connector lines that touch city edges (with slight overlap), matching the horizontal connector feel while preserving compact mini city gaps.
-- [x] [Improved] 📐 Vertical calendar spacing now gives transfers more room, restores visible transfer connector lines, keeps mini gaps between city cards, and uses fixed-width activity lanes for clearer overlaps.
+- [x] [Improved] 📐 Vertical calendar spacing now gives transfers a wider column with larger, easier-to-read pills and left-aligned transport icons while keeping fixed-width activity lanes for clearer overlaps.
 - [ ] [Internal] 🧩 Extended timeline block inactive styling logic so activity cards and city cards share the same modern color-mix rendering approach.
