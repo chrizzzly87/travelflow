@@ -31,9 +31,13 @@ const resolveRegisteredEntry = (
   keyName: string,
   medium: BrowserStorageMedium,
 ): RegisteredStorageEntry | null => {
+  const supportsMedium = (entry: CookieDefinition): boolean => (
+    entry.storage === medium || Boolean(entry.storageFallbacks?.includes(medium))
+  );
+
   for (const category of CATEGORIES) {
     const match = COOKIE_REGISTRY[category].find((entry) =>
-      entry.storage === medium && doesRegistryNameMatch(entry.name, keyName));
+      supportsMedium(entry) && doesRegistryNameMatch(entry.name, keyName));
     if (match) {
       return {
         category,
@@ -141,13 +145,21 @@ export const purgeOptionalBrowserStorage = (): number => {
   let removedCount = 0;
   for (const category of OPTIONAL_CATEGORIES) {
     for (const entry of COOKIE_REGISTRY[category]) {
-      if (entry.storage !== 'localStorage' && entry.storage !== 'sessionStorage') continue;
-      const storage = getStorage(entry.storage);
-      if (!storage) continue;
-      try {
-        removedCount += removeByRegistryPattern(storage, entry.name);
-      } catch {
-        // keep purging other entries even if one key fails
+      const candidateMedia = [
+        entry.storage,
+        ...(entry.storageFallbacks ?? []),
+      ];
+      const media = [...new Set(candidateMedia)].filter(
+        (value): value is BrowserStorageMedium => value === 'localStorage' || value === 'sessionStorage',
+      );
+      for (const medium of media) {
+        const storage = getStorage(medium);
+        if (!storage) continue;
+        try {
+          removedCount += removeByRegistryPattern(storage, entry.name);
+        } catch {
+          // keep purging other entries even if one key fails
+        }
       }
     }
   }

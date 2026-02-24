@@ -3,6 +3,10 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import {
+    removeLocalStorageItem,
+    removeSessionStorageItem,
+} from './browserStorageService';
 import { supabase } from './supabaseClient';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
@@ -57,7 +61,7 @@ const hashEmail = (email?: string | null): string | null => {
     return simpleHash(normalized);
 };
 
-const clearSupabaseAuthStorage = (): void => {
+export const clearSupabaseAuthStorage = (): void => {
     if (typeof window === 'undefined') return;
     const shouldClear = (key: string): boolean => (
         key.startsWith('sb-') &&
@@ -67,21 +71,29 @@ const clearSupabaseAuthStorage = (): void => {
             key.includes('code-verifier')
         )
     );
+    const collectStorageKeys = (storage: Storage): string[] => {
+        const keys: string[] = [];
+        for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (key) keys.push(key);
+        }
+        return keys;
+    };
     try {
-        const localKeys = Object.keys(window.localStorage);
+        const localKeys = collectStorageKeys(window.localStorage);
         for (const key of localKeys) {
             if (shouldClear(key)) {
-                window.localStorage.removeItem(key);
+                removeLocalStorageItem(key);
             }
         }
     } catch {
         // best effort
     }
     try {
-        const sessionKeys = Object.keys(window.sessionStorage);
+        const sessionKeys = collectStorageKeys(window.sessionStorage);
         for (const key of sessionKeys) {
             if (shouldClear(key)) {
-                window.sessionStorage.removeItem(key);
+                removeSessionStorageItem(key);
             }
         }
     } catch {

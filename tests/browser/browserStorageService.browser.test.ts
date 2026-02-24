@@ -40,9 +40,11 @@ describe('services/browserStorageService', () => {
   it('resolves wildcard registry entries for local and session storage keys', () => {
     const localMatch = getRegisteredStorageEntry('tf_share_links:trip-123', 'localStorage');
     const sessionMatch = getRegisteredStorageEntry('tf_lazy_chunk_recovery:TripView', 'sessionStorage');
+    const supabaseSessionMatch = getRegisteredStorageEntry('sb-project-auth-token', 'sessionStorage');
 
     expect(localMatch?.category).toBe('essential');
     expect(sessionMatch?.category).toBe('essential');
+    expect(supabaseSessionMatch?.category).toBe('essential');
   });
 
   it('purges optional keys while keeping essential keys intact', () => {
