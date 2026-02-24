@@ -23,13 +23,13 @@ interface VerticalTimelineProps {
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 2;
+const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 0;
 const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
-const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 4;
-const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 2;
-const CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX = 4;
-const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 5;
-const TRANSFER_LANE_WIDTH_PX = 144; // Tailwind `w-36`
+const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 7;
+const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 8;
+const CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX = 6;
+const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
+const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
 const TRANSFER_PILL_ATTACH_INSET_PX = 2;
 
 const parseLocalTripDate = (value: string): Date | null => {
@@ -60,14 +60,17 @@ const buildVerticalConnectorPath = (
   }
   if (Math.abs(endY - startY) < 0.5) return `M ${startX} ${startY} H ${endX}`;
 
-  const direction = endY > startY ? 1 : -1;
+  const direction = endY >= startY ? 1 : -1;
   const horizontalIn = trackX - startX;
   const horizontalOut = endX - trackX;
-  if (horizontalIn <= 1.5 || horizontalOut <= 1.5) {
+  if (horizontalIn <= 2 || horizontalOut <= 2) {
     return `M ${startX} ${startY} H ${trackX} V ${endY} H ${endX}`;
   }
   const verticalSpan = Math.abs(endY - startY);
-  const cornerRadius = Math.max(1.5, Math.min(6, verticalSpan * 0.28, horizontalIn / 2, horizontalOut / 2));
+  const cornerRadius = Math.max(
+    2,
+    Math.min(7, verticalSpan / 2, horizontalIn - 1, horizontalOut - 1)
+  );
 
   const cornerStartX = trackX - cornerRadius;
   const cornerEndY = endY - (direction * cornerRadius);
@@ -700,7 +703,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Travel Column */}
-                <div className="relative w-36 border-r border-gray-100 group/travel overflow-visible">
+                <div className="relative w-40 border-r border-gray-100 group/travel overflow-visible">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
                          <button 
@@ -738,25 +741,25 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const travel = link.travelItem;
                              const travelDurationHeight = travel ? Math.max(4, travel.duration * pixelsPerDay) : 0;
                              const desiredChipHeight = Math.max(connectorHeight - 2, travelDurationHeight);
-                             const chipHeight = Math.max(44, Math.min(58, desiredChipHeight));
+                             const chipHeight = Math.max(46, Math.min(62, desiredChipHeight));
                              const unclampedChipTop = connectorTop + ((connectorHeight - chipHeight) / 2);
                              const chipTop = Math.max(0, Math.min(unclampedChipTop, Math.max(0, totalHeight - chipHeight)));
+                             const chipBottom = chipTop + chipHeight;
                              const mode = normalizeTransportMode(travel?.transportMode);
                              const isUnsetTransport = mode === 'na';
                              const isSelected = travel && selectedItemId === travel.id;
-                             const chipWidth = Math.max(112, Math.min(132, TRANSFER_LANE_WIDTH_PX - 12));
+                             const chipWidth = Math.max(130, Math.min(148, TRANSFER_LANE_WIDTH_PX - 12));
                              const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
                              const cityConnectorStartX = -CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX;
                              const chipLeft = (TRANSFER_LANE_WIDTH_PX - chipWidth) / 2;
                              const chipAttachX = chipLeft + TRANSFER_PILL_ATTACH_INSET_PX;
                              const fromAbove = fromY <= toY;
-                             const attachSpreadPx = Math.max(14, Math.min(22, chipHeight * 0.45));
-                             const chipCenterY = chipTop + (chipHeight / 2);
-                             const upperAttachY = chipCenterY - (attachSpreadPx / 2);
-                             const lowerAttachY = chipCenterY + (attachSpreadPx / 2);
+                             const attachInsetPx = Math.max(8, Math.min(12, chipHeight * 0.2));
+                             const upperAttachY = chipTop + attachInsetPx;
+                             const lowerAttachY = chipBottom - attachInsetPx;
                              const fromAttachY = fromAbove ? upperAttachY : lowerAttachY;
                              const toAttachY = fromAbove ? lowerAttachY : upperAttachY;
-                             const trackBaseX = Math.max(3, chipLeft - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
+                             const trackBaseX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
                              const upperTrackX = trackBaseX - (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
                              const lowerTrackX = trackBaseX + (CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX / 2);
                              const fromTrackX = fromAbove ? upperTrackX : lowerTrackX;
@@ -792,7 +795,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      </svg>
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                         className={`absolute z-10 left-1/2 -translate-x-1/2 px-3 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
+                                         className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
                                              ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
