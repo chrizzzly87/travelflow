@@ -9,6 +9,7 @@ This repository uses markdown release files as the source of truth for product u
 - Keep route slugs English-only for canonical URLs. Do not add localized slug aliases or compatibility redirects (for example `/impressum`) unless a dedicated issue explicitly requests it. Locale support is prefix-only (`/{locale}/...`) on top of English slugs.
 - Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.
 - Run `pnpm storage:validate` when browser storage keys are introduced or changed; do not merge storage keys that are not registered.
+- When a PR resolves a GitHub issue, include a closing keyword in the PR description (for example `Closes #123`) so merge to `main` auto-closes the issue.
 - For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
 - For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.
