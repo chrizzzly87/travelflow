@@ -40,6 +40,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                 <Section title="1. Controller & contact">
                     <p>The controller within the meaning of Art. 4(7) GDPR is:</p>
                     <p className="mt-2 font-semibold text-slate-900">{entity.businessName}</p>
+                    <p className="text-slate-700">Owner / legal representative: {entity.representativeName}</p>
                     <p className="text-slate-700">{entity.legalForm}</p>
                     <div className="mt-2 text-slate-700">
                         <address className="not-italic">
