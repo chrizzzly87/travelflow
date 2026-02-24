@@ -27,3 +27,4 @@ dist-ssr
 # Performance artifacts
 /perf/
 /tmp/perf/
+public/images/og/site/generated/

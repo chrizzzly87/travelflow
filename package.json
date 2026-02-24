@@ -15,6 +15,8 @@
     "updates:next-version": "node scripts/next-release-version.mjs",
     "blog:validate": "node scripts/validate-blog.mjs",
     "edge:validate": "node scripts/validate-edge-functions.mjs",
+    "og:site:build": "tsx scripts/build-site-og-static-images.ts",
+    "og:site:validate": "tsx scripts/validate-site-og-static-manifest.ts",
     "sitemap:generate": "node scripts/generate-sitemap.mjs",
     "inspirations:images:jobs": "tsx scripts/build-inspiration-image-batch.ts",
     "build:images": "tsx scripts/build-inspiration-images.ts",
@@ -29,7 +31,7 @@
     "test:core": "vitest run --coverage --reporter=default",
     "test:e2e": "playwright test",
     "release:prepare": "pnpm build:blog-images && pnpm build",
-    "build": "pnpm test:core && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
+    "build": "pnpm test:core && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },

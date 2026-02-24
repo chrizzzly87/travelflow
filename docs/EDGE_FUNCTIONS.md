@@ -10,7 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
-| `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/login`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, `/pricing`, `/admin/*` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
+| `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
@@ -23,10 +23,13 @@ Shared helpers live in `netlify/edge-lib/`.
 ## Architecture
 
 ```
-Marketing pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
+Blog pages ──▶ site-og-meta.ts ──context.next()──▶ SPA index.html
                          │
-                         ▼ (OG image URL points to)
-                    site-og-image.tsx
+                         ├─▶ static OG manifest lookup (`/images/og/site/generated/manifest.json`)
+                         │         │
+                         │         └─▶ `/images/og/site/generated/*.png` (preferred)
+                         │
+                         └─▶ fallback OG URL (`/api/og/site?...`) when no static match
 
 Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA index.html
                          │
@@ -49,6 +52,33 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
 > Mixing inline config with `netlify.toml` config crashes the entire edge function bundle at runtime, producing **500 errors on every page**.
 
 The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at build time.
+
+### Catch-all route policy
+
+- Do not add `[[edge_functions]] path = "/*"` in `netlify.toml`.
+- Catch-all edge bindings are treated as a production availability risk because upstream timeouts can convert into full-site `502` incidents.
+- Use explicit path allowlists (for example: `/`, `/blog`, `/blog/*`, `/api/og/*`) and keep static/internal platform paths outside edge middleware.
+- CI fails if a catch-all edge binding is added.
+
+### Site metadata scope policy
+
+- `site-og-meta` must only be mapped to the explicit static/example allowlist in `netlify.toml`.
+- Allowed groups: `/`, static marketing pages, legal pages, `/blog*`, `/inspirations*`, `/create-trip`, `/example/*`, and locale-prefixed variants for active locales.
+- Forbidden: catch-all patterns, admin/profile/api routes, or broad locale catch-alls (for example `/de/*`).
+- CI fails if `site-og-meta` is configured outside the approved allowlist.
+
+## Static OG build workflow
+
+- Build-time generator: `pnpm og:site:build`
+  - Enumerates static OG targets from the shared metadata resolver.
+  - Writes hashed PNG assets to `public/images/og/site/generated/`.
+  - Writes `public/images/og/site/generated/manifest.json`.
+- Validator: `pnpm og:site:validate`
+  - Verifies full route coverage from resolver source.
+  - Verifies hash/path determinism and on-disk asset existence.
+- Build integration:
+  - `pnpm build` runs `og:site:build` and `og:site:validate` before `vite build`.
+- Generated assets are build artifacts and are intentionally not committed.
 
 ## Required environment variables
 
@@ -78,7 +108,12 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 |---|---|---|
 | `https://esm.sh/react@18.3.1` | `site-og-image.tsx`, `trip-og-image.tsx` | 18.3.1 |
 | `https://deno.land/x/og_edge/mod.ts` | `site-og-image.tsx`, `trip-og-image.tsx` | latest (unpinned) |
-| Space Grotesk font via `cdn.jsdelivr.net` | `site-og-image.tsx`, `trip-og-image.tsx` | — |
+
+### OG font dependency policy
+
+- OG image functions must load heading fonts from local assets only (`/fonts/bricolage-grotesque/*`).
+- Do not add remote CDN font fallbacks in edge image functions.
+- Font fetch operations must stay short-lived (timeout bounded) so upstream slowness does not turn into edge 502s.
 
 ## Caching strategies
 
@@ -86,6 +121,7 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 |---|---|---|
 | `site-og-meta.ts` | `s-maxage=900, stale-while-revalidate=86400` | 15 min CDN, 1 day stale |
 | `site-og-image.tsx` | `s-maxage=43200, stale-while-revalidate=604800` | 12 hour CDN, 7 day stale |
+| `/images/og/site/generated/*` | `max-age=31536000, immutable` | Build-time generated static OG assets |
 | `trip-og-meta.ts` (shared) | `s-maxage=300, stale-while-revalidate=86400` | 5 min CDN, 1 day stale |
 | `trip-og-meta.ts` (private) | `s-maxage=120, stale-while-revalidate=3600` | 2 min CDN, 1 hour stale |
 | `trip-og-image.tsx` (versioned) | `s-maxage=31536000` | 1 year immutable |
