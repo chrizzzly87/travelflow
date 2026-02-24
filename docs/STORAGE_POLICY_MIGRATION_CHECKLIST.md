@@ -27,9 +27,10 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `components/tripview/useTripLayoutControlsState.ts`
 - [x] `components/tripview/useTripResizeControls.ts`
 - [x] `components/tripview/useTripViewSettingsSync.ts`
+- [x] `components/tripview/useTripCopyNoticeToast.ts`
+- [x] `components/tripview/useTripShareLifecycle.ts`
 
 ## Remaining Direct Storage Usage (Next Batches)
-- [ ] `components/tripview/useTripCopyNoticeToast.ts` and `components/tripview/useTripShareLifecycle.ts` (remaining tripview persistence hooks)
 - [ ] `components/TripManager.tsx` / `components/ItineraryMap.tsx` / `components/CountryInfo.tsx`
 - [ ] `components/admin/*` cache utilities and shell state
 - [ ] `components/OnPageDebugger.tsx`
