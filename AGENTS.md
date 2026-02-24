@@ -10,6 +10,7 @@ This repository uses markdown release files as the source of truth for product u
 - Treat `lib/legal/cookies.config.ts` as the single source of truth for browser persistence disclosures (cookies + localStorage + sessionStorage). Any new/changed/removed storage key must be updated there and reflected by the legal cookie policy page.
 - Run `pnpm storage:validate` when browser storage keys are introduced or changed; do not merge storage keys that are not registered.
 - When a PR resolves a GitHub issue, include a closing keyword in the PR description (for example `Closes #123`) so merge to `main` auto-closes the issue.
+- When creating or editing GitHub PR descriptions with `gh`, always use a Markdown body file (`--body-file`) or stdin heredoc with real newlines; never pass escaped `\n` or escaped backticks in inline `--body` strings.
 - For user-facing copy changes in marketing/planner surfaces, request user style sign-off in English and German before finalizing unless the user explicitly opts out.
 - Admin workspace copy (`/admin/*`, admin tables, drawers, and admin-only controls) is English-only by default and is exempt from EN/DE style sign-off and translation requirements unless the user explicitly asks for localization.
 - For locale interpolation, use ICU placeholders (`{name}`), never `{{name}}`.

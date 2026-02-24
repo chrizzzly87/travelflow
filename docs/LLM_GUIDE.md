@@ -111,3 +111,4 @@ This doc is a compact, structured overview of the app to help future agents make
 15. For any user-facing copy changes, ask the user for style approval in EN/DE before finalizing unless they explicitly skip this step.
 16. For clickable marketing/planner UI changes, instrument `trackEvent(...)` + `getAnalyticsDebugAttributes(...)` following `docs/ANALYTICS_CONVENTION.md`.
 17. For any cookie/localStorage/sessionStorage change, update `lib/legal/cookies.config.ts` and run `pnpm storage:validate`.
+18. For `gh pr create/edit`, use `--body-file` (or stdin heredoc) with real Markdown newlines; avoid escaped `\n` and escaped backticks in inline `--body` text.
