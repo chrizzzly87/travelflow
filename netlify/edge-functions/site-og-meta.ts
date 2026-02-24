@@ -105,7 +105,7 @@ const PAGE_META: Record<string, PageDefinition> = {
   },
   "/contact": {
     title: "Contact",
-    description: "Reach out to report translation issues or localization feedback for {{appName}}.",
+    description: "Contact the team behind {{appName}} for support, bug reports, partnerships, or translation feedback.",
   },
   "/imprint": {
     title: "Imprint",
@@ -294,13 +294,13 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     pl: { title: "Logowanie", description: "Zaloguj się i kontynuuj planowanie kolejnej podróży w {{appName}}." },
   },
   "/contact": {
-    es: { title: "Contacto", description: "Reporta errores de traducción o comparte feedback de localización sobre {{appName}}." },
-    de: { title: "Kontakt", description: "Melde Übersetzungsfehler oder Lokalisierungsfeedback zu {{appName}}." },
-    fr: { title: "Contact", description: "Signalez des erreurs de traduction ou vos retours de localisation pour {{appName}}." },
-    it: { title: "Contatti", description: "Segnala errori di traduzione o feedback sulla localizzazione di {{appName}}." },
-    ru: { title: "Контакты", description: "Сообщите об ошибках перевода или оставьте отзыв о локализации {{appName}}." },
-    pt: { title: "Contacto", description: "Reporte erros de tradução ou partilhe feedback de localização sobre o {{appName}}." },
-    pl: { title: "Kontakt", description: "Zgłoś błędy tłumaczenia lub prześlij opinię o lokalizacji {{appName}}." },
+    es: { title: "Contacto", description: "Contacta con el equipo de {{appName}} para soporte, errores, colaboraciones o feedback de traducción." },
+    de: { title: "Kontakt", description: "Kontaktiere das Team hinter {{appName}} für Support, Fehlerberichte, Partnerschaften oder Übersetzungsfeedback." },
+    fr: { title: "Contact", description: "Contactez l’équipe de {{appName}} pour le support, les bugs, les partenariats ou les retours de traduction." },
+    it: { title: "Contatti", description: "Contatta il team di {{appName}} per supporto, bug, partnership o feedback sulle traduzioni." },
+    ru: { title: "Контакты", description: "Свяжитесь с командой {{appName}} по вопросам поддержки, багов, партнёрств или переводов." },
+    pt: { title: "Contacto", description: "Contacte a equipa da {{appName}} para suporte, bugs, parcerias ou feedback de tradução." },
+    pl: { title: "Kontakt", description: "Skontaktuj się z zespołem {{appName}} w sprawie wsparcia, błędów, partnerstw lub tłumaczeń." },
   },
   "/imprint": {
     es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },

@@ -156,6 +156,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `not_found__cta--plan_yours` | — | `{ locale }` | `NotFoundPage.tsx` |
 | `not_found__link--contact` | — | `{ locale }` | `NotFoundPage.tsx` |
 
+### Contact
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `contact__form--submit` | — | `{ reason, locale, has_user }` | `ContactPage.tsx` |
+| `contact__form--success` | — | `{ reason, locale, has_user, status }` | `ContactPage.tsx` |
+| `contact__form--failed` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+| `contact__fallback--email` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|

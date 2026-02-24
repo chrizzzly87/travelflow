@@ -59,12 +59,44 @@
   },
   "contact": {
     "title": "Contatti",
-    "description": "Usa questa pagina per segnalare errori di traduzione o inviare feedback sulla localizzazione.",
-    "formStatusTitle": "Modulo di contatto in arrivo",
-    "formStatusBody": "Il modulo dedicato non è ancora disponibile. Nel frattempo contattaci via e-mail.",
-    "emailLabel": "Email",
-    "emailValue": "support@travelflow.app",
+    "description": "Scrivici per domande sul prodotto, bug, partnership o feedback sulle traduzioni.",
+    "emailLabel": "Email principale",
+    "emailValue": "contact@wizz.art",
     "responseNote": "Di solito rispondiamo entro 2-3 giorni lavorativi.",
-    "backHome": "Torna alla home"
+    "backHome": "Torna alla home",
+    "form": {
+      "title": "Inviaci un messaggio",
+      "reasonLabel": "Motivo",
+      "reasonPlaceholder": "Seleziona un motivo",
+      "reasonOptions": {
+        "bugReport": "Segnala un bug",
+        "featureRequest": "Richiesta funzionalità",
+        "billingAccount": "Fatturazione / account",
+        "dataPrivacy": "Richiesta dati/privacy",
+        "partnership": "Partnership",
+        "other": "Altro"
+      },
+      "nameLabel": "Nome (facoltativo)",
+      "namePlaceholder": "Il tuo nome",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@example.com",
+      "messageLabel": "Messaggio",
+      "messagePlaceholder": "Dicci come possiamo aiutarti.",
+      "messageLimitHint": "Fino a {max} caratteri.",
+      "privacyNote": "Usiamo questi dati solo per gestire e rispondere alla tua richiesta.",
+      "submit": "Invia messaggio",
+      "submitting": "Invio in corso...",
+      "successTitle": "Messaggio inviato",
+      "successBody": "Grazie, il tuo messaggio è stato inviato con successo.",
+      "errorTitle": "Modulo non disponibile al momento",
+      "errorBody": "Non siamo riusciti a inviare il messaggio tramite il modulo. Scrivici direttamente via email.",
+      "fallbackTitle": "Fallback via email",
+      "fallbackBody": "Se il limite del modulo è stato raggiunto o l’invio fallisce, contattaci a:",
+      "fallbackCta": "Invia email a contact@wizz.art",
+      "validationReason": "Seleziona un motivo.",
+      "validationEmail": "Inserisci un indirizzo email valido.",
+      "validationMessage": "Inserisci un messaggio.",
+      "validationMessageLength": "Il tuo messaggio è troppo lungo. Massimo {max} caratteri."
+    }
   }
 }

@@ -19,6 +19,9 @@ export const ImprintPage: React.FC = () => {
     const shouldShowRegisterCourt = Boolean(entity.registerCourt && entity.registerCourt.trim().length > 0);
     const shouldShowRegisterNumber = Boolean(entity.registerNumber && entity.registerNumber.trim().length > 0);
     const shouldShowSupervisoryAuthority = Boolean(entity.supervisoryAuthority && entity.supervisoryAuthority.trim().length > 0);
+    const additionalContactEmails = (entity.additionalContactEmails || [])
+        .map((email) => email.trim())
+        .filter(Boolean);
 
     return (
         <MarketingLayout>
@@ -65,10 +68,19 @@ export const ImprintPage: React.FC = () => {
                         </div>
                         <div>
                             <dt className="font-semibold text-slate-900">Email</dt>
-                            <dd>
-                                <a className="text-accent-700 hover:underline" href={`mailto:${entity.contactEmail}`}>
-                                    {entity.contactEmail}
-                                </a>
+                            <dd className="space-y-1">
+                                <div>
+                                    <a className="text-accent-700 hover:underline" href={`mailto:${entity.contactEmail}`}>
+                                        {entity.contactEmail}
+                                    </a>
+                                </div>
+                                {additionalContactEmails.map((email) => (
+                                    <div key={email}>
+                                        <a className="text-accent-700 hover:underline" href={`mailto:${email}`}>
+                                            {email}
+                                        </a>
+                                    </div>
+                                ))}
                             </dd>
                         </div>
                         {shouldShowPhone && (
