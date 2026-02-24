@@ -10,7 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
-| `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/login`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, `/pricing`, `/admin/*` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
+| `site-og-meta.ts` | `/`, `/create-trip`, `/features`, `/updates`, `/blog`, `/blog/*`, `/pricing`, `/faq`, `/share-unavailable`, `/login`, `/contact`, `/imprint`, `/privacy`, `/terms`, `/cookies`, `/inspirations`, `/inspirations/*`, plus localized prefixes `/{locale}` and `/{locale}/*` for `es,de,fr,pt,ru,it,pl,ko` | Injects SEO & Open Graph meta tags into marketing page HTML | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
@@ -49,6 +49,13 @@ Trip/share pages ──▶ trip-og-meta.ts ──context.next()──▶ SPA ind
 > Mixing inline config with `netlify.toml` config crashes the entire edge function bundle at runtime, producing **500 errors on every page**.
 
 The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at build time.
+
+### Catch-all route policy
+
+- Do not add `[[edge_functions]] path = "/*"` in `netlify.toml`.
+- Catch-all edge bindings are treated as a production availability risk because upstream timeouts can convert into full-site `502` incidents.
+- Use explicit path allowlists (for example: `/`, `/blog`, `/blog/*`, `/api/og/*`) and keep static/internal platform paths outside edge middleware.
+- CI fails if a catch-all edge binding is added.
 
 ## Required environment variables
 
