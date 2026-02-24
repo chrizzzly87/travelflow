@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 
+import { writeLocalStorageItem } from '../../services/browserStorageService';
+
 interface UseTripResizeControlsOptions {
     layoutMode: 'vertical' | 'horizontal';
     timelineView: 'horizontal' | 'vertical';
@@ -143,13 +145,13 @@ export const useTripResizeControls = ({
 
     const stopResizing = useCallback(() => {
         if (isResizingRef.current === 'sidebar') {
-            localStorage.setItem('tf_sidebar_width', sidebarWidth.toString());
+            writeLocalStorageItem('tf_sidebar_width', sidebarWidth.toString());
         }
         if (isResizingRef.current === 'details') {
-            localStorage.setItem('tf_details_width', Math.round(detailsWidth).toString());
+            writeLocalStorageItem('tf_details_width', Math.round(detailsWidth).toString());
         }
         if (isResizingRef.current === 'timeline-h') {
-            localStorage.setItem('tf_timeline_height', timelineHeight.toString());
+            writeLocalStorageItem('tf_timeline_height', timelineHeight.toString());
         }
 
         isResizingRef.current = null;

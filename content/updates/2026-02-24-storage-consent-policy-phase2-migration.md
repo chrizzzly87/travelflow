@@ -14,6 +14,7 @@ summary: "Migrates auth/session, consent-adjacent, planner-setting, and trip per
 - [ ] [Internal] 🔒 Migrated auth/session storage callers to `browserStorageService` helper APIs.
 - [ ] [Internal] 🧭 Migrated consent-adjacent banner and release-notice storage access to policy-backed helper APIs.
 - [ ] [Internal] 🧾 Migrated consent bootstrap reads (`consentState`) to registry-backed storage helper APIs.
+- [ ] [Internal] 🧩 Migrated tripview planner persistence hooks (`useTripLayoutControlsState`, `useTripResizeControls`, `useTripViewSettingsSync`) to policy-backed storage helpers.
 - [ ] [Internal] 💾 Migrated trip persistence services (`storageService` and `historyService`) to policy-backed storage helpers.
 - [ ] [Internal] ♻️ Added registry-backed fallback handling for Supabase wildcard auth keys that can appear in session storage.
 - [ ] [Internal] 🧪 Added regression coverage for auth trace persistence, Supabase auth-key cleanup, and DB planner-setting persistence.

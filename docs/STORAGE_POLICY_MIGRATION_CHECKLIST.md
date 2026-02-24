@@ -24,9 +24,12 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `services/dbService.ts` (planner view preference writes)
 - [x] `services/storageService.ts` and `services/historyService.ts`
 - [x] `services/consentState.ts` (consent bootstrap read path)
+- [x] `components/tripview/useTripLayoutControlsState.ts`
+- [x] `components/tripview/useTripResizeControls.ts`
+- [x] `components/tripview/useTripViewSettingsSync.ts`
 
 ## Remaining Direct Storage Usage (Next Batches)
-- [ ] `components/tripview/*` persistence hooks
+- [ ] `components/tripview/useTripCopyNoticeToast.ts` and `components/tripview/useTripShareLifecycle.ts` (remaining tripview persistence hooks)
 - [ ] `components/TripManager.tsx` / `components/ItineraryMap.tsx` / `components/CountryInfo.tsx`
 - [ ] `components/admin/*` cache utilities and shell state
 - [ ] `components/OnPageDebugger.tsx`

@@ -1,5 +1,6 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 
+import { writeLocalStorageItem } from '../../services/browserStorageService';
 import type { IViewSettings, MapStyle, RouteMode } from '../../types';
 import { applyViewSettingsToSearchParams } from '../../utils';
 
@@ -57,27 +58,27 @@ export const useTripViewSettingsSync = ({
     prevViewRef,
 }: UseTripViewSettingsSyncOptions) => {
     useEffect(() => {
-        localStorage.setItem('tf_map_style', mapStyle);
+        writeLocalStorageItem('tf_map_style', mapStyle);
     }, [mapStyle]);
 
     useEffect(() => {
-        localStorage.setItem('tf_route_mode', routeMode);
+        writeLocalStorageItem('tf_route_mode', routeMode);
     }, [routeMode]);
 
     useEffect(() => {
-        localStorage.setItem('tf_layout_mode', layoutMode);
+        writeLocalStorageItem('tf_layout_mode', layoutMode);
     }, [layoutMode]);
 
     useEffect(() => {
-        localStorage.setItem('tf_timeline_view', timelineView);
+        writeLocalStorageItem('tf_timeline_view', timelineView);
     }, [timelineView]);
 
     useEffect(() => {
-        localStorage.setItem('tf_city_names', String(showCityNames));
+        writeLocalStorageItem('tf_city_names', String(showCityNames));
     }, [showCityNames]);
 
     useEffect(() => {
-        localStorage.setItem('tf_zoom_level', zoomLevel.toFixed(2));
+        writeLocalStorageItem('tf_zoom_level', zoomLevel.toFixed(2));
     }, [zoomLevel]);
 
     useEffect(() => {
