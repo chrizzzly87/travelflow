@@ -1,5 +1,6 @@
 import React from "https://esm.sh/react@18.3.1";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
+import { buildLocalHeadingFontUrls, type BaseHeadingFontWeight } from "../edge-lib/og-font-utils.ts";
 import {
   buildDisplayPath,
   buildTripOgSummary,
@@ -21,36 +22,6 @@ const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
 const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
-const LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-400-normal.woff";
-const LOCAL_HEADLINE_FONT_400_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-400-normal.woff";
-const LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-700-normal.woff";
-const LOCAL_HEADLINE_FONT_700_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-700-normal.woff";
-const CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-400-normal.woff";
-const CDN_HEADLINE_FONT_400_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-400-normal.woff";
-const GOOGLE_HEADLINE_FONT_400_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvRviyM4&skey=7f69194495102d00&v=v9";
-const CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-700-normal.woff";
-const CDN_HEADLINE_FONT_700_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-700-normal.woff";
-const GOOGLE_HEADLINE_FONT_700_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvfzlyM4&skey=7f69194495102d00&v=v9";
-const LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-ext-800-normal.woff";
-const LOCAL_HEADLINE_FONT_800_WOFF_PATH =
-  "/fonts/bricolage-grotesque/bricolage-grotesque-latin-800-normal.woff";
-const CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-ext-800-normal.woff";
-const CDN_HEADLINE_FONT_800_WOFF_URL =
-  "https://unpkg.com/@fontsource/bricolage-grotesque@5.2.10/files/bricolage-grotesque-latin-800-normal.woff";
-const GOOGLE_HEADLINE_FONT_800_WOFF_URL =
-  "https://fonts.gstatic.com/l/font?kit=3y9U6as8bTXq_nANBjzKo3IeZx8z6up5BeSl5jBNz_19PpbpMXuECpwUxJBOm_OJWiaaD30YfKfjZZoLvZvlyM4&skey=7f69194495102d00&v=v9";
 
 const VERSION_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -60,7 +31,6 @@ type LoadedHeadingFont = {
   weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
 };
 
-type BaseHeadingFontWeight = 400 | 700 | 800;
 type OgHeadingFontWeight = LoadedHeadingFont["weight"];
 const BASE_HEADING_FONT_WEIGHTS: readonly BaseHeadingFontWeight[] = [400, 700, 800];
 const OG_HEADING_FONT_WEIGHTS: readonly OgHeadingFontWeight[] = [100, 200, 300, 400, 500, 600, 700, 800, 900];
@@ -70,10 +40,19 @@ const WOFF_SIGNATURE = "wOFF";
 const WOFF2_SIGNATURE = "wOF2";
 const OTF_SIGNATURE = "OTTO";
 const TTC_SIGNATURE = "ttcf";
+const FONT_FETCH_TIMEOUT_MS = 900;
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_resolve, reject) => {
+    setTimeout(() => reject(new Error("font-fetch-timeout")), timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]);
+};
 
 const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null> => {
   try {
-    const response = await fetch(fontUrl);
+    const response = await withTimeout(fetch(fontUrl), FONT_FETCH_TIMEOUT_MS);
     if (!response.ok) return null;
     return await response.arrayBuffer();
   } catch {
@@ -84,46 +63,7 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
 // og_edge picks the first matching font per weight and does not merge unicode-range subsets.
 // Keep full latin files first so ASCII headlines do not fall back to system fonts.
 const buildHeadingFontUrls = (requestUrl: URL, weight: BaseHeadingFontWeight): string[] => {
-  const local400LatinExt = new URL(LOCAL_HEADLINE_FONT_400_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const local400 = new URL(LOCAL_HEADLINE_FONT_400_WOFF_PATH, requestUrl.origin).toString();
-  const local700LatinExt = new URL(LOCAL_HEADLINE_FONT_700_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const local700 = new URL(LOCAL_HEADLINE_FONT_700_WOFF_PATH, requestUrl.origin).toString();
-  const cdn400LatinExt = CDN_HEADLINE_FONT_400_LATIN_EXT_WOFF_URL;
-  const cdn400 = CDN_HEADLINE_FONT_400_WOFF_URL;
-  const cdn700LatinExt = CDN_HEADLINE_FONT_700_LATIN_EXT_WOFF_URL;
-  const local800 = new URL(LOCAL_HEADLINE_FONT_800_WOFF_PATH, requestUrl.origin).toString();
-  const local800LatinExt = new URL(LOCAL_HEADLINE_FONT_800_LATIN_EXT_WOFF_PATH, requestUrl.origin).toString();
-  const cdn700 = CDN_HEADLINE_FONT_700_WOFF_URL;
-  const cdn800LatinExt = CDN_HEADLINE_FONT_800_LATIN_EXT_WOFF_URL;
-  const cdn800 = CDN_HEADLINE_FONT_800_WOFF_URL;
-
-  if (weight === 800) {
-    return [
-      local800,
-      local800LatinExt,
-      GOOGLE_HEADLINE_FONT_800_WOFF_URL,
-      cdn800,
-      cdn800LatinExt,
-    ];
-  }
-
-  if (weight === 700) {
-    return [
-      local700,
-      local700LatinExt,
-      GOOGLE_HEADLINE_FONT_700_WOFF_URL,
-      cdn700,
-      cdn700LatinExt,
-    ];
-  }
-
-  return [
-    local400,
-    local400LatinExt,
-    GOOGLE_HEADLINE_FONT_400_WOFF_URL,
-    cdn400,
-    cdn400LatinExt,
-  ];
+  return buildLocalHeadingFontUrls(requestUrl.origin, weight);
 };
 
 const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {

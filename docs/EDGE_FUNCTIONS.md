@@ -108,7 +108,12 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 |---|---|---|
 | `https://esm.sh/react@18.3.1` | `site-og-image.tsx`, `trip-og-image.tsx` | 18.3.1 |
 | `https://deno.land/x/og_edge/mod.ts` | `site-og-image.tsx`, `trip-og-image.tsx` | latest (unpinned) |
-| Space Grotesk font via `cdn.jsdelivr.net` | `site-og-image.tsx`, `trip-og-image.tsx` | — |
+
+### OG font dependency policy
+
+- OG image functions must load heading fonts from local assets only (`/fonts/bricolage-grotesque/*`).
+- Do not add remote CDN font fallbacks in edge image functions.
+- Font fetch operations must stay short-lived (timeout bounded) so upstream slowness does not turn into edge 502s.
 
 ## Caching strategies
 
