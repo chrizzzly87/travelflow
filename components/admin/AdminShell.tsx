@@ -17,6 +17,11 @@ import {
 import { APP_NAME } from '../../config/appGlobals';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import {
+    readLocalStorageItem,
+    readSessionStorageItem,
+    writeLocalStorageItem,
+} from '../../services/browserStorageService';
+import {
     SIMULATED_LOGIN_DEBUG_EVENT,
     SIMULATED_LOGIN_STORAGE_KEY,
     isSimulatedLoggedIn,
@@ -45,14 +50,16 @@ interface AdminShellProps {
 const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
 const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
 
-const getStoredSidebarCollapseState = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
+export const getStoredSidebarCollapseState = (): boolean => {
+    return readLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
 };
 
-const persistSidebarCollapseState = (next: boolean): void => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
+export const persistSidebarCollapseState = (next: boolean): void => {
+    writeLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
+};
+
+export const isDevAdminBypassDisabled = (): boolean => {
+    return readSessionStorageItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
 };
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
@@ -118,7 +125,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         }
 
         const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
-        const bypassDisabled = window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
+        const bypassDisabled = isDevAdminBypassDisabled();
         const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
         setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);
     }, [access?.userId]);

@@ -35,10 +35,11 @@ This checklist tracks Phase 2 migration from raw browser storage access to `serv
 - [x] `components/ItineraryMap.tsx` (route cache persistence)
 - [x] `components/CountryInfo.tsx` (converter persistence)
 - [x] `components/TripView.tsx` (legacy cleanup key removal)
+- [x] `components/admin/AdminShell.tsx` (shell state persistence)
+- [x] `components/OnPageDebugger.tsx`
 
 ## Remaining Direct Storage Usage (Next Batches)
-- [ ] `components/admin/AdminShell.tsx` (shell state persistence)
-- [ ] `components/OnPageDebugger.tsx`
+- [ ] No remaining application-level direct storage access. Keep `services/browserStorageService.ts` and `services/authService.ts` low-level key-iteration paths as the intentional runtime boundary.
 
 ## Verification
 - Run `pnpm storage:validate`.
