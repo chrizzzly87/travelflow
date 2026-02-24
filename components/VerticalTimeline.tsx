@@ -30,7 +30,8 @@ const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 8;
 const CITY_VERTICAL_CONNECTOR_TRACK_SPLIT_PX = 6;
 const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
 const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
-const TRANSFER_PILL_ATTACH_INSET_PX = 2;
+const TRANSFER_PILL_ATTACH_INSET_PX = 0;
+const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -754,7 +755,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                              const chipLeft = (TRANSFER_LANE_WIDTH_PX - chipWidth) / 2;
                              const chipAttachX = chipLeft + TRANSFER_PILL_ATTACH_INSET_PX;
                              const fromAbove = fromY <= toY;
-                             const attachInsetPx = Math.max(8, Math.min(12, chipHeight * 0.2));
+                             const attachInsetPx = Math.max(2, Math.min(6, TRANSFER_PILL_EDGE_ATTACH_INSET_PX));
                              const upperAttachY = chipTop + attachInsetPx;
                              const lowerAttachY = chipBottom - attachInsetPx;
                              const fromAttachY = fromAbove ? upperAttachY : lowerAttachY;
