@@ -178,5 +178,17 @@
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
     }
+  },
+  "notifications": {
+    "prompt": {
+      "title": "Otrzymywac powiadomienie, gdy podroz bedzie gotowa?",
+      "message": "Generowanie podrozy moze zajac okolo minuty. Wlacz powiadomienia przegladarki, a damy znac, gdy plan bedzie gotowy.",
+      "enable": "Wlacz powiadomienia",
+      "notNow": "Nie teraz"
+    },
+    "ready": {
+      "title": "Podroz gotowa",
+      "body": "Twoj plan podrozy jest gotowy do sprawdzenia."
+    }
   }
 }

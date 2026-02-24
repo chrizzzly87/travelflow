@@ -45,6 +45,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { useAppDialog } from '../components/AppDialogProvider';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
@@ -55,6 +56,13 @@ import { Switch } from '../components/ui/switch';
 import { useDbSync } from '../hooks/useDbSync';
 import { generateItinerary } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    beginTripGenerationTabFeedback,
+    getTripReadyNotificationPermission,
+    requestTripReadyNotificationPermission,
+    sendTripReadyNotification,
+    type TripGenerationTabFeedbackSession,
+} from '../services/tripGenerationTabFeedbackService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
 import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
@@ -308,6 +316,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
+    const { confirm: confirmDialog } = useAppDialog();
     const [searchParams] = useSearchParams();
 
     useDbSync(onLanguageLoaded);
@@ -376,6 +385,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
     const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
+    const generationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
 
     const regionDisplayNames = useMemo(() => {
         try {
@@ -1442,6 +1452,29 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         trackEvent('create_trip__toggle--route_lock', { enabled: checked });
     };
 
+    const requestGenerationNotificationPermission = useCallback(async (): Promise<NotificationPermission | 'unsupported'> => {
+        const currentPermission = getTripReadyNotificationPermission();
+        if (currentPermission !== 'default') return currentPermission;
+
+        trackEvent('create_trip__notifications--prompt');
+        const shouldEnable = await confirmDialog({
+            title: t('notifications.prompt.title'),
+            message: t('notifications.prompt.message'),
+            confirmLabel: t('notifications.prompt.enable'),
+            cancelLabel: t('notifications.prompt.notNow'),
+        });
+
+        if (!shouldEnable) {
+            trackEvent('create_trip__notifications--not_now');
+            return currentPermission;
+        }
+
+        trackEvent('create_trip__notifications--enable');
+        const requestedPermission = await requestTripReadyNotificationPermission();
+        trackEvent('create_trip__notifications--permission', { permission: requestedPermission });
+        return requestedPermission;
+    }, [confirmDialog, t]);
+
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
         if (orderedDestinations.length === 0) {
@@ -1451,6 +1484,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
         setIsSubmitting(true);
         setSubmitError(null);
+
+        let notificationPermission: NotificationPermission | 'unsupported' = getTripReadyNotificationPermission();
+        try {
+            notificationPermission = await requestGenerationNotificationPermission();
+        } catch {
+            notificationPermission = getTripReadyNotificationPermission();
+        }
 
         trackEvent('create_trip__cta--generate', {
             destination_count: orderedDestinations.length,
@@ -1473,6 +1513,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             roundTrip,
         });
         const optimisticCreatedAt = optimisticTrip.createdAt;
+        generationTabFeedbackSessionRef.current?.cancel();
+        generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
 
         try {
@@ -1498,6 +1540,22 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 roundTrip: generatedTrip.roundTrip ?? roundTrip,
                 sourceKind: generatedTrip.sourceKind || 'created',
             });
+            generationTabFeedbackSessionRef.current?.complete('success', {
+                title: generatedTrip.title,
+            });
+            generationTabFeedbackSessionRef.current = null;
+
+            const isTabBackgrounded = document.visibilityState === 'hidden'
+                || (typeof document.hasFocus === 'function' && !document.hasFocus());
+            if (isTabBackgrounded && notificationPermission === 'granted') {
+                const sent = sendTripReadyNotification({
+                    title: t('notifications.ready.title'),
+                    body: t('notifications.ready.body'),
+                });
+                if (sent) {
+                    trackEvent('create_trip__notifications--sent');
+                }
+            }
         } catch (error) {
             const message = getErrorMessage(error, t('errors.genericGenerate'));
             const errorTitle = t('errors.genericGenerate');
@@ -1518,6 +1576,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     },
                 ],
             });
+            generationTabFeedbackSessionRef.current?.complete('error');
+            generationTabFeedbackSessionRef.current = null;
         } finally {
             setIsSubmitting(false);
         }

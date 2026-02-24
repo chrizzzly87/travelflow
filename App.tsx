@@ -14,6 +14,7 @@ import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from './config/pro
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from './config/locales';
 import {
     extractLocaleFromPath,
+    getBlogSlugFromPath,
     isToolRoute,
     stripLocalePrefix,
 } from './config/routes';
@@ -28,6 +29,9 @@ import {
     ensureDbSession,
 } from './services/dbApi';
 import { loadLazyComponentWithRecovery } from './services/lazyImportRecovery';
+import { getBlogPostBySlugWithFallback } from './services/blogService';
+import { resolvePageTitle } from './services/pageTitleService';
+import { setCanonicalDocumentTitle } from './services/tripGenerationTabFeedbackService';
 import { useAnalyticsBootstrap } from './app/bootstrap/useAnalyticsBootstrap';
 import { useAuthNavigationBootstrap } from './app/bootstrap/useAuthNavigationBootstrap';
 import { useDebuggerBootstrap } from './app/bootstrap/useDebuggerBootstrap';
@@ -198,7 +202,7 @@ const createLocalHistoryEntry = (
 };
 
 const AppContent: React.FC = () => {
-    const { i18n } = useTranslation();
+    const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip']);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
@@ -251,6 +255,36 @@ const AppContent: React.FC = () => {
         return DEFAULT_LOCALE;
     }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
 
+    const pageTitleLabels = useMemo(() => ({
+        features: t('nav.features', { ns: 'common' }),
+        inspirations: t('nav.inspirations', { ns: 'common' }),
+        updates: t('nav.updates', { ns: 'common' }),
+        blog: t('nav.blog', { ns: 'common' }),
+        pricing: t('nav.pricing', { ns: 'common' }),
+        faq: t('faq.title', { ns: 'wip' }),
+        contact: t('footer.contact', { ns: 'common' }),
+        imprint: t('footer.imprint', { ns: 'common' }),
+        privacy: t('footer.privacy', { ns: 'common' }),
+        terms: t('footer.terms', { ns: 'common' }),
+        cookies: t('footer.cookies', { ns: 'common' }),
+        login: t('nav.login', { ns: 'common' }),
+        resetPassword: t('reset.title', { ns: 'auth' }),
+        shareUnavailable: t('shareUnavailable.title', { ns: 'pages' }),
+        createTrip: t('nav.createTrip', { ns: 'common' }),
+        createTripLab: `${t('nav.createTrip', { ns: 'common' })} Labs`,
+        profile: 'Profile',
+        profileSettings: 'Profile settings',
+        profileOnboarding: 'Complete profile',
+        admin: t('nav.admin', { ns: 'common' }),
+        notFound: '404',
+    }), [t, i18n.resolvedLanguage]);
+
+    const blogPostTitle = useMemo(() => {
+        const blogSlug = getBlogSlugFromPath(location.pathname);
+        if (!blogSlug) return null;
+        return getBlogPostBySlugWithFallback(blogSlug, resolvedRouteLocale)?.title ?? null;
+    }, [location.pathname, resolvedRouteLocale]);
+
     // DB sync (session, upload, sync, user settings) is deferred to trip-related
     // routes via useDbSync to avoid unnecessary network calls on marketing pages.
 
@@ -278,6 +312,17 @@ const AppContent: React.FC = () => {
         if (resolvedToolLocale === appLanguage) return;
         setAppLanguage(resolvedToolLocale);
     }, [appLanguage, i18n.language, i18n.resolvedLanguage, location.pathname]);
+
+    useEffect(() => {
+        const nextTitle = resolvePageTitle({
+            pathname: location.pathname,
+            appName: APP_NAME,
+            labels: pageTitleLabels,
+            tripTitle: trip?.title || null,
+            blogPostTitle,
+        });
+        setCanonicalDocumentTitle(nextTitle);
+    }, [blogPostTitle, location.pathname, pageTitleLabels, trip?.title]);
 
     const isInitialLanguageRef = useRef(true);
     useEffect(() => {
