@@ -178,5 +178,17 @@
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
     }
+  },
+  "notifications": {
+    "prompt": {
+      "title": "Get a notification when your trip is ready?",
+      "message": "Trip generation can take around a minute. Enable browser notifications and we will alert you when your itinerary is ready.",
+      "enable": "Enable notifications",
+      "notNow": "Not now"
+    },
+    "ready": {
+      "title": "Trip ready",
+      "body": "Your itinerary is ready to review."
+    }
   }
 }

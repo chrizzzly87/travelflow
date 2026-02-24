@@ -189,6 +189,11 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--prompt` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--enable` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |
