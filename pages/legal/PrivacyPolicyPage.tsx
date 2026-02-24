@@ -1,12 +1,7 @@
 import React from 'react';
 import { MarketingLayout } from '../../components/marketing/MarketingLayout';
-import {
-    formatMultilineAddress,
-    getHostingInfo,
-    getLegalContactInfo,
-    getLegalReviewDates,
-    getLegalSupervisionInfo,
-} from '../../lib/legal/legalEnv';
+import { APP_NAME } from '../../config/appGlobals';
+import { LEGAL_PROFILE } from '../../config/legalProfile';
 import { COOKIE_CATEGORY_COPY, getCookieTableRows } from '../../lib/legal/cookies';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -19,11 +14,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 export const PrivacyPolicyPage: React.FC = () => {
-    const contact = getLegalContactInfo();
-    const hosting = getHostingInfo();
-    const reviewDates = getLegalReviewDates();
-    const authority = getLegalSupervisionInfo();
-    const addressLines = formatMultilineAddress(contact.address);
+    const { entity, hosting, reviewDates, supervision } = LEGAL_PROFILE;
     const cookieRows = getCookieTableRows();
     const analyticsCookies = cookieRows.filter((row) => row.category === 'analytics');
 
@@ -36,7 +27,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                         Privacy Policy
                     </h1>
                     <p className="mt-4 text-base text-slate-700 md:text-lg">
-                        This privacy policy explains which personal data Travelflow processes when you visit our website or
+                        This privacy policy explains which personal data {APP_NAME} processes when you visit our website or
                         use the planning tools, why we process it, and which rights you can exercise under Articles 13-22
                         GDPR. We only collect the data that is necessary to operate the product and continuously reduce the
                         amount of personal information we store.
@@ -48,22 +39,22 @@ export const PrivacyPolicyPage: React.FC = () => {
 
                 <Section title="1. Controller & contact">
                     <p>The controller within the meaning of Art. 4(7) GDPR is:</p>
-                    <p className="mt-2 font-semibold text-slate-900">{contact.businessName}</p>
-                    <p className="text-slate-700">{contact.legalForm}</p>
+                    <p className="mt-2 font-semibold text-slate-900">{entity.businessName}</p>
+                    <p className="text-slate-700">{entity.legalForm}</p>
                     <div className="mt-2 text-slate-700">
                         <address className="not-italic">
-                            {addressLines.map((line) => (
+                            {entity.addressLines.map((line) => (
                                 <span key={line} className="block">{line}</span>
                             ))}
                         </address>
                     </div>
                     <p className="mt-2">
                         Email:{' '}
-                        <a href={`mailto:${contact.email}`} className="text-accent-700 hover:underline">{contact.email}</a>
+                        <a href={`mailto:${entity.contactEmail}`} className="text-accent-700 hover:underline">{entity.contactEmail}</a>
                     </p>
                     <p>
                         Privacy inquiries:{' '}
-                        <a href={`mailto:${contact.privacyEmail}`} className="text-accent-700 hover:underline">{contact.privacyEmail}</a>
+                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline">{entity.privacyEmail}</a>
                     </p>
                 </Section>
 
@@ -78,7 +69,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
                 <Section title="3. Purposes & legal bases">
                     <ul className="list-disc space-y-2 pl-5">
-                        <li>Provide and improve the Travelflow planning experience (Art. 6(1)(b) GDPR – performance of a contract).</li>
+                        <li>Provide and improve the {APP_NAME} planning experience (Art. 6(1)(b) GDPR – performance of a contract).</li>
                         <li>Secure the service, prevent abuse, and debug incidents (Art. 6(1)(f) GDPR – legitimate interest in security).</li>
                         <li>Comply with legal retention requirements (Art. 6(1)(c) GDPR).
                         </li>
@@ -89,7 +80,7 @@ export const PrivacyPolicyPage: React.FC = () => {
 
                 <Section title="4. Storage, hosting & retention">
                     <p>
-                        Travelflow is hosted on {hosting.provider}. Application data is stored primarily in {hosting.dataRegion}. We
+                        {APP_NAME} is hosted on {hosting.provider}. Application data is stored primarily in {hosting.dataRegion}. We
                         retain server logs for a maximum of 30 days unless needed for incident investigations. Account data is
                         stored until you request deletion or your account becomes inactive for more than 24 months.
                     </p>
@@ -138,7 +129,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                     </ul>
                     <p className="mt-2">
                         To exercise these rights, email{' '}
-                        <a href={`mailto:${contact.privacyEmail}`} className="text-accent-700 hover:underline">{contact.privacyEmail}</a>.
+                        <a href={`mailto:${entity.privacyEmail}`} className="text-accent-700 hover:underline">{entity.privacyEmail}</a>.
                         We respond within one month as required by Art. 12(3) GDPR.
                     </p>
                 </Section>
@@ -149,9 +140,9 @@ export const PrivacyPolicyPage: React.FC = () => {
                         complaint with the supervisory authority responsible for your habitual residence. You can also contact
                         our local authority:
                     </p>
-                    <p className="mt-2 font-semibold">{authority.authorityName}</p>
-                    <a href={authority.authorityWebsite} target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
-                        {authority.authorityWebsite}
+                    <p className="mt-2 font-semibold">{supervision.authorityName}</p>
+                    <a href={supervision.authorityWebsite} target="_blank" rel="noreferrer" className="text-accent-700 hover:underline">
+                        {supervision.authorityWebsite}
                     </a>
                 </Section>
             </div>

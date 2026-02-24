@@ -1,5 +1,5 @@
 import { COOKIE_REGISTRY, CookieCategory, CookieDefinition } from './cookies.config';
-import { getLegalReviewDates } from './legalEnv';
+import { LEGAL_PROFILE } from '../../config/legalProfile';
 
 export interface CookieTableRow extends CookieDefinition {
     category: CookieCategory;
@@ -24,7 +24,7 @@ export const getCookieTableRows = (): CookieTableRow[] =>
     (Object.entries(COOKIE_REGISTRY) as Array<[CookieCategory, CookieDefinition[]]>)
         .flatMap(([category, cookies]) => cookies.map((cookie) => ({ ...cookie, category })));
 
-export const getCookieLastReviewedDate = (): string => getLegalReviewDates().cookiesLastUpdated;
+export const getCookieLastReviewedDate = (): string => LEGAL_PROFILE.reviewDates.cookiesLastUpdated;
 
 export const hasCategoryEntries = (category: CookieCategory): boolean => COOKIE_REGISTRY[category].length > 0;
 

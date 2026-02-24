@@ -74,8 +74,8 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/login$/,
     /^\/auth\/reset-password$/,
     /^\/contact$/,
-    /^\/impressum$/,
     /^\/imprint$/,
+    /^\/impressum$/,
     /^\/privacy$/,
     /^\/terms$/,
     /^\/cookies$/,
@@ -153,7 +153,7 @@ export const buildPath = <K extends RouteKey>(
         case 'contact':
             return '/contact';
         case 'imprint':
-            return '/impressum';
+            return '/imprint';
         case 'privacy':
             return '/privacy';
         case 'terms':

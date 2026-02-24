@@ -108,10 +108,6 @@ const PAGE_META: Record<string, PageDefinition> = {
     title: "Contact",
     description: "Reach out to report translation issues or localization feedback for {{appName}}.",
   },
-  "/impressum": {
-    title: "Impressum",
-    description: "Legal notice and provider identification for {{appName}}.",
-  },
   "/imprint": {
     title: "Imprint",
     description: "Legal notice and provider identification for {{appName}}.",
@@ -307,15 +303,6 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     pt: { title: "Contacto", description: "Reporte erros de tradução ou partilhe feedback de localização sobre o {{appName}}." },
     pl: { title: "Kontakt", description: "Zgłoś błędy tłumaczenia lub prześlij opinię o lokalizacji {{appName}}." },
   },
-  "/impressum": {
-    es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
-    de: { title: "Impressum", description: "Rechtliche Informationen und Unternehmensangaben zu {{appName}}." },
-    fr: { title: "Mentions légales", description: "Informations légales et sociétaires concernant {{appName}}." },
-    it: { title: "Note legali", description: "Informazioni legali e societarie su {{appName}}." },
-    ru: { title: "Реквизиты", description: "Юридическая и корпоративная информация о {{appName}}." },
-    pt: { title: "Aviso legal", description: "Informações legais e empresariais sobre o {{appName}}." },
-    pl: { title: "Informacje prawne", description: "Informacje prawne i firmowe dotyczące {{appName}}." },
-  },
   "/imprint": {
     es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
     de: { title: "Impressum", description: "Rechtliche Informationen und Unternehmensangaben zu {{appName}}." },
@@ -489,10 +476,24 @@ const isSupportedLocale = (value?: string | null): value is SupportedLocale => {
 const normalizePath = (pathname: string): string => {
   const raw = pathname || "/";
   const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
-  if (withLeadingSlash.length > 1 && withLeadingSlash.endsWith("/")) {
-    return withLeadingSlash.slice(0, -1);
+  const trimmed = withLeadingSlash.length > 1 && withLeadingSlash.endsWith("/")
+    ? withLeadingSlash.slice(0, -1)
+    : withLeadingSlash;
+  const segments = trimmed.split("/").filter(Boolean);
+
+  if (segments.length === 1 && segments[0] === "impressum") {
+    return "/imprint";
   }
-  return withLeadingSlash;
+
+  if (
+    segments.length === 2
+    && isSupportedLocale(segments[0])
+    && segments[1] === "impressum"
+  ) {
+    return `/${segments[0]}/imprint`;
+  }
+
+  return trimmed;
 };
 
 const matchesPrefix = (pathname: string, prefix: string): boolean => {

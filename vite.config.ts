@@ -19,7 +19,6 @@ export default defineConfig(({ mode }) => {
             },
         },
         plugins: [react(), tailwindcss()],
-        envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
         build: {
             sourcemap: mode !== 'production',
             modulePreload: false,
