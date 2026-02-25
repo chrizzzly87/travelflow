@@ -14,15 +14,13 @@ export const MarketingLayout: React.FC<MarketingLayoutProps> = ({ children }) =>
     const { openTripManager, prewarmTripManager } = useTripManager();
 
     return (
-        <div className="min-h-screen scroll-smooth bg-slate-50 text-slate-900 flex flex-col overflow-x-hidden relative">
-            <SiteHeader variant="glass" onMyTripsClick={openTripManager} onMyTripsIntent={prewarmTripManager} />
-            <div className="absolute top-0 left-0 w-full z-30 pointer-events-none">
-                <EarlyAccessBanner />
-                <LanguageSuggestionBanner />
-                <TranslationNoticeBanner />
-            </div>
+        <div className="min-h-screen scroll-smooth bg-white text-slate-900 flex flex-col">
+            <SiteHeader variant="solid" onMyTripsClick={openTripManager} onMyTripsIntent={prewarmTripManager} />
+            <EarlyAccessBanner />
+            <LanguageSuggestionBanner />
+            <TranslationNoticeBanner />
 
-            <main className="w-full flex-1">
+            <main className="mx-auto w-full flex-1">
                 {children}
             </main>
             <SiteFooter />

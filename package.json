@@ -46,6 +46,7 @@
     "blurhash": "^2.0.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cobe": "^0.6.5",
     "flagpack": "^1.0.5",
     "framer-motion": "^12.34.3",
     "i18next": "^25.6.0",

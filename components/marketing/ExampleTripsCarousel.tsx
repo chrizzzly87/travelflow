@@ -434,12 +434,12 @@ export const ExampleTripsCarousel: React.FC = () => {
     }, [handleCardClick]);
 
     return (
-        <section id="examples" className="py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
+        <section id="examples" className="w-full max-w-7xl mx-auto px-6 py-16 md:py-24 overflow-x-hidden md:overflow-x-visible">
             <div className="animate-scroll-blur-in">
-                <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-900" style={{ fontFamily: 'var(--tf-font-heading)' }}>
                     {t('examples.title')}
                 </h2>
-                <p className="mt-3 max-w-xl text-base text-slate-600">
+                <p className="mt-4 max-w-xl text-lg text-slate-500 font-medium tracking-tight">
                     {t('examples.subtitle')}
                 </p>
             </div>
