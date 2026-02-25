@@ -3,8 +3,8 @@ id: rel-2026-02-25-site-og-single-renderer-parity
 version: v0.63.0
 title: "Site OG single-renderer parity"
 date: 2026-02-25
-published_at: 2026-02-25T15:00:00Z
-status: draft
+published_at: 2026-02-25T13:55:16Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Pre-generated site Open Graph images now use the exact same renderer as live OG responses for consistent fonts and layout."
