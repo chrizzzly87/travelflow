@@ -21,6 +21,10 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:x-ai/grok-4.1-fast')).toBe(true);
     expect(modelIds.has('openrouter:minimax/minimax-m2.5')).toBe(true);
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
+    expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
+    expect(modelIds.has('perplexity:perplexity/sonar-pro')).toBe(true);
+    expect(modelIds.has('qwen:qwen/qwen-3.5-plus')).toBe(true);
+    expect(modelIds.has('qwen:qwen/qwen-3.5')).toBe(true);
   });
 
   it('keeps runtime/default model wiring intact', () => {
@@ -32,16 +36,16 @@ describe('config/aiModelCatalog', () => {
     expect(defaultModel.isCurrentRuntime).toBe(true);
   });
 
-  it('sorts openrouter after direct providers', () => {
+  it('sorts openrouter after direct providers and new provider families', () => {
     const sorted = sortAiModels(AI_MODEL_CATALOG);
     const providerOrder = sorted.map((item) => item.provider);
 
     const firstOpenRouterIndex = providerOrder.indexOf('openrouter');
-    const lastAnthropicIndex = providerOrder.lastIndexOf('anthropic');
+    const lastQwenIndex = providerOrder.lastIndexOf('qwen');
 
     expect(firstOpenRouterIndex).toBeGreaterThan(-1);
-    expect(lastAnthropicIndex).toBeGreaterThan(-1);
-    expect(firstOpenRouterIndex).toBeGreaterThan(lastAnthropicIndex);
+    expect(lastQwenIndex).toBeGreaterThan(-1);
+    expect(firstOpenRouterIndex).toBeGreaterThan(lastQwenIndex);
   });
 
   it('groups entries by provider label', () => {
@@ -49,6 +53,8 @@ describe('config/aiModelCatalog', () => {
     expect(grouped['Google Gemini']?.length).toBeGreaterThan(0);
     expect(grouped.OpenAI?.length).toBeGreaterThan(0);
     expect(grouped.Anthropic?.length).toBeGreaterThan(0);
+    expect(grouped.Perplexity?.length).toBeGreaterThan(0);
+    expect(grouped.Qwen?.length).toBeGreaterThan(0);
     expect(grouped.OpenRouter?.length).toBeGreaterThan(0);
     expect(grouped['OpenRouter (Free)']?.length).toBeGreaterThan(0);
   });

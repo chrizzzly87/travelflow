@@ -70,6 +70,14 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "minimax/minimax-m2.5",
     "moonshotai/kimi-k2.5",
   ]),
+  perplexity: new Set([
+    "perplexity/sonar",
+    "perplexity/sonar-pro",
+  ]),
+  qwen: new Set([
+    "qwen/qwen-3.5-plus",
+    "qwen/qwen-3.5",
+  ]),
 };
 
 export const GEMINI_DEFAULT_MODEL = "gemini-3-pro-preview";
@@ -978,6 +986,7 @@ const generateWithAnthropic = async (
 
 const generateWithOpenRouter = async (
   prompt: string,
+  provider: string,
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
@@ -988,7 +997,7 @@ const generateWithOpenRouter = async (
       ok: false,
       status: 500,
       value: {
-        error: "OpenRouter API key missing. Configure OPENROUTER_API_KEY on Netlify.",
+        error: "OpenRouter API key missing. Configure OPENROUTER_API_KEY on Netlify (used by OpenRouter, Perplexity, and Qwen benchmark providers).",
         code: "OPENROUTER_KEY_MISSING",
       },
     };
@@ -1143,7 +1152,7 @@ const generateWithOpenRouter = async (
       value: {
         data: parsed,
         meta: {
-          provider: "openrouter",
+          provider,
           model,
           providerModel,
           usage,
@@ -1192,5 +1201,5 @@ export const generateProviderItinerary = async (
   if (provider === "anthropic") {
     return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
-  return await generateWithOpenRouter(options.prompt, model, options.timeoutMs, maxOutputTokens);
+  return await generateWithOpenRouter(options.prompt, provider, model, options.timeoutMs, maxOutputTokens);
 };

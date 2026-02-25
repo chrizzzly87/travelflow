@@ -14,6 +14,9 @@ import {
     ArrowsDownUp,
     StopCircle,
     X,
+    Play,
+    ToggleLeft,
+    ToggleRight,
 } from '@phosphor-icons/react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-json';
@@ -23,6 +26,7 @@ import {
     groupAiModelsByProvider,
     sortAiModels,
 } from '../config/aiModelCatalog';
+import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
 import {
     BENCHMARK_DEFAULT_MODEL_IDS,
@@ -35,9 +39,17 @@ import {
 } from '../services/aiBenchmarkPreferencesService';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { getDaysDifference, getDefaultTripDates } from '../utils';
+import {
+    buildRunnableBenchmarkTargets,
+    getAllSelectedBenchmarkTargetIds,
+    pruneInactiveBenchmarkTargetIds,
+    toggleInactiveBenchmarkTargetId,
+    type AiBenchmarkRunTarget,
+} from '../utils/aiBenchmarkTargets';
 import { getDestinationPromptLabel, resolveDestinationName } from '../services/destinationService';
 import { useAuth } from '../hooks/useAuth';
 import { AdminShell } from '../components/admin/AdminShell';
+import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { AppModal } from '../components/ui/app-modal';
 import {
@@ -241,6 +253,37 @@ const formatTimestamp = (value?: string | null): string => {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
+};
+
+const ProviderLabel: React.FC<{
+    provider: string;
+    model?: string | null;
+    showModel?: boolean;
+    providerClassName?: string;
+    modelClassName?: string;
+    logoSize?: number;
+}> = ({
+    provider,
+    model,
+    showModel = true,
+    providerClassName,
+    modelClassName,
+    logoSize = 14,
+}) => {
+    const metadata = getAiProviderMetadata(provider);
+    return (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+            <AiProviderLogo provider={provider} model={model} size={logoSize} />
+            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${metadata.label} (${provider})`}>
+                {metadata.shortName}
+            </span>
+            {model && showModel ? (
+                <span className={modelClassName || 'truncate text-slate-600'}>
+                    / {model}
+                </span>
+            ) : null}
+        </span>
+    );
 };
 
 const getRunTimestampIso = (run: BenchmarkRun): string | null => {
@@ -449,6 +492,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         if (defaults.length > 0) return defaults;
         return [getDefaultCreateTripModel().id];
     });
+    const [inactiveModelTargetIds, setInactiveModelTargetIds] = useState<string[]>([]);
     const [modelModalOpen, setModelModalOpen] = useState(false);
     const [modelDraftIds, setModelDraftIds] = useState<string[]>([]);
     const [presetEditor, setPresetEditor] = useState<PresetEditorDraft | null>(null);
@@ -526,6 +570,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 return true;
             });
     }, [modelTargetIds]);
+    const selectedTargetIdSet = useMemo(() => new Set(selectedTargets.map((target) => target.id)), [selectedTargets]);
+    const inactiveTargetIdSet = useMemo(() => new Set(inactiveModelTargetIds), [inactiveModelTargetIds]);
+    const runnableTargets = useMemo(
+        () => buildRunnableBenchmarkTargets(selectedTargets, inactiveModelTargetIds),
+        [inactiveModelTargetIds, selectedTargets]
+    );
+    const allTargetsActive = selectedTargets.length > 0 && runnableTargets.length === selectedTargets.length;
+    const allTargetsInactive = selectedTargets.length > 0 && runnableTargets.length === 0;
     const selectedPreset = useMemo(
         () => presetConfigs.find((preset) => preset.id === selectedPresetId) || null,
         [presetConfigs, selectedPresetId]
@@ -533,7 +585,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const providerOptions = useMemo(() => {
         const values = Array.from(new Set(runs.map((run) => run.provider).filter(Boolean)));
-        values.sort((left, right) => left.localeCompare(right));
+        values.sort((left, right) => {
+            const orderDelta = getAiProviderSortOrder(left) - getAiProviderSortOrder(right);
+            if (orderDelta !== 0) return orderDelta;
+            return getAiProviderMetadata(left).shortName.localeCompare(getAiProviderMetadata(right).shortName);
+        });
         return values;
     }, [runs]);
 
@@ -868,6 +924,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         applyMaskScenario(preset.scenario);
     }, [applyMaskScenario, preferencesLoaded, presetConfigs, selectedPresetId]);
 
+    useEffect(() => {
+        setInactiveModelTargetIds((current) => {
+            const next = pruneInactiveBenchmarkTargetIds(current, selectedTargetIdSet);
+            if (next.length === current.length && next.every((entry, index) => entry === current[index])) {
+                return current;
+            }
+            return next;
+        });
+    }, [selectedTargetIdSet]);
+
     const loadSession = useCallback(async (sessionLookup: string) => {
         if (!sessionLookup) return;
         setError(null);
@@ -1145,17 +1211,13 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         transportMask,
     ]);
 
-    const runBenchmark = useCallback(async (targetsOverride?: Array<{ provider: string; model: string; label?: string }>) => {
+    const runBenchmark = useCallback(async (targetsOverride?: AiBenchmarkRunTarget[]) => {
         if (!accessToken) {
             setError('Supabase access token missing. Refresh this page and try again.');
             return;
         }
 
-        const selected = targetsOverride || selectedTargets.map((model) => ({
-            provider: model.provider,
-            model: model.model,
-            label: model.label,
-        }));
+        const selected = targetsOverride || runnableTargets;
 
         const timeoutSeconds = Math.max(
             BENCHMARK_TIMEOUT_MIN_SECONDS,
@@ -1164,7 +1226,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         const timeoutMs = timeoutSeconds * 1000;
 
         if (selected.length === 0) {
-            setError('Please select at least one model target.');
+            setError('Enable at least one model target before running benchmark.');
             return;
         }
 
@@ -1261,7 +1323,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         accessToken,
         benchmarkTimeoutSeconds,
         compactBenchmarkOutput,
-        selectedTargets,
+        runnableTargets,
         runs,
         fetchBenchmarkApi,
         session,
@@ -1278,6 +1340,16 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 provider: run.provider,
                 model: run.model,
                 label: run.label || `${run.provider}:${run.model}`,
+            },
+        ]);
+    }, [runBenchmark]);
+
+    const runSingleTarget = useCallback((target: AiBenchmarkRunTarget) => {
+        void runBenchmark([
+            {
+                provider: target.provider,
+                model: target.model,
+                label: target.label,
             },
         ]);
     }, [runBenchmark]);
@@ -1504,6 +1576,18 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         });
     }, []);
 
+    const toggleModelTargetActive = useCallback((modelId: string) => {
+        setInactiveModelTargetIds((current) => toggleInactiveBenchmarkTargetId(current, modelId));
+    }, []);
+
+    const activateAllModelTargets = useCallback(() => {
+        setInactiveModelTargetIds([]);
+    }, []);
+
+    const deactivateAllModelTargets = useCallback(() => {
+        setInactiveModelTargetIds(getAllSelectedBenchmarkTargetIds(selectedTargets));
+    }, [selectedTargets]);
+
     const saveModelDraft = useCallback(async () => {
         const normalized = normalizePreferencesForClient({
             modelTargets: modelDraftIds,
@@ -1515,6 +1599,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             return;
         }
         setModelTargetIds(normalized.modelTargets);
+        setInactiveModelTargetIds((current) => pruneInactiveBenchmarkTargetIds(current, normalized.modelTargets));
         setModelModalOpen(false);
         await savePreferences({
             modelTargets: normalized.modelTargets,
@@ -1528,6 +1613,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             return;
         }
         setModelTargetIds(next);
+        setInactiveModelTargetIds((current) => current.filter((entry) => entry !== modelId));
         await savePreferences({ modelTargets: next }, { silent: true });
     }, [modelTargetIds, savePreferences]);
 
@@ -1729,7 +1815,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{card.title}</p>
                                 <p className="mt-1 text-xl font-black text-slate-900">{card.metric}</p>
                                 <p className="mt-1 text-xs font-semibold text-slate-700">
-                                    {card.model ? `${card.model.provider} / ${card.model.model}` : 'No model yet'}
+                                    {card.model ? (
+                                        <ProviderLabel
+                                            provider={card.model.provider}
+                                            model={card.model.model}
+                                            providerClassName="font-semibold text-slate-700"
+                                            modelClassName="text-slate-600"
+                                            logoSize={13}
+                                        />
+                                    ) : 'No model yet'}
                                 </p>
                                 <p className="mt-1 text-[11px] text-slate-500">{card.detail}</p>
                             </article>
@@ -1747,7 +1841,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 </p>
                             </div>
                             <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                                {preferencesLoaded ? 'DB sync ready' : 'Loading prefs...'}
+                                {!accessToken && isAuthenticated
+                                    ? 'Re-auth required on this localhost port'
+                                    : preferencesLoaded
+                                        ? 'DB sync ready'
+                                        : 'Loading prefs...'}
                             </span>
                         </div>
 
@@ -1839,7 +1937,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                         scrollToResults();
                                         void runBenchmark();
                                     }}
-                                    disabled={loading || hasPendingRuns || cancelling || selectedTargets.length === 0}
+                                    disabled={loading || hasPendingRuns || cancelling || runnableTargets.length === 0}
                                     className="inline-flex items-center gap-1 rounded-md bg-accent-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     <ArrowClockwise size={14} />
@@ -1867,10 +1965,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         </div>
 
                         <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
-                            <span className="font-semibold text-slate-700">Parallel workers:</span> {BENCHMARK_PARALLEL_CONCURRENCY}. Additional selected models are queued automatically.
-                            {selectedTargets.length > BENCHMARK_PARALLEL_CONCURRENCY && (
+                            <span className="font-semibold text-slate-700">Parallel workers:</span> {BENCHMARK_PARALLEL_CONCURRENCY}. Additional active models are queued automatically.
+                            {runnableTargets.length > BENCHMARK_PARALLEL_CONCURRENCY && (
                                 <span className="ml-1">
-                                    ({selectedTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued with current selection)
+                                    ({runnableTargets.length - BENCHMARK_PARALLEL_CONCURRENCY} queued with current active targets)
+                                </span>
+                            )}
+                            {selectedTargets.length > runnableTargets.length && (
+                                <span className="ml-1">
+                                    ({selectedTargets.length - runnableTargets.length} temporarily deactivated)
                                 </span>
                             )}
                         </div>
@@ -1910,40 +2013,109 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
                         <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model targets</div>
-                                <button
-                                    type="button"
-                                    onClick={openModelPicker}
-                                    disabled={loading || cancelling || hasPendingRuns}
-                                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    <Plus size={14} />
-                                    Add models
-                                </button>
+                                <div className="space-y-0.5">
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Model targets</div>
+                                    <div className="text-[11px] text-slate-500">{runnableTargets.length} active / {selectedTargets.length} selected</div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={activateAllModelTargets}
+                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsActive}
+                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <ToggleRight size={12} />
+                                        Activate all
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={deactivateAllModelTargets}
+                                        disabled={loading || cancelling || hasPendingRuns || selectedTargets.length === 0 || allTargetsInactive}
+                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <ToggleLeft size={12} />
+                                        Deactivate all
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={openModelPicker}
+                                        disabled={loading || cancelling || hasPendingRuns}
+                                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    >
+                                        <Plus size={14} />
+                                        Add models
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="mt-2 flex flex-wrap gap-2">
                                 {selectedTargets.length === 0 && (
                                     <div className="text-xs text-slate-500">No model target selected.</div>
                                 )}
-                                {selectedTargets.map((model) => (
-                                    <span
-                                        key={model.id}
-                                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] text-slate-700"
-                                    >
-                                        <span className="font-semibold">{model.label}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => void removeModelTarget(model.id)}
-                                            disabled={loading || cancelling || hasPendingRuns || selectedTargets.length <= 1}
-                                            className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                                            aria-label={`Remove ${model.label}`}
-                                            title={`Remove ${model.label}`}
+                                {selectedTargets.map((model) => {
+                                    const isActive = !inactiveTargetIdSet.has(model.id);
+                                    const singleTarget: AiBenchmarkRunTarget = {
+                                        provider: model.provider,
+                                        model: model.model,
+                                        label: model.label,
+                                    };
+                                    return (
+                                        <span
+                                            key={model.id}
+                                            className={[
+                                                'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px]',
+                                                isActive
+                                                    ? 'border-slate-300 bg-slate-50 text-slate-700'
+                                                    : 'border-slate-300 bg-slate-100 text-slate-500',
+                                            ].join(' ')}
                                         >
-                                            <X size={10} />
-                                        </button>
-                                    </span>
-                                ))}
+                                            <ProviderLabel
+                                                provider={model.provider}
+                                                model={model.model}
+                                                showModel={false}
+                                                providerClassName={isActive ? 'text-slate-600' : 'text-slate-500'}
+                                                logoSize={12}
+                                            />
+                                            <span className={`font-semibold ${isActive ? '' : 'line-through'}`}>{model.label}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleModelTargetActive(model.id)}
+                                                disabled={loading || cancelling || hasPendingRuns}
+                                                className={[
+                                                    'rounded-full p-0.5 hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50',
+                                                    isActive ? 'text-emerald-700 hover:text-emerald-800' : 'text-slate-500 hover:text-slate-800',
+                                                ].join(' ')}
+                                                aria-label={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
+                                                title={isActive ? `Deactivate ${model.label} for Test all` : `Activate ${model.label} for Test all`}
+                                            >
+                                                {isActive ? <ToggleRight size={10} /> : <ToggleLeft size={10} />}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    scrollToResults();
+                                                    runSingleTarget(singleTarget);
+                                                }}
+                                                disabled={loading || cancelling || hasPendingRuns}
+                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                                aria-label={`Run ${model.label} only`}
+                                                title={`Run ${model.label} only`}
+                                            >
+                                                <Play size={10} weight="fill" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void removeModelTarget(model.id)}
+                                                disabled={loading || cancelling || hasPendingRuns || selectedTargets.length <= 1}
+                                                className="rounded-full p-0.5 text-slate-500 hover:bg-slate-200 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                                aria-label={`Remove ${model.label}`}
+                                                title={`Remove ${model.label}`}
+                                            >
+                                                <X size={10} />
+                                            </button>
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -1989,7 +2161,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <SelectItem value="all">All providers</SelectItem>
                                     {providerOptions.map((provider) => (
                                         <SelectItem key={provider} value={provider}>
-                                            {provider}
+                                            <ProviderLabel
+                                                provider={provider}
+                                                providerClassName="text-slate-700"
+                                                logoSize={12}
+                                            />
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -2099,7 +2275,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     return (
                                         <tr key={run.id} className="border-b border-slate-100 align-top">
                                             <td className="px-3 py-2">
-                                                <div className="font-semibold text-slate-800">{run.provider} / {run.model}</div>
+                                                <div className="font-semibold text-slate-800">
+                                                    <ProviderLabel provider={run.provider} model={run.model} />
+                                                </div>
                                                 <div className="text-xs text-slate-500">run #{run.run_index}</div>
                                             </td>
                                             <td className="px-3 py-2">
@@ -2267,7 +2445,9 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                     : 'text-rose-700';
                                         return (
                                             <tr key={`${row.provider}-${row.model}`} className="border-b border-slate-200/70">
-                                                <td className="px-2 py-1.5 font-semibold text-slate-800">{row.provider} / {row.model}</td>
+                                                <td className="px-2 py-1.5 font-semibold text-slate-800">
+                                                    <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
+                                                </td>
                                                 <td className="px-2 py-1.5 text-slate-700">{formatDuration(row.averageLatencyMs)}</td>
                                                 <td className="px-2 py-1.5 text-slate-700">{formatUsd(row.averageCostUsd)}</td>
                                                 <td className={`px-2 py-1.5 font-semibold ${satisfactionClass}`}>
@@ -2320,7 +2500,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
                             {Object.entries(groupedModels).map(([providerLabel, models]) => (
                                 <div key={providerLabel} className="space-y-1">
-                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{providerLabel}</div>
+                                    <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        <AiProviderLogo provider={models[0]?.provider || providerLabel} size={12} />
+                                        <span>{providerLabel}</span>
+                                        {models[0]?.provider ? (
+                                            <span className="rounded-full border border-slate-300 bg-white px-1.5 py-0 text-[10px] text-slate-500 normal-case">
+                                                {getAiProviderMetadata(models[0].provider).shortName}
+                                            </span>
+                                        ) : null}
+                                    </div>
                                     <div className="space-y-1">
                                         {models.map((model) => {
                                             const selected = modelDraftIds.includes(model.id);
@@ -2339,7 +2527,10 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                         disabled ? 'cursor-not-allowed opacity-50' : '',
                                                     ].join(' ')}
                                                 >
-                                                    <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                                    <span className="inline-flex min-w-0 items-center gap-1.5">
+                                        <AiProviderLogo provider={model.provider} model={model.model} size={12} />
+                                        <span className="min-w-0 truncate font-semibold">{model.label}</span>
+                                    </span>
                                                     <span className="ml-2 shrink-0 text-[10px] text-slate-500">{model.estimatedCostPerQueryLabel}</span>
                                                 </button>
                                             );
@@ -2694,7 +2885,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Run error details</h4>
                                     <p className="text-xs text-slate-400">
-                                        {errorModalRun.provider} / {errorModalRun.model} · run #{errorModalRun.run_index}
+                                        <ProviderLabel
+                                            provider={errorModalRun.provider}
+                                            model={errorModalRun.model}
+                                            providerClassName="text-slate-300"
+                                            modelClassName="text-slate-400"
+                                            logoSize={12}
+                                        />
+                                        <span className="ml-1">· run #{errorModalRun.run_index}</span>
                                     </p>
                                 </div>
                                 <button
@@ -2730,7 +2928,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                 <div>
                                     <h4 className="text-sm font-semibold text-slate-100">Validation details</h4>
                                     <p className="text-xs text-slate-400">
-                                        {validationModalRun.provider} / {validationModalRun.model} · run #{validationModalRun.run_index}
+                                        <ProviderLabel
+                                            provider={validationModalRun.provider}
+                                            model={validationModalRun.model}
+                                            providerClassName="text-slate-300"
+                                            modelClassName="text-slate-400"
+                                            logoSize={12}
+                                        />
+                                        <span className="ml-1">· run #{validationModalRun.run_index}</span>
                                     </p>
                                 </div>
                                 <button

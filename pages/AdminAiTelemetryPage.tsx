@@ -12,7 +12,9 @@ import {
 } from '@tremor/react';
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { AiProviderLogo } from '../components/admin/AiProviderLogo';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
 import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -152,8 +154,37 @@ const formatTimestamp = (value?: string | null): string => {
     return new Date(parsed).toLocaleString();
 };
 
+const ProviderLabel: React.FC<{
+    provider: string;
+    model?: string | null;
+    providerClassName?: string;
+    modelClassName?: string;
+    logoSize?: number;
+}> = ({
+    provider,
+    model,
+    providerClassName,
+    modelClassName,
+    logoSize = 14,
+}) => {
+    const metadata = getAiProviderMetadata(provider);
+    return (
+        <span className="inline-flex min-w-0 items-center gap-1.5">
+            <AiProviderLogo provider={provider} model={model} size={logoSize} />
+            <span className={providerClassName || 'font-semibold text-slate-800'} title={`${metadata.label} (${provider})`}>
+                {metadata.shortName}
+            </span>
+            {model ? (
+                <span className={modelClassName || 'truncate text-slate-600'}>
+                    / {model}
+                </span>
+            ) : null}
+        </span>
+    );
+};
+
 const compactModelLabel = (provider: string, model: string): string => {
-    const combined = `${provider} / ${model}`;
+    const combined = `${getAiProviderMetadata(provider).shortName} / ${model}`;
     if (combined.length <= 44) return combined;
     return `${combined.slice(0, 41)}...`;
 };
@@ -254,7 +285,12 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setCheapestModels(Array.isArray(payload.rankings?.cheapest) ? payload.rankings?.cheapest : []);
             setBestValueModels(Array.isArray(payload.rankings?.bestValue) ? payload.rankings?.bestValue : []);
 
-            const providerOptions = Array.isArray(payload.availableProviders) ? payload.availableProviders : [];
+            const providerOptions = Array.isArray(payload.availableProviders) ? [...payload.availableProviders] : [];
+            providerOptions.sort((left, right) => {
+                const orderDelta = getAiProviderSortOrder(left) - getAiProviderSortOrder(right);
+                if (orderDelta !== 0) return orderDelta;
+                return getAiProviderMetadata(left).shortName.localeCompare(getAiProviderMetadata(right).shortName);
+            });
             setTelemetryProviderOptions(providerOptions);
             if (telemetryProviderFilter !== 'all' && !providerOptions.includes(telemetryProviderFilter)) {
                 setTelemetryProviderFilter('all');
@@ -409,10 +445,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
             .sort((left, right) => right.total - left.total)
             .slice(0, 10)
             .map((row) => ({
-            Provider: row.provider,
-            Calls: row.total,
-            Failures: row.failed,
-        }));
+                Provider: getAiProviderMetadata(row.provider).shortName,
+                Calls: row.total,
+                Failures: row.failed,
+            }));
     }, [telemetryProviders]);
 
     const providerDonutEntries = useMemo(
@@ -437,12 +473,14 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
     const providerShareDonutData = useMemo(() => {
         return activeDonutEntries.map((entry) => ({
-            Segment: entry.label,
+            Segment: selectedProviderShare
+                ? entry.label
+                : (entry.provider === 'other' ? entry.label : getAiProviderMetadata(entry.provider).shortName),
             Calls: entry.calls,
             provider: entry.provider,
             model: entry.model,
         }));
-    }, [activeDonutEntries]);
+    }, [activeDonutEntries, selectedProviderShare]);
 
     const providerShareDonutColors = useMemo(
         () => activeDonutEntries.map((entry) => entry.color),
@@ -450,12 +488,18 @@ export const AdminAiTelemetryPage: React.FC = () => {
     );
 
     const providerSuccessRateChartData = useMemo(
-        () => buildProviderSuccessRateChartData(telemetryProviders, 8),
+        () => buildProviderSuccessRateChartData(telemetryProviders, 8).map((row) => ({
+            ...row,
+            Provider: getAiProviderMetadata(row.Provider).shortName,
+        })),
         [telemetryProviders],
     );
 
     const providerCostPerSuccessChartData = useMemo(
-        () => buildProviderCostPerSuccessChartData(telemetryProviders, 8),
+        () => buildProviderCostPerSuccessChartData(telemetryProviders, 8).map((row) => ({
+            ...row,
+            Provider: getAiProviderMetadata(row.Provider).shortName,
+        })),
         [telemetryProviders],
     );
 
@@ -592,7 +636,13 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 <SelectContent>
                                     <SelectItem value="all">All providers</SelectItem>
                                     {telemetryProviderOptions.map((provider) => (
-                                        <SelectItem key={provider} value={provider}>{provider}</SelectItem>
+                                        <SelectItem key={provider} value={provider}>
+                                            <ProviderLabel
+                                                provider={provider}
+                                                providerClassName="text-slate-700"
+                                                logoSize={12}
+                                            />
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -873,7 +923,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 <Title>Provider share</Title>
                                 <Subtitle>
                                     {selectedProviderShare
-                                        ? `Model split inside ${selectedProviderShare}. Click a slice for details.`
+                                        ? `Model split inside ${getAiProviderMetadata(selectedProviderShare).shortName}. Click a slice for details.`
                                         : 'Distribution of total call volume. Click a provider slice to drill down.'}
                                 </Subtitle>
                             </div>
@@ -900,7 +950,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                     data={providerShareDonutData}
                                     index="Segment"
                                     category="Calls"
-                                    label={selectedProviderShare ? `${selectedProviderShare} models` : 'Providers'}
+                                    label={selectedProviderShare ? `${getAiProviderMetadata(selectedProviderShare).shortName} models` : 'Providers'}
                                     valueFormatter={(value) => formatCallCount(value)}
                                     colors={providerShareDonutColors}
                                     showTooltip
@@ -921,6 +971,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                             );
                                             const isDisabled = !selectedProviderShare && entry.provider === 'other';
                                             const dotClass = DONUT_COLOR_DOT_CLASS[entry.color];
+                                            const providerMetadata = getAiProviderMetadata(entry.provider);
+                                            const displayLabel = selectedProviderShare
+                                                ? entry.label
+                                                : (entry.provider === 'other' ? entry.label : providerMetadata.shortName);
                                             return (
                                                 <button
                                                     key={entry.key}
@@ -947,7 +1001,10 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                                 >
                                                     <span className="inline-flex min-w-0 items-center gap-2">
                                                         <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
-                                                        <span className="truncate">{entry.label}</span>
+                                                        {entry.provider !== 'other' && (
+                                                            <AiProviderLogo provider={entry.provider} size={12} />
+                                                        )}
+                                                        <span className="truncate">{displayLabel}</span>
                                                     </span>
                                                     <span className="ml-2 shrink-0 text-slate-500">
                                                         {entry.calls.toLocaleString()} • {formatPercent(entry.sharePercent)}
@@ -965,7 +1022,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         {selectedProviderStats && (
                             <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
                                 <p className="font-semibold text-slate-900">
-                                    Provider details: <span className="font-bold">{selectedProviderStats.provider}</span>
+                                    Provider details: <ProviderLabel provider={selectedProviderStats.provider} providerClassName="font-bold text-slate-900" logoSize={12} />
                                 </p>
                                 <p className="mt-1">
                                     Calls {selectedProviderStats.total.toLocaleString()} • Success {formatPercent(
@@ -980,7 +1037,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                         {selectedModelStats && (
                             <div className="mt-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
                                 <p className="font-semibold">
-                                    Model details: {selectedModelStats.provider} / {selectedModelStats.model}
+                                    Model details: <ProviderLabel provider={selectedModelStats.provider} model={selectedModelStats.model} providerClassName="text-blue-900" modelClassName="text-blue-800" logoSize={12} />
                                 </p>
                                 <p className="mt-1">
                                     Calls {selectedModelStats.total.toLocaleString()} • Success {formatPercent(selectedModelStats.successRate)} • Avg duration {formatDuration(selectedModelStats.averageLatencyMs)} • Avg cost {formatUsd(selectedModelStats.averageCostUsd)}
@@ -1095,7 +1152,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                         <tr key={row.id} className="border-b border-slate-100">
                                             <td className="px-2 py-1.5 text-slate-600">{formatTimestamp(row.created_at)}</td>
                                             <td className="px-2 py-1.5 text-slate-800">
-                                                <span className="font-semibold">{row.provider}</span> / {row.model}
+                                                <ProviderLabel provider={row.provider} model={row.model} logoSize={13} />
                                             </td>
                                             <td className="px-2 py-1.5">
                                                 <span className={row.status === 'success' ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
