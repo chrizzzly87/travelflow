@@ -45,8 +45,7 @@ const writePngFromSvg = async (svg: string, outputPath: string): Promise<void> =
   await sharp(Buffer.from(svg)).png({
     compressionLevel: 9,
     effort: 10,
-    palette: true,
-    quality: 78,
+    palette: false,
   }).toFile(outputPath);
 };
 
