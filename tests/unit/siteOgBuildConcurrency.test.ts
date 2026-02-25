@@ -3,7 +3,7 @@ import { resolveDenoRenderConcurrency } from '../../scripts/build-site-og-static
 
 describe('site og build deno concurrency', () => {
   it('uses default when no env override is set', () => {
-    expect(resolveDenoRenderConcurrency({} as NodeJS.ProcessEnv)).toBe(4);
+    expect(resolveDenoRenderConcurrency({} as NodeJS.ProcessEnv)).toBe(8);
   });
 
   it('clamps override into safe range', () => {
@@ -13,6 +13,6 @@ describe('site og build deno concurrency', () => {
   });
 
   it('falls back to default on invalid override', () => {
-    expect(resolveDenoRenderConcurrency({ SITE_OG_STATIC_DENO_CONCURRENCY: 'wat' } as NodeJS.ProcessEnv)).toBe(4);
+    expect(resolveDenoRenderConcurrency({ SITE_OG_STATIC_DENO_CONCURRENCY: 'wat' } as NodeJS.ProcessEnv)).toBe(8);
   });
 });

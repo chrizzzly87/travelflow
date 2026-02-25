@@ -12,4 +12,4 @@ summary: "Production builds now use a more resilient static OG rendering pass to
 
 ## Changes
 - [x] [Fixed] 🛠️ Social preview generation is now more resilient during production deploys, reducing the chance of failed releases caused by transient rendering errors.
-- [ ] [Internal] 🧱 Added retry + safe fallback rendering in the static OG Deno batch pass and lowered default renderer concurrency for steadier CI performance.
+- [ ] [Internal] 🧱 Added retry + safe fallback rendering in the static OG Deno batch pass and tuned default renderer concurrency for faster, steadier CI execution.

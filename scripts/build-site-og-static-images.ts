@@ -117,7 +117,7 @@ export const resolveDenoRenderConcurrency = (
   if (Number.isFinite(raw)) {
     return Math.max(1, Math.min(8, raw));
   }
-  return 4;
+  return 8;
 };
 
 const buildQueryFromMetadata = (metadata: SiteOgMetadata): Record<string, string> => {
