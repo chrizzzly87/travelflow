@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import sharp from "sharp";
+import os from "node:os";
+import { spawnSync } from "node:child_process";
 import type { SiteOgStaticManifest } from "../netlify/edge-lib/site-og-static-manifest.ts";
 import { isSiteOgStaticManifest } from "../netlify/edge-lib/site-og-static-manifest.ts";
+import type { SiteOgMetadata } from "../netlify/edge-lib/site-og-metadata.ts";
 import {
   SITE_OG_BUILD_ORIGIN,
   SITE_OG_STATIC_DIR_RELATIVE,
@@ -15,7 +17,6 @@ import {
   collectSiteOgPathnames,
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
-  renderSiteOgStaticSvg,
   resolveSiteOgStaticPathFilterOptions,
   type SiteOgStaticPathFilterOptions,
 } from "./site-og-static-shared.ts";
@@ -24,6 +25,7 @@ import { resolveSiteOgStaticBuildMode } from "./site-og-build-mode.ts";
 const ROOT_DIR = process.cwd();
 const OUTPUT_DIR = path.join(ROOT_DIR, SITE_OG_STATIC_DIR_RELATIVE);
 const MANIFEST_PATH = path.join(OUTPUT_DIR, SITE_OG_STATIC_MANIFEST_FILE_NAME);
+const DENO_RENDER_SCRIPT_PATH = path.join(ROOT_DIR, "scripts", "render-site-og-static-batch.deno.ts");
 
 const CLI_FLAG_NAMES = new Set([
   "--locales",
@@ -49,14 +51,17 @@ const sortRecord = <T>(entries: Record<string, T>): Record<string, T> =>
     Object.entries(entries).sort(([left], [right]) => left.localeCompare(right)),
   );
 
-const writePngFromSvg = async (svg: string, outputPath: string): Promise<void> => {
-  await sharp(Buffer.from(svg)).png({
-    compressionLevel: 9,
-    effort: 10,
-    palette: true,
-    quality: 78,
-  }).toFile(outputPath);
-};
+interface SiteOgStaticRenderTask {
+  routeKey: string;
+  outputPath: string;
+  query: Record<string, string>;
+}
+
+interface DenoRenderBatchPayload {
+  tasks: SiteOgStaticRenderTask[];
+  concurrency: number;
+  logEvery: number;
+}
 
 const parseFlagValues = (argv: string[], flagName: string): string[] =>
   argv
@@ -113,6 +118,72 @@ const entryPathToFileName = (entryPath: string): string | null => {
   return entryPath.slice(`${SITE_OG_STATIC_PUBLIC_PREFIX}/`.length);
 };
 
+export const resolveDenoRenderConcurrency = (
+  env: NodeJS.ProcessEnv = process.env,
+): number => {
+  const raw = Number.parseInt(env.SITE_OG_STATIC_DENO_CONCURRENCY || "", 10);
+  if (Number.isFinite(raw)) {
+    return Math.max(1, Math.min(8, raw));
+  }
+  return 8;
+};
+
+const buildQueryFromMetadata = (metadata: SiteOgMetadata): Record<string, string> => {
+  const query: Record<string, string> = {};
+
+  const entries = Object.entries(metadata.ogImageParams as Record<string, string | undefined>);
+  for (const [key, rawValue] of entries) {
+    const value = (rawValue || "").trim();
+    if (!value) continue;
+    query[key] = value;
+  }
+
+  return query;
+};
+
+const renderMissingImagesWithDeno = (tasks: SiteOgStaticRenderTask[]): void => {
+  if (tasks.length === 0) return;
+  if (!existsSync(DENO_RENDER_SCRIPT_PATH)) {
+    throw new Error("Deno batch renderer script missing: scripts/render-site-og-static-batch.deno.ts");
+  }
+
+  const tempDirectory = mkdtempSync(path.join(os.tmpdir(), "site-og-static-deno-"));
+  const payloadPath = path.join(tempDirectory, "tasks.json");
+
+  const payload: DenoRenderBatchPayload = {
+    tasks,
+    concurrency: resolveDenoRenderConcurrency(),
+    logEvery: 100,
+  };
+
+  writeFileSync(payloadPath, JSON.stringify(payload), "utf8");
+
+  const runResult = spawnSync(
+    "deno",
+    [
+      "run",
+      "--allow-net",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      DENO_RENDER_SCRIPT_PATH,
+      payloadPath,
+    ],
+    {
+      stdio: "inherit",
+    },
+  );
+
+  rmSync(tempDirectory, { recursive: true, force: true });
+
+  if (runResult.error) {
+    throw new Error(`Failed to execute deno renderer: ${runResult.error.message}`);
+  }
+  if (runResult.status !== 0) {
+    throw new Error(`Deno renderer exited with code ${runResult.status ?? "unknown"}`);
+  }
+};
+
 const main = async (): Promise<void> => {
   const buildMode = resolveSiteOgStaticBuildMode();
   if (buildMode === "skip") {
@@ -139,12 +210,13 @@ const main = async (): Promise<void> => {
   }
 
   process.stdout.write(
-    `[site-og-static] start targets=${targets.length} mode=${isFilteredBuild ? "filtered" : "full"}\n`,
+    `[site-og-static] start targets=${targets.length} scope=${resolvedFilters.targetScope} mode=${isFilteredBuild ? "filtered" : "default"}\n`,
   );
 
   const existingManifest = readExistingManifest();
   const selectedManifestEntries: SiteOgStaticManifest["entries"] = {};
   const expectedFiles = new Set<string>([SITE_OG_STATIC_MANIFEST_FILE_NAME]);
+  const missingRenderTasks: SiteOgStaticRenderTask[] = [];
 
   let written = 0;
   let reused = 0;
@@ -162,9 +234,11 @@ const main = async (): Promise<void> => {
     if (existsSync(outputPath)) {
       reused += 1;
     } else {
-      const svg = renderSiteOgStaticSvg(payload);
-      await writePngFromSvg(svg, outputPath);
-      written += 1;
+      missingRenderTasks.push({
+        routeKey: target.routeKey,
+        outputPath,
+        query: buildQueryFromMetadata(target.metadata),
+      });
     }
 
     selectedManifestEntries[target.routeKey] = {
@@ -180,6 +254,15 @@ const main = async (): Promise<void> => {
         `[site-og-static] progress processed=${processed}/${targets.length} wrote=${written} reused=${reused}\n`,
       );
     }
+  }
+
+  if (missingRenderTasks.length > 0) {
+    process.stdout.write(`[site-og-static] rendering ${missingRenderTasks.length} missing image(s) with deno batch renderer\n`);
+    renderMissingImagesWithDeno(missingRenderTasks);
+    written += missingRenderTasks.length;
+    process.stdout.write(
+      `[site-og-static] progress processed=${processed}/${targets.length} wrote=${written} reused=${reused}\n`,
+    );
   }
 
   const mergedEntries = isFilteredBuild
@@ -218,8 +301,8 @@ const main = async (): Promise<void> => {
   writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
   const filterSummary = isFilteredBuild
-    ? ` mode=filtered locales=${resolvedFilters.locales.join(",") || "-"} includePaths=${resolvedFilters.includePaths.length} includePrefixes=${resolvedFilters.includePrefixes.length} excludePaths=${resolvedFilters.excludePaths.length} excludePrefixes=${resolvedFilters.excludePrefixes.length}`
-    : " mode=full";
+    ? ` mode=filtered scope=${resolvedFilters.targetScope} locales=${resolvedFilters.locales.join(",") || "-"} includePaths=${resolvedFilters.includePaths.length} includePrefixes=${resolvedFilters.includePrefixes.length} excludePaths=${resolvedFilters.excludePaths.length} excludePrefixes=${resolvedFilters.excludePrefixes.length}`
+    : ` mode=default scope=${resolvedFilters.targetScope}`;
 
   process.stdout.write(
     `[site-og-static] targets=${targets.length} wrote=${written} reused=${reused} removed=${removed}${filterSummary} manifest=${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}\n`,

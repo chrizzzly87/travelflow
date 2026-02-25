@@ -9,6 +9,7 @@ import {
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
   resolveSiteOgStaticPathFilterOptions,
+  resolveSiteOgStaticTargetScope,
 } from '../../scripts/site-og-static-shared.ts';
 
 const ORIGIN = 'https://travelflowapp.netlify.app';
@@ -96,12 +97,27 @@ describe('site OG static generation helpers', () => {
     });
 
     expect(pathnames).toContain('/');
+    expect(pathnames).toContain('/de/blog');
+    expect(pathnames).toContain('/de/inspirations');
+    expect(pathnames).toContain('/example/thailand-islands');
+    expect(pathnames).not.toContain('/de/features');
+    expect(pathnames).not.toContain('/blog/how-to-plan-multi-city-trip');
+    expect(pathnames).not.toContain('/inspirations/country/Japan');
+  });
+
+  it('supports full-scope pathname enumeration', () => {
+    const pathnames = enumerateSiteOgPathnames({
+      blogSlugs: ['how-to-plan-multi-city-trip'],
+      countryNames: ['Japan'],
+      exampleTemplateIds: ['thailand-islands'],
+      scope: 'full',
+    });
+
     expect(pathnames).toContain('/de/features');
     expect(pathnames).toContain('/fa/features');
     expect(pathnames).toContain('/ur/features');
     expect(pathnames).toContain('/blog/how-to-plan-multi-city-trip');
     expect(pathnames).toContain('/inspirations/country/Japan');
-    expect(pathnames).toContain('/example/thailand-islands');
   });
 
   it('builds deterministic payload hashes and unique target route keys', () => {
@@ -126,15 +142,16 @@ describe('site OG static generation helpers', () => {
   });
 
   it('filters static targets by locales and path include/exclude options', () => {
-    const allPathnames = collectSiteOgPathnames();
+    const allPathnames = collectSiteOgPathnames({ targetScope: 'full' });
     expect(allPathnames).toContain('/de/features');
     expect(allPathnames).toContain('/fr/features');
 
-    const germanOnly = collectSiteOgPathnames({ locales: ['de'] });
+    const germanOnly = collectSiteOgPathnames({ targetScope: 'full', locales: ['de'] });
     expect(germanOnly.length).toBeGreaterThan(0);
     expect(germanOnly.every((pathname) => pathname.startsWith('/de') || pathname === '/de')).toBe(true);
 
     const filteredBlog = collectSiteOgPathnames({
+      targetScope: 'full',
       includePrefixes: ['/blog', '/de/blog'],
       excludePaths: ['/blog/how-to-plan-multi-city-trip'],
     });
@@ -171,6 +188,12 @@ describe('site OG static generation helpers', () => {
     expect(resolved.includePrefixes).toEqual(['/blog', '/inspirations']);
     expect(resolved.excludePaths).toEqual(['/example/test']);
     expect(resolved.excludePrefixes).toEqual(['/example']);
+    expect(resolved.targetScope).toBe('priority');
     expect(resolved.hasFilters).toBe(true);
+  });
+
+  it('resolves static target scope from env override', () => {
+    expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'full' } as NodeJS.ProcessEnv)).toBe('full');
+    expect(resolveSiteOgStaticTargetScope({}, { SITE_OG_STATIC_TARGET_SCOPE: 'invalid' } as NodeJS.ProcessEnv)).toBe('priority');
   });
 });

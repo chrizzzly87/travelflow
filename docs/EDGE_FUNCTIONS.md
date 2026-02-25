@@ -8,7 +8,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | Function file | Route(s) | Purpose | Type |
 |---|---|---|---|
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
-| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
+| `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
 | `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
@@ -75,8 +75,16 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 
 - Build-time generator: `pnpm og:site:build`
   - Enumerates static OG targets from the shared metadata resolver.
+  - Default scope is intentionally small for production speed:
+    - localized home (`/` + locale-prefixed home)
+    - localized blog overview (`/blog`)
+    - localized inspirations overview (`/inspirations`)
+    - example templates (`/example/*`)
+  - Example routes still resolve dynamic `/api/og/trip` at runtime to preserve trip-card layout parity.
+  - All non-default pages fall back to dynamic OG image URLs (`/api/og/site` or `/api/og/trip`) with edge caching.
   - Writes hashed PNG assets to `public/images/og/site/generated/`.
   - Writes `public/images/og/site/generated/manifest.json`.
+  - Full-scope override: run `pnpm og:site:build:full` to generate every supported static path (marketing/legal/create-trip/blog detail/inspirations detail).
   - Supports optional route filters:
     - `--locales=en,de`
     - `--include-paths=/,/blog`
@@ -97,17 +105,18 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Build mode policy:
   - GitHub pull-request CI runs auto-skip static OG build/validation to keep PR checks fast.
   - Netlify non-production contexts (`deploy-preview`, `branch-deploy`, `dev`) auto-skip static OG build/validation to reduce preview deploy time.
-  - Netlify production context keeps full static OG build + validation enabled.
+  - Netlify production context keeps default static OG build + validation enabled.
   - Manual override: set `SITE_OG_STATIC_BUILD_MODE=full` to force generation, or `SITE_OG_STATIC_BUILD_MODE=skip` to bypass locally.
 - Generated assets are build artifacts and are intentionally not committed.
 - Filtered runs update only selected route keys and preserve existing manifest entries for all other routes.
 
 ### When adding locales or pages
 
-- If you add a new locale, static route, blog route, country inspiration route, or example template route that should have static OG coverage:
-  1. Update the shared resolver inputs (`netlify/edge-lib/site-og-metadata.ts` and related data sources).
-  2. Run `pnpm og:site:build`.
-  3. Run `pnpm og:site:validate`.
+- If you add a new locale or example template route, default static OG coverage updates automatically on the next build.
+- If you need pre-generated coverage beyond the default scope (for example blog detail or inspiration country routes):
+  1. Run `pnpm og:site:build:full`.
+  2. Run `pnpm og:site:validate:full`.
+- If you want a route in the default fast scope, update the static scope list in `netlify/edge-lib/site-og-metadata.ts`.
 - Use `pnpm og:site:build` + `pnpm og:site:validate` for fast OG-only iteration.
 - Use full `pnpm build` when you need complete release parity checks (i18n, storage registry, edge validation, sitemap, app bundle).
 - In Netlify CI, the site-og build-cache plugin restores previous generated assets before `og:site:build`, so unchanged routes are typically reused and only changed/new routes are rendered.
@@ -118,7 +127,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Capabilities:
   - Same-origin URL inspector for rendered `<head>` metadata (`canonical`, `og:*`, `twitter:*`) and `x-travelflow-og-source`.
   - OG image source classification (`static-generated`, `dynamic-site`, `dynamic-trip`).
-  - Command builder for filtered `pnpm og:site:build -- ...` runs plus validation command output.
+  - Command builder for filtered `pnpm og:site:build -- ...` runs, plus default scope and full-scope override command output.
 - Use this page for operational checks before sharing social links, then run full release-safe build validation before deploys.
 
 ## Required environment variables

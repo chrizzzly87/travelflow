@@ -89,9 +89,42 @@ interface BenchmarkRunRow {
   error_message: string | null;
   satisfaction_rating: "good" | "medium" | "bad" | null;
   satisfaction_updated_at: string | null;
+  run_comment: string | null;
+  run_comment_updated_at: string | null;
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
+}
+
+interface BenchmarkRunCommentRow {
+  id: string;
+  provider: string;
+  model: string;
+  run_comment: string | null;
+  run_comment_updated_at: string | null;
+  created_at: string;
+  status: "queued" | "running" | "completed" | "failed" | null;
+  satisfaction_rating: "good" | "medium" | "bad" | null;
+}
+
+interface BenchmarkRunCommentTelemetryEntry {
+  runId: string;
+  provider: string;
+  model: string;
+  comment: string;
+  status: "queued" | "running" | "completed" | "failed" | null;
+  satisfactionRating: "good" | "medium" | "bad" | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BenchmarkRunCommentTelemetryGroup {
+  provider: string;
+  model: string;
+  key: string;
+  total: number;
+  latestCommentAt: string;
+  comments: BenchmarkRunCommentTelemetryEntry[];
 }
 
 interface BenchmarkPreferencesRow {
@@ -139,6 +172,8 @@ const BENCHMARK_PROVIDER_TIMEOUT_MS = resolveTimeoutMs(
 const BENCHMARK_TIMEOUT_60S_MAX_OUTPUT_TOKENS = 3_072;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SATISFACTION_RATINGS = new Set(["good", "medium", "bad"]);
+const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
+const TELEMETRY_COMMENT_QUERY_LIMIT = 2000;
 const ALLOWED_MODEL_TRANSPORT_MODE_SET = new Set<string>(MODEL_TRANSPORT_MODE_VALUES);
 const TELEMETRY_SOURCE_VALUES = new Set(["all", "create_trip", "benchmark"]);
 const TELEMETRY_WINDOW_MIN_HOURS = 1;
@@ -426,6 +461,44 @@ const normalizeSatisfactionRating = (value: unknown): "good" | "medium" | "bad" 
   const normalized = value.trim().toLowerCase();
   if (!SATISFACTION_RATINGS.has(normalized)) return null;
   return normalized as "good" | "medium" | "bad";
+};
+
+const normalizeRunComment = (
+  value: unknown,
+): { ok: true; comment: string | null } | { ok: false; error: string } => {
+  if (value === null) {
+    return {
+      ok: true,
+      comment: null,
+    };
+  }
+
+  if (typeof value !== "string") {
+    return {
+      ok: false,
+      error: "Invalid comment. Expected string or null.",
+    };
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return {
+      ok: true,
+      comment: null,
+    };
+  }
+
+  if (trimmed.length > BENCHMARK_RUN_COMMENT_MAX_LENGTH) {
+    return {
+      ok: false,
+      error: `Comment too long. Max ${BENCHMARK_RUN_COMMENT_MAX_LENGTH} characters.`,
+    };
+  }
+
+  return {
+    ok: true,
+    comment: trimmed,
+  };
 };
 
 const formatErrorDetailsForMessage = (
@@ -1872,6 +1945,119 @@ const toTelemetryRows = (value: unknown): AiTelemetryRow[] => {
     .filter((row): row is AiTelemetryRow => Boolean(row));
 };
 
+const toBenchmarkRunCommentRows = (value: unknown): BenchmarkRunCommentRow[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((row) => {
+      if (!row || typeof row !== "object") return null;
+      const typed = row as Record<string, unknown>;
+      const id = typeof typed.id === "string" ? typed.id : "";
+      const provider = typeof typed.provider === "string" ? typed.provider.trim().toLowerCase() : "";
+      const model = typeof typed.model === "string" ? typed.model.trim() : "";
+      const comment = typeof typed.run_comment === "string" ? typed.run_comment.trim() : "";
+      const createdAt = typeof typed.created_at === "string" ? typed.created_at : "";
+      const commentUpdatedAt = typeof typed.run_comment_updated_at === "string" ? typed.run_comment_updated_at : null;
+      const status = typed.status === "queued" || typed.status === "running" || typed.status === "completed" || typed.status === "failed"
+        ? typed.status
+        : null;
+      const rating = normalizeSatisfactionRating(typed.satisfaction_rating);
+
+      if (!id || !provider || !model || !createdAt || !comment) return null;
+
+      return {
+        id,
+        provider,
+        model,
+        run_comment: comment,
+        run_comment_updated_at: commentUpdatedAt,
+        created_at: createdAt,
+        status,
+        satisfaction_rating: rating,
+      } satisfies BenchmarkRunCommentRow;
+    })
+    .filter((row): row is BenchmarkRunCommentRow => Boolean(row));
+};
+
+const toBenchmarkRunCommentTelemetryEntries = (rows: BenchmarkRunCommentRow[]): BenchmarkRunCommentTelemetryEntry[] => {
+  return rows
+    .map((row) => {
+      const comment = typeof row.run_comment === "string" ? row.run_comment.trim() : "";
+      if (!comment) return null;
+      const updatedAt = row.run_comment_updated_at || row.created_at;
+      if (!updatedAt) return null;
+      return {
+        runId: row.id,
+        provider: row.provider,
+        model: row.model,
+        comment,
+        status: row.status,
+        satisfactionRating: row.satisfaction_rating,
+        createdAt: row.created_at,
+        updatedAt,
+      } satisfies BenchmarkRunCommentTelemetryEntry;
+    })
+    .filter((entry): entry is BenchmarkRunCommentTelemetryEntry => Boolean(entry))
+    .sort((left, right) => {
+      const rightTs = Date.parse(right.updatedAt);
+      const leftTs = Date.parse(left.updatedAt);
+      const safeRight = Number.isFinite(rightTs) ? rightTs : 0;
+      const safeLeft = Number.isFinite(leftTs) ? leftTs : 0;
+      return safeRight - safeLeft;
+    });
+};
+
+const groupBenchmarkRunComments = (
+  entries: BenchmarkRunCommentTelemetryEntry[],
+): BenchmarkRunCommentTelemetryGroup[] => {
+  const grouped = new Map<string, BenchmarkRunCommentTelemetryGroup>();
+
+  entries.forEach((entry) => {
+    const key = `${entry.provider}:${entry.model}`;
+    if (!grouped.has(key)) {
+      grouped.set(key, {
+        provider: entry.provider,
+        model: entry.model,
+        key,
+        total: 0,
+        latestCommentAt: entry.updatedAt,
+        comments: [],
+      });
+    }
+
+    const group = grouped.get(key);
+    if (!group) return;
+    group.total += 1;
+    group.comments.push(entry);
+
+    const latestTs = Date.parse(group.latestCommentAt);
+    const nextTs = Date.parse(entry.updatedAt);
+    if (!Number.isFinite(latestTs) || (Number.isFinite(nextTs) && nextTs > latestTs)) {
+      group.latestCommentAt = entry.updatedAt;
+    }
+  });
+
+  return Array.from(grouped.values())
+    .map((group) => ({
+      ...group,
+      comments: [...group.comments].sort((left, right) => {
+        const rightTs = Date.parse(right.updatedAt);
+        const leftTs = Date.parse(left.updatedAt);
+        const safeRight = Number.isFinite(rightTs) ? rightTs : 0;
+        const safeLeft = Number.isFinite(leftTs) ? leftTs : 0;
+        return safeRight - safeLeft;
+      }),
+    }))
+    .sort((left, right) => {
+      if (right.total !== left.total) return right.total - left.total;
+      const rightTs = Date.parse(right.latestCommentAt);
+      const leftTs = Date.parse(left.latestCommentAt);
+      const safeRight = Number.isFinite(rightTs) ? rightTs : 0;
+      const safeLeft = Number.isFinite(leftTs) ? leftTs : 0;
+      if (safeRight !== safeLeft) return safeRight - safeLeft;
+      return left.key.localeCompare(right.key);
+    });
+};
+
 const handleTelemetry = async (
   request: Request,
   _config: { url: string; anonKey: string },
@@ -1963,6 +2149,40 @@ const handleTelemetry = async (
     // Ignore optionally.
   }
 
+  let commentGroups: BenchmarkRunCommentTelemetryGroup[] = [];
+  let commentTotal = 0;
+  if (source !== "create_trip") {
+    try {
+      const commentParams = new URLSearchParams();
+      commentParams.set(
+        "select",
+        "id,provider,model,run_comment,run_comment_updated_at,created_at,status,satisfaction_rating",
+      );
+      commentParams.set("run_comment", "not.is.null");
+      commentParams.set("created_at", `gte.${sinceIso}`);
+      commentParams.set("order", "run_comment_updated_at.desc.nullslast,created_at.desc");
+      commentParams.set("limit", String(TELEMETRY_COMMENT_QUERY_LIMIT));
+      if (providerFilter) {
+        commentParams.set("provider", `eq.${providerFilter}`);
+      }
+
+      const commentResponse = await supabaseServiceFetch(
+        serviceConfig,
+        `/rest/v1/ai_benchmark_runs?${commentParams.toString()}`,
+        { method: "GET" },
+      );
+
+      if (commentResponse.ok) {
+        const commentRows = toBenchmarkRunCommentRows(await safeJsonParse(commentResponse));
+        const entries = toBenchmarkRunCommentTelemetryEntries(commentRows);
+        commentTotal = entries.length;
+        commentGroups = groupBenchmarkRunComments(entries);
+      }
+    } catch {
+      // Ignore optionally.
+    }
+  }
+
   return json(200, {
     ok: true,
     filters: {
@@ -1979,6 +2199,10 @@ const handleTelemetry = async (
       fastest: topTelemetryModelsBySpeed(modelSummary, rankingLimit),
       cheapest: topTelemetryModelsByCost(modelSummary, rankingLimit),
       bestValue: topTelemetryModelsByEfficiency(modelSummary, rankingLimit),
+    },
+    comments: {
+      total: commentTotal,
+      groups: commentGroups,
     },
     recent: rows.slice(0, 120),
     availableProviders: providerOptions,
@@ -2368,6 +2592,10 @@ const handleExport = async (
       finishedAt: run.finished_at,
       latencyMs: run.latency_ms,
       schemaValid: run.schema_valid,
+      satisfactionRating: run.satisfaction_rating,
+      satisfactionUpdatedAt: run.satisfaction_updated_at,
+      runComment: run.run_comment,
+      runCommentUpdatedAt: run.run_comment_updated_at,
       validationErrors: run.validation_errors,
       usage: run.usage,
       costUsd: run.cost_usd,
@@ -2396,6 +2624,10 @@ const handleExport = async (
           finishedAt: run.finished_at,
           latencyMs: run.latency_ms,
           schemaValid: run.schema_valid,
+          satisfactionRating: run.satisfaction_rating,
+          satisfactionUpdatedAt: run.satisfaction_updated_at,
+          runComment: run.run_comment,
+          runCommentUpdatedAt: run.run_comment_updated_at,
           validationChecks: run.validation_checks,
           validationErrors: run.validation_errors,
           usage: run.usage,
@@ -2596,19 +2828,35 @@ const handleRate = async (
   }
 
   const hasRatingField = Object.prototype.hasOwnProperty.call(body, "rating");
-  if (!hasRatingField) {
+  const hasCommentField = Object.prototype.hasOwnProperty.call(body, "comment");
+  if (!hasRatingField && !hasCommentField) {
     return json(400, {
-      error: "Missing required field: rating",
+      error: "Missing required field: rating or comment",
       code: "BENCHMARK_RATE_INVALID_RATING",
     });
   }
 
-  const rating = normalizeSatisfactionRating(body.rating);
-  if (body.rating !== null && rating === null) {
-    return json(400, {
-      error: "Invalid rating. Allowed values: good, medium, bad, or null.",
-      code: "BENCHMARK_RATE_INVALID_RATING",
-    });
+  let rating: "good" | "medium" | "bad" | null = null;
+  if (hasRatingField) {
+    rating = normalizeSatisfactionRating(body.rating);
+    if (body.rating !== null && rating === null) {
+      return json(400, {
+        error: "Invalid rating. Allowed values: good, medium, bad, or null.",
+        code: "BENCHMARK_RATE_INVALID_RATING",
+      });
+    }
+  }
+
+  let comment: string | null = null;
+  if (hasCommentField) {
+    const normalizedComment = normalizeRunComment(body.comment);
+    if (!normalizedComment.ok) {
+      return json(400, {
+        error: normalizedComment.error,
+        code: "BENCHMARK_RATE_INVALID_COMMENT",
+      });
+    }
+    comment = normalizedComment.comment;
   }
 
   const existingRun = await fetchRunById(config, authToken, runId);
@@ -2620,10 +2868,17 @@ const handleRate = async (
   }
 
   const updatedAt = new Date().toISOString();
-  const updated = await updateRunRow(config, authToken, runId, {
-    satisfaction_rating: rating,
-    satisfaction_updated_at: rating ? updatedAt : null,
-  });
+  const patch: Record<string, unknown> = {};
+  if (hasRatingField) {
+    patch.satisfaction_rating = rating;
+    patch.satisfaction_updated_at = rating ? updatedAt : null;
+  }
+  if (hasCommentField) {
+    patch.run_comment = comment;
+    patch.run_comment_updated_at = comment ? updatedAt : null;
+  }
+
+  const updated = await updateRunRow(config, authToken, runId, patch);
 
   if (!updated) {
     return json(502, {
@@ -2696,8 +2951,11 @@ export const __benchmarkValidationInternals = {
   collectCountryInfoEntries,
   collectCountryInfoLanguages,
   pickCountryInfoExchangeRate,
+  normalizeRunComment,
   validateModelData,
   resolveRunLatencyMs,
+  toBenchmarkRunCommentTelemetryEntries,
+  groupBenchmarkRunComments,
 };
 
 const handleCancel = async (

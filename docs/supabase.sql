@@ -130,6 +130,8 @@ create table if not exists public.ai_benchmark_runs (
   error_message text,
   satisfaction_rating text check (satisfaction_rating in ('good', 'medium', 'bad')),
   satisfaction_updated_at timestamptz,
+  run_comment text,
+  run_comment_updated_at timestamptz,
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now()
@@ -175,6 +177,8 @@ alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
+alter table public.ai_benchmark_runs add column if not exists run_comment text;
+alter table public.ai_benchmark_runs add column if not exists run_comment_updated_at timestamptz;
 
 do $$
 begin

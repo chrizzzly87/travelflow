@@ -201,3 +201,44 @@ export const buildFailureCodeBarListData = (
     .sort((left, right) => right.value - left.value || left.name.localeCompare(right.name))
     .slice(0, limit);
 };
+
+const DATE_TOKEN_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const toDateToken = (value: Date): string => value.toISOString().slice(0, 10);
+
+const clampCurrency = (value: number): number => Number(value.toFixed(6));
+
+export const buildCurrentMonthDailyCostHistory = (
+  rows: Array<{ date: string; cost: number }>,
+  referenceDate = new Date(),
+): Array<{ date: string; cost: number }> => {
+  const year = referenceDate.getUTCFullYear();
+  const month = referenceDate.getUTCMonth();
+
+  const start = new Date(Date.UTC(year, month, 1));
+  const end = new Date(Date.UTC(year, month, referenceDate.getUTCDate()));
+
+  const costByDay = new Map<string, number>();
+  rows.forEach((row) => {
+    if (!DATE_TOKEN_REGEX.test(row.date)) return;
+    if (!Number.isFinite(row.cost)) return;
+    const dayTs = Date.parse(`${row.date}T00:00:00Z`);
+    if (!Number.isFinite(dayTs)) return;
+    const day = new Date(dayTs);
+    if (day.getUTCFullYear() !== year || day.getUTCMonth() !== month) return;
+
+    const current = costByDay.get(row.date) || 0;
+    costByDay.set(row.date, current + row.cost);
+  });
+
+  const output: Array<{ date: string; cost: number }> = [];
+  for (let cursor = new Date(start); cursor <= end; cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)) {
+    const token = toDateToken(cursor);
+    output.push({
+      date: token,
+      cost: clampCurrency(costByDay.get(token) || 0),
+    });
+  }
+
+  return output;
+};

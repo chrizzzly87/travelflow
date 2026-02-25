@@ -38,6 +38,7 @@ export interface SiteOgBuildCommandSet {
   buildCommand: string;
   validateCommand: string;
   releaseSafeCommand: string;
+  fullScopeCommand: string;
   hasFilters: boolean;
 }
 
@@ -247,6 +248,7 @@ export const buildSiteOgBuildCommands = (filters: SiteOgBuildCommandFilters): Si
       : "pnpm og:site:build",
     validateCommand: "pnpm og:site:validate",
     releaseSafeCommand: "pnpm og:site:build && pnpm og:site:validate",
+    fullScopeCommand: "pnpm og:site:build:full && pnpm og:site:validate:full",
     hasFilters,
   };
 };

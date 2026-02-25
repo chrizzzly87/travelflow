@@ -98,3 +98,7 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🧰 Added quick `Activate all` / `Deactivate all` target actions in `/admin/ai-benchmark` so benchmark model pools can be toggled in one click.
 - [ ] [Internal] 🧯 Fixed edge bundling regression by switching benchmark model-catalog provider metadata import to explicit `.ts` extension for Deno-compatible module resolution.
 - [ ] [Internal] 🛠️ Updated Qwen benchmark/runtime model IDs to valid OpenRouter slugs (`qwen3.5-plus-02-15`, `qwen3.5-397b-a17b`) and added legacy-ID aliasing to keep older saved target payloads working.
+- [ ] [Internal] 🔧 Switched OpenRouter benchmark `response_format` to provider-compatible text mode so Perplexity and Qwen routes no longer fail on unsupported `json_object` schema validation.
+- [ ] [Internal] 🏷️ Added provider-logo labels in telemetry model bar charts plus provider-logo custom tooltips for Tremor provider charts (`Provider breakdown`, `Provider success rate`, `Provider cost per success`) where custom rendering is supported.
+- [ ] [Internal] 📅 Expanded `Total cost per day (Current Month)` to render full day-by-day month history (including zero-cost days) instead of only returned aggregate days.
+- [ ] [Internal] 📝 Added persisted per-run benchmark comments (save/edit/export), plus telemetry comment rollups grouped by provider/model for qualitative model evaluation.

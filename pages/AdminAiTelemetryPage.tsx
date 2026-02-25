@@ -4,6 +4,7 @@ import {
     AreaChart,
     BarChart,
     BarList,
+    type CustomTooltipProps,
     DonutChart,
     Metric,
     Subtitle,
@@ -19,6 +20,7 @@ import { dbGetAccessToken, ensureDbSession } from '../services/dbService';
 import { useAuth } from '../hooks/useAuth';
 import {
     buildFailureCodeBarListData,
+    buildCurrentMonthDailyCostHistory,
     buildProviderCostPerSuccessChartData,
     buildProviderDonutEntries,
     buildProviderModelDonutEntries,
@@ -87,6 +89,26 @@ interface AiTelemetryRecentRow {
     error_code: string | null;
 }
 
+interface AiTelemetryRunComment {
+    runId: string;
+    provider: string;
+    model: string;
+    comment: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | null;
+    satisfactionRating: 'good' | 'medium' | 'bad' | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface AiTelemetryRunCommentGroup {
+    provider: string;
+    model: string;
+    key: string;
+    total: number;
+    latestCommentAt: string;
+    comments: AiTelemetryRunComment[];
+}
+
 interface AiTelemetryApiResponse extends BenchmarkApiResponse {
     summary?: AiTelemetrySummary;
     series?: AiTelemetrySeriesPoint[];
@@ -97,6 +119,10 @@ interface AiTelemetryApiResponse extends BenchmarkApiResponse {
         fastest?: AiTelemetryModelPoint[];
         cheapest?: AiTelemetryModelPoint[];
         bestValue?: AiTelemetryModelPoint[];
+    };
+    comments?: {
+        total?: number;
+        groups?: AiTelemetryRunCommentGroup[];
     };
     recent?: AiTelemetryRecentRow[];
     availableProviders?: string[];
@@ -154,6 +180,49 @@ const formatTimestamp = (value?: string | null): string => {
     return new Date(parsed).toLocaleString();
 };
 
+const toNumericTooltipValue = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const createProviderChartTooltip = (
+    formatValue: (name: string, value: number) => string,
+): React.FC<CustomTooltipProps> => {
+    return ({ active, payload, label }) => {
+        if (!active || !Array.isArray(payload) || payload.length === 0) return null;
+
+        const firstPayload = payload[0]?.payload as Record<string, unknown> | undefined;
+        const providerId = typeof firstPayload?.providerId === 'string'
+            ? firstPayload.providerId
+            : (typeof label === 'string' ? label.trim().toLowerCase() : '');
+
+        if (!providerId) return null;
+
+        return (
+            <div className="rounded-md border border-slate-200 bg-white px-2 py-1.5 shadow-lg">
+                <p className="mb-1 text-[11px] font-semibold text-slate-900">
+                    <ProviderLabel provider={providerId} providerClassName="text-slate-900" logoSize={12} />
+                </p>
+                <div className="space-y-0.5">
+                    {payload.map((entry, index) => {
+                        const metricName = String(entry.name || 'Value');
+                        const metricValue = toNumericTooltipValue(entry.value);
+                        return (
+                            <p key={`${metricName}-${index}`} className="text-[11px] text-slate-700">
+                                {metricName}: {formatValue(metricName, metricValue)}
+                            </p>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+};
+
+const ProviderBreakdownTooltip = createProviderChartTooltip((_name, value) => formatCallCount(value));
+const ProviderSuccessRateTooltip = createProviderChartTooltip((_name, value) => formatPercent(value));
+const ProviderCostPerSuccessTooltip = createProviderChartTooltip((_name, value) => formatUsd(value));
+
 const ProviderLabel: React.FC<{
     provider: string;
     model?: string | null;
@@ -183,10 +252,16 @@ const ProviderLabel: React.FC<{
     );
 };
 
-const compactModelLabel = (provider: string, model: string): string => {
-    const combined = `${getAiProviderMetadata(provider).shortName} / ${model}`;
-    if (combined.length <= 44) return combined;
-    return `${combined.slice(0, 41)}...`;
+const compactModelLabelNode = (provider: string, model: string): React.ReactNode => {
+    const metadata = getAiProviderMetadata(provider);
+    return (
+        <span className="inline-flex min-w-0 max-w-[270px] items-center gap-1.5">
+            <AiProviderLogo provider={provider} model={model} size={12} />
+            <span className="truncate text-slate-700" title={`${metadata.shortName} / ${model}`}>
+                {metadata.shortName} / {model}
+            </span>
+        </span>
+    );
 };
 
 export const AdminAiTelemetryPage: React.FC = () => {
@@ -205,6 +280,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
     const [telemetryModels, setTelemetryModels] = useState<AiTelemetryModelPoint[]>([]);
     const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
+    const [telemetryCommentTotal, setTelemetryCommentTotal] = useState(0);
+    const [telemetryCommentGroups, setTelemetryCommentGroups] = useState<AiTelemetryRunCommentGroup[]>([]);
     const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
     const [fastestModels, setFastestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [cheapestModels, setCheapestModels] = useState<AiTelemetryModelPoint[]>([]);
@@ -281,6 +358,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
             setTelemetryModels(Array.isArray(payload.models) ? payload.models : []);
             setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
+            setTelemetryCommentTotal(Number(payload.comments?.total) || 0);
+            setTelemetryCommentGroups(Array.isArray(payload.comments?.groups) ? payload.comments?.groups : []);
             setFastestModels(Array.isArray(payload.rankings?.fastest) ? payload.rankings?.fastest : []);
             setCheapestModels(Array.isArray(payload.rankings?.cheapest) ? payload.rankings?.cheapest : []);
             setBestValueModels(Array.isArray(payload.rankings?.bestValue) ? payload.rankings?.bestValue : []);
@@ -303,6 +382,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders([]);
             setTelemetryModels([]);
             setTelemetryRecent([]);
+            setTelemetryCommentTotal(0);
+            setTelemetryCommentGroups([]);
             setFastestModels([]);
             setCheapestModels([]);
             setBestValueModels([]);
@@ -352,7 +433,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const fastestBarListData = useMemo(() => {
         return limitedFastest.map((model) => ({
             key: model.key,
-            name: compactModelLabel(model.provider, model.model),
+            name: compactModelLabelNode(model.provider, model.model),
             value: model.averageLatencyMs || 0,
         }));
     }, [limitedFastest]);
@@ -360,7 +441,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const cheapestBarListData = useMemo(() => {
         return limitedCheapest.map((model) => ({
             key: model.key,
-            name: compactModelLabel(model.provider, model.model),
+            name: compactModelLabelNode(model.provider, model.model),
             value: model.averageCostUsd || 0,
         }));
     }, [limitedCheapest]);
@@ -368,7 +449,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const bestValueBarListData = useMemo(() => {
         return limitedBestValue.map((model) => ({
             key: model.key,
-            name: compactModelLabel(model.provider, model.model),
+            name: compactModelLabelNode(model.provider, model.model),
             value: model.costPerSecondUsd || 0,
         }));
     }, [limitedBestValue]);
@@ -376,7 +457,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const successRateBarListData = useMemo(() => {
         return successRateLeaders.map((model) => ({
             key: model.key,
-            name: compactModelLabel(model.provider, model.model),
+            name: compactModelLabelNode(model.provider, model.model),
             value: model.successRate,
         }));
     }, [successRateLeaders]);
@@ -426,25 +507,31 @@ export const AdminAiTelemetryPage: React.FC = () => {
         }));
     }, [telemetrySeries]);
 
+    const monthlyCostHistorySeries = useMemo(
+        () => buildCurrentMonthDailyCostHistory(monthlyCostSeries),
+        [monthlyCostSeries],
+    );
+
     const monthlyCostChartData = useMemo(() => {
-        return monthlyCostSeries.map((point) => ({
+        return monthlyCostHistorySeries.map((point) => ({
             Date: new Date(point.date).toLocaleDateString([], {
                 month: 'short',
                 day: 'numeric',
             }),
             'Cost (USD)': point.cost,
         }));
-    }, [monthlyCostSeries]);
+    }, [monthlyCostHistorySeries]);
 
     const currentMonthCostTotal = useMemo(() => {
-        return monthlyCostSeries.reduce((sum, item) => sum + item.cost, 0);
-    }, [monthlyCostSeries]);
+        return monthlyCostHistorySeries.reduce((sum, item) => sum + item.cost, 0);
+    }, [monthlyCostHistorySeries]);
 
     const providerVolumeChartData = useMemo(() => {
         return [...telemetryProviders]
             .sort((left, right) => right.total - left.total)
             .slice(0, 10)
             .map((row) => ({
+                providerId: row.provider,
                 Provider: getAiProviderMetadata(row.provider).shortName,
                 Calls: row.total,
                 Failures: row.failed,
@@ -489,6 +576,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
     const providerSuccessRateChartData = useMemo(
         () => buildProviderSuccessRateChartData(telemetryProviders, 8).map((row) => ({
+            providerId: row.Provider,
             ...row,
             Provider: getAiProviderMetadata(row.Provider).shortName,
         })),
@@ -497,6 +585,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
 
     const providerCostPerSuccessChartData = useMemo(
         () => buildProviderCostPerSuccessChartData(telemetryProviders, 8).map((row) => ({
+            providerId: row.Provider,
             ...row,
             Provider: getAiProviderMetadata(row.Provider).shortName,
         })),
@@ -552,7 +641,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
             .slice(0, 12)
             .map((row) => ({
                 key: row.key,
-                name: compactModelLabel(row.provider, row.model),
+                name: compactModelLabelNode(row.provider, row.model),
                 value: row.total,
             }));
     }, [telemetryModels]);
@@ -911,6 +1000,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatCallCount(value)}
                                 showTooltip
                                 showLegend
+                                customTooltip={ProviderBreakdownTooltip}
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider breakdown in this filter set.</Text>
@@ -1064,6 +1154,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatPercent(value)}
                                 showTooltip
                                 showLegend
+                                customTooltip={ProviderSuccessRateTooltip}
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider success-rate data available.</Text>
@@ -1085,6 +1176,7 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                 valueFormatter={(value) => formatUsd(value)}
                                 showTooltip
                                 showLegend
+                                customTooltip={ProviderCostPerSuccessTooltip}
                             />
                         ) : (
                             <Text className="mt-3 text-xs text-slate-500">No provider cost-per-success data available.</Text>
@@ -1166,6 +1258,53 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    </AdminSurfaceCard>
+                </section>
+
+                <section>
+                    <AdminSurfaceCard>
+                        <Title>Benchmark run comments</Title>
+                        <Subtitle>
+                            Qualitative notes captured per run, grouped by provider/model in the current telemetry filter window.
+                        </Subtitle>
+                        <Text className="mt-1 text-xs text-slate-500">
+                            Total comments: {telemetryCommentTotal.toLocaleString()}
+                        </Text>
+
+                        <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            {telemetryCommentGroups.length === 0 && (
+                                <div className="rounded-md border border-slate-200 bg-white px-3 py-4 text-xs text-slate-500">
+                                    {telemetryLoading ? 'Loading comments...' : 'No benchmark run comments in this filter window.'}
+                                </div>
+                            )}
+
+                            {telemetryCommentGroups.map((group) => (
+                                <div key={group.key} className="rounded-md border border-slate-200 bg-white p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs font-semibold text-slate-900">
+                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-slate-900" modelClassName="text-slate-700" logoSize={12} />
+                                        </p>
+                                        <span className="text-[11px] text-slate-500">
+                                            {group.total} comment{group.total === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 text-[11px] text-slate-500">
+                                        Latest: {formatTimestamp(group.latestCommentAt)}
+                                    </p>
+
+                                    <div className="mt-2 space-y-2">
+                                        {group.comments.map((comment) => (
+                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
+                                                <p className="whitespace-pre-wrap text-slate-800">{comment.comment}</p>
+                                                <p className="mt-1 text-[10px] text-slate-500">
+                                                    Run {comment.runId.slice(0, 8)} • {comment.status || 'unknown'} • {comment.satisfactionRating || 'unrated'} • {formatTimestamp(comment.updatedAt)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </AdminSurfaceCard>
                 </section>
