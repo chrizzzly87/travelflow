@@ -135,8 +135,14 @@ describe('site OG static generation helpers', () => {
     const payload = buildSiteOgStaticRenderPayload(metadata);
     const hashA = computeSiteOgStaticPayloadHash(payload);
     const hashB = computeSiteOgStaticPayloadHash(payload);
+    const hashWithDifferentHost = computeSiteOgStaticPayloadHash({
+      ...payload,
+      displayHost: 'example.com',
+    });
 
     expect(hashA).toBe(hashB);
+    expect(payload.displayHost).toBe('travelflowapp.netlify.app');
+    expect(hashWithDifferentHost).not.toBe(hashA);
     expect(hashA).toMatch(/^[a-f0-9]{16}$/);
 
     const allTargets = collectSiteOgStaticTargets();

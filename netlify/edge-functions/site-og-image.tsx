@@ -205,6 +205,20 @@ const normalizePath = (value: string | null): string => {
   return `/${trimmed}`;
 };
 
+const normalizeDisplayHost = (value: string | null, fallbackHost: string): string => {
+  if (!value) return fallbackHost;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return fallbackHost;
+
+  try {
+    const parsed = new URL(`https://${trimmed}`);
+    if (parsed.host !== trimmed) return fallbackHost;
+    return parsed.host;
+  } catch {
+    return fallbackHost;
+  }
+};
+
 const BLOG_IMAGE_PATH_REGEX = /^\/images\/blog\/[a-z0-9-]+-og-vertical\.(png|jpe?g)$/;
 
 const normalizeBlogImagePath = (value: string | null): string | null => {
@@ -374,7 +388,8 @@ export default async (request: Request): Promise<Response> => {
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
     const pillText = sanitizeText(getSearchParam(url, "pill"), 30) || SITE_NAME;
     const pagePath = normalizePath(getSearchParam(url, "path"));
-    const displayUrl = truncateText(`${url.host}${pagePath}`, 62);
+    const displayHost = normalizeDisplayHost(getSearchParam(url, "display_host"), url.host);
+    const displayUrl = truncateText(`${displayHost}${pagePath}`, 62);
     const blogImagePath = normalizeBlogImagePath(getSearchParam(url, "blog_image"));
     const blogTint = normalizeOptionalHexColor(getSearchParam(url, "blog_tint"));
     const blogTintIntensity = normalizeTintIntensity(getSearchParam(url, "blog_tint_intensity"), 60);

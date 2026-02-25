@@ -9,6 +9,7 @@ import type { SiteOgMetadata } from "../netlify/edge-lib/site-og-metadata.ts";
 import {
   SITE_OG_BUILD_ORIGIN,
   SITE_OG_STATIC_DIR_RELATIVE,
+  SITE_OG_STATIC_DISPLAY_HOST,
   SITE_OG_STATIC_MANIFEST_FILE_NAME,
   SITE_OG_STATIC_PUBLIC_PREFIX,
   buildSiteOgManifestRevision,
@@ -137,6 +138,8 @@ const buildQueryFromMetadata = (metadata: SiteOgMetadata): Record<string, string
     if (!value) continue;
     query[key] = value;
   }
+
+  query.display_host = SITE_OG_STATIC_DISPLAY_HOST;
 
   return query;
 };

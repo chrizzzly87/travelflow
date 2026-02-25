@@ -84,6 +84,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
   - All non-default pages fall back to dynamic OG image URLs (`/api/og/site` or `/api/og/trip`) with edge caching.
   - Writes hashed PNG assets to `public/images/og/site/generated/`.
   - Writes `public/images/og/site/generated/manifest.json`.
+  - Injects `display_host` from `SITE_OG_BUILD_ORIGIN` so static OG footer URLs always show the canonical public domain (not local build hosts).
   - Full-scope override: run `pnpm og:site:build:full` to generate every supported static path (marketing/legal/create-trip/blog detail/inspirations detail).
   - Supports optional route filters:
     - `--locales=en,de`
