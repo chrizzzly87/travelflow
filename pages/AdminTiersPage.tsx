@@ -40,6 +40,85 @@ const buildInitialDrafts = (): DraftMap => ({
     tier_premium: JSON.stringify(PLAN_CATALOG.tier_premium.entitlements, null, 2),
 });
 
+const EntitlementCard: React.FC<{
+    draft: string;
+    onChange: (nextStr: string) => void;
+}> = ({ draft, onChange }) => {
+    let parsed: Record<string, any> = {};
+    let isError = false;
+    try {
+        parsed = JSON.parse(draft) || {};
+    } catch {
+        isError = true;
+    }
+
+    const updateField = (field: string, value: any) => {
+        const next = { ...parsed, [field]: value };
+        onChange(JSON.stringify(next, null, 2));
+    };
+
+    if (isError) {
+        return (
+            <textarea
+                value={draft}
+                onChange={(e) => onChange(e.target.value)}
+                className="mt-3 min-h-[220px] w-full rounded-lg border border-red-300 bg-red-50 text-red-900 px-3 py-2 font-mono text-xs"
+            />
+        );
+    }
+
+    const limits = [
+        { key: 'maxActiveTrips', label: 'Max Active Trips' },
+        { key: 'maxTotalTrips', label: 'Max Total Trips' },
+        { key: 'tripExpirationDays', label: 'Trip Expiration (Days)' },
+    ];
+    
+    const permissions = [
+        { key: 'canShare', label: 'Can Share Trips' },
+        { key: 'canCreateEditableShares', label: 'Can Appoint Co-Editors' },
+        { key: 'canViewProTrips', label: 'Can View Premium Content' },
+        { key: 'canCreateProTrips', label: 'Can Create Premium Trips' },
+    ];
+
+    return (
+        <div className="mt-3 flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="grid grid-cols-2 gap-3">
+                {limits.map((l) => (
+                    <div key={l.key} className="flex flex-col gap-1">
+                        <label className="text-[11px] font-semibold uppercase text-slate-500">{l.label}</label>
+                        <input
+                            type="number"
+                            value={parsed[l.key] === null ? '' : parsed[l.key] ?? ''}
+                            onChange={(e) => {
+                                const val = e.target.value === '' ? null : Number(e.target.value);
+                                updateField(l.key, val);
+                            }}
+                            placeholder="Unlimited"
+                            className="h-8 w-full rounded-md border border-slate-300 px-2 text-sm focus:border-accent-400 focus:ring-1 focus:ring-accent-400"
+                        />
+                    </div>
+                ))}
+            </div>
+            
+            <div className="h-px w-full bg-slate-200" />
+            
+            <div className="grid grid-cols-2 gap-3">
+                {permissions.map((p) => (
+                    <label key={p.key} className="flex cursor-pointer items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={Boolean(parsed[p.key])}
+                            onChange={(e) => updateField(p.key, e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-accent-600 focus:ring-accent-600"
+                        />
+                        <span className="text-xs font-medium text-slate-700">{p.label}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const AdminTiersPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
@@ -239,15 +318,14 @@ export const AdminTiersPage: React.FC = () => {
                                 </span>
                             )}
                         </div>
-                        <textarea
-                            value={tierDrafts[tierKey]}
-                            onChange={(event) => {
+                        <EntitlementCard
+                            draft={tierDrafts[tierKey]}
+                            onChange={(nextStr) => {
                                 setTierDrafts((current) => ({
                                     ...current,
-                                    [tierKey]: event.target.value,
+                                    [tierKey]: nextStr,
                                 }));
                             }}
-                            className="mt-3 min-h-[220px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"
                         />
                         <div className="mt-3 flex flex-wrap gap-2">
                             <button

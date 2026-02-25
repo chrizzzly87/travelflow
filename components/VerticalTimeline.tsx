@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ITrip, ITimelineItem, IDragState } from '../types';
-import { addDays, findTravelBetweenCities, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
+import { addDays, buildApprovedCityRoute, buildCityOverlapLayout, computeVerticalTransferConnectorAnchors, findTravelBetweenCities, getHexFromColorClass, getTimelineBounds, TRAVEL_COLOR, TRAVEL_EMPTY_COLOR } from '../utils';
 import { TimelineBlock } from './TimelineBlock';
 import { Plus } from 'lucide-react';
 import { TransportModeIcon } from './TransportModeIcon';
@@ -23,6 +23,18 @@ interface VerticalTimelineProps {
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX = 0;
+const CITY_VERTICAL_CONNECTOR_GAP_PX = 0;
+const CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX = 7;
+const CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX = 8;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX = 10;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX = 34;
+const CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO = 0.14;
+const CITY_VERTICAL_CONNECTOR_CITY_SPREAD_BUFFER_PX = 24;
+const CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX = 10;
+const TRANSFER_LANE_WIDTH_PX = 160; // Tailwind `w-40`
+const TRANSFER_PILL_ATTACH_INSET_PX = 5;
+const TRANSFER_PILL_EDGE_ATTACH_INSET_PX = 3;
 
 const parseLocalTripDate = (value: string): Date | null => {
   if (!value) return null;
@@ -38,6 +50,20 @@ const parseLocalTripDate = (value: string): Date | null => {
 
   const fallback = new Date(value);
   return Number.isNaN(fallback.getTime()) ? null : fallback;
+};
+
+const buildVerticalConnectorPath = (
+  startX: number,
+  startY: number,
+  trackX: number,
+  endX: number,
+  endY: number
+): string => {
+  if (!Number.isFinite(startX) || !Number.isFinite(startY) || !Number.isFinite(trackX) || !Number.isFinite(endX) || !Number.isFinite(endY)) {
+    return '';
+  }
+  if (Math.abs(endY - startY) < 0.5) return `M ${startX} ${startY} H ${endX}`;
+  return `M ${startX} ${startY} H ${trackX} V ${endY} H ${endX}`;
 };
 
 export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
@@ -123,10 +149,30 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
   const cities = trip.items.filter(i => i.type === 'city').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const travelItems = trip.items.filter(i => i.type === 'travel' || i.type === 'travel-empty').sort((a, b) => a.startDateOffset - b.startDateOffset);
   const activities = trip.items.filter(i => i.type === 'activity');
+  const cityStackLayout = React.useMemo(() => buildCityOverlapLayout(cities), [cities]);
+  const connectorCities = React.useMemo(
+      () => buildApprovedCityRoute(cities),
+      [cities]
+  );
+  const uncertainSlotColorByKey = React.useMemo(() => {
+      const colorBySlot = new Map<string, string>();
+      cities.forEach((city) => {
+          if (city.cityPlanStatus !== 'uncertain') return;
+          const stack = cityStackLayout.get(city.id);
+          const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+              ? `option-${city.cityPlanOptionIndex}`
+              : `stack-${stack?.stackIndex || 0}`;
+          const slotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+          if (!colorBySlot.has(slotKey)) {
+              colorBySlot.set(slotKey, getHexFromColorClass(city.color || ''));
+          }
+      });
+      return colorBySlot;
+  }, [cities, cityStackLayout]);
 
   const travelLinks = React.useMemo(() => {
-      return cities.slice(0, -1).map((city, idx) => {
-          const nextCity = cities[idx + 1];
+      return connectorCities.slice(0, -1).map((city, idx) => {
+          const nextCity = connectorCities[idx + 1];
           const travelItem = findTravelBetweenCities(trip.items, city, nextCity);
           return {
               id: travelItem?.id || `travel-link-${city.id}-${nextCity.id}`,
@@ -135,7 +181,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
               travelItem
           };
       });
-  }, [cities, trip.items]);
+  }, [connectorCities, trip.items]);
 
   const getTransportIcon = (mode?: string) => {
       return <TransportModeIcon mode={mode} size={12} />;
@@ -579,6 +625,14 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
 
                      <div className="relative w-full h-full">
                          {cities.map((city, index) => {
+                             const cityStack = cityStackLayout.get(city.id);
+                             const optionKey = (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex))
+                                 ? `option-${city.cityPlanOptionIndex}`
+                                 : `stack-${cityStack?.stackIndex || 0}`;
+                             const uncertainSlotKey = `${city.cityPlanGroupId || 'global'}:${optionKey}`;
+                             const cityVisualColorHex = city.cityPlanStatus === 'uncertain'
+                                 ? uncertainSlotColorByKey.get(uncertainSlotKey)
+                                 : undefined;
                              const prev = index > 0 ? cities[index - 1] : null;
                              const next = index < cities.length - 1 ? cities[index + 1] : null;
                              const idealStart = prev ? prev.startDateOffset + prev.duration : 0;
@@ -622,6 +676,9 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      vertical={true}
                                      canEdit={canEdit}
                                      viewTransitionName={getExampleCityLaneViewTransitionName(enableExampleSharedTransition, index)}
+                                     cityStackIndex={cityStack?.stackIndex || 0}
+                                     cityStackCount={cityStack?.stackCount || 1}
+                                     cityVisualColorHex={cityVisualColorHex}
                                  />
                              );
                          })}
@@ -629,7 +686,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                 </div>
 
                 {/* Travel Column */}
-                <div className="relative w-16 border-r border-gray-100 group/travel overflow-visible">
+                <div className="relative w-40 border-r border-gray-100 group/travel overflow-visible">
                      <div className="sticky top-0 h-8 flex items-center justify-center z-30 bg-white/90 backdrop-blur w-full border-b border-gray-100">
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Transfer</span>
                          <button 
@@ -647,49 +704,114 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          {travelLinks.map(link => {
                              const fromEnd = link.fromCity.startDateOffset + link.fromCity.duration;
                              const toStart = link.toCity.startDateOffset;
-                             const top = (fromEnd - visualStartOffset) * pixelsPerDay;
-                             const bottom = (toStart - visualStartOffset) * pixelsPerDay;
-                             const height = Math.max(16, bottom - top);
-                             const mid = top + height / 2;
-                             const chipHeight = 36;
-                             const chipTop = Math.max(0, mid - chipHeight / 2);
-                             const chipBottom = chipTop + chipHeight;
+                             const rawFromBoundaryY = (fromEnd - visualStartOffset) * pixelsPerDay;
+                             const rawToBoundaryY = (toStart - visualStartOffset) * pixelsPerDay;
+                             const {
+                                 connectorTop,
+                                 connectorHeight,
+                             } = computeVerticalTransferConnectorAnchors(
+                                 rawFromBoundaryY,
+                                 rawToBoundaryY,
+                                 totalHeight,
+                                 {
+                                     cityEdgeInsetPx: CITY_VERTICAL_CONNECTOR_EDGE_INSET_PX,
+                                     edgeGapPx: CITY_VERTICAL_CONNECTOR_GAP_PX,
+                                     minSeparationPx: CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX,
+                                 }
+                             );
                              const travel = link.travelItem;
+                             const travelDurationHeight = travel ? Math.max(4, travel.duration * pixelsPerDay) : 0;
+                             const desiredChipHeight = Math.max(connectorHeight - 2, travelDurationHeight);
+                             const chipHeight = Math.max(46, Math.min(62, desiredChipHeight));
+                             const unclampedChipTop = connectorTop + ((connectorHeight - chipHeight) / 2);
+                             const chipTop = Math.max(0, Math.min(unclampedChipTop, Math.max(0, totalHeight - chipHeight)));
+                             const chipBottom = chipTop + chipHeight;
                              const mode = normalizeTransportMode(travel?.transportMode);
                              const isUnsetTransport = mode === 'na';
                              const isSelected = travel && selectedItemId === travel.id;
+                             const chipWidth = Math.max(130, Math.min(148, TRANSFER_LANE_WIDTH_PX - 12));
                              const durationHours = travel ? Math.round(travel.duration * 24 * 10) / 10 : null;
-                             const connectorWidth = 14;
-                             const connectorGap = 4;
+                             const cityConnectorStartX = -CITY_VERTICAL_CONNECTOR_CITY_OVERLAP_PX;
+                             const chipLeft = (TRANSFER_LANE_WIDTH_PX - chipWidth) / 2;
+                             const chipAttachX = chipLeft + TRANSFER_PILL_ATTACH_INSET_PX;
+                             const attachInsetPx = Math.max(2, Math.min(6, TRANSFER_PILL_EDGE_ATTACH_INSET_PX));
+                             const upperAttachY = chipTop + attachInsetPx;
+                             const lowerAttachY = chipBottom - attachInsetPx;
+                             const travelDirection = rawFromBoundaryY <= rawToBoundaryY ? 1 : -1;
+                             const fromCityHeightPx = Math.max(0, link.fromCity.duration * pixelsPerDay);
+                             const toCityHeightPx = Math.max(0, link.toCity.duration * pixelsPerDay);
+                             const fromCityExitInsetPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX,
+                                 Math.min(CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX, fromCityHeightPx * CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO)
+                             );
+                             const toCityExitInsetPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MIN_PX,
+                                 Math.min(CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_MAX_PX, toCityHeightPx * CITY_VERTICAL_CONNECTOR_CITY_EXIT_INSET_RATIO)
+                             );
+                             const rawFromCityExitY = rawFromBoundaryY - (travelDirection * fromCityExitInsetPx);
+                             const rawToCityExitY = rawToBoundaryY + (travelDirection * toCityExitInsetPx);
+                             const cityAnchorMinSeparationPx = Math.max(
+                                 CITY_VERTICAL_CONNECTOR_MIN_SEPARATION_PX,
+                                 Math.abs(lowerAttachY - upperAttachY) + CITY_VERTICAL_CONNECTOR_CITY_SPREAD_BUFFER_PX
+                             );
+                             const cityAnchors = computeVerticalTransferConnectorAnchors(
+                                 rawFromCityExitY,
+                                 rawToCityExitY,
+                                 totalHeight,
+                                 {
+                                     cityEdgeInsetPx: 0,
+                                     edgeGapPx: 0,
+                                     minSeparationPx: cityAnchorMinSeparationPx,
+                                 }
+                             );
+                             const fromAbove = cityAnchors.fromY <= cityAnchors.toY;
+                             const fromAttachY = fromAbove ? upperAttachY : lowerAttachY;
+                             const toAttachY = fromAbove ? lowerAttachY : upperAttachY;
+                             const trackX = Math.max(8, chipAttachX - CITY_VERTICAL_CONNECTOR_TRACK_OFFSET_PX);
+                             const fromPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.fromY, trackX, chipAttachX, fromAttachY);
+                             const toPath = buildVerticalConnectorPath(cityConnectorStartX, cityAnchors.toY, trackX, chipAttachX, toAttachY);
+                             const connectorOpacity = isUnsetTransport ? 0.52 : 1;
+                             const shouldDashConnector = isUnsetTransport;
 
                              return (
-                                 <div key={link.id} className="absolute left-0 right-0">
-                                     {/* Horizontal ticks from city column into travel column */}
-                                     <div className="absolute h-px bg-stone-200" style={{ top, left: -connectorWidth, width: connectorWidth }} />
-                                     <div className="absolute h-px bg-stone-200" style={{ top: bottom, left: -connectorWidth, width: connectorWidth }} />
-
-                                     {/* Connect chip top/bottom to city edge */}
-                                     <div className="absolute h-px bg-stone-200" style={{ top: chipTop, left: -connectorWidth, width: connectorWidth - connectorGap }} />
-                                     <div className="absolute h-px bg-stone-200" style={{ top: chipBottom, left: -connectorWidth, width: connectorWidth - connectorGap }} />
-
-                                     {/* Main connection line between cities */}
-                                     <div className="absolute left-1/2 -translate-x-1/2 w-0.5 bg-stone-100" style={{ top, height }} />
+                                 <div key={link.id} className="absolute inset-0 overflow-visible pointer-events-none">
+                                     <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none" aria-hidden="true">
+                                         <path
+                                             d={fromPath}
+                                             fill="none"
+                                             stroke="var(--color-slate-400)"
+                                             strokeWidth={1.7}
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                             strokeOpacity={connectorOpacity}
+                                         />
+                                         <path
+                                             d={toPath}
+                                             fill="none"
+                                             stroke="var(--color-slate-400)"
+                                             strokeWidth={1.7}
+                                             strokeLinecap="round"
+                                             strokeLinejoin="round"
+                                             strokeDasharray={shouldDashConnector ? '5 4' : undefined}
+                                             strokeOpacity={connectorOpacity}
+                                         />
+                                     </svg>
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
-                                         className={`absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg border text-[10px] font-semibold flex flex-col items-center gap-1 shadow-sm transition-colors
+                                         className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
                                              ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
-                                         style={{ top: chipTop, height: chipHeight, width: 46 }}
+                                         style={{ top: chipTop, height: chipHeight, width: chipWidth }}
                                          title={mode === 'na' ? 'Transport not decided' : `Transport: ${mode}`}
                                          disabled={!travel && !canEdit}
+                                         type="button"
                                      >
-                                         {!isUnsetTransport && (
-                                             <span className="text-gray-500">{getTransportIcon(mode)}</span>
-                                         )}
-                                         <span className="uppercase">{mode === 'na' ? 'N/A' : mode}</span>
+                                         {!isUnsetTransport && <span className="text-gray-500 shrink-0">{getTransportIcon(mode)}</span>}
+                                         <span className="uppercase tracking-wider truncate flex-1 text-left">{mode === 'na' ? 'N/A' : mode}</span>
                                          {durationHours !== null && (
-                                             <span className="text-[9px] font-normal text-gray-400">{durationHours}h</span>
+                                             <span className="text-[10px] font-medium text-gray-400 shrink-0">{durationHours}h</span>
                                          )}
                                      </button>
                                  </div>
@@ -718,25 +840,27 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                          For now, let's just render the blocks.
                      */}
                      
-                     <div className="flex flex-row gap-2 h-full p-2">
-                         {activityLanes.map((lane, laneIdx) => (
-                             <div key={laneIdx} className="relative w-full h-full min-w-[100px] rounded-lg border border-transparent">
-                                 {lane.map(item => (
-                                     <TimelineBlock
-                                         key={item.id}
-                                         item={item}
-                                         isSelected={selectedItemId === item.id}
-                                         onSelect={handleBlockSelect}
-                                         onResizeStart={handleResizeStart}
-                                         onMoveStart={handleMoveStart}
-                                         pixelsPerDay={pixelsPerDay}
-                                         timelineStartOffset={visualStartOffset}
-                                         vertical={true}
-                                         canEdit={canEdit}
-                                     />
-                                 ))}
-                             </div>
-                         ))}
+                     <div className="h-full overflow-x-auto p-2">
+                         <div className="flex flex-row gap-3 h-full items-start min-w-fit">
+                             {activityLanes.map((lane, laneIdx) => (
+                                 <div key={laneIdx} className="relative h-full w-[220px] shrink-0 rounded-lg border border-transparent">
+                                     {lane.map(item => (
+                                         <TimelineBlock
+                                             key={item.id}
+                                             item={item}
+                                             isSelected={selectedItemId === item.id}
+                                             onSelect={handleBlockSelect}
+                                             onResizeStart={handleResizeStart}
+                                             onMoveStart={handleMoveStart}
+                                             pixelsPerDay={pixelsPerDay}
+                                             timelineStartOffset={visualStartOffset}
+                                             vertical={true}
+                                             canEdit={canEdit}
+                                         />
+                                     ))}
+                                 </div>
+                             ))}
+                         </div>
                      </div>
                 </div>
 

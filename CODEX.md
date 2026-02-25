@@ -9,13 +9,20 @@
 6. For localized copy placeholders, always use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
 7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
+## Skill usage policy
+- For React performance or refactor work, consult `vercel-react-best-practices` and apply only the rules that materially affect the task.
+- After substantial React changes, run `pnpm dlx react-doctor@latest . --verbose --diff`; fix errors before merge and prioritize warnings by risk.
+- Use `find-skills` only for targeted capability discovery when existing project workflows/skills are insufficient.
+- Do not overuse skills for routine edits that are already covered by current repo conventions.
+
 ## Required behavior for Codex
 At the end of every completed feature or fix, update `content/updates/*.md`.
 
 Rules:
 - Use the schema in `docs/UPDATE_FORMAT.md`.
 - Keep exactly one release note file per worktree/feature. Keep updating that same file instead of creating multiple files for one feature.
-- Finalize the release note shortly before opening the PR, when the complete shipped scope is known.
+- Keep the release note as `status: draft` while the feature PR is open.
+- After merge to `main`, publish release metadata in a follow-up update (`status: published`, next version, `published_at` set to actual merge/deploy time before 23:00 UTC).
 - Keep user-facing highlights visible with `[x]`.
 - Keep internal/infrastructure items hidden from marketing with `[ ]`.
 - Each change line must start with a **content-matching emoji** — pick one that hints at the specific change. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
@@ -28,8 +35,13 @@ Rules:
 - Do not finish a feature task without updating release markdown when relevant.
 
 ## Validation
-Run `npm run updates:validate` (or `npm run build`, which includes validation) before final handoff when possible.
-For locale changes, run `npm run i18n:validate` to enforce namespace parity and ICU placeholder syntax.
+Run `pnpm updates:validate` (or `pnpm build`, which includes validation) before final handoff when possible.
+For locale changes, run `pnpm i18n:validate` to enforce namespace parity and ICU placeholder syntax.
+For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` before final handoff when feasible.
+For bug fixes, include a regression test that fails pre-fix and passes post-fix.
+Docs-only, copy-only, and style-only edits are exempt from mandatory new tests.
+If a PR adds files under `services/` or `config/`, include matching `tests/**` entries in the PR checklist/description.
+For TripView/route-loader orchestration changes, scope regression coverage using `docs/TESTING_PHASE2_SCOPE.md`.
 
 ## Direction-Safety Requirement
 - For new or updated UI components, check whether CSS logical properties are appropriate for direction safety (`inline`, `block`, `start`, `end`).

@@ -4,7 +4,7 @@ version: v0.50.0
 title: "Admin RBAC workspace + profile onboarding"
 date: 2026-02-17
 published_at: 2026-02-17T20:40:00Z
-status: draft
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Introduced a full admin operations workspace with safer trip overrides, deep-linked owner drawers, and bulk admin actions across users and trips."
@@ -40,6 +40,7 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Fixed] 🧩 Fixed dropdown layering in side drawers/dialogs so account status, role, and tier selectors are fully usable again.
 - [x] [Improved] 🔗 Added direct trip-open links in admin trip listings and connected-trip sections so visual verification is one click away.
 - [x] [Improved] 🧭 Enabled admins to open any trip directly from admin tables, while keeping owner-only behavior unchanged for regular users.
+- [x] [Improved] 🧭 Updated Trips table interaction so clicking a trip name opens the side drawer, while a dedicated “Open trip” link remains available inside the drawer.
 - [x] [Improved] 👤 Made trip owner cells open a user-information drawer for faster account context checks without leaving trip operations.
 - [x] [Improved] 🛡️ Added a default read-only safety mode for admin-opened trips, with an explicit edit override switch for authorized admins.
 - [x] [Improved] 🔎 Added direct owner-profile deep links from admin trip views so support can jump into the correct user drawer instantly.
@@ -53,12 +54,39 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [x] [Improved] 🔐 Added login-type filtering in User Provisioning with social/username-password/unknown modes plus provider-level social selection.
 - [x] [Improved] 🪪 Upgraded login badges in the user table with provider-specific icons/colors and better multi-provider visibility.
 - [x] [Improved] 📈 Added per-user trip counters in User Provisioning and surfaced active/total trip totals directly in the user details header.
+- [x] [Improved] 🧹 Added trip-count cleanup filters in User Provisioning so admins can quickly isolate users with no trips and empty profile data before deletion.
+- [x] [Improved] 🔁 Added safer admin deletion flow with explicit hard-delete impact warnings and a transfer-before-delete option for preserving owned trips.
+- [x] [Fixed] 🧾 Improved bulk hard-delete reliability by showing per-user failure reasons and automatically clearing safe historical links that can block deletion.
+- [x] [Fixed] 🧮 Prevented soft-deleted accounts from being hard-deleted via bulk selection so admin user totals no longer drop from no-op delete attempts.
+- [x] [Fixed] 🧬 Normalized legacy/invalid profile gender values during admin user updates to prevent `profiles_gender_check` save failures.
+- [x] [Improved] 🧭 Added clearer hard-delete prompts that explicitly steer admins to transfer trips first when preservation is needed.
+- [x] [Improved] ✅ Refined admin row selection UX with clearer selected-row highlighting, larger checkbox click targets, and in-table processing overlays during destructive actions.
+- [x] [Fixed] ✅ Restored admin checkbox pointer cursors and enlarged click targets after a checkbox component refactor regression.
+- [x] [Improved] 🧩 Disabled accidental text selection on admin pills/chips so clicks and drag gestures no longer highlight pill labels.
+- [x] [Improved] 🧾 Upgraded audit history readability with clearer action aliases, colored action/target pills, and direct deep links into related user or trip details.
+- [x] [Improved] 📋 Made user and trip UUIDs in admin tables/drawers click-to-select and copy-friendly, with lightweight inline copy feedback.
+- [x] [Improved] 🎯 Added field-level before/after change snapshots in audit entries so profile status, role, tier, and trip ownership edits are easier to review.
+- [x] [Fixed] 🔗 Cleaned up audit target controls so pills stay separate from action buttons, and added direct in-app drawer opening for both linked users and trips.
+- [x] [Improved] 🧩 Added native user/trip detail sidepanels directly inside Audit so target inspection no longer requires switching admin pages.
+- [x] [Improved] ♻️ Added soft-deleted user recovery directly from the Audit user drawer, including snapshot fallback when live profile rows are missing.
+- [x] [Improved] 🧾 Expanded hard-delete traceability with clearer delete-impact prompts and hard-delete audit metadata that records owned-trip impact.
+- [x] [Fixed] 🛠️ Improved admin hard-delete diagnostics so identity API failures now return actionable status details instead of generic error messages.
+- [x] [Fixed] 🧾 Prevented no-op “Updated overrides” audit entries when profile/status edits are saved without entitlement override changes.
+- [x] [Fixed] 🚧 Added an explicit admin access-denied screen for signed-in non-admin accounts and hardened invalid `/admin/*` URL handling so admins recover back to dashboard routes.
+- [x] [Fixed] 🔐 Stabilized delayed session restore UX by auto-closing the login modal after recovery without hard-refresh, while temporarily disabling login actions until auth state is ready.
+- [x] [Fixed] 🔐 Improved stale-session recovery so login and preference saves can self-heal after deleted-account session mismatches.
+- [x] [Fixed] 🧾 Prevented a login recovery edge case that could silently switch active accounts into an anonymous "unknown user" state.
+- [x] [Fixed] 🔐 Fixed anonymous-session detection so the login modal no longer auto-closes by mistaking guest sessions for signed-in accounts.
+- [x] [Improved] 🧭 Removed forced profile-onboarding redirects so authenticated users can continue without mandatory completion detours.
 - [x] [Improved] 🧭 Added a one-click “Open in Trips” shortcut from user details to jump into filtered trip lifecycle view for that owner.
 - [ ] [Internal] 🗒️ Documented deferred admin-shell and user-management follow-up backlog for the next layout-focused iteration.
 - [x] [Fixed] 🔎 Improved admin filtering so search and date-range controls update Users, Trips, Tiers, and Audit views consistently.
 - [x] [Fixed] 🧮 Fixed admin workspace data panels failing to load by aligning backend response types for users/trips/audit queries.
 - [x] [Fixed] ⏳ Fixed a trip-management issue where changing status could unintentionally clear the existing expiration date.
 - [x] [Fixed] 🧑‍🔧 Fixed a profile-settings stability issue that could prevent authenticated users from loading the settings form.
+- [x] [Fixed] 👥 Fixed an onboarding redirect issue so guest trip links and trip creation stay accessible without forcing profile completion.
+- [x] [Fixed] 🔗 Restored shared-token trip loading so valid shared links no longer get rejected as unavailable.
+- [x] [Improved] 🧭 Improved shared-link reliability by aligning lifecycle handling with live trip status and expiry metadata.
 - [ ] [Internal] 🔐 Added admin identity edge API wiring for invite/direct creation and hard-delete operations using service-role authorization.
 - [ ] [Internal] 🧾 Added admin audit log schema and RPC plumbing for user/trip/tier action tracking and replay.
 - [ ] [Internal] 🛡️ Hardened profile update safety with privileged-field guardrails while preserving user self-service edits for profile data.
@@ -71,3 +99,5 @@ summary: "Introduced a full admin operations workspace with safer trip overrides
 - [ ] [Internal] 🧱 Added a dedicated admin-only hard-delete trip RPC with audit logging so permanent removals are tracked server-side.
 - [ ] [Internal] 🧭 Updated agent copy/i18n rules so admin workspace text is English-only by default and exempt from EN/DE sign-off prompts.
 - [ ] [Internal] 🧩 Standardized admin destructive confirmations on the shared styled app dialog (`useAppDialog`) and documented prompt-component reuse in repo guidelines.
+- [ ] [Internal] 🧪 Added a local Vite proxy plus `dev:netlify` workflow so admin identity actions (`invite`, `create`, `hard delete`) can be tested reliably in development.
+- [ ] [Internal] 📘 Documented an env-safe Netlify CLI deploy workflow (`dotenv-cli`) in the LLM/deploy guides so preview builds include required `VITE_SUPABASE_*` keys.

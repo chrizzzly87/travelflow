@@ -155,6 +155,22 @@ Future monetization/auth tables already present:
 3. Stale rows are expired via `expire_stale_trip_generation_requests()`.
 4. Default queue TTL is 14 days.
 
+## Onboarding Gate Contract
+
+1. Required onboarding applies only to authenticated, non-anonymous users with incomplete onboarding.
+2. Anonymous and identity-uncertain sessions are treated as guest sessions and must never be forced into onboarding.
+3. Public planner-entry routes are exempt from forced onboarding redirects:
+   - `/create-trip`
+   - `/trip/*`
+   - `/s/*`
+   - `/example/*`
+4. Guest trip generation handoff contract:
+   - Guest starts generation and sees the generation/loading shell.
+   - Request is queued (`trip_generation_requests`) before generation execution.
+   - User is prompted to sign in/register.
+   - Login uses `claim=<requestId>` and resumes queued generation after auth.
+   - Successful claim navigates to the generated trip (`/trip/:id`).
+
 ## Runtime Write Path
 
 Main write path (client):
@@ -166,11 +182,12 @@ Main write path (client):
 Share path:
 
 1. `rpc('create_share_token', ...)`.
-2. Open share URL `/s/:token`.
-3. Load shared data via `rpc('get_shared_trip', ...)`.
-4. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
-5. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
-6. In `view` mode, editing controls are disabled; copy creates a new owned trip.
+2. Open share URL `/s/:token` (canonical shared route).
+3. If a direct planner URL (`/trip/:tripId`) is opened by a non-owner (and non-admin) for a trip that has an active share, the trip loader resolves the active share token and routes to `/s/:token`.
+4. Load shared data via `rpc('get_shared_trip', ...)`.
+5. Optional snapshot load via `rpc('get_shared_trip_version', ...)` when URL has `?v=<uuid>`.
+6. If share mode is `edit`, save changes via `rpc('update_shared_trip', ...)`.
+7. In `view` mode, editing controls are disabled; copy creates a new owned trip.
 
 ## Migration Behavior (LocalStorage -> DB)
 

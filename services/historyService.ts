@@ -1,4 +1,5 @@
 import { ITrip, IViewSettings } from "../types";
+import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageService";
 
 export interface HistoryEntry {
     id: string;
@@ -19,7 +20,7 @@ type HistoryStore = Record<string, HistoryEntry[]>;
 
 const loadStore = (): HistoryStore => {
     try {
-        const raw = localStorage.getItem(HISTORY_KEY);
+        const raw = readLocalStorageItem(HISTORY_KEY);
         if (!raw) return {};
         return JSON.parse(raw) as HistoryStore;
     } catch (e) {
@@ -30,7 +31,9 @@ const loadStore = (): HistoryStore => {
 
 const saveStore = (store: HistoryStore) => {
     try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(store));
+        if (!writeLocalStorageItem(HISTORY_KEY, JSON.stringify(store))) {
+            throw new Error('History storage write failed');
+        }
     } catch (e) {
         console.error("Failed to save history store", e);
     }

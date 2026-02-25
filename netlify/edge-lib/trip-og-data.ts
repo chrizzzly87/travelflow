@@ -132,6 +132,12 @@ interface SupabaseSharedTripRow {
   version_id?: string | null;
 }
 
+interface SupabaseTripShareRow {
+  token?: string;
+  expires_at?: string | null;
+  created_at?: string | null;
+}
+
 export interface RouteTarget {
   token?: string;
   tripId?: string;
@@ -143,6 +149,11 @@ export interface SharedTripLookupResult {
   viewSettings: SharedViewSettings | null;
   latestVersionId: string | null;
   resolvedVersionId: string | null;
+}
+
+export interface SharedTripByTripIdLookupResult {
+  token: string;
+  sharedTrip: SharedTripLookupResult;
 }
 
 export interface TripOgSummary {
@@ -971,6 +982,51 @@ const fetchSupabaseRpc = async (
   }
 };
 
+export const fetchActiveTripShareToken = async (tripId: string): Promise<string | null> => {
+  const supabaseUrl = readEnv("VITE_SUPABASE_URL").replace(/\/+$/, "");
+  const serviceRoleKey = readEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey || !tripId) return null;
+
+  try {
+    const endpoint = new URL(`${supabaseUrl}/rest/v1/trip_shares`);
+    endpoint.searchParams.set("select", "token,expires_at,created_at");
+    endpoint.searchParams.set("trip_id", `eq.${tripId}`);
+    endpoint.searchParams.set("revoked_at", "is.null");
+    endpoint.searchParams.set("order", "created_at.desc");
+    endpoint.searchParams.set("limit", "8");
+
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const raw = await response.json();
+    if (!Array.isArray(raw)) return null;
+
+    const now = Date.now();
+    for (const row of raw as SupabaseTripShareRow[]) {
+      const token = typeof row?.token === "string" ? row.token.trim() : "";
+      if (!token) continue;
+
+      const expiresAtMs = typeof row?.expires_at === "string" ? Date.parse(row.expires_at) : Number.NaN;
+      if (Number.isFinite(expiresAtMs) && expiresAtMs <= now) continue;
+      return token;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 export const fetchSharedTrip = async (
   token: string,
   versionId: string | null,
@@ -1014,6 +1070,23 @@ export const fetchSharedTrip = async (
     viewSettings,
     latestVersionId,
     resolvedVersionId: null,
+  };
+};
+
+export const fetchSharedTripByTripId = async (
+  tripId: string,
+  versionId: string | null,
+): Promise<SharedTripByTripIdLookupResult | null> => {
+  if (!tripId) return null;
+  const token = await fetchActiveTripShareToken(tripId);
+  if (!token) return null;
+
+  const sharedTrip = await fetchSharedTrip(token, versionId);
+  if (!sharedTrip) return null;
+
+  return {
+    token,
+    sharedTrip,
   };
 };
 

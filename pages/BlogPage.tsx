@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Article, Clock, Tag, ArrowRight, MagnifyingGlass, GlobeHemisphereWest } from '@phosphor-icons/react';
@@ -6,6 +6,7 @@ import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { getPublishedBlogPostsForLocales } from '../services/blogService';
 import { ProgressiveImage } from '../components/ProgressiveImage';
 import { FlagIcon } from '../components/flags/FlagIcon';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import type { BlogPost } from '../services/blogService';
 import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../config/routes';
 import { DEFAULT_LOCALE, localeToIntlLocale } from '../config/locales';
@@ -100,9 +101,11 @@ export const BlogPage: React.FC = () => {
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
     const supportsMixedLanguage = locale !== DEFAULT_LOCALE;
-    const [languageFilter, setLanguageFilter] = useState<BlogLanguageFilter>(() =>
-        supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly'
+    const defaultLanguageFilter: BlogLanguageFilter = supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly';
+    const [languageFilterState, setLanguageFilterState] = useState<{ locale: AppLanguage; filter: BlogLanguageFilter }>(
+        () => ({ locale, filter: defaultLanguageFilter })
     );
+    const languageFilter = languageFilterState.locale === locale ? languageFilterState.filter : defaultLanguageFilter;
     const postLocales = useMemo<AppLanguage[]>(() => {
         if (!supportsMixedLanguage) return [DEFAULT_LOCALE];
         if (languageFilter === 'nativeOnly') return [locale];
@@ -112,10 +115,6 @@ export const BlogPage: React.FC = () => {
     const posts = useMemo(() => getPublishedBlogPostsForLocales(postLocales), [postLocales]);
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-
-    useEffect(() => {
-        setLanguageFilter(supportsMixedLanguage ? 'nativeAndEnglish' : 'nativeOnly');
-    }, [supportsMixedLanguage, locale]);
 
     const allTags = useMemo(() => {
         const tagSet = new Set<string>();
@@ -188,17 +187,23 @@ export const BlogPage: React.FC = () => {
                     {supportsMixedLanguage && (
                         <div className="relative w-full md:w-72">
                             <GlobeHemisphereWest size={18} weight="duotone" className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <select
-                                aria-label={t('index.languageFilterAriaLabel')}
-                                value={languageFilter}
-                                onChange={(event) => setLanguageFilter(event.target.value as BlogLanguageFilter)}
-                                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-10 text-sm font-medium text-slate-800 shadow-sm focus:border-accent-400 focus:outline-none focus:ring-2 focus:ring-accent-200 transition-shadow"
-                            >
-                                <option value="nativeAndEnglish">{t('index.languageFilter.nativeAndEnglish')}</option>
-                                <option value="nativeOnly">{t('index.languageFilter.nativeOnly')}</option>
-                                <option value="englishOnly">{t('index.languageFilter.englishOnly')}</option>
-                            </select>
-                            <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">▾</span>
+                            <Select value={languageFilter} onValueChange={(value) => setLanguageFilterState({ locale, filter: value as BlogLanguageFilter })}>
+                                <SelectTrigger
+                                    aria-label={t('index.languageFilterAriaLabel')}
+                                    className="h-auto w-full rounded-xl border-slate-200 bg-white py-3 pl-10 pr-10 text-sm font-medium text-slate-800 shadow-sm focus:border-accent-400 focus:ring-accent-200 transition-shadow"
+                                >
+                                    <span>
+                                        {languageFilter === 'nativeAndEnglish' && t('index.languageFilter.nativeAndEnglish')}
+                                        {languageFilter === 'nativeOnly' && t('index.languageFilter.nativeOnly')}
+                                        {languageFilter === 'englishOnly' && t('index.languageFilter.englishOnly')}
+                                    </span>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="nativeAndEnglish">{t('index.languageFilter.nativeAndEnglish')}</SelectItem>
+                                    <SelectItem value="nativeOnly">{t('index.languageFilter.nativeOnly')}</SelectItem>
+                                    <SelectItem value="englishOnly">{t('index.languageFilter.englishOnly')}</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     )}
                 </div>

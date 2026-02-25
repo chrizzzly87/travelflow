@@ -3,6 +3,10 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import {
+    removeLocalStorageItem,
+    removeSessionStorageItem,
+} from './browserStorageService';
 import { supabase } from './supabaseClient';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
@@ -57,7 +61,7 @@ const hashEmail = (email?: string | null): string | null => {
     return simpleHash(normalized);
 };
 
-const clearSupabaseAuthStorage = (): void => {
+export const clearSupabaseAuthStorage = (): void => {
     if (typeof window === 'undefined') return;
     const shouldClear = (key: string): boolean => (
         key.startsWith('sb-') &&
@@ -67,26 +71,113 @@ const clearSupabaseAuthStorage = (): void => {
             key.includes('code-verifier')
         )
     );
+    const collectStorageKeys = (storage: Storage): string[] => {
+        const keys: string[] = [];
+        for (let index = 0; index < storage.length; index += 1) {
+            const key = storage.key(index);
+            if (key) keys.push(key);
+        }
+        return keys;
+    };
     try {
-        const localKeys = Object.keys(window.localStorage);
+        const localKeys = collectStorageKeys(window.localStorage);
         for (const key of localKeys) {
             if (shouldClear(key)) {
-                window.localStorage.removeItem(key);
+                removeLocalStorageItem(key);
             }
         }
     } catch {
         // best effort
     }
     try {
-        const sessionKeys = Object.keys(window.sessionStorage);
+        const sessionKeys = collectStorageKeys(window.sessionStorage);
         for (const key of sessionKeys) {
             if (shouldClear(key)) {
-                window.sessionStorage.removeItem(key);
+                removeSessionStorageItem(key);
             }
         }
     } catch {
         // best effort
     }
+};
+
+const isSessionNotFoundError = (error: { status?: number; code?: string; message?: string } | null | undefined): boolean => {
+    if (!error) return false;
+    const normalizedErrorCode = normalizeErrorCode(error).toLowerCase();
+    const normalizedMessage = typeof error.message === 'string'
+        ? error.message.toLowerCase()
+        : '';
+    return Boolean(
+        error.status === 403
+        || normalizedErrorCode.includes('session_not_found')
+        || normalizedMessage.includes('session from session_id claim in jwt does not exist')
+    );
+};
+
+const isLikelyStaleSessionError = (
+    error: { status?: number; code?: string; message?: string; details?: string | null } | null | undefined
+): boolean => {
+    if (!error) return false;
+    if (isSessionNotFoundError(error)) return true;
+    const normalizedCode = typeof error.code === 'string' ? error.code.trim().toLowerCase() : '';
+    const normalizedMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+    const normalizedDetails = typeof error.details === 'string' ? error.details.toLowerCase() : '';
+    const combined = `${normalizedMessage} ${normalizedDetails}`;
+    if (normalizedCode === 'pgrst301') return true;
+    return (
+        combined.includes('not authenticated')
+        || combined.includes('invalid jwt')
+        || combined.includes('jwt expired')
+        || combined.includes('user from sub claim in jwt does not exist')
+        || combined.includes('session from session_id claim in jwt does not exist')
+    );
+};
+
+const isProfileQueryUnavailableError = (
+    error: { code?: string; message?: string } | null | undefined
+): boolean => {
+    if (!error) return false;
+    const normalizedCode = typeof error.code === 'string' ? error.code.trim().toLowerCase() : '';
+    const normalizedMessage = typeof error.message === 'string' ? error.message.toLowerCase() : '';
+    return normalizedCode === '42p01'
+        || normalizedCode === '42703'
+        || normalizedCode === '42501'
+        || normalizedMessage.includes('relation "profiles" does not exist')
+        || normalizedMessage.includes('permission denied for table profiles');
+};
+
+type ProfileBindingState = 'present' | 'missing' | 'unknown';
+const PROFILE_BINDING_RECHECK_DELAY_MS = 250;
+
+const readProfileBindingState = async (userId: string): Promise<ProfileBindingState> => {
+    if (!supabase) return 'unknown';
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+    if (error) {
+        if (isProfileQueryUnavailableError(error)) return 'unknown';
+        return 'unknown';
+    }
+    return data?.id ? 'present' : 'missing';
+};
+
+const resolveProfileBindingState = async (userId: string): Promise<ProfileBindingState> => {
+    const firstCheck = await readProfileBindingState(userId);
+    if (firstCheck !== 'missing') return firstCheck;
+    await new Promise((resolve) => setTimeout(resolve, PROFILE_BINDING_RECHECK_DELAY_MS));
+    return readProfileBindingState(userId);
+};
+
+const recoverLocalAuthState = async (): Promise<void> => {
+    if (!supabase) return;
+    try {
+        await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+        // best effort recovery
+    }
+    clearSupabaseAuthStorage();
 };
 
 const buildAuthFlow = (): AuthFlowContext => ({
@@ -120,10 +211,15 @@ const hasNonAnonymousIdentity = (session: Session | null): boolean => {
 };
 
 const getAnonymousFlag = (session: Session | null): boolean => {
-    if (session?.user?.email || session?.user?.phone) return false;
+    const user = session?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
+    if (!user) return false;
+    if (user.is_anonymous === true) return true;
+
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
+    const providers = getMetadataProviders(session);
+    if (metadata?.is_anonymous === true || providers.includes('anonymous')) return true;
     if (hasNonAnonymousIdentity(session)) return false;
-    return Boolean(metadata?.is_anonymous === true || getMetadataProviders(session).includes('anonymous'));
+    return false;
 };
 
 const defaultAccessContext = (session: Session | null): UserAccessContext => ({
@@ -193,11 +289,46 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
     const session = sessionData?.session ?? null;
     if (!session) return defaultAccessContext(null);
 
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+        if (isLikelyStaleSessionError(authError)) {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
+        return defaultAccessContext(session);
+    }
+    const authUser = authData?.user;
+    if (!authUser) {
+        await recoverLocalAuthState();
+        return defaultAccessContext(null);
+    }
+    if (!getAnonymousFlag(session)) {
+        const profileBindingState = await resolveProfileBindingState(authUser.id);
+        if (profileBindingState === 'missing') {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
+    }
+
     try {
         const { data, error } = await supabase.rpc('get_current_user_access');
-        if (error) return defaultAccessContext(session);
+        if (error) {
+            if (isLikelyStaleSessionError(error)) {
+                await recoverLocalAuthState();
+                return defaultAccessContext(null);
+            }
+            return defaultAccessContext(session);
+        }
         const row = Array.isArray(data) ? data[0] : data;
         if (!row) return defaultAccessContext(session);
+
+        const resolvedUserId = row.user_id || session.user.id || authUser.id || null;
+        if (!resolvedUserId || resolvedUserId !== authUser.id) {
+            await recoverLocalAuthState();
+            return defaultAccessContext(null);
+        }
+        const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
+        const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
 
         const role: SystemRole = row.system_role === 'admin' ? 'admin' : 'user';
         const tierKey: PlanTierKey = row.tier_key === 'tier_mid'
@@ -207,9 +338,9 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 : 'tier_free';
 
         return {
-            userId: row.user_id || session.user.id,
-            email: row.email || session.user.email || null,
-            isAnonymous: getAnonymousFlag(session),
+            userId: resolvedUserId,
+            email: row.email || authUser.email || session.user.email || metadataEmail || null,
+            isAnonymous: Boolean(row.is_anonymous === true) || getAnonymousFlag(session),
             role,
             tierKey,
             entitlements: (row.entitlements || FREE_ENTITLEMENTS) as UserAccessContext['entitlements'],
@@ -246,7 +377,21 @@ export const signInWithEmailPassword = async (
     }
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'login_password', result: 'start', provider: 'password', email });
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const attemptSignIn = async () => supabase.auth.signInWithPassword({ email, password });
+    let { data, error } = await attemptSignIn();
+    let recoveredFromSessionNotFound = false;
+    if (error && isSessionNotFoundError(error)) {
+        clearSupabaseAuthStorage();
+        try {
+            await supabase.auth.signOut({ scope: 'local' });
+        } catch {
+            // best effort before retry
+        }
+        const retry = await attemptSignIn();
+        data = retry.data;
+        error = retry.error;
+        recoveredFromSessionNotFound = !retry.error;
+    }
     if (error) {
         await logAuthFlow({
             ...flow,
@@ -258,7 +403,14 @@ export const signInWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
-    await logAuthFlow({ ...flow, step: 'login_password', result: 'success', provider: 'password', email });
+    await logAuthFlow({
+        ...flow,
+        step: 'login_password',
+        result: 'success',
+        provider: 'password',
+        email,
+        metadata: recoveredFromSessionNotFound ? { recoveredFromSessionNotFound: true } : undefined,
+    });
     return { data, error: null, ...flow };
 };
 
@@ -380,17 +532,7 @@ export const signOut = async () => {
     await logAuthFlow({ ...flow, step: 'logout', result: 'start', provider: 'supabase' });
     const response = await supabase.auth.signOut({ scope: 'local' });
 
-    const normalizedErrorCode = normalizeErrorCode(response.error).toLowerCase();
-    const normalizedMessage = typeof response.error?.message === 'string'
-        ? response.error.message.toLowerCase()
-        : '';
-    const isSessionNotFound = Boolean(
-        response.error && (
-            response.error.status === 403 ||
-            normalizedErrorCode.includes('session_not_found') ||
-            normalizedMessage.includes('session from session_id claim in jwt does not exist')
-        )
-    );
+    const isSessionNotFound = isSessionNotFoundError(response.error || null);
 
     // Supabase can return 403 session_not_found when local client state still
     // has a stale session id. Clear local auth storage so the app can continue

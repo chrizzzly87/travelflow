@@ -11,10 +11,15 @@ import {
     type PrefetchReason,
     warmRouteAssets,
 } from '../services/navigationPrefetch';
+import { isFirstLoadCriticalPath } from '../app/prefetch/isFirstLoadCriticalPath';
 
 interface PrefetchIntent {
     path: string;
     sourceElement: Element;
+}
+
+interface NavigationPrefetchManagerProps {
+    enabled?: boolean;
 }
 
 const INTERNAL_LINK_SELECTOR = 'a[href], [data-prefetch-href]';
@@ -47,13 +52,10 @@ const resolvePrefetchIntent = (target: EventTarget | null): PrefetchIntent | nul
     }
 };
 
-export const NavigationPrefetchManager: React.FC = () => {
+export const NavigationPrefetchManager: React.FC<NavigationPrefetchManagerProps> = ({ enabled = true }) => {
     const location = useLocation();
     const prefetchEnabled = isNavPrefetchEnabled();
-
-    if (!prefetchEnabled) {
-        return null;
-    }
+    const isPrefetchActive = prefetchEnabled && enabled;
 
     const emitPrefetchLinkHighlight = (element: Element, path: string, reason: PrefetchReason) => {
         if (typeof window === 'undefined') return;
@@ -128,7 +130,11 @@ export const NavigationPrefetchManager: React.FC = () => {
     };
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
+        if (typeof document === 'undefined') return;
+
         const onPointerEnter = (event: Event) => {
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -143,16 +149,8 @@ export const NavigationPrefetchManager: React.FC = () => {
             clearHoverIntentTimer(intent.sourceElement);
         };
 
-        const onFocusIn = (event: FocusEvent) => {
-            const intent = resolvePrefetchIntent(event.target);
-            if (!intent) return;
-            if (intent.path === window.location.pathname) return;
-            emitPrefetchLinkHighlight(intent.sourceElement, intent.path, 'focus');
-            void warmRouteAssets(intent.path, 'focus');
-            publishPrefetchStats();
-        };
-
         const onPointerDown = (event: PointerEvent) => {
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -162,6 +160,7 @@ export const NavigationPrefetchManager: React.FC = () => {
         };
 
         const onTouchStart = (event: TouchEvent) => {
+            if (isFirstLoadCriticalPath(window.location.pathname)) return;
             const intent = resolvePrefetchIntent(event.target);
             if (!intent) return;
             if (intent.path === window.location.pathname) return;
@@ -172,21 +171,24 @@ export const NavigationPrefetchManager: React.FC = () => {
 
         document.addEventListener('pointerenter', onPointerEnter, true);
         document.addEventListener('pointerleave', onPointerLeave, true);
-        document.addEventListener('focusin', onFocusIn, true);
         document.addEventListener('pointerdown', onPointerDown, true);
         document.addEventListener('touchstart', onTouchStart, true);
 
         return () => {
             document.removeEventListener('pointerenter', onPointerEnter, true);
             document.removeEventListener('pointerleave', onPointerLeave, true);
-            document.removeEventListener('focusin', onFocusIn, true);
             document.removeEventListener('pointerdown', onPointerDown, true);
             document.removeEventListener('touchstart', onTouchStart, true);
         };
-    }, []);
+    }, [isPrefetchActive]);
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
         if (typeof window === 'undefined') return;
+        if (isFirstLoadCriticalPath(location.pathname)) {
+            return;
+        }
+
         let viewportWarmups = 0;
 
         const observer = new IntersectionObserver((entries) => {
@@ -227,13 +229,14 @@ export const NavigationPrefetchManager: React.FC = () => {
             mutationObserver.disconnect();
             observer.disconnect();
         };
-    }, [location.pathname]);
+    }, [isPrefetchActive, location.pathname]);
 
     useEffect(() => {
+        if (!isPrefetchActive) return;
         const extraCandidates = collectIdleCandidatesForPath(location.pathname);
         scheduleIdleWarmups(location.pathname, extraCandidates);
         publishPrefetchStats();
-    }, [location.pathname]);
+    }, [isPrefetchActive, location.pathname]);
 
     return null;
 };

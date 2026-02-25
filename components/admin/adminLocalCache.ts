@@ -1,7 +1,9 @@
+import { readLocalStorageItem, writeLocalStorageItem } from '../../services/browserStorageService';
+
 export const readAdminCache = <T>(key: string, fallbackValue: T): T => {
     if (typeof window === 'undefined') return fallbackValue;
     try {
-        const rawValue = window.localStorage.getItem(key);
+        const rawValue = readLocalStorageItem(key);
         if (!rawValue) return fallbackValue;
         return JSON.parse(rawValue) as T;
     } catch {
@@ -12,7 +14,7 @@ export const readAdminCache = <T>(key: string, fallbackValue: T): T => {
 export const writeAdminCache = (key: string, value: unknown): void => {
     if (typeof window === 'undefined') return;
     try {
-        window.localStorage.setItem(key, JSON.stringify(value));
+        writeLocalStorageItem(key, JSON.stringify(value));
     } catch {
         // ignore cache write errors (quota/private mode), UI still works from live fetches
     }

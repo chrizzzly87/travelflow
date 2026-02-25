@@ -102,6 +102,27 @@
 </head>
   <body>
     <div id="root"></div>
+    <!-- Netlify Forms SPA registration scaffold -->
+    <form
+      name="contact"
+      method="POST"
+      data-netlify="true"
+      netlify-honeypot="bot-field"
+      hidden
+      aria-hidden="true"
+    >
+      <input type="hidden" name="form-name" value="contact" />
+      <input type="text" name="reason" />
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <textarea name="message"></textarea>
+      <input type="text" name="currentPath" />
+      <input type="text" name="locale" />
+      <input type="text" name="userId" />
+      <input type="text" name="plan" />
+      <input type="text" name="appVersion" />
+      <input type="text" name="bot-field" />
+    </form>
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

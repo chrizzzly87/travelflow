@@ -37,7 +37,7 @@ Examples:
 
 Validation:
 
-- Run `npm run i18n:validate` (also executed in `npm run build`).
+- Run `pnpm i18n:validate` (also executed in `pnpm build`).
 - The validator fails if any locale string still contains legacy `{{...}}` placeholders.
 
 ## Namespace Placement Strategy
@@ -75,8 +75,8 @@ When adding a new key:
 
 1. Add the key to `locales/en/<namespace>.json`.
 2. Add the same key to all active locale files under the same namespace.
-3. Run `npm run i18n:validate`.
-4. Run `npm run build` before handoff.
+3. Run `pnpm i18n:validate`.
+4. Run `pnpm build` before handoff.
 
 ## New Marketing Page Checklist
 1. Add page component in `pages/` and wrap with `MarketingLayout` when applicable.

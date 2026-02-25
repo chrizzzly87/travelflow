@@ -1,9 +1,7 @@
 import LZString from 'lz-string';
 import { ActivityType, AppLanguage, ICoordinates, ITrip, ITimelineItem, IViewSettings, ISharedState, MapColorMode, TransportMode, TripPrefillData } from './types';
-import popularIslandDestinationsJson from './data/popularIslandDestinations.json';
-import { getLocalizedCountryNameFromData, getLocalizedIslandNameFromData } from './data/countryTravelData';
 import { normalizeTransportMode } from './shared/transportModes';
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, localeToIntlLocale, normalizeLocale } from './config/locales';
+import { DEFAULT_LOCALE, localeToIntlLocale, normalizeLocale } from './config/locales';
 
 export const BASE_PIXELS_PER_DAY = 120; // Width of one day column (Base Zoom 1.0)
 export const PIXELS_PER_DAY = BASE_PIXELS_PER_DAY; // Deprecated: Use prop passed from parent for zooming
@@ -226,6 +224,42 @@ export interface TimelineBounds {
     dayCount: number;
 }
 
+export interface CityOverlapLayoutSlot {
+    stackIndex: number;
+    stackCount: number;
+}
+
+export interface HorizontalTransferLaneInput {
+    id: string;
+    centerX: number;
+    preferredWidth: number;
+    minWidth?: number;
+    maxWidth?: number;
+}
+
+export interface HorizontalTransferLanePlacement {
+    id: string;
+    centerX: number;
+    chipLeft: number;
+    chipWidth: number;
+    laneIndex: number;
+    laneCount: number;
+}
+
+export interface VerticalTransferConnectorAnchorOptions {
+    cityEdgeInsetPx?: number;
+    edgeGapPx?: number;
+    minSeparationPx?: number;
+}
+
+export interface VerticalTransferConnectorAnchors {
+    fromY: number;
+    toY: number;
+    connectorTop: number;
+    connectorBottom: number;
+    connectorHeight: number;
+}
+
 export const getTimelineBounds = (
     items: ITimelineItem[],
     options: { minDays?: number } = {}
@@ -256,6 +290,275 @@ export const getTimelineBounds = (
         endOffset,
         dayCount: endOffset - startOffset,
     };
+};
+
+const CITY_OVERLAP_EPSILON = 0.0001;
+const CITY_ROUTE_EPSILON = 0.0001;
+
+const getCityRouteOptionIndex = (city: ITimelineItem): number => {
+    if (typeof city.cityPlanOptionIndex === 'number' && Number.isFinite(city.cityPlanOptionIndex)) {
+        return Math.max(0, Math.floor(city.cityPlanOptionIndex));
+    }
+    return Number.MAX_SAFE_INTEGER;
+};
+
+const compareCityRouteOrder = (a: ITimelineItem, b: ITimelineItem): number => {
+    if (a.startDateOffset !== b.startDateOffset) return a.startDateOffset - b.startDateOffset;
+    if (a.duration !== b.duration) return b.duration - a.duration;
+    const optionDelta = getCityRouteOptionIndex(a) - getCityRouteOptionIndex(b);
+    if (optionDelta !== 0) return optionDelta;
+    return a.id.localeCompare(b.id);
+};
+
+const pickCityRouteComponentWinner = (componentCities: ITimelineItem[]): ITimelineItem | null => {
+    if (componentCities.length === 0) return null;
+
+    const explicitApproved = componentCities.filter((city) => city.isApproved === true);
+    if (explicitApproved.length > 0) {
+        return [...explicitApproved].sort(compareCityRouteOrder)[0] || null;
+    }
+
+    const confirmed = componentCities.filter((city) => (city.cityPlanStatus || 'confirmed') !== 'uncertain');
+    if (confirmed.length > 0) {
+        return [...confirmed].sort(compareCityRouteOrder)[0] || null;
+    }
+
+    return [...componentCities].sort(compareCityRouteOrder)[0] || null;
+};
+
+export const buildCityOverlapLayout = (
+    cityItems: ITimelineItem[]
+): Map<string, CityOverlapLayoutSlot> => {
+    const layout = new Map<string, CityOverlapLayoutSlot>();
+    if (!Array.isArray(cityItems) || cityItems.length === 0) return layout;
+
+    const sortedCities = [...cityItems]
+        .filter((item) => item.type === 'city')
+        .sort((a, b) => {
+            if (a.startDateOffset === b.startDateOffset) {
+                return b.duration - a.duration;
+            }
+            return a.startDateOffset - b.startDateOffset;
+        });
+
+    if (sortedCities.length === 0) return layout;
+
+    const laneEnds: number[] = [];
+    const laneByCityId = new Map<string, number>();
+    const componentByCityId = new Map<string, number>();
+    const componentLaneCount = new Map<number, number>();
+
+    let currentComponentId = 0;
+    let currentComponentMaxEnd = Number.NEGATIVE_INFINITY;
+
+    sortedCities.forEach((city) => {
+        const start = city.startDateOffset;
+        const end = city.startDateOffset + Math.max(0, city.duration);
+
+        const startsNewComponent = start >= (currentComponentMaxEnd - CITY_OVERLAP_EPSILON);
+        if (startsNewComponent) {
+            currentComponentId += 1;
+            currentComponentMaxEnd = end;
+            laneEnds.length = 0;
+        } else {
+            currentComponentMaxEnd = Math.max(currentComponentMaxEnd, end);
+        }
+
+        let laneIndex = laneEnds.findIndex((laneEnd) => laneEnd <= (start + CITY_OVERLAP_EPSILON));
+        if (laneIndex < 0) {
+            laneIndex = laneEnds.length;
+            laneEnds.push(end);
+        } else {
+            laneEnds[laneIndex] = end;
+        }
+
+        laneByCityId.set(city.id, laneIndex);
+        componentByCityId.set(city.id, currentComponentId);
+        componentLaneCount.set(
+            currentComponentId,
+            Math.max(componentLaneCount.get(currentComponentId) || 1, laneIndex + 1)
+        );
+    });
+
+    sortedCities.forEach((city) => {
+        const componentId = componentByCityId.get(city.id) || 1;
+        layout.set(city.id, {
+            stackIndex: laneByCityId.get(city.id) || 0,
+            stackCount: componentLaneCount.get(componentId) || 1,
+        });
+    });
+
+    return layout;
+};
+
+export const buildApprovedCityRoute = (cityItems: ITimelineItem[]): ITimelineItem[] => {
+    const approvedCities = [...cityItems]
+        .filter((item) => item.type === 'city' && item.isApproved !== false)
+        .sort(compareCityRouteOrder);
+
+    if (approvedCities.length === 0) return [];
+
+    const route: ITimelineItem[] = [];
+    let componentCities: ITimelineItem[] = [];
+    let componentMaxEnd = Number.NEGATIVE_INFINITY;
+
+    const flushComponent = () => {
+        const winner = pickCityRouteComponentWinner(componentCities);
+        if (winner) route.push(winner);
+        componentCities = [];
+        componentMaxEnd = Number.NEGATIVE_INFINITY;
+    };
+
+    approvedCities.forEach((city) => {
+        const start = city.startDateOffset;
+        const end = city.startDateOffset + Math.max(0, city.duration);
+
+        if (componentCities.length === 0) {
+            componentCities.push(city);
+            componentMaxEnd = end;
+            return;
+        }
+
+        if (start < (componentMaxEnd - CITY_ROUTE_EPSILON)) {
+            componentCities.push(city);
+            componentMaxEnd = Math.max(componentMaxEnd, end);
+            return;
+        }
+
+        flushComponent();
+        componentCities.push(city);
+        componentMaxEnd = end;
+    });
+
+    flushComponent();
+
+    return route.sort(compareCityRouteOrder);
+};
+
+export const buildHorizontalTransferLaneLayout = (
+    inputs: HorizontalTransferLaneInput[],
+    options: { laneCollisionGap?: number } = {}
+): HorizontalTransferLanePlacement[] => {
+    const laneCollisionGap = Math.max(0, options.laneCollisionGap ?? 6);
+    const normalized = inputs
+        .map((input, index) => {
+            if (!input.id || !Number.isFinite(input.centerX) || !Number.isFinite(input.preferredWidth)) return null;
+
+            const minWidth = Math.max(6, Number.isFinite(input.minWidth) ? (input.minWidth as number) : 6);
+            const maxWidthCandidate = Number.isFinite(input.maxWidth) ? (input.maxWidth as number) : input.preferredWidth;
+            const maxWidth = Math.max(minWidth, maxWidthCandidate);
+            const clampedWidth = Math.min(maxWidth, Math.max(minWidth, input.preferredWidth));
+            const chipLeft = input.centerX - (clampedWidth / 2);
+
+            return {
+                index,
+                id: input.id,
+                centerX: input.centerX,
+                chipLeft,
+                chipWidth: clampedWidth,
+                chipRight: chipLeft + clampedWidth,
+            };
+        })
+        .filter((entry): entry is {
+            index: number;
+            id: string;
+            centerX: number;
+            chipLeft: number;
+            chipWidth: number;
+            chipRight: number;
+        } => !!entry);
+
+    if (normalized.length === 0) return [];
+
+    const ordered = [...normalized].sort((a, b) => {
+        if (a.chipLeft !== b.chipLeft) return a.chipLeft - b.chipLeft;
+        if (a.centerX !== b.centerX) return a.centerX - b.centerX;
+        return a.index - b.index;
+    });
+
+    const laneEndByIndex: number[] = [];
+    const laneByInputId = new Map<string, number>();
+
+    ordered.forEach((entry) => {
+        let laneIndex = -1;
+        for (let i = 0; i < laneEndByIndex.length; i += 1) {
+            if (entry.chipLeft >= (laneEndByIndex[i] + laneCollisionGap)) {
+                laneIndex = i;
+                break;
+            }
+        }
+
+        if (laneIndex < 0) {
+            laneIndex = laneEndByIndex.length;
+            laneEndByIndex.push(entry.chipRight);
+        } else {
+            laneEndByIndex[laneIndex] = entry.chipRight;
+        }
+
+        laneByInputId.set(entry.id, laneIndex);
+    });
+
+    const laneCount = Math.max(1, laneEndByIndex.length);
+    return normalized.map((entry) => ({
+        id: entry.id,
+        centerX: entry.centerX,
+        chipLeft: entry.chipLeft,
+        chipWidth: entry.chipWidth,
+        laneIndex: laneByInputId.get(entry.id) || 0,
+        laneCount,
+    }));
+};
+
+export const computeVerticalTransferConnectorAnchors = (
+    fromBoundaryY: number,
+    toBoundaryY: number,
+    totalHeight: number,
+    options: VerticalTransferConnectorAnchorOptions = {}
+): VerticalTransferConnectorAnchors => {
+    const cityEdgeInsetPx = Math.max(0, options.cityEdgeInsetPx ?? 4);
+    const edgeGapPx = Math.max(0, options.edgeGapPx ?? 1.5);
+    const minSeparationPx = Math.max(0, options.minSeparationPx ?? 5);
+    const safeTotalHeight = Number.isFinite(totalHeight) ? Math.max(0, totalHeight) : 0;
+    const direction = fromBoundaryY <= toBoundaryY ? 1 : -1;
+
+    const fromCityEdgeY = fromBoundaryY - (direction * cityEdgeInsetPx);
+    const toCityEdgeY = toBoundaryY + (direction * cityEdgeInsetPx);
+
+    let fromAnchorY = fromCityEdgeY + (direction * edgeGapPx);
+    let toAnchorY = toCityEdgeY - (direction * edgeGapPx);
+    const signedSeparation = (toAnchorY - fromAnchorY) * direction;
+    if (signedSeparation < minSeparationPx) {
+        const midpoint = (fromAnchorY + toAnchorY) / 2;
+        const halfMinSeparation = minSeparationPx / 2;
+        fromAnchorY = midpoint - (direction * halfMinSeparation);
+        toAnchorY = midpoint + (direction * halfMinSeparation);
+    }
+
+    let low = Math.min(fromAnchorY, toAnchorY);
+    let high = Math.max(fromAnchorY, toAnchorY);
+    if (low < 0) {
+        const delta = -low;
+        fromAnchorY += delta;
+        toAnchorY += delta;
+        low = 0;
+        high += delta;
+    }
+    if (high > safeTotalHeight) {
+        const delta = high - safeTotalHeight;
+        fromAnchorY -= delta;
+        toAnchorY -= delta;
+        low = Math.min(fromAnchorY, toAnchorY);
+        high = safeTotalHeight;
+    }
+
+    const clampY = (value: number): number => Math.max(0, Math.min(safeTotalHeight, value));
+    const fromY = clampY(fromAnchorY);
+    const toY = clampY(toAnchorY);
+    const connectorTop = Math.min(fromY, toY);
+    const connectorBottom = Math.max(fromY, toY);
+    const connectorHeight = Math.max(4, connectorBottom - connectorTop);
+
+    return { fromY, toY, connectorTop, connectorBottom, connectorHeight };
 };
 
 export const findTravelBetweenCities = (
@@ -1281,261 +1584,6 @@ export const COUNTRIES = [
     { name: "Zimbabwe", code: "ZW", flag: "🇿🇼" }
 ];
 
-export type DestinationKind = 'country' | 'island';
-
-export interface DestinationOption {
-    name: string;
-    code: string;
-    flag: string;
-    kind: DestinationKind;
-    parentCountryName?: string;
-    parentCountryCode?: string;
-    aliases?: string[];
-    localizedNames?: Record<string, string>;
-}
-
-interface IslandDestinationSeed {
-    name: string;
-    countryCode: string;
-    code?: string;
-    aliases?: string[];
-    localizedNames?: Record<string, string>;
-}
-
-const COUNTRY_BY_CODE = new Map(COUNTRIES.map((country) => [country.code.toLocaleLowerCase(), country]));
-
-const buildIslandCode = (parentCode: string, name: string): string =>
-    `${parentCode}-${name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
-
-const normalizeDestinationLocale = (locale?: string): string => {
-    if (!locale) return DEFAULT_LOCALE;
-    const trimmed = locale.trim().toLocaleLowerCase();
-    if (!trimmed) return DEFAULT_LOCALE;
-    const [base] = trimmed.split('-');
-    return base || DEFAULT_LOCALE;
-};
-
-const normalizeLocalizedNames = (
-    localizedNames?: Record<string, string>
-): Record<string, string> => {
-    if (!localizedNames) return {};
-
-    return Object.entries(localizedNames).reduce<Record<string, string>>((acc, [locale, value]) => {
-        if (typeof value !== 'string') return acc;
-        const normalizedLocale = normalizeDestinationLocale(locale);
-        const normalizedValue = value.trim();
-        if (!normalizedValue) return acc;
-        acc[normalizedLocale] = normalizedValue;
-        return acc;
-    }, {});
-};
-
-const buildLocalizedNamesFromDataset = (
-    kind: DestinationKind,
-    code: string,
-    fallbackName: string
-): Record<string, string> => {
-    const localizedNames: Record<string, string> = {};
-
-    SUPPORTED_LOCALES.forEach((locale) => {
-        const translatedName = kind === 'country'
-            ? getLocalizedCountryNameFromData(code, locale)
-            : getLocalizedIslandNameFromData(code, locale);
-        localizedNames[locale] = translatedName || fallbackName;
-    });
-
-    return localizedNames;
-};
-
-const getLocalizedDestinationName = (
-    destination: DestinationOption,
-    locale?: string
-): string => {
-    const localeKey = normalizeDestinationLocale(locale);
-    return destination.localizedNames?.[localeKey]
-        || destination.localizedNames?.[DEFAULT_LOCALE]
-        || destination.name;
-};
-
-const buildIslandDestination = (
-    seed: IslandDestinationSeed
-): DestinationOption => {
-    const parent = COUNTRY_BY_CODE.get(seed.countryCode.trim().toLocaleLowerCase());
-    if (!parent) {
-        throw new Error(`Island destination parent not found for ${seed.name}: ${seed.countryCode}`);
-    }
-    const code = seed.code || buildIslandCode(parent.code, seed.name);
-    const localizedNames = {
-        ...buildLocalizedNamesFromDataset('island', code, seed.name),
-        ...normalizeLocalizedNames(seed.localizedNames),
-    };
-
-    return {
-        name: seed.name,
-        code,
-        flag: parent.flag,
-        kind: 'island',
-        parentCountryName: parent.name,
-        parentCountryCode: parent.code,
-        aliases: seed.aliases || [],
-        localizedNames,
-    };
-};
-
-const ISLAND_DESTINATION_SEEDS = popularIslandDestinationsJson as IslandDestinationSeed[];
-
-export const ISLAND_DESTINATIONS: DestinationOption[] = ISLAND_DESTINATION_SEEDS
-    .map((seed) => buildIslandDestination(seed))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-export const DESTINATION_OPTIONS: DestinationOption[] = [
-    ...COUNTRIES.map((country) => ({
-        ...country,
-        kind: 'country' as const,
-        localizedNames: buildLocalizedNamesFromDataset('country', country.code, country.name),
-    })),
-    ...ISLAND_DESTINATIONS,
-];
-
-const DESTINATION_BY_CODE = new Map(
-    DESTINATION_OPTIONS.map((d) => [d.code.toLowerCase(), d])
-);
-
-const normalizeDestinationKey = (value: string): string => value.trim().toLocaleLowerCase();
-
-const DESTINATION_BY_LOOKUP = new Map<string, DestinationOption>();
-
-const addDestinationLookup = (destination: DestinationOption, candidate?: string): void => {
-    if (!candidate) return;
-    const normalized = normalizeDestinationKey(candidate);
-    if (!normalized || DESTINATION_BY_LOOKUP.has(normalized)) return;
-    DESTINATION_BY_LOOKUP.set(normalized, destination);
-};
-
-DESTINATION_OPTIONS.forEach((destination) => {
-    addDestinationLookup(destination, destination.name);
-    (destination.aliases || []).forEach((alias) => addDestinationLookup(destination, alias));
-    Object.values(destination.localizedNames || {}).forEach((localizedName) => addDestinationLookup(destination, localizedName));
-});
-
-const getDestinationSearchTokens = (destination: DestinationOption): string[] => {
-    const tokens = new Set<string>();
-    tokens.add(destination.name);
-    (destination.aliases || []).forEach((alias) => tokens.add(alias));
-    Object.values(destination.localizedNames || {}).forEach((localizedName) => tokens.add(localizedName));
-
-    if (destination.parentCountryName) tokens.add(destination.parentCountryName);
-    if (destination.parentCountryCode) {
-        const parent = DESTINATION_BY_CODE.get(destination.parentCountryCode.toLowerCase());
-        if (parent) {
-            tokens.add(parent.name);
-            Object.values(parent.localizedNames || {}).forEach((localizedName) => tokens.add(localizedName));
-        }
-    }
-
-    return Array.from(tokens)
-        .map((token) => token.trim())
-        .filter(Boolean);
-};
-
-export const getDestinationOptionByName = (value: string): DestinationOption | undefined => {
-    const normalized = normalizeDestinationKey(value);
-    if (!normalized) return undefined;
-    return DESTINATION_BY_LOOKUP.get(normalized);
-};
-
-export const getDestinationOptionByCode = (code: string): DestinationOption | undefined => {
-    return DESTINATION_BY_CODE.get(code.toLowerCase());
-};
-
-export const resolveDestinationCodes = (codes: string[]): string[] => {
-    return codes
-        .map((code) => getDestinationOptionByCode(code))
-        .filter((d): d is DestinationOption => d !== undefined)
-        .map((d) => d.name);
-};
-
-export const resolveDestinationName = (value: string): string => {
-    const match = getDestinationOptionByName(value);
-    return match?.name || value.trim();
-};
-
-export const getDestinationDisplayName = (value: string, locale?: string): string => {
-    const destination = getDestinationOptionByName(value);
-    if (!destination) return value.trim();
-    return getLocalizedDestinationName(destination, locale);
-};
-
-export const getDestinationDisplayNameByCode = (code: string, locale?: string): string | undefined => {
-    const destination = getDestinationOptionByCode(code);
-    if (!destination) return undefined;
-    return getLocalizedDestinationName(destination, locale);
-};
-
-export const getDestinationPromptLabel = (value: string, locale?: string): string => {
-    const destination = getDestinationOptionByName(value);
-    if (!destination) return value;
-
-    const destinationName = getLocalizedDestinationName(destination, locale);
-    if (destination.kind === 'island' && destination.parentCountryName) {
-        const parentCountryName = destination.parentCountryCode
-            ? getDestinationDisplayNameByCode(destination.parentCountryCode, locale) || destination.parentCountryName
-            : destination.parentCountryName;
-        return `${destinationName}, ${parentCountryName}`;
-    }
-    return destinationName;
-};
-
-export const getDestinationSeasonCountryName = (value: string): string => {
-    const destination = getDestinationOptionByName(value);
-    if (!destination) return value;
-    return destination.parentCountryName || destination.name;
-};
-
-export const getDestinationMetaLabel = (value: string, locale?: string): string | undefined => {
-    const destination = getDestinationOptionByName(value);
-    if (!destination || destination.kind !== 'island' || !destination.parentCountryName) return undefined;
-    const parentCountryName = destination.parentCountryCode
-        ? getDestinationDisplayNameByCode(destination.parentCountryCode, locale) || destination.parentCountryName
-        : destination.parentCountryName;
-    return `Island of ${parentCountryName}`;
-};
-
-export const isIslandDestination = (value: string): boolean => {
-    const destination = getDestinationOptionByName(value);
-    return destination?.kind === 'island';
-};
-
-export const searchDestinationOptions = (
-    query: string,
-    options: { excludeNames?: string[]; limit?: number } = {}
-): DestinationOption[] => {
-    const normalizedQuery = normalizeDestinationKey(query);
-    const excluded = new Set((options.excludeNames || []).map((name) => resolveDestinationName(name).toLocaleLowerCase()));
-    const source = DESTINATION_OPTIONS.filter((destination) => !excluded.has(destination.name.toLocaleLowerCase()));
-
-    if (!normalizedQuery) {
-        return source.slice(0, options.limit || source.length);
-    }
-
-    const startsWithMatches = source.filter((destination) => {
-        const tokens = getDestinationSearchTokens(destination);
-        return tokens.some((token) => token.toLocaleLowerCase().startsWith(normalizedQuery));
-    });
-
-    const includesMatches = source.filter((destination) => {
-        if (startsWithMatches.includes(destination)) return false;
-        const haystack = getDestinationSearchTokens(destination)
-            .filter(Boolean)
-            .join(' ')
-            .toLocaleLowerCase();
-        return haystack.includes(normalizedQuery);
-    });
-
-    const merged = [...startsWithMatches, ...includesMatches];
-    return merged.slice(0, options.limit || merged.length);
-};
-
 // --- COMPRESSION ---
 export const compressTrip = (trip: ITrip, view?: IViewSettings): string => {
     try {
@@ -1574,74 +1622,12 @@ export const decompressTrip = (encoded: string): ISharedState | null => {
 
 // --- TRIP PREFILL (URL-encoded create-trip parameters) ---
 
-const VALID_BUDGETS = ['Low', 'Medium', 'High', 'Luxury'];
-const VALID_PACES = ['Relaxed', 'Balanced', 'Fast'];
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
 export const encodeTripPrefill = (data: TripPrefillData): string => {
     const json = JSON.stringify(data);
     const bytes = new TextEncoder().encode(json);
     let binary = '';
     for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
     return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-};
-
-export const decodeTripPrefill = (encoded: string): TripPrefillData | null => {
-    try {
-        const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
-        const binary = atob(base64);
-        const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-        const json = new TextDecoder().decode(bytes);
-        const parsed = JSON.parse(json);
-        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
-
-        const result: TripPrefillData = {};
-
-        if (Array.isArray(parsed.countries)) {
-            const seen = new Set<string>();
-            const resolvedCountries = parsed.countries
-                .map((candidate: unknown) => {
-                    if (typeof candidate !== 'string') return null;
-                    const destination = getDestinationOptionByName(candidate);
-                    if (!destination) return null;
-                    const key = destination.name.toLocaleLowerCase();
-                    if (seen.has(key)) return null;
-                    seen.add(key);
-                    return destination.name;
-                })
-                .filter((name): name is string => Boolean(name));
-
-            if (resolvedCountries.length > 0) {
-                result.countries = resolvedCountries;
-            }
-        }
-        if (typeof parsed.startDate === 'string' && ISO_DATE_RE.test(parsed.startDate) && !isNaN(Date.parse(parsed.startDate))) {
-            result.startDate = parsed.startDate;
-        }
-        if (typeof parsed.endDate === 'string' && ISO_DATE_RE.test(parsed.endDate) && !isNaN(Date.parse(parsed.endDate))) {
-            result.endDate = parsed.endDate;
-        }
-        if (typeof parsed.budget === 'string' && VALID_BUDGETS.includes(parsed.budget)) {
-            result.budget = parsed.budget;
-        }
-        if (typeof parsed.pace === 'string' && VALID_PACES.includes(parsed.pace)) {
-            result.pace = parsed.pace;
-        }
-        if (typeof parsed.cities === 'string') result.cities = parsed.cities;
-        if (typeof parsed.notes === 'string') result.notes = parsed.notes;
-        if (typeof parsed.roundTrip === 'boolean') result.roundTrip = parsed.roundTrip;
-        if (parsed.mode === 'classic' || parsed.mode === 'wizard') result.mode = parsed.mode;
-        if (Array.isArray(parsed.styles)) result.styles = parsed.styles.filter((s: unknown) => typeof s === 'string');
-        if (Array.isArray(parsed.vibes)) result.vibes = parsed.vibes.filter((s: unknown) => typeof s === 'string');
-        if (Array.isArray(parsed.logistics)) result.logistics = parsed.logistics.filter((s: unknown) => typeof s === 'string');
-        if (typeof parsed.meta === 'object' && parsed.meta !== null && !Array.isArray(parsed.meta)) {
-            result.meta = parsed.meta;
-        }
-
-        return Object.keys(result).length > 0 ? result : null;
-    } catch {
-        return null;
-    }
 };
 
 export const buildCreateTripUrl = (data: TripPrefillData): string => {

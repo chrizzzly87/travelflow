@@ -1,19 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
-import { suggestActivityDetails, generateCityNotesAddition } from '../services/aiService';
 import type { CityNotesEnhancementMode } from '../services/aiService';
 import { HexColorPicker } from 'react-colorful';
 import { ALL_ACTIVITY_TYPES, TRAVEL_COLOR, addDays, applyCityPaletteToItems, CITY_COLOR_PALETTES, DEFAULT_CITY_COLOR_PALETTE_ID, formatDate, getContrastTextColor, getHexFromColorClass, getStoredAppLanguage, getActivityColorByTypes, getCityColorPalette, isTailwindCityColorValue, normalizeActivityTypes, normalizeCityColorInput, DEFAULT_DISTANCE_UNIT, estimateTravelHours, formatDistance, formatDurationHours, getTravelLegMetricsForItem, getNormalizedCityName, COUNTRIES, shiftHexColor } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
-import { MarkdownEditor } from './MarkdownEditor';
 import type { MarkdownAiAction } from './MarkdownEditor';
 import { ActivityTypeIcon, formatActivityTypeLabel, getActivityTypeButtonClass } from './ActivityTypeVisuals';
 import { TransportModeIcon } from './TransportModeIcon';
 import { useAppDialog } from './AppDialogProvider';
 import { normalizeTransportMode, TRANSPORT_MODE_UI_ORDER } from '../shared/transportModes';
 import { FlagIcon } from './flags/FlagIcon';
+import { Switch } from './ui/switch';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface DetailsPanelProps {
   item: ITimelineItem | null;
@@ -56,6 +56,12 @@ interface CityDraft {
     countryCode?: string;
 }
 
+interface HotelSearchResult {
+    id: string;
+    name: string;
+    address: string;
+}
+
 const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
     {
         id: 'expand-checklists',
@@ -73,6 +79,24 @@ const CITY_NOTES_AI_ACTIONS: MarkdownAiAction[] = [
         description: 'Adds lightweight morning/afternoon/evening checklist ideas.'
     }
 ];
+
+type AiServiceModule = typeof import('../services/aiService');
+let aiServicePromise: Promise<AiServiceModule> | null = null;
+
+const LazyMarkdownEditor = lazy(() =>
+    loadLazyComponentWithRecovery('MarkdownEditor', () =>
+        import('./MarkdownEditor').then((module) => ({ default: module.MarkdownEditor }))
+    )
+);
+
+const loadAiService = async (): Promise<AiServiceModule> => {
+    if (!aiServicePromise) {
+        aiServicePromise = import('../services/aiService');
+    }
+    return aiServicePromise;
+};
+
+const EMPTY_TRIP_ITEMS: ITimelineItem[] = [];
 
 const appendNotes = (existing: string, addition: string): string => {
     const trimmedExisting = existing.trim();
@@ -109,7 +133,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
     onBatchUpdate,
     onDelete, 
     tripStartDate, 
-    tripItems = [],
+    tripItems = EMPTY_TRIP_ITEMS,
     routeMode = 'simple',
     routeStatus,
     onForceFill,
@@ -126,7 +150,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [aiStatus, setAiStatus] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [pendingNotesProposal, setPendingNotesProposal] = useState<PendingCityNotesProposal | null>(null);
-  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(item);
+  const initialCachedItemRef = useRef<ITimelineItem | null>(item);
+  const [cachedItem, setCachedItem] = useState<ITimelineItem | null>(initialCachedItemRef.current);
   const [isDurationEditorOpen, setIsDurationEditorOpen] = useState(false);
   const [durationDraft, setDurationDraft] = useState<DurationDraft | null>(null);
   const [isCityEditorOpen, setIsCityEditorOpen] = useState(false);
@@ -143,7 +168,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   // Search State for Hotels
   const [hotelQuery, setHotelQuery] = useState('');
   const [isSearchingHotels, setIsSearchingHotels] = useState(false);
-  const [hotelResults, setHotelResults] = useState<{name: string, address: string}[]>([]);
+  const [hotelResults, setHotelResults] = useState<HotelSearchResult[]>([]);
   
   // Places Service
   const [placesService, setPlacesService] = useState<any>(null);
@@ -151,7 +176,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const [apiKeyError, setApiKeyError] = useState(false);
 
   // Custom Drawer State
-  const [isRendered, setIsRendered] = useState(isOpen);
+  const initialRenderedRef = useRef(isOpen);
+  const [isRendered, setIsRendered] = useState(initialRenderedRef.current);
   const [isVisible, setIsVisible] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -415,6 +441,98 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
           .sort((a, b) => a.startDateOffset - b.startDateOffset),
       [tripItems]
   );
+  const handleSetItemApproved = (checked: boolean) => {
+      if (!canEdit || !displayItem) return;
+
+      if (displayItem.type === 'city') {
+          if (checked) {
+              const overlapEpsilon = 0.0001;
+              const targetStart = displayItem.startDateOffset;
+              const targetEnd = displayItem.startDateOffset + Math.max(0, displayItem.duration);
+              const fallbackGroupId = `city-option-${Number(displayItem.startDateOffset.toFixed(3))}`;
+
+              const conflictingSiblings = sortedCityItems.filter((entry) => {
+                  if (entry.id === displayItem.id) return false;
+                  if (entry.isApproved === false) return false;
+
+                  const entryStart = entry.startDateOffset;
+                  const entryEnd = entry.startDateOffset + Math.max(0, entry.duration);
+                  const overlaps = entryStart < (targetEnd - overlapEpsilon) && entryEnd > (targetStart + overlapEpsilon);
+                  if (!overlaps) return false;
+
+                  const sharesGroup = !!displayItem.cityPlanGroupId && entry.cityPlanGroupId === displayItem.cityPlanGroupId;
+                  const isTentativeOption = (
+                      displayItem.cityPlanStatus === 'uncertain' ||
+                      entry.cityPlanStatus === 'uncertain' ||
+                      !!displayItem.cityPlanGroupId ||
+                      !!entry.cityPlanGroupId
+                  );
+                  return sharesGroup || isTentativeOption;
+              });
+
+              const approvedGroupId = displayItem.cityPlanGroupId || (conflictingSiblings.length > 0 ? fallbackGroupId : undefined);
+              const changes: Array<{ id: string; updates: Partial<ITimelineItem> }> = [
+                  {
+                      id: displayItem.id,
+                      updates: {
+                          isApproved: true,
+                          cityPlanStatus: 'confirmed',
+                          ...(approvedGroupId ? { cityPlanGroupId: approvedGroupId } : {}),
+                      },
+                  },
+              ];
+
+              conflictingSiblings.forEach((entry) => {
+                  changes.push({
+                      id: entry.id,
+                      updates: {
+                          isApproved: false,
+                          cityPlanStatus: 'uncertain',
+                          cityPlanGroupId: entry.cityPlanGroupId || approvedGroupId,
+                      },
+                  });
+              });
+
+              applyItemChanges(changes);
+              return;
+          }
+
+          const normalizedStart = Number(displayItem.startDateOffset.toFixed(3));
+          const defaultGroupId = `city-option-${normalizedStart}`;
+          const nextGroupId = displayItem.cityPlanGroupId || defaultGroupId;
+          const siblingOptionIndexes = sortedCityItems
+              .filter(entry =>
+                  entry.id !== displayItem.id
+                  && entry.cityPlanStatus === 'uncertain'
+                  && entry.cityPlanGroupId === nextGroupId
+              )
+              .map(entry => (
+                  typeof entry.cityPlanOptionIndex === 'number' && Number.isFinite(entry.cityPlanOptionIndex)
+                      ? Number(entry.cityPlanOptionIndex)
+                      : -1
+              ));
+          const existingOptionIndex = (typeof displayItem.cityPlanOptionIndex === 'number' && Number.isFinite(displayItem.cityPlanOptionIndex))
+              ? Number(displayItem.cityPlanOptionIndex)
+              : undefined;
+          const nextOptionIndex = existingOptionIndex !== undefined
+              ? Math.max(0, Math.floor(existingOptionIndex))
+              : (Math.max(-1, ...siblingOptionIndexes) + 1);
+
+          handleUpdate(displayItem.id, {
+              isApproved: false,
+              cityPlanStatus: 'uncertain',
+              cityPlanGroupId: nextGroupId,
+              cityPlanOptionIndex: nextOptionIndex,
+          });
+          return;
+      }
+
+      if (displayItem.type === 'activity') {
+          handleUpdate(displayItem.id, {
+              isApproved: checked,
+          });
+      }
+  };
   const firstCityItem = sortedCityItems[0] || null;
   const lastCityItem = sortedCityItems.length > 1 ? sortedCityItems[sortedCityItems.length - 1] : null;
   const isRoundTripSequence = !!(
@@ -685,7 +803,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (!displayItem) return;
       setLoading(true);
       try {
-          const details = await suggestActivityDetails(displayItem.title, displayItem.location || "");
+          const aiService = await loadAiService();
+          const details = await aiService.suggestActivityDetails(displayItem.title, displayItem.location || "");
           handleUpdate(displayItem.id, {
               aiInsights: { cost: details.cost, bestTime: details.bestTime, tips: details.tips },
           });
@@ -705,7 +824,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       setIsEnhancing(true);
 
       try {
-          const addition = await generateCityNotesAddition(
+          const aiService = await loadAiService();
+          const addition = await aiService.generateCityNotesAddition(
               displayItem.location || displayItem.title,
               displayItem.description || '',
               mode
@@ -783,8 +903,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
               setIsSearchingHotels(false);
               if (status === (window as any).google.maps.places.PlacesServiceStatus.OK && results) {
                   setHotelResults(results.map(p => ({ 
-                      name: p.name, 
-                      address: p.formatted_address 
+                      id: typeof p.place_id === 'string' && p.place_id.trim().length > 0
+                          ? p.place_id
+                          : `${p.name || 'hotel'}-${p.formatted_address || ''}`,
+                      name: p.name || 'Hotel',
+                      address: p.formatted_address || '',
                   })).slice(0, 5));
               } else {
                   setHotelResults([]);
@@ -796,7 +919,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       }
   };
   
-  const selectHotelResult = (result: {name: string, address: string}) => {
+  const selectHotelResult = (result: HotelSearchResult) => {
       if (!canEdit) return;
       if (!displayItem) return;
       handleUpdate(displayItem.id, { hotels: [...(displayItem.hotels || []), { id: `hotel-${Date.now()}`, name: result.name, address: result.address }] });
@@ -972,6 +1095,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       ? normalizedTransportMode
       : 'route';
   const showRouteDistance = routeMode === 'realistic';
+  const supportsApproval = isCity || isActivity;
+  const isItemApproved = supportsApproval ? displayItem.isApproved !== false : true;
 
   const Content = (
       <div className={`flex flex-col h-full w-full min-w-0 bg-gray-50 ${variant === 'sidebar' ? 'border-l border-gray-200' : 'rounded-t-[20px] sm:rounded-2xl'}`}>
@@ -1040,17 +1165,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                     <div>
                                         <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Palette colors</div>
                                         <div className="grid grid-cols-8 gap-1.5">
-                                            {activeCityPalette.colors.map((paletteColor, index) => {
+                                            {activeCityPalette.colors.map((paletteColor) => {
                                                 const normalizedSwatchHex = getHexFromColorClass(paletteColor).toLowerCase();
                                                 const isSelected = selectedCityColorHex?.toLowerCase() === normalizedSwatchHex;
                                                 return (
                                                     <button
-                                                        key={`${activeCityPalette.id}-color-${index}`}
+                                                        key={`${activeCityPalette.id}-color-${paletteColor}`}
                                                         onClick={() => { if (!canEdit) return; handleUpdate(displayItem.id, { color: paletteColor }); }}
                                                         disabled={!canEdit}
                                                         className={`h-6 w-6 rounded-full border-2 transition-transform ${isSelected ? 'border-gray-900 shadow-inner' : 'border-transparent'} ${canEdit ? 'hover:scale-110 hover:border-gray-200' : 'opacity-50 cursor-not-allowed'}`}
                                                         style={{ backgroundColor: paletteColor }}
-                                                        title={`Palette color ${index + 1}`}
+                                                        title="Palette color"
                                                     />
                                                 );
                                             })}
@@ -1139,6 +1264,18 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                       </div>
                   )}
              </div>
+             {supportsApproval && (
+                <div className="mb-3 flex items-center gap-2 text-xs text-gray-600">
+                    <Switch
+                        checked={isItemApproved}
+                        onCheckedChange={handleSetItemApproved}
+                        disabled={!canEdit}
+                        className="h-5 w-9 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-amber-400"
+                        aria-label="Toggle item approval"
+                    />
+                    <span className="font-medium">{isItemApproved ? 'Approved' : 'Needs approval'}</span>
+                </div>
+             )}
              
              <textarea 
                 value={displayItem.title} 
@@ -1405,15 +1542,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                                 </div>
                                 {hotelResults.length > 0 && (
                                     <div className="mt-2 space-y-2">
-                                        {hotelResults.map((result, idx) => (
-                                            <div
-                                                key={idx}
+                                        {hotelResults.map((result) => (
+                                            <button
+                                                key={result.id}
+                                                type="button"
                                                 onClick={() => selectHotelResult(result)}
-                                                className={`bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
+                                                disabled={!canEdit}
+                                                className={`w-full text-left bg-gray-50 border border-gray-200 rounded-lg p-2 transition-all ${canEdit ? 'hover:bg-accent-50 hover:border-accent-200 cursor-pointer' : 'cursor-not-allowed opacity-60'}`}
                                             >
                                                 <div className="font-bold text-sm text-gray-800">{result.name}</div>
                                                 <div className="text-xs text-gray-500 truncate">{result.address}</div>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 )}
@@ -1516,20 +1655,24 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
              <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex-1">
                 <div className="flex justify-between items-center mb-2"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notes</h3></div>
-                <MarkdownEditor
-                    key={displayItem.id}
-                    value={displayItem.description || ''}
-                    onChange={canEdit ? ((val) => handleUpdate(displayItem.id, { description: val })) : undefined}
-                    aiActions={isCity && canEdit ? CITY_NOTES_AI_ACTIONS : undefined}
-                    onAiActionSelect={isCity && canEdit ? ((actionId) => {
-                        if (actionId === 'expand-checklists' || actionId === 'local-tips' || actionId === 'day-plan') {
-                            handleEnhanceNotes(actionId);
-                        }
-                    }) : undefined}
-                    isGenerating={isEnhancing}
-                    aiStatus={isCity ? aiStatus : null}
-                    readOnly={!canEdit}
-                />
+                <Suspense
+                    fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading notes editor...</div>}
+                >
+                    <LazyMarkdownEditor
+                        key={displayItem.id}
+                        value={displayItem.description || ''}
+                        onChange={canEdit ? ((val) => handleUpdate(displayItem.id, { description: val })) : undefined}
+                        aiActions={isCity && canEdit ? CITY_NOTES_AI_ACTIONS : undefined}
+                        onAiActionSelect={isCity && canEdit ? ((actionId) => {
+                            if (actionId === 'expand-checklists' || actionId === 'local-tips' || actionId === 'day-plan') {
+                                handleEnhanceNotes(actionId);
+                            }
+                        }) : undefined}
+                        isGenerating={isEnhancing}
+                        aiStatus={isCity ? aiStatus : null}
+                        readOnly={!canEdit}
+                    />
+                </Suspense>
                 {aiError && (
                     <div className="mt-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                         {aiError}
@@ -1544,7 +1687,11 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
                             </div>
                         </div>
                         <div className="p-4 bg-white">
-                            <MarkdownEditor value={proposedNotesPreview} readOnly />
+                            <Suspense
+                                fallback={<div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-500">Loading preview...</div>}
+                            >
+                                <LazyMarkdownEditor value={proposedNotesPreview} readOnly />
+                            </Suspense>
                         </div>
                         <div className="px-4 py-3 bg-accent-50 border-t border-accent-100 flex items-center justify-end gap-2">
                             <button
@@ -1612,7 +1759,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   // Else Overlay mode (Portal)
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end pointer-events-none">
-        <div className={`absolute inset-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={handleClosePanel} />
+        <button
+            type="button"
+            aria-label="Close details panel"
+            className={`absolute inset-0 border-0 p-0 bg-black/30 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={handleClosePanel}
+        />
         <div 
             className={`bg-gray-100 shadow-2xl flex flex-col pointer-events-auto will-change-transform absolute w-full h-[85vh] bottom-0 rounded-t-[20px] left-0 right-0 sm:top-2 sm:bottom-2 sm:right-2 sm:w-[450px] sm:h-auto sm:rounded-2xl sm:left-auto`}
             style={{ transform: window.innerWidth < 640 ? `translateY(${!isVisible ? '100%' : `${dragOffset}px`})` : `translateX(${!isVisible ? '110%' : '0%'})`, transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1)' }}

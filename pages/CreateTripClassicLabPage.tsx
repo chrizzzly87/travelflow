@@ -6,6 +6,7 @@ import {
     Bicycle,
     Buildings,
     Bus,
+    Cake,
     CalendarBlank,
     CarProfile,
     CaretDown,
@@ -13,8 +14,13 @@ import {
     CheckCircle,
     Compass,
     DotsSixVertical,
+    EyeSlash,
     ForkKnife,
     GearSix,
+    GenderFemale,
+    GenderMale,
+    GenderNonbinary,
+    Heart,
     Info,
     Laptop,
     MagicWand,
@@ -39,32 +45,43 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
+import { useAppDialog } from '../components/AppDialogProvider';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { useDbSync } from '../hooks/useDbSync';
 import { generateItinerary } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    beginTripGenerationTabFeedback,
+    getTripReadyNotificationPermission,
+    requestTripReadyNotificationPermission,
+    sendTripReadyNotification,
+    type TripGenerationTabFeedbackSession,
+} from '../services/tripGenerationTabFeedbackService';
 import { getCountrySeasonByName } from '../data/countryTravelData';
 import { buildPath } from '../config/routes';
 import { AppLanguage, ITrip, TripPrefillData } from '../types';
 import {
     addDays,
-    DESTINATION_OPTIONS,
-    decodeTripPrefill,
     encodeTripPrefill,
     getDaysDifference,
+    generateTripId,
+} from '../utils';
+import {
+    DESTINATION_OPTIONS,
     getDestinationMetaLabel,
     getDestinationOptionByName,
     getDestinationPromptLabel,
     getDestinationSeasonCountryName,
-    generateTripId,
     resolveDestinationName,
     searchDestinationOptions,
-} from '../utils';
+} from '../services/destinationService';
+import { decodeTripPrefill } from '../services/tripPrefillDecoder';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;
@@ -79,6 +96,7 @@ type FlexWindow = 'spring' | 'summer' | 'autumn' | 'winter' | 'shoulder';
 type TravelerType = 'solo' | 'couple' | 'friends' | 'family';
 type TransportMode = 'auto' | 'plane' | 'car' | 'train' | 'bus' | 'cycle' | 'walk' | 'camper';
 type TravelerGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
+type TravelerGenderSelectValue = Exclude<TravelerGender, ''> | 'unspecified';
 type CollapsibleSection = 'traveler' | 'style' | 'transport';
 type TravelerComfort = 'social' | 'balanced' | 'private';
 type FriendsEnergy = 'chill' | 'mixed' | 'full-send';
@@ -145,6 +163,21 @@ const TRAVELER_OPTIONS: Array<ChoiceOption<TravelerType>> = [
     { id: 'couple', labelKey: 'traveler.options.couple', icon: Users },
     { id: 'friends', labelKey: 'traveler.options.friends', icon: UsersThree },
     { id: 'family', labelKey: 'traveler.options.family', icon: UsersFour },
+];
+
+const TRAVELER_GENDER_OPTIONS: Array<ChoiceOption<TravelerGenderSelectValue>> = [
+    { id: 'unspecified', labelKey: 'traveler.settings.notSpecified', icon: EyeSlash },
+    { id: 'female', labelKey: 'traveler.settings.genderFemale', icon: GenderFemale },
+    { id: 'male', labelKey: 'traveler.settings.genderMale', icon: GenderMale },
+    { id: 'non-binary', labelKey: 'traveler.settings.genderNonBinary', icon: GenderNonbinary },
+    { id: 'prefer-not', labelKey: 'traveler.settings.genderPreferNot', icon: EyeSlash },
+];
+
+const COUPLE_OCCASION_OPTIONS: Array<ChoiceOption<CoupleOccasion>> = [
+    { id: 'none', labelKey: 'traveler.settings.occasionOptions.none', icon: Sparkle },
+    { id: 'honeymoon', labelKey: 'traveler.settings.occasionOptions.honeymoon', icon: Heart },
+    { id: 'anniversary', labelKey: 'traveler.settings.occasionOptions.anniversary', icon: Cake },
+    { id: 'city-break', labelKey: 'traveler.settings.occasionOptions.cityBreak', icon: Buildings },
 ];
 
 const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
@@ -283,6 +316,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     onLanguageLoaded,
 }) => {
     const { t, i18n } = useTranslation('createTrip');
+    const { confirm: confirmDialog } = useAppDialog();
     const [searchParams] = useSearchParams();
 
     useDbSync(onLanguageLoaded);
@@ -351,6 +385,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const snapshotNodeRefs = useRef<Array<HTMLDivElement | null>>([]);
     const submitErrorRef = useRef<HTMLDivElement | null>(null);
     const [snapshotRouteGeometry, setSnapshotRouteGeometry] = useState<SnapshotRouteGeometry | null>(null);
+    const generationTabFeedbackSessionRef = useRef<TripGenerationTabFeedbackSession | null>(null);
 
     const regionDisplayNames = useMemo(() => {
         try {
@@ -1093,6 +1128,21 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     }, []);
 
     const settingsTravelerLabel = t(`traveler.options.${settingsTraveler}`);
+    const toTravelerGenderSelectValue = useCallback((value: TravelerGender): TravelerGenderSelectValue => (
+        value === '' ? 'unspecified' : value
+    ), []);
+    const fromTravelerGenderSelectValue = useCallback((value: TravelerGenderSelectValue): TravelerGender => (
+        value === 'unspecified' ? '' : value
+    ), []);
+    const getTravelerGenderOption = useCallback((value: TravelerGenderSelectValue) => (
+        TRAVELER_GENDER_OPTIONS.find((entry) => entry.id === value) ?? TRAVELER_GENDER_OPTIONS[0]
+    ), []);
+    const getCoupleOccasionOption = useCallback((value: CoupleOccasion) => (
+        COUPLE_OCCASION_OPTIONS.find((entry) => entry.id === value) ?? COUPLE_OCCASION_OPTIONS[0]
+    ), []);
+    const getFlexWindowOption = useCallback((value: FlexWindow) => (
+        FLEX_WINDOW_OPTIONS.find((entry) => entry.id === value) ?? FLEX_WINDOW_OPTIONS[0]
+    ), []);
     const labRouteLinks = useMemo(
         () => [
             { key: 'legacy', path: buildPath('createTripClassicLegacyLab') },
@@ -1133,18 +1183,38 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.gender')}</label>
-                            <select
-                                value={soloGender}
-                                onChange={(event) => setSoloGender(event.target.value as TravelerGender)}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                            <label htmlFor="traveler-solo-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.gender')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(soloGender)}
+                                onValueChange={(value) => setSoloGender(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
                             >
-                                <option value="">{t('traveler.settings.notSpecified')}</option>
-                                <option value="female">{t('traveler.settings.genderFemale')}</option>
-                                <option value="male">{t('traveler.settings.genderMale')}</option>
-                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
-                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
-                            </select>
+                                <SelectTrigger id="traveler-solo-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(soloGender));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`solo-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
                             <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.age')}</label>
@@ -1186,46 +1256,107 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 <div className="space-y-3">
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
-                            <select
-                                value={coupleTravelerA}
-                                onChange={(event) => setCoupleTravelerA(event.target.value as TravelerGender)}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                            <label htmlFor="traveler-couple-a-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerA')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(coupleTravelerA)}
+                                onValueChange={(value) => setCoupleTravelerA(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
                             >
-                                <option value="">{t('traveler.settings.notSpecified')}</option>
-                                <option value="female">{t('traveler.settings.genderFemale')}</option>
-                                <option value="male">{t('traveler.settings.genderMale')}</option>
-                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
-                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
-                            </select>
+                                <SelectTrigger id="traveler-couple-a-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(coupleTravelerA));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`couple-a-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div>
-                            <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerB')}</label>
-                            <select
-                                value={coupleTravelerB}
-                                onChange={(event) => setCoupleTravelerB(event.target.value as TravelerGender)}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                            <label htmlFor="traveler-couple-b-gender" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.travelerB')}</label>
+                            <Select
+                                value={toTravelerGenderSelectValue(coupleTravelerB)}
+                                onValueChange={(value) => setCoupleTravelerB(fromTravelerGenderSelectValue(value as TravelerGenderSelectValue))}
                             >
-                                <option value="">{t('traveler.settings.notSpecified')}</option>
-                                <option value="female">{t('traveler.settings.genderFemale')}</option>
-                                <option value="male">{t('traveler.settings.genderMale')}</option>
-                                <option value="non-binary">{t('traveler.settings.genderNonBinary')}</option>
-                                <option value="prefer-not">{t('traveler.settings.genderPreferNot')}</option>
-                            </select>
+                                <SelectTrigger id="traveler-couple-b-gender" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                    {(() => {
+                                        const option = getTravelerGenderOption(toTravelerGenderSelectValue(coupleTravelerB));
+                                        const Icon = option.icon;
+                                        return (
+                                            <span className="inline-flex items-center gap-2 truncate">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span className="truncate">{t(option.labelKey)}</span>
+                                            </span>
+                                        );
+                                    })()}
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {TRAVELER_GENDER_OPTIONS.map((option) => {
+                                        const Icon = option.icon;
+                                        const label = t(option.labelKey);
+                                        return (
+                                            <SelectItem key={`couple-b-gender-${option.id}`} value={option.id} textValue={label}>
+                                                <span className="inline-flex items-center gap-2">
+                                                    <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                    <span>{label}</span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.occasion')}</label>
-                        <select
+                        <label htmlFor="traveler-couple-occasion" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{t('traveler.settings.occasion')}</label>
+                        <Select
                             value={coupleOccasion}
-                            onChange={(event) => setCoupleOccasion(event.target.value as 'none' | 'honeymoon' | 'anniversary' | 'city-break')}
-                            className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none"
+                            onValueChange={(value) => setCoupleOccasion(value as CoupleOccasion)}
                         >
-                            <option value="none">{t('traveler.settings.occasionOptions.none')}</option>
-                            <option value="honeymoon">{t('traveler.settings.occasionOptions.honeymoon')}</option>
-                            <option value="anniversary">{t('traveler.settings.occasionOptions.anniversary')}</option>
-                            <option value="city-break">{t('traveler.settings.occasionOptions.cityBreak')}</option>
-                        </select>
+                            <SelectTrigger id="traveler-couple-occasion" className="mt-1 w-full rounded-xl border-slate-200 bg-slate-50 text-sm">
+                                {(() => {
+                                    const option = getCoupleOccasionOption(coupleOccasion);
+                                    const Icon = option.icon;
+                                    return (
+                                        <span className="inline-flex items-center gap-2 truncate">
+                                            <Icon size={15} weight="duotone" className="text-slate-500" />
+                                            <span className="truncate">{t(option.labelKey)}</span>
+                                        </span>
+                                    );
+                                })()}
+                            </SelectTrigger>
+                            <SelectContent>
+                                {COUPLE_OCCASION_OPTIONS.map((option) => {
+                                    const Icon = option.icon;
+                                    const label = t(option.labelKey);
+                                    return (
+                                        <SelectItem key={`couple-occasion-${option.id}`} value={option.id} textValue={label}>
+                                            <span className="inline-flex items-center gap-2">
+                                                <Icon size={15} weight="duotone" className="text-slate-500" />
+                                                <span>{label}</span>
+                                            </span>
+                                        </SelectItem>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             )}
@@ -1321,6 +1452,29 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         trackEvent('create_trip__toggle--route_lock', { enabled: checked });
     };
 
+    const requestGenerationNotificationPermission = useCallback(async (): Promise<NotificationPermission | 'unsupported'> => {
+        const currentPermission = getTripReadyNotificationPermission();
+        if (currentPermission !== 'default') return currentPermission;
+
+        trackEvent('create_trip__notifications--prompt');
+        const shouldEnable = await confirmDialog({
+            title: t('notifications.prompt.title'),
+            message: t('notifications.prompt.message'),
+            confirmLabel: t('notifications.prompt.enable'),
+            cancelLabel: t('notifications.prompt.notNow'),
+        });
+
+        if (!shouldEnable) {
+            trackEvent('create_trip__notifications--not_now');
+            return currentPermission;
+        }
+
+        trackEvent('create_trip__notifications--enable');
+        const requestedPermission = await requestTripReadyNotificationPermission();
+        trackEvent('create_trip__notifications--permission', { permission: requestedPermission });
+        return requestedPermission;
+    }, [confirmDialog, t]);
+
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
         if (orderedDestinations.length === 0) {
@@ -1330,6 +1484,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
         setIsSubmitting(true);
         setSubmitError(null);
+
+        let notificationPermission: NotificationPermission | 'unsupported' = getTripReadyNotificationPermission();
+        try {
+            notificationPermission = await requestGenerationNotificationPermission();
+        } catch {
+            notificationPermission = getTripReadyNotificationPermission();
+        }
 
         trackEvent('create_trip__cta--generate', {
             destination_count: orderedDestinations.length,
@@ -1352,6 +1513,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             roundTrip,
         });
         const optimisticCreatedAt = optimisticTrip.createdAt;
+        generationTabFeedbackSessionRef.current?.cancel();
+        generationTabFeedbackSessionRef.current = beginTripGenerationTabFeedback();
         onTripGenerated(optimisticTrip);
 
         try {
@@ -1377,6 +1540,22 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 roundTrip: generatedTrip.roundTrip ?? roundTrip,
                 sourceKind: generatedTrip.sourceKind || 'created',
             });
+            generationTabFeedbackSessionRef.current?.complete('success', {
+                title: generatedTrip.title,
+            });
+            generationTabFeedbackSessionRef.current = null;
+
+            const isTabBackgrounded = document.visibilityState === 'hidden'
+                || (typeof document.hasFocus === 'function' && !document.hasFocus());
+            if (isTabBackgrounded && notificationPermission === 'granted') {
+                const sent = sendTripReadyNotification({
+                    title: t('notifications.ready.title'),
+                    body: t('notifications.ready.body'),
+                });
+                if (sent) {
+                    trackEvent('create_trip__notifications--sent');
+                }
+            }
         } catch (error) {
             const message = getErrorMessage(error, t('errors.genericGenerate'));
             const errorTitle = t('errors.genericGenerate');
@@ -1397,6 +1576,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     },
                 ],
             });
+            generationTabFeedbackSessionRef.current?.complete('error');
+            generationTabFeedbackSessionRef.current = null;
         } finally {
             setIsSubmitting(false);
         }
@@ -1716,18 +1897,26 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                                 </button>
                                             </div>
                                         </label>
-                                        <label className="space-y-1.5 text-sm">
-                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">{t('dates.flexWindow.rangeLabel')}</span>
-                                            <select
+                                        <div className="space-y-1.5 text-sm">
+                                            <span className="text-xs font-semibold uppercase tracking-[0.11em] text-slate-500">
+                                                <label htmlFor="dates-flex-window-range">{t('dates.flexWindow.rangeLabel')}</label>
+                                            </span>
+                                            <Select
                                                 value={flexWindow}
-                                                onChange={(event) => setFlexWindow(event.target.value as FlexWindow)}
-                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                                onValueChange={(value) => setFlexWindow(value as FlexWindow)}
                                             >
-                                                {FLEX_WINDOW_OPTIONS.map((entry) => (
-                                                    <option key={entry.id} value={entry.id}>{t(entry.labelKey)}</option>
-                                                ))}
-                                            </select>
-                                        </label>
+                                                <SelectTrigger id="dates-flex-window-range" className="h-9 w-full rounded-lg border-slate-200 bg-white text-sm text-slate-800 focus:border-accent-400 focus:ring-accent-200">
+                                                    <span className="truncate">{t(getFlexWindowOption(flexWindow).labelKey)}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {FLEX_WINDOW_OPTIONS.map((entry) => (
+                                                        <SelectItem key={`flex-window-${entry.id}`} value={entry.id} textValue={t(entry.labelKey)}>
+                                                            {t(entry.labelKey)}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
                                 )}
 

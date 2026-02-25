@@ -9,12 +9,19 @@
 6. For localized copy placeholders, use ICU syntax (`{name}`), never `{{name}}` (project uses `i18next-icu`).
 7. For new locale keys, update all active locales (`en`, `es`, `de`, `fr`, `pt`, `ru`, `it`, `pl`, `ko`) and choose namespace intentionally (`common/pages/legal` vs route namespace).
 
+## Skill usage policy
+- Use `vercel-react-best-practices` for React performance/refactor tasks; apply only relevant high-impact guidance for the active change.
+- Run `pnpm dlx react-doctor@latest . --verbose --diff` after substantial React edits, fix errors before merge, and triage warnings pragmatically.
+- Use `find-skills` only when a task requires discovery of capabilities not already covered by current skills/workflows.
+- Avoid unnecessary skill runs for straightforward changes.
+
 ## Mandatory release note rule
 When a user-facing feature, fix, or behavior change is completed, you must update release notes in `content/updates/*.md` before finishing the task.
 
 - Use the exact markdown format in `docs/UPDATE_FORMAT.md`.
 - Keep one release note file per worktree/feature. Do not create multiple step-by-step files for the same feature.
-- Finalize that single release note shortly before PR creation so it reflects the final shipped scope.
+- Keep that single release note as `status: draft` while the feature PR is open.
+- After merge to `main`, publish metadata in a follow-up update (`status: published`, next version, and `published_at` equal to the post-merge deploy/merge timestamp before 23:00 UTC).
 - Add user-facing items as `- [x] [Type] ...`.
 - Add internal/non-marketing items as `- [ ] [Internal] ...`.
 - Each change line must start with a **content-matching emoji** — pick an emoji that hints at what the specific change is about. Do NOT use a fixed emoji per type (no 🚀 for every feature, no ✨ for every improvement).
@@ -27,7 +34,12 @@ When a user-facing feature, fix, or behavior change is completed, you must updat
 
 ## Completion gate
 Before finalizing, ensure all applicable code changes are represented in release markdown and versioning is updated.
-- For localization changes, run `npm run i18n:validate` and fix any locale parity/placeholder failures.
+- For localization changes, run `pnpm i18n:validate` and fix any locale parity/placeholder failures.
+- For behavioral code changes, add/update Vitest tests in the same PR and run `pnpm test:core` whenever feasible.
+- For bug fixes, add a regression test proving the previous failure mode is covered.
+- Docs-only, copy-only, and style-only edits are exempt from mandatory test additions.
+- For PRs adding files under `services/` or `config/`, include corresponding `tests/**` entries in the PR checklist/description.
+- For TripView/route-loader orchestration changes, follow `docs/TESTING_PHASE2_SCOPE.md` for phase-2 regression coverage.
 
 ## Direction-Safety Requirement
 - For any new or modified component, evaluate whether CSS logical properties should be used for direction-aware layouts.

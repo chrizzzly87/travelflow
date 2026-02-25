@@ -4,6 +4,7 @@ import {
     AppleLogo,
     ArrowSquareOut,
     ArrowsDownUp,
+    CaretDown,
     ChatCircleDots,
     ChartBarHorizontal,
     DiscordLogo,
@@ -42,9 +43,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '../components/ui/table';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
+import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 
@@ -53,6 +63,7 @@ type SortDirection = 'asc' | 'desc';
 type UserActivationStatus = 'activated' | 'invited' | 'pending' | 'anonymous';
 type UserAccountStatus = 'active' | 'disabled' | 'deleted';
 type UserLoginType = 'social' | 'password' | 'unknown';
+type UserTripFilter = 'no_trips_no_profile' | 'no_trips' | 'one_to_two' | 'three_to_five' | 'six_plus';
 type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github' | 'discord' | 'other_social';
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 
@@ -63,6 +74,7 @@ const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
 const USER_LOGIN_TYPE_VALUES: ReadonlyArray<UserLoginType> = ['social', 'password', 'unknown'];
+const USER_TRIP_FILTER_VALUES: ReadonlyArray<UserTripFilter> = ['no_trips_no_profile', 'no_trips', 'one_to_two', 'three_to_five', 'six_plus'];
 const SOCIAL_PROVIDER_VALUES: ReadonlyArray<SocialProviderFilter> = [
     'google',
     'facebook',
@@ -81,6 +93,16 @@ const SOCIAL_PROVIDER_OPTIONS: Array<{ value: SocialProviderFilter; label: strin
     { value: 'discord', label: 'Discord' },
     { value: 'other_social', label: 'Other social' },
 ];
+const USER_TRIP_FILTER_LABELS: Record<UserTripFilter, string> = {
+    no_trips_no_profile: 'No trips + no profile data',
+    no_trips: 'No trips',
+    one_to_two: '1-2 trips',
+    three_to_five: '3-5 trips',
+    six_plus: '6+ trips',
+};
+const USER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
 
 type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -236,12 +258,20 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
 };
 
 const resolveActivationStatus = (user: AdminUserRecord): UserActivationStatus => {
+    const providerCandidates = [
+        ...(Array.isArray(user.auth_providers) ? user.auth_providers : []),
+        user.auth_provider || '',
+    ]
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+    const hasAnonymousProvider = providerCandidates.some((provider) => provider === 'anonymous' || provider === 'anon');
+    if (Boolean(user.is_anonymous) || hasAnonymousProvider) return 'anonymous';
+
     const explicit = (user.activation_status || '').trim().toLowerCase();
     if (explicit === 'activated' || explicit === 'invited' || explicit === 'pending' || explicit === 'anonymous') {
         return explicit;
     }
     if (explicit === 'pending_activation' || explicit === 'placeholder') return 'pending';
-    if (Boolean(user.is_anonymous)) return 'anonymous';
     if (!user.email && !user.last_sign_in_at) return 'pending';
     if (user.email && !user.last_sign_in_at) return 'invited';
     return 'activated';
@@ -340,6 +370,110 @@ const getLoginSearchText = (user: AdminUserRecord): string => {
     return `${profile.providers.join(' ')} ${getLoginMethodSummary(user)}`.trim().toLowerCase();
 };
 
+const toProfileGenderDraft = (value: string | null | undefined): '' | 'female' | 'male' | 'non-binary' | 'prefer-not' => {
+    if (typeof value !== 'string') return '';
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return '';
+    return VALID_PROFILE_GENDERS.has(normalized)
+        ? (normalized as 'female' | 'male' | 'non-binary' | 'prefer-not')
+        : '';
+};
+
+const hasNonEmptyValue = (value: string | null | undefined): boolean => Boolean(value && value.trim().length > 0);
+const isLikelyUserId = (value: string): boolean => USER_ID_PATTERN.test(value.trim());
+const isLikelyEmail = (value: string): boolean => EMAIL_PATTERN.test(value.trim());
+
+const getUserTotalTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.total_trips || 0));
+
+const getUserActiveTrips = (user: AdminUserRecord): number => Math.max(0, Number(user.active_trips || 0));
+const isUserHardDeleteEligible = (user: AdminUserRecord): boolean => (user.account_status || 'active') !== 'deleted';
+
+const isUserTriplessAndNoData = (user: AdminUserRecord): boolean => {
+    if (getUserTotalTrips(user) !== 0) return false;
+    const hasProfileData = hasNonEmptyValue(user.email)
+        || hasNonEmptyValue(user.first_name)
+        || hasNonEmptyValue(user.last_name)
+        || hasNonEmptyValue(user.display_name)
+        || hasNonEmptyValue(user.username)
+        || hasNonEmptyValue(user.country)
+        || hasNonEmptyValue(user.city);
+    if (hasProfileData) return false;
+    if (hasNonEmptyValue(user.last_sign_in_at) || hasNonEmptyValue(user.onboarding_completed_at)) return false;
+    const loginProfile = resolveUserLoginProfile(user);
+    return !loginProfile.hasPassword && loginProfile.socialProviders.length === 0;
+};
+
+const matchesUserTripFilter = (user: AdminUserRecord, filter: UserTripFilter): boolean => {
+    const totalTrips = getUserTotalTrips(user);
+    if (filter === 'no_trips_no_profile') return isUserTriplessAndNoData(user);
+    if (filter === 'no_trips') return totalTrips === 0;
+    if (filter === 'one_to_two') return totalTrips >= 1 && totalTrips <= 2;
+    if (filter === 'three_to_five') return totalTrips >= 3 && totalTrips <= 5;
+    return totalTrips >= 6;
+};
+const getUserReferenceText = (user: AdminUserRecord): string => {
+    const name = getUserDisplayName(user);
+    const email = (user.email || '').trim();
+    if (email) return `${name} (${email})`;
+    return `${name} (${user.user_id})`;
+};
+
+const getUnknownErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message.trim()) return error.message.trim();
+    if (typeof error === 'string' && error.trim()) return error.trim();
+    return fallback;
+};
+
+const summarizeBulkDeleteFailures = (details: string[]): string => {
+    if (details.length === 0) return '';
+    const maxVisible = 5;
+    const visible = details.slice(0, maxVisible).map((detail) => `- ${detail}`).join('\n');
+    if (details.length <= maxVisible) return visible;
+    return `${visible}\n- +${details.length - maxVisible} more failure${details.length - maxVisible === 1 ? '' : 's'}`;
+};
+
+const buildSingleHardDeleteMessage = (
+    userRef: string,
+    ownedTripCount: number
+): string => {
+    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
+    return [
+        `Account: ${userRef}`,
+        '',
+        'Permanent delete impact',
+        '• Auth account',
+        '• Profile record',
+        `• ${tripLabel}`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        ownedTripCount > 0 ? 'Trip ownership choices before confirm' : '',
+        ownedTripCount > 0 ? '• Cancel and use "Transfer trips + hard delete" to preserve trip ownership' : '',
+        ownedTripCount > 0 ? '• Continue hard delete to permanently remove those trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
+const buildBulkHardDeleteMessage = (
+    selectedUsers: number,
+    selectedTrips: number
+): string => {
+    return [
+        `Selected users: ${selectedUsers}`,
+        '',
+        'Permanent delete impact',
+        `• Auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}`,
+        `• ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total`,
+        '• All related versions, share links, and collaborators for those trips',
+        '',
+        selectedTrips > 0 ? 'Trip ownership choices before confirm' : '',
+        selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
+        selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
+        '',
+        'This cannot be undone.',
+    ].join('\n');
+};
+
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
     return JSON.stringify(value, null, 2);
@@ -353,6 +487,28 @@ const parseOverrideDraft = (value: string): Record<string, unknown> => {
     }
     return parsed as Record<string, unknown>;
 };
+
+const normalizeOverrideRecord = (value: unknown): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return value as Record<string, unknown>;
+};
+
+const toStableComparableJson = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map((entry) => toStableComparableJson(entry));
+    if (value && typeof value === 'object') {
+        return Object.keys(value as Record<string, unknown>)
+            .sort((a, b) => a.localeCompare(b))
+            .reduce<Record<string, unknown>>((acc, key) => {
+                acc[key] = toStableComparableJson((value as Record<string, unknown>)[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areOverrideRecordsEqual = (left: Record<string, unknown>, right: Record<string, unknown>): boolean => (
+    JSON.stringify(toStableComparableJson(left)) === JSON.stringify(toStableComparableJson(right))
+);
 
 const rolePillClass = (role: 'admin' | 'user') => (
     role === 'admin'
@@ -619,98 +775,114 @@ const LoginTypeFilterMenu: React.FC<{
                     updateMenuPosition();
                     setIsOpen((current) => !current);
                 }}
-                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400"
+                className={`inline-flex h-8 w-fit items-center justify-center whitespace-nowrap rounded-md border border-dashed border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-1 focus:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50`}
                 aria-label="Filter by login type"
                 aria-expanded={isOpen}
             >
-                <Key size={14} className="text-slate-500" />
+                <Key size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />
                 <span>Login type</span>
-                <span className="h-4 w-px bg-slate-200" />
-                <span className="max-w-[220px] truncate text-slate-600">{selectedLabelSummary}</span>
+                
+                <div className="mx-2 flex h-4 items-center">
+                    <div className="h-full w-[1px] bg-slate-200" />
+                </div>
+                
+                <span className="inline-flex items-center rounded-sm bg-slate-100 px-1 font-normal text-slate-800 max-w-[220px] truncate">
+                    {selectedLabelSummary}
+                </span>
             </button>
 
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[1700] rounded-xl border border-slate-200 bg-white shadow-2xl"
+                    className="fixed z-[1700] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-950 shadow-md animate-in fade-in-80"
                     style={{
                         top: `${menuPosition.top}px`,
                         left: `${menuPosition.left}px`,
                         width: `${menuPosition.width}px`,
                     }}
                 >
-                    <div className="border-b border-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <div className="px-2 py-1.5 text-xs font-medium text-slate-500">
                         Login type
                     </div>
-                    <div className="space-y-1 p-1.5">
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                    <div className="h-px bg-slate-100" />
+                    <div className="space-y-0.5 p-1">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('password')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('password', Boolean(checked))}
+                                    className="h-4 w-4"
                                 />
-                                <span>Username/password</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.password}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                            </div>
+                            <span>Username/password</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.password}</span>
+                        </label>
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={socialCheckboxState}
                                     onCheckedChange={(checked) => setSocialParentChecked(Boolean(checked))}
+                                    className="h-4 w-4"
                                 />
-                                <span>Social</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.social}</span>
-                        </div>
-                        <div className={`ms-6 space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-2 ${socialEnabled ? '' : 'opacity-75'}`}>
+                            </div>
+                            <span>Social</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.social}</span>
+                        </label>
+                        <div className={`ms-6 space-y-0.5 border-l-2 border-slate-100 pl-2 ${socialEnabled ? '' : 'opacity-50 pointer-events-none'}`}>
                             {SOCIAL_PROVIDER_OPTIONS.map((option) => {
                                 const checked = socialEnabled
                                     && (selectedSocialProviders.length === 0 || selectedSocialProviderSet.has(option.value));
                                 const definition = LOGIN_PILL_DEFINITIONS[option.value];
                                 const Icon = definition.icon;
                                 return (
-                                    <div
+                                    <label
                                         key={`social-provider-filter-${option.value}`}
-                                        className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs text-slate-700 hover:bg-white"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900 group"
                                     >
-                                        <label className="inline-flex cursor-pointer items-center gap-2">
+                                        <div className="mr-2 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
                                             <Checkbox
                                                 checked={checked}
                                                 onCheckedChange={() => toggleSocialProvider(option.value)}
+                                                className="h-3.5 w-3.5 rounded-[2px]"
                                             />
-                                            <Icon size={12} className="text-slate-500" />
-                                            {option.label}
-                                        </label>
-                                        <span className="text-[11px] font-semibold text-slate-500">{counts.socialProviders[option.value]}</span>
-                                    </div>
+                                        </div>
+                                        <Icon size={12} className="mr-1.5 text-slate-500" />
+                                        <span>{option.label}</span>
+                                        <span className="ml-auto text-[10px] text-slate-500">{counts.socialProviders[option.value]}</span>
+                                    </label>
                                 );
                             })}
                         </div>
-                        <div className="flex items-center justify-between rounded-lg px-2.5 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                            <label className="inline-flex cursor-pointer items-center gap-2">
+                        <label className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none hover:bg-slate-100 hover:text-slate-900 group">
+                            <div className="mr-2 flex h-4 w-4 shrink-0 items-center justify-center">
                                 <Checkbox
                                     checked={selectedLoginTypeSet.has('unknown')}
                                     onCheckedChange={(checked) => setLoginTypeChecked('unknown', Boolean(checked))}
+                                    className="h-4 w-4"
                                 />
-                                <span>Unknown</span>
-                            </label>
-                            <span className="text-xs font-semibold text-slate-500">{counts.unknown}</span>
-                        </div>
+                            </div>
+                            <span>Unknown</span>
+                            <span className="ml-auto text-xs text-slate-500">{counts.unknown}</span>
+                        </label>
                     </div>
-                    <div className="border-t border-slate-100 p-1.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onSelectedLoginTypesChange([]);
-                                onSelectedSocialProvidersChange([]);
-                                setIsOpen(false);
-                            }}
-                            className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50"
-                        >
-                            Clear filters
-                        </button>
-                    </div>
+                    {selectedLoginTypeSet.size > 0 && (
+                        <>
+                            <div className="h-px bg-slate-100" />
+                            <div className="p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        onSelectedLoginTypesChange([]);
+                                        onSelectedSocialProvidersChange([]);
+                                        setIsOpen(false);
+                                    }}
+                                    className="relative flex w-full cursor-default select-none items-center justify-center rounded-sm py-1.5 text-sm font-medium outline-none hover:bg-slate-100 hover:text-slate-900"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>,
                 document.body
             )}
@@ -719,7 +891,7 @@ const LoginTypeFilterMenu: React.FC<{
 };
 
 export const AdminUsersPage: React.FC = () => {
-    const { confirm: confirmDialog } = useAppDialog();
+    const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
     const cachedUsers = useMemo(
         () => readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []),
@@ -753,11 +925,15 @@ export const AdminUsersPage: React.FC = () => {
     const [socialProviderFilters, setSocialProviderFilters] = useState<SocialProviderFilter[]>(
         () => parseQueryMultiValue(searchParams.get('social'), SOCIAL_PROVIDER_VALUES)
     );
+    const [tripFilters, setTripFilters] = useState<UserTripFilter[]>(
+        () => parseQueryMultiValue(searchParams.get('trips'), USER_TRIP_FILTER_VALUES)
+    );
     const [sortKey, setSortKey] = useState<SortKey>(() => parseSortKey(searchParams.get('sort')));
     const [sortDirection, setSortDirection] = useState<SortDirection>(() => parseSortDirection(searchParams.get('dir')));
     const [page, setPage] = useState(() => parsePositivePage(searchParams.get('page')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(() => new Set());
 
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -810,6 +986,9 @@ export const AdminUsersPage: React.FC = () => {
         ) {
             next.set('social', socialProviderFilters.join(','));
         }
+        if (tripFilters.length > 0 && tripFilters.length < USER_TRIP_FILTER_VALUES.length) {
+            next.set('trips', tripFilters.join(','));
+        }
         if (sortKey !== 'created_at') next.set('sort', sortKey);
         if (sortDirection !== 'desc') next.set('dir', sortDirection);
         if (page > 1) next.set('page', String(page));
@@ -837,6 +1016,7 @@ export const AdminUsersPage: React.FC = () => {
         socialProviderFilters,
         statusFilters,
         tierFilters,
+        tripFilters,
     ]);
 
     useEffect(() => {
@@ -881,8 +1061,8 @@ export const AdminUsersPage: React.FC = () => {
         [selectedUserId, users]
     );
     const selectedUserTripStats = useMemo(() => {
-        const fallbackTotal = Math.max(0, Number(selectedUser?.total_trips || 0));
-        const fallbackActive = Math.max(0, Number(selectedUser?.active_trips || 0));
+        const fallbackTotal = selectedUser ? getUserTotalTrips(selectedUser) : 0;
+        const fallbackActive = selectedUser ? getUserActiveTrips(selectedUser) : 0;
         if (isLoadingTrips) {
             return { total: fallbackTotal, active: fallbackActive };
         }
@@ -896,16 +1076,28 @@ export const AdminUsersPage: React.FC = () => {
         return `/admin/trips?q=${encodeURIComponent(token)}`;
     }, [selectedUser]);
 
-    const loadUsers = async () => {
+    const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
-        setErrorMessage(null);
+        setDataSourceNotice(null);
+        if (!options.preserveErrorMessage) {
+            setErrorMessage(null);
+        }
         try {
             const rows = await adminListUsers({ limit: 500 });
             setUsers(rows);
             writeAdminCache(USERS_CACHE_KEY, rows);
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not load users.');
-            setUsers((current) => (current.length > 0 ? current : []));
+            const reason = error instanceof Error ? error.message : 'Could not load users.';
+            if (!options.preserveErrorMessage) {
+                setErrorMessage(reason);
+            }
+            const cachedRows = readAdminCache<AdminUserRecord[]>(USERS_CACHE_KEY, []);
+            if (cachedRows.length > 0) {
+                setUsers(cachedRows);
+                setDataSourceNotice(`Live admin users failed. Showing ${cachedRows.length} cached row${cachedRows.length === 1 ? '' : 's'} from this browser. Reason: ${reason}`);
+            } else {
+                setUsers([]);
+            }
         } finally {
             setIsLoadingUsers(false);
         }
@@ -925,7 +1117,7 @@ export const AdminUsersPage: React.FC = () => {
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
             username: selectedUser.username || '',
-            gender: (selectedUser.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+            gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
             preferredLanguage: selectedUser.preferred_language || 'en',
@@ -942,7 +1134,7 @@ export const AdminUsersPage: React.FC = () => {
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
                     username: fullProfile.username || '',
-                    gender: (fullProfile.gender as '' | 'female' | 'male' | 'non-binary' | 'prefer-not') || '',
+                    gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
                     preferredLanguage: fullProfile.preferred_language || 'en',
@@ -995,6 +1187,9 @@ export const AdminUsersPage: React.FC = () => {
                 }
                 if (!loginMatches) return false;
             }
+            if (tripFilters.length > 0 && !tripFilters.some((tripFilter) => matchesUserTripFilter(user, tripFilter))) {
+                return false;
+            }
             if (!token) return true;
             return (
                 getUserDisplayName(user).toLowerCase().includes(token)
@@ -1009,7 +1204,7 @@ export const AdminUsersPage: React.FC = () => {
         const getSortValue = (user: AdminUserRecord): string | number => {
             if (sortKey === 'name') return getUserDisplayName(user).toLowerCase();
             if (sortKey === 'email') return (user.email || '').toLowerCase();
-            if (sortKey === 'total_trips') return Number(user.total_trips || 0);
+            if (sortKey === 'total_trips') return getUserTotalTrips(user);
             if (sortKey === 'activation_status') return resolveActivationStatus(user);
             if (sortKey === 'last_sign_in_at') return Date.parse(user.last_sign_in_at || '') || 0;
             if (sortKey === 'created_at') return Date.parse(user.created_at || '') || 0;
@@ -1043,6 +1238,7 @@ export const AdminUsersPage: React.FC = () => {
         sortKey,
         statusFilters,
         tierFilters,
+        tripFilters,
         users,
     ]);
 
@@ -1112,6 +1308,14 @@ export const AdminUsersPage: React.FC = () => {
         })),
         [usersInDateRange]
     );
+    const tripFilterOptions = useMemo<AdminFilterMenuOption[]>(
+        () => USER_TRIP_FILTER_VALUES.map((value) => ({
+            value,
+            label: USER_TRIP_FILTER_LABELS[value],
+            count: usersInDateRange.filter((user) => matchesUserTripFilter(user, value)).length,
+        })),
+        [usersInDateRange]
+    );
 
     const loginFilterCounts = useMemo<LoginFilterCounts>(() => {
         const socialProviders: Record<SocialProviderFilter, number> = {
@@ -1154,7 +1358,12 @@ export const AdminUsersPage: React.FC = () => {
         () => filteredUsers.filter((user) => selectedUserIds.has(user.user_id)),
         [filteredUsers, selectedUserIds]
     );
-    const areAllVisibleUsersSelected = filteredUsers.length > 0 && filteredUsers.every((user) => selectedUserIds.has(user.user_id));
+    const hardDeleteSelectableVisibleUsers = useMemo(
+        () => filteredUsers.filter((user) => isUserHardDeleteEligible(user)),
+        [filteredUsers]
+    );
+    const areAllVisibleUsersSelected = hardDeleteSelectableVisibleUsers.length > 0
+        && hardDeleteSelectableVisibleUsers.every((user) => selectedUserIds.has(user.user_id));
     const isVisibleUserSelectionPartial = selectedVisibleUsers.length > 0 && !areAllVisibleUsersSelected;
 
     useEffect(() => {
@@ -1169,6 +1378,23 @@ export const AdminUsersPage: React.FC = () => {
             const next = new Set<string>();
             current.forEach((userId) => {
                 if (allowed.has(userId)) {
+                    next.add(userId);
+                    return;
+                }
+                changed = true;
+            });
+            return changed ? next : current;
+        });
+    }, [filteredUsers]);
+
+    useEffect(() => {
+        setSelectedUserIds((current) => {
+            if (current.size === 0) return current;
+            const eligible = new Set(filteredUsers.filter((user) => isUserHardDeleteEligible(user)).map((user) => user.user_id));
+            let changed = false;
+            const next = new Set<string>();
+            current.forEach((userId) => {
+                if (eligible.has(userId)) {
                     next.add(userId);
                     return;
                 }
@@ -1194,6 +1420,10 @@ export const AdminUsersPage: React.FC = () => {
 
     const toggleUserSelection = (userId: string, checked: boolean) => {
         setSelectedUserIds((current) => {
+            const targetUser = filteredUsers.find((user) => user.user_id === userId);
+            if (checked && targetUser && !isUserHardDeleteEligible(targetUser)) {
+                return current;
+            }
             const next = new Set(current);
             if (checked) next.add(userId);
             else next.delete(userId);
@@ -1205,10 +1435,10 @@ export const AdminUsersPage: React.FC = () => {
         setSelectedUserIds((current) => {
             const next = new Set(current);
             if (!checked) {
-                filteredUsers.forEach((user) => next.delete(user.user_id));
+                hardDeleteSelectableVisibleUsers.forEach((user) => next.delete(user.user_id));
                 return next;
             }
-            filteredUsers.forEach((user) => next.add(user.user_id));
+            hardDeleteSelectableVisibleUsers.forEach((user) => next.add(user.user_id));
             return next;
         });
     };
@@ -1220,6 +1450,8 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             const parsedOverrides = parseOverrideDraft(overrideDraft);
+            const currentOverrides = normalizeOverrideRecord(selectedUser.entitlements_override);
+            const shouldUpdateOverrides = !areOverrideRecordsEqual(parsedOverrides, currentOverrides);
             await adminUpdateUserProfile(selectedUser.user_id, {
                 firstName: profileDraft.firstName,
                 lastName: profileDraft.lastName,
@@ -1232,7 +1464,9 @@ export const AdminUsersPage: React.FC = () => {
                 systemRole: profileDraft.role,
                 tierKey: tierDraft,
             });
-            await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            if (shouldUpdateOverrides) {
+                await adminUpdateUserOverrides(selectedUser.user_id, parsedOverrides);
+            }
             setMessage('User updated.');
             await loadUsers();
         } catch (error) {
@@ -1259,9 +1493,16 @@ export const AdminUsersPage: React.FC = () => {
     };
 
     const handleHardDelete = async (user: AdminUserRecord) => {
+        if (!isUserHardDeleteEligible(user)) {
+            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            return;
+        }
+        const sourceTripCount = selectedUser?.user_id === user.user_id
+            ? selectedUserTripStats.total
+            : getUserTotalTrips(user);
         const confirmed = await confirmDialog({
             title: 'Hard delete user',
-            message: `Hard-delete ${user.email || user.user_id}? This permanently removes auth and profile data.`,
+            message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1272,7 +1513,11 @@ export const AdminUsersPage: React.FC = () => {
         setMessage(null);
         try {
             await adminHardDeleteUser(user.user_id);
-            setMessage('User permanently deleted.');
+            setMessage(
+                sourceTripCount > 0
+                    ? `User permanently deleted. ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were removed with this hard delete.`
+                    : 'User permanently deleted.'
+            );
             setIsDetailOpen(false);
             setSelectedUserId(null);
             await loadUsers();
@@ -1310,9 +1555,16 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkHardDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
+        const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
+        const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
+        if (hardDeleteUsers.length === 0) {
+            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            return;
+        }
+        const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
         const confirmed = await confirmDialog({
             title: 'Hard delete selected users',
-            message: `Hard-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}? This cannot be undone.`,
+            message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
             cancelLabel: 'Cancel',
             tone: 'danger',
@@ -1322,27 +1574,203 @@ export const AdminUsersPage: React.FC = () => {
         setErrorMessage(null);
         setMessage(null);
         try {
-            const results = await Promise.allSettled(selectedVisibleUsers.map((user) => adminHardDeleteUser(user.user_id)));
-            const failed = results.filter((result) => result.status === 'rejected').length;
+            const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
+            const failedIndexes: number[] = [];
+            const failedDetails: string[] = [];
+            const deletedIds = new Set<string>();
+            let bulkErrorMessage: string | null = null;
+
+            results.forEach((result, index) => {
+                const user = hardDeleteUsers[index];
+                if (result.status === 'fulfilled') {
+                    deletedIds.add(user.user_id);
+                    return;
+                }
+                failedIndexes.push(index);
+                const reason = getUnknownErrorMessage(result.reason, 'Unknown delete error.');
+                failedDetails.push(`${getUserReferenceText(user)}: ${reason}`);
+            });
+
+            const failed = failedIndexes.length;
             const deleted = results.length - failed;
             if (deleted > 0) {
-                setMessage(
+                const deletedTripCount = hardDeleteUsers
+                    .filter((_, index) => results[index]?.status === 'fulfilled')
+                    .reduce((sum, user) => sum + getUserTotalTrips(user), 0);
+                const deleteMessage = (
                     failed > 0
-                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted. ${failed} failed.`
-                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted.`
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} hard-deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed). ${failed} failed.`
+                        : `${deleted} user${deleted === 1 ? '' : 's'} permanently deleted (${deletedTripCount} owned trip${deletedTripCount === 1 ? '' : 's'} removed).`
                 );
+                setMessage(skippedUsers > 0 ? `${deleteMessage} ${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.` : deleteMessage);
+            } else if (skippedUsers > 0) {
+                setMessage(`${skippedUsers} soft-deleted user${skippedUsers === 1 ? '' : 's'} were skipped.`);
             }
-            if (failed > 0 && deleted === 0) {
-                throw new Error('Could not hard-delete selected users.');
+            if (failed > 0) {
+                const detailSummary = summarizeBulkDeleteFailures(failedDetails);
+                if (deleted === 0) {
+                    bulkErrorMessage = (
+                        detailSummary
+                            ? `Could not hard-delete selected users.\n${detailSummary}`
+                            : 'Could not hard-delete selected users.'
+                    );
+                } else {
+                    bulkErrorMessage = (
+                        detailSummary
+                            ? `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.\n${detailSummary}`
+                            : `${failed} user${failed === 1 ? '' : 's'} failed to hard-delete.`
+                    );
+                }
             }
-            setSelectedUserIds(new Set());
-            if (selectedUserId && selectedVisibleUsers.some((user) => user.user_id === selectedUserId)) {
+            if (failed > 0) {
+                setSelectedUserIds(new Set(failedIndexes.map((index) => hardDeleteUsers[index].user_id)));
+            } else {
+                setSelectedUserIds(new Set());
+            }
+            if (selectedUserId && deletedIds.has(selectedUserId)) {
                 setSelectedUserId(null);
                 setIsDetailOpen(false);
             }
-            await loadUsers();
+            await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
+            if (bulkErrorMessage) {
+                setErrorMessage(bulkErrorMessage);
+            }
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const resolveTransferTargetUser = async (rawInput: string): Promise<AdminUserRecord> => {
+        const normalizedInput = rawInput.trim();
+        if (!normalizedInput) {
+            throw new Error('Enter a target user email or UUID.');
+        }
+        const normalizedLower = normalizedInput.toLowerCase();
+
+        const localMatches = users.filter((candidate) => {
+            const candidateEmail = (candidate.email || '').trim().toLowerCase();
+            if (candidate.user_id.toLowerCase() === normalizedLower) return true;
+            if (candidateEmail && candidateEmail === normalizedLower) return true;
+            return false;
+        });
+
+        if (localMatches.length > 1) {
+            throw new Error('Multiple local users matched that target. Enter a UUID instead.');
+        }
+        if (localMatches.length === 1) {
+            return localMatches[0];
+        }
+
+        if (isLikelyUserId(normalizedInput)) {
+            const profile = await adminGetUserProfile(normalizedInput);
+            if (profile) return profile;
+        }
+
+        if (isLikelyEmail(normalizedInput)) {
+            const rows = await adminListUsers({ search: normalizedInput, limit: 20 });
+            const exactMatches = rows.filter((candidate) => (candidate.email || '').trim().toLowerCase() === normalizedLower);
+            if (exactMatches.length > 1) {
+                throw new Error('Multiple users found for that email. Enter a UUID instead.');
+            }
+            if (exactMatches.length === 1) {
+                return exactMatches[0];
+            }
+        }
+
+        throw new Error('Target user not found. Enter an existing user email or UUID.');
+    };
+
+    const handleTransferTripsAndHardDelete = async (user: AdminUserRecord) => {
+        const knownTripCount = selectedUser?.user_id === user.user_id
+            ? selectedUserTripStats.total
+            : getUserTotalTrips(user);
+        if (knownTripCount <= 0) {
+            setErrorMessage('No owned trips found to transfer.');
+            return;
+        }
+
+        const transferTargetInput = await promptDialog({
+            title: 'Transfer trips before hard delete',
+            message: 'Enter the target user email or UUID. All owned trips will move to this account before hard delete.',
+            label: 'Target user (email or UUID)',
+            placeholder: 'name@example.com or user UUID',
+            confirmLabel: 'Continue',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+            inputType: 'text',
+        });
+        if (transferTargetInput === null) return;
+
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        try {
+            const targetUser = await resolveTransferTargetUser(transferTargetInput);
+            if (targetUser.user_id === user.user_id) {
+                throw new Error('Target user must be different from the user being deleted.');
+            }
+
+            const targetStatus = (targetUser.account_status || 'active') as UserAccountStatus;
+            if (targetStatus !== 'active') {
+                throw new Error('Target user must be an active account.');
+            }
+
+            const sourceTrips = await adminListUserTrips(user.user_id, { status: 'all' });
+            if (sourceTrips.length === 0) {
+                throw new Error('No owned trips found to transfer. Reload and try again.');
+            }
+
+            const confirmed = await confirmDialog({
+                title: 'Confirm transfer and hard delete',
+                message: [
+                    `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
+                    '',
+                    'Step 1: Transfer all owned trips to the target account.',
+                    'Step 2: Hard-delete the source user (auth + profile only).',
+                    '',
+                    'Result: trips remain accessible under the new owner.',
+                ].join('\n'),
+                confirmLabel: 'Transfer + hard delete',
+                cancelLabel: 'Cancel',
+                tone: 'danger',
+            });
+            if (!confirmed) return;
+
+            const transferResults = await Promise.allSettled(
+                sourceTrips.map((trip) => adminUpdateTrip(trip.trip_id, { ownerId: targetUser.user_id }))
+            );
+            const failedTransfers = transferResults.filter((result) => result.status === 'rejected');
+            if (failedTransfers.length > 0) {
+                const transferredCount = sourceTrips.length - failedTransfers.length;
+                throw new Error(
+                    transferredCount > 0
+                        ? `Transferred ${transferredCount}/${sourceTrips.length} trips. Hard delete was skipped because some transfers failed.`
+                        : 'Trip transfer failed. Hard delete was skipped.'
+                );
+            }
+
+            try {
+                await adminHardDeleteUser(user.user_id);
+                setMessage(
+                    [
+                        `Transferred ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} to ${getUserReferenceText(targetUser)} and permanently deleted the source user.`,
+                        `Audit should show ${sourceTrips.length} "Transferred trip owner" entr${sourceTrips.length === 1 ? 'y' : 'ies'} and one "Hard-deleted user" entry.`,
+                    ].join(' ')
+                );
+                setIsDetailOpen(false);
+                setSelectedUserId(null);
+                await loadUsers();
+            } catch (deleteError) {
+                await loadUsers();
+                const deleteMessage = deleteError instanceof Error ? deleteError.message : 'Could not hard-delete user after transfer.';
+                setErrorMessage(
+                    `Trips were transferred to ${getUserReferenceText(targetUser)}, but hard delete failed: ${deleteMessage} Retry hard delete for the source user if needed.`
+                );
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not transfer trips before hard delete.');
         } finally {
             setIsSaving(false);
         }
@@ -1417,6 +1845,7 @@ export const AdminUsersPage: React.FC = () => {
         setActivationFilters([]);
         setLoginTypeFilters([]);
         setSocialProviderFilters([]);
+        setTripFilters([]);
         setPage(1);
     };
 
@@ -1457,9 +1886,22 @@ export const AdminUsersPage: React.FC = () => {
                     {errorMessage}
                 </section>
             )}
+            {dataSourceNotice && (
+                <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {dataSourceNotice}
+                </section>
+            )}
             {message && (
                 <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
                     {message}
+                </section>
+            )}
+            {isSaving && (
+                <section className="mb-4 rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">
+                    <span className="inline-flex items-center gap-2 font-medium">
+                        <SpinnerGap size={14} className="animate-spin" />
+                        Processing admin changes. Please wait...
+                    </span>
                 </section>
             )}
 
@@ -1513,7 +1955,10 @@ export const AdminUsersPage: React.FC = () => {
                 </article>
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <section
+                className={`relative rounded-2xl border border-slate-200 bg-white p-4 shadow-sm ${isSaving ? 'pointer-events-none opacity-80' : ''}`}
+                aria-busy={isSaving}
+            >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-sm font-semibold text-slate-900">Users</h2>
                     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -1536,6 +1981,15 @@ export const AdminUsersPage: React.FC = () => {
                             }}
                             onSelectedSocialProvidersChange={(next) => {
                                 setSocialProviderFilters(next);
+                                setPage(1);
+                            }}
+                        />
+                        <AdminFilterMenu
+                            label="# Trips"
+                            options={tripFilterOptions}
+                            selectedValues={tripFilters}
+                            onSelectedValuesChange={(next) => {
+                                setTripFilters(next as UserTripFilter[]);
                                 setPage(1);
                             }}
                         />
@@ -1576,6 +2030,10 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                <p className="mt-2 text-xs text-slate-500">
+                    Cleanup shortcut: use <span className="font-semibold text-slate-700"># Trips</span> and select
+                    <span className="font-semibold text-slate-700"> No trips + no profile data</span>.
+                </p>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                     <span className="text-xs font-semibold text-slate-700">
@@ -1592,7 +2050,7 @@ export const AdminUsersPage: React.FC = () => {
                     <button
                         type="button"
                         onClick={() => void handleBulkHardDeleteUsers()}
-                        disabled={isSaving || selectedVisibleUsers.length === 0}
+                        disabled={isSaving || selectedVisibleUsers.every((user) => !isUserHardDeleteEligible(user))}
                         className="inline-flex h-8 items-center gap-1 rounded-lg border border-rose-300 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Trash size={12} />
@@ -1609,93 +2067,108 @@ export const AdminUsersPage: React.FC = () => {
                     )}
                 </div>
 
-                <div className="mt-3 overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm">
-                        <thead>
-                            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-3 py-2 align-middle">
+                <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
+                            <TableRow>
+                                <TableHead className="w-12 px-4 py-3">
                                     <Checkbox
                                         checked={areAllVisibleUsersSelected ? true : (isVisibleUserSelectionPartial ? 'indeterminate' : false)}
                                         onCheckedChange={(checked) => toggleSelectAllVisibleUsers(Boolean(checked))}
                                         aria-label="Select all visible users"
                                     />
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('name')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('name')}>
                                         User <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('email')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('email')}>
                                         Login <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('total_trips')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('total_trips')}>
                                         Trips <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('activation_status')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('activation_status')}>
                                         Activation <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('system_role')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('system_role')}>
                                         Role <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('tier_key')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('tier_key')}>
                                         Tier <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('account_status')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('account_status')}>
                                         Status <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('last_sign_in_at')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('last_sign_in_at')}>
                                         Last visit <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2">
-                                    <button type="button" className="inline-flex items-center gap-1" onClick={() => toggleSort('created_at')}>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 font-semibold text-slate-700">
+                                    <button type="button" className="inline-flex items-center gap-1 hover:text-accent-700" onClick={() => toggleSort('created_at')}>
                                         Created <ArrowsDownUp size={12} />
                                     </button>
-                                </th>
-                                <th className="px-3 py-2 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                </TableHead>
+                                <TableHead className="px-4 py-3 text-right font-semibold text-slate-700">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {pagedUsers.map((user) => {
                                 const userName = getUserDisplayName(user);
                                 const accountStatus = (user.account_status || 'active') as UserAccountStatus;
                                 const activationStatus = resolveActivationStatus(user);
                                 const isSelected = selectedUserIds.has(user.user_id);
+                                const isHardDeleteEligible = isUserHardDeleteEligible(user);
+                                const isTriplessNoData = isUserTriplessAndNoData(user);
                                 return (
-                                    <tr key={user.user_id} className={`border-b border-slate-100 align-top transition-colors ${isSelected ? 'bg-accent-50/60' : 'hover:bg-slate-50'}`}>
-                                        <td className="px-3 py-2 align-middle">
+                                    <TableRow
+                                        key={user.user_id}
+                                        data-state={isSelected ? "selected" : undefined}
+                                    >
+                                        <TableCell className="px-4 py-3">
                                             <Checkbox
                                                 checked={isSelected}
+                                                disabled={!isHardDeleteEligible}
                                                 onCheckedChange={(checked) => toggleUserSelection(user.user_id, Boolean(checked))}
-                                                aria-label={`Select ${userName}`}
+                                                aria-label={isHardDeleteEligible ? `Select ${userName}` : `Cannot select ${userName} (soft-deleted)`}
                                             />
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 max-w-[280px]">
                                             <button
                                                 type="button"
                                                 onClick={() => openUserDetail(user.user_id)}
                                                 title="Open details drawer"
-                                                className="group max-w-[280px] cursor-pointer text-left hover:text-accent-700"
+                                                className="group xl:max-w-full cursor-pointer text-left hover:text-accent-700"
                                             >
                                                 <div className="truncate text-sm font-semibold text-slate-800 group-hover:underline group-hover:decoration-slate-400">{userName}</div>
                                                 <div className="truncate text-xs text-slate-600">{user.email || 'No email address'}</div>
-                                                <div className="truncate text-[11px] text-slate-500">UUID: {user.user_id}</div>
+                                                <div className="text-[11px] text-slate-500 mt-0.5">
+                                                    UUID:{' '}
+                                                    <CopyableUuid
+                                                        value={user.user_id}
+                                                        focusable={false}
+                                                        className="align-middle"
+                                                        textClassName="max-w-full truncate text-[11px]"
+                                                        hintClassName="text-[9px]"
+                                                    />
+                                                </div>
                                             </button>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <div className="flex flex-wrap items-center gap-1.5">
                                                 {getLoginPills(user).map((pill) => {
                                                     const Icon = pill.icon;
@@ -1722,38 +2195,43 @@ export const AdminUsersPage: React.FC = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600">
-                                            <div className="font-semibold text-slate-800">
-                                                {Math.max(0, Number(user.total_trips || 0))} total
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-600">
+                                            <div className="font-semibold text-slate-800 hover:text-accent-700">
+                                                {getUserTotalTrips(user)} total
                                             </div>
                                             <div className="text-[11px] text-slate-500">
-                                                {Math.max(0, Number(user.active_trips || 0))} active
+                                                {getUserActiveTrips(user)} active
                                             </div>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                            {isTriplessNoData && (
+                                                <div className="text-[11px] font-semibold text-amber-700">
+                                                    No profile data
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${activationPillClass(activationStatus)}`}>
                                                 {getActivationStatusLabel(activationStatus)}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rolePillClass(user.system_role)}`}>
                                                 {user.system_role === 'admin' ? 'Admin' : 'User'}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tierPillClass(user.tier_key)}`}>
                                                 {PLAN_CATALOG[user.tier_key]?.publicName || user.tier_key}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3">
                                             <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusPillClass(accountStatus)}`}>
                                                 {formatAccountStatusLabel(accountStatus)}
                                             </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600">{formatTimestamp(user.last_sign_in_at)}</td>
-                                        <td className="px-3 py-2 text-xs text-slate-500">{new Date(user.created_at).toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-right">
+                                        </TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-600 max-w-[120px] truncate">{formatTimestamp(user.last_sign_in_at)}</TableCell>
+                                        <TableCell className="px-4 py-3 text-xs text-slate-500 max-w-[140px] truncate">{new Date(user.created_at).toLocaleString()}</TableCell>
+                                        <TableCell className="px-4 py-3 text-right">
                                             <UserRowActionsMenu
                                                 disabled={isSaving}
                                                 isDeleted={accountStatus === 'deleted'}
@@ -1762,29 +2240,29 @@ export const AdminUsersPage: React.FC = () => {
                                                     void handleSoftDelete(user);
                                                 }}
                                             />
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 );
                             })}
                             {pagedUsers.length === 0 && !isLoadingUsers && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
                                         No users match your filters.
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
                             {isLoadingUsers && (
-                                <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={11}>
-                                        <span className="inline-flex items-center gap-2">
-                                            <SpinnerGap size={14} className="animate-spin" />
+                                <TableRow>
+                                    <TableCell className="px-4 py-8 text-center text-sm text-slate-500" colSpan={11}>
+                                        <span className="inline-flex items-center gap-2 font-medium">
+                                            <SpinnerGap size={16} className="animate-spin text-slate-400" />
                                             Loading users...
                                         </span>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
@@ -1813,6 +2291,14 @@ export const AdminUsersPage: React.FC = () => {
                         </button>
                     </div>
                 </div>
+                {isSaving && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center rounded-2xl bg-white/45 backdrop-blur-[1px]">
+                        <span className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                            <SpinnerGap size={13} className="animate-spin" />
+                            Applying changes...
+                        </span>
+                    </div>
+                )}
             </section>
 
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -2005,7 +2491,13 @@ export const AdminUsersPage: React.FC = () => {
                             <div className="border-b border-slate-200 px-5 py-4">
                                 <h2 className="text-base font-black text-slate-900">{getUserDisplayName(selectedUser)}</h2>
                                 <p className="truncate text-sm text-slate-600">
-                                    {selectedUser.email || selectedUser.user_id}
+                                    {selectedUser.email || (
+                                        <CopyableUuid
+                                            value={selectedUser.user_id}
+                                            className="align-middle"
+                                            textClassName="max-w-[360px] truncate text-sm"
+                                        />
+                                    )}
                                 </p>
                                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                                     <p className="text-xs font-semibold text-slate-600">
@@ -2191,12 +2683,22 @@ export const AdminUsersPage: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={() => void handleHardDelete(selectedUser)}
-                                    disabled={isSaving}
+                                    disabled={isSaving || !isUserHardDeleteEligible(selectedUser)}
                                     className="inline-flex items-center gap-1 rounded-lg border border-rose-300 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                                 >
                                     <Trash size={13} />
                                     Hard delete
                                 </button>
+                                {selectedUserTripStats.total > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => void handleTransferTripsAndHardDelete(selectedUser)}
+                                        disabled={isSaving || isLoadingTrips}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-indigo-300 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                                    >
+                                        Transfer trips + hard delete
+                                    </button>
+                                )}
                                 </section>
 
                                 <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
@@ -2220,7 +2722,13 @@ export const AdminUsersPage: React.FC = () => {
                                                         >
                                                             {trip.title || trip.trip_id}
                                                         </a>
-                                                        <div className="text-[11px] text-slate-500">{trip.trip_id}</div>
+                                                        <div className="text-[11px] text-slate-500">
+                                                            <CopyableUuid
+                                                                value={trip.trip_id}
+                                                                textClassName="max-w-[300px] truncate text-[11px]"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -2248,7 +2756,17 @@ export const AdminUsersPage: React.FC = () => {
                                                             <SelectItem value="archived">Archived</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <span className="text-slate-500">Owner: {trip.owner_email || trip.owner_id}</span>
+                                                    <span className="text-slate-500">
+                                                        Owner:{' '}
+                                                        {trip.owner_email || (
+                                                            <CopyableUuid
+                                                                value={trip.owner_id}
+                                                                className="align-middle"
+                                                                textClassName="max-w-[280px] truncate text-xs"
+                                                                hintClassName="text-[9px]"
+                                                            />
+                                                        )}
+                                                    </span>
                                                 </div>
                                             </article>
                                         ))}
@@ -2261,7 +2779,10 @@ export const AdminUsersPage: React.FC = () => {
                                     <div className="mt-2 space-y-1 text-sm text-slate-700">
                                         <div><span className="font-semibold text-slate-800">Name:</span> {getUserDisplayName(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Email:</span> {selectedUser.email || 'No email'}</div>
-                                        <div className="break-all"><span className="font-semibold text-slate-800">User ID:</span> {selectedUser.user_id}</div>
+                                        <div className="break-all">
+                                            <span className="font-semibold text-slate-800">User ID:</span>{' '}
+                                            <CopyableUuid value={selectedUser.user_id} textClassName="break-all text-sm" />
+                                        </div>
                                         <div><span className="font-semibold text-slate-800">Activation:</span> {getActivationStatusLabel(resolveActivationStatus(selectedUser))}</div>
                                         <div><span className="font-semibold text-slate-800">Login method:</span> {getLoginMethodSummary(selectedUser)}</div>
                                         <div><span className="font-semibold text-slate-800">Account status:</span> {formatAccountStatusLabel((selectedUser.account_status || 'active') as UserAccountStatus)}</div>

@@ -1,6 +1,5 @@
 import React, { createContext, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthModal } from '../components/auth/AuthModal';
 import { useAuth } from '../hooks/useAuth';
 import { trackEvent } from '../services/analyticsService';
 import {
@@ -13,6 +12,7 @@ import {
     setPendingAuthRedirect,
 } from '../services/authNavigationService';
 import { consumePendingOAuthProvider, setLastUsedOAuthProvider } from '../services/authUiPreferencesService';
+import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 
 interface OpenLoginModalOptions {
     nextPath?: string;
@@ -41,6 +41,15 @@ const DEFAULT_MODAL_STATE: LoginModalState = {
 };
 
 const LoginModalContext = createContext<LoginModalContextValue | null>(null);
+
+const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
+    moduleKey: string,
+    importer: () => Promise<TModule>
+) => React.lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
+
+const AuthModal = lazyWithRecovery('AuthModal', () => import('../components/auth/AuthModal').then((module) => ({
+    default: module.AuthModal,
+})));
 
 export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
@@ -113,17 +122,19 @@ export const LoginModalProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return (
         <LoginModalContext.Provider value={value}>
             {children}
-            <Suspense fallback={null}>
-                <AuthModal
-                    isOpen={state.isOpen}
-                    source={state.source}
-                    nextPath={state.nextPath}
-                    reloadOnSuccess={state.reloadOnSuccess}
-                    onClose={(reason) => {
-                        closeLoginModal(reason);
-                    }}
-                />
-            </Suspense>
+            {state.isOpen ? (
+                <Suspense fallback={null}>
+                    <AuthModal
+                        isOpen={state.isOpen}
+                        source={state.source}
+                        nextPath={state.nextPath}
+                        reloadOnSuccess={state.reloadOnSuccess}
+                        onClose={(reason) => {
+                            closeLoginModal(reason);
+                        }}
+                    />
+                </Suspense>
+            ) : null}
         </LoginModalContext.Provider>
     );
 };

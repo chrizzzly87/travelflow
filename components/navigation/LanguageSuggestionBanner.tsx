@@ -7,6 +7,12 @@ import { applyDocumentLocale, DEFAULT_LOCALE, LOCALE_FLAGS, SUPPORTED_LOCALES } 
 import { APP_NAME } from '../../config/appGlobals';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+    readLocalStorageItem,
+    readSessionStorageItem,
+    writeLocalStorageItem,
+    writeSessionStorageItem,
+} from '../../services/browserStorageService';
 import i18n, { preloadLocaleNamespaces } from '../../i18n';
 import { FlagIcon } from '../flags/FlagIcon';
 
@@ -105,7 +111,7 @@ const getBrowserPreferredLocale = (currentLocale: AppLanguage): AppLanguage | nu
 const isDismissedForSession = (): boolean => {
     if (typeof window === 'undefined') return false;
     try {
-        return window.sessionStorage.getItem(SESSION_DISMISS_KEY) === '1';
+        return readSessionStorageItem(SESSION_DISMISS_KEY) === '1';
     } catch {
         return false;
     }
@@ -114,7 +120,7 @@ const isDismissedForSession = (): boolean => {
 const isSwitchAcknowledged = (): boolean => {
     if (typeof window === 'undefined') return false;
     try {
-        return window.localStorage.getItem(SWITCH_ACK_KEY) === '1';
+        return readLocalStorageItem(SWITCH_ACK_KEY) === '1';
     } catch {
         return false;
     }
@@ -149,7 +155,7 @@ export const LanguageSuggestionBanner: React.FC = () => {
         });
         if (typeof window === 'undefined') return;
         try {
-            window.sessionStorage.setItem(SESSION_DISMISS_KEY, '1');
+            writeSessionStorageItem(SESSION_DISMISS_KEY, '1');
         } catch {
             // ignore
         }
@@ -159,8 +165,8 @@ export const LanguageSuggestionBanner: React.FC = () => {
         setDismissed(true);
         if (typeof window !== 'undefined') {
             try {
-                window.sessionStorage.setItem(SESSION_DISMISS_KEY, '1');
-                window.localStorage.setItem(SWITCH_ACK_KEY, '1');
+                writeSessionStorageItem(SESSION_DISMISS_KEY, '1');
+                writeLocalStorageItem(SWITCH_ACK_KEY, '1');
             } catch {
                 // ignore
             }

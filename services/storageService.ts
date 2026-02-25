@@ -1,4 +1,5 @@
 import { ITrip } from "../types";
+import { readLocalStorageItem, writeLocalStorageItem } from "./browserStorageService";
 
 const STORAGE_KEY = 'travelflow_trips_v1';
 
@@ -25,7 +26,7 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
 
 export const getAllTrips = (): ITrip[] => {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = readLocalStorageItem(STORAGE_KEY);
         if (!raw) return [];
         const parsed = JSON.parse(raw);
         if (!Array.isArray(parsed)) return [];
@@ -61,7 +62,9 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
             trips.unshift(tripToSave);
         }
         
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(trips))) {
+            throw new Error('Trip storage write failed');
+        }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to save trip", e);
@@ -72,7 +75,9 @@ export const deleteTrip = (id: string): void => {
     try {
         const trips = getAllTrips();
         const filtered = trips.filter(t => t.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(filtered))) {
+            throw new Error('Trip storage write failed');
+        }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to delete trip", e);
@@ -89,7 +94,9 @@ export const setAllTrips = (trips: ITrip[]): void => {
         const normalized = trips
             .map(normalizeTrip)
             .filter((trip): trip is ITrip => Boolean(trip));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        if (!writeLocalStorageItem(STORAGE_KEY, JSON.stringify(normalized))) {
+            throw new Error('Trip storage write failed');
+        }
         window.dispatchEvent(new CustomEvent('tf:trips-updated'));
     } catch (e) {
         console.error("Failed to replace trips in storage", e);

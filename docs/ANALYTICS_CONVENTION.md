@@ -156,6 +156,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `not_found__cta--plan_yours` | — | `{ locale }` | `NotFoundPage.tsx` |
 | `not_found__link--contact` | — | `{ locale }` | `NotFoundPage.tsx` |
 
+### Contact
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `contact__form--submit` | — | `{ reason, locale, has_user }` | `ContactPage.tsx` |
+| `contact__form--success` | — | `{ reason, locale, has_user, status }` | `ContactPage.tsx` |
+| `contact__form--failed` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+| `contact__fallback--email` | — | `{ reason, locale, has_user, status, error_type }` | `ContactPage.tsx` |
+
 ### Inspirations
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|
@@ -181,6 +189,11 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__toggle--roundtrip` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__toggle--route_lock` | — | `{ enabled }` | `CreateTripClassicLabPage.tsx` |
 | `create_trip__section--expand` | — | `{ section_id, expanded }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--prompt` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--enable` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--not_now` | — | — | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--permission` | — | `{ permission }` | `CreateTripClassicLabPage.tsx` |
+| `create_trip__notifications--sent` | — | — | `CreateTripClassicLabPage.tsx` |
 
 ### Create Trip
 | Event | Detail | Payload | File |
@@ -190,6 +203,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `create_trip__guest_queue--modal_open` | — | `{ request_id }` | `CreateTripForm.tsx` |
 | `create_trip__guest_queue--continue_auth` | — | `{ request_id }` | `CreateTripForm.tsx` |
 | `create_trip__guest_queue--dismiss` | — | `{ request_id }` | `CreateTripForm.tsx` |
+| `create_trip__ai_request--success` | — | `{ provider, model, status, duration_ms, request_id }` | `aiService.ts` |
+| `create_trip__ai_request--failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_success` | — | `{ provider, model, status, duration_ms }` | `aiService.ts` |
+| `create_trip__ai_request--fallback_failed` | — | `{ provider, model, status, duration_ms, error_code }` | `aiService.ts` |
 
 ## Adding new events
 
@@ -197,4 +214,4 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 2. Choose an `element` name that describes the widget.
 3. Decide: is the qualifier finite (< ~15 values) and stable? → use `--{detail}`. Otherwise → payload.
 4. Add a `trackEvent(...)` call and update the catalog table above.
-5. Run `npm run build` — the TypeScript type catches malformed names at compile time.
+5. Run `pnpm build` — the TypeScript type catches malformed names at compile time.

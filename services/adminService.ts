@@ -1,5 +1,6 @@
 import type { PlanTierKey } from '../types';
 import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
 
 export interface AdminUserRecord {
@@ -73,6 +74,20 @@ const requireSupabase = () => {
     return supabase;
 };
 
+const VALID_PROFILE_GENDERS = new Set(['female', 'male', 'non-binary', 'prefer-not']);
+
+const normalizeProfileGender = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
+};
+
+export const shouldUseAdminMockData = (
+    isDevRuntime = import.meta.env.DEV,
+    simulatedLoginEnabled = isSimulatedLoggedIn()
+): boolean => isDevRuntime && simulatedLoginEnabled;
+
 export const adminListUsers = async (
     options: {
         limit?: number;
@@ -80,6 +95,24 @@ export const adminListUsers = async (
         search?: string;
     } = {}
 ): Promise<AdminUserRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        const mockUsers: AdminUserRecord[] = Array.from({ length: 15 }).map((_, i) => ({
+            user_id: `mock-user-${i}`,
+            email: `user${i}@example.com`,
+            system_role: i === 0 ? 'admin' : 'user',
+            tier_key: i % 3 === 0 ? 'tier_premium' : 'tier_free',
+            account_status: i === 14 ? 'disabled' : 'active',
+            auth_provider: i % 2 === 0 ? 'email' : 'google',
+            created_at: new Date(now.getTime() - i * 86400000 * 3).toISOString(),
+            updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
+            entitlements_override: null,
+            first_name: `TestName${i}`,
+            last_name: `LastName${i}`,
+        }));
+        return mockUsers;
+    }
+
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_list_users', {
         p_limit: options.limit ?? 250,
@@ -91,6 +124,10 @@ export const adminListUsers = async (
 };
 
 export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_user_tier', {
         p_user_id: userId,
@@ -100,6 +137,10 @@ export const adminUpdateUserTier = async (userId: string, tierKey: PlanTierKey):
 };
 
 export const adminUpdateUserOverrides = async (userId: string, overrides: Record<string, unknown>): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_user_overrides', {
         p_user_id: userId,
@@ -123,13 +164,17 @@ export const adminUpdateUserProfile = async (
         tierKey?: PlanTierKey | null;
     }
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_user_profile', {
         p_user_id: userId,
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
         p_username: payload.username ?? null,
-        p_gender: payload.gender ?? null,
+        p_gender: normalizeProfileGender(payload.gender),
         p_country: payload.country ?? null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
@@ -141,6 +186,22 @@ export const adminUpdateUserProfile = async (
 };
 
 export const adminGetUserProfile = async (userId: string): Promise<AdminUserRecord | null> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return {
+            user_id: userId,
+            email: `user-mock@example.com`,
+            system_role: 'user',
+            tier_key: 'tier_free',
+            account_status: 'active',
+            auth_provider: 'email',
+            created_at: new Date(now.getTime() - 86400000 * 3).toISOString(),
+            updated_at: new Date(now.getTime() - 3600000).toISOString(),
+            entitlements_override: null,
+            first_name: `MockUser`,
+            last_name: `Profile`,
+        };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_get_user_profile', {
         p_user_id: userId,
@@ -159,6 +220,23 @@ export const adminListTrips = async (
         status?: 'active' | 'archived' | 'expired' | 'all';
     } = {}
 ): Promise<AdminTripRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        const mockTrips: AdminTripRecord[] = Array.from({ length: 45 }).map((_, i) => ({
+            trip_id: `mock-trip-${i}`,
+            owner_id: `mock-user-${i % 15}`,
+            owner_email: `user${i % 15}@example.com`,
+            title: `Mock Trip to ${['Paris', 'Tokyo', 'London', 'New York', 'Rome'][i % 5]}`,
+            status: i % 10 === 0 ? 'expired' : i % 8 === 0 ? 'archived' : 'active',
+            trip_expires_at: null,
+            archived_at: null,
+            source_kind: null,
+            created_at: new Date(now.getTime() - i * 86400000 * 1.5).toISOString(),
+            updated_at: new Date(now.getTime() - i * 3600000).toISOString(),
+        }));
+        return mockTrips;
+    }
+
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_list_trips', {
         p_limit: options.limit ?? 300,
@@ -175,6 +253,21 @@ export const adminListUserTrips = async (
     userId: string,
     options: { limit?: number; offset?: number; status?: 'active' | 'archived' | 'expired' | 'all' } = {}
 ): Promise<AdminTripRecord[]> => {
+    if (shouldUseAdminMockData()) {
+        const now = new Date();
+        return Array.from({ length: 3 }).map((_, i) => ({
+            trip_id: `mock-trip-${i}`,
+            owner_id: userId,
+            owner_email: `user-mock@example.com`,
+            title: `User's Mock Trip ${i}`,
+            status: 'active',
+            trip_expires_at: null,
+            archived_at: null,
+            source_kind: null,
+            created_at: new Date(now.getTime() - i * 86400000).toISOString(),
+            updated_at: new Date(now.getTime() - 3600000).toISOString(),
+        }));
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_list_user_trips', {
         p_user_id: userId,
@@ -194,6 +287,10 @@ export const adminUpdateTrip = async (
         ownerId?: string | null;
     }
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_trip', {
         p_trip_id: tripId,
@@ -208,6 +305,10 @@ export const adminUpdateTrip = async (
 };
 
 export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_hard_delete_trip', {
         p_trip_id: tripId,
@@ -219,6 +320,10 @@ export const adminUpdatePlanEntitlements = async (
     tierKey: PlanTierKey,
     entitlements: Record<string, unknown>
 ): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     const client = requireSupabase();
     const { error } = await client.rpc('admin_update_plan_entitlements', {
         p_tier_key: tierKey,
@@ -230,6 +335,10 @@ export const adminUpdatePlanEntitlements = async (
 export const adminReapplyTierToUsers = async (
     tierKey: PlanTierKey
 ): Promise<{ affected_users: number; affected_trips: number }> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return { affected_users: 10, affected_trips: 15 };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_reapply_tier_to_users', {
         p_tier_key: tierKey,
@@ -241,6 +350,17 @@ export const adminReapplyTierToUsers = async (
 };
 
 export const adminPreviewTierReapply = async (tierKey: PlanTierKey): Promise<AdminTierReapplyPreview> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return {
+            affected_users: 100,
+            affected_trips: 150,
+            active_trips: 50,
+            expired_trips: 50,
+            archived_trips: 50,
+            users_with_overrides: 5,
+        };
+    }
     const client = requireSupabase();
     const { data, error } = await client.rpc('admin_preview_tier_reapply', {
         p_tier_key: tierKey,
@@ -299,9 +419,46 @@ const callAdminIdentityApi = async (
         body: JSON.stringify(body),
     });
 
-    const payload = await response.json().catch(() => ({}));
+    const responseText = await response.text().catch(() => '');
+    const payload = responseText
+        ? (() => {
+            try {
+                return JSON.parse(responseText);
+            } catch {
+                return {};
+            }
+        })()
+        : {};
     if (!response.ok || payload?.ok === false) {
-        const errorMessage = typeof payload?.error === 'string' ? payload.error : 'Admin identity API request failed.';
+        const looksLikeViteNotFoundPage = response.status === 404
+            && /<\s*html|<\s*!doctype\s+html/i.test(responseText);
+        const payloadError =
+            typeof payload?.error === 'string'
+                ? payload.error
+                : typeof payload?.message === 'string'
+                    ? payload.message
+                    : payload?.error && typeof payload.error === 'object' && typeof payload.error.message === 'string'
+                        ? payload.error.message
+                        : null;
+        const fallbackText = responseText.trim();
+        const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
+            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            : null;
+        const looksLikeViteProxyFailure = import.meta.env.DEV
+            && response.status === 500
+            && !payloadError
+            && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
+        const devProxyFailureMessage = looksLikeViteProxyFailure
+            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `npm run dev:netlify` before testing delete/invite/create.'
+            : null;
+        const reason = payloadError
+            || devNotFoundMessage
+            || devProxyFailureMessage
+            || normalizedFallback
+            || response.statusText
+            || 'Admin identity API request failed.';
+        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
     return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
@@ -314,6 +471,10 @@ export const adminCreateUserInvite = async (payload: {
     tierKey?: PlanTierKey;
     redirectTo?: string;
 }): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     await callAdminIdentityApi({
         action: 'invite',
         email: payload.email,
@@ -331,6 +492,10 @@ export const adminCreateUserDirect = async (payload: {
     lastName?: string;
     tierKey?: PlanTierKey;
 }): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     await callAdminIdentityApi({
         action: 'create',
         email: payload.email,
@@ -342,6 +507,10 @@ export const adminCreateUserDirect = async (payload: {
 };
 
 export const adminHardDeleteUser = async (userId: string): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
     await callAdminIdentityApi({
         action: 'delete',
         userId,

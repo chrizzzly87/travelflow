@@ -2,15 +2,17 @@ import React, { createContext, useContext } from 'react';
 
 interface TripManagerContextValue {
     openTripManager: () => void;
+    prewarmTripManager: () => void;
 }
 
 const TripManagerContext = createContext<TripManagerContextValue | null>(null);
 
 export const TripManagerProvider: React.FC<{
     openTripManager: () => void;
+    prewarmTripManager: () => void;
     children: React.ReactNode;
-}> = ({ openTripManager, children }) => (
-    <TripManagerContext.Provider value={{ openTripManager }}>
+}> = ({ openTripManager, prewarmTripManager, children }) => (
+    <TripManagerContext.Provider value={{ openTripManager, prewarmTripManager }}>
         {children}
     </TripManagerContext.Provider>
 );

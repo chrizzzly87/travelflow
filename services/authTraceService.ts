@@ -1,3 +1,8 @@
+import {
+    readLocalStorageItem,
+    writeLocalStorageItem,
+} from './browserStorageService';
+
 const AUTH_TRACE_STORAGE_KEY = 'tf_auth_trace_v1';
 const AUTH_TRACE_MAX_ENTRIES = 150;
 
@@ -17,7 +22,7 @@ const isBrowser = () => typeof window !== 'undefined';
 const readAuthTrace = (): AuthTraceEntry[] => {
     if (!isBrowser()) return [];
     try {
-        const raw = window.localStorage.getItem(AUTH_TRACE_STORAGE_KEY);
+        const raw = readLocalStorageItem(AUTH_TRACE_STORAGE_KEY);
         if (!raw) return [];
         const parsed = JSON.parse(raw);
         return Array.isArray(parsed) ? parsed as AuthTraceEntry[] : [];
@@ -29,7 +34,7 @@ const readAuthTrace = (): AuthTraceEntry[] => {
 const writeAuthTrace = (entries: AuthTraceEntry[]) => {
     if (!isBrowser()) return;
     try {
-        window.localStorage.setItem(AUTH_TRACE_STORAGE_KEY, JSON.stringify(entries.slice(-AUTH_TRACE_MAX_ENTRIES)));
+        writeLocalStorageItem(AUTH_TRACE_STORAGE_KEY, JSON.stringify(entries.slice(-AUTH_TRACE_MAX_ENTRIES)));
     } catch {
         // ignore storage limits/errors
     }
@@ -44,4 +49,3 @@ export const appendAuthTraceEntry = (entry: AuthTraceEntry) => {
 export const getAuthTraceEntries = (): AuthTraceEntry[] => readAuthTrace();
 
 export const clearAuthTraceEntries = () => writeAuthTrace([]);
-

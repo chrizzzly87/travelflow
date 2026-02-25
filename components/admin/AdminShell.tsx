@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
     AirplaneTilt,
     CaretLeft,
     CaretRight,
+    ChartLineUp,
     ChartPieSlice,
     Flask,
     List,
@@ -15,6 +16,17 @@ import {
 } from '@phosphor-icons/react';
 import { APP_NAME } from '../../config/appGlobals';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import {
+    readLocalStorageItem,
+    readSessionStorageItem,
+    writeLocalStorageItem,
+} from '../../services/browserStorageService';
+import {
+    SIMULATED_LOGIN_DEBUG_EVENT,
+    SIMULATED_LOGIN_STORAGE_KEY,
+    isSimulatedLoggedIn,
+    setSimulatedLoggedIn,
+} from '../../services/simulatedLoginService';
 import { ADMIN_NAV_ITEMS, ADMIN_NAV_SECTIONS } from './adminNavConfig';
 import { AccountMenu } from '../navigation/AccountMenu';
 import { useAuth } from '../../hooks/useAuth';
@@ -35,20 +47,24 @@ interface AdminShellProps {
     showDateRange?: boolean;
 }
 
-const SIDEBAR_COLLAPSE_STORAGE_KEY = 'tf_admin_sidebar_collapsed_v1';
+const SIDEBAR_COLLAPSE_PERSIST_KEY = 'tf_admin_sidebar_collapsed_v1';
+const DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY = 'tf_dev_admin_bypass_disabled';
 
-const getStoredSidebarCollapseState = (): boolean => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(SIDEBAR_COLLAPSE_STORAGE_KEY) === '1';
+export const getStoredSidebarCollapseState = (): boolean => {
+    return readLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY) === '1';
 };
 
-const persistSidebarCollapseState = (next: boolean): void => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(SIDEBAR_COLLAPSE_STORAGE_KEY, next ? '1' : '0');
+export const persistSidebarCollapseState = (next: boolean): void => {
+    writeLocalStorageItem(SIDEBAR_COLLAPSE_PERSIST_KEY, next ? '1' : '0');
+};
+
+export const isDevAdminBypassDisabled = (): boolean => {
+    return readSessionStorageItem(DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) === '1';
 };
 
 const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'overview') return <ChartPieSlice size={16} weight="duotone" />;
+    if (icon === 'telemetry') return <ChartLineUp size={16} weight="duotone" />;
     if (icon === 'users') return <UsersThree size={16} weight="duotone" />;
     if (icon === 'trips') return <SuitcaseRolling size={16} weight="duotone" />;
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
@@ -96,6 +112,28 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     const { access, isAdmin } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => getStoredSidebarCollapseState());
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+    const [isSimulatedDebugLoginActive, setIsSimulatedDebugLoginActive] = useState<boolean>(() => isSimulatedLoggedIn());
+    const [isDevAdminBypassActive, setIsDevAdminBypassActive] = useState(false);
+
+    const syncAdminRuntimeFlags = useCallback(() => {
+        const simulatedDebugLogin = isSimulatedLoggedIn();
+        setIsSimulatedDebugLoginActive(simulatedDebugLogin);
+
+        if (typeof window === 'undefined') {
+            setIsDevAdminBypassActive(false);
+            return;
+        }
+
+        const bypassConfigured = import.meta.env.DEV && import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true';
+        const bypassDisabled = isDevAdminBypassDisabled();
+        const bypassSessionUser = (access?.userId || '').trim() === 'dev-admin-id';
+        setIsDevAdminBypassActive(bypassConfigured && !bypassDisabled && bypassSessionUser);
+    }, [access?.userId]);
+
+    const handleDisableSimulatedLogin = useCallback(() => {
+        setSimulatedLoggedIn(false);
+        syncAdminRuntimeFlags();
+    }, [syncAdminRuntimeFlags]);
 
     useEffect(() => {
         persistSidebarCollapseState(isSidebarCollapsed);
@@ -114,6 +152,27 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         window.addEventListener('keydown', onEscape);
         return () => window.removeEventListener('keydown', onEscape);
     }, [isMobileSidebarOpen]);
+
+    useEffect(() => {
+        syncAdminRuntimeFlags();
+        if (typeof window === 'undefined') return;
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key && event.key !== SIMULATED_LOGIN_STORAGE_KEY && event.key !== DEV_ADMIN_BYPASS_DISABLED_SESSION_KEY) {
+                return;
+            }
+            syncAdminRuntimeFlags();
+        };
+        const handleSimulatedDebugEvent = () => {
+            syncAdminRuntimeFlags();
+        };
+        window.addEventListener('storage', handleStorage);
+        window.addEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+        return () => {
+            window.removeEventListener('storage', handleStorage);
+            window.removeEventListener(SIMULATED_LOGIN_DEBUG_EVENT, handleSimulatedDebugEvent as EventListener);
+        };
+    }, [syncAdminRuntimeFlags]);
 
     const emitMenuEvent = (id: string) => {
         trackEvent(`admin__menu--${id}`);
@@ -139,6 +198,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <NavLink
                         key={`${mode}-item-${item.id}`}
                         to={item.path}
+                        end={item.path === '/admin/ai-benchmark'}
                         title={isSidebarCollapsed && mode === 'desktop' ? item.label : undefined}
                         className={(nav) => mode === 'desktop'
                             ? buildDesktopNavClass(nav, isSidebarCollapsed)
@@ -158,7 +218,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
     ));
 
     return (
-        <div className="min-h-dvh bg-slate-100 text-slate-900">
+        <div className="min-h-dvh bg-slate-100 text-slate-900 [&_.rounded-full]:select-none">
             {isMobileSidebarOpen && (
                 <div
                     className="fixed inset-0 z-50 bg-slate-950/45 lg:hidden"
@@ -201,6 +261,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <div className="mt-3 border-t border-slate-200 pt-3">
                         <AccountMenu
                             email={access?.email || null}
+                            userId={access?.userId || null}
                             isAdmin
                             fullWidth
                             showLabel
@@ -212,8 +273,8 @@ export const AdminShell: React.FC<AdminShellProps> = ({
             </aside>
 
             <div className="flex min-h-dvh w-full">
-                <div className="relative hidden lg:block">
-                    <aside className={`flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
+                <div className="relative hidden lg:block z-50">
+                    <aside className={`sticky top-0 flex h-dvh shrink-0 flex-col border-r border-slate-200 bg-white/95 p-4 transition-[width] duration-200 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
                         <NavLink
                             to="/admin/dashboard"
                             className={`flex items-center rounded-xl border border-slate-200 bg-white ${isSidebarCollapsed ? 'justify-center p-2' : 'gap-2 px-3 py-2'}`}
@@ -241,6 +302,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                 )}
                                 <AccountMenu
                                     email={access?.email || null}
+                                    userId={access?.userId || null}
                                     isAdmin
                                     compact={isSidebarCollapsed}
                                     showLabel={!isSidebarCollapsed}
@@ -254,7 +316,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                     <button
                         type="button"
                         onClick={() => setIsSidebarCollapsed((current) => !current)}
-                        className="absolute -right-4 top-6 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
+                        className="absolute -right-4 top-6 z-50 inline-flex h-8 w-8 items-center justify-center rounded-full border border-accent-300 bg-white text-accent-700 shadow-sm hover:bg-accent-50"
                         aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                         {...getAnalyticsDebugAttributes('admin__menu--collapse_toggle')}
                     >
@@ -282,9 +344,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     <p className="mt-1 max-w-3xl text-sm text-slate-600">{description}</p>
                                 )}
                             </div>
-                            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
+                            <div className="flex w-full flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 lg:w-auto lg:flex-nowrap mt-3 lg:mt-0">
                                 {showGlobalSearch && (
-                                    <>
+                                    <div className="w-full sm:w-auto flex-1 lg:flex-none">
                                         <label className="sr-only" htmlFor="admin-global-search">Search</label>
                                         <input
                                             id="admin-global-search"
@@ -293,32 +355,66 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                             onChange={(event) => onSearchValueChange?.(event.target.value)}
                                             placeholder="Search"
                                             disabled={!onSearchValueChange}
-                                            className="h-9 min-w-[180px] flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px] lg:flex-none"
+                                            className="h-9 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:bg-slate-100 lg:w-[280px]"
                                         />
-                                    </>
+                                    </div>
                                 )}
                                 {showDateRange && (
-                                    <Select
-                                        value={dateRange}
-                                        onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
-                                        disabled={!onDateRangeChange}
-                                    >
-                                        <SelectTrigger className="h-9 w-[170px]">
-                                            <SelectValue placeholder="Date range" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {DATE_RANGE_OPTIONS.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="w-full sm:w-auto shrink-0">
+                                        <Select
+                                            value={dateRange}
+                                            onValueChange={(next) => onDateRangeChange?.(next as AdminDateRange)}
+                                            disabled={!onDateRangeChange}
+                                        >
+                                            <SelectTrigger className="h-9 w-full sm:w-[170px]">
+                                                <SelectValue placeholder="Date range" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DATE_RANGE_OPTIONS.map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
-                                {actions}
+                                {actions && (
+                                    <div className="w-full sm:w-auto shrink-0 flex items-center justify-end gap-2">
+                                        {actions}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </header>
+
+                    {isSimulatedDebugLoginActive && (
+                        <section className="mx-4 mt-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 md:mx-6">
+                            <p className="font-semibold">Debug simulated-login mode is active.</p>
+                            <p className="mt-1">
+                                Admin pages are showing mock data because the browser debug toggle is on (`{SIMULATED_LOGIN_STORAGE_KEY}=1`).
+                            </p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={handleDisableSimulatedLogin}
+                                    className="inline-flex h-8 items-center rounded-lg border border-amber-400 bg-white px-3 text-xs font-semibold text-amber-900 hover:bg-amber-100"
+                                >
+                                    Disable simulated login
+                                </button>
+                                <span className="text-xs text-amber-800">Reload data after disabling to confirm live backend records.</span>
+                            </div>
+                        </section>
+                    )}
+
+                    {!isSimulatedDebugLoginActive && isDevAdminBypassActive && (
+                        <section className="mx-4 mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 md:mx-6">
+                            <p className="font-semibold">Dev admin bypass is active in this tab.</p>
+                            <p className="mt-1">
+                                This session uses the local dev-admin identity instead of your real account.
+                            </p>
+                        </section>
+                    )}
 
                     <div className="px-4 py-5 md:px-6 md:py-6">
                         {children}

@@ -61,12 +61,44 @@
   },
   "contact": {
     "title": "Contacto",
-    "description": "Usa esta página para reportar errores de traducción o enviar comentarios sobre localización.",
-    "formStatusTitle": "Formulario de contacto próximamente",
-    "formStatusBody": "El formulario aún no está disponible. Mientras tanto, contáctanos por correo electrónico.",
-    "emailLabel": "Correo electrónico",
-    "emailValue": "support@travelflow.app",
-    "responseNote": "Normalmente respondemos en 2–3 días laborables.",
-    "backHome": "Volver a la página de inicio"
+    "description": "Escríbenos sobre producto, errores, colaboraciones o feedback de traducción.",
+    "emailLabel": "Correo principal",
+    "emailValue": "contact@wizz.art",
+    "responseNote": "Normalmente respondemos en 2-3 días laborables.",
+    "backHome": "Volver a la página de inicio",
+    "form": {
+      "title": "Envíanos un mensaje",
+      "reasonLabel": "Motivo",
+      "reasonPlaceholder": "Selecciona un motivo",
+      "reasonOptions": {
+        "bugReport": "Reporte de error",
+        "featureRequest": "Solicitud de funcionalidad",
+        "billingAccount": "Facturación / cuenta",
+        "dataPrivacy": "Solicitud de datos/privacidad",
+        "partnership": "Colaboración",
+        "other": "Otro"
+      },
+      "nameLabel": "Nombre (opcional)",
+      "namePlaceholder": "Tu nombre",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@ejemplo.com",
+      "messageLabel": "Mensaje",
+      "messagePlaceholder": "Cuéntanos cómo podemos ayudarte.",
+      "messageLimitHint": "Hasta {max} caracteres.",
+      "privacyNote": "Usamos estos datos solo para gestionar y responder tu solicitud.",
+      "submit": "Enviar mensaje",
+      "submitting": "Enviando...",
+      "successTitle": "Mensaje enviado",
+      "successBody": "Gracias, tu mensaje se envió correctamente.",
+      "errorTitle": "Formulario no disponible ahora",
+      "errorBody": "No pudimos enviar tu mensaje por el formulario. Escríbenos por correo directamente.",
+      "fallbackTitle": "Alternativa por correo",
+      "fallbackBody": "Si se alcanza el límite del formulario o falla el envío, contáctanos en:",
+      "fallbackCta": "Enviar correo a contact@wizz.art",
+      "validationReason": "Selecciona un motivo.",
+      "validationEmail": "Introduce un correo electrónico válido.",
+      "validationMessage": "Introduce un mensaje.",
+      "validationMessageLength": "Tu mensaje es demasiado largo. El máximo es {max} caracteres."
+    }
   }
 }

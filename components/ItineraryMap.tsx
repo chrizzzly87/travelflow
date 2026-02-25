@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
 import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
@@ -167,24 +168,137 @@ type RouteCacheEntry = {
 };
 
 const ROUTE_CACHE = new Map<string, RouteCacheEntry>();
-const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
+export const ROUTE_FAILURE_TTL_MS = 5 * 60 * 1000;
 const ROUTE_STORAGE_KEY = 'tf_route_cache_v1';
-const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
+export const ROUTE_PERSIST_TTL_MS = 24 * 60 * 60 * 1000;
 let routeCacheHydrated = false;
+
+const ROUTE_INNER_OUTLINE_COLOR = '#0f172a';
+const ROUTE_OUTER_OUTLINE_COLOR = '#f8fafc';
+
+export const getRouteOutlineColor = (_style: MapStyle = 'standard'): string => {
+    return ROUTE_INNER_OUTLINE_COLOR;
+};
+
+export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string => {
+    return ROUTE_OUTER_OUTLINE_COLOR;
+};
+
+const buildOutlineIconSequences = (
+    icons: google.maps.IconSequence[],
+    outlineColor: string,
+    scaleBoost: number,
+    opacityFloor: number,
+): google.maps.IconSequence[] => {
+    return icons.map((sequence) => {
+        const icon = sequence.icon;
+        const baseScale = typeof icon.scale === 'number' ? icon.scale : 2.5;
+        const strokeOpacity = Math.max(icon.strokeOpacity ?? 0.9, opacityFloor);
+        const fillOpacity = Math.max(icon.fillOpacity ?? 0, opacityFloor - 0.1);
+        return {
+            ...sequence,
+            icon: {
+                ...icon,
+                strokeColor: outlineColor,
+                fillColor: outlineColor,
+                strokeOpacity,
+                fillOpacity,
+                scale: baseScale + scaleBoost,
+            },
+        };
+    });
+};
+
+export const buildRoutePolylinePairOptions = (
+    options: google.maps.PolylineOptions,
+    style: MapStyle = 'standard',
+): {
+    outerOutlineOptions: google.maps.PolylineOptions;
+    outlineOptions: google.maps.PolylineOptions;
+    mainOptions: google.maps.PolylineOptions;
+} => {
+    const baseWeight = options.strokeWeight ?? 3;
+    const baseOpacity = options.strokeOpacity ?? 0.7;
+    const baseZIndex = options.zIndex ?? 30;
+    const iconSequences = options.icons ?? [];
+    const hasIconSequences = iconSequences.length > 0;
+    const visibleStroke = baseOpacity > 0.05;
+    const mainStrokeWeight = baseWeight + 1;
+    const innerOutlineColor = getRouteOutlineColor(style);
+    const outerOutlineColor = getRouteOuterOutlineColor(style);
+
+    const outerOutlineOptions: google.maps.PolylineOptions = {
+        ...options,
+        strokeColor: outerOutlineColor,
+        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.15, 0.65)) : 0,
+        strokeWeight: mainStrokeWeight + 5,
+        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, outerOutlineColor, 1.8, 0.85) : undefined,
+        zIndex: baseZIndex - 2,
+    };
+
+    const outlineOptions: google.maps.PolylineOptions = {
+        ...options,
+        strokeColor: innerOutlineColor,
+        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.08, 0.55)) : 0,
+        strokeWeight: mainStrokeWeight + 2,
+        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, innerOutlineColor, 1.1, 0.92) : undefined,
+        zIndex: baseZIndex - 1,
+    };
+
+    const mainOptions: google.maps.PolylineOptions = {
+        ...options,
+        strokeOpacity: baseOpacity,
+        strokeWeight: mainStrokeWeight,
+        zIndex: baseZIndex,
+    };
+
+    return { outerOutlineOptions, outlineOptions, mainOptions };
+};
+
+export const filterHydratedRouteCacheEntries = (
+    parsed: unknown,
+    now: number,
+): Array<[string, RouteCacheEntry]> => {
+    if (!parsed || typeof parsed !== 'object') return [];
+    const entries = parsed as Record<string, RouteCacheEntry>;
+    return Object.entries(entries).filter(([, entry]) => {
+        if (!entry || !entry.updatedAt || !entry.status) return false;
+        if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return false;
+        if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return false;
+        return true;
+    });
+};
+
+export const buildPersistedRouteCachePayload = (
+    routeCache: Map<string, RouteCacheEntry>,
+    now: number,
+): Record<string, RouteCacheEntry> => {
+    const payload: Record<string, RouteCacheEntry> = {};
+    routeCache.forEach((entry, key) => {
+        if (!entry || !entry.updatedAt || !entry.status) return;
+        if (entry.status === 'failed') {
+            if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
+                payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
+            }
+            return;
+        }
+        if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
+            payload[key] = entry;
+        }
+    });
+    return payload;
+};
 
 const hydrateRouteCache = () => {
     if (routeCacheHydrated) return;
     if (typeof window === 'undefined') return;
     routeCacheHydrated = true;
     try {
-        const raw = window.localStorage.getItem(ROUTE_STORAGE_KEY);
+        const raw = readLocalStorageItem(ROUTE_STORAGE_KEY);
         if (!raw) return;
-        const parsed = JSON.parse(raw) as Record<string, RouteCacheEntry>;
+        const parsed = JSON.parse(raw);
         const now = Date.now();
-        Object.entries(parsed).forEach(([key, entry]) => {
-            if (!entry || !entry.updatedAt || !entry.status) return;
-            if (entry.status === 'failed' && now - entry.updatedAt > ROUTE_FAILURE_TTL_MS) return;
-            if (now - entry.updatedAt > ROUTE_PERSIST_TTL_MS) return;
+        filterHydratedRouteCacheEntries(parsed, now).forEach(([key, entry]) => {
             ROUTE_CACHE.set(key, entry);
         });
     } catch (e) {
@@ -196,20 +310,8 @@ const persistRouteCache = () => {
     if (typeof window === 'undefined') return;
     try {
         const now = Date.now();
-        const payload: Record<string, RouteCacheEntry> = {};
-        ROUTE_CACHE.forEach((entry, key) => {
-            if (!entry || !entry.updatedAt || !entry.status) return;
-            if (entry.status === 'failed') {
-                if (now - entry.updatedAt <= ROUTE_FAILURE_TTL_MS) {
-                    payload[key] = { status: 'failed', updatedAt: entry.updatedAt };
-                }
-                return;
-            }
-            if (now - entry.updatedAt <= ROUTE_PERSIST_TTL_MS) {
-                payload[key] = entry;
-            }
-        });
-        window.localStorage.setItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
+        const payload = buildPersistedRouteCachePayload(ROUTE_CACHE, now);
+        writeLocalStorageItem(ROUTE_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
         console.warn('Failed to persist route cache', e);
     }
@@ -464,8 +566,27 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             return { lat: result.lat(), lng: result.lng() };
         };
 
+        const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
+            if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
+            const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
+            const outerOutline = new window.google.maps.Polyline({
+                ...outerOutlineOptions,
+                map: googleMapRef.current,
+            });
+            const outline = new window.google.maps.Polyline({
+                ...outlineOptions,
+                map: googleMapRef.current,
+            });
+            const main = new window.google.maps.Polyline({
+                ...mainOptions,
+                map: googleMapRef.current,
+            });
+            routesRef.current.push(outerOutline, outline, main);
+            return { outerOutline, outline, main };
+        };
+
         const drawRoutePath = (path: google.maps.LatLngLiteral[], color: string, weight = 3) => {
-            const line = new window.google.maps.Polyline({
+            return createRoutePolylinePair({
                 path,
                 geodesic: true,
                 strokeColor: color,
@@ -481,10 +602,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     },
                     offset: '50%'
                 }],
-                map: googleMapRef.current
+                zIndex: 40,
             });
-            routesRef.current.push(line);
-            return line;
         };
 
         const brandRouteColor = '#4f46e5';
@@ -874,7 +993,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                          { icon: arrowIcon, offset: '50%' }
                        ]
                      : [{ icon: arrowIcon, offset: '50%' }];
-                 const line = new window.google.maps.Polyline({
+                 createRoutePolylinePair({
                      path: [
                          { lat: start.coordinates.lat, lng: start.coordinates.lng },
                          { lat: end.coordinates.lat, lng: end.coordinates.lng }
@@ -885,9 +1004,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                      strokeWeight: 2,
                      clickable: false,
                      icons,
-                     map: googleMapRef.current
+                     zIndex: 35,
                  });
-                 routesRef.current.push(line);
 
                  const mid = {
                      lat: (start.coordinates.lat + end.coordinates.lat) / 2,
@@ -915,7 +1033,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             drawRoutes();
         }
 
-    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled]); 
+    }, [mapInitialized, mapRenderSignature, selectedCityId, routeMode, showCityNames, isPaywalled, activeStyle]); 
 
     // Pan to selected
     useEffect(() => {

@@ -178,5 +178,17 @@
       "designV2": "Design Variant V2",
       "designV3": "Design Variant V3"
     }
+  },
+  "notifications": {
+    "prompt": {
+      "title": "Ricevere una notifica quando il viaggio e pronto?",
+      "message": "La generazione del viaggio puo richiedere circa un minuto. Attiva le notifiche del browser e ti avviseremo quando il tuo itinerario sara pronto.",
+      "enable": "Attiva notifiche",
+      "notNow": "Non ora"
+    },
+    "ready": {
+      "title": "Viaggio pronto",
+      "body": "Il tuo itinerario e pronto da controllare."
+    }
   }
 }

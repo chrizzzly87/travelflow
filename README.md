@@ -5,14 +5,14 @@ TravelFlow is a React + TypeScript + Vite app for generating and managing travel
 ## Requirements
 
 - Node.js 18+
-- npm
+- pnpm 10+ (via Corepack)
 
 ## Local Setup
 
 1. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 2. Create your local env file:
@@ -28,7 +28,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 # Optional local fallback (browser-side Gemini path for non-Netlify dev)
 VITE_GEMINI_API_KEY=your_gemini_api_key_here
-# Future provider adapters / benchmark tooling
+# Optional provider adapters / benchmark tooling
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
@@ -46,13 +46,13 @@ TF_ADMIN_API_KEY=replace_with_a_long_random_secret
 4. Start the app:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 For internal edge API routes (for example `/api/internal/ai/benchmark`), run Netlify dev instead:
 
 ```bash
-npx netlify dev
+pnpm dlx netlify dev
 ```
 
 Then open the app via `http://localhost:8888` so `/api/*` routes are handled by Netlify Edge Functions.
@@ -62,7 +62,7 @@ Then open the app via `http://localhost:8888` so `/api/*` routes are handled by 
 - `/` marketing landing page
 - `/es/*`, `/de/*`, `/fr/*`, `/pt/*`, `/ru/*`, `/it/*`, `/pl/*`, `/ko/*` localized marketing pages (English stays on root paths)
 - `/create-trip` trip creation flow
-- `/trip/:tripId` planner
+- `/trip/:tripId` planner (owner/admin stays; non-owner viewers route to `/s/:token` when an active share exists; without share they are routed to login/share-unavailable)
 - `/example/:templateId` example trip playground (ephemeral, non-persistent)
 - `/s/:token` shared trip link
 - `/updates` marketing updates feed from markdown release files
@@ -98,6 +98,12 @@ For UI styling, component behavior, and accessibility standards, use:
 
 - `docs/BRAND_CI_GUIDELINES.md`
 
+## Tech Stack Overview
+
+For the current architecture snapshot (frameworks, state management, data stack, analytics, testing status, and upgrade roadmap), use:
+
+- `docs/TECH_STACK.md`
+
 ## Paywall Guidelines
 
 For trip lifecycle state handling, lock behavior, and paywall rules, use:
@@ -109,44 +115,50 @@ For trip lifecycle state handling, lock behavior, and paywall rules, use:
 For DB-backed trips, history snapshots, sharing, and auth/RLS troubleshooting, use:
 
 - `docs/SUPABASE_RUNBOOK.md`
+- `docs/SHARE_USERFLOWS.md`
 
 ## Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 The production output is generated in `dist/`.
 
-`npm run build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
+`pnpm build` now also runs build-time image optimization for inspirations + blog (responsive derivatives + compression) before validations and Vite bundling.
 
 Admin dashboard planning scope is documented in `docs/ADMIN_DASHBOARD_PLAN.md`.
 
-## NPM Scripts
+## Scripts
 
-All available `npm run` commands in this repo:
+All available `pnpm` commands in this repo:
 
-- `npm run dev` — Start Vite dev server.
-- `npm run build` — Run image optimization (inspirations + blog), validations, and production Vite build.
-- `npm run preview` — Preview the production build locally.
-- `npm run release:prepare` — Generate missing blog source images, then run the full production build pipeline.
-- `npm run updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
-- `npm run blog:validate` — Validate blog markdown metadata/content.
-- `npm run edge:validate` — Validate Netlify edge function setup and constraints.
-- `npm run maps:generate` — Generate static trip map PNGs from template coordinates.
-- `npm run build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
-- `npm run inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
-- `npm run inspirations:images:jobs` — Build inspiration image batch job file only.
-- `npm run build:blog-images` — Generate missing blog source images, then create responsive derivatives and optimize oversized assets.
-- `npm run blog:images:optimize` — Optimize blog images only (`--skip-generation`).
-- `npm run blog:images:jobs` — Build blog image batch job file only.
+- `pnpm dev` — Start Vite dev server.
+- `pnpm build` — Run image optimization (inspirations + blog), validations, and production Vite build.
+- `pnpm preview` — Preview the production build locally.
+- `pnpm release:prepare` — Generate missing blog source images, then run the full production build pipeline.
+- `pnpm updates:validate` — Validate `content/updates/*.md` formatting and release metadata.
+- `pnpm blog:validate` — Validate blog markdown metadata/content.
+- `pnpm edge:validate` — Validate Netlify edge function setup and constraints.
+- `pnpm maps:generate` — Generate static trip map PNGs from template coordinates.
+- `pnpm test` — Run the full Vitest suite once.
+- `pnpm test:watch` — Run Vitest in watch mode.
+- `pnpm test:run` — Run the full Vitest suite once.
+- `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
+- `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
+- `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
+- `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
+- `pnpm inspirations:images:jobs` — Build inspiration image batch job file only.
+- `pnpm build:blog-images` — Generate missing blog source images, then create responsive derivatives and optimize oversized assets.
+- `pnpm blog:images:optimize` — Optimize blog images only (`--skip-generation`).
+- `pnpm blog:images:jobs` — Build blog image batch job file only.
 
 ## Blog Image Workflow
 
 When publishing a new blog post, run:
 
 ```bash
-npm run build:blog-images
+pnpm build:blog-images
 ```
 
 This generates missing source images for published posts (card, header, vertical OG), then creates responsive `480/768/1024` WebP derivatives and compresses oversized blog assets.
@@ -156,7 +168,7 @@ This generates missing source images for published posts (card, header, vertical
 To generate missing inspiration source images, run:
 
 ```bash
-npm run build:images
+pnpm build:images
 ```
 
 This generates only missing source images and then creates responsive `480/768/1024` WebP derivatives while compressing oversized inspiration assets.
@@ -164,7 +176,7 @@ This generates only missing source images and then creates responsive `480/768/1
 For a full pre-release workflow (generate missing blog images + run full validations/build):
 
 ```bash
-npm run release:prepare
+pnpm release:prepare
 ```
 
 ## Generate Trip Map Images
@@ -172,7 +184,7 @@ npm run release:prepare
 The homepage trip cards display static route map PNGs. To regenerate them from current trip template coordinates:
 
 ```bash
-npm run maps:generate
+pnpm maps:generate
 ```
 
 The script reads `VITE_GOOGLE_MAPS_API_KEY` from `.env.local` (or `.env`) and downloads one PNG per template into `public/images/trip-maps/`.
@@ -180,7 +192,7 @@ The script reads `VITE_GOOGLE_MAPS_API_KEY` from `.env.local` (or `.env`) and do
 Use `--dry-run` to preview the Google Static Maps URLs without downloading:
 
 ```bash
-npm run maps:generate -- --dry-run
+pnpm maps:generate -- --dry-run
 ```
 
 Re-run this after adding new trip templates or changing city coordinates.
@@ -205,7 +217,7 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
 1. Push this repo to GitHub.
 2. In Netlify, create a new site from Git.
 3. Confirm build settings:
-   - Build command: `npm run build`
+   - Build command: `pnpm build`
    - Publish directory: `dist`
 4. In Netlify environment variables, add:
    - `SITE_URL` (canonical public base URL for sitemap and absolute SEO URLs, e.g. `https://travelflowapp.netlify.app`)
@@ -214,15 +226,15 @@ For branch/PR preview workflow and caveats, see `docs/NETLIFY_FEATURE_BRANCH_DEP
    - `VITE_GOOGLE_MAPS_API_KEY`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions)
+   - `SUPABASE_SERVICE_ROLE_KEY` (required for `/api/internal/admin/iam` provisioning actions and AI telemetry persistence/reads)
    - `OPENAI_API_KEY` (active for OpenAI models in `/api/ai/generate`)
    - `ANTHROPIC_API_KEY` (active for Anthropic models in `/api/ai/generate`)
-   - `OPENROUTER_API_KEY` (reserved for upcoming OpenRouter adapter)
+   - `OPENROUTER_API_KEY` (active for curated OpenRouter models in `/api/ai/generate`)
    - `TF_ADMIN_API_KEY` (required for internal benchmark API endpoints in deployed environments)
 5. Deploy.
 
 Sitemap behavior:
-- `npm run build` regenerates `public/sitemap.xml` on every deploy.
+- `pnpm build` regenerates `public/sitemap.xml` on every deploy.
 - The canonical sitemap host is read from `SITE_URL` (`VITE_SITE_URL` fallback) via `config/site-url.mjs`.
 - Static marketing URLs are derived from `MARKETING_ROUTE_CONFIGS` in `App.tsx`.
 - Utility/error routes that should stay out of search indexing must be listed in `NON_INDEXABLE_STATIC_PATHS` in `scripts/generate-sitemap.mjs`.
@@ -238,6 +250,7 @@ Sitemap behavior:
 
 - Non-trip pages (home, features, updates, blog, legal pages, etc.) use a dedicated `/api/og/site` image generator with page title + subline, TravelFlow branding, and an accent-gradient hero.
 - Shared links (`/s/:token`) use Netlify Edge Functions to inject route-specific Open Graph and Twitter meta tags into the HTML response.
+- Direct trip links (`/trip/:tripId`) with an active share use share-backed OG metadata/images, and non-owner viewers are routed to the canonical shared route (`/s/:token`).
 - OG images are generated at `/api/og/trip` with `og_edge` (Netlify-compatible `@vercel/og`), including:
   - trip title
   - weeks/months/total distance metrics
@@ -260,7 +273,7 @@ Sitemap behavior:
 
 1. Run the app through Netlify (Edge Functions only run through Netlify Dev):
    ```bash
-   npx netlify dev
+   pnpm dlx netlify dev
    ```
 2. Open the playground:
    - `http://localhost:8888/api/og/playground`

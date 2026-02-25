@@ -1,5 +1,10 @@
 import { ITrip, ITimelineItem } from '../types';
 import { isTripExpiredByTimestamp } from './productLimits';
+import {
+    readLocalStorageItem,
+    removeLocalStorageItem,
+    writeLocalStorageItem,
+} from '../services/browserStorageService';
 
 export type TripLifecycleState = 'active' | 'expired' | 'archived';
 export const TRIP_EXPIRY_DEBUG_EVENT = 'tf:trip-expiry-debug-updated';
@@ -76,7 +81,7 @@ const maskTripItemForPaywall = (item: ITimelineItem, cityIndexByItemId: Map<stri
 const readDebugTripExpiryOverrides = (): TripExpiryOverrides => {
     if (typeof window === 'undefined') return {};
     try {
-        const raw = window.localStorage.getItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
+        const raw = readLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
         if (!raw) return {};
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return {};
@@ -96,10 +101,10 @@ const writeDebugTripExpiryOverrides = (overrides: TripExpiryOverrides) => {
     if (typeof window === 'undefined') return;
     try {
         if (Object.keys(overrides).length === 0) {
-            window.localStorage.removeItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
+            removeLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY);
             return;
         }
-        window.localStorage.setItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
+        writeLocalStorageItem(DEBUG_EXPIRED_OVERRIDES_STORAGE_KEY, JSON.stringify(overrides));
     } catch {
         // ignore storage issues
     }

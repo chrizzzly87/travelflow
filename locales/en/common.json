@@ -61,12 +61,44 @@
   },
   "contact": {
     "title": "Contact",
-    "description": "Use this page to report translation issues or send localization feedback.",
-    "formStatusTitle": "Contact form coming soon",
-    "formStatusBody": "The dedicated form is not live yet. Please contact us by email in the meantime.",
-    "emailLabel": "Email",
-    "emailValue": "support@travelflow.app",
-    "responseNote": "We usually reply within 2–3 business days.",
-    "backHome": "Back to homepage"
+    "description": "Reach out with product questions, bugs, partnerships, or translation feedback.",
+    "emailLabel": "Primary email",
+    "emailValue": "contact@wizz.art",
+    "responseNote": "We usually reply within 2-3 business days.",
+    "backHome": "Back to homepage",
+    "form": {
+      "title": "Send us a message",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Select a reason",
+      "reasonOptions": {
+        "bugReport": "Bug report",
+        "featureRequest": "Feature request",
+        "billingAccount": "Billing / account",
+        "dataPrivacy": "Data/privacy request",
+        "partnership": "Partnership",
+        "other": "Other"
+      },
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "Your name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Tell us how we can help.",
+      "messageLimitHint": "Up to {max} characters.",
+      "privacyNote": "We use these details only to process and reply to your request.",
+      "submit": "Send message",
+      "submitting": "Sending...",
+      "successTitle": "Message sent",
+      "successBody": "Thanks, your message was sent successfully.",
+      "errorTitle": "Form unavailable right now",
+      "errorBody": "We could not submit your message through the form. Please email us directly instead.",
+      "fallbackTitle": "Direct email fallback",
+      "fallbackBody": "If the form limit is reached or submission fails, contact us at:",
+      "fallbackCta": "Email contact@wizz.art",
+      "validationReason": "Please choose a reason.",
+      "validationEmail": "Please enter a valid email address.",
+      "validationMessage": "Please enter a message.",
+      "validationMessageLength": "Your message is too long. Maximum is {max} characters."
+    }
   }
 }

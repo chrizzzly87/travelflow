@@ -61,12 +61,44 @@
   },
   "contact": {
     "title": "Kontakt",
-    "description": "Nutze diese Seite, um Übersetzungsfehler oder Feedback zur Lokalisierung zu melden.",
-    "formStatusTitle": "Kontaktformular folgt in Kürze",
-    "formStatusBody": "Das Kontaktformular ist noch nicht live. Bitte schreibe uns bis dahin per E-Mail.",
-    "emailLabel": "E-Mail",
-    "emailValue": "support@travelflow.app",
+    "description": "Melde dich bei Produktfragen, Bugs, Partnerschaften oder Übersetzungsfeedback.",
+    "emailLabel": "Primäre E-Mail",
+    "emailValue": "contact@wizz.art",
     "responseNote": "Wir antworten in der Regel innerhalb von 2 bis 3 Werktagen.",
-    "backHome": "Zur Startseite"
+    "backHome": "Zur Startseite",
+    "form": {
+      "title": "Nachricht senden",
+      "reasonLabel": "Anliegen",
+      "reasonPlaceholder": "Anliegen auswählen",
+      "reasonOptions": {
+        "bugReport": "Bug melden",
+        "featureRequest": "Feature anfragen",
+        "billingAccount": "Abrechnung / Konto",
+        "dataPrivacy": "Datenschutzanfrage",
+        "partnership": "Partnerschaft",
+        "other": "Sonstiges"
+      },
+      "nameLabel": "Name (optional)",
+      "namePlaceholder": "Dein Name",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Beschreibe kurz, wie wir helfen können.",
+      "messageLimitHint": "Bis zu {max} Zeichen.",
+      "privacyNote": "Wir nutzen diese Angaben nur zur Bearbeitung und Beantwortung deiner Anfrage.",
+      "submit": "Nachricht senden",
+      "submitting": "Wird gesendet...",
+      "successTitle": "Nachricht gesendet",
+      "successBody": "Danke, deine Nachricht wurde erfolgreich übermittelt.",
+      "errorTitle": "Formular aktuell nicht verfügbar",
+      "errorBody": "Deine Nachricht konnte nicht über das Formular gesendet werden. Bitte schreibe uns direkt per E-Mail.",
+      "fallbackTitle": "Direkter E-Mail-Fallback",
+      "fallbackBody": "Wenn das Formularlimit erreicht ist oder der Versand fehlschlägt, erreichst du uns unter:",
+      "fallbackCta": "E-Mail an contact@wizz.art",
+      "validationReason": "Bitte wähle ein Anliegen.",
+      "validationEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+      "validationMessage": "Bitte gib eine Nachricht ein.",
+      "validationMessageLength": "Deine Nachricht ist zu lang. Maximal {max} Zeichen."
+    }
   }
 }

@@ -81,6 +81,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
 ];
 
 const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/api'];
+const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
     'home',
@@ -244,6 +245,11 @@ const matchesPrefix = (pathname: string, prefix: string): boolean => {
 export const isToolRoute = (pathname: string): boolean => {
     const stripped = stripLocalePrefix(pathname);
     return TOOL_ROUTE_PREFIXES.some((prefix) => matchesPrefix(stripped, prefix));
+};
+
+export const isOnboardingExemptPath = (pathname: string): boolean => {
+    const stripped = stripLocalePrefix(pathname);
+    return ONBOARDING_EXEMPT_ROUTE_PREFIXES.some((prefix) => matchesPrefix(stripped, prefix));
 };
 
 export const isLocalizedMarketingPath = (pathname: string): boolean => {
