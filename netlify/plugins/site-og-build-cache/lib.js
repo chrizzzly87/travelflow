@@ -9,6 +9,10 @@ const resolveSiteOgStaticDirectory = (cwd = process.cwd()) => {
   return path.resolve(cwd, ...SITE_OG_STATIC_DIR_RELATIVE.split("/"));
 };
 
+const ensureSiteOgStaticDirectory = (cwd = process.cwd()) => {
+  fs.mkdirSync(resolveSiteOgStaticDirectory(cwd), { recursive: true });
+};
+
 const countGeneratedSiteOgPngs = (cwd = process.cwd()) => {
   const outputDirectory = resolveSiteOgStaticDirectory(cwd);
   if (!fs.existsSync(outputDirectory)) return 0;
@@ -30,6 +34,7 @@ const createSiteOgBuildCachePlugin = ({
 } = {}) => {
   const onPreBuild = async ({ utils }) => {
     const beforeCount = countPngs();
+    ensureSiteOgStaticDirectory();
     await restoreCache(utils);
     const afterCount = countPngs();
 
@@ -46,20 +51,30 @@ const createSiteOgBuildCachePlugin = ({
     log(`${LOG_PREFIX} no cached static OG assets restored.`);
   };
 
-  const onSuccess = async ({ utils }) => {
+  const persistCache = async ({ utils, reason = "success" }) => {
     const assetCount = countPngs();
     if (assetCount === 0) {
-      log(`${LOG_PREFIX} skipping cache save (no static OG assets found).`);
+      log(`${LOG_PREFIX} skipping cache save (no static OG assets found; reason=${reason}).`);
       return;
     }
 
+    ensureSiteOgStaticDirectory();
     await saveCache(utils);
-    log(`${LOG_PREFIX} saved ${SITE_OG_STATIC_DIR_RELATIVE} cache (${assetCount} png assets).`);
+    log(`${LOG_PREFIX} saved ${SITE_OG_STATIC_DIR_RELATIVE} cache (${assetCount} png assets; reason=${reason}).`);
+  };
+
+  const onSuccess = async ({ utils }) => {
+    await persistCache({ utils, reason: "success" });
+  };
+
+  const onError = async ({ utils }) => {
+    await persistCache({ utils, reason: "error" });
   };
 
   return {
     onPreBuild,
     onSuccess,
+    onError,
   };
 };
 
@@ -67,5 +82,6 @@ module.exports = {
   SITE_OG_STATIC_DIR_RELATIVE,
   countGeneratedSiteOgPngs,
   createSiteOgBuildCachePlugin,
+  ensureSiteOgStaticDirectory,
   resolveSiteOgStaticDirectory,
 };
