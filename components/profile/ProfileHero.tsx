@@ -41,15 +41,15 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   labels,
 }) => {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(79,70,229,0.15),_transparent_48%)]" />
+    <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(120deg,#f8fafc_0%,#eef2ff_45%,#f8fafc_100%)] p-6 md:p-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(79,70,229,0.12),_transparent_52%)]" />
       <div className="relative">
         <p className="text-xs font-semibold uppercase tracking-wide text-accent-700">{accountLabel}</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{title}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{subtitle}</p>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
-          <article className="rounded-2xl border border-slate-200 bg-white/80 p-4 backdrop-blur">
+          <article className="rounded-2xl border border-white/70 bg-white/70 p-4 backdrop-blur">
             {isLoading ? (
               <div className="inline-flex items-center gap-2 text-sm text-slate-500">
                 <SpinnerGap size={16} className="animate-spin" />
@@ -81,7 +81,7 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
             )}
           </article>
 
-          <article className="rounded-2xl border border-accent-200 bg-accent-50 p-4">
+          <article className="rounded-2xl border border-accent-100 bg-white/55 p-4 backdrop-blur">
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-accent-700">
               <Sparkle size={14} weight="duotone" />
               {greetingLanguage}

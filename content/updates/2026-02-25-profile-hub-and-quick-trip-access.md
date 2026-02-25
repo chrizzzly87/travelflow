@@ -12,6 +12,7 @@ summary: "Signed-in travelers now land in a richer profile hub with map cards, h
 
 ## Changes
 - [x] [New feature] 👤 Added a private profile hub with map-preview trip cards, favorites, all-trips, recent sorting, and clear trip source badges.
+- [x] [Improved] 🎨 Refined the profile hub layout to use full page width and updated trip cards to match the example-trip visual style more closely.
 - [x] [New feature] 📌 Added pinned trip highlights with automatic oldest-pin replacement when more than three trips are pinned.
 - [x] [Improved] 🧭 Signed-in users now go directly to their profile hub when opening the homepage.
 - [x] [Improved] ⚡ Added quick recent-trip access in the account menu plus a mobile shortcut to jump directly into recent plans.

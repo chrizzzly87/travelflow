@@ -207,7 +207,7 @@ export const ProfilePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <div className="mx-auto w-full max-w-7xl space-y-4 px-5 py-8 md:px-8 md:py-10">
+            <div className="w-full space-y-6 px-4 py-6 sm:px-6 md:py-8 lg:px-8 xl:px-10 2xl:px-14">
                 <ProfileHero
                     isLoading={loadingProfile}
                     displayName={displayName}
@@ -242,183 +242,172 @@ export const ProfilePage: React.FC = () => {
                     </section>
                 )}
 
-                <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-                    <div className="space-y-4">
-                        {pinnedTrips.length > 0 && (
-                            <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h2 className="text-lg font-black tracking-tight text-slate-900">{t('sections.highlights')}</h2>
-                                    <span className="text-xs font-semibold text-slate-500">
-                                        {t('sections.highlightsCount', { count: pinnedTrips.length })}
-                                    </span>
-                                </div>
-                                <div className="grid gap-3 xl:grid-cols-2">
-                                    {pinnedTrips.map((trip) => (
-                                        <ProfileTripCard
-                                            key={`pinned-${trip.id}`}
-                                            trip={trip}
-                                            locale={appLocale}
-                                            sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
-                                            labels={{
-                                                open: t('cards.actions.open'),
-                                                favorite: t('cards.actions.favorite'),
-                                                unfavorite: t('cards.actions.unfavorite'),
-                                                pin: t('cards.actions.pin'),
-                                                unpin: t('cards.actions.unpin'),
-                                                pinnedTag: t('cards.pinnedTag'),
-                                                mapUnavailable: t('cards.mapUnavailable'),
-                                                mapLoading: t('cards.mapLoading'),
-                                            }}
-                                            onOpen={handleOpenTrip}
-                                            onToggleFavorite={handleToggleFavorite}
-                                            onTogglePin={handleTogglePin}
-                                            analyticsAttrs={(action) =>
-                                                getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
-                                                    trip_id: trip.id,
-                                                    tab,
-                                                })}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        <section className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                <ProfileTripTabs
-                                    activeTab={tab}
-                                    tabs={[
-                                        { id: 'recent', label: t('tabs.recent'), count: tabCounts.recent },
-                                        { id: 'favorites', label: t('tabs.favorites'), count: tabCounts.favorites },
-                                        { id: 'all', label: t('tabs.all'), count: tabCounts.all },
-                                        {
-                                            id: 'liked',
-                                            label: t('tabs.liked'),
-                                            count: tabCounts.liked,
-                                            badge: t('tabs.comingSoon'),
-                                        },
-                                    ]}
-                                    onTabChange={handleTabChange}
-                                    analyticsAttrs={(nextTab) =>
-                                        getAnalyticsDebugAttributes(`profile__tab--${nextTab}`)}
-                                />
-
-                                {tab === 'recent' && (
-                                    <div className="inline-flex items-center rounded-xl border border-slate-200 bg-slate-50 p-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRecentSortChange('created')}
-                                            className={[
-                                                'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                                                recentSort === 'created'
-                                                    ? 'bg-white text-accent-700 shadow-sm'
-                                                    : 'text-slate-600 hover:text-slate-900',
-                                            ].join(' ')}
-                                            {...getAnalyticsDebugAttributes('profile__recent_sort--created')}
-                                        >
-                                            {t('recentSort.created')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRecentSortChange('updated')}
-                                            className={[
-                                                'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
-                                                recentSort === 'updated'
-                                                    ? 'bg-white text-accent-700 shadow-sm'
-                                                    : 'text-slate-600 hover:text-slate-900',
-                                            ].join(' ')}
-                                            {...getAnalyticsDebugAttributes('profile__recent_sort--updated')}
-                                        >
-                                            {t('recentSort.updated')}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {tab === 'liked' ? (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                                    <p className="text-sm font-semibold text-slate-800">{t('likedPlaceholder.title')}</p>
-                                    <p className="mt-1 text-sm text-slate-600">{t('likedPlaceholder.description')}</p>
-                                </div>
-                            ) : tripsForTab.length === 0 ? (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                                    <p className="text-sm font-semibold text-slate-800">{t('empty.title')}</p>
-                                    <p className="mt-1 text-sm text-slate-600">{t('empty.description')}</p>
-                                </div>
-                            ) : (
-                                <div className="grid gap-3 lg:grid-cols-1 xl:grid-cols-2">
-                                    {tripsForTab.map((trip) => (
-                                        <ProfileTripCard
-                                            key={trip.id}
-                                            trip={trip}
-                                            locale={appLocale}
-                                            sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
-                                            labels={{
-                                                open: t('cards.actions.open'),
-                                                favorite: t('cards.actions.favorite'),
-                                                unfavorite: t('cards.actions.unfavorite'),
-                                                pin: t('cards.actions.pin'),
-                                                unpin: t('cards.actions.unpin'),
-                                                pinnedTag: t('cards.pinnedTag'),
-                                                mapUnavailable: t('cards.mapUnavailable'),
-                                                mapLoading: t('cards.mapLoading'),
-                                            }}
-                                            onOpen={handleOpenTrip}
-                                            onToggleFavorite={handleToggleFavorite}
-                                            onTogglePin={handleTogglePin}
-                                            analyticsAttrs={(action) =>
-                                                getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
-                                                    trip_id: trip.id,
-                                                    tab,
-                                                })}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-                        </section>
-                    </div>
-
-                    <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm h-fit">
-                        <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
+                <section className="space-y-2">
+                    <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
+                    <div className="flex flex-wrap items-center gap-2">
                         <NavLink
                             to="/profile/settings"
                             onClick={() => trackEvent('profile__shortcut--settings')}
-                            className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('profile__shortcut--settings')}
                         >
-                            <span className="inline-flex items-center gap-2">
-                                <GearSix size={16} />
-                                {t('actions.settings')}
-                            </span>
-                            <span aria-hidden="true">&rarr;</span>
+                            <GearSix size={16} />
+                            {t('actions.settings')}
                         </NavLink>
                         <NavLink
                             to="/create-trip"
                             onClick={() => trackEvent('profile__shortcut--planner')}
-                            className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
                         >
-                            <span className="inline-flex items-center gap-2">
-                                <IdentificationCard size={16} />
-                                {t('actions.planner')}
-                            </span>
-                            <span aria-hidden="true">&rarr;</span>
+                            <IdentificationCard size={16} />
+                            {t('actions.planner')}
                         </NavLink>
                         {isAdmin && (
                             <NavLink
                                 to="/admin/dashboard"
                                 onClick={() => trackEvent('profile__shortcut--admin_workspace')}
-                                className="flex items-center justify-between rounded-xl border border-accent-200 bg-accent-50 px-3 py-2.5 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100"
+                                className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100"
                                 {...getAnalyticsDebugAttributes('profile__shortcut--admin_workspace')}
                             >
-                                <span className="inline-flex items-center gap-2">
-                                    <ShieldCheck size={16} />
-                                    {t('actions.adminWorkspace')}
-                                </span>
-                                <span aria-hidden="true">&rarr;</span>
+                                <ShieldCheck size={16} />
+                                {t('actions.adminWorkspace')}
                             </NavLink>
                         )}
-                    </aside>
+                    </div>
+                </section>
+
+                {pinnedTrips.length > 0 && (
+                    <section className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <h2 className="text-lg font-black tracking-tight text-slate-900">{t('sections.highlights')}</h2>
+                            <span className="text-xs font-semibold text-slate-500">
+                                {t('sections.highlightsCount', { count: pinnedTrips.length })}
+                            </span>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                            {pinnedTrips.map((trip) => (
+                                <ProfileTripCard
+                                    key={`pinned-${trip.id}`}
+                                    trip={trip}
+                                    locale={appLocale}
+                                    sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                    labels={{
+                                        open: t('cards.actions.open'),
+                                        favorite: t('cards.actions.favorite'),
+                                        unfavorite: t('cards.actions.unfavorite'),
+                                        pin: t('cards.actions.pin'),
+                                        unpin: t('cards.actions.unpin'),
+                                        pinnedTag: t('cards.pinnedTag'),
+                                        mapUnavailable: t('cards.mapUnavailable'),
+                                        mapLoading: t('cards.mapLoading'),
+                                    }}
+                                    onOpen={handleOpenTrip}
+                                    onToggleFavorite={handleToggleFavorite}
+                                    onTogglePin={handleTogglePin}
+                                    analyticsAttrs={(action) =>
+                                        getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
+                                            trip_id: trip.id,
+                                            tab,
+                                        })}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                <section className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <ProfileTripTabs
+                            activeTab={tab}
+                            tabs={[
+                                { id: 'recent', label: t('tabs.recent'), count: tabCounts.recent },
+                                { id: 'favorites', label: t('tabs.favorites'), count: tabCounts.favorites },
+                                { id: 'all', label: t('tabs.all'), count: tabCounts.all },
+                                {
+                                    id: 'liked',
+                                    label: t('tabs.liked'),
+                                    count: tabCounts.liked,
+                                    badge: t('tabs.comingSoon'),
+                                },
+                            ]}
+                            onTabChange={handleTabChange}
+                            analyticsAttrs={(nextTab) =>
+                                getAnalyticsDebugAttributes(`profile__tab--${nextTab}`)}
+                        />
+
+                        {tab === 'recent' && (
+                            <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => handleRecentSortChange('created')}
+                                    className={[
+                                        'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                                        recentSort === 'created'
+                                            ? 'bg-slate-100 text-accent-700'
+                                            : 'text-slate-600 hover:text-slate-900',
+                                    ].join(' ')}
+                                    {...getAnalyticsDebugAttributes('profile__recent_sort--created')}
+                                >
+                                    {t('recentSort.created')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleRecentSortChange('updated')}
+                                    className={[
+                                        'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
+                                        recentSort === 'updated'
+                                            ? 'bg-slate-100 text-accent-700'
+                                            : 'text-slate-600 hover:text-slate-900',
+                                    ].join(' ')}
+                                    {...getAnalyticsDebugAttributes('profile__recent_sort--updated')}
+                                >
+                                    {t('recentSort.updated')}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    {tab === 'liked' ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                            <p className="text-sm font-semibold text-slate-800">{t('likedPlaceholder.title')}</p>
+                            <p className="mt-1 text-sm text-slate-600">{t('likedPlaceholder.description')}</p>
+                        </div>
+                    ) : tripsForTab.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
+                            <p className="text-sm font-semibold text-slate-800">{t('empty.title')}</p>
+                            <p className="mt-1 text-sm text-slate-600">{t('empty.description')}</p>
+                        </div>
+                    ) : (
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                            {tripsForTab.map((trip) => (
+                                <ProfileTripCard
+                                    key={trip.id}
+                                    trip={trip}
+                                    locale={appLocale}
+                                    sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                    labels={{
+                                        open: t('cards.actions.open'),
+                                        favorite: t('cards.actions.favorite'),
+                                        unfavorite: t('cards.actions.unfavorite'),
+                                        pin: t('cards.actions.pin'),
+                                        unpin: t('cards.actions.unpin'),
+                                        pinnedTag: t('cards.pinnedTag'),
+                                        mapUnavailable: t('cards.mapUnavailable'),
+                                        mapLoading: t('cards.mapLoading'),
+                                    }}
+                                    onOpen={handleOpenTrip}
+                                    onToggleFavorite={handleToggleFavorite}
+                                    onTogglePin={handleTogglePin}
+                                    analyticsAttrs={(action) =>
+                                        getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
+                                            trip_id: trip.id,
+                                            tab,
+                                        })}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </section>
             </div>
         </div>
