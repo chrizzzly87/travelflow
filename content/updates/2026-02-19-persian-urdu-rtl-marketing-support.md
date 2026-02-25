@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-19-persian-urdu-rtl-marketing-support
-version: v0.50.0
+version: v0.64.0
 title: "Persian and Urdu marketing RTL support"
 date: 2026-02-19
-published_at: 2026-02-19T17:30:00Z
-status: draft
+published_at: 2026-02-25T16:55:24Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Added Persian and Urdu language options for marketing pages with automatic RTL direction handling and destination-name locale coverage updates."
