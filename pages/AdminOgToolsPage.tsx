@@ -286,9 +286,14 @@ export const AdminOgToolsPage: React.FC = () => {
                         <header className="mb-4">
                             <h2 className="text-base font-semibold text-slate-900">Static OG Build Command Builder</h2>
                             <p className="mt-1 text-sm text-slate-600">
-                                Build command-line filters for static OG generation. Leave inputs empty for a full build.
+                                Build command-line filters for static OG generation. Leave inputs empty for the default priority scope.
                             </p>
                         </header>
+
+                        <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                            Default static scope pre-generates only localized home, localized blog overview, localized inspirations overview, and `/example/*` template cards.
+                            Example routes still resolve dynamic trip OG output at runtime for card-layout parity, and all other routes stay dynamic with edge caching unless you run the full-scope command below.
+                        </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
                             <label className="space-y-1">
@@ -371,14 +376,29 @@ export const AdminOgToolsPage: React.FC = () => {
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                                 <div className="mb-1 flex items-center gap-1 font-semibold text-slate-800">
-                                    <LinkSimpleHorizontal size={14} /> Release-safe full run
+                                    <LinkSimpleHorizontal size={14} /> Release-safe default run
                                 </div>
                                 <code className="text-xs text-slate-700">{commands.releaseSafeCommand}</code>
                                 {commands.hasFilters && (
                                     <p className="mt-2 text-xs text-slate-600">
-                                        Filtered builds only regenerate selected route keys. Run the full release-safe command before final deploy checks.
+                                        Filtered builds only regenerate selected route keys. Run the default release-safe command before final deploy checks.
                                     </p>
                                 )}
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 bg-slate-900 p-3 text-slate-100">
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-300">Full-scope override command</div>
+                                    <button
+                                        type="button"
+                                        onClick={() => void copyText('fullscope', commands.fullScopeCommand)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-600 px-2 py-1 text-xs font-semibold text-slate-100 hover:bg-slate-800"
+                                    >
+                                        <ClipboardText size={14} />
+                                        {copiedKey === 'fullscope' ? 'Copied' : 'Copy'}
+                                    </button>
+                                </div>
+                                <code className="block overflow-x-auto whitespace-pre text-xs">{commands.fullScopeCommand}</code>
                             </div>
                         </div>
                     </section>

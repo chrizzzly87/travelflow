@@ -195,7 +195,7 @@ const main = async (): Promise<void> => {
   }
 
   process.stdout.write(
-    `[site-og-static] start targets=${targets.length} mode=${isFilteredBuild ? "filtered" : "full"}\n`,
+    `[site-og-static] start targets=${targets.length} scope=${resolvedFilters.targetScope} mode=${isFilteredBuild ? "filtered" : "default"}\n`,
   );
 
   const existingManifest = readExistingManifest();
@@ -286,8 +286,8 @@ const main = async (): Promise<void> => {
   writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 
   const filterSummary = isFilteredBuild
-    ? ` mode=filtered locales=${resolvedFilters.locales.join(",") || "-"} includePaths=${resolvedFilters.includePaths.length} includePrefixes=${resolvedFilters.includePrefixes.length} excludePaths=${resolvedFilters.excludePaths.length} excludePrefixes=${resolvedFilters.excludePrefixes.length}`
-    : " mode=full";
+    ? ` mode=filtered scope=${resolvedFilters.targetScope} locales=${resolvedFilters.locales.join(",") || "-"} includePaths=${resolvedFilters.includePaths.length} includePrefixes=${resolvedFilters.includePrefixes.length} excludePaths=${resolvedFilters.excludePaths.length} excludePrefixes=${resolvedFilters.excludePrefixes.length}`
+    : ` mode=default scope=${resolvedFilters.targetScope}`;
 
   process.stdout.write(
     `[site-og-static] targets=${targets.length} wrote=${written} reused=${reused} removed=${removed}${filterSummary} manifest=${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}\n`,

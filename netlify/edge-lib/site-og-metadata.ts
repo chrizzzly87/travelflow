@@ -988,7 +988,7 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
   };
 };
 
-const STATIC_MARKETING_BASE_PATHS: readonly string[] = [
+const FULL_STATIC_MARKETING_BASE_PATHS: readonly string[] = [
   "/",
   "/features",
   "/inspirations",
@@ -1010,10 +1010,21 @@ const STATIC_MARKETING_BASE_PATHS: readonly string[] = [
   "/cookies",
 ];
 
+const PRIORITY_STATIC_MARKETING_BASE_PATHS: readonly string[] = [
+  "/",
+  "/blog",
+  "/inspirations",
+];
+
+export const SITE_OG_STATIC_SCOPE_VALUES = ["priority", "full"] as const;
+export type SiteOgStaticScope = (typeof SITE_OG_STATIC_SCOPE_VALUES)[number];
+export const DEFAULT_SITE_OG_STATIC_SCOPE: SiteOgStaticScope = "priority";
+
 export interface SiteOgPathEnumerationInput {
   blogSlugs: string[];
   countryNames: string[];
   exampleTemplateIds: string[];
+  scope?: SiteOgStaticScope;
 }
 
 const localizeStaticPath = (basePath: string, locale: SupportedLocale): string => {
@@ -1026,6 +1037,7 @@ export const enumerateSiteOgPathnames = (
   input: SiteOgPathEnumerationInput,
 ): string[] => {
   const paths = new Set<string>();
+  const scope = input.scope || DEFAULT_SITE_OG_STATIC_SCOPE;
 
   const addLocalized = (basePath: string) => {
     for (const locale of SUPPORTED_LOCALES) {
@@ -1033,19 +1045,25 @@ export const enumerateSiteOgPathnames = (
     }
   };
 
-  for (const basePath of STATIC_MARKETING_BASE_PATHS) addLocalized(basePath);
-  addLocalized("/create-trip");
+  const basePaths = scope === "full"
+    ? FULL_STATIC_MARKETING_BASE_PATHS
+    : PRIORITY_STATIC_MARKETING_BASE_PATHS;
+  for (const basePath of basePaths) addLocalized(basePath);
 
-  for (const slug of input.blogSlugs) {
-    const normalizedSlug = slug.trim();
-    if (!normalizedSlug) continue;
-    addLocalized(`/blog/${encodeURIComponent(normalizedSlug)}`);
-  }
+  if (scope === "full") {
+    addLocalized("/create-trip");
 
-  for (const countryName of input.countryNames) {
-    const normalizedCountryName = countryName.trim();
-    if (!normalizedCountryName) continue;
-    addLocalized(`/inspirations/country/${encodeURIComponent(normalizedCountryName)}`);
+    for (const slug of input.blogSlugs) {
+      const normalizedSlug = slug.trim();
+      if (!normalizedSlug) continue;
+      addLocalized(`/blog/${encodeURIComponent(normalizedSlug)}`);
+    }
+
+    for (const countryName of input.countryNames) {
+      const normalizedCountryName = countryName.trim();
+      if (!normalizedCountryName) continue;
+      addLocalized(`/inspirations/country/${encodeURIComponent(normalizedCountryName)}`);
+    }
   }
 
   for (const templateId of input.exampleTemplateIds) {
