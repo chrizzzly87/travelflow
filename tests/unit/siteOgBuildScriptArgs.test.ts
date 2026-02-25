@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { parseSiteOgStaticBuildCliArgs } from '../../scripts/build-site-og-static-images.ts';
+import {
+  parseSiteOgStaticBuildCliArgs,
+  shouldTreatEmptyStaticSelectionAsNoOp,
+} from '../../scripts/build-site-og-static-images.ts';
 
 describe('site og build script cli args', () => {
   it('parses known filter flags', () => {
@@ -29,5 +32,22 @@ describe('site og build script cli args', () => {
   it('throws on unknown or value-less flags', () => {
     expect(() => parseSiteOgStaticBuildCliArgs(['--wat=1'])).toThrow('Unknown flag');
     expect(() => parseSiteOgStaticBuildCliArgs(['--locales'])).toThrow('requires a value');
+  });
+
+  it('allows empty filtered output for dynamic-only route selections', () => {
+    expect(shouldTreatEmptyStaticSelectionAsNoOp({
+      isFilteredBuild: true,
+      filteredPathCount: 12,
+    })).toBe(true);
+
+    expect(shouldTreatEmptyStaticSelectionAsNoOp({
+      isFilteredBuild: false,
+      filteredPathCount: 12,
+    })).toBe(false);
+
+    expect(shouldTreatEmptyStaticSelectionAsNoOp({
+      isFilteredBuild: true,
+      filteredPathCount: 0,
+    })).toBe(false);
   });
 });

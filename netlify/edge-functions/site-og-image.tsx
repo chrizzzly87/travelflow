@@ -1,12 +1,19 @@
 import React from "https://esm.sh/react@18.3.1";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 import { APP_NAME } from "../../config/appGlobals.ts";
-import { buildLocalHeadingFontUrls, type BaseHeadingFontWeight } from "../edge-lib/og-font-utils.ts";
+import {
+  buildLocalHeadingFontUrls,
+  buildLocalRtlHeadingFontUrls,
+  type BaseHeadingFontWeight,
+} from "../edge-lib/og-font-utils.ts";
 
 const IMAGE_WIDTH = 1200;
 const IMAGE_HEIGHT = 630;
 const SITE_NAME = APP_NAME;
-const HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const LATIN_HEADLINE_FONT_FAMILY = "Bricolage Grotesque";
+const RTL_HEADLINE_FONT_FAMILY = "Vazirmatn";
+type HeadingFontScript = "latin" | "rtl";
+type OgDirection = "ltr" | "rtl";
 
 const DEFAULT_TITLE = APP_NAME;
 const DEFAULT_SUBLINE = "Plan and share travel routes with timeline and map previews.";
@@ -53,7 +60,14 @@ const fetchFontArrayBuffer = async (fontUrl: string): Promise<ArrayBuffer | null
 
 // og_edge picks the first matching font per weight and does not merge unicode-range subsets.
 // Keep full latin files first so ASCII headlines do not fall back to system fonts.
-const buildHeadingFontUrls = (requestUrl: URL, weight: BaseHeadingFontWeight): string[] => {
+const buildHeadingFontUrls = (
+  requestUrl: URL,
+  weight: BaseHeadingFontWeight,
+  script: HeadingFontScript,
+): string[] => {
+  if (script === "rtl") {
+    return buildLocalRtlHeadingFontUrls(requestUrl.origin, weight);
+  }
   return buildLocalHeadingFontUrls(requestUrl.origin, weight);
 };
 
@@ -71,8 +85,9 @@ const isSupportedOgFont = (fontData: ArrayBuffer): boolean => {
 const loadHeadingFontByWeight = async (
   requestUrl: URL,
   weight: BaseHeadingFontWeight,
+  script: HeadingFontScript,
 ): Promise<ArrayBuffer | null> => {
-  for (const fontUrl of buildHeadingFontUrls(requestUrl, weight)) {
+  for (const fontUrl of buildHeadingFontUrls(requestUrl, weight, script)) {
     const fontData = await fetchFontArrayBuffer(fontUrl);
     if (fontData && isSupportedOgFont(fontData)) return fontData;
   }
@@ -115,8 +130,11 @@ const toExpandedOgHeadingFonts = (
   });
 };
 
-const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> => {
-  const cacheKey = requestUrl.origin;
+const loadHeadingFonts = async (
+  requestUrl: URL,
+  script: HeadingFontScript,
+): Promise<LoadedHeadingFont[]> => {
+  const cacheKey = `${requestUrl.origin}:${script}`;
   let fontPromise = headingFontPromiseByOrigin.get(cacheKey);
 
   if (!fontPromise) {
@@ -124,7 +142,7 @@ const loadHeadingFonts = async (requestUrl: URL): Promise<LoadedHeadingFont[]> =
       const fontResults = await Promise.all(
         BASE_HEADING_FONT_WEIGHTS.map(async (weight) => ({
           weight,
-          data: await loadHeadingFontByWeight(requestUrl, weight),
+          data: await loadHeadingFontByWeight(requestUrl, weight, script),
         })),
       );
 
@@ -150,6 +168,25 @@ const sanitizeText = (value: string | null, max: number): string | null => {
 
 const getSearchParam = (url: URL, key: string): string | null => {
   return url.searchParams.get(key) ?? url.searchParams.get(`amp;${key}`);
+};
+
+const normalizeLanguageTag = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return null;
+  return trimmed;
+};
+
+const isRtlLanguageTag = (languageTag: string | null): boolean => {
+  if (!languageTag) return false;
+  return /^(fa|ur)(-|$)/i.test(languageTag);
+};
+
+const normalizeDirection = (value: string | null): OgDirection | null => {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === "rtl" || trimmed === "ltr") return trimmed;
+  return null;
 };
 
 const normalizePath = (value: string | null): string => {
@@ -325,7 +362,13 @@ const TOPO_CONTOUR_OVERLAY_URI = svgToDataUri(
 export default async (request: Request): Promise<Response> => {
   try {
     const url = new URL(request.url);
-    const headingFonts = await loadHeadingFonts(url);
+    const languageTag = normalizeLanguageTag(getSearchParam(url, "lang"));
+    const requestedDirection = normalizeDirection(getSearchParam(url, "dir"));
+    const ogDirection: OgDirection = requestedDirection ?? (isRtlLanguageTag(languageTag) ? "rtl" : "ltr");
+    const isRtl = ogDirection === "rtl";
+    const headingFontScript: HeadingFontScript = isRtl ? "rtl" : "latin";
+    const headlineFontFamily = isRtl ? RTL_HEADLINE_FONT_FAMILY : LATIN_HEADLINE_FONT_FAMILY;
+    const headingFonts = await loadHeadingFonts(url, headingFontScript);
 
     const title = sanitizeText(getSearchParam(url, "title"), 110) || DEFAULT_TITLE;
     const subline = sanitizeText(getSearchParam(url, "description"), 160) || DEFAULT_SUBLINE;
@@ -351,9 +394,12 @@ export default async (request: Request): Promise<Response> => {
             width: "100%",
             height: "100%",
             display: "flex",
+            flexDirection: isRtl ? "row-reverse" : "row",
             padding: 28,
             color: "#0f172a",
-            fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+            direction: ogDirection,
+            textAlign: isRtl ? "right" : "left",
+            fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
             fontWeight: 400,
             background:
               "linear-gradient(165deg, #f8fafc 0%, #eef2ff 62%, #e0e7ff 100%)",
@@ -375,15 +421,16 @@ export default async (request: Request): Promise<Response> => {
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexDirection: isRtl ? "row-reverse" : "row",
                 gap: 10,
-                alignSelf: "flex-start",
+                alignSelf: isRtl ? "flex-end" : "flex-start",
                 padding: "10px 18px",
                 borderRadius: 9999,
                 background: ACCENT_600,
                 color: "#ffffff",
                 fontSize: 20,
                 fontWeight: 700,
-                fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               <img src={FOOTER_PLANE_ICON_URI} alt="" style={{ width: 16, height: 16, display: "flex" }} />
@@ -402,11 +449,11 @@ export default async (request: Request): Promise<Response> => {
                 fontWeight: 800,
                 textWrap: "pretty",
                 color: "#0f172a",
-                fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
               }}
             >
               {titleLines.map((line, i) => (
-                <div key={`title-${i}`} style={{ display: "flex" }}>
+                <div key={`title-${i}`} style={{ display: "flex", justifyContent: isRtl ? "flex-end" : "flex-start" }}>
                   {line}
                 </div>
               ))}
@@ -430,6 +477,7 @@ export default async (request: Request): Promise<Response> => {
                 marginTop: "auto",
                 display: "flex",
                 alignItems: "center",
+                flexDirection: isRtl ? "row-reverse" : "row",
                 justifyContent: "space-between",
                 borderTop: "1px solid rgba(148, 163, 184, 0.36)",
                 paddingTop: 20,
@@ -440,6 +488,7 @@ export default async (request: Request): Promise<Response> => {
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  flexDirection: isRtl ? "row-reverse" : "row",
                   gap: 12,
                 }}
               >
@@ -463,7 +512,7 @@ export default async (request: Request): Promise<Response> => {
                     fontWeight: 700,
                     color: "#111827",
                     display: "flex",
-                    fontFamily: `"${HEADLINE_FONT_FAMILY}", "Avenir Next", "Segoe UI", sans-serif`,
+                    fontFamily: `"${headlineFontFamily}", "TravelFlow Global Fallback", "Avenir Next", "Segoe UI", sans-serif`,
                   }}
                 >
                   {SITE_NAME}
@@ -479,6 +528,7 @@ export default async (request: Request): Promise<Response> => {
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  direction: "ltr",
                 }}
               >
                 {displayUrl}
@@ -490,7 +540,8 @@ export default async (request: Request): Promise<Response> => {
             style={{
               width: "33%",
               height: "100%",
-              paddingLeft: 20,
+              paddingLeft: isRtl ? 0 : 20,
+              paddingRight: isRtl ? 20 : 0,
               display: "flex",
             }}
           >
@@ -566,7 +617,7 @@ export default async (request: Request): Promise<Response> => {
         ...(headingFonts.length
           ? {
               fonts: headingFonts.map((font) => ({
-                  name: HEADLINE_FONT_FAMILY,
+                  name: headlineFontFamily,
                   data: font.data,
                   style: "normal",
                   weight: font.weight,

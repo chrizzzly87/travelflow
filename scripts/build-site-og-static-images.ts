@@ -12,6 +12,7 @@ import {
   buildSiteOgManifestRevision,
   buildSiteOgStaticFileName,
   buildSiteOgStaticRenderPayload,
+  collectSiteOgPathnames,
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
   renderSiteOgStaticSvg,
@@ -35,6 +36,13 @@ const CLI_FLAG_NAMES = new Set([
 export interface SiteOgStaticBuildCliOptions extends SiteOgStaticPathFilterOptions {
   hasFilters: boolean;
 }
+
+export const shouldTreatEmptyStaticSelectionAsNoOp = (
+  options: {
+    isFilteredBuild: boolean;
+    filteredPathCount: number;
+  },
+): boolean => options.isFilteredBuild && options.filteredPathCount > 0;
 
 const sortRecord = <T>(entries: Record<string, T>): Record<string, T> =>
   Object.fromEntries(
@@ -120,6 +128,13 @@ const main = async (): Promise<void> => {
 
   const targets = collectSiteOgStaticTargets(SITE_OG_BUILD_ORIGIN, cliOptions);
   if (targets.length === 0) {
+    const filteredPathCount = collectSiteOgPathnames(cliOptions).length;
+    if (shouldTreatEmptyStaticSelectionAsNoOp({ isFilteredBuild, filteredPathCount })) {
+      process.stdout.write(
+        `[site-og-static] filtered selection contains only dynamic OG routes (paths=${filteredPathCount}); no static images were generated.\n`,
+      );
+      return;
+    }
     throw new Error("No static OG targets matched the selected filters.");
   }
 

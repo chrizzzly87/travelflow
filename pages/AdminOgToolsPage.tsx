@@ -18,6 +18,7 @@ import {
 const PRESET_PATHS = [
     '/',
     '/blog',
+    '/fa/blog',
     '/de/features',
     '/example/thailand-islands',
     '/example/italy-classic',

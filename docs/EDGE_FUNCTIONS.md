@@ -83,6 +83,8 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
     - `--include-prefixes=/blog,/de/blog`
     - `--exclude-paths=/blog/draft-slug`
     - `--exclude-prefixes=/example`
+  - When `--locales` is set, include/exclude path filters may use base paths (for example `--locales=fa --include-paths=/blog` targets `/fa/blog`).
+  - Filtered runs that resolve only to dynamic OG routes (for example RTL locales that stay edge-rendered) exit successfully without writing static files.
 - Netlify build-cache plugin: `./netlify/plugins/site-og-build-cache`
   - Restores `public/images/og/site/generated/` before `pnpm og:site:build`.
   - Saves `public/images/og/site/generated/` after successful builds.
@@ -150,7 +152,7 @@ Set required keys in **Netlify > Site settings > Environment variables**. Key na
 
 ### OG font dependency policy
 
-- OG image functions must load heading fonts from local assets only (`/fonts/bricolage-grotesque/*`).
+- OG image functions must load heading fonts from local assets only (`/fonts/bricolage-grotesque/*` for LTR and `/fonts/vazirmatn/*` for RTL Persian/Urdu rendering).
 - Do not add remote CDN font fallbacks in edge image functions.
 - Font fetch operations must stay short-lived (timeout bounded) so upstream slowness does not turn into edge 502s.
 

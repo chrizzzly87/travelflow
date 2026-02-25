@@ -78,7 +78,8 @@ const resolveOgImageUrl = async (
   metadata: SiteOgMetadata,
 ): Promise<{ ogImageUrl: string; source: "static" | "dynamic" }> => {
   const prefersDynamicTripCard = metadata.canonicalPath.startsWith("/example/");
-  if (prefersDynamicTripCard) {
+  const prefersDynamicRtlCard = metadata.htmlDir === "rtl";
+  if (prefersDynamicTripCard || prefersDynamicRtlCard) {
     return {
       ogImageUrl: metadata.ogImageUrl,
       source: "dynamic",

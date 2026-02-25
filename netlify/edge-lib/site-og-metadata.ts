@@ -8,9 +8,22 @@ export const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 export const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 export const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
-export const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko"] as const;
+export const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: SupportedLocale = "en";
+const LOCALE_DIR_MAP: Record<SupportedLocale, "ltr" | "rtl"> = {
+  en: "ltr",
+  es: "ltr",
+  de: "ltr",
+  fr: "ltr",
+  pt: "ltr",
+  ru: "ltr",
+  it: "ltr",
+  pl: "ltr",
+  ko: "ltr",
+  fa: "rtl",
+  ur: "rtl",
+};
 
 export interface AlternateLink {
   hreflang: string;
@@ -22,6 +35,8 @@ export interface SiteOgImageParams {
   description: string;
   path: string;
   pill?: string;
+  lang?: string;
+  dir?: "ltr" | "rtl";
   blog_image?: string;
   blog_rev?: string;
   blog_tint?: string;
@@ -824,6 +839,8 @@ export const buildDynamicSiteOgImageUrl = (origin: string, params: SiteOgImagePa
   ogImage.searchParams.set("description", params.description);
   ogImage.searchParams.set("path", params.path);
   if (params.pill) ogImage.searchParams.set("pill", params.pill);
+  if (params.lang) ogImage.searchParams.set("lang", params.lang);
+  if (params.dir) ogImage.searchParams.set("dir", params.dir);
   if (params.blog_image) ogImage.searchParams.set("blog_image", params.blog_image);
   if (params.blog_rev) ogImage.searchParams.set("blog_rev", params.blog_rev);
   if (params.blog_tint) ogImage.searchParams.set("blog_tint", params.blog_tint);
@@ -956,6 +973,8 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     title: ogTitleRaw,
     description: ogDescriptionRaw,
     path: canonicalPath + canonicalSearch,
+    lang: effectiveLocale,
+    dir: LOCALE_DIR_MAP[effectiveLocale] || "ltr",
   };
   if (page.pill) ogImageParams.pill = page.pill;
   if (page.blogOgImagePath) {
@@ -984,7 +1003,7 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     robots: page.robots || "index,follow,max-image-preview:large",
     alternateLinks,
     htmlLang: effectiveLocale,
-    htmlDir: "ltr",
+    htmlDir: LOCALE_DIR_MAP[effectiveLocale] || "ltr",
   };
 };
 
