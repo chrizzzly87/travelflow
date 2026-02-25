@@ -30,14 +30,14 @@ describe('utils/aiBenchmarkTargets', () => {
     const selectedTargets: AiBenchmarkTargetModel[] = [
       { id: 'a', provider: 'openai', model: 'openai/gpt-5-mini', label: 'GPT 5 mini' },
       { id: 'b', provider: 'perplexity', model: 'perplexity/sonar', label: 'Sonnar' },
-      { id: 'c', provider: 'qwen', model: 'qwen/qwen-3.5-plus', label: 'Qwen 3.5 Plus' },
+      { id: 'c', provider: 'qwen', model: 'qwen/qwen3.5-plus-02-15', label: 'Qwen 3.5 Plus' },
     ];
 
     const runnable = buildRunnableBenchmarkTargets(selectedTargets, ['b']);
 
     expect(runnable).toEqual([
       { provider: 'openai', model: 'openai/gpt-5-mini', label: 'GPT 5 mini' },
-      { provider: 'qwen', model: 'qwen/qwen-3.5-plus', label: 'Qwen 3.5 Plus' },
+      { provider: 'qwen', model: 'qwen/qwen3.5-plus-02-15', label: 'Qwen 3.5 Plus' },
     ]);
   });
 

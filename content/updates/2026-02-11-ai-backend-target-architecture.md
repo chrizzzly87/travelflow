@@ -97,3 +97,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🎚️ Added per-pill benchmark target controls to temporarily deactivate models for `Test all` and trigger a single-model run directly from the target chip.
 - [ ] [Internal] 🧰 Added quick `Activate all` / `Deactivate all` target actions in `/admin/ai-benchmark` so benchmark model pools can be toggled in one click.
 - [ ] [Internal] 🧯 Fixed edge bundling regression by switching benchmark model-catalog provider metadata import to explicit `.ts` extension for Deno-compatible module resolution.
+- [ ] [Internal] 🛠️ Updated Qwen benchmark/runtime model IDs to valid OpenRouter slugs (`qwen3.5-plus-02-15`, `qwen3.5-397b-a17b`) and added legacy-ID aliasing to keep older saved target payloads working.

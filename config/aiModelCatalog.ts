@@ -227,9 +227,9 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. Perplexity benchmark calls are routed via OpenRouter for unified execution.',
     },
     {
-        id: 'qwen:qwen/qwen-3.5-plus',
+        id: 'qwen:qwen/qwen3.5-plus-02-15',
         provider: 'qwen',
-        model: 'qwen/qwen-3.5-plus',
+        model: 'qwen/qwen3.5-plus-02-15',
         label: 'Qwen 3.5 Plus',
         availability: 'active',
         releasedAt: '2026-02-22',
@@ -238,9 +238,9 @@ const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
         costNote: 'Requires OPENROUTER_API_KEY on server. Qwen benchmark calls are routed via OpenRouter for unified execution.',
     },
     {
-        id: 'qwen:qwen/qwen-3.5',
+        id: 'qwen:qwen/qwen3.5-397b-a17b',
         provider: 'qwen',
-        model: 'qwen/qwen-3.5',
+        model: 'qwen/qwen3.5-397b-a17b',
         label: 'Qwen 3.5',
         availability: 'active',
         releasedAt: '2026-02-22',
