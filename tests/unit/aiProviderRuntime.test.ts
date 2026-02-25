@@ -344,9 +344,14 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
+    const perplexityRequest = (fetchMock.mock.calls[0] as [string, RequestInit])[1];
+    const perplexityBody = JSON.parse(String(perplexityRequest.body));
+    expect(perplexityBody.model).toBe('perplexity/sonar');
+    expect(perplexityBody.response_format?.type).toBe('text');
     const qwenRequest = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
     const qwenBody = JSON.parse(String(qwenRequest.body));
     expect(qwenBody.model).toBe('qwen/qwen3.5-plus-02-15');
+    expect(qwenBody.response_format?.type).toBe('text');
 
     expect(perplexityResult.ok).toBe(true);
     if (perplexityResult.ok) {
