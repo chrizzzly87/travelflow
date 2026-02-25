@@ -285,6 +285,21 @@ Sitemap behavior:
    - `blog_image=/images/blog/<slug>-og-vertical.jpg`
    - optional `blog_tint=#<hex>` + `blog_tint_intensity=<0-100>` (strict percent scale; blog pages default to accent tint at 60)
    - optional `blog_rev=<revision>` (cache-bust token; default comes from `data/blogImageMedia.ts`)
+5. Use the admin inspector at `http://localhost:8888/admin/og-tools` to:
+   - inspect same-origin route metadata (`canonical`, `og:*`, `twitter:*`)
+   - verify static vs dynamic OG source mode (`x-travelflow-og-source`)
+   - build filtered static OG generation commands
+
+Filtered static OG generation examples:
+- `pnpm og:site:build -- --locales=en,de --include-prefixes=/blog,/de/blog`
+- `pnpm og:site:build -- --exclude-prefixes=/example`
+
+Release-safe verification:
+- `pnpm og:site:build && pnpm og:site:validate`
+
+Faster local builds (skip static OG generation/validation):
+- `SITE_OG_STATIC_BUILD_MODE=skip pnpm build`
+- `SITE_OG_STATIC_BUILD_MODE=full pnpm build` (force full local parity)
 
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
