@@ -6,23 +6,18 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
-const pluginModule = require('../../netlify/plugins/site-og-build-cache/index.js') as {
-  _internal: {
-    createSiteOgBuildCachePlugin: (deps?: {
-      countPngs?: () => number;
-      restoreCache?: (utils: { cache: { restore: (input: string) => Promise<void> } }) => Promise<void>;
-      saveCache?: (utils: { cache: { save: (input: string) => Promise<void> } }) => Promise<void>;
-      log?: (message: string) => void;
-    }) => {
-      onPreBuild: (input: { utils: { cache: { restore: (input: string) => Promise<void> } } }) => Promise<void>;
-      onSuccess: (input: { utils: { cache: { save: (input: string) => Promise<void> } } }) => Promise<void>;
-    };
-  };
-};
-
 const libModule = require('../../netlify/plugins/site-og-build-cache/lib.js') as {
   SITE_OG_STATIC_DIR_RELATIVE: string;
   countGeneratedSiteOgPngs: (cwd?: string) => number;
+  createSiteOgBuildCachePlugin: (deps?: {
+    countPngs?: () => number;
+    restoreCache?: (utils: { cache: { restore: (input: string) => Promise<void> } }) => Promise<void>;
+    saveCache?: (utils: { cache: { save: (input: string) => Promise<void> } }) => Promise<void>;
+    log?: (message: string) => void;
+  }) => {
+    onPreBuild: (input: { utils: { cache: { restore: (input: string) => Promise<void> } } }) => Promise<void>;
+    onSuccess: (input: { utils: { cache: { save: (input: string) => Promise<void> } } }) => Promise<void>;
+  };
   resolveSiteOgStaticDirectory: (cwd?: string) => string;
 };
 
@@ -37,7 +32,7 @@ describe('site-og-build-cache plugin internals', () => {
     const restoreCache = vi.fn(async () => {});
     const saveCache = vi.fn(async () => {});
 
-    const plugin = pluginModule._internal.createSiteOgBuildCachePlugin({
+    const plugin = libModule.createSiteOgBuildCachePlugin({
       countPngs,
       restoreCache,
       saveCache,
@@ -60,7 +55,7 @@ describe('site-og-build-cache plugin internals', () => {
     const logs: string[] = [];
     const saveCache = vi.fn(async () => {});
 
-    const plugin = pluginModule._internal.createSiteOgBuildCachePlugin({
+    const plugin = libModule.createSiteOgBuildCachePlugin({
       countPngs: () => 0,
       saveCache,
       log: (message) => logs.push(message),
@@ -82,7 +77,7 @@ describe('site-og-build-cache plugin internals', () => {
     const logs: string[] = [];
     const saveCache = vi.fn(async () => {});
 
-    const plugin = pluginModule._internal.createSiteOgBuildCachePlugin({
+    const plugin = libModule.createSiteOgBuildCachePlugin({
       countPngs: () => 42,
       saveCache,
       log: (message) => logs.push(message),
