@@ -5,9 +5,12 @@ import { COUNTRY_TRAVEL_DATA } from "../data/countryTravelData.ts";
 import { exampleTripCards } from "../data/exampleTripCards.ts";
 import {
   DEFAULT_LOCALE,
+  DEFAULT_SITE_OG_STATIC_SCOPE,
+  SITE_OG_STATIC_SCOPE_VALUES,
   SUPPORTED_LOCALES,
   buildSiteOgMetadata,
   enumerateSiteOgPathnames,
+  type SiteOgStaticScope,
   type SiteOgMetadata,
 } from "../netlify/edge-lib/site-og-metadata.ts";
 
@@ -19,6 +22,7 @@ export const SITE_OG_STATIC_MANIFEST_FILE_NAME = "manifest.json";
 export const SITE_OG_STATIC_MANIFEST_RELATIVE_PATH = `${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}`;
 export const SITE_OG_BUILD_ORIGIN = "https://travelflowapp.netlify.app";
 export const SITE_OG_STATIC_TEMPLATE_REVISION = "2026-02-25-site-og-single-renderer-v5";
+export const SITE_OG_STATIC_TARGET_SCOPE_ENV = "SITE_OG_STATIC_TARGET_SCOPE";
 
 export interface SiteOgStaticTarget {
   pathname: string;
@@ -39,6 +43,7 @@ export interface SiteOgStaticRenderPayload {
 }
 
 export interface SiteOgStaticPathFilterOptions {
+  targetScope?: SiteOgStaticScope;
   locales?: string[];
   includePaths?: string[];
   includePrefixes?: string[];
@@ -47,6 +52,7 @@ export interface SiteOgStaticPathFilterOptions {
 }
 
 const SUPPORTED_LOCALE_SET = new Set<string>(SUPPORTED_LOCALES);
+const SITE_OG_STATIC_SCOPE_SET = new Set<string>(SITE_OG_STATIC_SCOPE_VALUES);
 
 const toSlug = (value: string): string =>
   value
@@ -103,7 +109,28 @@ const normalizeFilterValues = (values: string[] | undefined, normalizer: (value:
   ).sort((left, right) => left.localeCompare(right));
 };
 
+const resolveScopeValue = (value: string | undefined): SiteOgStaticScope | null => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (!SITE_OG_STATIC_SCOPE_SET.has(normalized)) return null;
+  return normalized as SiteOgStaticScope;
+};
+
+export const resolveSiteOgStaticTargetScope = (
+  options: SiteOgStaticPathFilterOptions = {},
+  env: NodeJS.ProcessEnv = process.env,
+): SiteOgStaticScope => {
+  const explicitScope = options.targetScope ? resolveScopeValue(options.targetScope) : null;
+  if (explicitScope) return explicitScope;
+
+  const envScope = resolveScopeValue(env[SITE_OG_STATIC_TARGET_SCOPE_ENV]);
+  if (envScope) return envScope;
+
+  return DEFAULT_SITE_OG_STATIC_SCOPE;
+};
+
 export interface SiteOgResolvedPathFilterOptions {
+  targetScope: SiteOgStaticScope;
   locales: string[];
   includePaths: string[];
   includePrefixes: string[];
@@ -115,6 +142,7 @@ export interface SiteOgResolvedPathFilterOptions {
 export const resolveSiteOgStaticPathFilterOptions = (
   options: SiteOgStaticPathFilterOptions = {},
 ): SiteOgResolvedPathFilterOptions => {
+  const targetScope = resolveSiteOgStaticTargetScope(options);
   const localeValues = normalizeFilterValues(options.locales, (value) => value.toLowerCase());
   const locales = localeValues.filter((value) => SUPPORTED_LOCALE_SET.has(value));
   const includePaths = normalizeFilterValues(options.includePaths, normalizePath);
@@ -123,6 +151,7 @@ export const resolveSiteOgStaticPathFilterOptions = (
   const excludePrefixes = normalizeFilterValues(options.excludePrefixes, normalizePrefix);
 
   return {
+    targetScope,
     locales,
     includePaths,
     includePrefixes,
@@ -190,13 +219,13 @@ const collectExampleTemplateIds = (): string[] => {
 };
 
 export const collectSiteOgPathnames = (options: SiteOgStaticPathFilterOptions = {}): string[] => {
+  const resolvedFilters = resolveSiteOgStaticPathFilterOptions(options);
   const pathnames = enumerateSiteOgPathnames({
     blogSlugs: collectBlogSlugs(),
     countryNames: collectCountryNames(),
     exampleTemplateIds: collectExampleTemplateIds(),
+    scope: resolvedFilters.targetScope,
   });
-
-  const resolvedFilters = resolveSiteOgStaticPathFilterOptions(options);
 
   return Array.from(new Set(pathnames))
     .filter((pathname) => shouldIncludePathname(pathname, resolvedFilters))

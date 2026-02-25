@@ -9,6 +9,7 @@ import {
   buildSiteOgStaticRenderPayload,
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
+  resolveSiteOgStaticPathFilterOptions,
 } from "./site-og-static-shared.ts";
 import { shouldSkipSiteOgStaticBuild } from "./site-og-build-mode.ts";
 
@@ -43,6 +44,7 @@ const main = (): void => {
   }
 
   const manifest = parsed as SiteOgStaticManifest;
+  const { targetScope } = resolveSiteOgStaticPathFilterOptions();
   const targets = collectSiteOgStaticTargets();
   const expectedRouteKeys = new Set(targets.map((target) => target.routeKey));
   const manifestRouteKeys = new Set(Object.keys(manifest.entries));
@@ -86,7 +88,7 @@ const main = (): void => {
     }
   }
 
-  process.stdout.write(`[site-og-static:validate] validated ${targets.length} route entries\n`);
+  process.stdout.write(`[site-og-static:validate] validated ${targets.length} route entries (scope=${targetScope})\n`);
 };
 
 main();

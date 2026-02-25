@@ -294,8 +294,18 @@ Filtered static OG generation examples:
 - `pnpm og:site:build -- --locales=en,de --include-prefixes=/blog,/de/blog`
 - `pnpm og:site:build -- --exclude-prefixes=/example`
 
-Release-safe verification:
+Default static OG scope (fast path):
+- localized home (`/` + locale homes)
+- localized blog overview (`/blog`)
+- localized inspirations overview (`/inspirations`)
+- `/example/*` templates
+- Note: `/example/*` keeps runtime trip-card OG rendering for visual parity with shared trip previews.
+
+Release-safe default verification:
 - `pnpm og:site:build && pnpm og:site:validate`
+
+Full static coverage override (all supported static/detail routes):
+- `pnpm og:site:build:full && pnpm og:site:validate:full`
 
 Faster local builds (skip static OG generation/validation):
 - `SITE_OG_STATIC_BUILD_MODE=skip pnpm build`

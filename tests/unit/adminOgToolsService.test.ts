@@ -97,6 +97,7 @@ describe('adminOgToolsService command builder', () => {
     expect(commands.hasFilters).toBe(false);
     expect(commands.buildCommand).toBe('pnpm og:site:build');
     expect(commands.validateCommand).toBe('pnpm og:site:validate');
+    expect(commands.fullScopeCommand).toBe('pnpm og:site:build:full && pnpm og:site:validate:full');
   });
 
   it('builds filtered command flags in stable order', () => {
