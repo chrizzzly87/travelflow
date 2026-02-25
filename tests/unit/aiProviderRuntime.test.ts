@@ -35,6 +35,8 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'openrouter/free')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
+    expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();
+    expect(ensureModelAllowed('qwen', 'qwen/qwen-3.5-plus')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'missing-model')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('unknown-provider', 'x')?.code).toBe('PROVIDER_NOT_SUPPORTED');
   });
@@ -302,6 +304,57 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       totalTokens: 579,
       estimatedCostUsd: 0.000321,
     });
+  });
+
+  it('routes perplexity and qwen providers via openrouter while preserving provider id', async () => {
+    stubDenoEnv({
+      OPENROUTER_API_KEY: 'test-key',
+    });
+
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'perplexity/sonar',
+          choices: [{ message: { content: '{"title":"Perplexity"}' } }],
+          usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          model: 'qwen/qwen-3.5-plus',
+          choices: [{ message: { content: '{"title":"Qwen"}' } }],
+          usage: { prompt_tokens: 4, completion_tokens: 5, total_tokens: 9 },
+        }),
+      );
+
+    const perplexityResult = await generateProviderItinerary({
+      prompt: '{"request":"perplexity"}',
+      provider: 'perplexity',
+      model: 'perplexity/sonar',
+      timeoutMs: 30_000,
+    });
+    const qwenResult = await generateProviderItinerary({
+      prompt: '{"request":"qwen"}',
+      provider: 'qwen',
+      model: 'qwen/qwen-3.5-plus',
+      timeoutMs: 30_000,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
+
+    expect(perplexityResult.ok).toBe(true);
+    if (perplexityResult.ok) {
+      expect(perplexityResult.value.meta.provider).toBe('perplexity');
+      expect(perplexityResult.value.meta.model).toBe('perplexity/sonar');
+    }
+
+    expect(qwenResult.ok).toBe(true);
+    if (qwenResult.ok) {
+      expect(qwenResult.value.meta.provider).toBe('qwen');
+      expect(qwenResult.value.meta.model).toBe('qwen/qwen-3.5-plus');
+    }
   });
 
   it('passes maxOutputTokens override through to provider requests', async () => {
