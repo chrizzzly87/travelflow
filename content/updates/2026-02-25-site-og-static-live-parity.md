@@ -3,8 +3,8 @@ id: rel-2026-02-25-site-og-static-live-parity
 version: v0.62.0
 title: "Static OG visual parity with live renderer"
 date: 2026-02-25
-published_at: 2026-02-25T10:50:00Z
-status: draft
+published_at: 2026-02-25T09:51:37Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Static pre-generated Open Graph images now match live-rendered OG visuals more closely, including icon sizing and safer footer URL fitting."
