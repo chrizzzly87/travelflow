@@ -13,6 +13,11 @@ interface SiteOgStaticRenderBatchPayload {
   logEvery?: number;
 }
 
+const DEFAULT_TITLE = "TravelFlow";
+const DEFAULT_DESCRIPTION = "Plan and share travel routes with timeline and map previews.";
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 const getContentType = (filePath: string): string => {
   const lower = filePath.toLowerCase();
   if (lower.endsWith(".woff2")) return "font/woff2";
@@ -73,6 +78,22 @@ const buildRequestUrl = (origin: string, query: Record<string, string>): string 
   return url.toString();
 };
 
+const buildSafeFallbackQuery = (query: Record<string, string>): Record<string, string> => {
+  const safeQuery: Record<string, string> = {};
+
+  const title = (query.title || "").trim() || DEFAULT_TITLE;
+  const description = (query.description || "").trim() || DEFAULT_DESCRIPTION;
+  const pagePath = (query.path || "").trim() || "/";
+  const pill = (query.pill || "").trim() || DEFAULT_TITLE;
+
+  safeQuery.title = title;
+  safeQuery.description = description;
+  safeQuery.path = pagePath;
+  safeQuery.pill = pill;
+
+  return safeQuery;
+};
+
 const run = async (): Promise<void> => {
   const payloadPath = Deno.args[0];
   if (!payloadPath) {
@@ -129,16 +150,43 @@ const run = async (): Promise<void> => {
   let cursor = 0;
   let done = 0;
 
-  const renderOne = async (task: SiteOgStaticRenderTask): Promise<void> => {
-    const requestUrl = buildRequestUrl(origin, task.query);
+  const renderBytesForQuery = async (task: SiteOgStaticRenderTask, query: Record<string, string>): Promise<Uint8Array> => {
+    const requestUrl = buildRequestUrl(origin, query);
     const response = await siteOgImage(new Request(requestUrl));
     if (!response.ok) {
       const body = await response.text();
       throw new Error(`Render failed for ${task.routeKey} (status=${response.status}): ${body.slice(0, 320)}`);
     }
+    return new Uint8Array(await response.arrayBuffer());
+  };
 
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    await Deno.writeFile(task.outputPath, bytes);
+  const renderOne = async (task: SiteOgStaticRenderTask): Promise<void> => {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const bytes = await renderBytesForQuery(task, task.query);
+        await Deno.writeFile(task.outputPath, bytes);
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (attempt < 2) {
+          await wait(120);
+        }
+      }
+    }
+
+    try {
+      const bytes = await renderBytesForQuery(task, buildSafeFallbackQuery(task.query));
+      await Deno.writeFile(task.outputPath, bytes);
+      console.warn(`[site-og-static:deno] fallback render used for ${task.routeKey}`);
+      return;
+    } catch (error) {
+      const fallbackError = error instanceof Error ? error : new Error(String(error));
+      throw new Error(
+        `Render failed for ${task.routeKey} after retry and fallback: ${lastError?.message || "unknown"} | fallback=${fallbackError.message}`,
+      );
+    }
   };
 
   const worker = async (): Promise<void> => {

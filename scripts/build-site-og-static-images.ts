@@ -110,6 +110,16 @@ const entryPathToFileName = (entryPath: string): string | null => {
   return entryPath.slice(`${SITE_OG_STATIC_PUBLIC_PREFIX}/`.length);
 };
 
+export const resolveDenoRenderConcurrency = (
+  env: NodeJS.ProcessEnv = process.env,
+): number => {
+  const raw = Number.parseInt(env.SITE_OG_STATIC_DENO_CONCURRENCY || "", 10);
+  if (Number.isFinite(raw)) {
+    return Math.max(1, Math.min(8, raw));
+  }
+  return 4;
+};
+
 const buildQueryFromMetadata = (metadata: SiteOgMetadata): Record<string, string> => {
   const query: Record<string, string> = {};
 
@@ -134,7 +144,7 @@ const renderMissingImagesWithDeno = (tasks: SiteOgStaticRenderTask[]): void => {
 
   const payload: DenoRenderBatchPayload = {
     tasks,
-    concurrency: 6,
+    concurrency: resolveDenoRenderConcurrency(),
     logEvery: 100,
   };
 
