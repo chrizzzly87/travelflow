@@ -96,3 +96,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🏷️ Added Perplexity/Qwen benchmark provider families (`Sonnar`, `Sonnar Pro`, `Qwen 3.5 Plus`, `Qwen 3.5`) with short-name metadata plus bundled brand-logo assets (provider + routed model vendors) across admin benchmark and telemetry model surfaces.
 - [ ] [Internal] 🎚️ Added per-pill benchmark target controls to temporarily deactivate models for `Test all` and trigger a single-model run directly from the target chip.
 - [ ] [Internal] 🧰 Added quick `Activate all` / `Deactivate all` target actions in `/admin/ai-benchmark` so benchmark model pools can be toggled in one click.
+- [ ] [Internal] 🧯 Fixed edge bundling regression by switching benchmark model-catalog provider metadata import to explicit `.ts` extension for Deno-compatible module resolution.
