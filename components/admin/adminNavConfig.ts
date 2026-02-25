@@ -7,7 +7,7 @@ export interface AdminNavItem {
 }
 
 export type AdminNavSectionId = 'workspace' | 'operations' | 'tools';
-export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'benchmark' | 'telemetry';
+export type AdminNavItemIconKey = 'overview' | 'users' | 'trips' | 'tiers' | 'audit' | 'benchmark' | 'telemetry' | 'og_tools';
 
 export interface AdminNavSection {
     id: AdminNavSectionId;
@@ -63,6 +63,13 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
         path: '/admin/ai-benchmark/telemetry',
         section: 'tools',
         icon: 'telemetry',
+    },
+    {
+        id: 'og_tools',
+        label: 'OG Tools',
+        path: '/admin/og-tools',
+        section: 'tools',
+        icon: 'og_tools',
     },
 ];
 

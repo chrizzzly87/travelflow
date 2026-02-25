@@ -14,6 +14,7 @@ const AdminUsersPage = lazyWithRecovery('AdminUsersPage', () => import('./AdminU
 const AdminTripsPage = lazyWithRecovery('AdminTripsPage', () => import('./AdminTripsPage').then((module) => ({ default: module.AdminTripsPage })));
 const AdminTiersPage = lazyWithRecovery('AdminTiersPage', () => import('./AdminTiersPage').then((module) => ({ default: module.AdminTiersPage })));
 const AdminAuditPage = lazyWithRecovery('AdminAuditPage', () => import('./AdminAuditPage').then((module) => ({ default: module.AdminAuditPage })));
+const AdminOgToolsPage = lazyWithRecovery('AdminOgToolsPage', () => import('./AdminOgToolsPage').then((module) => ({ default: module.AdminOgToolsPage })));
 
 const RouteLoadingFallback: React.FC = () => (
     <div className="min-h-[42vh] w-full bg-slate-50" aria-hidden="true" />
@@ -30,6 +31,7 @@ export const AdminWorkspaceRouter: React.FC = () => (
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="ai-benchmark" element={<AdminAiBenchmarkPage />} />
             <Route path="ai-benchmark/telemetry" element={<AdminAiTelemetryPage />} />
+            <Route path="og-tools" element={<AdminOgToolsPage />} />
             <Route path="access" element={<Navigate to="/admin/users" replace />} />
             <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
