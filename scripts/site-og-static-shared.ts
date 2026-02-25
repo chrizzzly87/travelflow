@@ -21,7 +21,8 @@ export const SITE_OG_STATIC_PUBLIC_PREFIX = "/images/og/site/generated";
 export const SITE_OG_STATIC_MANIFEST_FILE_NAME = "manifest.json";
 export const SITE_OG_STATIC_MANIFEST_RELATIVE_PATH = `${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}`;
 export const SITE_OG_BUILD_ORIGIN = "https://travelflowapp.netlify.app";
-export const SITE_OG_STATIC_TEMPLATE_REVISION = "2026-02-25-site-og-single-renderer-v5";
+export const SITE_OG_STATIC_DISPLAY_HOST = new URL(SITE_OG_BUILD_ORIGIN).host;
+export const SITE_OG_STATIC_TEMPLATE_REVISION = "2026-02-25-site-og-single-renderer-v6";
 export const SITE_OG_STATIC_TARGET_SCOPE_ENV = "SITE_OG_STATIC_TARGET_SCOPE";
 
 export interface SiteOgStaticTarget {
@@ -35,6 +36,7 @@ export interface SiteOgStaticRenderPayload {
   title: string;
   description: string;
   path: string;
+  displayHost: string;
   pill: string;
   blogImage: string;
   blogRevision: string;
@@ -259,6 +261,7 @@ export const buildSiteOgStaticRenderPayload = (metadata: SiteOgMetadata): SiteOg
   title: metadata.ogImageParams.title,
   description: metadata.ogImageParams.description,
   path: metadata.ogImageParams.path,
+  displayHost: SITE_OG_STATIC_DISPLAY_HOST,
   pill: metadata.ogImageParams.pill || "",
   blogImage: metadata.ogImageParams.blog_image || "",
   blogRevision: metadata.ogImageParams.blog_rev || "",
