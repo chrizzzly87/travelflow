@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-24-edge-availability-hotfix
-version: v0.58.0
+version: v0.61.0
 title: "Edge availability hotfix"
 date: 2026-02-24
-published_at: 2026-02-24T18:40:00Z
-status: draft
+published_at: 2026-02-25T08:43:14Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Stabilizes edge availability and restores reliable custom social previews across static pages, blog, and example trips."
