@@ -17,7 +17,11 @@ import {
 
 const PRESET_PATHS = [
     '/',
+    '/fa',
+    '/fa/features',
     '/blog',
+    '/fa/blog',
+    '/ur',
     '/de/features',
     '/example/thailand-islands',
     '/example/italy-classic',
@@ -288,6 +292,9 @@ export const AdminOgToolsPage: React.FC = () => {
                             <p className="mt-1 text-sm text-slate-600">
                                 Build command-line filters for static OG generation. Leave inputs empty for the default priority scope.
                             </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                                RTL locales (`fa`, `ur`) currently render via dynamic `/api/og/site` for font shaping/layout fidelity, so RTL-only filtered builds no-op by design.
+                            </p>
                         </header>
 
                         <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
@@ -301,7 +308,7 @@ export const AdminOgToolsPage: React.FC = () => {
                                 <input
                                     value={localesInput}
                                     onChange={(event) => setLocalesInput(event.target.value)}
-                                    placeholder="en,de,fr"
+                                    placeholder="en,de,fr,fa,ur"
                                     className={fieldClassName}
                                 />
                             </label>

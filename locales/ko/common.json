@@ -31,7 +31,9 @@
     "ru": "Русский",
     "pt": "Português",
     "pl": "Polski",
-    "ko": "한국어"
+    "ko": "한국어",
+    "fa": "فارسی",
+    "ur": "اردو"
   },
   "buttons": {
     "startPlanning": "여행 계획 시작",

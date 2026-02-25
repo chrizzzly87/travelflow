@@ -699,6 +699,142 @@
   function = "site-og-meta"
 
 [[edge_functions]]
+  path = "/fa"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/blog"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/fa/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/features"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/inspirations"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/inspirations/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/updates"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/blog"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/blog/*"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/pricing"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/faq"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/share-unavailable"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/login"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/contact"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/imprint"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/privacy"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/terms"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/cookies"
+  function = "site-og-meta"
+
+[[edge_functions]]
+  path = "/ur/create-trip"
+  function = "site-og-meta"
+
+[[edge_functions]]
   path = "/s/*"
   function = "trip-og-meta"
 

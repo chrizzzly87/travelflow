@@ -8,9 +8,22 @@ export const DEFAULT_DESCRIPTION = APP_DEFAULT_DESCRIPTION;
 export const SITE_CACHE_CONTROL = "public, max-age=0, s-maxage=900, stale-while-revalidate=86400";
 export const TOOL_APP_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60, must-revalidate";
 const DEFAULT_BLOG_OG_TINT = "#6366f1";
-export const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko"] as const;
+export const SUPPORTED_LOCALES = ["en", "es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 export const DEFAULT_LOCALE: SupportedLocale = "en";
+const LOCALE_DIR_MAP: Record<SupportedLocale, "ltr" | "rtl"> = {
+  en: "ltr",
+  es: "ltr",
+  de: "ltr",
+  fr: "ltr",
+  pt: "ltr",
+  ru: "ltr",
+  it: "ltr",
+  pl: "ltr",
+  ko: "ltr",
+  fa: "rtl",
+  ur: "rtl",
+};
 
 export interface AlternateLink {
   hreflang: string;
@@ -22,6 +35,8 @@ export interface SiteOgImageParams {
   description: string;
   path: string;
   pill?: string;
+  lang?: string;
+  dir?: "ltr" | "rtl";
   blog_image?: string;
   blog_rev?: string;
   blog_tint?: string;
@@ -212,6 +227,12 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     pl: {
       description: "Planuj podróże sprytniej dzięki osi czasu i mapie, a potem łatwo je udostępniaj.",
     },
+    fa: {
+      description: "سفرها را هوشمندتر برنامه‌ریزی کنید؛ با تایم‌لاین و مسیرهای نقشه، و آن‌ها را زیبا به اشتراک بگذارید.",
+    },
+    ur: {
+      description: "سفر زیادہ سمجھ داری سے پلان کریں؛ ٹائم لائن اور نقشے کی روٹنگ کے ساتھ، اور انہیں خوبصورتی سے شیئر کریں۔",
+    },
   },
   "/create-trip": {
     es: {
@@ -249,6 +270,16 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
       description: "Zbuduj plan podróży z elastycznymi przystankami, trasami i planowaniem na osi czasu.",
       pill: "PLANER PODRÓŻY",
     },
+    fa: {
+      title: "ساخت سفر",
+      description: "برنامه سفر خود را با توقف‌های منعطف، مسیرها و برنامه‌ریزی روی تایم‌لاین بسازید.",
+      pill: "برنامه‌ریز سفر",
+    },
+    ur: {
+      title: "سفر بنائیں",
+      description: "اپنا سفرنامہ لچکدار اسٹاپس، روٹس اور ٹائم لائن پلاننگ کے ساتھ بنائیں۔",
+      pill: "ٹریول پلانر",
+    },
   },
   "/features": {
     es: { title: "Funciones", description: "Descubre todo lo que {{appName}} ofrece para planificar y compartir mejores viajes." },
@@ -258,6 +289,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Возможности", description: "Узнайте, как {{appName}} помогает планировать поездки удобнее и быстрее." },
     pt: { title: "Funcionalidades", description: "Descubra tudo o que o {{appName}} oferece para planear e partilhar melhores viagens." },
     pl: { title: "Funkcje", description: "Sprawdź wszystko, co {{appName}} oferuje do lepszego planowania i udostępniania podróży." },
+    fa: { title: "ویژگی‌ها", description: "همه قابلیت‌های {{appName}} برای برنامه‌ریزی و اشتراک‌گذاری سفرهای بهتر را ببینید." },
+    ur: { title: "فیچرز", description: "{{appName}} کی تمام خصوصیات دیکھیں جو بہتر سفر پلاننگ اور شیئرنگ میں مدد دیتی ہیں۔" },
   },
   "/updates": {
     es: { title: "Novedades del producto", description: "Sigue las últimas mejoras y funcionalidades lanzadas en {{appName}}." },
@@ -267,6 +300,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Новости и обновления", description: "Последние улучшения и новые функции {{appName}}." },
     pt: { title: "Novidades do produto", description: "Acompanhe as melhorias mais recentes e as funcionalidades lançadas no {{appName}}." },
     pl: { title: "Nowości produktu", description: "Sprawdź najnowsze usprawnienia i funkcje wdrożone w {{appName}}." },
+    fa: { title: "به‌روزرسانی‌های محصول", description: "آخرین بهبودها و قابلیت‌های منتشرشده {{appName}} را دنبال کنید." },
+    ur: { title: "پروڈکٹ اپڈیٹس", description: "{{appName}} کی تازہ ترین بہتریاں اور جاری کی گئی خصوصیات دیکھیں۔" },
   },
   "/blog": {
     es: { title: "Blog", description: "Guías y consejos prácticos para planificar mejores viajes con {{appName}}." },
@@ -276,6 +311,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Блог", description: "Гайды и советы по планированию поездок с {{appName}}." },
     pt: { title: "Blog", description: "Guias e dicas práticas para planear viagens melhores com o {{appName}}." },
     pl: { title: "Blog", description: "Poradniki i praktyczne wskazówki, które pomagają lepiej planować podróże z {{appName}}." },
+    fa: { title: "وبلاگ", description: "راهنماها و نکته‌های کاربردی برای برنامه‌ریزی سفر بهتر با {{appName}}." },
+    ur: { title: "بلاگ", description: "{{appName}} کے ساتھ بہتر سفر پلاننگ کے لیے گائیڈز اور عملی مشورے۔" },
   },
   "/pricing": {
     es: { title: "Precios", description: "Empieza gratis y mejora cuando lo necesites. Transparente y sin costes ocultos." },
@@ -285,6 +322,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Тарифы", description: "Начните бесплатно и переходите на расширенный план при необходимости. Без скрытых платежей." },
     pt: { title: "Preços", description: "Comece grátis e faça upgrade quando precisar. Transparente e sem custos escondidos." },
     pl: { title: "Cennik", description: "Zacznij za darmo i przejdź na wyższy plan, gdy będzie potrzeba. Bez ukrytych opłat." },
+    fa: { title: "قیمت‌گذاری", description: "رایگان شروع کنید و هر زمان لازم شد ارتقا دهید. شفاف و بدون هزینه پنهان." },
+    ur: { title: "قیمت", description: "مفت شروع کریں اور ضرورت پر اپ گریڈ کریں۔ شفاف اور بغیر چھپے اخراجات۔" },
   },
   "/faq": {
     es: { title: "Preguntas frecuentes", description: "Respuestas a preguntas comunes sobre {{appName}}, precios y viajes compartidos." },
@@ -294,6 +333,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "FAQ", description: "Ответы на частые вопросы о {{appName}}, тарифах и совместном доступе к поездкам." },
     pt: { title: "Perguntas frequentes", description: "Respostas às perguntas mais comuns sobre {{appName}}, preços e partilha de viagens." },
     pl: { title: "Najczęściej zadawane pytania", description: "Odpowiedzi na najczęstsze pytania o {{appName}}, cennik i udostępnianie podróży." },
+    fa: { title: "پرسش‌های متداول", description: "پاسخ پرسش‌های رایج درباره {{appName}}، قیمت‌گذاری و اشتراک سفر." },
+    ur: { title: "اکثر پوچھے گئے سوالات", description: "{{appName}}، قیمت اور ٹرپ شیئرنگ سے متعلق عام سوالات کے جواب۔" },
   },
   "/share-unavailable": {
     es: { title: "Viaje compartido no disponible", description: "Este enlace de viaje compartido ya no está disponible o ha caducado." },
@@ -303,6 +344,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Общий маршрут недоступен", description: "Ссылка на общий маршрут недоступна или истекла." },
     pt: { title: "Viagem partilhada indisponível", description: "Este link de viagem partilhada não está disponível ou expirou." },
     pl: { title: "Udostępniona podróż jest niedostępna", description: "Ten link do udostępnionej podróży jest niedostępny lub wygasł." },
+    fa: { title: "سفر اشتراکی در دسترس نیست", description: "این لینک سفر اشتراکی در دسترس نیست یا منقضی شده است." },
+    ur: { title: "شیئر کیا گیا سفر دستیاب نہیں", description: "یہ شیئر کیا گیا سفری لنک دستیاب نہیں یا اس کی مدت ختم ہو چکی ہے۔" },
   },
   "/login": {
     es: { title: "Iniciar sesión", description: "Inicia sesión y sigue planificando tu próximo viaje en {{appName}}." },
@@ -312,6 +355,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Вход", description: "Войдите, чтобы продолжить планирование следующей поездки в {{appName}}." },
     pt: { title: "Iniciar sessão", description: "Inicie sessão e continue a planear a sua próxima viagem no {{appName}}." },
     pl: { title: "Logowanie", description: "Zaloguj się i kontynuuj planowanie kolejnej podróży w {{appName}}." },
+    fa: { title: "ورود", description: "وارد شوید و برنامه‌ریزی سفر بعدی‌تان را در {{appName}} ادامه دهید." },
+    ur: { title: "لاگ اِن", description: "لاگ اِن کریں اور {{appName}} میں اپنا اگلا سفر پلان کرنا جاری رکھیں۔" },
   },
   "/contact": {
     es: { title: "Contacto", description: "Contacta con el equipo de {{appName}} para soporte, errores, colaboraciones o feedback de traducción." },
@@ -321,6 +366,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Контакты", description: "Свяжитесь с командой {{appName}} по вопросам поддержки, багов, партнёрств или переводов." },
     pt: { title: "Contacto", description: "Contacte a equipa da {{appName}} para suporte, bugs, parcerias ou feedback de tradução." },
     pl: { title: "Kontakt", description: "Skontaktuj się z zespołem {{appName}} w sprawie wsparcia, błędów, partnerstw lub tłumaczeń." },
+    fa: { title: "تماس", description: "برای پشتیبانی، گزارش خطا، همکاری یا بازخورد ترجمه با تیم {{appName}} تماس بگیرید." },
+    ur: { title: "رابطہ", description: "سپورٹ، بگ رپورٹ، شراکت داری یا ترجمے کے فیڈبیک کے لیے {{appName}} ٹیم سے رابطہ کریں۔" },
   },
   "/imprint": {
     es: { title: "Aviso legal", description: "Información legal y corporativa sobre {{appName}}." },
@@ -330,6 +377,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Реквизиты", description: "Юридическая и корпоративная информация о {{appName}}." },
     pt: { title: "Aviso legal", description: "Informações legais e empresariais sobre o {{appName}}." },
     pl: { title: "Informacje prawne", description: "Informacje prawne i firmowe dotyczące {{appName}}." },
+    fa: { title: "اطلاعات حقوقی", description: "اطلاعات حقوقی و هویتی {{appName}}." },
+    ur: { title: "قانونی معلومات", description: "{{appName}} کے قانونی اور ادارتی معلومات۔" },
   },
   "/privacy": {
     es: { title: "Política de privacidad", description: "Descubre cómo {{appName}} trata los datos personales y protege la privacidad." },
@@ -339,6 +388,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Политика конфиденциальности", description: "Узнайте, как {{appName}} обрабатывает персональные данные и защищает конфиденциальность." },
     pt: { title: "Política de privacidade", description: "Saiba como o {{appName}} trata dados pessoais e protege a privacidade." },
     pl: { title: "Polityka prywatności", description: "Sprawdź, jak {{appName}} przetwarza dane osobowe i chroni prywatność." },
+    fa: { title: "حریم خصوصی", description: "ببینید {{appName}} چگونه داده‌های شخصی را مدیریت و از حریم خصوصی محافظت می‌کند." },
+    ur: { title: "رازداری پالیسی", description: "دیکھیں {{appName}} ذاتی ڈیٹا کیسے سنبھالتا ہے اور رازداری کیسے محفوظ رکھتا ہے۔" },
   },
   "/terms": {
     es: { title: "Términos del servicio", description: "Consulta los términos que regulan el uso de {{appName}}." },
@@ -348,6 +399,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Условия использования", description: "Ознакомьтесь с условиями использования {{appName}}." },
     pt: { title: "Termos de serviço", description: "Leia os termos que regem a utilização do {{appName}}." },
     pl: { title: "Warunki korzystania z usługi", description: "Przeczytaj zasady korzystania z {{appName}}." },
+    fa: { title: "شرایط استفاده", description: "شرایط استفاده از {{appName}} را بخوانید." },
+    ur: { title: "سروس کی شرائط", description: "{{appName}} کے استعمال کی شرائط پڑھیں۔" },
   },
   "/cookies": {
     es: { title: "Política de cookies", description: "Descubre cómo {{appName}} usa cookies y tecnologías similares." },
@@ -357,6 +410,8 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Политика cookie", description: "Узнайте, как {{appName}} использует cookie и похожие технологии." },
     pt: { title: "Política de cookies", description: "Saiba como o {{appName}} usa cookies e tecnologias semelhantes." },
     pl: { title: "Polityka cookies", description: "Dowiedz się, jak {{appName}} używa plików cookie i podobnych technologii." },
+    fa: { title: "سیاست کوکی", description: "ببینید {{appName}} چگونه از کوکی‌ها و فناوری‌های مشابه استفاده می‌کند." },
+    ur: { title: "کوکی پالیسی", description: "سمجھیں {{appName}} کوکیز اور ملتی جلتی ٹیکنالوجیز کیسے استعمال کرتا ہے۔" },
   },
   "/inspirations": {
     es: {
@@ -394,6 +449,16 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
       description: "Przeglądaj pomysły na podróże według motywu, miesiąca, kraju lub nadchodzących festiwali.",
       pill: "INSPIRACJE PODRÓŻNICZE",
     },
+    fa: {
+      title: "سفر بعدی کجاست؟",
+      description: "ایده‌های سفر را بر اساس موضوع، ماه، کشور یا جشنواره‌های پیش رو مرور کنید.",
+      pill: "الهام سفر",
+    },
+    ur: {
+      title: "اگلا سفر کہاں؟",
+      description: "موضوع، مہینے، ملک یا آنے والے فیسٹیولز کے حساب سے سفر کے آئیڈیاز دیکھیں۔",
+      pill: "ٹریول انسپیریشن",
+    },
   },
   "/inspirations/themes": {
     es: { title: "Viajar por temática" },
@@ -403,6 +468,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Путешествия по темам" },
     pt: { title: "Viajar por tema" },
     pl: { title: "Podróże według motywu" },
+    fa: {
+      title: "سفر بر اساس موضوع",
+      description: "ایده‌های سفر منتخب را پیدا کنید که با سبک سفر شما هماهنگ است؛ از ماجراجویی و غذا تا عکاسی و بیشتر.",
+    },
+    ur: {
+      title: "موضوع کے مطابق سفر",
+      description: "منتخب سفری آئیڈیاز تلاش کریں جو آپ کے ٹریول اسٹائل سے میل کھاتے ہوں؛ ایڈونچر، فوڈ، فوٹوگرافی اور مزید۔",
+    },
   },
   "/inspirations/best-time-to-travel": {
     es: { title: "Cuándo ir y a dónde" },
@@ -412,6 +485,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Когда и куда ехать" },
     pt: { title: "Quando ir e para onde" },
     pl: { title: "Kiedy i dokąd jechać" },
+    fa: {
+      title: "چه زمانی به کجا برویم",
+      description: "راهنمای ماه‌به‌ماه بهترین زمان سفر به مقاصد مختلف جهان.",
+    },
+    ur: {
+      title: "کب اور کہاں جائیں",
+      description: "دنیا بھر کے مقامات پر جانے کے بہترین وقت کے لیے ماہ بہ ماہ گائیڈ۔",
+    },
   },
   "/inspirations/countries": {
     es: { title: "Explorar destinos por país" },
@@ -421,6 +502,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Направления по странам" },
     pt: { title: "Explorar destinos por país" },
     pl: { title: "Odkrywaj kierunki według kraju" },
+    fa: {
+      title: "مقصدها بر اساس کشور",
+      description: "راهنماهای سفر هر کشور با بهترین ماه‌ها، شهرهای برتر و نکته‌های محلی.",
+    },
+    ur: {
+      title: "ملک کے حساب سے مقامات",
+      description: "ہر ملک کے لیے سفری گائیڈز، بہترین مہینے، ٹاپ شہروں اور مقامی مشوروں کے ساتھ۔",
+    },
   },
   "/inspirations/events-and-festivals": {
     es: { title: "Planear alrededor de un festival" },
@@ -430,6 +519,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Планируйте поездку вокруг фестиваля" },
     pt: { title: "Planear à volta de um festival" },
     pl: { title: "Zaplanuj podróż wokół festiwalu" },
+    fa: {
+      title: "برنامه‌ریزی پیرامون جشنواره",
+      description: "جشنواره‌های پیش رو را کشف کنید و برنامه سفر خود را حول همان رویداد بسازید.",
+    },
+    ur: {
+      title: "فیسٹیول کے گرد سفر پلان کریں",
+      description: "آنے والے فیسٹیولز دریافت کریں اور اپنا سفر اسی ایونٹ کے گرد ترتیب دیں۔",
+    },
   },
   "/inspirations/weekend-getaways": {
     es: { title: "Escapadas rápidas para agendas ocupadas" },
@@ -439,6 +536,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Быстрые поездки для занятых" },
     pt: { title: "Escapadinhas rápidas para quem tem pouco tempo" },
     pl: { title: "Szybkie wypady dla zapracowanych" },
+    fa: {
+      title: "سفرهای کوتاه آخر هفته",
+      description: "ایده‌های سفر ۲ تا ۳ روزه برای ماجراجویان؛ سبک سفر کنید و از آخر هفته بیشترین بهره را ببرید.",
+    },
+    ur: {
+      title: "مصروف لوگوں کے لیے مختصر ویک اینڈ ٹرپس",
+      description: "2–3 دن کے مختصر سفر کے آئیڈیاز؛ ہلکا سامان رکھیں اور لانگ ویک اینڈ کا بھرپور فائدہ اٹھائیں۔",
+    },
   },
 };
 
@@ -601,6 +706,18 @@ const getCountryRouteMeta = (country: string, locale: SupportedLocale): PageDefi
         title: `Podróż do ${country}`,
         description: `Wszystko, czego potrzebujesz, aby zaplanować podróż do ${country}: najlepsze miesiące, popularne trasy i praktyczne wskazówki.`,
         pill: "INSPIRACJE PODRÓŻNICZE",
+      });
+    case "fa":
+      return finalizePageDefinition({
+        title: `سفر به ${country}`,
+        description: `هرآنچه برای برنامه‌ریزی سفر به ${country} نیاز دارید: بهترین ماه‌ها، مسیرهای محبوب و نکته‌های کاربردی.`,
+        pill: "الهام سفر",
+      });
+    case "ur":
+      return finalizePageDefinition({
+        title: `${country} کا سفر`,
+        description: `${country} کے سفر کی منصوبہ بندی کے لیے درکار سب کچھ: بہترین مہینے، مقبول راستے اور مفید مشورے۔`,
+        pill: "ٹریول انسپیریشن",
       });
     default:
       return finalizePageDefinition({
@@ -824,6 +941,8 @@ export const buildDynamicSiteOgImageUrl = (origin: string, params: SiteOgImagePa
   ogImage.searchParams.set("description", params.description);
   ogImage.searchParams.set("path", params.path);
   if (params.pill) ogImage.searchParams.set("pill", params.pill);
+  if (params.lang) ogImage.searchParams.set("lang", params.lang);
+  if (params.dir) ogImage.searchParams.set("dir", params.dir);
   if (params.blog_image) ogImage.searchParams.set("blog_image", params.blog_image);
   if (params.blog_rev) ogImage.searchParams.set("blog_rev", params.blog_rev);
   if (params.blog_tint) ogImage.searchParams.set("blog_tint", params.blog_tint);
@@ -956,6 +1075,8 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     title: ogTitleRaw,
     description: ogDescriptionRaw,
     path: canonicalPath + canonicalSearch,
+    lang: effectiveLocale,
+    dir: LOCALE_DIR_MAP[effectiveLocale] || "ltr",
   };
   if (page.pill) ogImageParams.pill = page.pill;
   if (page.blogOgImagePath) {
@@ -984,7 +1105,7 @@ export const buildSiteOgMetadata = (url: URL): SiteOgMetadata => {
     robots: page.robots || "index,follow,max-image-preview:large",
     alternateLinks,
     htmlLang: effectiveLocale,
-    htmlDir: "ltr",
+    htmlDir: LOCALE_DIR_MAP[effectiveLocale] || "ltr",
   };
 };
 

@@ -68,6 +68,24 @@ const MESSAGE_BY_LOCALE: Record<AppLanguage, { message: string; action: string; 
         actionShort: 'Polski',
         dismiss: 'Zamknij podpowiedź języka',
     },
+    ko: {
+        message: '이 페이지는 한국어로도 제공됩니다.',
+        action: `${APP_NAME}를 한국어로 보기`,
+        actionShort: '한국어',
+        dismiss: '언어 제안 닫기',
+    },
+    fa: {
+        message: 'این صفحه به فارسی هم در دسترس است.',
+        action: `${APP_NAME} را به فارسی امتحان کنید`,
+        actionShort: 'فارسی',
+        dismiss: 'بستن پیشنهاد زبان',
+    },
+    ur: {
+        message: 'یہ صفحہ اردو میں بھی دستیاب ہے۔',
+        action: `${APP_NAME} کو اردو میں آزمائیں`,
+        actionShort: 'اردو',
+        dismiss: 'زبان کی تجویز بند کریں',
+    },
 };
 
 const getBrowserPreferredLocale = (currentLocale: AppLanguage): AppLanguage | null => {

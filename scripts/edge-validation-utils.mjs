@@ -23,7 +23,7 @@ export const parseEdgeFunctionEntries = (toml) => {
 export const findCatchAllEdgeEntries = (entries) =>
   entries.filter((entry) => entry.path.trim() === "/*");
 
-const SITE_OG_META_LOCALES = ["es", "de", "fr", "pt", "ru", "it", "pl", "ko"];
+const SITE_OG_META_LOCALES = ["es", "de", "fr", "pt", "ru", "it", "pl", "ko", "fa", "ur"];
 
 const SITE_OG_META_BASE_ALLOWED_PATHS = [
   "/",

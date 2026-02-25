@@ -92,9 +92,43 @@ const getLocaleForPathname = (pathname: string): string => {
   return DEFAULT_LOCALE;
 };
 
+const getBasePathForPathname = (pathname: string): string => {
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return "/";
+
+  const localeCandidate = segments[0]?.toLowerCase();
+  if (!localeCandidate || !SUPPORTED_LOCALE_SET.has(localeCandidate)) {
+    return pathname;
+  }
+
+  if (segments.length === 1) return "/";
+  return `/${segments.slice(1).join("/")}`;
+};
+
 const matchesPrefix = (pathname: string, prefix: string): boolean => {
   if (!prefix || prefix === "/") return true;
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+};
+
+const matchesPathFilter = (
+  pathname: string,
+  filterPaths: string[],
+  localeAwareFilters: boolean,
+): boolean => {
+  if (filterPaths.includes(pathname)) return true;
+  if (!localeAwareFilters) return false;
+  return filterPaths.includes(getBasePathForPathname(pathname));
+};
+
+const matchesPrefixFilter = (
+  pathname: string,
+  filterPrefixes: string[],
+  localeAwareFilters: boolean,
+): boolean => {
+  if (filterPrefixes.some((prefix) => matchesPrefix(pathname, prefix))) return true;
+  if (!localeAwareFilters) return false;
+  const basePath = getBasePathForPathname(pathname);
+  return filterPrefixes.some((prefix) => matchesPrefix(basePath, prefix));
 };
 
 const normalizeFilterValues = (values: string[] | undefined, normalizer: (value: string) => string): string[] => {
@@ -173,17 +207,25 @@ const shouldIncludePathname = (pathname: string, options: SiteOgResolvedPathFilt
     if (!options.locales.includes(locale)) return false;
   }
 
-  if (options.includePaths.length > 0 && !options.includePaths.includes(pathname)) {
+  const localeAwarePathFilters = options.locales.length > 0;
+
+  if (
+    options.includePaths.length > 0
+    && !matchesPathFilter(pathname, options.includePaths, localeAwarePathFilters)
+  ) {
     return false;
   }
 
-  if (options.includePrefixes.length > 0 && !options.includePrefixes.some((prefix) => matchesPrefix(pathname, prefix))) {
+  if (
+    options.includePrefixes.length > 0
+    && !matchesPrefixFilter(pathname, options.includePrefixes, localeAwarePathFilters)
+  ) {
     return false;
   }
 
-  if (options.excludePaths.includes(pathname)) return false;
+  if (matchesPathFilter(pathname, options.excludePaths, localeAwarePathFilters)) return false;
 
-  if (options.excludePrefixes.some((prefix) => matchesPrefix(pathname, prefix))) return false;
+  if (matchesPrefixFilter(pathname, options.excludePrefixes, localeAwarePathFilters)) return false;
 
   return true;
 };
@@ -241,6 +283,8 @@ export const collectSiteOgStaticTargets = (
 
   for (const pathname of pathnames) {
     const metadata = buildSiteOgMetadata(new URL(pathname, origin));
+    // Keep RTL routes dynamic to preserve Arabic-script shaping and custom font rendering.
+    if (metadata.htmlDir === "rtl") continue;
 
     if (!targetsByRouteKey.has(metadata.routeKey)) {
       targetsByRouteKey.set(metadata.routeKey, {

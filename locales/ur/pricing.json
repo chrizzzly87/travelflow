@@ -1,0 +1,63 @@
+{
+  "hero": {
+    "title": "Simple, transparent pricing",
+    "description": "Choose the tier that matches your travel style. Limits and features stay synced with your account plan."
+  },
+  "shared": {
+    "perMonth": "/mo",
+    "unlimited": "Unlimited",
+    "noExpiry": "No expiry",
+    "enabled": "Included",
+    "disabled": "Not included",
+    "days": "{count} days"
+  },
+  "tiers": {
+    "backpacker": {
+      "name": "Backpacker",
+      "badge": "Current plan",
+      "description": "A generous free tier to start planning with confidence.",
+      "cta": "Start with Backpacker",
+      "features": [
+        "{maxActiveTripsLabel} active trips",
+        "{maxTotalTripsLabel} total trips",
+        "Trip retention: {tripExpirationLabel}",
+        "Share links: {sharingLabel}",
+        "Editable collaboration shares: {editableSharesLabel}",
+        "Pro trip creation: {proCreationLabel}"
+      ]
+    },
+    "explorer": {
+      "name": "Explorer",
+      "badge": "Paid tier",
+      "description": "Higher limits, longer retention, and collaboration-ready editing.",
+      "cta": "Launching Soon",
+      "features": [
+        "{maxActiveTripsLabel} active trips",
+        "{maxTotalTripsLabel} total trips",
+        "Trip retention: {tripExpirationLabel}",
+        "Share links: {sharingLabel}",
+        "Editable collaboration shares: {editableSharesLabel}",
+        "Pro trip creation: {proCreationLabel}"
+      ]
+    },
+    "globetrotter": {
+      "name": "Globetrotter",
+      "badge": "Paid tier",
+      "description": "Top tier with unlimited scale and no trip expiry.",
+      "cta": "Launching Soon",
+      "features": [
+        "{maxActiveTripsLabel} active trips",
+        "{maxTotalTripsLabel} total trips",
+        "Trip retention: {tripExpirationLabel}",
+        "Share links: {sharingLabel}",
+        "Editable collaboration shares: {editableSharesLabel}",
+        "Pro trip creation: {proCreationLabel}"
+      ]
+    }
+  },
+  "anonymousLimits": {
+    "title": "Anonymous access limits",
+    "description": "Anonymous users can keep up to <strong>{limit}</strong> active trips at a time. Each anonymous trip stays editable for <strong>{days} days</strong>, then becomes locked until account activation.",
+    "footer": "Create a free account to keep your planning history and unlock tier upgrades later."
+  }
+}

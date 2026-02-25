@@ -25,6 +25,8 @@ const MAPS_LANGUAGE_MAP: Record<AppLanguage, string> = {
     it: 'it',
     pl: 'pl',
     ko: 'ko',
+    fa: 'fa',
+    ur: 'ur',
 };
 
 const GOOGLE_MAPS_KEY_PATTERN = /^AIza[A-Za-z0-9_-]{35}$/;

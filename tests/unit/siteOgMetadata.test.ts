@@ -35,6 +35,50 @@ describe('site OG metadata resolver', () => {
     expect(metadata.ogImageParams.path).toBe('/de/features');
   });
 
+  it('marks Persian and Urdu localized routes as RTL in metadata and OG params', () => {
+    const persianMetadata = getMetadata('/fa/features');
+    expect(persianMetadata.canonicalPath).toBe('/fa/features');
+    expect(persianMetadata.htmlLang).toBe('fa');
+    expect(persianMetadata.htmlDir).toBe('rtl');
+    expect(persianMetadata.ogImageParams.lang).toBe('fa');
+    expect(persianMetadata.ogImageParams.dir).toBe('rtl');
+
+    const urduMetadata = getMetadata('/ur/pricing');
+    expect(urduMetadata.canonicalPath).toBe('/ur/pricing');
+    expect(urduMetadata.htmlLang).toBe('ur');
+    expect(urduMetadata.htmlDir).toBe('rtl');
+    expect(urduMetadata.ogImageParams.lang).toBe('ur');
+    expect(urduMetadata.ogImageParams.dir).toBe('rtl');
+  });
+
+  it('uses localized Persian and Urdu OG copy for localized marketing paths', () => {
+    const persianHomeMetadata = getMetadata('/fa');
+    expect(persianHomeMetadata.canonicalPath).toBe('/fa');
+    expect(persianHomeMetadata.description).toContain('سفرها');
+    expect(persianHomeMetadata.ogImageParams.description).toContain('سفرها');
+
+    const persianBlogMetadata = getMetadata('/fa/blog');
+    expect(persianBlogMetadata.ogImageParams.title).toBe('وبلاگ');
+
+    const urduHomeMetadata = getMetadata('/ur');
+    expect(urduHomeMetadata.canonicalPath).toBe('/ur');
+    expect(urduHomeMetadata.description).toContain('سفر');
+    expect(urduHomeMetadata.ogImageParams.description).toContain('سفر');
+
+    const urduBlogMetadata = getMetadata('/ur/blog');
+    expect(urduBlogMetadata.ogImageParams.title).toBe('بلاگ');
+
+    const persianThemesMetadata = getMetadata('/fa/inspirations/themes');
+    expect(persianThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
+
+    const urduThemesMetadata = getMetadata('/ur/inspirations/themes');
+    expect(urduThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
+  });
+
   it('resolves blog, country detail, and example route metadata', () => {
     const blogMeta = getMetadata('/blog/how-to-plan-multi-city-trip');
     expect(blogMeta.ogImageParams.blog_image).toContain('/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg');
@@ -80,6 +124,8 @@ describe('site OG static generation helpers', () => {
     });
 
     expect(pathnames).toContain('/de/features');
+    expect(pathnames).toContain('/fa/features');
+    expect(pathnames).toContain('/ur/features');
     expect(pathnames).toContain('/blog/how-to-plan-multi-city-trip');
     expect(pathnames).toContain('/inspirations/country/Japan');
   });
@@ -95,6 +141,8 @@ describe('site OG static generation helpers', () => {
 
     const allTargets = collectSiteOgStaticTargets();
     expect(allTargets.length).toBeGreaterThan(0);
+    expect(allTargets.some((target) => target.pathname.startsWith('/fa/'))).toBe(false);
+    expect(allTargets.some((target) => target.pathname.startsWith('/ur/'))).toBe(false);
 
     const routeKeySet = new Set(allTargets.map((target) => target.routeKey));
     expect(routeKeySet.size).toBe(allTargets.length);
@@ -120,6 +168,20 @@ describe('site OG static generation helpers', () => {
     expect(filteredBlog.some((pathname) => pathname.startsWith('/blog'))).toBe(true);
     expect(filteredBlog).not.toContain('/blog/how-to-plan-multi-city-trip');
     expect(filteredBlog.every((pathname) => pathname.startsWith('/blog') || pathname.startsWith('/de/blog'))).toBe(true);
+
+    const persianBlogOverview = collectSiteOgPathnames({
+      locales: ['fa'],
+      includePaths: ['/blog'],
+    });
+    expect(persianBlogOverview).toEqual(['/fa/blog']);
+
+    const urduBlogSubset = collectSiteOgPathnames({
+      locales: ['ur'],
+      includePrefixes: ['/blog'],
+      excludePaths: ['/blog'],
+    });
+    expect(urduBlogSubset).not.toContain('/ur/blog');
+    expect(urduBlogSubset.every((pathname) => pathname.startsWith('/ur/blog/'))).toBe(true);
   });
 
   it('normalizes and sanitizes filter options', () => {

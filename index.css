@@ -164,6 +164,39 @@
   unicode-range: U+02D7, U+0303, U+0331, U+0E01-0E5B, U+200C-200D, U+25CC;
 }
 
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/vazirmatn/vazirmatn-arabic-400-normal.woff2") format("woff2"),
+    url("/fonts/vazirmatn/vazirmatn-arabic-400-normal.woff") format("woff");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url("/fonts/vazirmatn/vazirmatn-arabic-700-normal.woff2") format("woff2"),
+    url("/fonts/vazirmatn/vazirmatn-arabic-700-normal.woff") format("woff");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
+@font-face {
+  font-family: "Vazirmatn";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src:
+    url("/fonts/vazirmatn/vazirmatn-arabic-800-normal.woff2") format("woff2"),
+    url("/fonts/vazirmatn/vazirmatn-arabic-800-normal.woff") format("woff");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+FB50-FDFF, U+FE70-FEFC;
+}
+
 :root {
   --tf-font-heading: "Bricolage Grotesque", "Space Grotesk", "TravelFlow Global Fallback", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
   --tf-font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "TravelFlow Global Fallback", "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
@@ -223,6 +256,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+}
+
+html:lang(fa),
+html[lang^="fa-"],
+html:lang(ur),
+html[lang^="ur-"] {
+  --tf-font-heading: "Vazirmatn", "TravelFlow Global Fallback", "Noto Sans Arabic", "Noto Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --tf-font-body: "Vazirmatn", "TravelFlow Global Fallback", "Noto Sans Arabic", "Noto Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 @theme inline {

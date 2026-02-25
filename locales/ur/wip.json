@@ -1,0 +1,12 @@
+{
+  "label": "Work in progress",
+  "footer": "More details and account actions are arriving in upcoming releases.",
+  "login": {
+    "title": "Login",
+    "description": "Account access is rolling out soon. Login will unlock premium features, longer trip history, and smoother paywall upgrade flows."
+  },
+  "faq": {
+    "title": "FAQ",
+    "description": "The full FAQ is currently in progress. For now, account activation and anonymous-trip access limits are described on the Pricing page while we prepare the complete help center."
+  }
+}

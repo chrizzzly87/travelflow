@@ -67,6 +67,8 @@ describe('edge validation utils', () => {
       { path: '/de/inspirations/*', functionName: 'site-og-meta' },
       { path: '/de/blog/*', functionName: 'site-og-meta' },
       { path: '/de/create-trip', functionName: 'site-og-meta' },
+      { path: '/fa/pricing', functionName: 'site-og-meta' },
+      { path: '/ur/create-trip', functionName: 'site-og-meta' },
       { path: '/trip/*', functionName: 'trip-og-meta' },
     ];
 
