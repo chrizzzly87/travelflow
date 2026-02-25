@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCurrentMonthDailyCostHistory,
   buildFailureCodeBarListData,
   buildProviderCostPerSuccessChartData,
   buildProviderDonutEntries,
@@ -156,5 +157,24 @@ describe('services/adminAiTelemetryChartData', () => {
     expect(barListRows).toHaveLength(2);
     expect(barListRows[0]).toMatchObject({ key: 'OPENAI_REQUEST_FAILED', value: 2 });
     expect(barListRows[1]).toMatchObject({ key: 'UNKNOWN_ERROR', value: 2 });
+  });
+
+  it('builds current-month daily cost history with missing days filled as zero', () => {
+    const rows = [
+      { date: '2026-02-01', cost: 0.5 },
+      { date: '2026-02-03', cost: 0.2 },
+      { date: '2026-02-03', cost: 0.1 },
+      { date: '2026-01-31', cost: 9.99 },
+      { date: 'invalid', cost: 3 },
+    ];
+
+    const series = buildCurrentMonthDailyCostHistory(rows, new Date('2026-02-05T11:30:00Z'));
+    expect(series).toEqual([
+      { date: '2026-02-01', cost: 0.5 },
+      { date: '2026-02-02', cost: 0 },
+      { date: '2026-02-03', cost: 0.3 },
+      { date: '2026-02-04', cost: 0 },
+      { date: '2026-02-05', cost: 0 },
+    ]);
   });
 });
