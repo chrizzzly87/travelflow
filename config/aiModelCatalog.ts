@@ -2,7 +2,7 @@ import {
     type AiProviderId,
     getAiProviderMetadata,
     getAiProviderSortOrder,
-} from './aiProviderCatalog';
+} from './aiProviderCatalog.ts';
 
 export type AiModelAvailability = 'active' | 'planned';
 
