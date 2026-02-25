@@ -101,3 +101,4 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🔧 Switched OpenRouter benchmark `response_format` to provider-compatible text mode so Perplexity and Qwen routes no longer fail on unsupported `json_object` schema validation.
 - [ ] [Internal] 🏷️ Added provider-logo labels in telemetry model bar charts plus provider-logo custom tooltips for Tremor provider charts (`Provider breakdown`, `Provider success rate`, `Provider cost per success`) where custom rendering is supported.
 - [ ] [Internal] 📅 Expanded `Total cost per day (Current Month)` to render full day-by-day month history (including zero-cost days) instead of only returned aggregate days.
+- [ ] [Internal] 📝 Added persisted per-run benchmark comments (save/edit/export), plus telemetry comment rollups grouped by provider/model for qualitative model evaluation.

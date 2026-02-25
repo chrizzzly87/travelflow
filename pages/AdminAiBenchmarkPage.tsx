@@ -88,6 +88,8 @@ interface BenchmarkRun {
     error_message: string | null;
     satisfaction_rating?: 'good' | 'medium' | 'bad' | null;
     satisfaction_updated_at?: string | null;
+    run_comment?: string | null;
+    run_comment_updated_at?: string | null;
     started_at?: string | null;
     finished_at?: string | null;
     created_at: string;
@@ -188,6 +190,7 @@ const BENCHMARK_PARALLEL_CONCURRENCY = 3;
 const BENCHMARK_TIMEOUT_MIN_SECONDS = 20;
 const BENCHMARK_TIMEOUT_MAX_SECONDS = 180;
 const BENCHMARK_TIMEOUT_DEFAULT_SECONDS = 60;
+const BENCHMARK_RUN_COMMENT_MAX_LENGTH = 2000;
 const COST_ESTIMATE_FOOTNOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 const BENCHMARK_EFFECTIVE_DEFAULTS = {
     travelerSetup: 'solo',
@@ -253,6 +256,11 @@ const formatTimestamp = (value?: string | null): string => {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return '—';
     return new Date(parsed).toLocaleString();
+};
+
+const normalizeRunCommentDraft = (value?: string | null): string => {
+    if (!value) return '';
+    return value.trim();
 };
 
 const ProviderLabel: React.FC<{
@@ -505,6 +513,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
     const [errorModalRun, setErrorModalRun] = useState<BenchmarkRun | null>(null);
     const [validationModalRun, setValidationModalRun] = useState<BenchmarkRun | null>(null);
     const [ratingSavingRunId, setRatingSavingRunId] = useState<string | null>(null);
+    const [commentSavingRunId, setCommentSavingRunId] = useState<string | null>(null);
+    const [runCommentDrafts, setRunCommentDrafts] = useState<Record<string, string>>({});
     const [promptModal, setPromptModal] = useState<{ prompt: string; generatedAt: string } | null>(null);
 
     const [loading, setLoading] = useState(false);
@@ -595,6 +605,30 @@ export const AdminAiBenchmarkPage: React.FC = () => {
 
     const hasPendingRuns = useMemo(() => runs.some((run) => isRunActive(run)), [runs]);
     const hasExactCostData = useMemo(() => runs.some((run) => typeof run.cost_usd === 'number' && Number.isFinite(run.cost_usd)), [runs]);
+
+    useEffect(() => {
+        setRunCommentDrafts((current) => {
+            const next: Record<string, string> = {};
+            runs.forEach((run) => {
+                if (!run.id || run.id.startsWith('optimistic-')) return;
+                if (Object.prototype.hasOwnProperty.call(current, run.id)) {
+                    next[run.id] = current[run.id];
+                    return;
+                }
+                next[run.id] = run.run_comment || '';
+            });
+
+            const currentKeys = Object.keys(current);
+            const nextKeys = Object.keys(next);
+            if (
+                currentKeys.length === nextKeys.length
+                && currentKeys.every((key) => next[key] === current[key])
+            ) {
+                return current;
+            }
+            return next;
+        });
+    }, [runs]);
 
     const displayRuns = useMemo(() => {
         const filtered = runs.filter((run) => {
@@ -1252,6 +1286,8 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                 error_message: null,
                 satisfaction_rating: null,
                 satisfaction_updated_at: null,
+                run_comment: null,
+                run_comment_updated_at: null,
                 started_at: startedAtIso,
                 finished_at: null,
                 created_at: new Date(Date.now() + index).toISOString(),
@@ -1392,36 +1428,71 @@ export const AdminAiBenchmarkPage: React.FC = () => {
         void cancelRuns({ sessionId: session.id });
     }, [cancelRuns, session?.id]);
 
+    const updateRunFeedback = useCallback(async (
+        run: BenchmarkRun,
+        payload: { rating?: SatisfactionRating | null; comment?: string | null }
+    ): Promise<BenchmarkRun> => {
+        const response = await fetchBenchmarkApi('/api/internal/ai/benchmark/rating', {
+            method: 'POST',
+            body: JSON.stringify({
+                runId: run.id,
+                ...(Object.prototype.hasOwnProperty.call(payload, 'rating') ? { rating: payload.rating } : {}),
+                ...(Object.prototype.hasOwnProperty.call(payload, 'comment') ? { comment: payload.comment } : {}),
+            }),
+        });
+
+        const updatedRun = response?.run as BenchmarkRun | undefined;
+        if (!updatedRun) {
+            throw new Error('Run feedback saved but no updated row returned.');
+        }
+
+        setRuns((current) => {
+            const next = current.map((entry) => (entry.id === updatedRun.id ? { ...entry, ...updatedRun } : entry));
+            setSummary(summarizeRunsLocal(next));
+            return next;
+        });
+        setRunCommentDrafts((current) => ({
+            ...current,
+            [updatedRun.id]: updatedRun.run_comment || '',
+        }));
+        return updatedRun;
+    }, [fetchBenchmarkApi]);
+
     const updateRunRating = useCallback(async (run: BenchmarkRun, nextRating: SatisfactionRating | null) => {
         if (!run.id || run.id.startsWith('optimistic-') || isRunActive(run)) return;
         setError(null);
         setRatingSavingRunId(run.id);
 
         try {
-            const payload = await fetchBenchmarkApi('/api/internal/ai/benchmark/rating', {
-                method: 'POST',
-                body: JSON.stringify({
-                    runId: run.id,
-                    rating: nextRating,
-                }),
-            });
-
-            const updatedRun = payload?.run as BenchmarkRun | undefined;
-            if (!updatedRun) {
-                throw new Error('Run rating saved but no updated row returned.');
-            }
-
-            setRuns((current) => {
-                const next = current.map((entry) => (entry.id === updatedRun.id ? { ...entry, ...updatedRun } : entry));
-                setSummary(summarizeRunsLocal(next));
-                return next;
-            });
+            await updateRunFeedback(run, { rating: nextRating });
         } catch (ratingError) {
             setError(ratingError instanceof Error ? ratingError.message : 'Failed to save run rating');
         } finally {
             setRatingSavingRunId(null);
         }
-    }, [fetchBenchmarkApi]);
+    }, [updateRunFeedback]);
+
+    const saveRunComment = useCallback(async (run: BenchmarkRun) => {
+        if (!run.id || run.id.startsWith('optimistic-') || isRunActive(run)) return;
+        const draft = normalizeRunCommentDraft(runCommentDrafts[run.id] || '');
+        if (draft.length > BENCHMARK_RUN_COMMENT_MAX_LENGTH) {
+            setError(`Comment too long (max ${BENCHMARK_RUN_COMMENT_MAX_LENGTH} characters).`);
+            return;
+        }
+
+        const persisted = normalizeRunCommentDraft(run.run_comment || '');
+        if (draft === persisted) return;
+
+        setError(null);
+        setCommentSavingRunId(run.id);
+        try {
+            await updateRunFeedback(run, { comment: draft || null });
+        } catch (commentError) {
+            setError(commentError instanceof Error ? commentError.message : 'Failed to save run comment');
+        } finally {
+            setCommentSavingRunId(null);
+        }
+    }, [runCommentDrafts, updateRunFeedback]);
 
     const downloadRow = useCallback((run: BenchmarkRun) => {
         const payload = {
@@ -2239,13 +2310,14 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     <th className="px-3 py-2">Cost</th>
                                     <th className="px-3 py-2">Trip</th>
                                     <th className="px-3 py-2">Rank</th>
+                                    <th className="px-3 py-2">Comment</th>
                                     <th className="px-3 py-2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {displayRuns.length === 0 && (
                                     <tr>
-                                        <td colSpan={9} className="px-3 py-6 text-center text-sm text-slate-500">
+                                        <td colSpan={10} className="px-3 py-6 text-center text-sm text-slate-500">
                                             {loading ? 'Loading benchmark runs...' : 'No runs yet. Configure targets and click Test all.'}
                                         </td>
                                     </tr>
@@ -2271,6 +2343,15 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                     const warningCount = validationWarnings.length;
                                     const hasValidationDetails = validationStats.total > 0 || (run.validation_errors?.length || 0) > 0 || warningCount > 0 || run.schema_valid !== null;
                                     const costEstimateLabel = getModelCostEstimateLabel(run.provider, run.model);
+                                    const persistedComment = normalizeRunCommentDraft(run.run_comment || '');
+                                    const commentDraft = runCommentDrafts[run.id] ?? run.run_comment ?? '';
+                                    const normalizedCommentDraft = normalizeRunCommentDraft(commentDraft);
+                                    const commentLength = normalizedCommentDraft.length;
+                                    const isCommentDirty = normalizedCommentDraft !== persistedComment;
+                                    const isCommentTooLong = commentLength > BENCHMARK_RUN_COMMENT_MAX_LENGTH;
+                                    const canEditComment = !isPending && !run.id.startsWith('optimistic-');
+                                    const isCommentSaveBusy = commentSavingRunId === run.id;
+                                    const canSaveComment = canEditComment && isCommentDirty && !isCommentTooLong && !isCommentSaveBusy && !loading;
 
                                     return (
                                         <tr key={run.id} className="border-b border-slate-100 align-top">
@@ -2352,7 +2433,7 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                 <div className="flex items-center gap-1">
                                                     {(Object.keys(SATISFACTION_META) as SatisfactionRating[]).map((rating) => {
                                                         const isActive = run.satisfaction_rating === rating;
-                                                        const isDisabled = loading || isPending || ratingSavingRunId === run.id;
+                                                        const isDisabled = loading || isPending || ratingSavingRunId === run.id || commentSavingRunId === run.id;
                                                         const meta = SATISFACTION_META[rating];
                                                         return (
                                                             <button
@@ -2371,6 +2452,43 @@ export const AdminAiBenchmarkPage: React.FC = () => {
                                                             </button>
                                                         );
                                                     })}
+                                                </div>
+                                            </td>
+                                            <td className="px-3 py-2">
+                                                <div className="w-[250px] space-y-1.5">
+                                                    <textarea
+                                                        value={commentDraft}
+                                                        onChange={(event) => {
+                                                            const nextValue = event.target.value;
+                                                            setRunCommentDrafts((current) => ({
+                                                                ...current,
+                                                                [run.id]: nextValue,
+                                                            }));
+                                                        }}
+                                                        disabled={!canEditComment || isCommentSaveBusy}
+                                                        maxLength={BENCHMARK_RUN_COMMENT_MAX_LENGTH}
+                                                        rows={2}
+                                                        placeholder={canEditComment ? 'Add run note…' : 'Comment after run completes'}
+                                                        className="w-full resize-y rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 placeholder:text-slate-400 focus:border-accent-400 focus:outline-none focus:ring-1 focus:ring-accent-300 disabled:cursor-not-allowed disabled:bg-slate-100"
+                                                    />
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className={`text-[10px] ${isCommentTooLong ? 'text-rose-600' : 'text-slate-500'}`}>
+                                                            {commentLength}/{BENCHMARK_RUN_COMMENT_MAX_LENGTH}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void saveRunComment(run)}
+                                                            disabled={!canSaveComment}
+                                                            className="rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            {isCommentSaveBusy ? 'Saving…' : 'Save'}
+                                                        </button>
+                                                    </div>
+                                                    {run.run_comment_updated_at && (
+                                                        <div className="text-[10px] text-slate-500">
+                                                            Saved {formatTimestamp(run.run_comment_updated_at)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-3 py-2">
