@@ -89,6 +89,26 @@ interface AiTelemetryRecentRow {
     error_code: string | null;
 }
 
+interface AiTelemetryRunComment {
+    runId: string;
+    provider: string;
+    model: string;
+    comment: string;
+    status: 'queued' | 'running' | 'completed' | 'failed' | null;
+    satisfactionRating: 'good' | 'medium' | 'bad' | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface AiTelemetryRunCommentGroup {
+    provider: string;
+    model: string;
+    key: string;
+    total: number;
+    latestCommentAt: string;
+    comments: AiTelemetryRunComment[];
+}
+
 interface AiTelemetryApiResponse extends BenchmarkApiResponse {
     summary?: AiTelemetrySummary;
     series?: AiTelemetrySeriesPoint[];
@@ -99,6 +119,10 @@ interface AiTelemetryApiResponse extends BenchmarkApiResponse {
         fastest?: AiTelemetryModelPoint[];
         cheapest?: AiTelemetryModelPoint[];
         bestValue?: AiTelemetryModelPoint[];
+    };
+    comments?: {
+        total?: number;
+        groups?: AiTelemetryRunCommentGroup[];
     };
     recent?: AiTelemetryRecentRow[];
     availableProviders?: string[];
@@ -256,6 +280,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
     const [telemetryProviders, setTelemetryProviders] = useState<AiTelemetryProviderPoint[]>([]);
     const [telemetryModels, setTelemetryModels] = useState<AiTelemetryModelPoint[]>([]);
     const [telemetryRecent, setTelemetryRecent] = useState<AiTelemetryRecentRow[]>([]);
+    const [telemetryCommentTotal, setTelemetryCommentTotal] = useState(0);
+    const [telemetryCommentGroups, setTelemetryCommentGroups] = useState<AiTelemetryRunCommentGroup[]>([]);
     const [telemetryProviderOptions, setTelemetryProviderOptions] = useState<string[]>([]);
     const [fastestModels, setFastestModels] = useState<AiTelemetryModelPoint[]>([]);
     const [cheapestModels, setCheapestModels] = useState<AiTelemetryModelPoint[]>([]);
@@ -332,6 +358,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders(Array.isArray(payload.providers) ? payload.providers : []);
             setTelemetryModels(Array.isArray(payload.models) ? payload.models : []);
             setTelemetryRecent(Array.isArray(payload.recent) ? payload.recent : []);
+            setTelemetryCommentTotal(Number(payload.comments?.total) || 0);
+            setTelemetryCommentGroups(Array.isArray(payload.comments?.groups) ? payload.comments?.groups : []);
             setFastestModels(Array.isArray(payload.rankings?.fastest) ? payload.rankings?.fastest : []);
             setCheapestModels(Array.isArray(payload.rankings?.cheapest) ? payload.rankings?.cheapest : []);
             setBestValueModels(Array.isArray(payload.rankings?.bestValue) ? payload.rankings?.bestValue : []);
@@ -354,6 +382,8 @@ export const AdminAiTelemetryPage: React.FC = () => {
             setTelemetryProviders([]);
             setTelemetryModels([]);
             setTelemetryRecent([]);
+            setTelemetryCommentTotal(0);
+            setTelemetryCommentGroups([]);
             setFastestModels([]);
             setCheapestModels([]);
             setBestValueModels([]);
@@ -1228,6 +1258,53 @@ export const AdminAiTelemetryPage: React.FC = () => {
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    </AdminSurfaceCard>
+                </section>
+
+                <section>
+                    <AdminSurfaceCard>
+                        <Title>Benchmark run comments</Title>
+                        <Subtitle>
+                            Qualitative notes captured per run, grouped by provider/model in the current telemetry filter window.
+                        </Subtitle>
+                        <Text className="mt-1 text-xs text-slate-500">
+                            Total comments: {telemetryCommentTotal.toLocaleString()}
+                        </Text>
+
+                        <div className="mt-3 max-h-[500px] space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            {telemetryCommentGroups.length === 0 && (
+                                <div className="rounded-md border border-slate-200 bg-white px-3 py-4 text-xs text-slate-500">
+                                    {telemetryLoading ? 'Loading comments...' : 'No benchmark run comments in this filter window.'}
+                                </div>
+                            )}
+
+                            {telemetryCommentGroups.map((group) => (
+                                <div key={group.key} className="rounded-md border border-slate-200 bg-white p-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-xs font-semibold text-slate-900">
+                                            <ProviderLabel provider={group.provider} model={group.model} providerClassName="text-slate-900" modelClassName="text-slate-700" logoSize={12} />
+                                        </p>
+                                        <span className="text-[11px] text-slate-500">
+                                            {group.total} comment{group.total === 1 ? '' : 's'}
+                                        </span>
+                                    </div>
+                                    <p className="mt-0.5 text-[11px] text-slate-500">
+                                        Latest: {formatTimestamp(group.latestCommentAt)}
+                                    </p>
+
+                                    <div className="mt-2 space-y-2">
+                                        {group.comments.map((comment) => (
+                                            <div key={`${group.key}-${comment.runId}-${comment.updatedAt}`} className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs">
+                                                <p className="whitespace-pre-wrap text-slate-800">{comment.comment}</p>
+                                                <p className="mt-1 text-[10px] text-slate-500">
+                                                    Run {comment.runId.slice(0, 8)} • {comment.status || 'unknown'} • {comment.satisfactionRating || 'unrated'} • {formatTimestamp(comment.updatedAt)}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </AdminSurfaceCard>
                 </section>

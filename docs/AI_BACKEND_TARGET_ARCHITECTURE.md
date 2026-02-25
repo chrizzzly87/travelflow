@@ -10,7 +10,7 @@ Current implementation status:
 3. `/api/internal/ai/benchmark` is implemented with Supabase-backed session/run persistence and real provider execution.
 4. `/api/internal/ai/benchmark/export` is implemented (`run` JSON export, `session` ZIP export, optional log bundle via `includeLogs=1`).
 5. `/api/internal/ai/benchmark/cleanup` is implemented for bulk deletion of benchmark-linked trips and benchmark rows.
-6. `/api/internal/ai/benchmark/rating` is implemented for persisted per-run satisfaction ranking updates (`good`, `medium`, `bad`).
+6. `/api/internal/ai/benchmark/rating` is implemented for persisted per-run satisfaction ranking updates (`good`, `medium`, `bad`) and saved run comments.
 7. `/admin/ai-benchmark` now includes classic benchmark input, prompt preview generation, dynamic model matrix, rerun/test-all, persisted table, export/cleanup actions, persisted ranking controls, and model-level summary cards.
 8. Benchmark model-row selections in admin UI are persisted locally with default starter set (Gemini 3.1 Pro Preview, Gemini 3 Pro Preview, GPT-5.2 Pro, Claude Haiku 4.5).
 9. Benchmark table uses optimistic prefilled running rows with live latency feedback during test execution.
@@ -310,10 +310,13 @@ No auto-archive workflow in v1.
 Purpose:
 1. Persist editable per-run quality ranking for manual QA scoring.
 2. Drive benchmark table ranking UI and model-level satisfaction rollups.
+3. Persist optional per-run qualitative comments for manual evaluation notes.
 
 Request fields:
 1. `runId` (required)
-2. `rating` (`good` | `medium` | `bad` | `null`)
+2. `rating` (`good` | `medium` | `bad` | `null`) optional
+3. `comment` (`string` | `null`) optional
+4. At least one of `rating` or `comment` must be provided.
 
 ## 8.7 Run cancellation endpoint
 
@@ -376,6 +379,8 @@ create table if not exists public.ai_benchmark_runs (
   error_message text,
   satisfaction_rating text check (satisfaction_rating in ('good','medium','bad')),
   satisfaction_updated_at timestamptz,
+  run_comment text,
+  run_comment_updated_at timestamptz,
   started_at timestamptz,
   finished_at timestamptz,
   created_at timestamptz not null default now()
