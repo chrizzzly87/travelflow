@@ -93,6 +93,7 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Build integration:
   - `pnpm build` runs `og:site:build` and `og:site:validate` before `vite build`.
 - Build mode policy:
+  - GitHub pull-request CI runs auto-skip static OG build/validation to keep PR checks fast.
   - Netlify non-production contexts (`deploy-preview`, `branch-deploy`, `dev`) auto-skip static OG build/validation to reduce preview deploy time.
   - Netlify production context keeps full static OG build + validation enabled.
   - Manual override: set `SITE_OG_STATIC_BUILD_MODE=full` to force generation, or `SITE_OG_STATIC_BUILD_MODE=skip` to bypass locally.

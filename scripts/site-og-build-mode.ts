@@ -11,6 +11,12 @@ export const resolveSiteOgStaticBuildMode = (
   if (override === "skip") return "skip";
   if (override === "full") return "full";
 
+  const isCi = normalize(env.CI) === "true";
+  const githubEventName = normalize(env.GITHUB_EVENT_NAME);
+  if (isCi && (githubEventName === "pull_request" || githubEventName === "pull_request_target")) {
+    return "skip";
+  }
+
   const isNetlify = normalize(env.NETLIFY) === "true" || normalize(env.NETLIFY) === "1";
   const context = normalize(env.CONTEXT);
   if (isNetlify && NETLIFY_SKIP_CONTEXTS.has(context)) {
@@ -23,4 +29,3 @@ export const resolveSiteOgStaticBuildMode = (
 export const shouldSkipSiteOgStaticBuild = (
   env: NodeJS.ProcessEnv = process.env,
 ): boolean => resolveSiteOgStaticBuildMode(env) === "skip";
-

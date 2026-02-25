@@ -34,6 +34,13 @@ describe("site og static build mode", () => {
     })).toBe(true);
   });
 
+  it("auto-skips pull request CI runs", () => {
+    expect(resolveSiteOgStaticBuildMode({
+      CI: "true",
+      GITHUB_EVENT_NAME: "pull_request",
+    })).toBe("skip");
+  });
+
   it("keeps production and non-netlify builds in full mode", () => {
     expect(resolveSiteOgStaticBuildMode({
       NETLIFY: "true",
@@ -43,4 +50,3 @@ describe("site og static build mode", () => {
     expect(resolveSiteOgStaticBuildMode({})).toBe("full");
   });
 });
-

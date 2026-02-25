@@ -29,4 +29,4 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [ ] [Internal] ♻️ Versioned the static OG template hash revision and regenerated all locale/static OG assets so stale legacy-style files are fully replaced.
 - [ ] [Internal] 🧪 Added OG Tools dual-tab workflow (URL Analyzer + embedded OG Playground) with rendered `og:image` preview inside analyzer results.
 - [ ] [Internal] 🩺 Added embedded OG Playground health checks and explicit Trip/Site mode switching so admin tools always expose the full legacy query-control interface.
-- [ ] [Internal] ⏱️ Added context-aware static OG build/validate skipping for Netlify non-production deploys plus progress logging and manual override (`SITE_OG_STATIC_BUILD_MODE`) to reduce preview build time.
+- [ ] [Internal] ⏱️ Added context-aware static OG build/validate skipping for GitHub PR CI and Netlify non-production deploys plus progress logging and manual override (`SITE_OG_STATIC_BUILD_MODE`) to reduce check/build time.
