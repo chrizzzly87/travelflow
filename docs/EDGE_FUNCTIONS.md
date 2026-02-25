@@ -77,12 +77,26 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
   - Enumerates static OG targets from the shared metadata resolver.
   - Writes hashed PNG assets to `public/images/og/site/generated/`.
   - Writes `public/images/og/site/generated/manifest.json`.
+- Netlify build-cache plugin: `./netlify/plugins/site-og-build-cache`
+  - Restores `public/images/og/site/generated/` before `pnpm og:site:build`.
+  - Saves `public/images/og/site/generated/` after successful builds.
+  - Enables hash-based reuse across CI builds so unchanged static OG assets are not re-rendered.
 - Validator: `pnpm og:site:validate`
   - Verifies full route coverage from resolver source.
   - Verifies hash/path determinism and on-disk asset existence.
 - Build integration:
   - `pnpm build` runs `og:site:build` and `og:site:validate` before `vite build`.
 - Generated assets are build artifacts and are intentionally not committed.
+
+### When adding locales or pages
+
+- If you add a new locale, static route, blog route, country inspiration route, or example template route that should have static OG coverage:
+  1. Update the shared resolver inputs (`netlify/edge-lib/site-og-metadata.ts` and related data sources).
+  2. Run `pnpm og:site:build`.
+  3. Run `pnpm og:site:validate`.
+- Use `pnpm og:site:build` + `pnpm og:site:validate` for fast OG-only iteration.
+- Use full `pnpm build` when you need complete release parity checks (i18n, storage registry, edge validation, sitemap, app bundle).
+- In Netlify CI, the site-og build-cache plugin restores previous generated assets before `og:site:build`, so unchanged routes are typically reused and only changed/new routes are rendered.
 
 ## Required environment variables
 
