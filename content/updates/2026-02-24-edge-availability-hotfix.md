@@ -28,3 +28,4 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [ ] [Internal] 🧭 Added filtered static OG command builder support (`--locales`, include/exclude paths/prefixes) with documented release-safe full validation flow.
 - [ ] [Internal] ♻️ Versioned the static OG template hash revision and regenerated all locale/static OG assets so stale legacy-style files are fully replaced.
 - [ ] [Internal] 🧪 Added OG Tools dual-tab workflow (URL Analyzer + embedded OG Playground) with rendered `og:image` preview inside analyzer results.
+- [ ] [Internal] 🩺 Added embedded OG Playground health checks and explicit Trip/Site mode switching so admin tools always expose the full legacy query-control interface.

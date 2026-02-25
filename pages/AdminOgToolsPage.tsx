@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
     CheckCircle,
     ClipboardText,
@@ -25,6 +25,7 @@ const PRESET_PATHS = [
 ];
 
 const OG_PLAYGROUND_PATH = '/api/og/playground';
+const OG_PLAYGROUND_TITLE = 'TravelFlow OG Playground';
 
 const fieldClassName = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-accent-400 focus:ring-2 focus:ring-accent-100';
 
@@ -44,6 +45,9 @@ const formatKindLabel = (value: OgInspectionResult['imageKind']): string => {
 
 export const AdminOgToolsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'analyzer' | 'playground'>('analyzer');
+    const [playgroundMode, setPlaygroundMode] = useState<'trip' | 'site'>('trip');
+    const [playgroundLoadIssue, setPlaygroundLoadIssue] = useState<string | null>(null);
+    const playgroundFrameRef = useRef<HTMLIFrameElement | null>(null);
 
     const [urlInput, setUrlInput] = useState('/');
     const [isInspecting, setIsInspecting] = useState(false);
@@ -64,6 +68,7 @@ export const AdminOgToolsPage: React.FC = () => {
         excludePaths: parseCsvListInput(excludePathsInput),
         excludePrefixes: parseCsvListInput(excludePrefixesInput),
     }), [excludePathsInput, excludePrefixesInput, includePathsInput, includePrefixesInput, localesInput]);
+    const playgroundSrc = useMemo(() => `${OG_PLAYGROUND_PATH}?mode=${playgroundMode}`, [playgroundMode]);
 
     const copyText = async (key: string, value: string): Promise<void> => {
         try {
@@ -88,6 +93,35 @@ export const AdminOgToolsPage: React.FC = () => {
             setInspectResult(null);
         } finally {
             setIsInspecting(false);
+        }
+    };
+
+    const validatePlaygroundEmbed = (): void => {
+        const frame = playgroundFrameRef.current;
+        if (!frame) return;
+
+        try {
+            const doc = frame.contentDocument;
+            if (!doc) {
+                setPlaygroundLoadIssue('Could not access embedded OG playground document. Use "Open standalone" as fallback.');
+                return;
+            }
+
+            const title = doc.title.trim();
+            if (title === OG_PLAYGROUND_TITLE) {
+                setPlaygroundLoadIssue(null);
+                return;
+            }
+
+            const loadedSpaShell = Boolean(doc.querySelector('#root'));
+            if (loadedSpaShell) {
+                setPlaygroundLoadIssue('Embedded view loaded the app shell instead of /api/og/playground. Use "Open standalone" and verify Netlify edge routing.');
+                return;
+            }
+
+            setPlaygroundLoadIssue(`Embedded view returned unexpected content (${title || 'untitled document'}). Open standalone for the full legacy controls.`);
+        } catch {
+            setPlaygroundLoadIssue('Could not inspect embedded OG playground content. Use "Open standalone" as fallback.');
         }
     };
 
@@ -356,23 +390,61 @@ export const AdminOgToolsPage: React.FC = () => {
                             <div>
                                 <h2 className="text-base font-semibold text-slate-900">OG Playground</h2>
                                 <p className="mt-1 text-sm text-slate-600">
-                                    Full manual playground for `/api/og/site` and `/api/og/trip` with all query controls.
+                                    Full legacy playground for `/api/og/site` and `/api/og/trip` with all original query controls.
                                 </p>
                             </div>
-                            <a
-                                href={OG_PLAYGROUND_PATH}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100"
-                            >
-                                Open standalone
-                            </a>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPlaygroundMode('trip');
+                                        setPlaygroundLoadIssue(null);
+                                    }}
+                                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                                        playgroundMode === 'trip'
+                                            ? 'border-accent-500 bg-accent-600 text-white'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    Trip mode
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPlaygroundMode('site');
+                                        setPlaygroundLoadIssue(null);
+                                    }}
+                                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                                        playgroundMode === 'site'
+                                            ? 'border-accent-500 bg-accent-600 text-white'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    Site mode
+                                </button>
+                                <a
+                                    href={playgroundSrc}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="rounded-lg border border-accent-300 bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent-800 hover:bg-accent-100"
+                                >
+                                    Open standalone
+                                </a>
+                            </div>
                         </header>
 
+                        {playgroundLoadIssue && (
+                            <p className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+                                {playgroundLoadIssue}
+                            </p>
+                        )}
+
                         <iframe
+                            ref={playgroundFrameRef}
                             title="TravelFlow OG Playground"
-                            src={OG_PLAYGROUND_PATH}
+                            src={playgroundSrc}
                             className="h-[980px] w-full rounded-xl border border-slate-200 bg-white"
+                            onLoad={validatePlaygroundEmbed}
                         />
                     </section>
                 </TabsContent>
