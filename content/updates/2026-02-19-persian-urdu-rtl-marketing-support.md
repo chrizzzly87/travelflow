@@ -18,6 +18,7 @@ summary: "Added Persian and Urdu language options for marketing pages with autom
 - [x] [Improved] 📝 Persian and Urdu interfaces now use Vazirmatn for clearer Arabic-script typography.
 - [x] [Improved] 🪞 Social preview cards now mirror the layout direction for Persian and Urdu so text and visual hierarchy read naturally.
 - [x] [Fixed] 🔤 Persian and Urdu social preview metadata now uses localized titles/descriptions on localized routes instead of English fallback copy.
+- [x] [Fixed] 🗺️ Persian and Urdu inspiration subpages now include localized OG descriptions (not only localized titles), so social previews stay native-language end to end.
 - [ ] [Internal] 🧱 Extended locale, profile, and SEO metadata mappings so language and direction stay synchronized across runtime and edge rendering.
 - [ ] [Internal] 🖼️ Persian and Urdu OG previews now use a dedicated RTL dynamic rendering path to preserve layout direction and script shaping.
 - [ ] [Internal] 🎛️ Static OG filter flags now accept base paths with locale filters and gracefully no-op when selections are dynamic-only RTL routes.

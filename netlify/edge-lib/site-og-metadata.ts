@@ -468,8 +468,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Путешествия по темам" },
     pt: { title: "Viajar por tema" },
     pl: { title: "Podróże według motywu" },
-    fa: { title: "سفر بر اساس موضوع" },
-    ur: { title: "موضوع کے مطابق سفر" },
+    fa: {
+      title: "سفر بر اساس موضوع",
+      description: "ایده‌های سفر منتخب را پیدا کنید که با سبک سفر شما هماهنگ است؛ از ماجراجویی و غذا تا عکاسی و بیشتر.",
+    },
+    ur: {
+      title: "موضوع کے مطابق سفر",
+      description: "منتخب سفری آئیڈیاز تلاش کریں جو آپ کے ٹریول اسٹائل سے میل کھاتے ہوں؛ ایڈونچر، فوڈ، فوٹوگرافی اور مزید۔",
+    },
   },
   "/inspirations/best-time-to-travel": {
     es: { title: "Cuándo ir y a dónde" },
@@ -479,8 +485,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Когда и куда ехать" },
     pt: { title: "Quando ir e para onde" },
     pl: { title: "Kiedy i dokąd jechać" },
-    fa: { title: "چه زمانی به کجا برویم" },
-    ur: { title: "کب اور کہاں جائیں" },
+    fa: {
+      title: "چه زمانی به کجا برویم",
+      description: "راهنمای ماه‌به‌ماه بهترین زمان سفر به مقاصد مختلف جهان.",
+    },
+    ur: {
+      title: "کب اور کہاں جائیں",
+      description: "دنیا بھر کے مقامات پر جانے کے بہترین وقت کے لیے ماہ بہ ماہ گائیڈ۔",
+    },
   },
   "/inspirations/countries": {
     es: { title: "Explorar destinos por país" },
@@ -490,8 +502,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Направления по странам" },
     pt: { title: "Explorar destinos por país" },
     pl: { title: "Odkrywaj kierunki według kraju" },
-    fa: { title: "مقصدها بر اساس کشور" },
-    ur: { title: "ملک کے حساب سے مقامات" },
+    fa: {
+      title: "مقصدها بر اساس کشور",
+      description: "راهنماهای سفر هر کشور با بهترین ماه‌ها، شهرهای برتر و نکته‌های محلی.",
+    },
+    ur: {
+      title: "ملک کے حساب سے مقامات",
+      description: "ہر ملک کے لیے سفری گائیڈز، بہترین مہینے، ٹاپ شہروں اور مقامی مشوروں کے ساتھ۔",
+    },
   },
   "/inspirations/events-and-festivals": {
     es: { title: "Planear alrededor de un festival" },
@@ -501,8 +519,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Планируйте поездку вокруг фестиваля" },
     pt: { title: "Planear à volta de um festival" },
     pl: { title: "Zaplanuj podróż wokół festiwalu" },
-    fa: { title: "برنامه‌ریزی پیرامون جشنواره" },
-    ur: { title: "فیسٹیول کے گرد سفر پلان کریں" },
+    fa: {
+      title: "برنامه‌ریزی پیرامون جشنواره",
+      description: "جشنواره‌های پیش رو را کشف کنید و برنامه سفر خود را حول همان رویداد بسازید.",
+    },
+    ur: {
+      title: "فیسٹیول کے گرد سفر پلان کریں",
+      description: "آنے والے فیسٹیولز دریافت کریں اور اپنا سفر اسی ایونٹ کے گرد ترتیب دیں۔",
+    },
   },
   "/inspirations/weekend-getaways": {
     es: { title: "Escapadas rápidas para agendas ocupadas" },
@@ -512,8 +536,14 @@ const LOCALIZED_PAGE_META: Record<string, Partial<Record<SupportedLocale, Locali
     ru: { title: "Быстрые поездки для занятых" },
     pt: { title: "Escapadinhas rápidas para quem tem pouco tempo" },
     pl: { title: "Szybkie wypady dla zapracowanych" },
-    fa: { title: "سفرهای کوتاه آخر هفته" },
-    ur: { title: "مصروف لوگوں کے لیے مختصر ویک اینڈ ٹرپس" },
+    fa: {
+      title: "سفرهای کوتاه آخر هفته",
+      description: "ایده‌های سفر ۲ تا ۳ روزه برای ماجراجویان؛ سبک سفر کنید و از آخر هفته بیشترین بهره را ببرید.",
+    },
+    ur: {
+      title: "مصروف لوگوں کے لیے مختصر ویک اینڈ ٹرپس",
+      description: "2–3 دن کے مختصر سفر کے آئیڈیاز؛ ہلکا سامان رکھیں اور لانگ ویک اینڈ کا بھرپور فائدہ اٹھائیں۔",
+    },
   },
 };
 

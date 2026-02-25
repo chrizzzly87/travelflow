@@ -67,6 +67,16 @@ describe('site OG metadata resolver', () => {
 
     const urduBlogMetadata = getMetadata('/ur/blog');
     expect(urduBlogMetadata.ogImageParams.title).toBe('بلاگ');
+
+    const persianThemesMetadata = getMetadata('/fa/inspirations/themes');
+    expect(persianThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
+
+    const urduThemesMetadata = getMetadata('/ur/inspirations/themes');
+    expect(urduThemesMetadata.ogImageParams.description).not.toBe(
+      'Find curated trip ideas that match your travel style — adventure, food, photography, and more.',
+    );
   });
 
   it('resolves blog, country detail, and example route metadata', () => {
