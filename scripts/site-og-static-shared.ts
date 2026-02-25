@@ -18,7 +18,7 @@ export const SITE_OG_STATIC_PUBLIC_PREFIX = "/images/og/site/generated";
 export const SITE_OG_STATIC_MANIFEST_FILE_NAME = "manifest.json";
 export const SITE_OG_STATIC_MANIFEST_RELATIVE_PATH = `${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}`;
 export const SITE_OG_BUILD_ORIGIN = "https://travelflowapp.netlify.app";
-export const SITE_OG_STATIC_TEMPLATE_REVISION = "2026-02-25-site-og-classic-layout-v2";
+export const SITE_OG_STATIC_TEMPLATE_REVISION = "2026-02-25-site-og-live-parity-v4";
 
 export interface SiteOgStaticTarget {
   pathname: string;
@@ -53,6 +53,12 @@ const ACCENT_500 = "#6366f1";
 const ACCENT_600 = "#4f46e5";
 const ACCENT_700 = "#4338ca";
 const PLANE_GLYPH_PATH = "M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z";
+
+const svgToDataUri = (svg: string): string => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+
+const FOOTER_PLANE_ICON_URI = svgToDataUri(
+  `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='#ffffff' d='${PLANE_GLYPH_PATH}'/><path fill='none' stroke='rgba(255,255,255,0.42)' stroke-width='0.75' d='${PLANE_GLYPH_PATH}'/></svg>`,
+);
 
 const truncateText = (value: string, max: number): string => {
   if (value.length <= max) return value;
@@ -417,8 +423,8 @@ export const renderSiteOgStaticSvg = (payload: SiteOgStaticRenderPayload): strin
   );
   const pill = payload.pill || "TravelFlow";
   const normalizedPath = (payload.path || "/").trim().startsWith("/") ? (payload.path || "/").trim() : `/${(payload.path || "/").trim()}`;
-  const displayUrl = truncateText(`${SITE_OG_BUILD_HOST}${normalizedPath || "/"}`, 62);
-  const pillWidth = Math.max(214, Math.min(340, (pill.length * 11) + 110));
+  const displayUrl = truncateText(`${SITE_OG_BUILD_HOST}${normalizedPath || "/"}`, 40);
+  const pillWidth = Math.max(170, Math.min(340, (pill.length * 12) + 62));
   const titleStartY = 205;
   const descriptionStartY = titleStartY + (titleLines.length * titleLineHeight) + 56;
 
@@ -498,16 +504,14 @@ export const renderSiteOgStaticSvg = (payload: SiteOgStaticRenderPayload): strin
       ? `  <rect x="828" y="38" width="328" height="554" rx="28" fill="${tint}" opacity="${overlayOpacity.toFixed(3)}" />`
       : "",
     `  <rect x="92" y="76" width="${pillWidth}" height="58" rx="29" fill="${ACCENT_600}" />`,
-    `  <path d="${PLANE_GLYPH_PATH}" transform="translate(110 92) scale(0.66)" fill="#ffffff" />`,
-    `  <path d="${PLANE_GLYPH_PATH}" transform="translate(110 92) scale(0.66)" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.75" />`,
-    `  ${buildSvgTextLine(pill, 146, 113, "pill")}`,
+    `  <image href="${FOOTER_PLANE_ICON_URI}" x="110" y="97" width="16" height="16" preserveAspectRatio="xMidYMid meet" />`,
+    `  ${buildSvgTextLine(pill, 136, 113, "pill")}`,
     `  ${titleText}`,
     `  ${descriptionText}`,
     "  <rect x=\"92\" y=\"518\" width=\"670\" height=\"1\" fill=\"rgba(148,163,184,0.42)\" />",
     `  <rect x="92" y="532" width="36" height="36" rx="10" fill="${ACCENT_600}" />`,
-    `  <path d="${PLANE_GLYPH_PATH}" transform="translate(99 539) scale(0.44)" fill="#ffffff" />`,
-    `  <path d="${PLANE_GLYPH_PATH}" transform="translate(99 539) scale(0.44)" fill="none" stroke="rgba(255,255,255,0.44)" stroke-width="0.7" />`,
-    `  ${buildSvgTextLine("TravelFlow", 146, 560, "site")}`,
+    `  <image href="${FOOTER_PLANE_ICON_URI}" x="101" y="541" width="18" height="18" preserveAspectRatio="xMidYMid meet" />`,
+    `  ${buildSvgTextLine("TravelFlow", 140, 560, "site")}`,
     `  ${buildSvgTextLine(displayUrl, 760, 560, "path", " text-anchor=\"end\"")}`,
     "</svg>",
   ].filter(Boolean).join("\n");
