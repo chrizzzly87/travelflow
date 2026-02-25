@@ -22,4 +22,4 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [ ] [Internal] 🌐 Removed external font-CDN fallback dependencies from OG edge image functions and enforced short font-fetch timeouts.
 - [ ] [Internal] 🗺️ Routed `/example/*` OG images through trip-style renderer overrides while preserving static-site OG coverage for other marketing paths.
 - [ ] [Internal] ♻️ Added Netlify build-cache restore/save for static OG assets so unchanged generated social-preview images can be reused across CI deploys.
-- [ ] [Internal] 🧪 Added Netlify secret-scan allowlist handling for public browser key prefixes used in client-side map integrations to prevent false-positive preview deploy failures.
+- [ ] [Internal] 🧪 Added Netlify secret-scan guardrails for public browser key prefixes used in client-side map integrations, including disabling enhanced smart detection to prevent repeated preview deploy false positives.
