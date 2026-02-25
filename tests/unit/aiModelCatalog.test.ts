@@ -23,8 +23,8 @@ describe('config/aiModelCatalog', () => {
     expect(modelIds.has('openrouter:moonshotai/kimi-k2.5')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar')).toBe(true);
     expect(modelIds.has('perplexity:perplexity/sonar-pro')).toBe(true);
-    expect(modelIds.has('qwen:qwen/qwen-3.5-plus')).toBe(true);
-    expect(modelIds.has('qwen:qwen/qwen-3.5')).toBe(true);
+    expect(modelIds.has('qwen:qwen/qwen3.5-plus-02-15')).toBe(true);
+    expect(modelIds.has('qwen:qwen/qwen3.5-397b-a17b')).toBe(true);
   });
 
   it('keeps runtime/default model wiring intact', () => {

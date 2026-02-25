@@ -75,9 +75,16 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "perplexity/sonar-pro",
   ]),
   qwen: new Set([
-    "qwen/qwen-3.5-plus",
-    "qwen/qwen-3.5",
+    "qwen/qwen3.5-plus-02-15",
+    "qwen/qwen3.5-397b-a17b",
   ]),
+};
+
+const PROVIDER_MODEL_ALIASES: Record<string, Record<string, string>> = {
+  qwen: {
+    "qwen/qwen-3.5-plus": "qwen/qwen3.5-plus-02-15",
+    "qwen/qwen-3.5": "qwen/qwen3.5-397b-a17b",
+  },
 };
 
 export const GEMINI_DEFAULT_MODEL = "gemini-3-pro-preview";
@@ -386,7 +393,9 @@ export const ensureModelAllowed = (
     };
   }
 
-  if (!allowlist.has(model)) {
+  const resolvedModel = PROVIDER_MODEL_ALIASES[provider]?.[model] ?? model;
+
+  if (!allowlist.has(resolvedModel)) {
     return {
       error: `Model '${model}' is not enabled for provider '${provider}'.`,
       code: "MODEL_NOT_ALLOWED",
@@ -1180,7 +1189,8 @@ export const generateProviderItinerary = async (
   options: ProviderGenerationOptions,
 ): Promise<ProviderGenerationResult> => {
   const provider = options.provider.trim().toLowerCase();
-  const model = options.model.trim();
+  const requestedModel = options.model.trim();
+  const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
   const maxOutputTokens = resolveOutputTokenBudget(options.maxOutputTokens);
 
   const allowlistError = ensureModelAllowed(provider, model);

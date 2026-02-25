@@ -36,6 +36,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(ensureModelAllowed('openrouter', 'z-ai/glm-5')).toBeNull();
     expect(ensureModelAllowed('anthropic', 'claude-sonnet-4.6')).toBeNull();
     expect(ensureModelAllowed('perplexity', 'perplexity/sonar')).toBeNull();
+    expect(ensureModelAllowed('qwen', 'qwen/qwen3.5-plus-02-15')).toBeNull();
     expect(ensureModelAllowed('qwen', 'qwen/qwen-3.5-plus')).toBeNull();
     expect(ensureModelAllowed('openrouter', 'missing-model')?.code).toBe('MODEL_NOT_ALLOWED');
     expect(ensureModelAllowed('unknown-provider', 'x')?.code).toBe('PROVIDER_NOT_SUPPORTED');
@@ -321,7 +322,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
       )
       .mockResolvedValueOnce(
         jsonResponse({
-          model: 'qwen/qwen-3.5-plus',
+          model: 'qwen/qwen3.5-plus-02-15',
           choices: [{ message: { content: '{"title":"Qwen"}' } }],
           usage: { prompt_tokens: 4, completion_tokens: 5, total_tokens: 9 },
         }),
@@ -343,6 +344,9 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((fetchMock.mock.calls[0] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect((fetchMock.mock.calls[1] as [string])[0]).toBe('https://openrouter.ai/api/v1/chat/completions');
+    const qwenRequest = (fetchMock.mock.calls[1] as [string, RequestInit])[1];
+    const qwenBody = JSON.parse(String(qwenRequest.body));
+    expect(qwenBody.model).toBe('qwen/qwen3.5-plus-02-15');
 
     expect(perplexityResult.ok).toBe(true);
     if (perplexityResult.ok) {
@@ -353,7 +357,7 @@ describe('netlify/edge-lib/ai-provider-runtime', () => {
     expect(qwenResult.ok).toBe(true);
     if (qwenResult.ok) {
       expect(qwenResult.value.meta.provider).toBe('qwen');
-      expect(qwenResult.value.meta.model).toBe('qwen/qwen-3.5-plus');
+      expect(qwenResult.value.meta.model).toBe('qwen/qwen3.5-plus-02-15');
     }
   });
 

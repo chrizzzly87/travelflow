@@ -44,7 +44,7 @@ export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'openai:gpt-5.2-pro',
     'anthropic:claude-sonnet-4.6',
     'perplexity:perplexity/sonar',
-    'qwen:qwen/qwen-3.5-plus',
+    'qwen:qwen/qwen3.5-plus-02-15',
 ];
 
 export const DEFAULT_BENCHMARK_MASK_SCENARIO: BenchmarkMaskScenario = {
