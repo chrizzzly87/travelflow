@@ -70,6 +70,21 @@ export const PROVIDER_ALLOWLIST: Record<string, Set<string>> = {
     "minimax/minimax-m2.5",
     "moonshotai/kimi-k2.5",
   ]),
+  perplexity: new Set([
+    "perplexity/sonar",
+    "perplexity/sonar-pro",
+  ]),
+  qwen: new Set([
+    "qwen/qwen3.5-plus-02-15",
+    "qwen/qwen3.5-397b-a17b",
+  ]),
+};
+
+const PROVIDER_MODEL_ALIASES: Record<string, Record<string, string>> = {
+  qwen: {
+    "qwen/qwen-3.5-plus": "qwen/qwen3.5-plus-02-15",
+    "qwen/qwen-3.5": "qwen/qwen3.5-397b-a17b",
+  },
 };
 
 export const GEMINI_DEFAULT_MODEL = "gemini-3-pro-preview";
@@ -378,7 +393,9 @@ export const ensureModelAllowed = (
     };
   }
 
-  if (!allowlist.has(model)) {
+  const resolvedModel = PROVIDER_MODEL_ALIASES[provider]?.[model] ?? model;
+
+  if (!allowlist.has(resolvedModel)) {
     return {
       error: `Model '${model}' is not enabled for provider '${provider}'.`,
       code: "MODEL_NOT_ALLOWED",
@@ -978,6 +995,7 @@ const generateWithAnthropic = async (
 
 const generateWithOpenRouter = async (
   prompt: string,
+  provider: string,
   model: string,
   timeoutMs: number,
   maxOutputTokens: number,
@@ -988,7 +1006,7 @@ const generateWithOpenRouter = async (
       ok: false,
       status: 500,
       value: {
-        error: "OpenRouter API key missing. Configure OPENROUTER_API_KEY on Netlify.",
+        error: "OpenRouter API key missing. Configure OPENROUTER_API_KEY on Netlify (used by OpenRouter, Perplexity, and Qwen benchmark providers).",
         code: "OPENROUTER_KEY_MISSING",
       },
     };
@@ -1143,7 +1161,7 @@ const generateWithOpenRouter = async (
       value: {
         data: parsed,
         meta: {
-          provider: "openrouter",
+          provider,
           model,
           providerModel,
           usage,
@@ -1171,7 +1189,8 @@ export const generateProviderItinerary = async (
   options: ProviderGenerationOptions,
 ): Promise<ProviderGenerationResult> => {
   const provider = options.provider.trim().toLowerCase();
-  const model = options.model.trim();
+  const requestedModel = options.model.trim();
+  const model = PROVIDER_MODEL_ALIASES[provider]?.[requestedModel] ?? requestedModel;
   const maxOutputTokens = resolveOutputTokenBudget(options.maxOutputTokens);
 
   const allowlistError = ensureModelAllowed(provider, model);
@@ -1192,5 +1211,5 @@ export const generateProviderItinerary = async (
   if (provider === "anthropic") {
     return await generateWithAnthropic(options.prompt, model, options.timeoutMs, maxOutputTokens);
   }
-  return await generateWithOpenRouter(options.prompt, model, options.timeoutMs, maxOutputTokens);
+  return await generateWithOpenRouter(options.prompt, provider, model, options.timeoutMs, maxOutputTokens);
 };

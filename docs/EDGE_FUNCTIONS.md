@@ -14,7 +14,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
 | `trip-og-image.tsx` | `/api/og/trip` | Generates dynamic OG images showing trip route, duration, distance | Image generator |
-| `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip OG images | Dev tool |
+| `trip-og-playground.ts` | `/api/og/playground` | Dev tool — interactive UI to preview trip/site OG image endpoints directly | Dev tool |
 | `trip-map-preview.ts` | `/api/trip-map-preview` | Proxies Google Static Maps API; returns 302 redirect to styled map | API proxy |
 | `trip-share-resolve.ts` | `/api/trip-share-resolve` | Resolves active share token by trip id for non-owner route handoff | API |
 
@@ -77,6 +77,12 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
   - Enumerates static OG targets from the shared metadata resolver.
   - Writes hashed PNG assets to `public/images/og/site/generated/`.
   - Writes `public/images/og/site/generated/manifest.json`.
+  - Supports optional route filters:
+    - `--locales=en,de`
+    - `--include-paths=/,/blog`
+    - `--include-prefixes=/blog,/de/blog`
+    - `--exclude-paths=/blog/draft-slug`
+    - `--exclude-prefixes=/example`
 - Netlify build-cache plugin: `./netlify/plugins/site-og-build-cache`
   - Restores `public/images/og/site/generated/` before `pnpm og:site:build`.
   - Saves `public/images/og/site/generated/` after successful builds.
@@ -86,7 +92,13 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
   - Verifies hash/path determinism and on-disk asset existence.
 - Build integration:
   - `pnpm build` runs `og:site:build` and `og:site:validate` before `vite build`.
+- Build mode policy:
+  - GitHub pull-request CI runs auto-skip static OG build/validation to keep PR checks fast.
+  - Netlify non-production contexts (`deploy-preview`, `branch-deploy`, `dev`) auto-skip static OG build/validation to reduce preview deploy time.
+  - Netlify production context keeps full static OG build + validation enabled.
+  - Manual override: set `SITE_OG_STATIC_BUILD_MODE=full` to force generation, or `SITE_OG_STATIC_BUILD_MODE=skip` to bypass locally.
 - Generated assets are build artifacts and are intentionally not committed.
+- Filtered runs update only selected route keys and preserve existing manifest entries for all other routes.
 
 ### When adding locales or pages
 
@@ -97,6 +109,15 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 - Use `pnpm og:site:build` + `pnpm og:site:validate` for fast OG-only iteration.
 - Use full `pnpm build` when you need complete release parity checks (i18n, storage registry, edge validation, sitemap, app bundle).
 - In Netlify CI, the site-og build-cache plugin restores previous generated assets before `og:site:build`, so unchanged routes are typically reused and only changed/new routes are rendered.
+
+## Admin OG tooling
+
+- Admin route: `/admin/og-tools`
+- Capabilities:
+  - Same-origin URL inspector for rendered `<head>` metadata (`canonical`, `og:*`, `twitter:*`) and `x-travelflow-og-source`.
+  - OG image source classification (`static-generated`, `dynamic-site`, `dynamic-trip`).
+  - Command builder for filtered `pnpm og:site:build -- ...` runs plus validation command output.
+- Use this page for operational checks before sharing social links, then run full release-safe build validation before deploys.
 
 ## Required environment variables
 

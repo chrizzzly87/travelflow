@@ -1,4 +1,8 @@
-export type AiProviderId = 'gemini' | 'openai' | 'anthropic' | 'openrouter';
+import {
+    type AiProviderId,
+    getAiProviderMetadata,
+    getAiProviderSortOrder,
+} from './aiProviderCatalog.ts';
 
 export type AiModelAvailability = 'active' | 'planned';
 
@@ -6,6 +10,7 @@ export interface AiModelCatalogItem {
     id: string;
     provider: AiProviderId;
     providerLabel: string;
+    providerShortName: string;
     model: string;
     label: string;
     availability: AiModelAvailability;
@@ -22,7 +27,12 @@ export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'gemini'}:${CURRENT_RUNTIME_MODEL
 
 const ESTIMATE_NOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 
-export const AI_MODEL_CATALOG: AiModelCatalogItem[] = [
+type RawAiModelCatalogItem = Omit<AiModelCatalogItem, 'providerLabel' | 'providerShortName'> & {
+    providerLabel?: string;
+    providerShortName?: string;
+};
+
+const RAW_AI_MODEL_CATALOG: RawAiModelCatalogItem[] = [
     {
         id: 'gemini:gemini-2.5-flash',
         provider: 'gemini',
@@ -196,6 +206,48 @@ export const AI_MODEL_CATALOG: AiModelCatalogItem[] = [
         costNote: 'Requires ANTHROPIC_API_KEY on server. Exact pricing depends on active provider account pricing.',
     },
     {
+        id: 'perplexity:perplexity/sonar',
+        provider: 'perplexity',
+        model: 'perplexity/sonar',
+        label: 'Sonnar',
+        availability: 'active',
+        releasedAt: '2026-02-21',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.004 - $0.02',
+        costNote: 'Requires OPENROUTER_API_KEY on server. Perplexity benchmark calls are routed via OpenRouter for unified execution.',
+    },
+    {
+        id: 'perplexity:perplexity/sonar-pro',
+        provider: 'perplexity',
+        model: 'perplexity/sonar-pro',
+        label: 'Sonnar Pro',
+        availability: 'active',
+        releasedAt: '2026-02-21',
+        estimatedCostPerQueryLabel: '~$0.01 - $0.05',
+        costNote: 'Requires OPENROUTER_API_KEY on server. Perplexity benchmark calls are routed via OpenRouter for unified execution.',
+    },
+    {
+        id: 'qwen:qwen/qwen3.5-plus-02-15',
+        provider: 'qwen',
+        model: 'qwen/qwen3.5-plus-02-15',
+        label: 'Qwen 3.5 Plus',
+        availability: 'active',
+        releasedAt: '2026-02-22',
+        isPreferred: true,
+        estimatedCostPerQueryLabel: '~$0.003 - $0.015',
+        costNote: 'Requires OPENROUTER_API_KEY on server. Qwen benchmark calls are routed via OpenRouter for unified execution.',
+    },
+    {
+        id: 'qwen:qwen/qwen3.5-397b-a17b',
+        provider: 'qwen',
+        model: 'qwen/qwen3.5-397b-a17b',
+        label: 'Qwen 3.5',
+        availability: 'active',
+        releasedAt: '2026-02-22',
+        estimatedCostPerQueryLabel: '~$0.002 - $0.01',
+        costNote: 'Requires OPENROUTER_API_KEY on server. Qwen benchmark calls are routed via OpenRouter for unified execution.',
+    },
+    {
         id: 'openrouter:openrouter/free',
         provider: 'openrouter',
         providerLabel: 'OpenRouter (Free)',
@@ -291,12 +343,14 @@ export const AI_MODEL_CATALOG: AiModelCatalogItem[] = [
     },
 ];
 
-const PROVIDER_SORT_ORDER: Record<AiProviderId, number> = {
-    gemini: 0,
-    openai: 1,
-    anthropic: 2,
-    openrouter: 3,
-};
+export const AI_MODEL_CATALOG: AiModelCatalogItem[] = RAW_AI_MODEL_CATALOG.map((item) => {
+    const providerMeta = getAiProviderMetadata(item.provider);
+    return {
+        ...item,
+        providerLabel: item.providerLabel || providerMeta.label,
+        providerShortName: item.providerShortName || providerMeta.shortName,
+    };
+});
 
 const toReleaseTs = (releasedAt: string): number => {
     const parsed = Date.parse(releasedAt);
@@ -305,7 +359,7 @@ const toReleaseTs = (releasedAt: string): number => {
 
 export const sortAiModels = (items: AiModelCatalogItem[]): AiModelCatalogItem[] => {
     return [...items].sort((left, right) => {
-        const providerDelta = (PROVIDER_SORT_ORDER[left.provider] ?? 99) - (PROVIDER_SORT_ORDER[right.provider] ?? 99);
+        const providerDelta = getAiProviderSortOrder(left.provider) - getAiProviderSortOrder(right.provider);
         if (providerDelta !== 0) return providerDelta;
 
         const releaseDelta = toReleaseTs(right.releasedAt) - toReleaseTs(left.releasedAt);

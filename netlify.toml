@@ -1,7 +1,10 @@
 [build]
-  command = "pnpm build"
+  command = "pnpm build:netlify"
   publish = "dist"
   edge_functions = "netlify/edge-functions"
+
+[context.production]
+  command = "pnpm build"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -710,6 +713,11 @@
 
 [[headers]]
   for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/flags/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 

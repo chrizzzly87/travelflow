@@ -93,3 +93,8 @@ summary: "Implemented the first operational benchmark stack with persisted sessi
 - [ ] [Internal] 🔁 Updated benchmark validation to accept terminal round-trip return cities with `days: 0` as a non-blocking warning, normalizing to one day during trip build.
 - [ ] [Internal] ⚡ Further optimized benchmark compact prompt rules (single checklist bullet per required section + compact base constraints) to lower 60s timeout and truncation risk.
 - [ ] [Internal] 🧪 Added Gemini/Anthropic parse diagnostics with provider finish-reason hints plus ultra-compact truncation-retry instructions for malformed long responses.
+- [ ] [Internal] 🏷️ Added Perplexity/Qwen benchmark provider families (`Sonnar`, `Sonnar Pro`, `Qwen 3.5 Plus`, `Qwen 3.5`) with short-name metadata plus bundled brand-logo assets (provider + routed model vendors) across admin benchmark and telemetry model surfaces.
+- [ ] [Internal] 🎚️ Added per-pill benchmark target controls to temporarily deactivate models for `Test all` and trigger a single-model run directly from the target chip.
+- [ ] [Internal] 🧰 Added quick `Activate all` / `Deactivate all` target actions in `/admin/ai-benchmark` so benchmark model pools can be toggled in one click.
+- [ ] [Internal] 🧯 Fixed edge bundling regression by switching benchmark model-catalog provider metadata import to explicit `.ts` extension for Deno-compatible module resolution.
+- [ ] [Internal] 🛠️ Updated Qwen benchmark/runtime model IDs to valid OpenRouter slugs (`qwen3.5-plus-02-15`, `qwen3.5-397b-a17b`) and added legacy-ID aliasing to keep older saved target payloads working.

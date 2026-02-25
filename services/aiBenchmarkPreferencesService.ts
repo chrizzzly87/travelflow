@@ -43,6 +43,8 @@ export const BENCHMARK_DEFAULT_MODEL_IDS = [
     'gemini:gemini-3-pro-preview',
     'openai:gpt-5.2-pro',
     'anthropic:claude-sonnet-4.6',
+    'perplexity:perplexity/sonar',
+    'qwen:qwen/qwen3.5-plus-02-15',
 ];
 
 export const DEFAULT_BENCHMARK_MASK_SCENARIO: BenchmarkMaskScenario = {
@@ -321,4 +323,3 @@ export const normalizeBenchmarkPreferencesPayload = (
         selectedPresetId,
     };
 };
-

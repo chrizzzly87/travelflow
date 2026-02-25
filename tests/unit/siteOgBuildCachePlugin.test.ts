@@ -17,7 +17,9 @@ const libModule = require('../../netlify/plugins/site-og-build-cache/lib.js') as
   }) => {
     onPreBuild: (input: { utils: { cache: { restore: (input: string) => Promise<void> } } }) => Promise<void>;
     onSuccess: (input: { utils: { cache: { save: (input: string) => Promise<void> } } }) => Promise<void>;
+    onError: (input: { utils: { cache: { save: (input: string) => Promise<void> } } }) => Promise<void>;
   };
+  ensureSiteOgStaticDirectory: (cwd?: string) => void;
   resolveSiteOgStaticDirectory: (cwd?: string) => string;
 };
 
@@ -94,6 +96,28 @@ describe('site-og-build-cache plugin internals', () => {
     expect(saveCache).toHaveBeenCalledTimes(1);
     expect(logs.some((message) => message.includes('saved'))).toBe(true);
   });
+
+  it('saves cache on error when static og assets are present', async () => {
+    const logs: string[] = [];
+    const saveCache = vi.fn(async () => {});
+
+    const plugin = libModule.createSiteOgBuildCachePlugin({
+      countPngs: () => 13,
+      saveCache,
+      log: (message) => logs.push(message),
+    });
+
+    await plugin.onError({
+      utils: {
+        cache: {
+          save: async () => {},
+        },
+      },
+    });
+
+    expect(saveCache).toHaveBeenCalledTimes(1);
+    expect(logs.some((message) => message.includes('reason=error'))).toBe(true);
+  });
 });
 
 describe('site-og-build-cache filesystem helpers', () => {
@@ -126,5 +150,13 @@ describe('site-og-build-cache filesystem helpers', () => {
 
     expect(libModule.countGeneratedSiteOgPngs(tempRoot)).toBe(2);
     expect(libModule.SITE_OG_STATIC_DIR_RELATIVE).toBe('public/images/og/site/generated');
+  });
+
+  it('creates output directory when missing', () => {
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), 'site-og-cache-test-mkdir-'));
+    tempDirectories.push(tempRoot);
+
+    expect(() => libModule.ensureSiteOgStaticDirectory(tempRoot)).not.toThrow();
+    expect(libModule.resolveSiteOgStaticDirectory(tempRoot)).toContain('public/images/og/site/generated');
   });
 });
