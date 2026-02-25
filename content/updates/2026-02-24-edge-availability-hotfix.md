@@ -14,7 +14,6 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [x] [Fixed] 🛟 Restored reliable page and asset loading during intermittent edge timeout spikes.
 - [x] [Fixed] 🖼️ Restored custom social previews for static pages, localized blog entries, and example trip pages.
 - [x] [Improved] ⚡ Switched static-page preview images to pre-generated assets for faster, more stable social-card delivery.
-- [x] [Improved] 🏳️ Repeat visits now reuse cached flag icons more reliably, improving load speed in language and destination UI.
 - [x] [Fixed] 🧯 Hardened social-image rendering so temporary third-party font-network slowdowns no longer break OG image endpoints.
 - [x] [Fixed] 🧭 Updated example template social previews to use the same trip-card style as shared trip previews.
 - [x] [Fixed] 🎨 Restored the classic static social-preview visual style (wave panel, proper footer branding, and full page URL in preview cards).
@@ -24,8 +23,6 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [ ] [Internal] 🌐 Removed external font-CDN fallback dependencies from OG edge image functions and enforced short font-fetch timeouts.
 - [ ] [Internal] 🗺️ Routed `/example/*` OG images through trip-style renderer overrides while preserving static-site OG coverage for other marketing paths.
 - [ ] [Internal] ♻️ Added Netlify build-cache restore/save for static OG assets so unchanged generated social-preview images can be reused across CI deploys.
-- [ ] [Internal] 🚀 Added a dedicated Netlify build command that skips redundant full test coverage work during deploy builds while keeping release validators and asset checks.
-- [ ] [Internal] 🧩 Replaced bundled Flagpack asset emission with synced public 4x3 flag assets and generated local flag CSS to cut duplicate build output churn.
 - [ ] [Internal] 🧪 Added Netlify secret-scan guardrails for public browser key prefixes used in client-side map integrations, including disabling enhanced smart detection to prevent repeated preview deploy false positives.
 - [ ] [Internal] 🛠️ Added `/admin/og-tools` with a same-origin OG inspector showing canonical/OG/Twitter tags plus static-vs-dynamic source detection.
 - [ ] [Internal] 🧭 Added filtered static OG command builder support (`--locales`, include/exclude paths/prefixes) with documented release-safe full validation flow.
