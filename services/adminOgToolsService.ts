@@ -22,6 +22,7 @@ export interface OgInspectionResult {
   sourceHeader: "static" | "dynamic" | null;
   mode: OgImageMode;
   imageKind: OgImageKind;
+  resolvedOgImageUrl: string | null;
   metadata: OgHeadMetadata;
 }
 
@@ -125,6 +126,15 @@ export const classifyOgImageKind = (ogImage: string, origin: string): OgImageKin
   return "unknown";
 };
 
+export const resolveOgImageUrl = (ogImage: string, origin: string): string | null => {
+  if (!ogImage.trim()) return null;
+  try {
+    return new URL(ogImage, origin).toString();
+  } catch {
+    return null;
+  }
+};
+
 const resolveOgMode = (
   sourceHeader: "static" | "dynamic" | null,
   imageKind: OgImageKind,
@@ -185,6 +195,7 @@ export const inspectOgUrl = async (
     ? sourceHeaderRaw
     : null;
   const imageKind = classifyOgImageKind(metadata.ogImage, targetUrl.origin);
+  const resolvedOgImageUrl = resolveOgImageUrl(metadata.ogImage, targetUrl.origin);
 
   return {
     requestUrl: targetUrl.toString(),
@@ -194,6 +205,7 @@ export const inspectOgUrl = async (
     contentType: response.headers.get("content-type") || "",
     sourceHeader,
     imageKind,
+    resolvedOgImageUrl,
     mode: resolveOgMode(sourceHeader, imageKind),
     metadata,
   };

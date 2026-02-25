@@ -6,6 +6,7 @@ import {
   normalizeOgInspectionUrl,
   parseCsvListInput,
   parseOgHeadMetadata,
+  resolveOgImageUrl,
 } from '../../services/adminOgToolsService';
 
 const ORIGIN = 'https://travelflowapp.netlify.app';
@@ -44,6 +45,14 @@ describe('adminOgToolsService image source classification', () => {
     expect(classifyOgImageKind('', ORIGIN)).toBe('missing');
     expect(classifyOgImageKind(`${ORIGIN}/images/blog/cover.jpg`, ORIGIN)).toBe('unknown');
   });
+
+  it('resolves og image url to absolute same-origin url when possible', () => {
+    expect(resolveOgImageUrl('/images/og/site/generated/root-a1.png', ORIGIN)).toBe(
+      `${ORIGIN}/images/og/site/generated/root-a1.png`,
+    );
+    expect(resolveOgImageUrl('not a url', ORIGIN)).toBe(`${ORIGIN}/not%20a%20url`);
+    expect(resolveOgImageUrl('', ORIGIN)).toBeNull();
+  });
 });
 
 describe('adminOgToolsService URL inspection', () => {
@@ -78,6 +87,7 @@ describe('adminOgToolsService URL inspection', () => {
     expect(result.mode).toBe('static');
     expect(result.imageKind).toBe('static-generated');
     expect(result.metadata.ogTitle).toBe('TravelFlow Blog');
+    expect(result.resolvedOgImageUrl).toBe(`${ORIGIN}/images/og/site/generated/blog-f00.png`);
   });
 });
 
