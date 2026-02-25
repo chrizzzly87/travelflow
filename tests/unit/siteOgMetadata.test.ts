@@ -50,6 +50,24 @@ describe('site OG metadata resolver', () => {
     expect(urduMetadata.ogImageParams.dir).toBe('rtl');
   });
 
+  it('uses localized Persian and Urdu OG copy for localized marketing paths', () => {
+    const persianHomeMetadata = getMetadata('/fa');
+    expect(persianHomeMetadata.canonicalPath).toBe('/fa');
+    expect(persianHomeMetadata.description).toContain('سفرها');
+    expect(persianHomeMetadata.ogImageParams.description).toContain('سفرها');
+
+    const persianBlogMetadata = getMetadata('/fa/blog');
+    expect(persianBlogMetadata.ogImageParams.title).toBe('وبلاگ');
+
+    const urduHomeMetadata = getMetadata('/ur');
+    expect(urduHomeMetadata.canonicalPath).toBe('/ur');
+    expect(urduHomeMetadata.description).toContain('سفر');
+    expect(urduHomeMetadata.ogImageParams.description).toContain('سفر');
+
+    const urduBlogMetadata = getMetadata('/ur/blog');
+    expect(urduBlogMetadata.ogImageParams.title).toBe('بلاگ');
+  });
+
   it('resolves blog, country detail, and example route metadata', () => {
     const blogMeta = getMetadata('/blog/how-to-plan-multi-city-trip');
     expect(blogMeta.ogImageParams.blog_image).toContain('/images/blog/how-to-plan-multi-city-trip-og-vertical.jpg');
