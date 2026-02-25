@@ -77,6 +77,10 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
   - Enumerates static OG targets from the shared metadata resolver.
   - Writes hashed PNG assets to `public/images/og/site/generated/`.
   - Writes `public/images/og/site/generated/manifest.json`.
+- Netlify build-cache plugin: `./netlify/plugins/site-og-build-cache`
+  - Restores `public/images/og/site/generated/` before `pnpm og:site:build`.
+  - Saves `public/images/og/site/generated/` after successful builds.
+  - Enables hash-based reuse across CI builds so unchanged static OG assets are not re-rendered.
 - Validator: `pnpm og:site:validate`
   - Verifies full route coverage from resolver source.
   - Verifies hash/path determinism and on-disk asset existence.
