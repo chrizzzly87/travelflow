@@ -23,3 +23,5 @@ summary: "Stabilizes edge availability and restores reliable custom social previ
 - [ ] [Internal] 🗺️ Routed `/example/*` OG images through trip-style renderer overrides while preserving static-site OG coverage for other marketing paths.
 - [ ] [Internal] ♻️ Added Netlify build-cache restore/save for static OG assets so unchanged generated social-preview images can be reused across CI deploys.
 - [ ] [Internal] 🧪 Added Netlify secret-scan guardrails for public browser key prefixes used in client-side map integrations, including disabling enhanced smart detection to prevent repeated preview deploy false positives.
+- [ ] [Internal] 🛠️ Added `/admin/og-tools` with a same-origin OG inspector showing canonical/OG/Twitter tags plus static-vs-dynamic source detection.
+- [ ] [Internal] 🧭 Added filtered static OG command builder support (`--locales`, include/exclude paths/prefixes) with documented release-safe full validation flow.

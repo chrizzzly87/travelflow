@@ -3,7 +3,13 @@ import { readdirSync } from "node:fs";
 import path from "node:path";
 import { COUNTRY_TRAVEL_DATA } from "../data/countryTravelData.ts";
 import { exampleTripCards } from "../data/exampleTripCards.ts";
-import { buildSiteOgMetadata, enumerateSiteOgPathnames, type SiteOgMetadata } from "../netlify/edge-lib/site-og-metadata.ts";
+import {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  buildSiteOgMetadata,
+  enumerateSiteOgPathnames,
+  type SiteOgMetadata,
+} from "../netlify/edge-lib/site-og-metadata.ts";
 
 export const SITE_OG_IMAGE_WIDTH = 1200;
 export const SITE_OG_IMAGE_HEIGHT = 630;
@@ -30,6 +36,16 @@ export interface SiteOgStaticRenderPayload {
   blogTint: string;
   blogTintIntensity: string;
 }
+
+export interface SiteOgStaticPathFilterOptions {
+  locales?: string[];
+  includePaths?: string[];
+  includePrefixes?: string[];
+  excludePaths?: string[];
+  excludePrefixes?: string[];
+}
+
+const SUPPORTED_LOCALE_SET = new Set<string>(SUPPORTED_LOCALES);
 
 const truncateText = (value: string, max: number): string => {
   if (value.length <= max) return value;
@@ -99,6 +115,110 @@ const toSlug = (value: string): string =>
     .replace(/^-+|-+$/g, "")
     || "route";
 
+const splitListItem = (value: string): string[] =>
+  value
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+const normalizePath = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (!trimmed.startsWith("/")) return `/${trimmed}`;
+  return trimmed;
+};
+
+const normalizePrefix = (value: string): string => {
+  const normalized = normalizePath(value);
+  if (!normalized) return "";
+  if (normalized.length > 1 && normalized.endsWith("/")) {
+    return normalized.slice(0, -1);
+  }
+  return normalized;
+};
+
+const getLocaleForPathname = (pathname: string): string => {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/i);
+  const localeCandidate = match?.[1]?.toLowerCase();
+  if (localeCandidate && SUPPORTED_LOCALE_SET.has(localeCandidate)) {
+    return localeCandidate;
+  }
+  return DEFAULT_LOCALE;
+};
+
+const matchesPrefix = (pathname: string, prefix: string): boolean => {
+  if (!prefix || prefix === "/") return true;
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+};
+
+const normalizeFilterValues = (values: string[] | undefined, normalizer: (value: string) => string): string[] => {
+  if (!values?.length) return [];
+  return Array.from(
+    new Set(
+      values
+        .flatMap(splitListItem)
+        .map(normalizer)
+        .filter(Boolean),
+    ),
+  ).sort((left, right) => left.localeCompare(right));
+};
+
+export interface SiteOgResolvedPathFilterOptions {
+  locales: string[];
+  includePaths: string[];
+  includePrefixes: string[];
+  excludePaths: string[];
+  excludePrefixes: string[];
+  hasFilters: boolean;
+}
+
+export const resolveSiteOgStaticPathFilterOptions = (
+  options: SiteOgStaticPathFilterOptions = {},
+): SiteOgResolvedPathFilterOptions => {
+  const localeValues = normalizeFilterValues(options.locales, (value) => value.toLowerCase());
+  const locales = localeValues.filter((value) => SUPPORTED_LOCALE_SET.has(value));
+  const includePaths = normalizeFilterValues(options.includePaths, normalizePath);
+  const includePrefixes = normalizeFilterValues(options.includePrefixes, normalizePrefix);
+  const excludePaths = normalizeFilterValues(options.excludePaths, normalizePath);
+  const excludePrefixes = normalizeFilterValues(options.excludePrefixes, normalizePrefix);
+
+  return {
+    locales,
+    includePaths,
+    includePrefixes,
+    excludePaths,
+    excludePrefixes,
+    hasFilters: Boolean(
+      locales.length
+      || includePaths.length
+      || includePrefixes.length
+      || excludePaths.length
+      || excludePrefixes.length,
+    ),
+  };
+};
+
+const shouldIncludePathname = (pathname: string, options: SiteOgResolvedPathFilterOptions): boolean => {
+  if (options.locales.length > 0) {
+    const locale = getLocaleForPathname(pathname);
+    if (!options.locales.includes(locale)) return false;
+  }
+
+  if (options.includePaths.length > 0 && !options.includePaths.includes(pathname)) {
+    return false;
+  }
+
+  if (options.includePrefixes.length > 0 && !options.includePrefixes.some((prefix) => matchesPrefix(pathname, prefix))) {
+    return false;
+  }
+
+  if (options.excludePaths.includes(pathname)) return false;
+
+  if (options.excludePrefixes.some((prefix) => matchesPrefix(pathname, prefix))) return false;
+
+  return true;
+};
+
 const collectBlogSlugs = (): string[] => {
   const contentDir = path.join(process.cwd(), "content", "blog");
 
@@ -129,18 +249,25 @@ const collectExampleTemplateIds = (): string[] => {
   return Array.from(new Set(ids));
 };
 
-export const collectSiteOgPathnames = (): string[] => {
+export const collectSiteOgPathnames = (options: SiteOgStaticPathFilterOptions = {}): string[] => {
   const pathnames = enumerateSiteOgPathnames({
     blogSlugs: collectBlogSlugs(),
     countryNames: collectCountryNames(),
     exampleTemplateIds: collectExampleTemplateIds(),
   });
 
-  return Array.from(new Set(pathnames)).sort((left, right) => left.localeCompare(right));
+  const resolvedFilters = resolveSiteOgStaticPathFilterOptions(options);
+
+  return Array.from(new Set(pathnames))
+    .filter((pathname) => shouldIncludePathname(pathname, resolvedFilters))
+    .sort((left, right) => left.localeCompare(right));
 };
 
-export const collectSiteOgStaticTargets = (origin = SITE_OG_BUILD_ORIGIN): SiteOgStaticTarget[] => {
-  const pathnames = collectSiteOgPathnames();
+export const collectSiteOgStaticTargets = (
+  origin = SITE_OG_BUILD_ORIGIN,
+  options: SiteOgStaticPathFilterOptions = {},
+): SiteOgStaticTarget[] => {
+  const pathnames = collectSiteOgPathnames(options);
   const targetsByRouteKey = new Map<string, SiteOgStaticTarget>();
 
   for (const pathname of pathnames) {

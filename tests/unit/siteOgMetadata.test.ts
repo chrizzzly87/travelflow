@@ -5,8 +5,10 @@ import {
 } from '../../netlify/edge-lib/site-og-metadata.ts';
 import {
   buildSiteOgStaticRenderPayload,
+  collectSiteOgPathnames,
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
+  resolveSiteOgStaticPathFilterOptions,
 } from '../../scripts/site-og-static-shared.ts';
 
 const ORIGIN = 'https://travelflowapp.netlify.app';
@@ -83,5 +85,40 @@ describe('site OG static generation helpers', () => {
 
     const exampleTarget = allTargets.find((target) => target.pathname === '/example/thailand-islands');
     expect(exampleTarget).toBeTruthy();
+  });
+
+  it('filters static targets by locales and path include/exclude options', () => {
+    const allPathnames = collectSiteOgPathnames();
+    expect(allPathnames).toContain('/de/features');
+    expect(allPathnames).toContain('/fr/features');
+
+    const germanOnly = collectSiteOgPathnames({ locales: ['de'] });
+    expect(germanOnly.length).toBeGreaterThan(0);
+    expect(germanOnly.every((pathname) => pathname.startsWith('/de') || pathname === '/de')).toBe(true);
+
+    const filteredBlog = collectSiteOgPathnames({
+      includePrefixes: ['/blog', '/de/blog'],
+      excludePaths: ['/blog/how-to-plan-multi-city-trip'],
+    });
+    expect(filteredBlog.some((pathname) => pathname.startsWith('/blog'))).toBe(true);
+    expect(filteredBlog).not.toContain('/blog/how-to-plan-multi-city-trip');
+    expect(filteredBlog.every((pathname) => pathname.startsWith('/blog') || pathname.startsWith('/de/blog'))).toBe(true);
+  });
+
+  it('normalizes and sanitizes filter options', () => {
+    const resolved = resolveSiteOgStaticPathFilterOptions({
+      locales: ['DE', 'de', 'xx'],
+      includePaths: ['blog', '/blog', '/blog'],
+      includePrefixes: ['/blog/', 'inspirations'],
+      excludePaths: ['/example/test'],
+      excludePrefixes: ['example/', '/example/'],
+    });
+
+    expect(resolved.locales).toEqual(['de']);
+    expect(resolved.includePaths).toEqual(['/blog']);
+    expect(resolved.includePrefixes).toEqual(['/blog', '/inspirations']);
+    expect(resolved.excludePaths).toEqual(['/example/test']);
+    expect(resolved.excludePrefixes).toEqual(['/example']);
+    expect(resolved.hasFilters).toBe(true);
   });
 });
