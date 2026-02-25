@@ -297,6 +297,10 @@ Filtered static OG generation examples:
 Release-safe verification:
 - `pnpm og:site:build && pnpm og:site:validate`
 
+Faster local builds (skip static OG generation/validation):
+- `SITE_OG_STATIC_BUILD_MODE=skip pnpm build`
+- `SITE_OG_STATIC_BUILD_MODE=full pnpm build` (force full local parity)
+
 Example direct image URL:
 `http://localhost:8888/api/og/trip?s=demo-share&title=Japan%20Spring%20Loop&mapStyle=clean&routeMode=realistic&showStops=1&showCities=1`
 

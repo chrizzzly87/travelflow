@@ -10,6 +10,7 @@ import {
   collectSiteOgStaticTargets,
   computeSiteOgStaticPayloadHash,
 } from "./site-og-static-shared.ts";
+import { shouldSkipSiteOgStaticBuild } from "./site-og-build-mode.ts";
 
 const ROOT_DIR = process.cwd();
 const OUTPUT_DIR = path.join(ROOT_DIR, SITE_OG_STATIC_DIR_RELATIVE);
@@ -21,6 +22,11 @@ const fail = (message: string): never => {
 };
 
 const main = (): void => {
+  if (shouldSkipSiteOgStaticBuild()) {
+    process.stdout.write("[site-og-static:validate] skipped (mode=skip).\n");
+    return;
+  }
+
   if (!existsSync(MANIFEST_PATH)) {
     fail(`Missing manifest: ${SITE_OG_STATIC_DIR_RELATIVE}/${SITE_OG_STATIC_MANIFEST_FILE_NAME}. Run pnpm og:site:build first.`);
   }

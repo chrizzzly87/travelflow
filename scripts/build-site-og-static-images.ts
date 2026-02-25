@@ -18,6 +18,7 @@ import {
   resolveSiteOgStaticPathFilterOptions,
   type SiteOgStaticPathFilterOptions,
 } from "./site-og-static-shared.ts";
+import { resolveSiteOgStaticBuildMode } from "./site-og-build-mode.ts";
 
 const ROOT_DIR = process.cwd();
 const OUTPUT_DIR = path.join(ROOT_DIR, SITE_OG_STATIC_DIR_RELATIVE);
@@ -105,6 +106,12 @@ const entryPathToFileName = (entryPath: string): string | null => {
 };
 
 const main = async (): Promise<void> => {
+  const buildMode = resolveSiteOgStaticBuildMode();
+  if (buildMode === "skip") {
+    process.stdout.write("[site-og-static] skipped (mode=skip). Set SITE_OG_STATIC_BUILD_MODE=full to force generation.\n");
+    return;
+  }
+
   const cliOptions = parseSiteOgStaticBuildCliArgs(process.argv.slice(2));
   const resolvedFilters = resolveSiteOgStaticPathFilterOptions(cliOptions);
   const isFilteredBuild = resolvedFilters.hasFilters;
@@ -116,6 +123,10 @@ const main = async (): Promise<void> => {
     throw new Error("No static OG targets matched the selected filters.");
   }
 
+  process.stdout.write(
+    `[site-og-static] start targets=${targets.length} mode=${isFilteredBuild ? "filtered" : "full"}\n`,
+  );
+
   const existingManifest = readExistingManifest();
   const selectedManifestEntries: SiteOgStaticManifest["entries"] = {};
   const expectedFiles = new Set<string>([SITE_OG_STATIC_MANIFEST_FILE_NAME]);
@@ -123,6 +134,7 @@ const main = async (): Promise<void> => {
   let written = 0;
   let reused = 0;
   let removed = 0;
+  let processed = 0;
 
   for (const target of targets) {
     const payload = buildSiteOgStaticRenderPayload(target.metadata);
@@ -146,6 +158,13 @@ const main = async (): Promise<void> => {
     };
 
     expectedFiles.add(fileName);
+    processed += 1;
+
+    if (processed % 250 === 0 || processed === targets.length) {
+      process.stdout.write(
+        `[site-og-static] progress processed=${processed}/${targets.length} wrote=${written} reused=${reused}\n`,
+      );
+    }
   }
 
   const mergedEntries = isFilteredBuild
