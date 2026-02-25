@@ -277,6 +277,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         {isAuthenticated ? (
                             <>
                                 <NavLink
+                                    to="/profile?tab=recent"
+                                    onClick={() => handleNavClick('profile_recent')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('profile_recent')}
+                                >
+                                    Recent trips
+                                </NavLink>
+                                <NavLink
                                     to="/profile"
                                     onClick={() => handleNavClick('profile')}
                                     className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"

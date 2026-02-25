@@ -115,6 +115,7 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);
+    expect(getNamespacesForToolPath('/profile?tab=recent')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
   });
 

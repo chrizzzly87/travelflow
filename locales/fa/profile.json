@@ -1,0 +1,70 @@
+{
+  "hero": {
+    "accountLabel": "Account profile",
+    "title": "Your profile hub",
+    "subtitle": "Track recent plans, favorites, and highlighted trips in one place.",
+    "loading": "Loading profile...",
+    "labels": {
+      "tier": "Tier",
+      "role": "Role",
+      "language": "Language"
+    }
+  },
+  "tabs": {
+    "recent": "Recent",
+    "favorites": "Favorites",
+    "all": "All trips",
+    "liked": "Liked trips",
+    "comingSoon": "Soon"
+  },
+  "recentSort": {
+    "created": "Created",
+    "updated": "Updated"
+  },
+  "sections": {
+    "highlights": "Pinned highlights",
+    "highlightsCount": "{count}/3 pinned"
+  },
+  "cards": {
+    "pinnedTag": "Pinned",
+    "mapUnavailable": "Map preview unavailable",
+    "mapLoading": "Loading preview...",
+    "actions": {
+      "open": "Open",
+      "favorite": "Favorite",
+      "unfavorite": "Unfavorite",
+      "pin": "Pin",
+      "unpin": "Unpin"
+    },
+    "source": {
+      "createdByYou": "Created by you",
+      "copiedFromShared": "Copied from shared trip",
+      "copiedFromYourTrip": "Copied from your trip",
+      "startedFromExample": "Started from example"
+    }
+  },
+  "actions": {
+    "title": "Quick actions",
+    "settings": "Profile settings",
+    "planner": "Go to planner",
+    "adminWorkspace": "Open admin workspace"
+  },
+  "likedPlaceholder": {
+    "title": "Liked trips are coming soon",
+    "description": "You will soon be able to save and revisit trips from other travelers here."
+  },
+  "empty": {
+    "title": "No trips in this section yet",
+    "description": "Create a trip or mark one as favorite to populate this view."
+  },
+  "messages": {
+    "pinEvicted": "The oldest pinned trip was unpinned to keep your highlights at three."
+  },
+  "errors": {
+    "profileLoad": "Could not load profile."
+  },
+  "fallback": {
+    "displayName": "Traveler",
+    "email": "No email available"
+  }
+}

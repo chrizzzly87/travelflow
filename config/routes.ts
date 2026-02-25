@@ -292,5 +292,6 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
 export const getNamespacesForToolPath = (pathname: string): string[] => {
     const stripped = stripLocalePrefix(pathname);
     if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    if (stripped.startsWith('/profile')) return ['common', 'profile'];
     return ['common'];
 };

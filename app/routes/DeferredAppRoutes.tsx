@@ -58,6 +58,25 @@ const renderWithSuspense = (node: React.ReactElement) => (
     </Suspense>
 );
 
+const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAuthenticated } = useAuth();
+
+    if (isLoading) return <RouteLoadingFallback />;
+    if (isAuthenticated) {
+        return <Navigate to="/profile" replace />;
+    }
+    return children;
+};
+
+const wrapMarketingRouteElement = (path: string, element: React.ReactElement): React.ReactElement => {
+    if (path !== '/') return element;
+    return (
+        <AuthenticatedMarketingHomeRoute>
+            {element}
+        </AuthenticatedMarketingHomeRoute>
+    );
+};
+
 const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 
 const MARKETING_ROUTE_CONFIGS: Array<{ path: string; element: React.ReactElement }> = [
@@ -221,7 +240,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 <Route
                     key={`marketing:${path}`}
                     path={path}
-                    element={renderWithSuspense(element)}
+                    element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                 />
             ))}
             {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
@@ -229,7 +248,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     <Route
                         key={`marketing:${locale}:${path}`}
                         path={getLocalizedMarketingRoutePath(path, locale)}
-                        element={renderWithSuspense(element)}
+                        element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                     />
                 ))
             )}

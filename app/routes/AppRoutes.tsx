@@ -10,7 +10,6 @@ const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },
     importer: () => Promise<TModule>
 ) => lazy(() => loadLazyComponentWithRecovery(moduleKey, importer));
 
-const MarketingHomePage = lazyWithRecovery('MarketingHomePage', () => import('../../pages/MarketingHomePage').then((module) => ({ default: module.MarketingHomePage })));
 const TripLoaderRoute = lazyWithRecovery('TripLoaderRoute', () => import('../../routes/TripLoaderRoute').then((module) => ({ default: module.TripLoaderRoute })));
 const SharedTripLoaderRoute = lazyWithRecovery('SharedTripLoaderRoute', () => import('../../routes/SharedTripLoaderRoute').then((module) => ({ default: module.SharedTripLoaderRoute })));
 const ExampleTripLoaderRoute = lazyWithRecovery('ExampleTripLoaderRoute', () => import('../../routes/ExampleTripLoaderRoute').then((module) => ({ default: module.ExampleTripLoaderRoute })));
@@ -92,10 +91,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <>
             <ScrollToTop />
             <Routes>
-                <Route
-                    path="/"
-                    element={renderWithSuspense(<MarketingHomePage />)}
-                />
                 <Route
                     path="/create-trip"
                     element={

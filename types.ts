@@ -120,6 +120,8 @@ export interface ITrip {
   createdAt: number;
   updatedAt: number;
   isFavorite?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: number;
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;
