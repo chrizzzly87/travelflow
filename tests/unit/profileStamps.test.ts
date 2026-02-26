@@ -3,6 +3,7 @@ import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 import {
   buildProfileStampProgress,
   computeProfileStampMetrics,
+  getPassportDisplayStamps,
   getLastAchievedStamps,
 } from '../../components/profile/profileStamps';
 
@@ -62,5 +63,26 @@ describe('components/profile/profileStamps', () => {
 
     expect(latest).toHaveLength(2);
     expect((latest[0].achievedAt || 0) >= (latest[1].achievedAt || 0)).toBe(true);
+  });
+
+  it('builds passport cover stamps from selected ids and backfills with recent unlocks', () => {
+    const trips = Array.from({ length: 10 }, (_, index) => makeTrip({
+      id: `trip-${index + 1}`,
+      createdAt: 100 + index,
+      updatedAt: 500 + index,
+      isFavorite: index === 0,
+      items: [
+        { ...makeCityItem({ id: `city-${index + 1}`, title: `City ${index + 1}`, startDateOffset: 0, duration: 2 }), countryName: 'Germany' },
+      ],
+    }));
+
+    const metrics = computeProfileStampMetrics(trips);
+    const progress = buildProfileStampProgress(metrics);
+
+    const coverStamps = getPassportDisplayStamps(progress, ['trip_architect_10']);
+
+    expect(coverStamps).toHaveLength(3);
+    expect(coverStamps[0]?.definition.id).toBe('trip_architect_10');
+    expect(coverStamps.every((stamp) => stamp.achieved)).toBe(true);
   });
 });

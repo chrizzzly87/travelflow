@@ -191,7 +191,13 @@
       "exploration": "Exploration",
       "social": "Social",
       "momentum": "Momentum"
-    }
+    },
+    "selectionTitle": "Shown on passport cover",
+    "selectionCount": "{count}/{total} selected",
+    "selectionEmpty": "Unlock stamps to choose what appears on your passport cover.",
+    "selectionLimitNotice": "Choose up to {count} stamps for your cover.",
+    "selectionSaveFailed": "Could not save your stamp cover selection.",
+    "selectionSaving": "Saving passport cover selection..."
   },
   "likedPlaceholder": {
     "title": "Liked trips are coming soon",

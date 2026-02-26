@@ -34,6 +34,11 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] ✨ Added interactive stamp cards with rarity/progress details plus draggable “recent stamp” stickers on the passport module.
 - [x] [Improved] 📅 Added clearer “unlocked on” timing visibility for stamps in the collection view.
 - [x] [Improved] 💾 Persisted passport sticker placement to the profile database so sticker positions survive reloads and sessions.
+- [x] [Improved] 🛂 Upgraded profile and public-profile stamp previews to a reusable dark passport booklet that reflects each user’s saved sticker layout.
+- [x] [Improved] 🎟️ Added passport-cover customization so users can choose which unlocked stamps to showcase (up to 3) and persist that selection.
+- [x] [Improved] 📖 Added a passport-style modal transition to open and browse full stamp collections, including locked achievements in a muted state.
+- [x] [Improved] 🌐 Applied country-based passport cover color themes from profile country/region data for a more personalized booklet look.
+- [x] [Improved] 👀 Removed owner-facing passport helper copy from public profiles to keep visitor views focused on the profile owner’s achievements.
 - [x] [Improved] 🧷 Added quick access to stamp collection from profile actions and account navigation.
 - [x] [Improved] 🗺️ Added per-trip public visibility controls and enforced read-only public trip access mode where needed.
 - [x] [Improved] 🏳️ Added country flags to visited-country chips and improved profile metadata readability.
@@ -43,5 +48,6 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.
 - [ ] [Internal] 🗄️ Fixed Supabase SQL function defaults ordering for the trip upsert RPC signature.
 - [ ] [Internal] 🧱 Added DB-side ISO-2 validation and constraints for profile country storage, and defaulted existing non-ISO/empty values to `DE`.
+- [ ] [Internal] 🧾 Added profile schema/service support for explicit passport sticker selection persistence in addition to sticker-position persistence.
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
 - [ ] [Internal] 📌 Tracked deferred backend work in issue #181 for DB-backed pins, reactions, bookmarks, follows, and anti-abuse/RLS contracts.

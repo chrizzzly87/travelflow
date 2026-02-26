@@ -172,6 +172,10 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `profile_settings__default_visibility--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
+| `profile__passport_cover--select` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `profile__passport_cover--unselect` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `profile__passport_cover--selection_limit` | — | `{ stamp_id }` | `ProfileStampsPage.tsx` |
+| `public_profile__summary--open_passport` | — | — | `PublicProfilePage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
 

@@ -531,7 +531,11 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         if (row) {
             const status = typeof row.status === 'string' ? row.status : 'not_found';
             const canonicalUsername = normalizeUsername(row.canonical_username);
-            const profile = mapProfileRow(row, null);
+            const hasSelectionField = Object.prototype.hasOwnProperty.call(row, 'passport_sticker_selection');
+            const baseProfile = mapProfileRow(row, null);
+            const profile = !hasSelectionField && baseProfile.username
+                ? (await findProfileByUsername(baseProfile.username) || baseProfile)
+                : baseProfile;
 
             if (status === 'found') {
                 return {
