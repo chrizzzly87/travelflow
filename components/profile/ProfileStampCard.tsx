@@ -150,23 +150,25 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
 
       <div
         className={[
-          'pointer-events-none absolute inset-x-0 bottom-0 border-t border-slate-200 bg-white/96 p-2.5 backdrop-blur-sm transition-all duration-200',
+          compact
+            ? 'pointer-events-none absolute inset-0 z-20 flex flex-col justify-end border-t border-slate-200/70 bg-slate-950/64 p-2.5 text-white backdrop-blur-[1px] transition-all duration-200'
+            : 'pointer-events-none absolute inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/96 p-2.5 backdrop-blur-sm transition-all duration-200',
           detailsVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
         ].join(' ')}
         aria-hidden={!detailsVisible}
       >
-        <p className="line-clamp-2 text-[11px] text-slate-600">{stamp.definition.subtitle}</p>
+        <p className={`line-clamp-2 text-[11px] ${compact ? 'text-slate-100' : 'text-slate-600'}`}>{stamp.definition.subtitle}</p>
         <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
-            {stamp.achieved ? <SealCheck size={13} weight="duotone" className="text-emerald-600" /> : <LockSimple size={13} weight="duotone" />}
+          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
+            {stamp.achieved ? <SealCheck size={13} weight="duotone" className={compact ? 'text-emerald-300' : 'text-emerald-600'} /> : <LockSimple size={13} weight="duotone" />}
             {stamp.achieved ? 'Unlocked' : `${Math.floor(stamp.currentValue)}/${stamp.targetValue}`}
           </span>
-          <span className="text-[11px] font-semibold text-slate-600">
+          <span className={`text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
             {stamp.definition.rarityPercent}% rarity
           </span>
         </div>
         {unlockedAtLabel && (
-          <p className="mt-1 text-[11px] font-medium text-slate-600">
+          <p className={`mt-1 text-[11px] font-medium ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
             {unlockedOnLabel}: {unlockedAtLabel}
           </p>
         )}

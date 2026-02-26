@@ -287,6 +287,14 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
             />
           ) : (
             <>
+              <div className="pointer-events-none invisible">
+                <StampBookSpread
+                  spread={spreads[turnState.from]}
+                  locale={locale}
+                  emptySlotLabel={labels.emptySlot}
+                  compact={compact}
+                />
+              </div>
               <div className={`stamp-book-turn-layer stamp-book-turn-layer--current stamp-book-turn-layer--${turnState.direction}-current`}>
                 <StampBookSpread
                   spread={spreads[turnState.from]}
