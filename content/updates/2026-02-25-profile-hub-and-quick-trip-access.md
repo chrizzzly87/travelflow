@@ -28,6 +28,9 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔎 Added a direct “Open public profile” action in the admin users drawer next to “Open in Trips” for faster cross-surface navigation.
 - [x] [Improved] ⚙️ Expanded profile settings with username availability/cooldown guidance, public URL preview, bio, and profile visibility defaults.
 - [x] [Improved] 🔐 Updated username editing to be opt-in by default: users now unlock the field via “Change username” and validation runs on save instead of every keystroke.
+- [x] [Fixed] 🛡️ Restored 90-day username cooldown enforcement in profile settings for environments using legacy profile-column fallbacks.
+- [x] [Fixed] 🔗 Added canonical `@handle` normalization so public profile links and username saves resolve correctly even when users paste handles with `@`.
+- [x] [Fixed] 🧯 Stopped profile-page request thrashing and flashing by hardening profile-column fallbacks and preventing repeated auto-refresh loops after failed profile fetches.
 - [x] [Improved] 🧠 Added save-time username suggestions when a handle is unavailable, proposing nearby available alternatives based on profile/name patterns.
 - [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
 - [x] [Improved] 🧭 Refined Country/Region picker behavior to close immediately after single selection and keep the control scoped to one selected country.
@@ -74,4 +77,5 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [ ] [Internal] 🧱 Added DB-side ISO-2 validation and constraints for profile country storage, and defaulted existing non-ISO/empty values to `DE`.
 - [ ] [Internal] 🧾 Added profile schema/service support for explicit passport sticker selection persistence in addition to sticker-position persistence.
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
+- [ ] [Internal] 🧪 Added regression coverage for username cooldown fallback loading and `@`-prefixed username normalization on save.
 - [ ] [Internal] 📌 Tracked deferred backend work in issue #181 for DB-backed pins, reactions, bookmarks, follows, and anti-abuse/RLS contracts.

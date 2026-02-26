@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -115,6 +115,7 @@ export const ProfilePage: React.FC = () => {
     const [pinNotice, setPinNotice] = useState<string | null>(null);
     const [visibleTripCount, setVisibleTripCount] = useState(PROFILE_TRIPS_PAGE_SIZE);
     const [isTripPaginationPending, startTripPaginationTransition] = useTransition();
+    const hasRequestedMissingProfileRef = useRef(false);
 
     const greeting = useMemo(() => pickRandomInternationalGreeting(), []);
     const appLocale = useMemo(
@@ -175,8 +176,16 @@ export const ProfilePage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
-        if (profile || isProfileLoading) return;
+        if (!isAuthenticated) {
+            hasRequestedMissingProfileRef.current = false;
+            return;
+        }
+        if (profile) {
+            hasRequestedMissingProfileRef.current = false;
+            return;
+        }
+        if (isProfileLoading || hasRequestedMissingProfileRef.current) return;
+        hasRequestedMissingProfileRef.current = true;
         void refreshProfile();
     }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
 

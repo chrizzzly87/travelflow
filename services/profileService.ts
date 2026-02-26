@@ -89,8 +89,9 @@ const USERNAME_RESERVED = new Set([
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
-const PROFILE_SELECT_FULL = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
-const PROFILE_SELECT_LEGACY = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
+const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
+const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
+const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
     return normalizeLocale(typeof value === 'string' ? value : null);
@@ -114,7 +115,9 @@ const toBooleanWithDefault = (value: unknown, fallback: boolean): boolean => (
 );
 
 const normalizeUsername = (value: unknown): string => (
-    typeof value === 'string' ? value.trim().toLowerCase() : ''
+    typeof value === 'string'
+        ? value.trim().toLowerCase().replace(/^@+/, '')
+        : ''
 );
 
 const isProfileColumnMissing = (message: string): boolean =>
@@ -269,6 +272,14 @@ const loadProfileByQuery = async (
             .maybeSingle();
         data = fallback.data as typeof data;
         error = fallback.error as typeof error;
+
+        if (error && isProfileColumnMissing(error.message || '')) {
+            const minimalFallback = await queryFactory()
+                .select(PROFILE_SELECT_MINIMAL)
+                .maybeSingle();
+            data = minimalFallback.data as typeof data;
+            error = minimalFallback.error as typeof error;
+        }
     }
 
     if (error) {
@@ -301,18 +312,28 @@ export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null>
 
     let { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
+        .select(PROFILE_SELECT_FULL)
         .eq('id', userId)
         .maybeSingle();
 
     if (error && isProfileColumnMissing(error.message || '')) {
         const fallback = await supabase
             .from('profiles')
-            .select('id, display_name, first_name, last_name, username, gender, country, city, preferred_language, onboarding_completed_at, account_status')
+            .select(PROFILE_SELECT_LEGACY)
             .eq('id', userId)
             .maybeSingle();
         data = fallback.data as typeof data;
         error = fallback.error as typeof error;
+
+        if (error && isProfileColumnMissing(error.message || '')) {
+            const minimalFallback = await supabase
+                .from('profiles')
+                .select(PROFILE_SELECT_MINIMAL)
+                .eq('id', userId)
+                .maybeSingle();
+            data = minimalFallback.data as typeof data;
+            error = minimalFallback.error as typeof error;
+        }
     }
 
     if (error) {
@@ -503,15 +524,23 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
         }
     }
 
-    const { data: takenRow, error: takenError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', normalizedUsername)
-        .maybeSingle();
+    const lookupTaken = async (candidate: string): Promise<Record<string, unknown> | null> => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq('username', candidate)
+            .maybeSingle();
 
-    if (takenError && !/row-level security|permission denied/i.test(takenError.message || '')) {
-        throw new Error(takenError.message || 'Could not validate username availability.');
-    }
+        if (error && !/row-level security|permission denied/i.test(error.message || '')) {
+            throw new Error(error.message || 'Could not validate username availability.');
+        }
+
+        return data as Record<string, unknown> | null;
+    };
+
+    const canonicalTaken = await lookupTaken(normalizedUsername);
+    const legacyTaken = canonicalTaken ? null : await lookupTaken(`@${normalizedUsername}`);
+    const takenRow = canonicalTaken || legacyTaken;
 
     if (takenRow && typeof takenRow.id === 'string' && takenRow.id !== currentUserId) {
         return {
@@ -532,10 +561,20 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
 
 const findProfileByUsername = async (username: string): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
+    const normalized = normalizeUsername(username);
+    if (!normalized) return null;
+
+    const canonicalProfile = await loadProfileByQuery(() => (
+        supabase
+            .from('profiles')
+            .ilike('username', normalized)
+    ));
+    if (canonicalProfile) return canonicalProfile;
+
     return loadProfileByQuery(() => (
         supabase
             .from('profiles')
-            .ilike('username', username)
+            .ilike('username', `@${normalized}`)
     ));
 };
 

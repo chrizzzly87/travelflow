@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink } from 'react-router-dom';
 import { CaretLeft, IdentificationCard } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -22,10 +22,19 @@ export const ProfileStampsPage: React.FC = () => {
     refreshProfile,
   } = useAuth();
   const [trips, setTrips] = useState(() => getAllTrips());
+  const hasRequestedMissingProfileRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    if (profile || isProfileLoading) return;
+    if (!isAuthenticated) {
+      hasRequestedMissingProfileRef.current = false;
+      return;
+    }
+    if (profile) {
+      hasRequestedMissingProfileRef.current = false;
+      return;
+    }
+    if (isProfileLoading || hasRequestedMissingProfileRef.current) return;
+    hasRequestedMissingProfileRef.current = true;
     void refreshProfile();
   }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
 

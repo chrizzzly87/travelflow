@@ -70,6 +70,7 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
 
 const USERNAME_COOLDOWN_DAYS = 90;
 const USERNAME_ALLOWED_PATTERN = /^[a-z0-9_-]{3,30}$/;
+const normalizeUsernameInput = (value: string): string => value.trim().toLowerCase().replace(/^@+/, '');
 
 const hasMissingRequiredField = (form: ProfileFormState): boolean =>
     REQUIRED_FIELDS.some((key) => !String(form[key] || '').trim());
@@ -166,7 +167,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
 
     const isMissingRequired = useMemo(() => hasMissingRequiredField(form), [form]);
-    const normalizedUsername = useMemo(() => form.username.trim().toLowerCase(), [form.username]);
+    const normalizedUsername = useMemo(() => normalizeUsernameInput(form.username), [form.username]);
 
     const currentUsername = (profile?.username || '').trim().toLowerCase();
     const publicProfilePath = normalizedUsername
@@ -239,6 +240,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             value
                 .trim()
                 .toLowerCase()
+                .replace(/^@+/, '')
                 .replace(/\s+/g, '')
                 .replace(/[^a-z0-9_-]/g, '')
         );

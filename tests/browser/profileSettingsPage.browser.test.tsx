@@ -147,6 +147,35 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
   });
 
+  it('normalizes @-prefixed username input before availability check and save', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'chrizzzly_hh',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '@chrizzzly_hh');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh');
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'chrizzzly_hh',
+      }));
+    });
+  });
+
   it('keeps edit action blocked during cooldown and emits blocked analytics', async () => {
     const user = userEvent.setup();
     mocks.auth.profile = buildProfile({
