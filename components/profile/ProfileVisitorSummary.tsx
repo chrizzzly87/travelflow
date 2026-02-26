@@ -4,6 +4,7 @@ import { ProfileMetaPanel } from './ProfileMetaPanel';
 import type { VisitedCountry } from './profileCountryUtils';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
+import type { ProfileStampProgress } from './profileStamps';
 
 interface ProfileVisitorSummaryLabels {
   follow: string;
@@ -16,8 +17,10 @@ interface ProfileVisitorSummaryLabels {
   distance: string;
   countries: string;
   countriesEmpty: string;
-  scratchMapTitle: string;
-  scratchMapDescription: string;
+  stampsTitle: string;
+  stampsDescription: string;
+  stampsOpen: string;
+  stampsEmpty: string;
 }
 
 interface ProfileVisitorSummaryProps {
@@ -29,6 +32,7 @@ interface ProfileVisitorSummaryProps {
   location: string;
   distanceLabel: string;
   countries: VisitedCountry[];
+  stamps: ProfileStampProgress[];
   stats: ProfileSummaryStat[];
   labels: ProfileVisitorSummaryLabels;
 }
@@ -42,6 +46,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   location,
   distanceLabel,
   countries,
+  stamps,
   stats,
   labels,
 }) => {
@@ -104,6 +109,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
           location={location}
           distanceLabel={distanceLabel}
           countries={countries}
+          stamps={stamps}
           labels={{
             bio: labels.bio,
             bioFallback: labels.bioFallback,
@@ -111,8 +117,10 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
             distance: labels.distance,
             countries: labels.countries,
             countriesEmpty: labels.countriesEmpty,
-            scratchMapTitle: labels.scratchMapTitle,
-            scratchMapDescription: labels.scratchMapDescription,
+            stampsTitle: labels.stampsTitle,
+            stampsDescription: labels.stampsDescription,
+            stampsOpen: labels.stampsOpen,
+            stampsEmpty: labels.stampsEmpty,
           }}
         />
       </div>

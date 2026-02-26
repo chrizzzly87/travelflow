@@ -7,6 +7,11 @@ import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
 import { resolveProfileStatusByTripCount } from '../components/profile/profileStatus';
+import {
+    buildProfileStampProgress,
+    computeProfileStampMetrics,
+    getLastAchievedStamps,
+} from '../components/profile/profileStamps';
 import { getPublicTripsByUserId, resolvePublicProfileByHandle, type UserProfileRecord } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { normalizeLocale } from '../config/locales';
@@ -122,6 +127,13 @@ export const PublicProfilePage: React.FC = () => {
         () => resolveProfileStatusByTripCount(trips.length),
         [trips.length]
     );
+    const latestStamps = useMemo(() => {
+        const metrics = computeProfileStampMetrics(trips, {
+            likesGiven: 0,
+            likesEarned: 0,
+        });
+        return getLastAchievedStamps(buildProfileStampProgress(metrics), 3);
+    }, [trips]);
 
     const handleOpenTrip = (trip: ITrip) => {
         trackEvent('public_profile__trip--open', {
@@ -183,6 +195,7 @@ export const PublicProfilePage: React.FC = () => {
                             location={locationLabel}
                             distanceLabel={distanceLabel}
                             countries={visitedCountries}
+                            stamps={latestStamps}
                             stats={[
                                 { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                                 { id: 'likes_saved', label: t('stats.likesSaved'), value: 0 },
@@ -200,8 +213,10 @@ export const PublicProfilePage: React.FC = () => {
                                 distance: t('summary.distanceLabel'),
                                 countries: t('summary.countriesLabel'),
                                 countriesEmpty: t('summary.countriesEmpty'),
-                                scratchMapTitle: t('summary.scratchMapTitle'),
-                                scratchMapDescription: t('summary.scratchMapDescription'),
+                                stampsTitle: t('summary.stampsTitle'),
+                                stampsDescription: t('summary.stampsDescription'),
+                                stampsOpen: t('summary.stampsOpen'),
+                                stampsEmpty: t('summary.stampsEmpty'),
                             }}
                         />
 

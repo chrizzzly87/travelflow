@@ -19,6 +19,11 @@ import {
 } from '../components/profile/profileTripState';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { resolveProfileStatusByTier } from '../components/profile/profileStatus';
+import {
+    buildProfileStampProgress,
+    computeProfileStampMetrics,
+    getLastAchievedStamps,
+} from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentUserProfile, type UserProfileRecord } from '../services/profileService';
 import { getAllTrips, saveTrip } from '../services/storageService';
@@ -205,6 +210,21 @@ export const ProfilePage: React.FC = () => {
         all: trips.length,
         liked: 0,
     }), [trips, recentSort]);
+    const stampMetrics = useMemo(
+        () => computeProfileStampMetrics(trips, {
+            likesGiven: tabCounts.favorites,
+            likesEarned: 0,
+        }),
+        [tabCounts.favorites, trips]
+    );
+    const stampProgress = useMemo(
+        () => buildProfileStampProgress(stampMetrics),
+        [stampMetrics]
+    );
+    const latestStamps = useMemo(
+        () => getLastAchievedStamps(stampProgress, 3),
+        [stampProgress]
+    );
 
     const handleTabChange = useCallback((nextTab: 'recent' | 'favorites' | 'all' | 'liked') => {
         const next = new URLSearchParams(searchParams);
@@ -353,6 +373,7 @@ export const ProfilePage: React.FC = () => {
                     location={locationLabel}
                     distanceLabel={distanceLabel}
                     countries={visitedCountries}
+                    stamps={latestStamps}
                     stats={[
                         { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                         { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
@@ -371,8 +392,10 @@ export const ProfilePage: React.FC = () => {
                         distance: t('summary.distanceLabel'),
                         countries: t('summary.countriesLabel'),
                         countriesEmpty: t('summary.countriesEmpty'),
-                        scratchMapTitle: t('summary.scratchMapTitle'),
-                        scratchMapDescription: t('summary.scratchMapDescription'),
+                        stampsTitle: t('summary.stampsTitle'),
+                        stampsDescription: t('summary.stampsDescription'),
+                        stampsOpen: t('summary.stampsOpen'),
+                        stampsEmpty: t('summary.stampsEmpty'),
                     }}
                     onEditProfile={() => {
                         trackEvent('profile__summary--edit_profile');
@@ -393,6 +416,10 @@ export const ProfilePage: React.FC = () => {
                         } else {
                             window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
                         }
+                    }}
+                    onOpenStamps={() => {
+                        trackEvent('profile__summary--open_stamps');
+                        navigate('/profile/stamps');
                     }}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}

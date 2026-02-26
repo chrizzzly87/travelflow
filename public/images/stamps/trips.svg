@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+  <rect x="18" y="18" width="284" height="284" rx="26" stroke="#0f172a" stroke-width="4"/>
+  <rect x="36" y="36" width="248" height="248" rx="18" stroke="#334155" stroke-width="2" stroke-dasharray="8 6"/>
+  <circle cx="160" cy="160" r="72" fill="#f8fafc" stroke="#1e293b" stroke-width="3"/>
+  <path d="M116 172h88" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M138 140l22-20 22 20" stroke="#1e293b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="160" y="252" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#0f172a">TRIPS</text>
+</svg>

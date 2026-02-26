@@ -61,8 +61,10 @@
     "distanceUnknown": "No tracked distance yet",
     "countriesLabel": "Countries visited",
     "countriesEmpty": "No countries tracked yet",
-    "scratchMapTitle": "Scratch map",
-    "scratchMapDescription": "Your visited-country map layer is coming soon.",
+    "stampsTitle": "Passport stamps",
+    "stampsDescription": "Your latest achievements are collected as travel passport stamps.",
+    "stampsOpen": "Open stamp collection",
+    "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
     "message": "Message"
   },

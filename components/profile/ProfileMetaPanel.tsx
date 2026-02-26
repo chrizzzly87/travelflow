@@ -1,7 +1,9 @@
 import React from 'react';
-import { GlobeHemisphereWest, MapPin, Mountains } from '@phosphor-icons/react';
+import { MapPin, Mountains } from '@phosphor-icons/react';
 import { FlagIcon } from '../flags/FlagIcon';
 import type { VisitedCountry } from './profileCountryUtils';
+import type { ProfileStampProgress } from './profileStamps';
+import { ProfileStampsPreview } from './ProfileStampsPreview';
 
 interface ProfileMetaPanelLabels {
   bio: string;
@@ -10,8 +12,10 @@ interface ProfileMetaPanelLabels {
   distance: string;
   countries: string;
   countriesEmpty: string;
-  scratchMapTitle: string;
-  scratchMapDescription: string;
+  stampsTitle: string;
+  stampsDescription: string;
+  stampsOpen: string;
+  stampsEmpty: string;
 }
 
 interface ProfileMetaPanelProps {
@@ -19,6 +23,8 @@ interface ProfileMetaPanelProps {
   location: string;
   distanceLabel: string;
   countries: VisitedCountry[];
+  stamps: ProfileStampProgress[];
+  onOpenStamps?: () => void;
   labels: ProfileMetaPanelLabels;
 }
 
@@ -27,6 +33,8 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   location,
   distanceLabel,
   countries,
+  stamps,
+  onOpenStamps,
   labels,
 }) => {
   return (
@@ -74,23 +82,14 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
         </section>
       </div>
 
-      <article className="border border-slate-200 bg-white px-4 py-4">
-        <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-          <GlobeHemisphereWest size={14} weight="duotone" className="text-accent-600" />
-          {labels.scratchMapTitle}
-        </p>
-        <div className="mt-3 rounded-lg border border-slate-200 px-3 py-3">
-          <div className="grid grid-cols-7 gap-1.5">
-            {Array.from({ length: 28 }, (_, index) => (
-              <span
-                key={`scratch-dot-${index}`}
-                className={`h-2 w-2 rounded-full ${index % 5 === 0 ? 'bg-accent-500/70' : 'bg-slate-300/80'}`}
-              />
-            ))}
-          </div>
-        </div>
-        <p className="mt-3 text-sm leading-6 text-slate-600">{labels.scratchMapDescription}</p>
-      </article>
+      <ProfileStampsPreview
+        title={labels.stampsTitle}
+        description={labels.stampsDescription}
+        openLabel={labels.stampsOpen}
+        emptyLabel={labels.stampsEmpty}
+        stamps={stamps.slice(0, 3)}
+        onOpen={onOpenStamps}
+      />
     </section>
   );
 };

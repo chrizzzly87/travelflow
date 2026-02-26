@@ -4,6 +4,7 @@ import { ProfileMetaPanel } from './ProfileMetaPanel';
 import type { VisitedCountry } from './profileCountryUtils';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
+import type { ProfileStampProgress } from './profileStamps';
 
 interface ProfileOwnerSummaryLabels {
   editProfile: string;
@@ -17,8 +18,10 @@ interface ProfileOwnerSummaryLabels {
   distance: string;
   countries: string;
   countriesEmpty: string;
-  scratchMapTitle: string;
-  scratchMapDescription: string;
+  stampsTitle: string;
+  stampsDescription: string;
+  stampsOpen: string;
+  stampsEmpty: string;
 }
 
 interface ProfileOwnerSummaryProps {
@@ -31,11 +34,13 @@ interface ProfileOwnerSummaryProps {
   location: string;
   distanceLabel: string;
   countries: VisitedCountry[];
+  stamps: ProfileStampProgress[];
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
   onEditProfile: () => void;
   onViewPublicProfile: () => void;
   onShareProfile: () => void;
+  onOpenStamps: () => void;
   canViewPublicProfile: boolean;
   canShareProfile: boolean;
 }
@@ -50,11 +55,13 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   location,
   distanceLabel,
   countries,
+  stamps,
   stats,
   labels,
   onEditProfile,
   onViewPublicProfile,
   onShareProfile,
+  onOpenStamps,
   canViewPublicProfile,
   canShareProfile,
 }) => {
@@ -128,6 +135,8 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
           location={location}
           distanceLabel={distanceLabel}
           countries={countries}
+          stamps={stamps}
+          onOpenStamps={onOpenStamps}
           labels={{
             bio: labels.bio,
             bioFallback: labels.bioFallback,
@@ -135,8 +144,10 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             distance: labels.distance,
             countries: labels.countries,
             countriesEmpty: labels.countriesEmpty,
-            scratchMapTitle: labels.scratchMapTitle,
-            scratchMapDescription: labels.scratchMapDescription,
+            stampsTitle: labels.stampsTitle,
+            stampsDescription: labels.stampsDescription,
+            stampsOpen: labels.stampsOpen,
+            stampsEmpty: labels.stampsEmpty,
           }}
         />
       </div>
