@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-25-profile-hub-and-quick-trip-access
-version: v0.65.0
+version: v0.66.0
 title: "Profile hub with highlights and quick trip access"
 date: 2026-02-26
 published_at: 2026-02-26T12:20:38Z
