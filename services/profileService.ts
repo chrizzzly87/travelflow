@@ -61,6 +61,12 @@ export interface PublicProfileResolveResult {
     redirectFromUsername: string | null;
 }
 
+export interface PublicTripsPageResult {
+    trips: ITrip[];
+    hasMore: boolean;
+    nextOffset: number;
+}
+
 const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
 const USERNAME_RESERVED = new Set([
     'admin',
@@ -82,6 +88,7 @@ const USERNAME_RESERVED = new Set([
     'u',
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
+const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
     return normalizeLocale(typeof value === 'string' ? value : null);
@@ -635,8 +642,24 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
     };
 };
 
-export const getPublicTripsByUserId = async (userId: string): Promise<ITrip[]> => {
-    if (!supabase || !userId) return [];
+export const getPublicTripsPageByUserId = async (
+    userId: string,
+    options?: { offset?: number; limit?: number }
+): Promise<PublicTripsPageResult> => {
+    if (!supabase || !userId) {
+        return {
+            trips: [],
+            hasMore: false,
+            nextOffset: 0,
+        };
+    }
+
+    const offset = Number.isFinite(options?.offset)
+        ? Math.max(0, Math.floor(options?.offset || 0))
+        : 0;
+    const limit = Number.isFinite(options?.limit)
+        ? Math.max(1, Math.floor(options?.limit || DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT))
+        : DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT;
 
     let { data, error } = await supabase
         .from('trips')
@@ -644,7 +667,8 @@ export const getPublicTripsByUserId = async (userId: string): Promise<ITrip[]> =
         .eq('owner_id', userId)
         .neq('status', 'archived')
         .eq('show_on_public_profile', true)
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
     if (error && /column/i.test(error.message || '') && /show_on_public_profile/i.test(error.message || '')) {
         const fallback = await supabase
@@ -652,17 +676,54 @@ export const getPublicTripsByUserId = async (userId: string): Promise<ITrip[]> =
             .select('id, data, status, trip_expires_at, source_kind, source_template_id')
             .eq('owner_id', userId)
             .neq('status', 'archived')
-            .order('updated_at', { ascending: false });
+            .order('updated_at', { ascending: false })
+            .range(offset, offset + limit - 1);
         data = fallback.data as typeof data;
         error = fallback.error as typeof error;
     }
 
     if (error) {
-        if (/row-level security|permission denied/i.test(error.message || '')) return [];
+        if (/row-level security|permission denied/i.test(error.message || '')) {
+            return {
+                trips: [],
+                hasMore: false,
+                nextOffset: offset,
+            };
+        }
         throw new Error(error.message || 'Could not load public trips.');
     }
 
-    return (data || [])
+    const mappedTrips = (data || [])
         .map((row) => mapTripRow(row as Record<string, unknown>))
-        .filter((trip): trip is ITrip => Boolean(trip && trip.status !== 'archived'));
+        .filter((trip): trip is ITrip => Boolean(
+            trip
+            && trip.status !== 'archived'
+            && trip.showOnPublicProfile !== false
+        ));
+    const rawCount = Array.isArray(data) ? data.length : 0;
+
+    return {
+        trips: mappedTrips,
+        hasMore: rawCount >= limit,
+        nextOffset: offset + rawCount,
+    };
+};
+
+export const getPublicTripsByUserId = async (userId: string): Promise<ITrip[]> => {
+    if (!supabase || !userId) return [];
+
+    const trips: ITrip[] = [];
+    let offset = 0;
+
+    while (true) {
+        const page = await getPublicTripsPageByUserId(userId, {
+            offset,
+            limit: 48,
+        });
+        trips.push(...page.trips);
+        if (!page.hasMore) break;
+        offset = page.nextOffset;
+    }
+
+    return trips;
 };

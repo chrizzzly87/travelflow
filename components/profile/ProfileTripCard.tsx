@@ -95,15 +95,39 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
 }) => {
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
+  const [isNearViewport, setIsNearViewport] = React.useState(false);
+  const cardRef = React.useRef<HTMLElement | null>(null);
 
   React.useEffect(() => {
     setMapLoaded(false);
     setMapError(false);
   }, [trip.id, locale]);
 
+  React.useEffect(() => {
+    const node = cardRef.current;
+    if (!node) return;
+    if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+      setIsNearViewport(true);
+      return;
+    }
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setIsNearViewport(true);
+        observer.disconnect();
+      },
+      { rootMargin: '520px 0px' }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [trip.id]);
+
   const cityStops = React.useMemo(() => getTripCityStops(trip), [trip]);
   const cityItems = React.useMemo(() => getTripCityItems(trip), [trip]);
-  const mapUrl = React.useMemo(() => buildMiniMapUrl(trip, locale), [trip, locale]);
+  const mapUrl = React.useMemo(
+    () => (isNearViewport ? buildMiniMapUrl(trip, locale) : null),
+    [isNearViewport, trip, locale]
+  );
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
   const durationDays = React.useMemo(() => getTripDurationDays(trip), [trip]);
@@ -139,9 +163,17 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   ), [cityItems]);
 
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300">
+    <article
+      ref={cardRef}
+      className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300"
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
+    >
       <div className="relative h-40 overflow-hidden bg-slate-100">
-        {mapUrl && !mapError ? (
+        {!isNearViewport ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
+            {labels.mapLoading}
+          </div>
+        ) : mapUrl && !mapError ? (
           <>
             {!mapLoaded && (
               <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">

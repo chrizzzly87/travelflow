@@ -7,7 +7,7 @@ import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
   resolvePublicProfileByHandle: vi.fn(),
-  getPublicTripsByUserId: vi.fn(),
+  getPublicTripsPageByUserId: vi.fn(),
   trackEvent: vi.fn(),
 }));
 
@@ -17,7 +17,7 @@ vi.mock('../../components/navigation/SiteHeader', () => ({
 
 vi.mock('../../services/profileService', () => ({
   resolvePublicProfileByHandle: mocks.resolvePublicProfileByHandle,
-  getPublicTripsByUserId: mocks.getPublicTripsByUserId,
+  getPublicTripsPageByUserId: mocks.getPublicTripsPageByUserId,
 }));
 
 vi.mock('../../services/analyticsService', () => ({
@@ -71,7 +71,11 @@ describe('pages/PublicProfilePage', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-    mocks.getPublicTripsByUserId.mockResolvedValue([]);
+    mocks.getPublicTripsPageByUserId.mockResolvedValue({
+      trips: [],
+      hasMore: false,
+      nextOffset: 0,
+    });
   });
 
   it('renders visitor profile summary with disabled follow and message actions', async () => {
@@ -99,14 +103,18 @@ describe('pages/PublicProfilePage', () => {
       },
     });
 
-    mocks.getPublicTripsByUserId.mockResolvedValue([
-      makeTrip({
-        id: 'public-trip-1',
-        title: 'Public Trip',
-        showOnPublicProfile: true,
-        items: [makeCityItem({ id: 'city-1', title: 'Bangkok', startDateOffset: 0, duration: 2 })],
-      }),
-    ]);
+    mocks.getPublicTripsPageByUserId.mockResolvedValue({
+      trips: [
+        makeTrip({
+          id: 'public-trip-1',
+          title: 'Public Trip',
+          showOnPublicProfile: true,
+          items: [makeCityItem({ id: 'city-1', title: 'Bangkok', startDateOffset: 0, duration: 2 })],
+        }),
+      ],
+      hasMore: false,
+      nextOffset: 1,
+    });
 
     renderPublicProfilePage('/u/traveler');
 

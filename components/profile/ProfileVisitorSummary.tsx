@@ -108,7 +108,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
       </article>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <ProfileSummaryStats stats={stats} />
+        <ProfileSummaryStats stats={stats} locale={locale} />
         <div className="mt-6">
           <ProfileMetaPanel
             bio={bio}

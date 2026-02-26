@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { ProfileHero } from '../components/profile/ProfileHero';
 import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
 import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
+import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
 import {
     getPinnedTrips,
     getRecentTrips,
@@ -38,6 +39,9 @@ import { normalizeLocale } from '../config/locales';
 import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
+import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
+
+const PROFILE_TRIPS_PAGE_SIZE = 6;
 
 const initialsFrom = (
     profile: {
@@ -106,6 +110,8 @@ export const ProfilePage: React.FC = () => {
 
     const [trips, setTrips] = useState<ITrip[]>(() => getAllTrips());
     const [pinNotice, setPinNotice] = useState<string | null>(null);
+    const [visibleTripCount, setVisibleTripCount] = useState(PROFILE_TRIPS_PAGE_SIZE);
+    const [isTripPaginationPending, startTripPaginationTransition] = useTransition();
 
     const greeting = useMemo(() => pickRandomInternationalGreeting(), []);
     const appLocale = useMemo(
@@ -212,6 +218,12 @@ export const ProfilePage: React.FC = () => {
         () => getTripsForProfileTab(trips, tab, recentSort),
         [trips, tab, recentSort]
     );
+    const visibleTripsForTab = useMemo(
+        () => tripsForTab.slice(0, visibleTripCount),
+        [tripsForTab, visibleTripCount]
+    );
+    const hasMoreTripsForTab = visibleTripCount < tripsForTab.length;
+    const skeletonTripCount = Math.max(0, Math.min(PROFILE_TRIPS_PAGE_SIZE, tripsForTab.length - visibleTripCount));
 
     const tabCounts = useMemo(() => ({
         recent: getRecentTrips(trips, recentSort).length,
@@ -250,6 +262,25 @@ export const ProfilePage: React.FC = () => {
         setSearchParams(next);
         trackEvent(`profile__recent_sort--${nextSort}`);
     }, [searchParams, setSearchParams, tab]);
+
+    useEffect(() => {
+        setVisibleTripCount(PROFILE_TRIPS_PAGE_SIZE);
+    }, [tab, recentSort, tripsForTab.length]);
+
+    const handleLoadMoreTrips = useCallback(() => {
+        if (!hasMoreTripsForTab || isTripPaginationPending) return;
+        startTripPaginationTransition(() => {
+            setVisibleTripCount((current) => Math.min(current + PROFILE_TRIPS_PAGE_SIZE, tripsForTab.length));
+        });
+    }, [hasMoreTripsForTab, isTripPaginationPending, startTripPaginationTransition, tripsForTab.length]);
+
+    const tripsLoadMoreRef = useInfiniteScrollSentinel({
+        enabled: tab !== 'liked',
+        hasMore: hasMoreTripsForTab,
+        isLoading: isTripPaginationPending,
+        onLoadMore: handleLoadMoreTrips,
+        rootMargin: '520px 0px',
+    });
 
     const handleOpenTrip = useCallback((trip: ITrip) => {
         trackEvent('profile__trip--open', { trip_id: trip.id, tab });
@@ -599,38 +630,51 @@ export const ProfilePage: React.FC = () => {
                             <p className="mt-1 text-sm text-slate-600">{t('empty.description')}</p>
                         </div>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                            {tripsForTab.map((trip) => (
-                                <ProfileTripCard
-                                    key={trip.id}
-                                    trip={trip}
-                                    locale={appLocale}
-                                    sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
-                                    labels={{
-                                        open: t('cards.actions.open'),
-                                        favorite: t('cards.actions.favorite'),
-                                        unfavorite: t('cards.actions.unfavorite'),
-                                        pin: t('cards.actions.pin'),
-                                        unpin: t('cards.actions.unpin'),
-                                        makePublic: t('cards.actions.makePublic'),
-                                        makePrivate: t('cards.actions.makePrivate'),
-                                        pinnedTag: t('cards.pinnedTag'),
-                                        mapUnavailable: t('cards.mapUnavailable'),
-                                        mapLoading: t('cards.mapLoading'),
-                                        creatorPrefix: t('cards.creatorPrefix'),
-                                    }}
-                                    onOpen={handleOpenTrip}
-                                    onToggleFavorite={handleToggleFavorite}
-                                    onTogglePin={handleTogglePin}
-                                    onToggleVisibility={handleToggleVisibility}
-                                    analyticsAttrs={(action) =>
-                                        getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
-                                            trip_id: trip.id,
-                                            tab,
-                                        })}
-                                />
-                            ))}
-                        </div>
+                        <>
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                {visibleTripsForTab.map((trip) => (
+                                    <ProfileTripCard
+                                        key={trip.id}
+                                        trip={trip}
+                                        locale={appLocale}
+                                        sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                        labels={{
+                                            open: t('cards.actions.open'),
+                                            favorite: t('cards.actions.favorite'),
+                                            unfavorite: t('cards.actions.unfavorite'),
+                                            pin: t('cards.actions.pin'),
+                                            unpin: t('cards.actions.unpin'),
+                                            makePublic: t('cards.actions.makePublic'),
+                                            makePrivate: t('cards.actions.makePrivate'),
+                                            pinnedTag: t('cards.pinnedTag'),
+                                            mapUnavailable: t('cards.mapUnavailable'),
+                                            mapLoading: t('cards.mapLoading'),
+                                            creatorPrefix: t('cards.creatorPrefix'),
+                                        }}
+                                        onOpen={handleOpenTrip}
+                                        onToggleFavorite={handleToggleFavorite}
+                                        onTogglePin={handleTogglePin}
+                                        onToggleVisibility={handleToggleVisibility}
+                                        analyticsAttrs={(action) =>
+                                            getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
+                                                trip_id: trip.id,
+                                                tab,
+                                            })}
+                                    />
+                                ))}
+                            </div>
+
+                            {hasMoreTripsForTab && (
+                                <>
+                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                        {Array.from({ length: skeletonTripCount || PROFILE_TRIPS_PAGE_SIZE }).map((_, index) => (
+                                            <ProfileTripCardSkeleton key={`profile-trip-skeleton-${index}`} pulse={isTripPaginationPending} />
+                                        ))}
+                                    </div>
+                                    <div ref={tripsLoadMoreRef} className="h-8 w-full" aria-hidden="true" />
+                                </>
+                            )}
+                        </>
                     )}
                 </section>
             </main>
