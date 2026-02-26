@@ -25,6 +25,12 @@ export const CURRENT_RUNTIME_MODEL_ID = 'gemini-3-pro-preview';
 
 export const DEFAULT_CREATE_TRIP_MODEL_ID = `${'gemini'}:${CURRENT_RUNTIME_MODEL_ID}`;
 
+export const CREATE_TRIP_PREFERRED_MODEL_IDS = [
+    'openrouter:minimax/minimax-m2.5',
+    'perplexity:perplexity/sonar-pro',
+    DEFAULT_CREATE_TRIP_MODEL_ID,
+] as const;
+
 const ESTIMATE_NOTE = 'Estimate for one classic itinerary generation; real cost varies by prompt/output size.';
 
 type RawAiModelCatalogItem = Omit<AiModelCatalogItem, 'providerLabel' | 'providerShortName'> & {
@@ -388,6 +394,20 @@ export const getDefaultCreateTripModel = (): AiModelCatalogItem => {
 
 export const getCurrentRuntimeModel = (): AiModelCatalogItem | null => {
     return AI_MODEL_CATALOG.find((item) => item.model === CURRENT_RUNTIME_MODEL_ID) || null;
+};
+
+export const getCreateTripModelOptions = (items: AiModelCatalogItem[]): AiModelCatalogItem[] => {
+    const activeItems = items.filter((item) => item.availability === 'active');
+    const sortedActive = sortAiModels(activeItems);
+    const byId = new Map(sortedActive.map((item) => [item.id, item]));
+
+    const preferred = CREATE_TRIP_PREFERRED_MODEL_IDS
+        .map((id) => byId.get(id))
+        .filter((item): item is AiModelCatalogItem => Boolean(item));
+
+    const preferredIdSet = new Set(preferred.map((item) => item.id));
+    const remainder = sortedActive.filter((item) => !preferredIdSet.has(item.id));
+    return [...preferred, ...remainder];
 };
 
 export const groupAiModelsByProvider = (items: AiModelCatalogItem[]) => {
