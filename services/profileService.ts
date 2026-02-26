@@ -140,8 +140,10 @@ interface ProfileSelectResult {
     error: { message?: string } | null;
 }
 
+type ProfileSelectQuery = (selectColumns: string) => PromiseLike<ProfileSelectResult>;
+
 const runProfileSelectWithFallback = async (
-    queryFactory: (selectColumns: string) => Promise<ProfileSelectResult>
+    queryFactory: ProfileSelectQuery
 ): Promise<ProfileSelectResult> => {
     const fallbackOrder = PROFILE_SELECT_FALLBACK_ORDER[profileSelectTierHint];
     let latestColumnError: ProfileSelectResult | null = null;
@@ -301,7 +303,7 @@ const validateUsername = (candidate: string): UsernameAvailabilityResult | null 
 };
 
 const loadProfileByQuery = async (
-    queryFactory: (selectColumns: string) => Promise<ProfileSelectResult>
+    queryFactory: ProfileSelectQuery
 ): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
 
