@@ -308,4 +308,42 @@ describe('pages/PublicProfilePage', () => {
       limit: 9,
     });
   });
+
+  it('keeps the profile visible when public trips loading fails', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'TH',
+        city: 'Bangkok',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+    mocks.getPublicTripsPageByUserId.mockRejectedValueOnce(new Error('Public trips unavailable'));
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Traveler One')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('publicProfile.notFoundTitle')).toBeNull();
+    expect(screen.getByText('Public trips unavailable')).toBeInTheDocument();
+  });
 });

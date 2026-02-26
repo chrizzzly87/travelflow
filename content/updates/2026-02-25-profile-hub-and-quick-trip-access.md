@@ -22,6 +22,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔧 Kept orbit text as a reusable component for later, but removed it from active profile avatar rendering.
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
 - [x] [Fixed] 🧭 Hardened public-profile handle resolution so valid profiles no longer fall into false “profile not found” states in mixed-schema environments.
+- [x] [Fixed] 🧭 Decoupled public-profile identity loading from public-trip loading so profile pages still render even if trip queries fail temporarily.
 - [x] [Improved] 🚀 Added a guest-first public-profile fallback CTA so signed-out visitors can register for free directly from unavailable/private profile states.
 - [x] [Improved] 🛡️ Allowed admins to open user public profiles even when profile visibility is disabled, so moderation/review workflows are never blocked.
 - [x] [Improved] 🔎 Added a direct “Open public profile” action in the admin users drawer next to “Open in Trips” for faster cross-surface navigation.
@@ -35,15 +36,12 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧠 Cached current-profile data in app session state so profile surfaces avoid fallback-name flicker after login.
 - [x] [Improved] 🧭 Added “View public profile” shortcuts to account and mobile menus plus kept recent-trip quick access.
 - [x] [New feature] 🛂 Added a passport-inspired stamp system with achievement milestones and a dedicated stamp collection page.
-- [x] [Improved] ✨ Added interactive stamp cards with rarity/progress details plus draggable “recent stamp” stickers on the passport module.
+- [x] [Improved] ✨ Added interactive stamp cards with cleaner density: core achievement label stays visible while rarity/progress metadata appears on hover/focus.
 - [x] [Improved] 📅 Added clearer “unlocked on” timing visibility for stamps in the collection view.
-- [x] [Improved] 💾 Persisted passport sticker placement to the profile database so sticker positions survive reloads and sessions.
-- [x] [Improved] 🛂 Upgraded profile and public-profile stamp previews to a reusable dark passport booklet that reflects each user’s saved sticker layout.
-- [x] [Improved] 🧲 Restored direct sticker movement on the profile passport cover so owners can drag their 3 showcase stamps from the profile hub and keep those positions.
-- [x] [Improved] 📓 Reworked the passport modal motion to feel closer to an opening-book transition while still respecting reduced-motion preferences.
+- [x] [Improved] 🛂 Upgraded profile and public-profile stamp entry to a reusable passport-cover module with country-based color themes, holographic/grain detailing, and hover-lift feedback.
+- [x] [Improved] 📓 Reworked stamp browsing into dedicated passport pages with opening-book + page-turn transitions, left/right hit-zones, and reduced-motion fallbacks.
 - [x] [Improved] 🏛️ Replaced the ambiguous “TF” passport seal text with a neutral emblem treatment.
-- [x] [Improved] 🎟️ Added passport-cover customization so users can choose which unlocked stamps to showcase (up to 3) and persist that selection.
-- [x] [Improved] 📖 Added a passport-style modal transition to open and browse full stamp collections, including locked achievements in a muted state.
+- [x] [Improved] 📖 Added stateful stamp-book URLs for public handles so visitor stamp collections can be opened directly and shared.
 - [x] [Improved] 🌐 Applied country-based passport cover color themes from profile country/region data for a more personalized booklet look.
 - [x] [Improved] 👀 Removed owner-facing passport helper copy from public profiles to keep visitor views focused on the profile owner’s achievements.
 - [x] [Improved] 🧷 Simplified stamp card density by moving achievement meta details into hover/focus reveal states instead of always showing them inline.
@@ -51,7 +49,9 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🗺️ Added per-trip public visibility controls and enforced read-only public trip access mode where needed.
 - [x] [Improved] 🏳️ Added country flags to visited-country chips and improved profile metadata readability.
 - [x] [Improved] 📤 Added a one-click action to share your public profile URL directly from your profile summary.
+- [x] [Improved] ✅ Added immediate share feedback with tactile press-state styling and copy/open confirmation toasts.
 - [x] [Improved] 🧩 Simplified trip-card controls to reduce visual clutter while keeping open/favorite/pin/visibility actions.
+- [x] [Improved] 📱 Updated profile/public trip-card grids to a 2-column mobile layout for better small-screen scanability.
 - [x] [Improved] 🔢 Added right-aligned, tabular-number stat counters with animated count-up transitions for profile summary metrics.
 - [x] [Improved] ⚡ Added lazy chunk rendering + skeleton placeholders for profile trip grids and paged loading for public-profile trips to reduce first-load work.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.

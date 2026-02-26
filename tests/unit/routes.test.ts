@@ -21,6 +21,7 @@ describe('config/routes', () => {
     expect(buildPath('blogPost', { slug: 'spring-guide' })).toBe('/blog/spring-guide');
     expect(buildPath('tripDetail', { tripId: 'abc 123' })).toBe('/trip/abc%20123');
     expect(buildPath('publicProfile', { username: 'traveler_1' })).toBe('/u/traveler_1');
+    expect(buildPath('publicProfileStamps', { username: 'traveler_1' })).toBe('/u/traveler_1/stamps');
   });
 
   it('buildPath handles all declared route keys', () => {
@@ -69,6 +70,7 @@ describe('config/routes', () => {
       buildPath('profileSettings'),
       buildPath('profileOnboarding'),
       buildPath('publicProfile', { username: 'traveler' }),
+      buildPath('publicProfileStamps', { username: 'traveler' }),
     ];
 
     expect(routeResults.every((path) => path.startsWith('/'))).toBe(true);

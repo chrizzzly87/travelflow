@@ -45,7 +45,8 @@ export type RouteKey =
     | 'profileStamps'
     | 'profileSettings'
     | 'profileOnboarding'
-    | 'publicProfile';
+    | 'publicProfile'
+    | 'publicProfileStamps';
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
@@ -54,6 +55,7 @@ type RouteParamsByKey = {
     exampleTrip: { templateId: string };
     shareTrip: { token: string };
     publicProfile: { username: string };
+    publicProfileStamps: { username: string };
 };
 
 const encodeSegment = (value: string): string => encodeURIComponent(value);
@@ -208,6 +210,8 @@ export const buildPath = <K extends RouteKey>(
             return '/profile/onboarding';
         case 'publicProfile':
             return `/u/${encodeSegment((params as RouteParamsByKey['publicProfile']).username)}`;
+        case 'publicProfileStamps':
+            return `/u/${encodeSegment((params as RouteParamsByKey['publicProfileStamps']).username)}/stamps`;
         default:
             return '/';
     }

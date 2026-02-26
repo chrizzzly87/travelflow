@@ -120,6 +120,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       className={[
         'profile-stamp-card group relative overflow-hidden rounded-xl border bg-white text-left',
         selected ? 'border-accent-300 shadow-md shadow-accent-100/60' : 'border-slate-200',
+        stamp.achieved ? '' : 'opacity-80',
       ].join(' ')}
       style={{
         '--stamp-tilt-x': `${prefersReducedMotion ? 0 : visualState.tiltX}deg`,
@@ -142,7 +143,6 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
 
       <div className="space-y-1 border-t border-slate-100 px-3 py-2.5">
         <p className="line-clamp-1 text-sm font-semibold text-slate-900">{stamp.definition.title}</p>
-        <p className="line-clamp-2 text-xs text-slate-500">{stamp.definition.subtitle}</p>
       </div>
 
       <div
@@ -152,7 +152,8 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         ].join(' ')}
         aria-hidden={!detailsVisible}
       >
-        <div className="flex items-center justify-between gap-2">
+        <p className="line-clamp-2 text-[11px] text-slate-600">{stamp.definition.subtitle}</p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
             {stamp.achieved ? <SealCheck size={13} weight="duotone" className="text-emerald-600" /> : <LockSimple size={13} weight="duotone" />}
             {stamp.achieved ? 'Unlocked' : `${Math.floor(stamp.currentValue)}/${stamp.targetValue}`}

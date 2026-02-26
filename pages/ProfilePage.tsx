@@ -31,7 +31,6 @@ import { getProfileCountryDisplayName } from '../services/profileCountryService'
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { updateCurrentUserPassportStickerPositions } from '../services/profileService';
 import {
     formatDisplayNameForGreeting,
     pickRandomInternationalGreeting,
@@ -352,19 +351,6 @@ export const ProfilePage: React.FC = () => {
         });
     }, [persistTrip, tab, trips]);
 
-    const handlePassportStickerMoveEnd = useCallback((
-        positions: Record<string, { x: number; y: number }>,
-        movedStampId: string
-    ) => {
-        trackEvent('profile__passport_sticker--move', {
-            stamp_id: movedStampId,
-            surface: 'profile_summary',
-        });
-        void updateCurrentUserPassportStickerPositions(positions)
-            .then(() => refreshProfile())
-            .catch(() => undefined);
-    }, [refreshProfile]);
-
     const publicProfilePath = profile?.username
         ? buildPath('publicProfile', { username: profile.username })
         : null;
@@ -434,9 +420,7 @@ export const ProfilePage: React.FC = () => {
                     distanceLabel={distanceLabel}
                     countries={visitedCountries}
                     stamps={passportDisplayStamps}
-                    allStamps={stampProgress}
                     passportCountryCode={profile?.country}
-                    passportStickerPositions={profile?.passportStickerPositions}
                     stats={[
                         { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                         { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
@@ -458,8 +442,6 @@ export const ProfilePage: React.FC = () => {
                         stampsTitle: t('summary.stampsTitle'),
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
-                        stampsEmpty: t('summary.stampsEmpty'),
-                        stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                     }}
                     onEditProfile={() => {
                         trackEvent('profile__summary--edit_profile');
@@ -491,8 +473,8 @@ export const ProfilePage: React.FC = () => {
                     }}
                     onOpenPassport={() => {
                         trackEvent('profile__summary--open_stamps');
+                        navigate(buildPath('profileStamps'));
                     }}
-                    onPassportStickerMoveEnd={handlePassportStickerMoveEnd}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}

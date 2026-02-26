@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
-import type { PassportStickerPosition, ProfileStampProgress } from './profileStamps';
+import type { ProfileStampProgress } from './profileStamps';
 import { ProfilePassportBook } from './ProfilePassportBook';
 import { ProfileStampCard } from './ProfileStampCard';
 
@@ -15,7 +15,6 @@ interface ProfilePassportDialogProps {
   stamps: ProfileStampProgress[];
   previewStamps: ProfileStampProgress[];
   countryCode?: string | null;
-  stickerPositions?: Record<string, PassportStickerPosition>;
   locale?: string;
 }
 
@@ -30,7 +29,6 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
   stamps,
   previewStamps,
   countryCode,
-  stickerPositions,
   locale = 'en',
 }) => {
   return (
@@ -42,10 +40,8 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
               title={title}
               description={description}
               openLabel={openLabel}
-              emptyLabel={emptyLabel}
               stamps={previewStamps}
               countryCode={countryCode}
-              stickerPositions={stickerPositions}
               testId="profile-passport-dialog-book"
             />
           </div>

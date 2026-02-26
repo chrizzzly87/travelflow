@@ -200,7 +200,12 @@
     "selectionEmpty": "Unlock stamps to choose what appears on your passport cover.",
     "selectionLimitNotice": "Choose up to {count} stamps for your cover.",
     "selectionSaveFailed": "Could not save your stamp cover selection.",
-    "selectionSaving": "Saving passport cover selection..."
+    "selectionSaving": "Saving passport cover selection...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "emptySlot": "Stamp slot",
+    "backToPublicProfile": "Back to public profile"
   },
   "likedPlaceholder": {
     "title": "Liked trips are coming soon",

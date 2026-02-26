@@ -3,7 +3,6 @@ import { ChatTeardropText, UserPlus } from '@phosphor-icons/react';
 import { ProfileMetaPanel } from './ProfileMetaPanel';
 import { ProfileAvatarOrbitText } from './ProfileAvatarOrbitText';
 import type { VisitedCountry } from './profileCountryUtils';
-import type { PassportStickerPosition } from './profileStamps';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
 import type { ProfileStampProgress } from './profileStamps';
@@ -22,8 +21,6 @@ interface ProfileVisitorSummaryLabels {
   stampsTitle: string;
   stampsDescription: string;
   stampsOpen: string;
-  stampsEmpty: string;
-  stampsUnlockedOn: string;
 }
 
 interface ProfileVisitorSummaryProps {
@@ -36,9 +33,7 @@ interface ProfileVisitorSummaryProps {
   distanceLabel: string;
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
-  allStamps: ProfileStampProgress[];
   passportCountryCode?: string;
-  passportStickerPositions?: Record<string, PassportStickerPosition>;
   stats: ProfileSummaryStat[];
   labels: ProfileVisitorSummaryLabels;
   locale?: string;
@@ -56,9 +51,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   distanceLabel,
   countries,
   stamps,
-  allStamps,
   passportCountryCode,
-  passportStickerPositions,
   stats,
   labels,
   locale = 'en',
@@ -116,10 +109,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
             distanceLabel={distanceLabel}
             countries={countries}
             stamps={stamps}
-            allStamps={allStamps}
             passportCountryCode={passportCountryCode}
-            passportStickerPositions={passportStickerPositions}
-            locale={locale}
             onOpenPassport={onOpenPassport}
             labels={{
               bio: labels.bio,
@@ -131,8 +121,6 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
               stampsTitle: labels.stampsTitle,
               stampsDescription: labels.stampsDescription,
               stampsOpen: labels.stampsOpen,
-              stampsEmpty: labels.stampsEmpty,
-              stampsUnlockedOn: labels.stampsUnlockedOn,
             }}
           />
         </div>

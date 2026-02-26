@@ -106,15 +106,25 @@ export const PublicProfilePage: React.FC = () => {
             });
 
             setIsTripsLoading(true);
-            const firstPage = await getPublicTripsPageByUserId(profileRecord.id, {
-                offset: 0,
-                limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-            });
-            if (!active) return;
-            setTrips(firstPage.trips);
-            setNextTripsOffset(firstPage.nextOffset);
-            setHasMoreTrips(firstPage.hasMore);
-            setIsTripsLoading(false);
+            try {
+                const firstPage = await getPublicTripsPageByUserId(profileRecord.id, {
+                    offset: 0,
+                    limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
+                });
+                if (!active) return;
+                setTrips(firstPage.trips);
+                setNextTripsOffset(firstPage.nextOffset);
+                setHasMoreTrips(firstPage.hasMore);
+            } catch (error) {
+                if (!active) return;
+                setTrips([]);
+                setNextTripsOffset(0);
+                setHasMoreTrips(false);
+                setErrorMessage(error instanceof Error ? error.message : profileLoadErrorLabel);
+            } finally {
+                if (!active) return;
+                setIsTripsLoading(false);
+            }
         };
 
         void resolvePublicProfileByHandle(handle)
@@ -323,9 +333,7 @@ export const PublicProfilePage: React.FC = () => {
                             distanceLabel={distanceLabel}
                             countries={visitedCountries}
                             stamps={passportDisplayStamps}
-                            allStamps={allStampProgress}
                             passportCountryCode={state.profile.country}
-                            passportStickerPositions={state.profile.passportStickerPositions}
                             stats={[
                                 { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                                 { id: 'likes_saved', label: t('stats.likesSaved'), value: 0 },
@@ -346,11 +354,12 @@ export const PublicProfilePage: React.FC = () => {
                                 stampsTitle: t('summary.stampsTitle'),
                                 stampsDescription: '',
                                 stampsOpen: t('summary.stampsOpen'),
-                                stampsEmpty: t('summary.stampsEmpty'),
-                                stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                             }}
                             onOpenPassport={() => {
                                 trackEvent('public_profile__summary--open_passport');
+                                navigate(buildPath('publicProfileStamps', {
+                                    username: state.profile?.username || username,
+                                }));
                             }}
                             locale={appLocale}
                         />

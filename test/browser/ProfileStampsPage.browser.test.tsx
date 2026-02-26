@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 const mocks = vi.hoisted(() => ({
   auth: {
@@ -32,8 +33,6 @@ const mocks = vi.hoisted(() => ({
     },
   },
   getAllTrips: vi.fn(),
-  updatePositions: vi.fn().mockResolvedValue(undefined),
-  updateSelection: vi.fn().mockResolvedValue(undefined),
   trackEvent: vi.fn(),
 }));
 
@@ -49,11 +48,6 @@ vi.mock('../../services/storageService', () => ({
   getAllTrips: mocks.getAllTrips,
 }));
 
-vi.mock('../../services/profileService', () => ({
-  updateCurrentUserPassportStickerPositions: mocks.updatePositions,
-  updateCurrentUserPassportStickerSelection: mocks.updateSelection,
-}));
-
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: mocks.trackEvent,
   getAnalyticsDebugAttributes: () => ({}),
@@ -61,11 +55,10 @@ vi.mock('../../services/analyticsService', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, options?: { name?: string; count?: number; total?: number }) => {
+    t: (key: string, options?: { name?: string }) => {
       if (key === 'stamps.description') return `desc ${options?.name || ''}`;
-      if (key === 'stamps.unlockedCount') return `${options?.count ?? 0}/${options?.total ?? 0}`;
-      if (key === 'stamps.lastUpdated') return `${options?.count ?? 0}`;
       if (key === 'fallback.displayName') return 'Traveler';
+      if (key === 'stamps.pageIndicator') return '{page}/{total}';
       return key;
     },
     i18n: {
@@ -77,12 +70,28 @@ vi.mock('react-i18next', () => ({
 
 import { ProfileStampsPage } from '../../pages/ProfileStampsPage';
 
+const LocationProbe: React.FC = () => {
+  const location = useLocation();
+  return React.createElement('div', { 'data-testid': 'location-probe' }, `${location.pathname}${location.search}`);
+};
+
 const renderPage = () => render(
   React.createElement(
     MemoryRouter,
     { initialEntries: ['/profile/stamps'] },
-    React.createElement(ProfileStampsPage)
-  )
+    React.createElement(
+      Routes,
+      null,
+      React.createElement(Route, {
+        path: '/profile/stamps',
+        element: React.createElement(React.Fragment, null, React.createElement(ProfileStampsPage), React.createElement(LocationProbe)),
+      }),
+      React.createElement(Route, {
+        path: '/login',
+        element: React.createElement('div', { 'data-testid': 'login-route' }, 'Login'),
+      }),
+    ),
+  ),
 );
 
 describe('pages/ProfileStampsPage', () => {
@@ -100,10 +109,8 @@ describe('pages/ProfileStampsPage', () => {
       firstName: 'Traveler',
       lastName: 'One',
       username: 'traveler',
-      passportStickerPositions: {
-        first_trip_created: { x: 44, y: 55 },
-      },
-      passportStickerSelection: ['first_trip_created'],
+      passportStickerPositions: {},
+      passportStickerSelection: [],
     };
 
     mocks.getAllTrips.mockReturnValue([
@@ -118,40 +125,20 @@ describe('pages/ProfileStampsPage', () => {
     ]);
   });
 
-  it('uses persisted passport sticker positions from profile data', async () => {
-    const { container } = renderPage();
+  it('renders grouped stamp-book navigation and tracks page changes', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
     await waitFor(() => {
-      expect(container.querySelector('[data-stamp-id="first_trip_created"]')).toBeTruthy();
+      expect(screen.getAllByRole('button', { name: 'stamps.nextPage' }).length).toBeGreaterThanOrEqual(2);
     });
 
-    const sticker = container.querySelector('[data-stamp-id="first_trip_created"]') as HTMLButtonElement;
-    expect(sticker.style.left).toBe('44px');
-    expect(sticker.style.top).toBe('55px');
-  });
-
-  it('saves sticker positions after moving a passport sticker', async () => {
-    const { container } = renderPage();
+    const nextButtons = screen.getAllByRole('button', { name: 'stamps.nextPage' });
+    await user.click(nextButtons[nextButtons.length - 1]);
 
     await waitFor(() => {
-      expect(container.querySelector('[data-stamp-id="first_trip_created"]')).toBeTruthy();
+      expect(mocks.trackEvent).toHaveBeenCalledWith('profile__stamps_page--change', { page: 2 });
     });
-
-    const sticker = container.querySelector('[data-stamp-id="first_trip_created"]') as HTMLButtonElement;
-    const canvas = screen.getByTestId('profile-stamps-passport-canvas');
-
-    fireEvent.pointerDown(sticker, { clientX: 60, clientY: 70, pointerId: 1 });
-    fireEvent.pointerMove(canvas, { clientX: 170, clientY: 190, pointerId: 1 });
-    fireEvent.pointerUp(canvas, { pointerId: 1 });
-
-    await waitFor(() => {
-      expect(mocks.updatePositions).toHaveBeenCalledTimes(1);
-    });
-
-    const payload = mocks.updatePositions.mock.calls[0][0] as Record<string, { x: number; y: number }>;
-    expect(payload.first_trip_created).toBeTruthy();
-    expect(typeof payload.first_trip_created.x).toBe('number');
-    expect(typeof payload.first_trip_created.y).toBe('number');
   });
 
   it('uses email fallback for new users while profile is not cached yet', async () => {
@@ -168,17 +155,13 @@ describe('pages/ProfileStampsPage', () => {
     expect(screen.getByText('desc new.user')).toBeInTheDocument();
   });
 
-  it('persists passport cover sticker selection changes', async () => {
+  it('redirects guests to login', async () => {
+    mocks.auth.isAuthenticated = false;
+
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByTestId('passport-selection-first_trip_created')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('passport-selection-first_trip_created'));
-
-    await waitFor(() => {
-      expect(mocks.updateSelection).toHaveBeenCalledWith([]);
+      expect(screen.getByTestId('login-route')).toBeInTheDocument();
     });
   });
 });
