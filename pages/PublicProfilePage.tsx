@@ -49,11 +49,15 @@ const mergeTripsById = (currentTrips: ITrip[], nextTrips: ITrip[]): ITrip[] => {
     return sortTripsByUpdatedDesc(Array.from(mergedById.values()));
 };
 
+const normalizeUsername = (value: unknown): string => (
+    typeof value === 'string' ? value.trim().toLowerCase() : ''
+);
+
 export const PublicProfilePage: React.FC = () => {
     const { username = '' } = useParams();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('profile');
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, profile: viewerProfile } = useAuth();
 
     const [state, setState] = useState<ProfileState>({
         status: 'loading',
@@ -74,6 +78,10 @@ export const PublicProfilePage: React.FC = () => {
         () => t('errors.profileLoad'),
         [i18n.language, i18n.resolvedLanguage, t]
     );
+    const viewerHandle = useMemo(
+        () => normalizeUsername(viewerProfile?.username),
+        [viewerProfile?.username]
+    );
 
     useEffect(() => {
         const handle = (username || '').trim().toLowerCase();
@@ -91,6 +99,24 @@ export const PublicProfilePage: React.FC = () => {
         setIsTripsLoading(false);
         setIsTripsLoadingMore(false);
 
+        const loadFirstTripsPage = async (profileRecord: UserProfileRecord) => {
+            setState({ status: 'found', profile: profileRecord });
+            trackEvent('public_profile__view', {
+                username: profileRecord.username || handle,
+            });
+
+            setIsTripsLoading(true);
+            const firstPage = await getPublicTripsPageByUserId(profileRecord.id, {
+                offset: 0,
+                limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
+            });
+            if (!active) return;
+            setTrips(firstPage.trips);
+            setNextTripsOffset(firstPage.nextOffset);
+            setHasMoreTrips(firstPage.hasMore);
+            setIsTripsLoading(false);
+        };
+
         void resolvePublicProfileByHandle(handle)
             .then(async (result) => {
                 if (!active) return;
@@ -105,30 +131,24 @@ export const PublicProfilePage: React.FC = () => {
                 }
 
                 if (result.status === 'private') {
+                    if (isAuthenticated && viewerProfile && viewerHandle === handle) {
+                        await loadFirstTripsPage(viewerProfile);
+                        return;
+                    }
                     setState({ status: 'private', profile: null });
                     return;
                 }
 
                 if (result.status === 'not_found' || !result.profile) {
+                    if (isAuthenticated && viewerProfile && viewerHandle === handle) {
+                        await loadFirstTripsPage(viewerProfile);
+                        return;
+                    }
                     setState({ status: 'not_found', profile: null });
                     return;
                 }
 
-                setState({ status: 'found', profile: result.profile });
-                trackEvent('public_profile__view', {
-                    username: result.profile.username || handle,
-                });
-
-                setIsTripsLoading(true);
-                const firstPage = await getPublicTripsPageByUserId(result.profile.id, {
-                    offset: 0,
-                    limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-                });
-                if (!active) return;
-                setTrips(firstPage.trips);
-                setNextTripsOffset(firstPage.nextOffset);
-                setHasMoreTrips(firstPage.hasMore);
-                setIsTripsLoading(false);
+                await loadFirstTripsPage(result.profile);
             })
             .catch((error) => {
                 if (!active) return;
@@ -140,7 +160,7 @@ export const PublicProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [navigate, profileLoadErrorLabel, username]);
+    }, [isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfile]);
 
     const loadMoreTrips = useCallback(() => {
         if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
@@ -230,7 +250,7 @@ export const PublicProfilePage: React.FC = () => {
                                 <div className="h-4 w-1/2 rounded bg-slate-100" />
                             </div>
                         </section>
-                        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                        <section className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                             {Array.from({ length: 3 }).map((_, index) => (
                                 <ProfileTripCardSkeleton key={`public-profile-loading-skeleton-${index}`} />
                             ))}
@@ -349,7 +369,7 @@ export const PublicProfilePage: React.FC = () => {
                                         {t('sections.highlightsCount', { count: pinnedTrips.length })}
                                     </span>
                                 </div>
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                     {pinnedTrips.map((trip) => (
                                         <ProfileTripCard
                                             key={`public-pinned-${trip.id}`}
@@ -382,7 +402,7 @@ export const PublicProfilePage: React.FC = () => {
                         <section className="space-y-3">
                             <h2 className="text-lg font-black tracking-tight text-slate-900">{t('publicProfile.tripsTitle')}</h2>
                             {isTripsLoading && trips.length === 0 ? (
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                     {Array.from({ length: 3 }).map((_, index) => (
                                         <ProfileTripCardSkeleton key={`public-trip-loading-${index}`} />
                                     ))}
@@ -393,7 +413,7 @@ export const PublicProfilePage: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                         {trips.map((trip) => (
                                             <ProfileTripCard
                                                 key={`public-trip-${trip.id}`}
@@ -423,7 +443,7 @@ export const PublicProfilePage: React.FC = () => {
 
                                     {(hasMoreTrips || isTripsLoadingMore) && (
                                         <>
-                                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                                 {Array.from({ length: 3 }).map((_, index) => (
                                                     <ProfileTripCardSkeleton
                                                         key={`public-trip-more-skeleton-${index}`}

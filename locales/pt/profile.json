@@ -68,7 +68,9 @@
     "stampsOpen": "Open stamp collection",
     "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
-    "message": "Message"
+    "message": "Message",
+    "shareCopied": "URL do perfil copiada para a área de transferência.",
+    "shareOpened": "Perfil público aberto em uma nova aba."
   },
   "stats": {
     "totalTrips": "Total trips",

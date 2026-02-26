@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState, useTransition } from 
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
@@ -475,9 +476,17 @@ export const ProfilePage: React.FC = () => {
                         }
                         trackEvent('profile__summary--share_public_profile');
                         if (navigator.clipboard?.writeText) {
-                            void navigator.clipboard.writeText(publicProfileUrl);
+                            void navigator.clipboard.writeText(publicProfileUrl)
+                                .then(() => {
+                                    toast.success(t('summary.shareCopied'));
+                                })
+                                .catch(() => {
+                                    window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
+                                    toast.info(t('summary.shareOpened'));
+                                });
                         } else {
                             window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
+                            toast.info(t('summary.shareOpened'));
                         }
                     }}
                     onOpenPassport={() => {
@@ -532,7 +541,7 @@ export const ProfilePage: React.FC = () => {
                                 {t('sections.highlightsCount', { count: pinnedTrips.length })}
                             </span>
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                             {pinnedTrips.map((trip) => (
                                 <ProfileTripCard
                                     key={`pinned-${trip.id}`}
@@ -631,7 +640,7 @@ export const ProfilePage: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                 {visibleTripsForTab.map((trip) => (
                                     <ProfileTripCard
                                         key={trip.id}
@@ -666,7 +675,7 @@ export const ProfilePage: React.FC = () => {
 
                             {hasMoreTripsForTab && (
                                 <>
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                         {Array.from({ length: skeletonTripCount || PROFILE_TRIPS_PAGE_SIZE }).map((_, index) => (
                                             <ProfileTripCardSkeleton key={`profile-trip-skeleton-${index}`} pulse={isTripPaginationPending} />
                                         ))}

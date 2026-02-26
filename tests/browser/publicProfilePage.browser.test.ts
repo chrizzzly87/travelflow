@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
   auth: {
     isAuthenticated: false,
+    profile: null as any,
   },
 }));
 
@@ -79,6 +80,7 @@ describe('pages/PublicProfilePage', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.auth.isAuthenticated = false;
+    mocks.auth.profile = null;
     mocks.getPublicTripsPageByUserId.mockResolvedValue({
       trips: [],
       hasMore: false,
@@ -258,5 +260,52 @@ describe('pages/PublicProfilePage', () => {
     });
 
     expect(screen.queryByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeNull();
+  });
+
+  it('falls back to the authenticated viewer profile when own public handle resolve fails', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'not_found',
+      canonicalUsername: null,
+      redirectFromUsername: null,
+      profile: null,
+    });
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.profile = {
+      id: 'viewer-1',
+      email: 'viewer@example.com',
+      displayName: 'Viewer Traveler',
+      firstName: 'Viewer',
+      lastName: 'Traveler',
+      username: 'viewer_traveler',
+      bio: '',
+      gender: '',
+      country: 'DE',
+      city: 'Hamburg',
+      preferredLanguage: 'en',
+      onboardingCompletedAt: null,
+      accountStatus: 'active',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      usernameChangedAt: null,
+      passportStickerPositions: {},
+      passportStickerSelection: [],
+    };
+    mocks.getPublicTripsPageByUserId.mockResolvedValue({
+      trips: [makeTrip({ id: 'self-trip-1', title: 'My Public Trip', showOnPublicProfile: true })],
+      hasMore: false,
+      nextOffset: 1,
+    });
+
+    renderPublicProfilePage('/u/viewer_traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Viewer Traveler')).toBeInTheDocument();
+      expect(screen.getByText('My Public Trip')).toBeInTheDocument();
+    });
+
+    expect(mocks.getPublicTripsPageByUserId).toHaveBeenCalledWith('viewer-1', {
+      offset: 0,
+      limit: 9,
+    });
   });
 });

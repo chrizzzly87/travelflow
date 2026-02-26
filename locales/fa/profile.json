@@ -68,7 +68,9 @@
     "stampsOpen": "Open stamp collection",
     "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
-    "message": "Message"
+    "message": "Message",
+    "shareCopied": "لینک پروفایل در کلیپ‌بورد کپی شد.",
+    "shareOpened": "پروفایل عمومی در تب جدید باز شد."
   },
   "stats": {
     "totalTrips": "Total trips",

@@ -68,7 +68,9 @@
     "stampsOpen": "Open stamp collection",
     "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
-    "message": "Message"
+    "message": "Message",
+    "shareCopied": "프로필 URL이 클립보드에 복사되었습니다.",
+    "shareOpened": "공개 프로필이 새 탭에서 열렸습니다."
   },
   "stats": {
     "totalTrips": "Total trips",
