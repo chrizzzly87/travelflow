@@ -39,9 +39,7 @@ import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
-import { ConnectivityStatusBanner } from './components/ConnectivityStatusBanner';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
-import { useSyncStatus } from './hooks/useSyncStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
@@ -215,7 +213,6 @@ const AppContent: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
-    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const userSettingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const shouldLoadDebugger = useDebuggerBootstrap({ appName: APP_NAME, isDev: IS_DEV });
     const isFirstLoadCritical = useMemo(
@@ -524,12 +521,6 @@ const AppContent: React.FC = () => {
                     <SpeculationRulesManager enabled={!shouldSuppressSpeculationRules} />
                 </Suspense>
             )}
-            <ConnectivityStatusBanner
-                isPlannerRoute={isToolRoute(location.pathname)}
-                connectivity={connectivitySnapshot}
-                sync={syncSnapshot}
-                onRetrySync={() => retrySyncNow()}
-            />
             <AppRoutes
                 trip={trip}
                 appLanguage={appLanguage}

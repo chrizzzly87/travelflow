@@ -1,12 +1,15 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
+import { normalizeLocale } from '../../config/locales';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
 import { Spinner } from '../ui/spinner';
+
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;
@@ -86,81 +89,81 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     onRestoreConflictBackup,
     exampleTripBanner,
 }) => {
-    const { t } = useTranslation('common');
+    const { t, i18n } = useTranslation('common');
     const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
     const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
+    const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
     const queueCountVariant = pendingSyncCount === 0 ? 'None' : (pendingSyncCount === 1 ? 'One' : 'Many');
     const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
+    const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
+    const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
 
     return (
         <>
-            {shouldShowConnectivityStrip && (
-                <div className={`px-4 sm:px-6 py-2 border-b text-xs flex items-center justify-between gap-3 ${
+            {showSyncStatusStrip && (
+                <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
                     connectivityState === 'offline'
                         ? 'border-rose-200 bg-rose-50 text-rose-900'
-                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                        : connectivityState === 'degraded'
+                            ? 'border-amber-200 bg-amber-50 text-amber-900'
+                            : 'border-sky-200 bg-sky-50 text-sky-900'
                 }`}>
-                    <span>
-                        {t(`connectivity.tripStrip.${connectivityState}.message${queueCountVariant}`, { count: pendingSyncCount })}
-                        {connectivityForced ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
-                    </span>
-                    {failedSyncCount > 0 && onRetrySyncQueue && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                trackEvent('trip_connectivity__trip_strip--retry_sync', {
-                                    trip_id: tripId,
-                                    failed_count: failedSyncCount,
-                                    pending_count: pendingSyncCount,
-                                    connectivity_state: connectivityState,
-                                });
-                                onRetrySyncQueue();
-                            }}
-                            className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
-                            {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
-                                trip_id: tripId,
-                                failed_count: failedSyncCount,
-                                pending_count: pendingSyncCount,
-                                connectivity_state: connectivityState,
-                            })}
-                        >
-                            {t('connectivity.tripStrip.retry')}
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {shouldShowSyncStrip && (
-                <div className="px-4 sm:px-6 py-2 border-b border-sky-200 bg-sky-50 text-sky-900 text-xs flex items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-2">
                         {isSyncingQueue && <Spinner className="h-3.5 w-3.5" />}
-                        {isSyncingQueue
-                            ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
-                            : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount })}
+                        {shouldShowConnectivityStrip
+                            ? t(`connectivity.tripStrip.${connectivityState}.message${queueCountVariant}`, { count: pendingSyncCount })
+                            : (isSyncingQueue
+                                ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
+                                : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount }))}
+                        {connectivityForced && IS_DEV ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
                     </span>
-                    {failedSyncCount > 0 && onRetrySyncQueue && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                    <div className="flex items-center gap-2">
+                        {shouldShowConnectivityStrip && (
+                            <a
+                                href={supportContactPath}
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__banner--contact', {
+                                        trip_id: tripId,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState,
+                                        source: 'trip_strip',
+                                    });
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__banner--contact', {
+                                    trip_id: tripId,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState,
+                                    source: 'trip_strip',
+                                })}
+                            >
+                                {t('connectivity.banner.actions.contact')}
+                            </a>
+                        )}
+                        {failedSyncCount > 0 && onRetrySyncQueue && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                                        trip_id: tripId,
+                                        failed_count: failedSyncCount,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState || 'online',
+                                    });
+                                    onRetrySyncQueue();
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
                                     trip_id: tripId,
                                     failed_count: failedSyncCount,
                                     pending_count: pendingSyncCount,
                                     connectivity_state: connectivityState || 'online',
-                                });
-                                onRetrySyncQueue();
-                            }}
-                            className="px-3 py-1 rounded-md bg-sky-100 text-sky-900 text-xs font-semibold hover:bg-sky-200"
-                            {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
-                                trip_id: tripId,
-                                failed_count: failedSyncCount,
-                                pending_count: pendingSyncCount,
-                                connectivity_state: connectivityState || 'online',
-                            })}
-                        >
-                            {t('connectivity.tripStrip.retry')}
-                        </button>
-                    )}
+                                })}
+                            >
+                                {t('connectivity.tripStrip.retry')}
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 

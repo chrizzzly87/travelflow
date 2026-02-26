@@ -429,6 +429,8 @@ interface TripViewModalLayerProps {
     isGeneratingShare: boolean;
     isHistoryOpen: boolean;
     historyModalItems: any[];
+    pendingSyncCount: number;
+    failedSyncCount: number;
     onCloseHistory: () => void;
     onHistoryGo: (item: any) => void;
     shareStatus?: ShareMode;
@@ -502,6 +504,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     isGeneratingShare,
     isHistoryOpen,
     historyModalItems,
+    pendingSyncCount,
+    failedSyncCount,
     onCloseHistory,
     onHistoryGo,
     shareStatus,
@@ -605,6 +609,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     isExamplePreview={isExamplePreview}
                     showAllHistory={showAllHistory}
                     items={historyModalItems}
+                    pendingSyncCount={pendingSyncCount}
+                    failedSyncCount={failedSyncCount}
                     onClose={onCloseHistory}
                     onUndo={onHistoryUndo}
                     onRedo={onHistoryRedo}
@@ -980,10 +986,10 @@ const useTripViewRender = ({
     }, [showToast, t]);
 
     const handleRestoreServerBackup = useCallback(() => {
-        const latestConflictBackup = getLatestConflictBackupForTrip(trip.id);
-        if (!latestConflictBackup) return;
+        const conflictBackup = getLatestConflictBackupForTrip(trip.id);
+        if (!conflictBackup) return;
         const restoredTrip: ITrip = {
-            ...latestConflictBackup.serverTripSnapshot,
+            ...conflictBackup.serverTripSnapshot,
             updatedAt: Date.now(),
         };
         onUpdateTrip(restoredTrip);
@@ -1467,7 +1473,7 @@ const useTripViewRender = ({
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
     const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
-    const latestConflictBackup = useMemo(() => {
+    const latestConflictBackupEntry = useMemo(() => {
         if (!showOwnedTripConnectivityStatus) return null;
         return getLatestConflictBackupForTrip(trip.id);
     }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
@@ -1632,8 +1638,8 @@ const useTripViewRender = ({
                             void retrySyncNow();
                         })
                         : undefined}
-                    hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackup) : false}
-                    onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackup ? handleRestoreServerBackup : undefined}
+                    hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackupEntry) : false}
+                    onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackupEntry ? handleRestoreServerBackup : undefined}
                     exampleTripBanner={exampleTripBanner}
                 />
 
@@ -1745,6 +1751,8 @@ const useTripViewRender = ({
                         isGeneratingShare={isGeneratingShare}
                         isHistoryOpen={isHistoryOpen}
                         historyModalItems={historyModalItems}
+                        pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                        failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
                         onCloseHistory={() => setIsHistoryOpen(false)}
                         onHistoryGo={(item) => {
                             setIsHistoryOpen(false);

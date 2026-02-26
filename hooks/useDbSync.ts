@@ -66,7 +66,7 @@ export const useDbSync = (onLanguageLoaded?: (lang: AppLanguage) => void) => {
 
     useEffect(() => {
         if (!DB_ENABLED) return;
-        if (!hasBootstrapped && !calledRef.current) {
+        if (!hasBootstrapped && !calledRef.current && getConnectivitySnapshot().state === 'online') {
             calledRef.current = true;
             void runInitialBootstrap(onLanguageLoaded);
         }
@@ -74,7 +74,15 @@ export const useDbSync = (onLanguageLoaded?: (lang: AppLanguage) => void) => {
         const unsubscribe = subscribeConnectivityStatus((snapshot) => {
             const previous = previousConnectivityStateRef.current;
             previousConnectivityStateRef.current = snapshot.state;
-            if (!hasBootstrapped) return;
+
+            if (!hasBootstrapped) {
+                if (snapshot.state === 'online' && !calledRef.current) {
+                    calledRef.current = true;
+                    void runInitialBootstrap(onLanguageLoaded);
+                }
+                return;
+            }
+
             if (previous !== 'online' && snapshot.state === 'online') {
                 void runRecoverySync();
             }

@@ -127,6 +127,7 @@ describe('ConnectivityStatusBanner', () => {
           })}
           sync={makeSyncSnapshot({ pendingCount: 1 })}
           onRetrySync={() => undefined}
+          showDeveloperDetails
         />
       </MemoryRouter>,
     );
@@ -134,6 +135,25 @@ describe('ConnectivityStatusBanner', () => {
     expect(screen.getByText('Connection is unstable. Saving in resilient mode.')).toBeInTheDocument();
     expect(screen.getByText('1 queued change will sync when Supabase stabilizes.')).toBeInTheDocument();
     expect(screen.getByText('Supabase outage simulation is currently forced in debugger mode.')).toBeInTheDocument();
+  });
+
+  it('hides forced-mode hint for non-developer surfaces', () => {
+    render(
+      <MemoryRouter>
+        <ConnectivityStatusBanner
+          isPlannerRoute
+          connectivity={makeConnectivitySnapshot({
+            state: 'offline',
+            isForced: true,
+            forcedState: 'offline',
+          })}
+          sync={makeSyncSnapshot({ pendingCount: 1 })}
+          onRetrySync={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText('Supabase outage simulation is currently forced in debugger mode.')).not.toBeInTheDocument();
   });
 
   it('shows online syncing state without outage-only contact actions', () => {

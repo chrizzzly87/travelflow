@@ -10,6 +10,7 @@ import {
   type OfflineTripQueueEntry,
 } from './offlineChangeQueue';
 import {
+  describeConnectivityError,
   getConnectivitySnapshot,
   markConnectivityFailure,
   markConnectivitySuccess,
@@ -25,6 +26,7 @@ export const TRIP_SYNC_TOAST_EVENT = 'tf:trip-sync-toast';
 const MAX_REPLAY_ATTEMPTS = 3;
 const BASE_RETRY_DELAY_MS = 300;
 const INTER_ITEM_DELAY_MS = 200;
+const SYNC_RETRY_INTERVAL_MS = 30_000;
 
 export interface SyncRunSnapshot {
   isSyncing: boolean;
@@ -73,6 +75,7 @@ let syncSnapshot: SyncRunSnapshot = {
 let managerStarted = false;
 let lastConnectivityState: ConnectivityState = getConnectivitySnapshot().state;
 let syncPromise: Promise<SyncRunSnapshot> | null = null;
+let periodicSyncTimer: ReturnType<typeof setTimeout> | null = null;
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -118,6 +121,67 @@ const resolveErrorMessage = (error: unknown): string => {
     if (parts.length > 0) return parts.join(' | ');
   }
   return 'Unknown sync error';
+};
+
+const isPermissionLikeSyncError = (error: unknown): boolean => {
+  const typed = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown } | null;
+  const code = typeof typed?.code === 'string' ? typed.code.trim().toUpperCase() : '';
+  if (code === '42501' || code === 'P0001') return true;
+
+  const text = `${String(typed?.message ?? '')} ${String(typed?.details ?? '')} ${String(typed?.hint ?? '')}`.toLowerCase();
+  return text.includes('row-level security')
+    || text.includes('not allowed')
+    || text.includes('permission denied');
+};
+
+const shouldMarkConnectivityFailureForReplay = (error: unknown): boolean => {
+  if (isPermissionLikeSyncError(error)) return false;
+
+  const summary = resolveErrorMessage(error).toLowerCase();
+  if (summary.includes('trip upsert failed during replay')) return false;
+  if (summary.includes('trip version creation failed during replay')) return false;
+
+  const connectivity = describeConnectivityError(error, {
+    source: 'trip_sync',
+    operation: 'replay_entry',
+  });
+  if (connectivity.isNetworkLike) return true;
+
+  const typed = error as { status?: unknown } | null;
+  const status = typeof typed?.status === 'number' ? typed.status : null;
+  return status === 500 || status === 502 || status === 503 || status === 504;
+};
+
+const isEntryRetryable = (entry: OfflineTripQueueEntry): boolean => entry.attemptCount < MAX_REPLAY_ATTEMPTS;
+
+const clearPeriodicRetryTimer = () => {
+  if (!periodicSyncTimer) return;
+  clearTimeout(periodicSyncTimer);
+  periodicSyncTimer = null;
+};
+
+const hasRetryableQueueEntries = (): boolean => {
+  const queueSnapshot = getQueueSnapshot();
+  if (queueSnapshot.pendingCount === 0) return false;
+  return queueSnapshot.entries.some(isEntryRetryable);
+};
+
+const schedulePeriodicRetry = () => {
+  clearPeriodicRetryTimer();
+  if (typeof window === 'undefined') return;
+  if (syncSnapshot.isSyncing) return;
+  if (getConnectivitySnapshot().state !== 'online') return;
+  if (!hasRetryableQueueEntries()) return;
+
+  periodicSyncTimer = window.setTimeout(() => {
+    periodicSyncTimer = null;
+    if (typeof document !== 'undefined' && document.hidden) {
+      schedulePeriodicRetry();
+      return;
+    }
+    scheduleQueueSync();
+    schedulePeriodicRetry();
+  }, SYNC_RETRY_INTERVAL_MS);
 };
 
 const isServerTripNewerThanQueued = (serverUpdatedAt: number | undefined, queuedUpdatedAt: number | undefined): boolean => {
@@ -186,11 +250,13 @@ const replaySingleEntryWithRetries = async (entry: OfflineTripQueueEntry): Promi
     } catch (error) {
       attemptCount += 1;
       lastError = resolveErrorMessage(error);
-      markConnectivityFailure(error, {
-        source: 'trip_sync',
-        operation: 'replay_entry',
-        tripId: entry.tripId,
-      });
+      if (shouldMarkConnectivityFailureForReplay(error)) {
+        markConnectivityFailure(error, {
+          source: 'trip_sync',
+          operation: 'replay_entry',
+          tripId: entry.tripId,
+        });
+      }
 
       updateQueuedTripCommit(entry.id, {
         attemptCount,
@@ -225,13 +291,25 @@ const runSyncInternal = async (
 
   syncPromise = (async () => {
     const queueSnapshot = getQueueSnapshot();
-    const entries = options?.onlyFailed
+    let entries = options?.onlyFailed
       ? queueSnapshot.entries.filter((entry) => Boolean(entry.lastError) || entry.attemptCount > 0)
       : queueSnapshot.entries;
 
+    if (options?.onlyFailed) {
+      entries = entries.map((entry) => {
+        if (entry.attemptCount >= MAX_REPLAY_ATTEMPTS) {
+          return {
+            ...entry,
+            attemptCount: 0,
+          };
+        }
+        return entry;
+      });
+    }
+
     if (entries.length === 0) {
       const refreshed = refreshCounts();
-      return setSyncSnapshot((previous) => ({
+      const emptyRunSnapshot = setSyncSnapshot((previous) => ({
         ...refreshed,
         ...previous,
         isSyncing: false,
@@ -243,6 +321,8 @@ const runSyncInternal = async (
         lastError: null,
         lastTrigger: trigger,
       }));
+      schedulePeriodicRetry();
+      return emptyRunSnapshot;
     }
 
     emitToastEvent({
@@ -318,6 +398,7 @@ const runSyncInternal = async (
       lastError,
       lastTrigger: trigger,
     }));
+    schedulePeriodicRetry();
 
     emitToastEvent({
       type: failedDuringRun > 0 ? 'sync_partial_failure' : 'sync_completed',
@@ -336,7 +417,10 @@ const runSyncInternal = async (
 const scheduleQueueSync = () => {
   if (syncSnapshot.isSyncing) return;
   if (getConnectivitySnapshot().state !== 'online') return;
-  if (getQueueSnapshot().pendingCount === 0) return;
+  const queueSnapshot = getQueueSnapshot();
+  if (queueSnapshot.pendingCount === 0) return;
+  if (!queueSnapshot.entries.some(isEntryRetryable)) return;
+  clearPeriodicRetryTimer();
   void runSyncInternal('queue_update');
 };
 
@@ -352,20 +436,27 @@ export const startTripSyncManager = (): void => {
 
     if (connectivity.state === 'online' && previous !== 'online') {
       void runSyncInternal('reconnect');
+      schedulePeriodicRetry();
       return;
     }
 
     if (connectivity.state === 'online') {
       scheduleQueueSync();
+      schedulePeriodicRetry();
+      return;
     }
+
+    clearPeriodicRetryTimer();
   });
 
   subscribeOfflineQueue(() => {
     refreshCounts();
     scheduleQueueSync();
+    schedulePeriodicRetry();
   });
 
   scheduleQueueSync();
+  schedulePeriodicRetry();
 };
 
 export const getSyncRunSnapshot = (): SyncRunSnapshot => syncSnapshot;

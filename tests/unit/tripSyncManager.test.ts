@@ -149,4 +149,43 @@ describe('services/tripSyncManager', () => {
     expect(backups[0].serverTripSnapshot.title).toBe('Server title');
     expect(backups[0].queuedTripSnapshot.title).toBe('Client title');
   });
+
+  it('retries failed entries that previously reached max attempts when retried manually', async () => {
+    const failedTrip = makeTrip({ id: 'trip-max-attempts', title: 'Needs retry' });
+    enqueueTripCommit({
+      tripId: failedTrip.id,
+      tripSnapshot: failedTrip,
+      label: 'Data: Offline edit',
+    });
+
+    const queuedEntry = getQueueSnapshot().entries[0];
+    updateQueuedTripCommit(queuedEntry.id, {
+      attemptCount: 3,
+      lastError: 'temporary failure',
+    });
+
+    mockState.connectivityState = 'online';
+    await retrySyncNow();
+
+    expect(mockState.dbUpsertTrip).toHaveBeenCalledTimes(1);
+    expect(mockState.dbCreateTripVersion).toHaveBeenCalledTimes(1);
+    expect(getQueueSnapshot().pendingCount).toBe(0);
+  });
+
+  it('does not treat replay upsert failures as connectivity outages', async () => {
+    const failedTrip = makeTrip({ id: 'trip-no-connectivity-failure', title: 'Permission-like failure' });
+    enqueueTripCommit({
+      tripId: failedTrip.id,
+      tripSnapshot: failedTrip,
+      label: 'Data: Offline edit',
+    });
+
+    mockState.connectivityState = 'online';
+    mockState.dbUpsertTrip.mockResolvedValue(null);
+
+    await syncQueuedTripsNow();
+
+    expect(mockState.markConnectivityFailure).not.toHaveBeenCalled();
+    expect(getQueueSnapshot().pendingCount).toBe(1);
+  });
 });

@@ -25,6 +25,8 @@ export interface TripHistoryModalProps {
     isExamplePreview: boolean;
     showAllHistory: boolean;
     items: TripHistoryModalItem[];
+    pendingSyncCount: number;
+    failedSyncCount: number;
     onClose: () => void;
     onUndo: () => void;
     onRedo: () => void;
@@ -38,6 +40,8 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
     isExamplePreview,
     showAllHistory,
     items,
+    pendingSyncCount,
+    failedSyncCount,
     onClose,
     onUndo,
     onRedo,
@@ -45,6 +49,14 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
     onGo,
     formatHistoryTime,
 }) => {
+    const hasUnsyncedChanges = pendingSyncCount > 0;
+    const failedSyncLabel = failedSyncCount === 1
+        ? '1 queued change still failed to sync. Retry sync to publish it.'
+        : `${failedSyncCount} queued changes still failed to sync. Retry sync to publish them.`;
+    const pendingSyncLabel = pendingSyncCount === 1
+        ? '1 latest change is saved locally and not synced yet.'
+        : `${pendingSyncCount} latest changes are saved locally and not synced yet.`;
+
     return (
         <AppModal
             isOpen={isOpen}
@@ -90,13 +102,19 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                             {showAllHistory ? 'Show Recent' : 'Show All'}
                         </button>
                     </div>
+                    {hasUnsyncedChanges && (
+                        <div className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                            {failedSyncCount > 0 ? failedSyncLabel : pendingSyncLabel}
+                        </div>
+                    )}
                     <div className="flex-1 overflow-y-auto">
                         {items.length === 0 ? (
                             <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
                         ) : (
                             <ul className="divide-y divide-gray-100">
-                                {items.map((item) => {
+                                {items.map((item, index) => {
                                     const Icon = item.meta.Icon;
+                                    const showUnsyncedBadge = hasUnsyncedChanges && index === 0;
                                     return (
                                         <li key={item.id} className={`flex items-start gap-3 p-4 ${item.isCurrent ? 'bg-accent-50/70' : 'hover:bg-gray-50/80'}`}>
                                             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${item.meta.iconClass}`}>
@@ -111,6 +129,11 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                                                     {item.isCurrent && (
                                                         <span className="rounded-full bg-accent-100 px-2 py-0.5 text-[10px] font-semibold text-accent-600">
                                                             Current
+                                                        </span>
+                                                    )}
+                                                    {showUnsyncedBadge && (
+                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                                                            Not synced
                                                         </span>
                                                     )}
                                                 </div>

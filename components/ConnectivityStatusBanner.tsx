@@ -18,6 +18,7 @@ interface ConnectivityStatusBannerProps {
   connectivity: ConnectivitySnapshot;
   sync: SyncRunSnapshot;
   onRetrySync: () => void | Promise<unknown>;
+  showDeveloperDetails?: boolean;
 }
 
 export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> = ({
@@ -25,6 +26,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
   connectivity,
   sync,
   onRetrySync,
+  showDeveloperDetails = false,
 }) => {
   const { t, i18n } = useTranslation('common');
   const [dismissedForState, setDismissedForState] = useState<string | null>(() => (
@@ -110,7 +112,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
               {sync.isSyncing && (
                 <span>{syncingProgressLabel}</span>
               )}
-              {connectivity.isForced && (
+              {showDeveloperDetails && connectivity.isForced && (
                 <span>{t('connectivity.banner.forcedMode')}</span>
               )}
             </div>

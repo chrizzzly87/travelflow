@@ -53,7 +53,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
+import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
 import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
 import { generateItinerary } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
@@ -204,6 +207,7 @@ const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
 };
 const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_NOTE_KEY_BY_ID));
 const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -331,6 +335,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const { t, i18n } = useTranslation('createTrip');
     const { confirm: confirmDialog } = useAppDialog();
     const [searchParams] = useSearchParams();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
 
     useDbSync(onLanguageLoaded);
 
@@ -1638,6 +1644,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             <div className="relative z-10">
                 <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
+                <ConnectivityStatusBanner
+                    isPlannerRoute
+                    connectivity={connectivitySnapshot}
+                    sync={syncSnapshot}
+                    onRetrySync={() => retrySyncNow()}
+                    showDeveloperDetails={IS_DEV}
+                />
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (

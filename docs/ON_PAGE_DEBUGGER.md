@@ -2,6 +2,12 @@
 
 This project includes a global debug toolbar for developer-only QA flows.
 
+## Panel layout
+- The toolbar is grouped into three tabs to reduce noise:
+- `Testing`: simulated login, forced Supabase connectivity, trip-sync replay, trip-expired toggle.
+- `Tracking`: analytics overlay, Umami shortcut, navigation prefetch diagnostics, view-transition diagnostics.
+- `SEO`: OG playground, SEO/a11y checks, H1 marker, Lighthouse shortcut.
+
 ## Source of truth
 - Component: `components/OnPageDebugger.tsx`
 - App mount: `App.tsx` (rendered globally)
@@ -97,15 +103,13 @@ The toolbar now saves toggle state in `localStorage` and restores it after reloa
 ## Route-aware behavior
 
 ### On `/trip/:tripId`
-- SEO controls are hidden
-- Trip-expired debug control is shown
-- `window.toggleExpired()` is available
+- Trip-expired debug control is shown in the `Testing` tab.
+- `window.toggleExpired()` is available.
+- SEO tab still renders, but route-level SEO checks are intentionally limited and show a guidance note.
 
 ### On non-trip routes
-- SEO controls are shown
-- H1 marker button is shown
-- Meta title/description preview is shown
-- Trip-expired control is hidden
+- SEO tab includes H1 marker and meta snapshot.
+- Trip-expired control is hidden.
 
 ## Analytics box overlay contract
 
@@ -225,9 +229,10 @@ Consumer:
 
 ## Quick verification checklist
 - `debug()` opens toolbar.
+- Tabs switch between `Testing`, `Tracking`, and `SEO` without resetting state.
 - Tracking boxes appear on known tracked controls.
 - `onPageDebugger.runViewTransitionAudit()` returns anchor counts for `trip-map`, `trip-title`, and `trip-city-lane-*`.
-- On `/trip/:id`, SEO UI is hidden and `Set Trip Expired` is visible.
+- On `/trip/:id`, `Set Trip Expired` is visible in `Testing`.
 - `window.toggleExpired(true)` shows expired banner and disables editing.
 - `window.toggleSimulatedLogin(true)` sets simulated login to enabled.
 - `window.toggleSupabaseConnectivity('offline')` forces outage mode for planner resilience checks.

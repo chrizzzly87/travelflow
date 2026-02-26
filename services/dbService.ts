@@ -10,6 +10,7 @@ import { getAllTrips, setAllTrips } from './storageService';
 import { ANONYMOUS_TRIP_LIMIT, isTripExpiredByTimestamp } from '../config/productLimits';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from './simulatedLoginService';
 import {
+    describeConnectivityError,
     markConnectivityFailure,
     markConnectivitySuccess,
 } from './supabaseHealthMonitor';
@@ -48,6 +49,8 @@ let authBlockedUntil = 0;
 const AUTH_COOLDOWN_MS = 3000;
 const SESSION_POLL_MS = 200;
 const SESSION_POLL_ATTEMPTS = 6;
+const DB_ERROR_LOG_THROTTLE_MS = 15_000;
+const recentDbErrorLogAt = new Map<string, number>();
 
 const isDebugEnabled = () => {
     if (typeof window === 'undefined') return false;
@@ -88,15 +91,72 @@ const requireSupabase = () => {
     return supabase;
 };
 
+const isPermissionLikeDbError = (error: unknown): boolean => {
+    const typed = error as { code?: unknown; message?: unknown; details?: unknown; hint?: unknown } | null;
+    const code = typeof typed?.code === 'string' ? typed.code.trim().toUpperCase() : '';
+    if (code === '42501' || code === 'P0001') return true;
+    const text = `${String(typed?.message ?? '')} ${String(typed?.details ?? '')} ${String(typed?.hint ?? '')}`.toLowerCase();
+    return text.includes('row-level security')
+        || text.includes('not allowed')
+        || text.includes('permission denied');
+};
+
+const shouldMarkConnectivityFailureForDbError = (error: unknown): boolean => {
+    if (isPermissionLikeDbError(error)) return false;
+    const connectivity = describeConnectivityError(error, {
+        source: 'db_service',
+    });
+    if (connectivity.isNetworkLike) return true;
+    const typed = error as { status?: unknown } | null;
+    const status = typeof typed?.status === 'number' ? typed.status : null;
+    return status === 500 || status === 502 || status === 503 || status === 504;
+};
+
+const buildDbErrorLogSignature = (
+    prefix: string,
+    error: unknown,
+    options: { operation: string; tripId?: string },
+): string => {
+    const typed = error as { code?: unknown; message?: unknown; status?: unknown } | null;
+    const code = typeof typed?.code === 'string' ? typed.code : '';
+    const status = typeof typed?.status === 'number' ? typed.status : '';
+    const message = typeof typed?.message === 'string' ? typed.message : '';
+    return [
+        prefix,
+        options.operation,
+        options.tripId ?? '',
+        code,
+        status,
+        message.slice(0, 140),
+    ].join('|');
+};
+
+const logDbErrorThrottled = (
+    prefix: string,
+    error: unknown,
+    options: { operation: string; tripId?: string },
+) => {
+    const signature = buildDbErrorLogSignature(prefix, error, options);
+    const now = Date.now();
+    const lastLoggedAt = recentDbErrorLogAt.get(signature) ?? 0;
+    if (now - lastLoggedAt < DB_ERROR_LOG_THROTTLE_MS) {
+        return;
+    }
+    recentDbErrorLogAt.set(signature, now);
+    console.error(prefix, error);
+};
+
 const reportDbFailure = (
     error: unknown,
     options: { operation: string; tripId?: string; route?: string }
 ) => {
-    markConnectivityFailure(error, {
-        source: 'db_service',
-        operation: options.operation,
-        tripId: options.tripId,
-    });
+    if (shouldMarkConnectivityFailureForDbError(error)) {
+        markConnectivityFailure(error, {
+            source: 'db_service',
+            operation: options.operation,
+            tripId: options.tripId,
+        });
+    }
     appendClientErrorLog({
         errorType: `supabase_${options.operation}`,
         error,
@@ -481,7 +541,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         if (isRlsViolation(error)) {
             debugLog('dbUpsertTrip:rls', { code: error.code, message: error.message });
         }
-        console.error('Failed to upsert trip', error);
+        logDbErrorThrottled('Failed to upsert trip', error, { operation: 'upsert_trip', tripId: trip.id });
         reportDbFailure(error, { operation: 'upsert_trip', tripId: trip.id, route: `/trip/${trip.id}` });
         return null;
     }
