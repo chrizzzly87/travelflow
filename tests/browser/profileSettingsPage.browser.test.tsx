@@ -65,30 +65,33 @@ const renderPage = () => render(
 );
 
 describe('pages/ProfileSettingsPage username governance', () => {
+  const buildProfile = (overrides: Record<string, unknown> = {}) => ({
+    id: 'user-1',
+    email: 'traveler@example.com',
+    displayName: 'Traveler One',
+    firstName: 'Traveler',
+    lastName: 'One',
+    username: 'traveler',
+    bio: '',
+    gender: '',
+    country: 'DE',
+    city: 'Berlin',
+    preferredLanguage: 'en',
+    onboardingCompletedAt: '2026-01-01T00:00:00Z',
+    accountStatus: 'active',
+    publicProfileEnabled: true,
+    defaultPublicTripVisibility: true,
+    usernameChangedAt: '2025-01-01T00:00:00Z',
+    passportStickerPositions: {},
+    ...overrides,
+  });
+
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
 
-    mocks.auth.profile = {
-      id: 'user-1',
-      email: 'traveler@example.com',
-      displayName: 'Traveler One',
-      firstName: 'Traveler',
-      lastName: 'One',
-      username: 'traveler',
-      bio: '',
-      gender: '',
-      country: 'Germany',
-      city: 'Berlin',
-      preferredLanguage: 'en',
-      onboardingCompletedAt: '2026-01-01T00:00:00Z',
-      accountStatus: 'active',
-      publicProfileEnabled: true,
-      defaultPublicTripVisibility: true,
-      usernameChangedAt: '2026-01-01T00:00:00Z',
-    };
-
-    mocks.updateCurrentUserProfile.mockResolvedValue(null);
+    mocks.auth.profile = buildProfile();
+    mocks.updateCurrentUserProfile.mockResolvedValue(buildProfile());
     mocks.checkUsernameAvailability.mockResolvedValue({
       normalizedUsername: 'traveler',
       availability: 'unchanged',
@@ -97,7 +100,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
   });
 
-  it('checks username availability while user edits the username field', async () => {
+  it('keeps username locked by default and unlocks editing via the tiny edit action', async () => {
     const user = userEvent.setup();
     mocks.checkUsernameAvailability.mockResolvedValueOnce({
       normalizedUsername: 'traveler',
@@ -118,6 +121,15 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
 
     const usernameInput = screen.getByLabelText('settings.fields.username');
+    expect(usernameInput).toHaveAttribute('readonly');
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameEdit' }));
+
+    await waitFor(() => {
+      expect(mocks.trackEvent).toHaveBeenCalledWith('profile_settings__username_edit--open');
+    });
+
+    expect(usernameInput).not.toHaveAttribute('readonly');
     await user.clear(usernameInput);
     await user.type(usernameInput, 'new_handle');
 
@@ -130,8 +142,11 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
   });
 
-  it('shows cooldown date guidance when username check reports cooldown', async () => {
+  it('keeps edit action blocked during cooldown and emits blocked analytics', async () => {
     const user = userEvent.setup();
+    mocks.auth.profile = buildProfile({
+      usernameChangedAt: '2026-01-15T00:00:00Z',
+    });
     mocks.checkUsernameAvailability.mockResolvedValueOnce({
       normalizedUsername: 'traveler',
       availability: 'unchanged',
@@ -151,11 +166,45 @@ describe('pages/ProfileSettingsPage username governance', () => {
     });
 
     const usernameInput = screen.getByLabelText('settings.fields.username');
-    await user.clear(usernameInput);
-    await user.type(usernameInput, 'later_name');
+    const editButton = screen.getByRole('button', { name: 'settings.usernameEdit' });
+
+    expect(usernameInput).toHaveAttribute('readonly');
+    expect(editButton).toHaveAttribute('aria-disabled', 'true');
+
+    await user.click(editButton);
+
+    await waitFor(() => {
+      expect(mocks.trackEvent).toHaveBeenCalledWith('profile_settings__username_edit--blocked_cooldown');
+    });
+
+    expect(usernameInput).toHaveAttribute('readonly');
 
     await waitFor(() => {
       expect(screen.getByText(/cooldown:/i)).toBeInTheDocument();
+    });
+  });
+
+  it('saves selected Country/Region as ISO code from the searchable picker', async () => {
+    const user = userEvent.setup();
+    mocks.updateCurrentUserProfile.mockResolvedValue(buildProfile({ country: 'DE' }));
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    const countrySearchInput = screen.getByPlaceholderText('settings.countryRegionSearchPlaceholder');
+    await user.click(countrySearchInput);
+    await user.type(countrySearchInput, 'ger');
+    await user.click(screen.getByRole('option', { name: 'Germany' }));
+
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        country: 'DE',
+      }));
     });
   });
 });

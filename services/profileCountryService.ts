@@ -1,7 +1,6 @@
 import { DEFAULT_LOCALE, normalizeLocale } from '../config/locales';
 import type { AppLanguage } from '../types';
 import { COUNTRIES } from '../utils';
-import { stripLeadingFlagEmoji } from '../utils/flagUtils';
 
 export interface ProfileCountryOption {
     code: string;
@@ -29,10 +28,6 @@ const COUNTRY_BY_CODE = new Map(
     COUNTRY_OPTIONS.map((country) => [country.code, country] as const)
 );
 
-const COUNTRY_CODE_BY_NAME = new Map(
-    COUNTRY_OPTIONS.map((country) => [normalizeCountrySearchToken(country.name), country.code] as const)
-);
-
 export const getProfileCountryOptions = (): ProfileCountryOption[] => COUNTRY_OPTIONS;
 
 export const isProfileCountryCode = (value: unknown): value is string => (
@@ -44,18 +39,14 @@ export const isProfileCountryCode = (value: unknown): value is string => (
 export const normalizeProfileCountryCode = (value: unknown): string => {
     if (typeof value !== 'string') return '';
 
-    const withoutFlag = stripLeadingFlagEmoji(value);
-    const trimmed = withoutFlag.trim();
+    const trimmed = value.trim();
     if (!trimmed) return '';
 
     if (/^[A-Za-z]{2}$/.test(trimmed)) {
         const upper = trimmed.toUpperCase();
         return COUNTRY_BY_CODE.has(upper) ? upper : '';
     }
-
-    const normalizedToken = normalizeCountrySearchToken(trimmed);
-    if (!normalizedToken) return '';
-    return COUNTRY_CODE_BY_NAME.get(normalizedToken) || '';
+    return '';
 };
 
 export const getProfileCountryOptionByCode = (code?: string | null): ProfileCountryOption | null => {

@@ -299,7 +299,11 @@ export const updateCurrentUserProfile = async (
     const lastName = payload.lastName.trim();
     const username = normalizeUsername(payload.username);
     const bio = toSafeText(payload.bio);
-    const country = normalizeProfileCountryCode(payload.country);
+    const rawCountry = typeof payload.country === 'string' ? payload.country.trim() : '';
+    const country = normalizeProfileCountryCode(rawCountry);
+    if (rawCountry && !country) {
+        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+    }
     const city = payload.city.trim();
     const preferredLanguage = normalizeLanguage(payload.preferredLanguage);
 

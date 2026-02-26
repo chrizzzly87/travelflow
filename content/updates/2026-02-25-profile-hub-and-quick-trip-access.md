@@ -20,6 +20,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🎯 Corrected avatar-orbit alignment so rotating status text wraps the avatar ring cleanly.
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
 - [x] [Improved] ⚙️ Expanded profile settings with username availability/cooldown guidance, public URL preview, bio, and profile visibility defaults.
+- [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
+- [x] [Improved] 🧩 Added settings breadcrumb navigation, grouped gender + name fields into one row, and introduced a lock-and-edit username flow with cooldown-aware guidance.
 - [x] [Improved] 🧠 Cached current-profile data in app session state so profile surfaces avoid fallback-name flicker after login.
 - [x] [Improved] 🧭 Added “View public profile” shortcuts to account and mobile menus plus kept recent-trip quick access.
 - [x] [New feature] 🛂 Added a passport-inspired stamp system with achievement milestones and a dedicated stamp collection page.
@@ -34,5 +36,6 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.
 - [ ] [Internal] 🗄️ Fixed Supabase SQL function defaults ordering for the trip upsert RPC signature.
+- [ ] [Internal] 🧱 Added DB-side ISO-2 validation and constraints for profile country storage, and defaulted existing non-ISO/empty values to `DE`.
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
 - [ ] [Internal] 📌 Tracked deferred backend work in issue #181 for DB-backed pins, reactions, bookmarks, follows, and anti-abuse/RLS contracts.

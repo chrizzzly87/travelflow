@@ -165,10 +165,13 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `public_profile__view` | — | `{ username }` | `PublicProfilePage.tsx` |
 | `public_profile__trip--open` | — | `{ username, trip_id }` | `PublicProfilePage.tsx` |
 | `profile_settings__username_check--{state}` | `available`, `taken`, `reserved`, `invalid`, `unchanged`, `cooldown` | `{ username }` | `ProfileSettingsPage.tsx` |
+| `profile_settings__username_edit--open` | — | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__username_edit--blocked_cooldown` | — | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__save--attempt` | — | `{ mode, username_changed, public_profile_enabled, default_public_trip_visibility }` | `ProfileSettingsPage.tsx` |
 | `profile_settings__public_profile--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__default_visibility--{state}` | `enabled`, `disabled` | — | `ProfileSettingsPage.tsx` |
 | `profile_settings__public_url--open` | — | — | `ProfileSettingsPage.tsx` |
+| `profile_settings__country_region--select` | — | `{ country_code }` | `ProfileSettingsPage.tsx` |
 | `trip_preview_card__creator_handle` | — | `{ creator_handle, trip_id }` | `ProfileTripCard.tsx` |
 | `example_trip__creator_handle` | — | `{ creator_handle }` | `ExampleTripCard.tsx` |
 

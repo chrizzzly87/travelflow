@@ -448,6 +448,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         {hasUsernameLock && isUsernameLocked && (
                                             <button
                                                 type="button"
+                                                aria-label={t('settings.usernameEdit')}
                                                 onClick={handleUnlockUsernameEditing}
                                                 disabled={isSaving}
                                                 aria-disabled={isUsernameEditBlocked}
@@ -465,6 +466,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     </span>
                                     <input
                                         ref={usernameInputRef}
+                                        aria-label={t('settings.fields.username')}
                                         value={form.username}
                                         onChange={(event) => updateField('username', event.target.value)}
                                         readOnly={isUsernameLocked}

@@ -172,6 +172,9 @@ export const adminUpdateUserProfile = async (
     const normalizedCountry = typeof payload.country === 'string'
         ? normalizeProfileCountryCode(payload.country)
         : '';
+    if (typeof payload.country === 'string' && payload.country.trim() && !normalizedCountry) {
+        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+    }
     const client = requireSupabase();
     const rpcPayload = {
         p_user_id: userId,
@@ -180,7 +183,7 @@ export const adminUpdateUserProfile = async (
         p_username: payload.username ?? null,
         p_gender: normalizeProfileGender(payload.gender),
         p_country: typeof payload.country === 'string'
-            ? (normalizedCountry || payload.country.trim() || null)
+            ? (normalizedCountry || null)
             : null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
