@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   AI_MODEL_CATALOG,
+  CREATE_TRIP_PREFERRED_MODEL_IDS,
   getCurrentRuntimeModel,
+  getCreateTripModelOptions,
   getDefaultCreateTripModel,
   groupAiModelsByProvider,
   sortAiModels,
@@ -57,5 +59,19 @@ describe('config/aiModelCatalog', () => {
     expect(grouped.Qwen?.length).toBeGreaterThan(0);
     expect(grouped.OpenRouter?.length).toBeGreaterThan(0);
     expect(grouped['OpenRouter (Free)']?.length).toBeGreaterThan(0);
+  });
+
+  it('prioritizes create-trip preferred models and keeps full active coverage', () => {
+    const options = getCreateTripModelOptions(AI_MODEL_CATALOG);
+    const activeIds = AI_MODEL_CATALOG
+      .filter((item) => item.availability === 'active')
+      .map((item) => item.id);
+    const uniqueActiveIds = new Set(activeIds);
+
+    expect(options.slice(0, CREATE_TRIP_PREFERRED_MODEL_IDS.length).map((item) => item.id)).toEqual(
+      [...CREATE_TRIP_PREFERRED_MODEL_IDS]
+    );
+    expect(new Set(options.map((item) => item.id))).toEqual(uniqueActiveIds);
+    expect(options).toHaveLength(uniqueActiveIds.size);
   });
 });

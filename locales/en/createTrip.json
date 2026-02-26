@@ -157,6 +157,16 @@
     "style": "Style",
     "transport": "Transport"
   },
+  "modelPicker": {
+    "label": "AI model",
+    "topPicks": "Top picks",
+    "allModels": "All models",
+    "badges": {
+      "default": "Default",
+      "fastAndGood": "Fast and good",
+      "veryFast": "Very fast!"
+    }
+  },
   "cta": {
     "label": "Create my trip",
     "loading": "Creating..."
