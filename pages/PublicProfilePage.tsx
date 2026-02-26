@@ -6,6 +6,7 @@ import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSumma
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
+import { resolveProfileStatusByTripCount } from '../components/profile/profileStatus';
 import { getPublicTripsByUserId, resolvePublicProfileByHandle, type UserProfileRecord } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { normalizeLocale } from '../config/locales';
@@ -117,6 +118,10 @@ export const PublicProfilePage: React.FC = () => {
 
     const visitedCountries = useMemo(() => collectVisitedCountries(trips), [trips]);
     const pinnedTrips = useMemo(() => getPinnedTrips(trips), [trips]);
+    const profileStatus = useMemo(
+        () => resolveProfileStatusByTripCount(trips.length),
+        [trips.length]
+    );
 
     const handleOpenTrip = (trip: ITrip) => {
         trackEvent('public_profile__trip--open', {
@@ -173,6 +178,7 @@ export const PublicProfilePage: React.FC = () => {
                             displayName={displayName}
                             username={state.profile.username || ''}
                             initials={initialsFromProfile(state.profile)}
+                            status={profileStatus}
                             bio={state.profile.bio || ''}
                             location={locationLabel}
                             distanceLabel={distanceLabel}

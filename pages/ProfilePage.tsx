@@ -18,6 +18,7 @@ import {
     toggleTripPinned,
 } from '../components/profile/profileTripState';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
+import { resolveProfileStatusByTier } from '../components/profile/profileStatus';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentUserProfile, type UserProfileRecord } from '../services/profileService';
 import { getAllTrips, saveTrip } from '../services/storageService';
@@ -122,6 +123,10 @@ export const ProfilePage: React.FC = () => {
     const memberSince = useMemo(
         () => formatMemberSince(profile, trips, appLocale, t('summary.memberSinceUnknown')),
         [appLocale, profile, t, trips]
+    );
+    const profileStatus = useMemo(
+        () => resolveProfileStatusByTier(access?.tierKey),
+        [access?.tierKey]
     );
 
     const refreshTrips = useCallback(() => {
@@ -342,7 +347,7 @@ export const ProfilePage: React.FC = () => {
                     displayName={displayName}
                     username={profile?.username || ''}
                     initials={initialsFrom(profile, access?.email || null)}
-                    role={access?.role || 'user'}
+                    status={profileStatus}
                     memberSince={memberSince}
                     bio={profile?.bio || ''}
                     location={locationLabel}
@@ -360,7 +365,6 @@ export const ProfilePage: React.FC = () => {
                         shareProfile: t('summary.shareProfile'),
                         memberSinceLabel: t('summary.memberSinceLabel'),
                         usernamePrefix: t('summary.usernamePrefix'),
-                        roleLabel: t('summary.roleLabel'),
                         bio: t('summary.bioLabel'),
                         bioFallback: t('summary.bioFallback'),
                         location: t('summary.locationLabel'),

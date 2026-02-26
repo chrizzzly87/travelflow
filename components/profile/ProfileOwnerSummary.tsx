@@ -3,6 +3,7 @@ import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-i
 import { ProfileMetaPanel } from './ProfileMetaPanel';
 import type { VisitedCountry } from './profileCountryUtils';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
+import type { ProfileStatus } from './profileStatus';
 
 interface ProfileOwnerSummaryLabels {
   editProfile: string;
@@ -10,7 +11,6 @@ interface ProfileOwnerSummaryLabels {
   shareProfile: string;
   memberSinceLabel: string;
   usernamePrefix: string;
-  roleLabel: string;
   bio: string;
   bioFallback: string;
   location: string;
@@ -25,7 +25,7 @@ interface ProfileOwnerSummaryProps {
   displayName: string;
   username: string;
   initials: string;
-  role: string;
+  status: ProfileStatus;
   memberSince: string;
   bio: string;
   location: string;
@@ -44,7 +44,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   displayName,
   username,
   initials,
-  role,
+  status,
   memberSince,
   bio,
   location,
@@ -58,20 +58,35 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   canViewPublicProfile,
   canShareProfile,
 }) => {
+  const orbitPathId = React.useId();
   return (
     <section className="grid gap-8 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
       <article className="relative border border-slate-200 bg-white px-5 pb-5 pt-12 text-center">
-        <span className="absolute left-1/2 top-0 inline-flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md">
-          {initials}
-        </span>
+        <div className="absolute inset-x-0 top-0 -translate-y-1/2">
+          <span className={`mx-auto inline-flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current ${status.ringClassName}`}>
+            {initials}
+          </span>
+          <svg
+            viewBox="0 0 120 120"
+            className={`pointer-events-none absolute inset-x-0 top-1/2 mx-auto h-32 w-32 -translate-y-1/2 profile-avatar-orbit ${status.ringClassName}`}
+            aria-hidden="true"
+          >
+            <defs>
+              <path id={orbitPathId} d="M 60,60 m -46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" />
+            </defs>
+            <text className="fill-current text-[8px] font-semibold uppercase tracking-[0.2em]">
+              <textPath href={`#${orbitPathId}`} startOffset="50%" textAnchor="middle">
+                {`${status.orbitLabel} • ${status.orbitLabel} • ${status.orbitLabel}`}
+              </textPath>
+            </text>
+          </svg>
+        </div>
         <h2 className="text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
         <p className="mt-1 text-sm font-semibold text-slate-600">
           {labels.usernamePrefix}
           {username || 'traveler'}
         </p>
-        <p className="mt-2 text-xs text-slate-500">
-          {labels.roleLabel}: <span className="font-semibold text-slate-700">{role}</span>
-        </p>
+        <p className={`mt-2 text-xs font-semibold uppercase tracking-[0.16em] ${status.ringClassName}`}>{status.label}</p>
         <p className="mt-1 text-xs text-slate-500">
           {labels.memberSinceLabel}: <span className="font-semibold text-slate-700">{memberSince}</span>
         </p>
