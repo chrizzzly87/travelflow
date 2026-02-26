@@ -162,4 +162,25 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(container.className).toContain('px-5');
     expect(container.className).toContain('md:px-8');
   });
+
+  it('copies the public profile URL from the share action', async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+    renderProfilePage('/profile');
+
+    const shareButton = await screen.findByRole('button', { name: /summary\.shareProfile/i });
+    await waitFor(() => {
+      expect(shareButton).toBeEnabled();
+    });
+
+    await user.click(shareButton);
+
+    expect(openSpy).toHaveBeenCalledTimes(1);
+    expect(String(openSpy.mock.calls[0][0])).toContain('/u/traveler');
+    openSpy.mockRestore();
+  });
 });
