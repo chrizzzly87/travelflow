@@ -1037,7 +1037,7 @@ h6,
 }
 
 .profile-passport-cover--interactive:hover .profile-passport-cover-tilt {
-  transform: perspective(1700px) translate3d(0, -30px, 14px) rotateY(-15deg);
+  transform: perspective(1700px) rotateY(-15deg);
 }
 
 .profile-passport-cover--interactive:hover .profile-passport-fake-page {
