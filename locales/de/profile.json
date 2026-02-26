@@ -101,7 +101,7 @@
       "bio": "Bio",
       "gender": "Gender",
       "unspecified": "Unspecified",
-      "country": "Country *",
+      "country": "Land/Region *",
       "city": "City *",
       "preferredLanguage": "Preferred language *"
     },
@@ -140,7 +140,23 @@
       "cooldown": "Username changes are currently on cooldown.",
       "cooldownDate": "Username changes are on cooldown until {date}.",
       "failed": "Could not verify username availability right now."
-    }
+    },
+    "breadcrumb": {
+      "profile": "Profil",
+      "settings": "Einstellungen"
+    },
+    "usernameEdit": "Bearbeiten",
+    "usernameLockedHint": "Dein Benutzername ist gesperrt. Nutze Bearbeiten, um eine Änderung anzufragen.",
+    "usernameRecoveryHint": {
+      "taken": "Füge eine Zahl oder einen Unterstrich hinzu.",
+      "reserved": "Wähle einen anderen Handle, der nicht reserviert ist.",
+      "invalid": "Nutze 3-30 Kleinbuchstaben, Zahlen oder Unterstriche.",
+      "cooldown": "Benutzernamen können erst nach dem Cooldown wieder geändert werden."
+    },
+    "countryRegionSearchPlaceholder": "Land oder Region suchen",
+    "countryRegionClear": "Land/Region löschen",
+    "countryRegionEmpty": "Kein passendes Land oder keine passende Region gefunden.",
+    "countryRegionToggle": "Optionen für Land/Region umschalten"
   },
   "stamps": {
     "eyebrow": "Passport collection",

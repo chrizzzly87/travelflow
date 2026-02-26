@@ -25,6 +25,7 @@ import {
     getLastAchievedStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
+import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -134,7 +135,8 @@ export const ProfilePage: React.FC = () => {
         { primaryNameOnly: true }
     );
 
-    const locationLabel = [profile?.city || '', profile?.country || '']
+    const profileCountryLabel = getProfileCountryDisplayName(profile?.country, appLocale);
+    const locationLabel = [profile?.city || '', profileCountryLabel]
         .map((part) => part.trim())
         .filter(Boolean)
         .join(', ') || t('summary.locationUnknown');

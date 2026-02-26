@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
-import { CheckCircle } from '@phosphor-icons/react';
+import { CaretRight, CheckCircle, PencilSimple, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { Switch } from '../components/ui/switch';
+import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
 import { LOCALE_DROPDOWN_ORDER, LOCALE_FLAGS, LOCALE_LABELS, normalizeLocale } from '../config/locales';
 import type { AppLanguage } from '../types';
@@ -100,6 +101,9 @@ const formatDateLabel = (value: string, locale: string): string => {
     });
 };
 
+const shouldLockUsernameField = (profile: UserProfileRecord | null): boolean =>
+    Boolean(profile?.username && profile.usernameChangedAt);
+
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('profile');
@@ -116,7 +120,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
+    const [isUsernameEditing, setIsUsernameEditing] = useState(false);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
+    const usernameInputRef = useRef<HTMLInputElement>(null);
     const [usernameCheck, setUsernameCheck] = useState<UsernameCheckState>({
         loading: false,
         result: null,
@@ -155,6 +161,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             publicProfileEnabled: cachedProfile.publicProfileEnabled !== false,
             defaultPublicTripVisibility: cachedProfile.defaultPublicTripVisibility !== false,
         });
+        setIsUsernameEditing(!shouldLockUsernameField(cachedProfile));
         setHasHydratedForm(true);
     }, [cachedProfile, isAuthenticated, isAuthProfileLoading, refreshProfile]);
 
@@ -225,6 +232,11 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     const fallbackCooldownEnd = computeCooldownEndFromProfile(profile);
     const cooldownEndsAt = usernameCheck.result?.cooldownEndsAt || fallbackCooldownEnd;
+    const cooldownEndsMs = cooldownEndsAt ? Date.parse(cooldownEndsAt) : Number.NaN;
+    const isUsernameCooldownActive = Number.isFinite(cooldownEndsMs) && cooldownEndsMs > Date.now();
+    const hasUsernameLock = shouldLockUsernameField(profile);
+    const isUsernameLocked = hasUsernameLock && !isUsernameEditing;
+    const isUsernameEditBlocked = isUsernameCooldownActive;
 
     const usernameStatus = useMemo(() => {
         if (usernameCheck.loading) return t('settings.usernameStatus.checking');
@@ -258,12 +270,33 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return 'text-slate-500';
     }, [usernameCheck]);
 
+    const usernameRecoveryHint = useMemo(() => {
+        const availability = usernameCheck.result?.availability;
+        if (availability === 'taken') return t('settings.usernameRecoveryHint.taken');
+        if (availability === 'reserved') return t('settings.usernameRecoveryHint.reserved');
+        if (availability === 'invalid') return t('settings.usernameRecoveryHint.invalid');
+        if (availability === 'cooldown') return t('settings.usernameRecoveryHint.cooldown');
+        if (isUsernameLocked) return t('settings.usernameLockedHint');
+        return null;
+    }, [isUsernameLocked, t, usernameCheck.result?.availability]);
+
     if (!isLoading && !isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
 
     const updateField = <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) => {
         setForm((current) => ({ ...current, [key]: value }));
+    };
+
+    const handleUnlockUsernameEditing = () => {
+        if (!hasUsernameLock) return;
+        if (isUsernameCooldownActive) {
+            trackEvent('profile_settings__username_edit--blocked_cooldown');
+            return;
+        }
+        trackEvent('profile_settings__username_edit--open');
+        setIsUsernameEditing(true);
+        window.requestAnimationFrame(() => usernameInputRef.current?.focus());
     };
 
     const handleSave = async () => {
@@ -311,6 +344,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 publicProfileEnabled: updated.publicProfileEnabled !== false,
                 defaultPublicTripVisibility: updated.defaultPublicTripVisibility !== false,
             }));
+            setIsUsernameEditing(!shouldLockUsernameField(updated));
 
             await refreshAccess();
 
@@ -335,7 +369,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
             <main className="mx-auto w-full max-w-7xl space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
-                <section className="space-y-1">
+                <section className="space-y-2">
+                    <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700">
+                            {t('settings.breadcrumb.profile')}
+                        </NavLink>
+                        <CaretRight size={12} weight="bold" aria-hidden="true" />
+                        <span className="text-slate-600">{t('settings.breadcrumb.settings')}</span>
+                    </nav>
                     <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{heading}</h1>
                     <p className="max-w-3xl text-sm leading-6 text-slate-600">{description}</p>
                 </section>
@@ -360,31 +401,83 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                 </div>
                             )}
 
-                            <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                                    <label className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.gender')}</span>
+                                        <Select
+                                            value={toProfileGenderSelectValue(form.gender)}
+                                            onValueChange={(value) => updateField('gender', fromProfileGenderSelectValue(value as ProfileGenderSelectValue))}
+                                        >
+                                            <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
+                                                <span>{
+                                                    form.gender
+                                                        ? PROFILE_GENDER_OPTIONS.find((option) => option.value === form.gender)?.label || t('settings.fields.unspecified')
+                                                        : t('settings.fields.unspecified')
+                                                }</span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value={PROFILE_GENDER_UNSPECIFIED}>{t('settings.fields.unspecified')}</SelectItem>
+                                                {PROFILE_GENDER_OPTIONS.filter((option) => option.value !== '').map((option) => (
+                                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
+                                    <label className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
+                                        <input
+                                            value={form.firstName}
+                                            onChange={(event) => updateField('firstName', event.target.value)}
+                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        />
+                                    </label>
+                                    <label className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
+                                        <input
+                                            value={form.lastName}
+                                            onChange={(event) => updateField('lastName', event.target.value)}
+                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        />
+                                    </label>
+                                </div>
+
                                 <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.firstName')}</span>
+                                    <span className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        <span>{t('settings.fields.username')}</span>
+                                        {hasUsernameLock && isUsernameLocked && (
+                                            <button
+                                                type="button"
+                                                onClick={handleUnlockUsernameEditing}
+                                                disabled={isSaving}
+                                                aria-disabled={isUsernameEditBlocked}
+                                                className={`inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold normal-case tracking-normal text-slate-600 transition-colors ${
+                                                    isUsernameEditBlocked
+                                                        ? 'cursor-not-allowed opacity-50'
+                                                        : 'hover:border-slate-300 hover:bg-slate-50'
+                                                } disabled:cursor-not-allowed disabled:opacity-50`}
+                                                {...getAnalyticsDebugAttributes('profile_settings__username_edit--open')}
+                                            >
+                                                <PencilSimple size={11} weight="bold" />
+                                                {t('settings.usernameEdit')}
+                                            </button>
+                                        )}
+                                    </span>
                                     <input
-                                        value={form.firstName}
-                                        onChange={(event) => updateField('firstName', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.lastName')}</span>
-                                    <input
-                                        value={form.lastName}
-                                        onChange={(event) => updateField('lastName', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                    />
-                                </label>
-                                <label className="space-y-1 md:col-span-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.username')}</span>
-                                    <input
+                                        ref={usernameInputRef}
                                         value={form.username}
                                         onChange={(event) => updateField('username', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        readOnly={isUsernameLocked}
+                                        className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
+                                            isUsernameLocked
+                                                ? 'border-slate-200 bg-slate-100 text-slate-600'
+                                                : 'border-slate-300 bg-white text-slate-900'
+                                        }`}
                                     />
                                     <p className={`text-xs font-medium ${usernameStatusTone}`}>{usernameStatus}</p>
+                                    {usernameRecoveryHint && (
+                                        <p className="text-xs text-slate-500">{usernameRecoveryHint}</p>
+                                    )}
                                     {cooldownEndsAt && (
                                         <p className="text-xs text-amber-700">
                                             {t('settings.usernameCooldownHint', {
@@ -394,7 +487,8 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     )}
                                     <p className="text-xs text-slate-500">{t('settings.usernameHelp')}</p>
                                 </label>
-                                <label className="space-y-1 md:col-span-2">
+
+                                <label className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.bio')}</span>
                                     <textarea
                                         value={form.bio}
@@ -405,43 +499,31 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     />
                                     <p className="text-xs text-slate-500">{t('settings.bioHelp')}</p>
                                 </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.gender')}</span>
-                                    <Select
-                                        value={toProfileGenderSelectValue(form.gender)}
-                                        onValueChange={(value) => updateField('gender', fromProfileGenderSelectValue(value as ProfileGenderSelectValue))}
-                                    >
-                                        <SelectTrigger className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
-                                            <span>{
-                                                form.gender
-                                                    ? PROFILE_GENDER_OPTIONS.find((option) => option.value === form.gender)?.label || t('settings.fields.unspecified')
-                                                    : t('settings.fields.unspecified')
-                                            }</span>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value={PROFILE_GENDER_UNSPECIFIED}>{t('settings.fields.unspecified')}</SelectItem>
-                                            {PROFILE_GENDER_OPTIONS.filter((option) => option.value !== '').map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
-                                    <input
-                                        value={form.country}
-                                        onChange={(event) => updateField('country', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                    />
-                                </label>
-                                <label className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
-                                    <input
-                                        value={form.city}
-                                        onChange={(event) => updateField('city', event.target.value)}
-                                        className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                    />
-                                </label>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <label className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
+                                        <ProfileCountryRegionSelect
+                                            value={form.country}
+                                            disabled={isSaving}
+                                            placeholder={t('settings.countryRegionSearchPlaceholder')}
+                                            clearLabel={t('settings.countryRegionClear')}
+                                            emptyLabel={t('settings.countryRegionEmpty')}
+                                            toggleLabel={t('settings.countryRegionToggle')}
+                                            onValueChange={(nextCode) => {
+                                                updateField('country', nextCode);
+                                                trackEvent('profile_settings__country_region--select', { country_code: nextCode });
+                                            }}
+                                        />
+                                    </label>
+                                    <label className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.city')}</span>
+                                        <input
+                                            value={form.city}
+                                            onChange={(event) => updateField('city', event.target.value)}
+                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                        />
+                                    </label>
+                                </div>
                                 <label htmlFor="profile-language-select" className="space-y-1">
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.preferredLanguage')}</span>
                                     <Select

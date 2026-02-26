@@ -12,6 +12,7 @@ import {
     computeProfileStampMetrics,
     getLastAchievedStamps,
 } from '../components/profile/profileStamps';
+import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { getPublicTripsByUserId, resolvePublicProfileByHandle, type UserProfileRecord } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { normalizeLocale } from '../config/locales';
@@ -108,7 +109,8 @@ export const PublicProfilePage: React.FC = () => {
         || state.profile?.username
         || t('fallback.displayName');
 
-    const locationLabel = [state.profile?.city || '', state.profile?.country || '']
+    const profileCountryLabel = getProfileCountryDisplayName(state.profile?.country, appLocale);
+    const locationLabel = [state.profile?.city || '', profileCountryLabel]
         .map((part) => part.trim())
         .filter(Boolean)
         .join(', ') || t('summary.locationUnknown');
