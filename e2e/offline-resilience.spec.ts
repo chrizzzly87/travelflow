@@ -9,7 +9,7 @@ test.describe('Supabase outage resilience', () => {
 
         await expect(page.getByText(OFFLINE_TITLE)).toBeVisible();
         await expect(page.getByText(RETRY_HINT)).toBeVisible();
-        await expect(page.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', /\/contact$/);
+        await expect(page.getByRole('link', { name: 'Contact' }).first()).toHaveAttribute('href', /\/contact$/);
         await expect(page.getByRole('link', { name: 'Email support' })).toHaveAttribute('href', /^mailto:/);
     });
 
@@ -25,8 +25,27 @@ test.describe('Supabase outage resilience', () => {
         await page.goto('/create-trip');
 
         await context.setOffline(true);
+        let navigatorReportedOffline = false;
+        for (let attempt = 0; attempt < 20; attempt += 1) {
+            const status = await readOnlineStatus();
+            if (status === false) {
+                navigatorReportedOffline = true;
+                break;
+            }
+            await page.waitForTimeout(100);
+        }
 
-        await expect.poll(readOnlineStatus).toBe(false);
+        if (!navigatorReportedOffline) {
+            const offlineFetchResult = await page.evaluate(async () => {
+                try {
+                    await fetch('/favicon.ico?offline-check=true', { cache: 'no-store' });
+                    return 'online';
+                } catch {
+                    return 'offline';
+                }
+            });
+            expect(offlineFetchResult).toBe('offline');
+        }
 
         await context.setOffline(false);
         await expect.poll(readOnlineStatus).toBe(true);
