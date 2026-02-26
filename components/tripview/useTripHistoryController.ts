@@ -206,8 +206,6 @@ export const useTripHistoryController = ({
             const isShareRoute = nextPath.startsWith('/s/');
 
             if ((!isTripRoute && !isShareRoute) || (isTripRoute && !nextPath.startsWith(expectedTripPrefix))) {
-                navigate(currentUrlRef.current || '/', { replace: true });
-                showToast('Reached start of history', { tone: 'neutral', title: 'Undo' });
                 return;
             }
 
