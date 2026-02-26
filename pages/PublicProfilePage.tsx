@@ -25,6 +25,7 @@ import { buildPath } from '../config/routes';
 import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
+import { useAuth } from '../hooks/useAuth';
 
 const PUBLIC_PROFILE_TRIPS_PAGE_SIZE = 9;
 
@@ -52,6 +53,7 @@ export const PublicProfilePage: React.FC = () => {
     const { username = '' } = useParams();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('profile');
+    const { isAuthenticated } = useAuth();
 
     const [state, setState] = useState<ProfileState>({
         status: 'loading',
@@ -67,6 +69,10 @@ export const PublicProfilePage: React.FC = () => {
     const appLocale = useMemo(
         () => normalizeLocale(i18n.resolvedLanguage ?? i18n.language ?? 'en'),
         [i18n.language, i18n.resolvedLanguage]
+    );
+    const profileLoadErrorLabel = useMemo(
+        () => t('errors.profileLoad'),
+        [i18n.language, i18n.resolvedLanguage, t]
     );
 
     useEffect(() => {
@@ -126,7 +132,7 @@ export const PublicProfilePage: React.FC = () => {
             })
             .catch((error) => {
                 if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : t('errors.profileLoad'));
+                setErrorMessage(error instanceof Error ? error.message : profileLoadErrorLabel);
                 setState({ status: 'not_found', profile: null });
                 setIsTripsLoading(false);
             });
@@ -134,7 +140,7 @@ export const PublicProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [navigate, t, username]);
+    }, [navigate, profileLoadErrorLabel, username]);
 
     const loadMoreTrips = useCallback(() => {
         if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
@@ -148,7 +154,9 @@ export const PublicProfilePage: React.FC = () => {
                 setNextTripsOffset(page.nextOffset);
                 setHasMoreTrips(page.hasMore);
             })
-            .catch(() => undefined)
+            .catch(() => {
+                setHasMoreTrips(false);
+            })
             .finally(() => {
                 setIsTripsLoadingMore(false);
             });
@@ -234,12 +242,22 @@ export const PublicProfilePage: React.FC = () => {
                     <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
                         <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.privateTitle')}</h1>
                         <p className="mt-2 text-sm text-slate-600">{t('publicProfile.privateDescription')}</p>
-                        <NavLink
-                            to={buildPath('inspirations')}
-                            className="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                        >
-                            {t('publicProfile.ctaExploreInspirations')}
-                        </NavLink>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                            {!isAuthenticated ? (
+                                <NavLink
+                                    to="/login"
+                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                >
+                                    {t('publicProfile.ctaRegisterFree')}
+                                </NavLink>
+                            ) : null}
+                            <NavLink
+                                to={buildPath('inspirations')}
+                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                            >
+                                {t('publicProfile.ctaExploreInspirations')}
+                            </NavLink>
+                        </div>
                     </section>
                 )}
 
@@ -247,12 +265,29 @@ export const PublicProfilePage: React.FC = () => {
                     <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
                         <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.notFoundTitle')}</h1>
                         <p className="mt-2 text-sm text-slate-600">{t('publicProfile.notFoundDescription')}</p>
-                        <NavLink
-                            to={buildPath('profile')}
-                            className="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                        >
-                            {t('publicProfile.ctaBackProfile')}
-                        </NavLink>
+                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                            {!isAuthenticated ? (
+                                <NavLink
+                                    to="/login"
+                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                >
+                                    {t('publicProfile.ctaRegisterFree')}
+                                </NavLink>
+                            ) : (
+                                <NavLink
+                                    to={buildPath('profile')}
+                                    className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                >
+                                    {t('publicProfile.ctaBackProfile')}
+                                </NavLink>
+                            )}
+                            <NavLink
+                                to={buildPath('inspirations')}
+                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                            >
+                                {t('publicProfile.ctaExploreInspirations')}
+                            </NavLink>
+                        </div>
                     </section>
                 )}
 

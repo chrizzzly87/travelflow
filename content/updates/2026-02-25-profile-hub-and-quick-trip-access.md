@@ -21,6 +21,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧼 Removed redundant public-profile top heading and unified owner/public summary spacing for a cleaner, less clustered layout.
 - [x] [Improved] 🔧 Kept orbit text as a reusable component for later, but removed it from active profile avatar rendering.
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
+- [x] [Fixed] 🧭 Hardened public-profile handle resolution so valid profiles no longer fall into false “profile not found” states in mixed-schema environments.
+- [x] [Improved] 🚀 Added a guest-first public-profile fallback CTA so signed-out visitors can register for free directly from unavailable/private profile states.
 - [x] [Improved] ⚙️ Expanded profile settings with username availability/cooldown guidance, public URL preview, bio, and profile visibility defaults.
 - [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
 - [x] [Improved] 🛡️ Updated the admin user editor to use the same Country/Region ISO picker so admin profile edits stay consistent with app profile rules.

@@ -87,7 +87,8 @@
     "ctaBackProfile": "Go to your profile",
     "tripsTitle": "Public trips",
     "emptyTrips": "No public trips yet.",
-    "followHint": "Follow and message actions are coming soon."
+    "followHint": "Follow and message actions are coming soon.",
+    "ctaRegisterFree": "Register for free"
   },
   "settings": {
     "title": "Profile settings",

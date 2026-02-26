@@ -89,6 +89,8 @@ const USERNAME_RESERVED = new Set([
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
+const PROFILE_SELECT_FULL = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
+const PROFILE_SELECT_LEGACY = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
     return normalizeLocale(typeof value === 'string' ? value : null);
@@ -250,6 +252,32 @@ const validateUsername = (candidate: string): UsernameAvailabilityResult | null 
     }
 
     return null;
+};
+
+const loadProfileByQuery = async (
+    queryFactory: () => any
+): Promise<UserProfileRecord | null> => {
+    if (!supabase) return null;
+
+    let { data, error } = await queryFactory()
+        .select(PROFILE_SELECT_FULL)
+        .maybeSingle();
+
+    if (error && isProfileColumnMissing(error.message || '')) {
+        const fallback = await queryFactory()
+            .select(PROFILE_SELECT_LEGACY)
+            .maybeSingle();
+        data = fallback.data as typeof data;
+        error = fallback.error as typeof error;
+    }
+
+    if (error) {
+        if (/row-level security|permission denied/i.test(error.message || '')) return null;
+        throw new Error(error.message || 'Could not load profile.');
+    }
+
+    if (!data) return null;
+    return mapProfileRow(data as Record<string, unknown>, null);
 };
 
 export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null> => {
@@ -492,20 +520,20 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
 
 const findProfileByUsername = async (username: string): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
+    return loadProfileByQuery(() => (
+        supabase
+            .from('profiles')
+            .ilike('username', username)
+    ));
+};
 
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
-        .eq('username', username)
-        .maybeSingle();
-
-    if (error) {
-        if (/row-level security|permission denied/i.test(error.message || '')) return null;
-        throw new Error(error.message || 'Could not load profile by username.');
-    }
-
-    if (!data) return null;
-    return mapProfileRow(data as Record<string, unknown>, null);
+const findProfileByUserId = async (userId: string): Promise<UserProfileRecord | null> => {
+    if (!supabase) return null;
+    return loadProfileByQuery(() => (
+        supabase
+            .from('profiles')
+            .eq('id', userId)
+    ));
 };
 
 export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<PublicProfileResolveResult> => {
@@ -606,14 +634,8 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
             const targetUserId = toSafeText(redirectAttempt.data.user_id);
             if (targetUserId) {
-                const { data: targetProfileRow, error: targetProfileError } = await supabase
-                    .from('profiles')
-                    .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
-                    .eq('id', targetUserId)
-                    .maybeSingle();
-
-                if (!targetProfileError && targetProfileRow) {
-                    const targetProfile = mapProfileRow(targetProfileRow as Record<string, unknown>, null);
+                const targetProfile = await findProfileByUserId(targetUserId);
+                if (targetProfile) {
                     if (!targetProfile.publicProfileEnabled) {
                         return {
                             status: 'private',

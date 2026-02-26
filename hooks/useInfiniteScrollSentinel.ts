@@ -16,16 +16,29 @@ export const useInfiniteScrollSentinel = ({
   rootMargin = '420px 0px',
 }: InfiniteScrollSentinelOptions) => {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const fallbackTriggeredRef = useRef(false);
 
   useEffect(() => {
-    if (!enabled || !hasMore || isLoading) return;
+    if (!enabled || !hasMore) {
+      fallbackTriggeredRef.current = false;
+      return;
+    }
+    if (isLoading) {
+      fallbackTriggeredRef.current = false;
+      return;
+    }
+
     const node = sentinelRef.current;
     if (!node) return;
 
     if (typeof window === 'undefined' || typeof window.IntersectionObserver !== 'function') {
+      if (fallbackTriggeredRef.current) return;
+      fallbackTriggeredRef.current = true;
       onLoadMore();
       return;
     }
+
+    fallbackTriggeredRef.current = false;
 
     const observer = new window.IntersectionObserver(
       (entries) => {
