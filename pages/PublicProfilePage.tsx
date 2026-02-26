@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSummary';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
+import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
 import { getPublicTripsByUserId, resolvePublicProfileByHandle, type UserProfileRecord } from '../services/profileService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -23,20 +24,6 @@ const initialsFromProfile = (profile: UserProfileRecord | null): string => {
     if (first || last) return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
     if (profile?.username) return profile.username.charAt(0).toUpperCase();
     return 'U';
-};
-
-const collectVisitedCountries = (trips: ITrip[]): string[] => {
-    const countries = new Set<string>();
-
-    trips.forEach((trip) => {
-        trip.items.forEach((item) => {
-            if (item.type !== 'city') return;
-            const name = typeof item.countryName === 'string' ? item.countryName.trim() : '';
-            if (name) countries.add(name);
-        });
-    });
-
-    return [...countries].sort((a, b) => a.localeCompare(b));
 };
 
 export const PublicProfilePage: React.FC = () => {

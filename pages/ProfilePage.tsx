@@ -17,6 +17,7 @@ import {
     toggleTripFavorite,
     toggleTripPinned,
 } from '../components/profile/profileTripState';
+import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentUserProfile, type UserProfileRecord } from '../services/profileService';
 import { getAllTrips, saveTrip } from '../services/storageService';
@@ -38,20 +39,6 @@ const initialsFrom = (profile: UserProfileRecord | null, fallbackEmail: string |
         return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'U';
     }
     return (fallbackEmail || 'user').charAt(0).toUpperCase();
-};
-
-const collectVisitedCountries = (trips: ITrip[]): string[] => {
-    const countries = new Set<string>();
-
-    trips.forEach((trip) => {
-        trip.items.forEach((item) => {
-            if (item.type !== 'city') return;
-            const name = typeof item.countryName === 'string' ? item.countryName.trim() : '';
-            if (name) countries.add(name);
-        });
-    });
-
-    return [...countries].sort((a, b) => a.localeCompare(b));
 };
 
 const formatMemberSince = (
@@ -302,6 +289,9 @@ export const ProfilePage: React.FC = () => {
     const publicProfilePath = profile?.username
         ? buildPath('publicProfile', { username: profile.username })
         : null;
+    const publicProfileUrl = publicProfilePath
+        ? `${typeof window !== 'undefined' ? window.location.origin : ''}${publicProfilePath}`
+        : null;
 
     const inspirationPath = buildLocalizedMarketingPath('inspirationsCountryDetail', appLocale, {
         countryName: greeting.inspirationCountry,
@@ -367,6 +357,7 @@ export const ProfilePage: React.FC = () => {
                     labels={{
                         editProfile: t('summary.editProfile'),
                         viewPublicProfile: t('summary.viewPublicProfile'),
+                        shareProfile: t('summary.shareProfile'),
                         memberSinceLabel: t('summary.memberSinceLabel'),
                         usernamePrefix: t('summary.usernamePrefix'),
                         roleLabel: t('summary.roleLabel'),
@@ -387,7 +378,20 @@ export const ProfilePage: React.FC = () => {
                         trackEvent(publicProfilePath ? 'profile__summary--view_public_profile' : 'profile__summary--view_public_profile_setup');
                         navigate(publicProfilePath || buildPath('profileSettings'));
                     }}
+                    onShareProfile={() => {
+                        if (!publicProfileUrl) {
+                            navigate(buildPath('profileSettings'));
+                            return;
+                        }
+                        trackEvent('profile__summary--share_public_profile');
+                        if (navigator.clipboard?.writeText) {
+                            void navigator.clipboard.writeText(publicProfileUrl);
+                        } else {
+                            window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
+                        }
+                    }}
                     canViewPublicProfile={Boolean(publicProfilePath)}
+                    canShareProfile={Boolean(publicProfileUrl)}
                 />
 
                 <section className="space-y-2">

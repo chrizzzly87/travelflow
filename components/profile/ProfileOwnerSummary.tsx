@@ -1,11 +1,13 @@
 import React from 'react';
-import { PencilSimpleLine, GlobeHemisphereWest } from '@phosphor-icons/react';
+import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-icons/react';
 import { ProfileMetaPanel } from './ProfileMetaPanel';
+import type { VisitedCountry } from './profileCountryUtils';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 
 interface ProfileOwnerSummaryLabels {
   editProfile: string;
   viewPublicProfile: string;
+  shareProfile: string;
   memberSinceLabel: string;
   usernamePrefix: string;
   roleLabel: string;
@@ -28,12 +30,14 @@ interface ProfileOwnerSummaryProps {
   bio: string;
   location: string;
   distanceLabel: string;
-  countries: string[];
+  countries: VisitedCountry[];
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
   onEditProfile: () => void;
   onViewPublicProfile: () => void;
+  onShareProfile: () => void;
   canViewPublicProfile: boolean;
+  canShareProfile: boolean;
 }
 
 export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
@@ -50,52 +54,59 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   labels,
   onEditProfile,
   onViewPublicProfile,
+  onShareProfile,
   canViewPublicProfile,
+  canShareProfile,
 }) => {
   return (
-    <section className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-      <article className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-accent-100 text-xl font-black text-accent-800">
-            {initials}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-2xl font-black tracking-tight text-slate-900">{displayName}</h2>
-            <p className="mt-0.5 text-sm font-semibold text-slate-600">
-              {labels.usernamePrefix}
-              {username || 'traveler'}
-            </p>
-            <p className="mt-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
-              {labels.roleLabel}: {role}
-            </p>
-          </div>
-        </div>
+    <section className="grid gap-8 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+      <article className="relative border border-slate-200 bg-white px-5 pb-5 pt-12 text-center">
+        <span className="absolute left-1/2 top-0 inline-flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md">
+          {initials}
+        </span>
+        <h2 className="text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
+        <p className="mt-1 text-sm font-semibold text-slate-600">
+          {labels.usernamePrefix}
+          {username || 'traveler'}
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          {labels.roleLabel}: <span className="font-semibold text-slate-700">{role}</span>
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          {labels.memberSinceLabel}: <span className="font-semibold text-slate-700">{memberSince}</span>
+        </p>
 
-        <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">{labels.memberSinceLabel}</p>
-        <p className="mt-1 text-sm font-semibold text-slate-800">{memberSince}</p>
-
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+        <div className="mt-4 grid gap-2">
           <button
             type="button"
             onClick={onEditProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
           >
-            <PencilSimpleLine size={15} />
+            <PencilSimpleLine size={15} weight="duotone" />
             {labels.editProfile}
           </button>
           <button
             type="button"
             onClick={onViewPublicProfile}
             disabled={!canViewPublicProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <GlobeHemisphereWest size={15} />
+            <GlobeHemisphereWest size={15} weight="duotone" />
             {labels.viewPublicProfile}
+          </button>
+          <button
+            type="button"
+            onClick={onShareProfile}
+            disabled={!canShareProfile}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <ShareNetwork size={15} weight="duotone" />
+            {labels.shareProfile}
           </button>
         </div>
       </article>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <ProfileSummaryStats stats={stats} />
         <ProfileMetaPanel
           bio={bio}

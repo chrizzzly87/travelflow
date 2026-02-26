@@ -48,6 +48,7 @@
   "summary": {
     "editProfile": "Edit profile",
     "viewPublicProfile": "View public profile",
+    "shareProfile": "Share profile URL",
     "memberSinceLabel": "Member since",
     "memberSinceUnknown": "Not available",
     "usernamePrefix": "@",
