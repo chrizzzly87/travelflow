@@ -157,6 +157,16 @@
     "style": "Стиль",
     "transport": "Транспорт"
   },
+  "modelPicker": {
+    "label": "Модель ИИ",
+    "topPicks": "Рекомендованные",
+    "allModels": "Все модели",
+    "badges": {
+      "default": "По умолчанию",
+      "fastAndGood": "Быстро и качественно",
+      "veryFast": "Очень быстро!"
+    }
+  },
   "cta": {
     "label": "Создать мою поездку",
     "loading": "Создание..."

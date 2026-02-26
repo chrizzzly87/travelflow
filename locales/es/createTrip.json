@@ -157,6 +157,16 @@
     "style": "Estilo",
     "transport": "Transporte"
   },
+  "modelPicker": {
+    "label": "Modelo de IA",
+    "topPicks": "Recomendados",
+    "allModels": "Todos los modelos",
+    "badges": {
+      "default": "Predeterminado",
+      "fastAndGood": "Rápido y bueno",
+      "veryFast": "¡Muy rápido!"
+    }
+  },
   "cta": {
     "label": "Crear mi viaje",
     "loading": "Creando..."

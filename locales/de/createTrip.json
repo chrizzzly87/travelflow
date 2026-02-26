@@ -157,6 +157,16 @@
     "style": "Stil",
     "transport": "Transport"
   },
+  "modelPicker": {
+    "label": "KI-Modell",
+    "topPicks": "Top-Auswahl",
+    "allModels": "Alle Modelle",
+    "badges": {
+      "default": "Standard",
+      "fastAndGood": "Schnell und gut",
+      "veryFast": "Sehr schnell!"
+    }
+  },
   "cta": {
     "label": "Reise erstellen",
     "loading": "Wird erstellt..."

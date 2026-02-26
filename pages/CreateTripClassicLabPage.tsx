@@ -51,7 +51,7 @@ import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { useDbSync } from '../hooks/useDbSync';
 import { generateItinerary } from '../services/aiService';
@@ -82,6 +82,12 @@ import {
     searchDestinationOptions,
 } from '../services/destinationService';
 import { decodeTripPrefill } from '../services/tripPrefillDecoder';
+import {
+    AI_MODEL_CATALOG,
+    DEFAULT_CREATE_TRIP_MODEL_ID,
+    getAiModelById,
+    getCreateTripModelOptions,
+} from '../config/aiModelCatalog';
 
 interface CreateTripClassicLabPageProps {
     onOpenManager: () => void;
@@ -191,6 +197,13 @@ const FLEX_WINDOW_OPTIONS: Array<{ id: FlexWindow; labelKey: string }> = [
 const DEFAULT_EFFECTIVE_STYLE_IDS = ['culture', 'food', 'nature', 'beaches', 'nightlife'];
 const DEFAULT_EFFECTIVE_TRAVELER: TravelerType = 'solo';
 const DEFAULT_EFFECTIVE_TRANSPORT: TransportMode = 'auto';
+const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
+    'openrouter:minimax/minimax-m2.5': 'modelPicker.badges.fastAndGood',
+    'perplexity:perplexity/sonar-pro': 'modelPicker.badges.veryFast',
+    [DEFAULT_CREATE_TRIP_MODEL_ID]: 'modelPicker.badges.default',
+};
+const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_NOTE_KEY_BY_ID));
+const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
 
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -368,6 +381,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const [prefillHydrated, setPrefillHydrated] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [selectedModelId, setSelectedModelId] = useState<string>(DEFAULT_CREATE_TRIP_MODEL_ID);
 
     const [sectionExpanded, setSectionExpanded] = useState<Record<CollapsibleSection, boolean>>({
         traveler: false,
@@ -494,6 +508,20 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         if (orderedDestinations.length === 0) return 0;
         return dayCount / orderedDestinations.length;
     }, [dayCount, orderedDestinations.length]);
+
+    const selectedAiModel = useMemo(() => {
+        return getAiModelById(selectedModelId)
+            || getAiModelById(DEFAULT_CREATE_TRIP_MODEL_ID)
+            || CREATE_TRIP_MODELS[0]!;
+    }, [selectedModelId]);
+    const preferredCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
+    const remainingCreateTripModels = useMemo(
+        () => CREATE_TRIP_MODELS.filter((model) => !CREATE_TRIP_PREFERRED_MODEL_ID_SET.has(model.id)),
+        []
+    );
 
     const destinationComplete = orderedDestinations.length > 0;
     const datesComplete = Boolean(startDate && endDate);
@@ -1452,6 +1480,18 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         trackEvent('create_trip__toggle--route_lock', { enabled: checked });
     };
 
+    const handleModelChange = (modelId: string) => {
+        const model = getAiModelById(modelId);
+        if (!model || model.availability !== 'active') return;
+        setSelectedModelId(model.id);
+        trackEvent('create_trip__model--select', {
+            provider: model.provider,
+            model: model.model,
+            model_id: model.id,
+            is_default: model.id === DEFAULT_CREATE_TRIP_MODEL_ID,
+        });
+    };
+
     const requestGenerationNotificationPermission = useCallback(async (): Promise<NotificationPermission | 'unsupported'> => {
         const currentPermission = getTripReadyNotificationPermission();
         if (currentPermission !== 'default') return currentPermission;
@@ -1497,6 +1537,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
             date_mode: dateInputMode,
             route_lock: routeLock,
             round_trip: roundTrip,
+            provider: selectedAiModel.provider,
+            model: selectedAiModel.model,
         });
 
         const destinationPromptLabels = orderedDestinations.map((destination) => getDestinationPromptLabel(destination));
@@ -1530,6 +1572,10 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                 interests: notesInterests.length > 0 ? notesInterests : undefined,
                 roundTrip,
                 totalDays: dayCount,
+                aiTarget: {
+                    provider: selectedAiModel.provider,
+                    model: selectedAiModel.model,
+                },
             });
 
             onTripGenerated({
@@ -2281,6 +2327,83 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     <div className="mt-1 text-[11px] text-amber-100/90">{t('previewOnly.global')}</div>
                                 </div>
 
+                                <div className="space-y-1">
+                                    <label htmlFor="create-trip-model-desktop" className="text-[11px] font-semibold uppercase tracking-[0.11em] text-indigo-200/95">
+                                        {t('modelPicker.label')}
+                                    </label>
+                                    <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                        <SelectTrigger
+                                            id="create-trip-model-desktop"
+                                            className="h-auto min-h-11 w-full rounded-xl border-indigo-200/45 bg-white/95 text-left text-indigo-950 hover:bg-white"
+                                            {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                                provider: selectedAiModel.provider,
+                                                model: selectedAiModel.model,
+                                                model_id: selectedAiModel.id,
+                                                source: 'desktop_snapshot',
+                                            })}
+                                        >
+                                            <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                                <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-700">
+                                                    {selectedAiModel.providerShortName}
+                                                </span>
+                                                {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                                    <span className="rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                        {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-[26rem]">
+                                            {preferredCreateTripModels.length > 0 && (
+                                                <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                            )}
+                                            {preferredCreateTripModels.map((model) => {
+                                                const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                return (
+                                                    <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                        <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate font-semibold">{model.label}</span>
+                                                                <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                            </span>
+                                                            <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                                {noteKey && (
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                        {t(noteKey)}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                            {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                                <SelectSeparator />
+                                            )}
+                                            {remainingCreateTripModels.length > 0 && (
+                                                <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                            )}
+                                            {remainingCreateTripModels.map((model) => (
+                                                <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold">{model.label}</span>
+                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                        </span>
+                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                            {model.providerShortName}
+                                                        </span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 <button
                                     type="button"
                                     onClick={handleGenerateTrip}
@@ -2289,6 +2412,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
                                         date_mode: dateInputMode,
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
                                     })}
                                 >
                                     {isSubmitting ? t('cta.loading') : t('cta.label')}
@@ -2324,6 +2449,82 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                     style={{ bottom: `${mobileSnapshotFooterOffset}px` }}
                 >
                     <div className="mx-auto max-w-[1260px]">
+                        <div className="mb-2.5 space-y-1">
+                            <label htmlFor="create-trip-model-mobile" className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">
+                                {t('modelPicker.label')}
+                            </label>
+                            <Select value={selectedAiModel.id} onValueChange={handleModelChange}>
+                                <SelectTrigger
+                                    id="create-trip-model-mobile"
+                                    className="h-auto min-h-10 w-full rounded-xl border-white/20 bg-white/10 text-left text-white hover:bg-white/15"
+                                    {...getAnalyticsDebugAttributes('create_trip__model--select', {
+                                        provider: selectedAiModel.provider,
+                                        model: selectedAiModel.model,
+                                        model_id: selectedAiModel.id,
+                                        source: 'mobile_footer',
+                                    })}
+                                >
+                                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 pr-2">
+                                        <span className="truncate text-sm font-semibold">{selectedAiModel.label}</span>
+                                        <span className="rounded-full border border-indigo-200/40 bg-indigo-300/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-indigo-100">
+                                            {selectedAiModel.providerShortName}
+                                        </span>
+                                        {MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id] && (
+                                            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-100">
+                                                {t(MODEL_PREFERENCE_NOTE_KEY_BY_ID[selectedAiModel.id])}
+                                            </span>
+                                        )}
+                                    </span>
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[24rem]">
+                                    {preferredCreateTripModels.length > 0 && (
+                                        <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                    )}
+                                    {preferredCreateTripModels.map((model) => {
+                                        const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                        return (
+                                            <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                    <span className="min-w-0">
+                                                        <span className="block truncate font-semibold">{model.label}</span>
+                                                        <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                    </span>
+                                                    <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                            {model.providerShortName}
+                                                        </span>
+                                                        {noteKey && (
+                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                {t(noteKey)}
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                </span>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                    {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
+                                        <SelectSeparator />
+                                    )}
+                                    {remainingCreateTripModels.length > 0 && (
+                                        <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                    )}
+                                    {remainingCreateTripModels.map((model) => (
+                                        <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                <span className="min-w-0">
+                                                    <span className="block truncate font-semibold">{model.label}</span>
+                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                </span>
+                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                    {model.providerShortName}
+                                                </span>
+                                            </span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="flex items-start gap-3.5">
                             <div className="min-w-0 flex-1 space-y-1.5">
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-200/95">{t('snapshot.title')}</div>
@@ -2346,6 +2547,8 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     destination_count: orderedDestinations.length,
                                     date_mode: dateInputMode,
                                     source: 'mobile_footer',
+                                    provider: selectedAiModel.provider,
+                                    model: selectedAiModel.model,
                                 })}
                             >
                                 {isSubmitting ? t('cta.loading') : t('cta.label')}

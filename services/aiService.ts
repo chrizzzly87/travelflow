@@ -1,5 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ICoordinates, ITimelineItem, ITrip } from "../types";
+import type { AiProviderId } from "../config/aiProviderCatalog";
 import { buildDurationPromptGuidance, parseFlexibleDurationDays, parseFlexibleDurationHours } from "../shared/durationParsing";
 import { buildTransportModePromptGuidance, MODEL_TRANSPORT_MODE_VALUES, normalizeTransportMode } from "../shared/transportModes";
 import {
@@ -167,7 +168,7 @@ export interface GenerateOptions {
     selectedIslandNames?: string[];
     enforceIslandOnly?: boolean;
     aiTarget?: {
-        provider: 'gemini' | 'openai' | 'anthropic' | 'openrouter';
+        provider: AiProviderId;
         model: string;
     };
     promptMode?: 'default' | 'benchmark_compact';
@@ -553,7 +554,12 @@ const generateItineraryFromPrompt = async (
         request_id: typeof payload?.meta?.requestId === 'string' ? payload.meta.requestId : null,
     });
 
-    const normalizedProvider = provider === 'openai' || provider === 'anthropic' || provider === 'gemini' || provider === 'openrouter'
+    const normalizedProvider = provider === 'openai'
+        || provider === 'anthropic'
+        || provider === 'gemini'
+        || provider === 'openrouter'
+        || provider === 'perplexity'
+        || provider === 'qwen'
         ? provider
         : 'gemini';
 

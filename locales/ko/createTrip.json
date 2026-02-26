@@ -157,6 +157,16 @@
     "style": "스타일",
     "transport": "이동 수단"
   },
+  "modelPicker": {
+    "label": "AI 모델",
+    "topPicks": "추천",
+    "allModels": "모든 모델",
+    "badges": {
+      "default": "기본값",
+      "fastAndGood": "빠르고 품질 좋음",
+      "veryFast": "아주 빠름!"
+    }
+  },
   "cta": {
     "label": "내 여행 만들기",
     "loading": "만드는 중..."
