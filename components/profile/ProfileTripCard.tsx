@@ -1,5 +1,14 @@
 import React from 'react';
-import { ArrowUpRight, CalendarBlank, Clock, MapPin, PushPin, Star } from '@phosphor-icons/react';
+import {
+  ArrowUpRight,
+  CalendarBlank,
+  Clock,
+  Eye,
+  EyeSlash,
+  MapPin,
+  PushPin,
+  Star,
+} from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
@@ -44,6 +53,29 @@ interface ProfileTripCardProps {
   showPinAction?: boolean;
 }
 
+const DEFAULT_ROUTE_COLOR = '#64748b';
+const DEFAULT_LANE_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#0ea5e9',
+  '#3b82f6',
+  '#6366f1',
+  '#8b5cf6',
+];
+
+const buildLaneOutlineColor = (hexColor: string): string => {
+  const sanitized = hexColor.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(sanitized)) return 'rgba(15, 23, 42, 0.14)';
+
+  const r = Number.parseInt(sanitized.slice(0, 2), 16);
+  const g = Number.parseInt(sanitized.slice(2, 4), 16);
+  const b = Number.parseInt(sanitized.slice(4, 6), 16);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.58 ? 'rgba(15, 23, 42, 0.16)' : 'rgba(255, 255, 255, 0.22)';
+};
+
 export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   trip,
   locale,
@@ -76,6 +108,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
   const durationDays = React.useMemo(() => getTripDurationDays(trip), [trip]);
   const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
+  const isPublic = trip.showOnPublicProfile !== false;
 
   const cityLanes = React.useMemo(() => (
     cityItems.map((item, index) => ({
@@ -106,7 +139,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   ), [cityItems]);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg">
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300">
       <div className="relative h-40 overflow-hidden bg-slate-100">
         {mapUrl && !mapError ? (
           <>
@@ -130,24 +163,22 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-inline-0 top-0 h-16 bg-gradient-to-b from-slate-950/45 to-transparent" />
-
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
-          <span className="rounded-full bg-white/92 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700 shadow-sm">
+          <span className="rounded-full border border-slate-200 bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
             {sourceLabel}
           </span>
           {trip.isPinned && (
-            <span className="rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-sm">
+            <span className="rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
               {labels.pinnedTag}
             </span>
           )}
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="space-y-3 p-4">
         <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">{trip.title}</h3>
 
-        <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-600">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
             <Clock size={15} weight="duotone" className="text-accent-500" />
             {durationDays}
@@ -156,17 +187,16 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             <MapPin size={15} weight="duotone" className="text-accent-500" />
             {cityStops.length}
           </span>
+          <span className="inline-flex items-center gap-1.5 text-accent-700">
+            <CalendarBlank size={14} weight="duotone" />
+            {dateRange}
+          </span>
         </div>
 
-        <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-accent-700">
-          <CalendarBlank size={14} />
-          <span>{dateRange}</span>
-        </p>
-
-        <p className="mt-1 text-sm text-slate-500">{summaryLine}</p>
+        <p className="text-sm text-slate-500">{summaryLine}</p>
 
         {cityStops.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {cityStops.slice(0, 3).map((stop) => (
               <span
                 key={`${trip.id}-stop-${stop.id}`}
@@ -244,115 +274,73 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         </div>
       )}
 
-      <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-slate-100'} flex flex-wrap items-center justify-between gap-2 px-4 py-3`}>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onOpen(trip)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
-            {...(analyticsAttrs ? analyticsAttrs('open') : {})}
-          >
-            <ArrowUpRight size={14} weight="bold" />
-            {labels.open}
-          </button>
+      <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-slate-100'} flex items-center justify-between gap-2 px-4 py-3`}>
+        <button
+          type="button"
+          onClick={() => onOpen(trip)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+          {...(analyticsAttrs ? analyticsAttrs('open') : {})}
+        >
+          <ArrowUpRight size={14} weight="bold" />
+          {labels.open}
+        </button>
+
+        <div className="flex items-center gap-1.5">
+          {onToggleVisibility && (
+            <button
+              type="button"
+              onClick={() => onToggleVisibility(trip)}
+              aria-label={isPublic ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
+              title={isPublic ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
+              className={[
+                'inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors',
+                isPublic
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+              ].join(' ')}
+              {...(analyticsAttrs ? analyticsAttrs('visibility') : {})}
+            >
+              {isPublic ? <EyeSlash size={16} weight="duotone" /> : <Eye size={16} weight="duotone" />}
+            </button>
+          )}
+
           {showFavoriteAction && onToggleFavorite && (
             <button
               type="button"
               onClick={() => onToggleFavorite(trip)}
+              aria-label={trip.isFavorite ? labels.unfavorite : labels.favorite}
+              title={trip.isFavorite ? labels.unfavorite : labels.favorite}
               className={[
-                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+                'inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors',
                 trip.isFavorite
                   ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
                   : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
               ].join(' ')}
               {...(analyticsAttrs ? analyticsAttrs('favorite') : {})}
             >
-              <Star size={14} weight={trip.isFavorite ? 'fill' : 'regular'} />
-              {trip.isFavorite ? labels.unfavorite : labels.favorite}
+              <Star size={16} weight={trip.isFavorite ? 'fill' : 'duotone'} />
             </button>
           )}
-          {onToggleVisibility && (
+
+          {showPinAction && onTogglePin && (
             <button
               type="button"
-              onClick={() => onToggleVisibility(trip)}
+              onClick={() => onTogglePin(trip)}
+              aria-label={trip.isPinned ? labels.unpin : labels.pin}
+              title={trip.isPinned ? labels.unpin : labels.pin}
               className={[
-                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
-                trip.showOnPublicProfile !== false
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                'inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors',
+                trip.isPinned
+                  ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
                   : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
               ].join(' ')}
-              {...(analyticsAttrs ? analyticsAttrs('visibility') : {})}
+              {...(analyticsAttrs ? analyticsAttrs('pin') : {})}
             >
-              {trip.showOnPublicProfile !== false ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
+              <PushPin size={16} weight={trip.isPinned ? 'fill' : 'duotone'} />
             </button>
           )}
         </div>
-
-        {showPinAction && onTogglePin && (
-          <button
-            type="button"
-            onClick={() => onTogglePin(trip)}
-            className={[
-              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
-              trip.isPinned
-                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-                : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
-            ].join(' ')}
-            {...(analyticsAttrs ? analyticsAttrs('pin') : {})}
-          >
-            <PushPin size={14} weight={trip.isPinned ? 'fill' : 'regular'} />
-            {trip.isPinned ? labels.unpin : labels.pin}
-          </button>
-        )}
       </div>
     </article>
   );
-};
-
-const DEFAULT_ROUTE_COLOR = '#64748b';
-const DEFAULT_LANE_COLORS = [
-  '#ef4444',
-  '#f97316',
-  '#eab308',
-  '#22c55e',
-  '#0ea5e9',
-  '#3b82f6',
-  '#6366f1',
-  '#8b5cf6',
-  '#ec4899',
-];
-
-const HEX_COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-const RGB_COLOR_PATTERN = /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i;
-
-const parseHexColor = (color: string): [number, number, number] | null => {
-  const normalized = color.trim();
-  const match = normalized.match(HEX_COLOR_PATTERN);
-  if (!match) return null;
-  const raw = match[1];
-  const expanded = raw.length === 3 ? raw.split('').map((part) => `${part}${part}`).join('') : raw;
-  const red = Number.parseInt(expanded.slice(0, 2), 16);
-  const green = Number.parseInt(expanded.slice(2, 4), 16);
-  const blue = Number.parseInt(expanded.slice(4, 6), 16);
-  if ([red, green, blue].some((channel) => Number.isNaN(channel))) return null;
-  return [red, green, blue];
-};
-
-const parseRgbColor = (color: string): [number, number, number] | null => {
-  const match = color.trim().match(RGB_COLOR_PATTERN);
-  if (!match) return null;
-  const red = Number.parseFloat(match[1]);
-  const green = Number.parseFloat(match[2]);
-  const blue = Number.parseFloat(match[3]);
-  if ([red, green, blue].some((channel) => !Number.isFinite(channel))) return null;
-  return [Math.round(red), Math.round(green), Math.round(blue)];
-};
-
-const buildLaneOutlineColor = (color: string): string => {
-  if (typeof CSS !== 'undefined' && CSS.supports?.('color', `color(from ${color} srgb r g b / 0.45)`)) {
-    return `color(from ${color} srgb r g b / 0.45)`;
-  }
-  const rgb = parseHexColor(color) || parseRgbColor(color);
-  if (!rgb) return 'rgb(15 23 42 / 0.2)';
-  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.45)`;
 };
