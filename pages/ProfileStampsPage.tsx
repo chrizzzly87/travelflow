@@ -16,6 +16,10 @@ import { getAllTrips } from '../services/storageService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { buildPath } from '../config/routes';
+import {
+    updateCurrentUserPassportStickerPositions,
+    type PassportStickerPosition,
+} from '../services/profileService';
 
 type StampGroupFilter = 'all' | ProfileStampGroup;
 
@@ -66,6 +70,7 @@ export const ProfileStampsPage: React.FC = () => {
     const [trips, setTrips] = useState(() => getAllTrips());
     const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
     const [stickerPositions, setStickerPositions] = useState<Record<string, { x: number; y: number }>>({});
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
     const dragStateRef = useRef<{
         stampId: string;
@@ -73,6 +78,7 @@ export const ProfileStampsPage: React.FC = () => {
         offsetY: number;
     } | null>(null);
     const passportCanvasRef = useRef<HTMLDivElement | null>(null);
+    const stickerPositionsRef = useRef<Record<string, PassportStickerPosition>>({});
 
     const sortBy = normalizeStampSort(searchParams.get('sort'));
     const groupBy = normalizeStampGroup(searchParams.get('group'));
@@ -87,6 +93,19 @@ export const ProfileStampsPage: React.FC = () => {
         if (profile || isProfileLoading) return;
         void refreshProfile();
     }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+        updatePreference();
+        if (typeof mediaQuery.addEventListener === 'function') {
+            mediaQuery.addEventListener('change', updatePreference);
+            return () => mediaQuery.removeEventListener('change', updatePreference);
+        }
+        mediaQuery.addListener(updatePreference);
+        return () => mediaQuery.removeListener(updatePreference);
+    }, []);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -139,11 +158,13 @@ export const ProfileStampsPage: React.FC = () => {
         setStickerPositions((current) => {
             const next: Record<string, { x: number; y: number }> = {};
             recentStamps.forEach((stamp, index) => {
-                next[stamp.definition.id] = current[stamp.definition.id] || defaultStickerPosition(index);
+                const savedPosition = profile?.passportStickerPositions?.[stamp.definition.id];
+                next[stamp.definition.id] = current[stamp.definition.id] || savedPosition || defaultStickerPosition(index);
             });
+            stickerPositionsRef.current = next;
             return next;
         });
-    }, [recentStamps]);
+    }, [recentStamps, profile?.passportStickerPositions]);
 
     const visibleStamps = useMemo(() => {
         const filtered = groupBy === 'all'
@@ -203,7 +224,9 @@ export const ProfileStampsPage: React.FC = () => {
             offsetX: event.clientX - stickerRect.left,
             offsetY: event.clientY - stickerRect.top,
         };
-        event.currentTarget.setPointerCapture(event.pointerId);
+        if (typeof event.currentTarget.setPointerCapture === 'function') {
+            event.currentTarget.setPointerCapture(event.pointerId);
+        }
         setSelectedStampId(stamp.definition.id);
     };
 
@@ -214,16 +237,23 @@ export const ProfileStampsPage: React.FC = () => {
         const nextX = clamp(event.clientX - canvasRect.left - dragState.offsetX, 8, canvasRect.width - 108);
         const nextY = clamp(event.clientY - canvasRect.top - dragState.offsetY, 8, canvasRect.height - 116);
 
-        setStickerPositions((current) => ({
-            ...current,
-            [dragState.stampId]: { x: nextX, y: nextY },
-        }));
+        setStickerPositions((current) => {
+            const next = {
+                ...current,
+                [dragState.stampId]: { x: nextX, y: nextY },
+            };
+            stickerPositionsRef.current = next;
+            return next;
+        });
     };
 
     const handlePassportPointerUp = () => {
         const dragState = dragStateRef.current;
         if (!dragState) return;
         trackEvent('profile__passport_sticker--move', { stamp_id: dragState.stampId });
+        void updateCurrentUserPassportStickerPositions(stickerPositionsRef.current)
+            .then(() => refreshProfile())
+            .catch(() => undefined);
         dragStateRef.current = null;
     };
 
@@ -283,6 +313,7 @@ export const ProfileStampsPage: React.FC = () => {
 
                         <div
                             ref={passportCanvasRef}
+                            data-testid="profile-stamps-passport-canvas"
                             className="relative mt-5 h-[300px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950/60"
                             onPointerMove={handlePassportPointerMove}
                             onPointerUp={handlePassportPointerUp}
@@ -299,13 +330,16 @@ export const ProfileStampsPage: React.FC = () => {
                                         <button
                                             key={`passport-sticker-${stamp.definition.id}`}
                                             type="button"
+                                            data-stamp-id={stamp.definition.id}
                                             onPointerDown={(event) => handleStickerPointerDown(event, stamp)}
                                             onClick={() => handleSelectStamp(stamp)}
-                                            className="group absolute w-[98px] cursor-grab rounded-lg border border-white/25 bg-slate-100/95 p-1.5 text-left text-[10px] shadow-lg transition-transform active:cursor-grabbing"
+                                            className="profile-passport-sticker group absolute w-[98px] cursor-grab rounded-lg border border-white/25 bg-slate-100/95 p-1.5 text-left text-[10px] shadow-lg transition-transform active:cursor-grabbing"
                                             style={{
                                                 left: `${position.x}px`,
                                                 top: `${position.y}px`,
-                                                transform: `rotate(${index % 2 === 0 ? '-6deg' : '5deg'})`,
+                                                transform: prefersReducedMotion
+                                                    ? 'none'
+                                                    : `rotate(${index % 2 === 0 ? '-6deg' : '5deg'})`,
                                             }}
                                         >
                                             <img
@@ -334,7 +368,7 @@ export const ProfileStampsPage: React.FC = () => {
                                     trackEvent('profile__stamps_back--profile');
                                     navigate(buildPath('profile'));
                                 }}
-                                className="text-xs font-semibold text-slate-500 transition-colors hover:text-slate-700"
+                                className="inline-flex items-center rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                                 {...getAnalyticsDebugAttributes('profile__stamps_back--profile')}
                             >
                                 {t('stamps.backToProfile')}
@@ -420,6 +454,8 @@ export const ProfileStampsPage: React.FC = () => {
                                     key={stamp.definition.id}
                                     stamp={stamp}
                                     selected={selectedStamp?.definition.id === stamp.definition.id}
+                                    locale={appLocale}
+                                    unlockedOnLabel={t('stamps.cardUnlockedOn')}
                                     onSelect={handleSelectStamp}
                                     onHover={handleHoverStamp}
                                 />

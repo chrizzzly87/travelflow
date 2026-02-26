@@ -156,6 +156,7 @@
     "detailRarity": "Rarity",
     "detailProgress": "Progress",
     "detailUnlocked": "Unlocked",
+    "cardUnlockedOn": "Unlocked on",
     "detailUnlockedNow": "Just unlocked",
     "detailLocked": "Locked",
     "selectHint": "Select a stamp to view details and rarity.",

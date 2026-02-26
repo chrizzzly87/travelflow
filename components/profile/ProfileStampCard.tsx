@@ -7,6 +7,8 @@ interface ProfileStampCardProps {
   selected?: boolean;
   onSelect?: (stamp: ProfileStampProgress) => void;
   onHover?: (stamp: ProfileStampProgress) => void;
+  locale?: string;
+  unlockedOnLabel?: string;
 }
 
 type StampVisualState = {
@@ -32,10 +34,27 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
   selected = false,
   onSelect,
   onHover,
+  locale = 'en',
+  unlockedOnLabel = 'Unlocked',
 }) => {
   const [visualState, setVisualState] = React.useState<StampVisualState>(INITIAL_VISUAL_STATE);
+  const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    updatePreference();
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updatePreference);
+      return () => mediaQuery.removeEventListener('change', updatePreference);
+    }
+    mediaQuery.addListener(updatePreference);
+    return () => mediaQuery.removeListener(updatePreference);
+  }, []);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (prefersReducedMotion) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) return;
 
@@ -57,6 +76,14 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
     setVisualState(INITIAL_VISUAL_STATE);
   };
 
+  const unlockedAtLabel = stamp.achievedAt
+    ? new Date(stamp.achievedAt).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    : null;
+
   return (
     <button
       type="button"
@@ -71,11 +98,11 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         selected ? 'border-accent-300 shadow-md shadow-accent-100/60' : 'border-slate-200',
       ].join(' ')}
       style={{
-        '--stamp-tilt-x': `${visualState.tiltX}deg`,
-        '--stamp-tilt-y': `${visualState.tiltY}deg`,
+        '--stamp-tilt-x': `${prefersReducedMotion ? 0 : visualState.tiltX}deg`,
+        '--stamp-tilt-y': `${prefersReducedMotion ? 0 : visualState.tiltY}deg`,
         '--stamp-shine-x': `${visualState.shineX}%`,
         '--stamp-shine-y': `${visualState.shineY}%`,
-        '--stamp-shine-opacity': visualState.shineOpacity,
+        '--stamp-shine-opacity': prefersReducedMotion ? 0.2 : visualState.shineOpacity,
       } as React.CSSProperties}
       aria-pressed={selected}
     >
@@ -101,6 +128,11 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
             {stamp.definition.rarityPercent}% rarity
           </span>
         </div>
+        {unlockedAtLabel && (
+          <p className="text-[11px] font-medium text-slate-500">
+            {unlockedOnLabel}: {unlockedAtLabel}
+          </p>
+        )}
       </div>
     </button>
   );

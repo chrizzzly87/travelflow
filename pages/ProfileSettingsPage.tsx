@@ -343,9 +343,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
                     {isProfileLoading ? (
                         <div className="space-y-2" aria-hidden="true">
-                            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
-                            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
-                            <div className="h-20 w-full animate-pulse rounded-lg bg-slate-100" />
+                            <div className="h-10 w-full rounded-lg bg-slate-100" />
+                            <div className="h-10 w-full rounded-lg bg-slate-100" />
+                            <div className="h-20 w-full rounded-lg bg-slate-100" />
                         </div>
                     ) : (
                         <>

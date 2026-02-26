@@ -5,6 +5,10 @@ import { supabase } from './supabaseClient';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
 export type ProfileAccountStatus = 'active' | 'disabled' | 'deleted';
+export interface PassportStickerPosition {
+    x: number;
+    y: number;
+}
 
 export interface UserProfileRecord {
     id: string;
@@ -23,6 +27,7 @@ export interface UserProfileRecord {
     publicProfileEnabled: boolean;
     defaultPublicTripVisibility: boolean;
     usernameChangedAt: string | null;
+    passportStickerPositions: Record<string, PassportStickerPosition>;
 }
 
 export interface UpdateUserProfilePayload {
@@ -101,7 +106,34 @@ const normalizeUsername = (value: unknown): string => (
 );
 
 const isProfileColumnMissing = (message: string): boolean =>
-    /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at)/i.test(message);
+    /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions)/i.test(message);
+
+const toPassportStickerPosition = (value: unknown): PassportStickerPosition | null => {
+    if (!value || typeof value !== 'object') return null;
+    const candidate = value as { x?: unknown; y?: unknown };
+    const x = typeof candidate.x === 'number' && Number.isFinite(candidate.x) ? candidate.x : null;
+    const y = typeof candidate.y === 'number' && Number.isFinite(candidate.y) ? candidate.y : null;
+    if (x === null || y === null) return null;
+    return {
+        x: Math.round(x),
+        y: Math.round(y),
+    };
+};
+
+const normalizePassportStickerPositions = (value: unknown): Record<string, PassportStickerPosition> => {
+    if (!value || typeof value !== 'object') return {};
+    const entries = Object.entries(value as Record<string, unknown>);
+    const normalizedEntries = entries
+        .map(([stampId, rawPosition]) => {
+            const normalizedStampId = typeof stampId === 'string' ? stampId.trim() : '';
+            if (!normalizedStampId) return null;
+            const position = toPassportStickerPosition(rawPosition);
+            if (!position) return null;
+            return [normalizedStampId, position] as const;
+        })
+        .filter((entry): entry is readonly [string, PassportStickerPosition] => Array.isArray(entry));
+    return Object.fromEntries(normalizedEntries);
+};
 
 const mapProfileRow = (
     row: Record<string, unknown> | null,
@@ -123,6 +155,7 @@ const mapProfileRow = (
     publicProfileEnabled: toBooleanWithDefault(row?.public_profile_enabled, true),
     defaultPublicTripVisibility: toBooleanWithDefault(row?.default_public_trip_visibility, true),
     usernameChangedAt: typeof row?.username_changed_at === 'string' ? row.username_changed_at : null,
+    passportStickerPositions: normalizePassportStickerPositions(row?.passport_sticker_positions),
 });
 
 const mapTripRow = (row: Record<string, unknown>): ITrip | null => {
@@ -217,7 +250,7 @@ export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null>
 
     let { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at')
+        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
         .eq('id', userId)
         .maybeSingle();
 
@@ -300,6 +333,30 @@ export const updateCurrentUserProfile = async (
         throw new Error('Profile updated but could not be reloaded.');
     }
     return nextProfile;
+};
+
+export const updateCurrentUserPassportStickerPositions = async (
+    positions: Record<string, PassportStickerPosition>
+): Promise<void> => {
+    if (!supabase) return;
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) return;
+
+    const normalizedPositions = normalizePassportStickerPositions(positions);
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            passport_sticker_positions: normalizedPositions,
+        })
+        .eq('id', authData.user.id);
+
+    if (error) {
+        const message = error.message || '';
+        if (/column/i.test(message) && /passport_sticker_positions/i.test(message)) {
+            return;
+        }
+        throw new Error(error.message || 'Could not update passport sticker positions.');
+    }
 };
 
 export const checkUsernameAvailability = async (candidateRaw: string): Promise<UsernameAvailabilityResult> => {
@@ -399,7 +456,7 @@ const findProfileByUsername = async (username: string): Promise<UserProfileRecor
 
     const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at')
+        .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
         .eq('username', username)
         .maybeSingle();
 
@@ -508,7 +565,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
             if (targetUserId) {
                 const { data: targetProfileRow, error: targetProfileError } = await supabase
                     .from('profiles')
-                    .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at')
+                    .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
                     .eq('id', targetUserId)
                     .maybeSingle();
 
