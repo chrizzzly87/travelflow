@@ -51,7 +51,7 @@ export const INTERNATIONAL_GREETINGS_CATALOG: InternationalGreetingCatalogEntry[
     greeting: 'สวัสดี',
     transliteration: 'Sawasdee',
     ipa: 'sa.wat.diː',
-    context: 'Thai greeting used throughout the day, often paired with a wai.',
+    context: 'Thai greeting used throughout the day, often paired with a wai; speakers add polite endings by their own gender (khrap for men, kha for women).',
     language: 'Thai',
     inspirationCountry: 'Thailand',
     inspirationCountryCode: 'TH',
