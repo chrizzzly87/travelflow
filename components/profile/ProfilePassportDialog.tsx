@@ -35,26 +35,36 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(96vw,1120px)] max-w-6xl overflow-hidden border-slate-200 p-0">
-        <section className="profile-passport-dialog-shell max-h-[88vh] overflow-y-auto bg-slate-50 p-4 sm:p-5">
-          <DialogHeader className="space-y-1 pb-3 text-left">
-            <DialogTitle className="text-xl font-black tracking-tight text-slate-900">{title}</DialogTitle>
+      <DialogContent className="w-[min(96vw,1120px)] max-w-6xl overflow-visible border-none bg-transparent p-0 shadow-none">
+        <section className="profile-passport-dialog-shell px-2 pb-2 pt-4 sm:px-3 sm:pt-5">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{title}</DialogTitle>
             {description ? (
-              <DialogDescription className="text-sm text-slate-600">{description}</DialogDescription>
-            ) : null}
-            {!description ? (
-              <DialogDescription className="sr-only">{title}</DialogDescription>
-            ) : null}
+              <DialogDescription>{description}</DialogDescription>
+            ) : (
+              <DialogDescription>{title}</DialogDescription>
+            )}
           </DialogHeader>
 
-          <div className="profile-passport-dialog-book rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-            <ProfileStampBookViewer
-              stamps={stamps}
-              locale={locale}
-              labels={labels}
-              resolveGroupLabel={resolveGroupLabel}
-              onPageChange={onPageChange}
-            />
+          <div className="profile-passport-dialog-stage">
+            <div className="profile-passport-dialog-opening-book" aria-hidden="true">
+              <span className="profile-passport-dialog-opening-spine" />
+              <span className="profile-passport-dialog-opening-page profile-passport-dialog-opening-page--back" />
+              <span className="profile-passport-dialog-opening-page profile-passport-dialog-opening-page--front" />
+              <span className="profile-passport-dialog-opening-cover" />
+            </div>
+
+            <div className="profile-passport-dialog-book rounded-2xl border border-slate-200 bg-white/96 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur-[1px] sm:p-4">
+              <ProfileStampBookViewer
+                stamps={stamps}
+                locale={locale}
+                labels={labels}
+                resolveGroupLabel={resolveGroupLabel}
+                onPageChange={onPageChange}
+                compact
+                disableInitialOpenAnimation
+              />
+            </div>
           </div>
         </section>
       </DialogContent>

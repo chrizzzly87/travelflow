@@ -51,6 +51,9 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧷 Added quick access to stamp collection from profile actions and account navigation.
 - [x] [Improved] 🛂 Refined the passport cover visual style with tighter corners, centered emblem layout, subtle texture grain, and a cleaner hover “book cover” lift/open motion.
 - [x] [Improved] 📖 Changed passport opening to an in-page modal flow with URL state (`?passport=open`) so the profile context stays intact while still supporting shareable state.
+- [x] [Improved] 📚 Added stacked inner “paper” layers to the passport cover with subtle staggered 3D hover motion and restored shimmer/noise detailing.
+- [x] [Improved] 🧾 Reworked passport modal entry to a center-origin book-opening animation where the cover and first page flip open into the spread.
+- [x] [Improved] 🗂️ Resized stamp layouts to compact 2×3 grids per themed page for clearer category grouping and lower visual density.
 - [x] [Improved] 🗺️ Added per-trip public visibility controls and enforced read-only public trip access mode where needed.
 - [x] [Improved] 🏳️ Added country flags to visited-country chips and improved profile metadata readability.
 - [x] [Improved] 📤 Added a one-click action to share your public profile URL directly from your profile summary.

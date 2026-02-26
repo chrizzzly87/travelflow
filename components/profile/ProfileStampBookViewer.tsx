@@ -16,12 +16,21 @@ interface ProfileStampBookViewerProps {
   labels: ProfileStampBookViewerLabels;
   resolveGroupLabel: (group: ProfileStampGroup) => string;
   onPageChange?: (page: number) => void;
+  compact?: boolean;
+  disableInitialOpenAnimation?: boolean;
 }
 
-interface StampBookPage {
-  group: ProfileStampGroup;
+interface StampBookSide {
+  id: string;
+  group: ProfileStampGroup | 'empty';
   groupLabel: string;
   slots: Array<ProfileStampProgress | null>;
+}
+
+interface StampBookSpreadPage {
+  id: string;
+  left: StampBookSide;
+  right: StampBookSide;
 }
 
 type TurnDirection = 'next' | 'prev';
@@ -50,75 +59,114 @@ const toPageSlots = (groupStamps: ProfileStampProgress[]): Array<ProfileStampPro
   return slots;
 };
 
-const buildPages = (
+const buildEmptySide = (id: string): StampBookSide => ({
+  id,
+  group: 'empty',
+  groupLabel: '',
+  slots: toPageSlots([]),
+});
+
+const buildSpreads = (
   stamps: ProfileStampProgress[],
   resolveGroupLabel: (group: ProfileStampGroup) => string
-): StampBookPage[] => {
-  const pages = GROUP_ORDER.map((group) => {
+): StampBookSpreadPage[] => {
+  const sides: StampBookSide[] = GROUP_ORDER.map((group) => {
     const groupStamps = stamps.filter((stamp) => stamp.definition.group === group);
     return {
+      id: `group-${group}`,
       group,
       groupLabel: resolveGroupLabel(group),
       slots: toPageSlots(groupStamps),
     };
   });
-  return pages.length > 0 ? pages : [{
-    group: 'trips',
-    groupLabel: resolveGroupLabel('trips'),
-    slots: toPageSlots([]),
-  }];
+
+  if (sides.length === 0) {
+    sides.push(buildEmptySide('group-empty'));
+  }
+
+  const spreads: StampBookSpreadPage[] = [];
+  for (let index = 0; index < sides.length; index += 2) {
+    const left = sides[index] || buildEmptySide(`left-empty-${index}`);
+    const right = sides[index + 1] || buildEmptySide(`right-empty-${index}`);
+    spreads.push({
+      id: `spread-${index / 2}`,
+      left,
+      right,
+    });
+  }
+
+  return spreads;
 };
 
-const StampPlaceholder: React.FC<{ label: string }> = ({ label }) => (
-  <div className="flex min-h-[170px] items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-slate-400">
+const StampPlaceholder: React.FC<{ label: string; compact?: boolean }> = ({ label, compact = false }) => (
+  <div
+    className={[
+      'flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-slate-400',
+      compact ? 'min-h-[108px]' : 'min-h-[132px]',
+    ].join(' ')}
+  >
     <LockSimple size={14} weight="duotone" />
     <span className="text-xs font-semibold">{label}</span>
   </div>
 );
 
-const StampBookSpread: React.FC<{
-  page: StampBookPage;
+const StampBookSideView: React.FC<{
+  side: StampBookSide;
   locale: string;
   emptySlotLabel: string;
-}> = ({ page, locale, emptySlotLabel }) => {
-  const leftSlots = page.slots.slice(0, 3);
-  const rightSlots = page.slots.slice(3, 6);
+  compact?: boolean;
+}> = ({ side, locale, emptySlotLabel, compact = false }) => (
+  <article className="stamp-book-page">
+    {side.groupLabel ? (
+      <header className="mb-2 border-b border-slate-200/80 pb-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{side.groupLabel}</p>
+      </header>
+    ) : null}
+    <div className="stamp-book-page-grid">
+      {side.slots.map((stamp, slotIndex) => {
+        const slotKey = `${side.id}-slot-${slotIndex}`;
+        if (stamp) {
+          return (
+            <ProfileStampCard
+              key={`${slotKey}-${stamp.definition.id}`}
+              stamp={stamp}
+              locale={locale}
+              compact={compact}
+            />
+          );
+        }
+        return (
+          <StampPlaceholder
+            key={`${slotKey}-empty`}
+            label={emptySlotLabel}
+            compact={compact}
+          />
+        );
+      })}
+    </div>
+  </article>
+);
 
+const StampBookSpread: React.FC<{
+  spread: StampBookSpreadPage;
+  locale: string;
+  emptySlotLabel: string;
+  compact?: boolean;
+}> = ({ spread, locale, emptySlotLabel, compact = false }) => {
   return (
     <section className="stamp-book-spread">
-      <article className="stamp-book-page stamp-book-page--left">
-        <div className="stamp-book-page-grid">
-          {leftSlots.map((stamp, index) => stamp ? (
-            <ProfileStampCard
-              key={`page-left-${stamp.definition.id}-${index}`}
-              stamp={stamp}
-              locale={locale}
-            />
-          ) : (
-            <StampPlaceholder
-              key={`page-left-empty-${index}`}
-              label={emptySlotLabel}
-            />
-          ))}
-        </div>
-      </article>
-
-      <article className="stamp-book-page stamp-book-page--right">
-        <div className="stamp-book-page-grid">
-          {rightSlots.map((stamp, index) => stamp ? (
-            <ProfileStampCard
-              key={`page-right-${stamp.definition.id}-${index}`}
-              stamp={stamp}
-              locale={locale}
-            />
-          ) : (
-            <StampPlaceholder
-              key={`page-right-empty-${index}`}
-              label={emptySlotLabel}
-            />
-          ))}
-        </div>
-      </article>
+      <StampBookSideView
+        side={spread.left}
+        locale={locale}
+        emptySlotLabel={emptySlotLabel}
+        compact={compact}
+      />
+      <StampBookSideView
+        side={spread.right}
+        locale={locale}
+        emptySlotLabel={emptySlotLabel}
+        compact={compact}
+      />
     </section>
   );
 };
@@ -129,12 +177,14 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
   labels,
   resolveGroupLabel,
   onPageChange,
+  compact = false,
+  disableInitialOpenAnimation = false,
 }) => {
-  const pages = React.useMemo(
-    () => buildPages(stamps, resolveGroupLabel),
+  const spreads = React.useMemo(
+    () => buildSpreads(stamps, resolveGroupLabel),
     [resolveGroupLabel, stamps]
   );
-  const [activePage, setActivePage] = React.useState(0);
+  const [activeSpread, setActiveSpread] = React.useState(0);
   const [turnState, setTurnState] = React.useState<TurnState | null>(null);
   const [bookOpened, setBookOpened] = React.useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -155,7 +205,7 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
   }, []);
 
   React.useEffect(() => {
-    if (prefersReducedMotion) {
+    if (disableInitialOpenAnimation || prefersReducedMotion) {
       setBookOpened(true);
       return;
     }
@@ -163,11 +213,11 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
       setBookOpened(true);
     });
     return () => cancelAnimationFrame(raf);
-  }, [prefersReducedMotion]);
+  }, [disableInitialOpenAnimation, prefersReducedMotion]);
 
   React.useEffect(() => {
-    setActivePage((current) => Math.min(current, pages.length - 1));
-  }, [pages.length]);
+    setActiveSpread((current) => Math.min(current, spreads.length - 1));
+  }, [spreads.length]);
 
   React.useEffect(() => {
     return () => {
@@ -179,18 +229,18 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
   const startTurn = (direction: TurnDirection) => {
     if (turnState) return;
     const step = direction === 'next' ? 1 : -1;
-    const nextPage = Math.min(Math.max(activePage + step, 0), pages.length - 1);
-    if (nextPage === activePage) return;
+    const nextSpread = Math.min(Math.max(activeSpread + step, 0), spreads.length - 1);
+    if (nextSpread === activeSpread) return;
 
     if (prefersReducedMotion) {
-      setActivePage(nextPage);
-      onPageChange?.(nextPage + 1);
+      setActiveSpread(nextSpread);
+      onPageChange?.(nextSpread + 1);
       return;
     }
 
     setTurnState({
-      from: activePage,
-      to: nextPage,
+      from: activeSpread,
+      to: nextSpread,
       direction,
     });
 
@@ -198,8 +248,8 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
     if (turnTimeoutRef.current) clearTimeout(turnTimeoutRef.current);
 
     swapTimeoutRef.current = setTimeout(() => {
-      setActivePage(nextPage);
-      onPageChange?.(nextPage + 1);
+      setActiveSpread(nextSpread);
+      onPageChange?.(nextSpread + 1);
     }, TURN_SWAP_DELAY_MS);
 
     turnTimeoutRef.current = setTimeout(() => {
@@ -207,18 +257,22 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
     }, TURN_DURATION_MS);
   };
 
-  const currentPage = pages[activePage];
-  const pendingPage = turnState ? pages[turnState.to] : null;
-  const canGoPrev = activePage > 0;
-  const canGoNext = activePage < pages.length - 1;
+  const currentSpread = spreads[activeSpread];
+  const pendingSpread = turnState ? spreads[turnState.to] : null;
+  const canGoPrev = activeSpread > 0;
+  const canGoNext = activeSpread < spreads.length - 1;
   const pageIndicator = labels.pageIndicator
-    .replace('{page}', String(activePage + 1))
-    .replace('{total}', String(pages.length));
+    .replace('{page}', String(activeSpread + 1))
+    .replace('{total}', String(spreads.length));
+
+  const currentSpreadLabel = [currentSpread.left.groupLabel, currentSpread.right.groupLabel]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <section className="space-y-3">
+    <section className={compact ? 'stamp-book stamp-book--compact space-y-3' : 'stamp-book space-y-3'}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{currentPage.groupLabel}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{currentSpreadLabel}</p>
         <p className="text-xs font-semibold text-slate-500 tabular-nums">{pageIndicator}</p>
       </div>
 
@@ -226,25 +280,28 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
         <div className={`stamp-book-sheet ${bookOpened ? 'stamp-book-sheet--opened' : 'stamp-book-sheet--opening'}`}>
           {!turnState ? (
             <StampBookSpread
-              page={currentPage}
+              spread={currentSpread}
               locale={locale}
               emptySlotLabel={labels.emptySlot}
+              compact={compact}
             />
           ) : (
             <>
               <div className={`stamp-book-turn-layer stamp-book-turn-layer--current stamp-book-turn-layer--${turnState.direction}-current`}>
                 <StampBookSpread
-                  page={pages[turnState.from]}
+                  spread={spreads[turnState.from]}
                   locale={locale}
                   emptySlotLabel={labels.emptySlot}
+                  compact={compact}
                 />
               </div>
-              {pendingPage ? (
+              {pendingSpread ? (
                 <div className={`stamp-book-turn-layer stamp-book-turn-layer--next stamp-book-turn-layer--${turnState.direction}-next`}>
                   <StampBookSpread
-                    page={pendingPage}
+                    spread={pendingSpread}
                     locale={locale}
                     emptySlotLabel={labels.emptySlot}
+                    compact={compact}
                   />
                 </div>
               ) : null}
@@ -291,4 +348,3 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
     </section>
   );
 };
-

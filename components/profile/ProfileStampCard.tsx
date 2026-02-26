@@ -9,6 +9,7 @@ interface ProfileStampCardProps {
   onHover?: (stamp: ProfileStampProgress) => void;
   locale?: string;
   unlockedOnLabel?: string;
+  compact?: boolean;
 }
 
 type StampVisualState = {
@@ -36,6 +37,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
   onHover,
   locale = 'en',
   unlockedOnLabel = 'Unlocked',
+  compact = false,
 }) => {
   const [visualState, setVisualState] = React.useState<StampVisualState>(INITIAL_VISUAL_STATE);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -121,6 +123,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         'profile-stamp-card group relative overflow-hidden rounded-xl border bg-white text-left',
         selected ? 'border-accent-300 shadow-md shadow-accent-100/60' : 'border-slate-200',
         stamp.achieved ? '' : 'opacity-80',
+        compact ? 'rounded-lg' : '',
       ].join(' ')}
       style={{
         '--stamp-tilt-x': `${prefersReducedMotion ? 0 : visualState.tiltX}deg`,
@@ -131,7 +134,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       } as React.CSSProperties}
       aria-pressed={selected}
     >
-      <div className={`relative aspect-square overflow-hidden ${stamp.achieved ? '' : 'grayscale opacity-70'}`}>
+      <div className={`relative ${compact ? 'aspect-[4/3]' : 'aspect-square'} overflow-hidden ${stamp.achieved ? '' : 'grayscale opacity-70'}`}>
         <img
           src={stamp.definition.assetPath}
           alt={stamp.definition.title}
@@ -141,8 +144,8 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         <span className="pointer-events-none absolute inset-0 bg-slate-950/5" />
       </div>
 
-      <div className="space-y-1 border-t border-slate-100 px-3 py-2.5">
-        <p className="line-clamp-1 text-sm font-semibold text-slate-900">{stamp.definition.title}</p>
+      <div className={`space-y-1 border-t border-slate-100 ${compact ? 'px-2.5 py-2' : 'px-3 py-2.5'}`}>
+        <p className={`line-clamp-1 font-semibold text-slate-900 ${compact ? 'text-[13px]' : 'text-sm'}`}>{stamp.definition.title}</p>
       </div>
 
       <div

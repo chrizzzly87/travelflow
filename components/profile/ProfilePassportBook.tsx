@@ -42,41 +42,57 @@ export const ProfilePassportBook: React.FC<ProfilePassportBookProps> = ({
 }) => {
   const theme = getPassportCoverTheme(countryCode);
   const showcasedCountLabel = stamps.length > 0
-    ? `${stamps.length} stamp${stamps.length === 1 ? '' : 's'} showcased`
-    : 'No stamps showcased yet';
+    ? `${stamps.length} stamp${stamps.length === 1 ? '' : 's'}`
+    : 'No stamps yet';
   const rootClassName = [
-    'profile-passport-cover group relative isolate mx-auto aspect-[4/5] w-full max-w-[208px] overflow-hidden rounded-lg border',
+    'profile-passport-cover group relative isolate mx-auto aspect-[4/5] w-full max-w-[208px]',
     onOpen ? 'profile-passport-cover--interactive cursor-pointer' : '',
   ].join(' ').trim();
 
-  const coverStyle: React.CSSProperties = {
+  const clipStyle: React.CSSProperties = {
     borderColor: theme.borderHex,
     color: theme.textHex,
     backgroundColor: theme.coverHex,
   };
 
   const content = (
-    <div className={rootClassName} style={coverStyle} data-testid={testId}>
-      <span className="profile-passport-cover-noise pointer-events-none absolute inset-0" aria-hidden="true" />
-      <div className="profile-passport-cover-face relative z-[1]">
-        <span
-          className="pointer-events-none absolute inset-y-0 start-0 w-10"
-          style={{ backgroundColor: theme.spineHex }}
-          aria-hidden="true"
-        />
-        <span className="profile-passport-cover-fiber pointer-events-none absolute inset-0" aria-hidden="true" />
-        <span className="profile-passport-cover-edge pointer-events-none absolute inset-y-0 end-0 w-[3px]" aria-hidden="true" />
+    <div className={rootClassName} data-testid={testId}>
+      <div className="profile-passport-stack">
+        <div className="profile-passport-page-stack" aria-hidden="true">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <span
+              key={`passport-fake-page-${index}`}
+              className="profile-passport-fake-page"
+              style={{ '--passport-page-index': index } as React.CSSProperties}
+            />
+          ))}
+        </div>
 
-        <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 py-7 text-center">
-          <p className="sr-only">{title}</p>
-          <div className="flex items-center justify-center gap-4 text-[#f1d17d]">
-            <GlobeHemisphereWest size={56} weight="duotone" />
+        <div className="profile-passport-cover-clip" style={clipStyle}>
+          <span className="profile-passport-cover-noise pointer-events-none absolute inset-0" aria-hidden="true" />
+          <span className="profile-passport-cover-shimmer pointer-events-none absolute inset-0" aria-hidden="true" />
+
+          <div className="profile-passport-cover-face relative z-[1] h-full">
+            <span
+              className="pointer-events-none absolute inset-y-0 start-0 w-10"
+              style={{ backgroundColor: theme.spineHex }}
+              aria-hidden="true"
+            />
+            <span className="profile-passport-cover-fiber pointer-events-none absolute inset-0" aria-hidden="true" />
+            <span className="profile-passport-cover-edge pointer-events-none absolute inset-y-0 end-0 w-[3px]" aria-hidden="true" />
+
+            <div className="relative flex h-full flex-col items-center justify-center gap-6 px-8 py-7 text-center" style={{ backgroundColor: theme.spineHex }}>
+              <p className="sr-only">{title}</p>
+              <div className="flex items-center justify-center gap-4 text-[#f1d17d]">
+                <GlobeHemisphereWest size={56} weight="duotone" />
+              </div>
+              <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-[#f8e5b4]">Travel Passport</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                {showcasedCountLabel}
+              </p>
+              <EPassportGlyph className="h-7 w-8 text-[#f1d17d]" />
+            </div>
           </div>
-          <p className="text-[13px] font-semibold uppercase tracking-[0.22em] text-[#f8e5b4]">Travel Passport</p>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.mutedTextHex }}>
-            {showcasedCountLabel}
-          </p>
-          <EPassportGlyph className="h-7 w-8 text-[#f1d17d]" />
         </div>
       </div>
     </div>
