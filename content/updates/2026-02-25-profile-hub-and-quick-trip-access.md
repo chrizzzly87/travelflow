@@ -27,7 +27,10 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🛡️ Allowed admins to open user public profiles even when profile visibility is disabled, so moderation/review workflows are never blocked.
 - [x] [Improved] 🔎 Added a direct “Open public profile” action in the admin users drawer next to “Open in Trips” for faster cross-surface navigation.
 - [x] [Improved] ⚙️ Expanded profile settings with username availability/cooldown guidance, public URL preview, bio, and profile visibility defaults.
+- [x] [Improved] 🔐 Updated username editing to be opt-in by default: users now unlock the field via “Change username” and validation runs on save instead of every keystroke.
+- [x] [Improved] 🧠 Added save-time username suggestions when a handle is unavailable, proposing nearby available alternatives based on profile/name patterns.
 - [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
+- [x] [Improved] 🧭 Refined Country/Region picker behavior to close immediately after single selection and keep the control scoped to one selected country.
 - [x] [Improved] 🛡️ Updated the admin user editor to use the same Country/Region ISO picker so admin profile edits stay consistent with app profile rules.
 - [x] [Improved] 🌎 Updated empty profile-location fallback copy to “Probably Planet Earth” for a friendlier profile touch.
 - [x] [Improved] 🗣️ Expanded the international greeting catalog with more regional/local greetings (including Northern Germany’s “Moin”) and richer usage/fun-fact context lines.
@@ -50,6 +53,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🏳️ Added country flags to visited-country chips and improved profile metadata readability.
 - [x] [Improved] 📤 Added a one-click action to share your public profile URL directly from your profile summary.
 - [x] [Improved] ✅ Added immediate share feedback with tactile press-state styling and copy/open confirmation toasts.
+- [x] [Improved] ✅ Added Sonner success toast feedback for profile settings saves so users get clear confirmation without a hard reload.
 - [x] [Improved] 🧩 Simplified trip-card controls to reduce visual clutter while keeping open/favorite/pin/visibility actions.
 - [x] [Improved] 📱 Updated profile/public trip-card grids to a 2-column mobile layout for better small-screen scanability.
 - [x] [Improved] 🔢 Added right-aligned, tabular-number stat counters with animated count-up transitions for profile summary metrics.

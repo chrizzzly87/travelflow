@@ -108,7 +108,7 @@
       "city": "City *",
       "preferredLanguage": "Preferred language *"
     },
-    "usernameHelp": "Lowercase letters, numbers, and underscores only. 3-30 characters.",
+    "usernameHelp": "Use 3-30 letters, numbers, underscores, or hyphens. No spaces.",
     "usernameCooldownHint": "You can change your username again on {date}.",
     "bioHelp": "Share a short intro travelers can see on your public profile.",
     "publicProfileToggleTitle": "Enable public profile",
@@ -138,7 +138,7 @@
       "available": "Great, this username is available.",
       "taken": "This username is already taken.",
       "reserved": "This username is reserved.",
-      "invalid": "Use 3-30 lowercase letters, numbers, or underscores.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens.",
       "unchanged": "This is your current username.",
       "cooldown": "Username changes are currently on cooldown.",
       "cooldownDate": "Username changes are on cooldown until {date}.",
@@ -153,13 +153,15 @@
     "usernameRecoveryHint": {
       "taken": "Füge eine Zahl oder einen Unterstrich hinzu.",
       "reserved": "Wähle einen anderen Handle, der nicht reserviert ist.",
-      "invalid": "Nutze 3-30 Kleinbuchstaben, Zahlen oder Unterstriche.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens with no spaces.",
       "cooldown": "Benutzernamen können erst nach dem Cooldown wieder geändert werden."
     },
     "countryRegionSearchPlaceholder": "Land oder Region suchen",
     "countryRegionClear": "Land/Region löschen",
     "countryRegionEmpty": "Kein passendes Land oder keine passende Region gefunden.",
-    "countryRegionToggle": "Optionen für Land/Region umschalten"
+    "countryRegionToggle": "Optionen für Land/Region umschalten",
+    "usernameChange": "Change username",
+    "usernameSuggestionsTitle": "Try one of these available options:"
   },
   "stamps": {
     "eyebrow": "Passport collection",

@@ -10,6 +10,7 @@ import {
 interface ProfileCountryRegionSelectProps {
     value: string;
     disabled?: boolean;
+    inputClassName?: string;
     placeholder?: string;
     clearLabel?: string;
     emptyLabel?: string;
@@ -27,6 +28,7 @@ const clampIndex = (index: number, max: number): number => {
 export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProps> = ({
     value,
     disabled = false,
+    inputClassName = '',
     placeholder = 'Search country or region',
     clearLabel = 'Clear selection',
     emptyLabel = 'No matches',
@@ -72,6 +74,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
         onValueChange(country.code);
         setSearch('');
         setIsOpen(false);
+        inputRef.current?.blur();
     };
 
     const handleInputFocus = () => {
@@ -140,7 +143,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     disabled={disabled}
                     placeholder={placeholder}
                     autoComplete="off"
-                    className="h-10 w-full rounded-lg border border-slate-300 bg-white px-9 pe-20 text-sm text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={`h-10 w-full rounded-lg border border-slate-300 bg-white px-9 pe-20 text-sm text-slate-900 outline-none transition-colors focus:border-accent-400 focus:ring-2 focus:ring-accent-200 disabled:cursor-not-allowed disabled:opacity-60 ${inputClassName}`.trim()}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={listboxId}

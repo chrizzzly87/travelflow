@@ -3559,8 +3559,8 @@ begin
   end if;
 
   if v_new_username is not null then
-    if v_new_username !~ '^[a-z0-9_]{3,30}$' then
-      raise exception 'Username must be 3-30 chars and use only lowercase letters, numbers, and underscores';
+    if v_new_username !~ '^[a-z0-9_-]{3,30}$' then
+      raise exception 'Username must be 3-30 chars and use only lowercase letters, numbers, underscores, or hyphens';
     end if;
 
     if v_new_username in (
@@ -3639,7 +3639,7 @@ begin
     return;
   end if;
 
-  if v_username !~ '^[a-z0-9_]{3,30}$' then
+  if v_username !~ '^[a-z0-9_-]{3,30}$' then
     return query select 'invalid'::text, 'format'::text, null::timestamptz;
     return;
   end if;
@@ -3724,7 +3724,7 @@ declare
   v_handle text := nullif(lower(btrim(coalesce(p_handle, ''))), '');
   v_redirect_user_id uuid;
 begin
-  if v_handle is null or v_handle !~ '^[a-z0-9_]{3,30}$' then
+  if v_handle is null or v_handle !~ '^[a-z0-9_-]{3,30}$' then
     return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
     return;
   end if;

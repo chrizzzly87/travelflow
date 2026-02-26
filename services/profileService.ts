@@ -67,7 +67,7 @@ export interface PublicTripsPageResult {
     nextOffset: number;
 }
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
+const USERNAME_PATTERN = /^[a-z0-9_-]{3,30}$/;
 const USERNAME_RESERVED = new Set([
     'admin',
     'support',

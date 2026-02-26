@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
-import { CaretRight, CheckCircle, PencilSimple, SpinnerGap } from '@phosphor-icons/react';
+import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { Switch } from '../components/ui/switch';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
@@ -67,8 +68,8 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
     'preferredLanguage',
 ];
 
-const USERNAME_CHECK_DEBOUNCE_MS = 350;
 const USERNAME_COOLDOWN_DAYS = 90;
+const USERNAME_ALLOWED_PATTERN = /^[a-z0-9_-]{3,30}$/;
 
 const hasMissingRequiredField = (form: ProfileFormState): boolean =>
     REQUIRED_FIELDS.some((key) => !String(form[key] || '').trim());
@@ -101,9 +102,6 @@ const formatDateLabel = (value: string, locale: string): string => {
     });
 };
 
-const shouldLockUsernameField = (profile: UserProfileRecord | null): boolean =>
-    Boolean(profile?.username && profile.usernameChangedAt);
-
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('profile');
@@ -116,11 +114,11 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         isProfileLoading: isAuthProfileLoading,
     } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
-    const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
     const [isUsernameEditing, setIsUsernameEditing] = useState(false);
+    const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
     const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const usernameInputRef = useRef<HTMLInputElement>(null);
     const [usernameCheck, setUsernameCheck] = useState<UsernameCheckState>({
@@ -161,66 +159,14 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             publicProfileEnabled: cachedProfile.publicProfileEnabled !== false,
             defaultPublicTripVisibility: cachedProfile.defaultPublicTripVisibility !== false,
         });
-        setIsUsernameEditing(!shouldLockUsernameField(cachedProfile));
+        setIsUsernameEditing(mode === 'onboarding' || !cachedProfile.username);
         setHasHydratedForm(true);
-    }, [cachedProfile, isAuthenticated, isAuthProfileLoading, refreshProfile]);
+    }, [cachedProfile, isAuthenticated, isAuthProfileLoading, mode, refreshProfile]);
 
     const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
 
-    useEffect(() => {
-        if (!isAuthenticated || isProfileLoading) return;
-        const normalizedUsername = form.username.trim().toLowerCase();
-        if (!normalizedUsername) {
-            setUsernameCheck({
-                loading: false,
-                result: {
-                    normalizedUsername: '',
-                    availability: 'invalid',
-                    reason: 'empty',
-                    cooldownEndsAt: null,
-                },
-                error: null,
-            });
-            return;
-        }
-
-        let active = true;
-        const timer = window.setTimeout(() => {
-            setUsernameCheck((current) => ({ ...current, loading: true, error: null }));
-            void checkUsernameAvailability(normalizedUsername)
-                .then((result) => {
-                    if (!active) return;
-                    setUsernameCheck({
-                        loading: false,
-                        result,
-                        error: null,
-                    });
-                    trackEvent(`profile_settings__username_check--${result.availability}`, {
-                        username: result.normalizedUsername,
-                    });
-                })
-                .catch((error) => {
-                    if (!active) return;
-                    setUsernameCheck({
-                        loading: false,
-                        result: null,
-                        error: error instanceof Error ? error.message : t('settings.usernameStatus.failed'),
-                    });
-                });
-        }, USERNAME_CHECK_DEBOUNCE_MS);
-
-        return () => {
-            active = false;
-            window.clearTimeout(timer);
-        };
-    }, [form.username, isAuthenticated, isProfileLoading, t]);
-
     const isMissingRequired = useMemo(() => hasMissingRequiredField(form), [form]);
     const normalizedUsername = useMemo(() => form.username.trim().toLowerCase(), [form.username]);
-    const isUsernameAvailableToSave = useMemo(() => {
-        const availability = usernameCheck.result?.availability;
-        return availability === 'available' || availability === 'unchanged';
-    }, [usernameCheck.result?.availability]);
 
     const currentUsername = (profile?.username || '').trim().toLowerCase();
     const publicProfilePath = normalizedUsername
@@ -234,7 +180,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     const cooldownEndsAt = usernameCheck.result?.cooldownEndsAt || fallbackCooldownEnd;
     const cooldownEndsMs = cooldownEndsAt ? Date.parse(cooldownEndsAt) : Number.NaN;
     const isUsernameCooldownActive = Number.isFinite(cooldownEndsMs) && cooldownEndsMs > Date.now();
-    const hasUsernameLock = shouldLockUsernameField(profile);
+    const hasUsernameLock = Boolean((profile?.username || '').trim()) && mode !== 'onboarding';
     const isUsernameLocked = hasUsernameLock && !isUsernameEditing;
     const isUsernameEditBlocked = isUsernameCooldownActive;
 
@@ -288,6 +234,84 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         setForm((current) => ({ ...current, [key]: value }));
     };
 
+    const buildUsernameSuggestionCandidates = (input: string): string[] => {
+        const sanitize = (value: string): string => (
+            value
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, '')
+                .replace(/[^a-z0-9_-]/g, '')
+        );
+
+        const firstName = sanitize(form.firstName);
+        const lastName = sanitize(form.lastName);
+        const city = sanitize(form.city);
+        const baseInput = sanitize(input);
+        const current = sanitize(currentUsername);
+        const joined = sanitize(`${firstName}${lastName}`);
+        const withUnderscore = sanitize(`${firstName}_${lastName}`);
+        const withHyphen = sanitize(`${firstName}-${lastName}`);
+        const firstWithInitial = sanitize(`${firstName}${lastName.charAt(0)}`);
+
+        const rawCandidates = [
+            baseInput,
+            `${baseInput}1`,
+            `${baseInput}7`,
+            `${baseInput}_trip`,
+            `${baseInput}-tf`,
+            joined,
+            withUnderscore,
+            withHyphen,
+            firstWithInitial,
+            city ? `${firstName || baseInput}_${city}` : '',
+            city ? `${joined || baseInput}-${city}` : '',
+        ];
+
+        return Array.from(new Set(
+            rawCandidates
+                .map((candidate) => sanitize(candidate))
+                .filter((candidate) => candidate.length >= 3 && candidate.length <= 30 && USERNAME_ALLOWED_PATTERN.test(candidate))
+                .filter((candidate) => candidate !== current)
+        ));
+    };
+
+    const fetchUsernameSuggestions = async (input: string): Promise<string[]> => {
+        const candidates = buildUsernameSuggestionCandidates(input).slice(0, 10);
+        if (candidates.length === 0) return [];
+
+        const results = await Promise.all(candidates.map(async (candidate) => {
+            try {
+                const check = await checkUsernameAvailability(candidate);
+                if (check.availability === 'available') return check.normalizedUsername;
+            } catch {
+                return null;
+            }
+            return null;
+        }));
+
+        return Array.from(new Set(results.filter((candidate): candidate is string => Boolean(candidate)))).slice(0, 4);
+    };
+
+    const resolveLocalUsernameValidation = (candidate: string): UsernameAvailabilityResult | null => {
+        if (!candidate) {
+            return {
+                normalizedUsername: '',
+                availability: 'invalid',
+                reason: 'empty',
+                cooldownEndsAt: null,
+            };
+        }
+        if (!USERNAME_ALLOWED_PATTERN.test(candidate)) {
+            return {
+                normalizedUsername: candidate,
+                availability: 'invalid',
+                reason: 'format',
+                cooldownEndsAt: null,
+            };
+        }
+        return null;
+    };
+
     const handleUnlockUsernameEditing = () => {
         if (!hasUsernameLock) return;
         if (isUsernameCooldownActive) {
@@ -305,11 +329,6 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             return;
         }
 
-        if (normalizedUsername !== currentUsername && !isUsernameAvailableToSave) {
-            setErrorMessage(t('settings.errors.usernameUnavailable'));
-            return;
-        }
-
         trackEvent('profile_settings__save--attempt', {
             mode,
             username_changed: normalizedUsername !== currentUsername,
@@ -319,9 +338,47 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
         setIsSaving(true);
         setErrorMessage(null);
-        setSaveMessage(null);
+        setUsernameSuggestions([]);
 
         try {
+            if (normalizedUsername !== currentUsername) {
+                const localValidation = resolveLocalUsernameValidation(normalizedUsername);
+                if (localValidation) {
+                    setUsernameCheck({
+                        loading: false,
+                        result: localValidation,
+                        error: null,
+                    });
+                    setErrorMessage(t('settings.errors.usernameUnavailable'));
+                    setUsernameSuggestions(await fetchUsernameSuggestions(normalizedUsername));
+                    return;
+                }
+
+                setUsernameCheck({
+                    loading: true,
+                    result: null,
+                    error: null,
+                });
+
+                const checkResult = await checkUsernameAvailability(normalizedUsername);
+                setUsernameCheck({
+                    loading: false,
+                    result: checkResult,
+                    error: null,
+                });
+                trackEvent(`profile_settings__username_check--${checkResult.availability}`, {
+                    username: checkResult.normalizedUsername,
+                });
+
+                if (checkResult.availability !== 'available' && checkResult.availability !== 'unchanged') {
+                    setErrorMessage(t('settings.errors.usernameUnavailable'));
+                    if (checkResult.availability === 'taken' || checkResult.availability === 'reserved' || checkResult.availability === 'invalid') {
+                        setUsernameSuggestions(await fetchUsernameSuggestions(normalizedUsername));
+                    }
+                    return;
+                }
+            }
+
             const updated = await updateCurrentUserProfile({
                 firstName: form.firstName,
                 lastName: form.lastName,
@@ -344,12 +401,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 publicProfileEnabled: updated.publicProfileEnabled !== false,
                 defaultPublicTripVisibility: updated.defaultPublicTripVisibility !== false,
             }));
-            setIsUsernameEditing(!shouldLockUsernameField(updated));
+            setIsUsernameEditing(mode === 'onboarding' || !updated.username);
 
             await refreshAccess();
 
             trackEvent(mode === 'onboarding' ? 'profile__onboarding--completed' : 'profile__settings--saved');
-            setSaveMessage(
+            toast.success(
                 mode === 'onboarding'
                     ? t('settings.messages.onboardingSaved')
                     : t('settings.messages.saved')
@@ -359,6 +416,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                 navigate('/create-trip', { replace: true });
             }
         } catch (error) {
+            setUsernameCheck((current) => ({ ...current, loading: false }));
             setErrorMessage(error instanceof Error ? error.message : t('settings.errors.saveFailed'));
         } finally {
             setIsSaving(false);
@@ -395,12 +453,6 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     {errorMessage}
                                 </div>
                             )}
-                            {saveMessage && (
-                                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-                                    {saveMessage}
-                                </div>
-                            )}
-
                             <div className="space-y-4">
                                 <div className="grid gap-4 md:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,1fr)]">
                                     <label className="space-y-1">
@@ -448,19 +500,18 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         {hasUsernameLock && isUsernameLocked && (
                                             <button
                                                 type="button"
-                                                aria-label={t('settings.usernameEdit')}
+                                                aria-label={t('settings.usernameChange')}
                                                 onClick={handleUnlockUsernameEditing}
                                                 disabled={isSaving}
                                                 aria-disabled={isUsernameEditBlocked}
-                                                className={`inline-flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold normal-case tracking-normal text-slate-600 transition-colors ${
+                                                className={`text-[11px] font-semibold normal-case tracking-normal text-accent-700 transition-colors ${
                                                     isUsernameEditBlocked
                                                         ? 'cursor-not-allowed opacity-50'
-                                                        : 'hover:border-slate-300 hover:bg-slate-50'
+                                                        : 'hover:text-accent-800'
                                                 } disabled:cursor-not-allowed disabled:opacity-50`}
                                                 {...getAnalyticsDebugAttributes('profile_settings__username_edit--open')}
                                             >
-                                                <PencilSimple size={11} weight="bold" />
-                                                {t('settings.usernameEdit')}
+                                                {t('settings.usernameChange')}
                                             </button>
                                         )}
                                     </span>
@@ -468,12 +519,20 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         ref={usernameInputRef}
                                         aria-label={t('settings.fields.username')}
                                         value={form.username}
-                                        onChange={(event) => updateField('username', event.target.value)}
+                                        onChange={(event) => {
+                                            updateField('username', event.target.value);
+                                            setUsernameSuggestions([]);
+                                            setUsernameCheck({
+                                                loading: false,
+                                                result: null,
+                                                error: null,
+                                            });
+                                        }}
                                         readOnly={isUsernameLocked}
                                         className={`h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200 ${
                                             isUsernameLocked
                                                 ? 'border-slate-200 bg-slate-100 text-slate-600'
-                                                : 'border-slate-300 bg-white text-slate-900'
+                                            : 'border-slate-300 bg-white text-slate-900'
                                         }`}
                                     />
                                     <p className={`text-xs font-medium ${usernameStatusTone}`}>{usernameStatus}</p>
@@ -486,6 +545,32 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 date: formatDateLabel(cooldownEndsAt, appLocale),
                                             })}
                                         </p>
+                                    )}
+                                    {usernameSuggestions.length > 0 && (
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-slate-500">{t('settings.usernameSuggestionsTitle')}</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {usernameSuggestions.map((suggestion) => (
+                                                    <button
+                                                        key={`username-suggestion-${suggestion}`}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateField('username', suggestion);
+                                                            setErrorMessage(null);
+                                                            setUsernameSuggestions([]);
+                                                            setUsernameCheck({
+                                                                loading: false,
+                                                                result: null,
+                                                                error: null,
+                                                            });
+                                                        }}
+                                                        className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                                    >
+                                                        {suggestion}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
                                     <p className="text-xs text-slate-500">{t('settings.usernameHelp')}</p>
                                 </label>
@@ -501,12 +586,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     />
                                     <p className="text-xs text-slate-500">{t('settings.bioHelp')}</p>
                                 </label>
-                                <div className="grid gap-4 md:grid-cols-2">
+                                <div className="grid gap-3 md:grid-cols-3">
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
                                         <ProfileCountryRegionSelect
                                             value={form.country}
                                             disabled={isSaving}
+                                            inputClassName="h-9 rounded-md text-xs"
                                             placeholder={t('settings.countryRegionSearchPlaceholder')}
                                             clearLabel={t('settings.countryRegionClear')}
                                             emptyLabel={t('settings.countryRegionEmpty')}
@@ -522,34 +608,34 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         <input
                                             value={form.city}
                                             onChange={(event) => updateField('city', event.target.value)}
-                                            className="h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
+                                            className="h-9 w-full rounded-md border border-slate-300 px-2.5 text-xs outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
                                         />
                                     </label>
+                                    <label htmlFor="profile-language-select" className="space-y-1">
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.preferredLanguage')}</span>
+                                        <Select
+                                            value={form.preferredLanguage}
+                                            onValueChange={(value) => updateField('preferredLanguage', value as AppLanguage)}
+                                        >
+                                            <SelectTrigger id="profile-language-select" className="h-9 w-full rounded-md border-slate-300 text-xs focus:border-accent-400 focus:ring-accent-200">
+                                                <span className="inline-flex items-center gap-2">
+                                                    <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
+                                                    <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
+                                                </span>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {LOCALE_DROPDOWN_ORDER.map((locale) => (
+                                                    <SelectItem key={`profile-locale-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
+                                                        <span className="inline-flex items-center gap-2">
+                                                            <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
+                                                            <span>{LOCALE_LABELS[locale]}</span>
+                                                        </span>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </label>
                                 </div>
-                                <label htmlFor="profile-language-select" className="space-y-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.preferredLanguage')}</span>
-                                    <Select
-                                        value={form.preferredLanguage}
-                                        onValueChange={(value) => updateField('preferredLanguage', value as AppLanguage)}
-                                    >
-                                        <SelectTrigger id="profile-language-select" className="h-10 w-full rounded-lg border-slate-300 text-sm focus:border-accent-400 focus:ring-accent-200">
-                                            <span className="inline-flex items-center gap-2">
-                                                <FlagIcon code={LOCALE_FLAGS[form.preferredLanguage]} size="sm" className="shrink-0" />
-                                                <span>{LOCALE_LABELS[form.preferredLanguage]}</span>
-                                            </span>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {LOCALE_DROPDOWN_ORDER.map((locale) => (
-                                                <SelectItem key={`profile-locale-${locale}`} value={locale} textValue={LOCALE_LABELS[locale]}>
-                                                    <span className="inline-flex items-center gap-2">
-                                                        <FlagIcon code={LOCALE_FLAGS[locale]} size="sm" className="shrink-0" />
-                                                        <span>{LOCALE_LABELS[locale]}</span>
-                                                    </span>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </label>
                             </div>
 
                             <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -611,7 +697,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     className="inline-flex h-10 items-center gap-2 rounded-lg bg-accent-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes(mode === 'onboarding' ? 'profile__onboarding--submit' : 'profile__settings--save')}
                                 >
-                                    {isSaving ? <SpinnerGap size={15} className="animate-spin" /> : <CheckCircle size={15} />}
+                                    {isSaving ? <SpinnerGap size={15} className="animate-spin" /> : null}
                                     {mode === 'onboarding' ? t('settings.actions.saveAndContinue') : t('settings.actions.save')}
                                 </button>
                                 {isMissingRequired && (
