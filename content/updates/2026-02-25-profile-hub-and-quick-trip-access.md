@@ -77,6 +77,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔢 Added right-aligned, tabular-number stat counters with animated count-up transitions for profile summary metrics.
 - [x] [Improved] ⏳ Added clearer expired-trip treatment in profile/public cards with an explicit status badge and cleaner fallback title for expired generation drafts.
 - [x] [Improved] ⚡ Added lazy chunk rendering + skeleton placeholders for profile trip grids and paged loading for public-profile trips to reduce first-load work.
+- [x] [Fixed] 🧭 Eliminated interaction-triggered request bursts on public profiles by hardening guest auth/session handling and avoiding anonymous profile refresh probes.
+- [x] [Fixed] 🚦 Capped “My Plans” reverse-geocoding enrichment work per open cycle to prevent large request floods on guest devices.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.
@@ -84,6 +86,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [ ] [Internal] 🧱 Added DB-side ISO-2 validation and constraints for profile country storage, and defaulted existing non-ISO/empty values to `DE`.
 - [ ] [Internal] 🧾 Added profile schema/service support for explicit passport sticker selection persistence in addition to sticker-position persistence.
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
+- [ ] [Internal] 🛡️ Updated user-settings DB sync to skip anonymous-session auto-provisioning so public/marketing routes no longer create unexpected guest auth sessions.
 - [ ] [Internal] 🧪 Added regression coverage for username cooldown fallback loading and `@`-prefixed username normalization on save.
 - [ ] [Internal] 🧪 Added regression coverage for public-profile resolver fallback paths after Supabase query-chain hardening.
 - [ ] [Internal] 📘 Documented public-profile handle resolver guardrails in the Supabase runbook (query-chain order, exact username matching, and verification checklist).

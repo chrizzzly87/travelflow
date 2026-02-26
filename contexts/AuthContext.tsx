@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
-        if (nextAccess?.userId) {
+        if (nextAccess?.userId && !nextAccess.isAnonymous) {
             await refreshProfile();
             return;
         }

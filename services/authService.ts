@@ -302,7 +302,24 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
         await recoverLocalAuthState();
         return defaultAccessContext(null);
     }
-    if (!getAnonymousFlag(session)) {
+    const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
+    const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
+    const isAnonymousSession = getAnonymousFlag(session);
+
+    if (isAnonymousSession) {
+        return {
+            userId: authUser.id || session.user.id || null,
+            email: authUser.email || session.user.email || metadataEmail || null,
+            isAnonymous: true,
+            role: 'user',
+            tierKey: 'tier_free',
+            entitlements: FREE_ENTITLEMENTS,
+            onboardingCompleted: true,
+            accountStatus: 'active',
+        };
+    }
+
+    if (!isAnonymousSession) {
         const profileBindingState = await resolveProfileBindingState(authUser.id);
         if (profileBindingState === 'missing') {
             await recoverLocalAuthState();
@@ -327,8 +344,6 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
             await recoverLocalAuthState();
             return defaultAccessContext(null);
         }
-        const metadata = authUser.user_metadata as Record<string, unknown> | undefined;
-        const metadataEmail = typeof metadata?.email === 'string' ? metadata.email : null;
 
         const role: SystemRole = row.system_role === 'admin' ? 'admin' : 'user';
         const tierKey: PlanTierKey = row.tier_key === 'tier_mid'

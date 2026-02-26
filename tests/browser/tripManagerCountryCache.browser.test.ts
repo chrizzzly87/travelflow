@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   readTripManagerCountryCache,
+  shouldAttemptTripManagerReverseGeocode,
   writeTripManagerCountryCache,
 } from '../../components/TripManager';
 
@@ -41,5 +42,31 @@ describe('components/TripManager country cache helpers', () => {
   it('returns empty cache for malformed payloads', () => {
     window.localStorage.setItem(COUNTRY_CACHE_KEY, '{invalid-json');
     expect(readTripManagerCountryCache()).toEqual({});
+  });
+
+  it('guards reverse geocoding behind finite coordinates and lookup budget', () => {
+    expect(shouldAttemptTripManagerReverseGeocode(
+      { coordinates: { lat: 53.55, lng: 9.99 } },
+      false,
+      2,
+    )).toBe(true);
+
+    expect(shouldAttemptTripManagerReverseGeocode(
+      { coordinates: { lat: 53.55, lng: 9.99 } },
+      true,
+      2,
+    )).toBe(false);
+
+    expect(shouldAttemptTripManagerReverseGeocode(
+      { coordinates: { lat: Number.NaN, lng: 9.99 } },
+      false,
+      2,
+    )).toBe(false);
+
+    expect(shouldAttemptTripManagerReverseGeocode(
+      { coordinates: { lat: 53.55, lng: 9.99 } },
+      false,
+      0,
+    )).toBe(false);
   });
 });
