@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-26-create-trip-model-selection-dropdown
-version: v0.63.0
+version: v0.65.0
 title: "Create-Trip Model Selection"
 date: 2026-02-26
-published_at: 2026-02-26T10:30:00Z
-status: draft
+published_at: 2026-02-26T07:59:39Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Create Trip now lets you choose the AI model before generation, with prioritized recommendations."
