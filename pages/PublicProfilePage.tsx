@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSummary';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
+import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
 import { resolveProfileStatusByTripCount } from '../components/profile/profileStatus';
@@ -28,6 +29,8 @@ import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { useAuth } from '../hooks/useAuth';
 
 const PUBLIC_PROFILE_TRIPS_PAGE_SIZE = 9;
+const PUBLIC_PROFILE_PASSPORT_QUERY_KEY = 'passport';
+const PUBLIC_PROFILE_PASSPORT_QUERY_VALUE = 'open';
 
 interface ProfileState {
     status: 'loading' | 'found' | 'private' | 'not_found';
@@ -56,6 +59,7 @@ const normalizeUsername = (value: unknown): string => (
 export const PublicProfilePage: React.FC = () => {
     const { username = '' } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
     const { isAuthenticated, profile: viewerProfile } = useAuth();
 
@@ -82,6 +86,7 @@ export const PublicProfilePage: React.FC = () => {
         () => normalizeUsername(viewerProfile?.username),
         [viewerProfile?.username]
     );
+    const isPassportDialogOpen = searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE;
 
     useEffect(() => {
         const handle = (username || '').trim().toLowerCase();
@@ -247,6 +252,21 @@ export const PublicProfilePage: React.FC = () => {
         navigate(buildPath('tripDetail', { tripId: trip.id }));
     };
 
+    const handlePassportDialogOpenChange = useCallback((nextOpen: boolean) => {
+        const next = new URLSearchParams(searchParams);
+        if (nextOpen) {
+            next.set(PUBLIC_PROFILE_PASSPORT_QUERY_KEY, PUBLIC_PROFILE_PASSPORT_QUERY_VALUE);
+        } else {
+            next.delete(PUBLIC_PROFILE_PASSPORT_QUERY_KEY);
+        }
+        setSearchParams(next, { replace: !nextOpen });
+    }, [searchParams, setSearchParams]);
+
+    const handleOpenPassportDialog = useCallback(() => {
+        trackEvent('public_profile__summary--open_passport');
+        handlePassportDialogOpenChange(true);
+    }, [handlePassportDialogOpenChange]);
+
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
@@ -356,10 +376,7 @@ export const PublicProfilePage: React.FC = () => {
                                 stampsOpen: t('summary.stampsOpen'),
                             }}
                             onOpenPassport={() => {
-                                trackEvent('public_profile__summary--open_passport');
-                                navigate(buildPath('publicProfileStamps', {
-                                    username: state.profile?.username || username,
-                                }));
+                                handleOpenPassportDialog();
                             }}
                             locale={appLocale}
                         />
@@ -392,6 +409,8 @@ export const PublicProfilePage: React.FC = () => {
                                                 pin: t('cards.actions.pin'),
                                                 unpin: t('cards.actions.unpin'),
                                                 pinnedTag: t('cards.pinnedTag'),
+                                                expiredTag: t('cards.expiredTag'),
+                                                expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                                 mapUnavailable: t('cards.mapUnavailable'),
                                                 mapLoading: t('cards.mapLoading'),
                                             }}
@@ -436,6 +455,8 @@ export const PublicProfilePage: React.FC = () => {
                                                     pin: t('cards.actions.pin'),
                                                     unpin: t('cards.actions.unpin'),
                                                     pinnedTag: t('cards.pinnedTag'),
+                                                    expiredTag: t('cards.expiredTag'),
+                                                    expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                                     mapUnavailable: t('cards.mapUnavailable'),
                                                     mapLoading: t('cards.mapLoading'),
                                                 }}
@@ -467,6 +488,27 @@ export const PublicProfilePage: React.FC = () => {
                             )}
                         </section>
                     </>
+                )}
+
+                {state.status === 'found' && (
+                    <ProfilePassportDialog
+                        open={isPassportDialogOpen}
+                        onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
+                        title={t('stamps.title')}
+                        description={t('stamps.description', { name: displayName })}
+                        stamps={allStampProgress}
+                        locale={appLocale}
+                        labels={{
+                            pageIndicator: t('stamps.pageIndicator'),
+                            previousPage: t('stamps.previousPage'),
+                            nextPage: t('stamps.nextPage'),
+                            emptySlot: t('stamps.emptySlot'),
+                        }}
+                        resolveGroupLabel={(group) => t(`stamps.group.${group}`)}
+                        onPageChange={(page) => {
+                            trackEvent('public_profile__stamps_page--change', { page });
+                        }}
+                    />
                 )}
             </main>
         </div>

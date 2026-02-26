@@ -496,62 +496,29 @@ h6,
 }
 
 .profile-passport-cover {
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-@keyframes profile-passport-open-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes profile-passport-grid-in {
-  from {
-    opacity: 0;
-    transform: perspective(1600px) rotateY(16deg) translateX(18px);
-  }
-  to {
-    opacity: 1;
-    transform: perspective(1600px) rotateY(0deg) translateX(0);
-  }
-}
-
-.profile-passport-modal-shell {
+  box-shadow: 0 16px 30px -26px rgb(15 23 42 / 85%);
   transform-style: preserve-3d;
-  animation: profile-passport-open-in 280ms cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 
-.profile-passport-modal-cover {
-  transform-origin: 0% 50%;
-  animation: profile-passport-open-cover 460ms cubic-bezier(0.2, 0.9, 0.2, 1);
-}
-
-.profile-passport-modal-grid {
-  transform-origin: 0% 50%;
-  animation: profile-passport-grid-in 400ms cubic-bezier(0.18, 0.84, 0.24, 1);
-}
-
-@keyframes profile-passport-open-cover {
+@keyframes profile-passport-dialog-enter {
   from {
-    opacity: 0;
-    transform: perspective(1600px) rotateY(-84deg) translateX(-26px);
-    filter: blur(1.4px);
-  }
-  72% {
-    opacity: 1;
-    transform: perspective(1600px) rotateY(4deg) translateX(2px);
-    filter: blur(0);
+    opacity: 0.45;
+    transform: perspective(1800px) rotateY(-15deg) translateY(18px) scale(0.965);
   }
   to {
     opacity: 1;
-    transform: perspective(1600px) rotateY(0deg) translateX(0);
-    filter: blur(0);
+    transform: perspective(1800px) rotateY(0deg) translateY(0) scale(1);
   }
+}
+
+.profile-passport-dialog-shell {
+  transform-style: preserve-3d;
+  animation: profile-passport-dialog-enter 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-passport-dialog-book {
+  transform-origin: 0% 50%;
+  animation: profile-passport-dialog-enter 460ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -581,9 +548,8 @@ h6,
     transform: none !important;
   }
 
-  .profile-passport-modal-shell,
-  .profile-passport-modal-cover,
-  .profile-passport-modal-grid {
+  .profile-passport-dialog-shell,
+  .profile-passport-dialog-book {
     animation: none;
     transform: none;
   }
@@ -884,50 +850,55 @@ h6,
 
 .profile-passport-cover--interactive {
   transition:
-    transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 18px 34px -24px rgb(15 23 42 / 70%);
+  box-shadow: 0 20px 34px -26px rgb(15 23 42 / 88%);
+}
+
+.profile-passport-cover-face {
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .profile-passport-cover--interactive:hover {
-  transform: translateY(-4px) scale(1.012);
-  box-shadow: 0 38px 62px -30px rgb(15 23 42 / 78%);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 36px 56px -30px rgb(15 23 42 / 92%);
 }
 
-.profile-passport-cover-grain {
-  opacity: 0.26;
-  background-image:
-    radial-gradient(rgb(255 255 255 / 20%) 0.7px, transparent 0.8px),
-    radial-gradient(rgb(0 0 0 / 18%) 0.7px, transparent 0.8px);
-  background-size: 3px 3px, 4px 4px;
-  background-position: 0 0, 1px 1px;
+.profile-passport-cover--interactive:hover .profile-passport-cover-face {
+  transform: perspective(1600px) rotateY(-10deg) translateX(-2px);
+}
+
+.profile-passport-cover-noise {
+  opacity: 0.14;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.52'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
   mix-blend-mode: soft-light;
 }
 
-.profile-passport-cover-holo {
-  opacity: 0.5;
-  background-image: linear-gradient(
-    120deg,
-    rgb(245 205 104 / 0.22) 14%,
-    rgb(255 241 197 / 0.5) 32%,
-    rgb(244 212 133 / 0.2) 58%,
-    rgb(146 208 255 / 0.16) 72%,
-    rgb(245 205 104 / 0.24) 90%
+.profile-passport-cover-fiber {
+  opacity: 0.24;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgb(255 255 255 / 10%) 0%,
+      rgb(255 255 255 / 0%) 7%,
+      rgb(255 255 255 / 9%) 16%,
+      rgb(255 255 255 / 0%) 23%
+    );
+  background-size: 180px 100%;
+  background-repeat: repeat-x;
+}
+
+.profile-passport-cover-edge {
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 12%) 0%,
+    rgb(255 255 255 / 34%) 20%,
+    rgb(255 255 255 / 14%) 100%
   );
-  background-size: 210% 210%;
-  animation: passport-holo-sweep 7s linear infinite;
-}
-
-.profile-passport-cover-flap {
-  border-inline-start: 1px solid rgb(255 255 255 / 22%);
-  background: linear-gradient(90deg, rgb(255 255 255 / 20%) 0%, rgb(255 255 255 / 4%) 100%);
-  transform: perspective(1000px) rotateY(0deg);
-  transform-origin: left center;
-  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.profile-passport-cover--interactive:hover .profile-passport-cover-flap {
-  transform: perspective(1000px) rotateY(-24deg) translateX(1px);
+  opacity: 0.8;
 }
 
 .stamp-book-stage {
@@ -1031,15 +1002,6 @@ h6,
   animation: stamp-turn-prev-next 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-@keyframes passport-holo-sweep {
-  0% {
-    background-position: 0% 40%;
-  }
-  100% {
-    background-position: 200% 60%;
-  }
-}
-
 @keyframes stamp-turn-next-current {
   0% {
     opacity: 1;
@@ -1086,8 +1048,9 @@ h6,
 
 @media (prefers-reduced-motion: reduce) {
   .profile-passport-cover--interactive,
-  .profile-passport-cover-flap,
-  .profile-passport-cover-holo,
+  .profile-passport-cover-face,
+  .profile-passport-dialog-shell,
+  .profile-passport-dialog-book,
   .stamp-book-sheet--opened,
   .stamp-book-turn-layer--next-current,
   .stamp-book-turn-layer--next-next,

@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
@@ -345,5 +346,44 @@ describe('pages/PublicProfilePage', () => {
 
     expect(screen.queryByText('publicProfile.notFoundTitle')).toBeNull();
     expect(screen.getByText('Public trips unavailable')).toBeInTheDocument();
+  });
+
+  it('opens passport dialog using URL search state', async () => {
+    const user = userEvent.setup();
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'TH',
+        city: 'Bangkok',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+
+    renderPublicProfilePage('/u/traveler');
+
+    const openPassportButton = await screen.findByRole('button', { name: /summary\.stampsOpen/i });
+    await user.click(openPassportButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
+    });
+    expect(screen.getByText('stamps.title')).toBeInTheDocument();
   });
 });

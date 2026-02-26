@@ -38,7 +38,9 @@
       "copiedFromShared": "Copied from shared trip",
       "copiedFromYourTrip": "Copied from your trip",
       "startedFromExample": "Started from example"
-    }
+    },
+    "expiredTag": "만료됨",
+    "expiredFallbackTitle": "만료된 여행 초안"
   },
   "actions": {
     "title": "Quick actions",

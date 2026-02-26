@@ -231,4 +231,17 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       (window as Window & { IntersectionObserver?: unknown }).IntersectionObserver = originalIntersectionObserver;
     }
   });
+
+  it('opens the passport dialog via query state without leaving the profile route', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile');
+
+    const openPassportButton = await screen.findByRole('button', { name: /summary\.stampsOpen/i });
+    await user.click(openPassportButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
+    });
+    expect(screen.getByText('stamps.title')).toBeInTheDocument();
+  });
 });

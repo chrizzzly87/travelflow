@@ -49,6 +49,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 👀 Removed owner-facing passport helper copy from public profiles to keep visitor views focused on the profile owner’s achievements.
 - [x] [Improved] 🧷 Simplified stamp card density by moving achievement meta details into hover/focus reveal states instead of always showing them inline.
 - [x] [Improved] 🧷 Added quick access to stamp collection from profile actions and account navigation.
+- [x] [Improved] 🛂 Refined the passport cover visual style with tighter corners, centered emblem layout, subtle texture grain, and a cleaner hover “book cover” lift/open motion.
+- [x] [Improved] 📖 Changed passport opening to an in-page modal flow with URL state (`?passport=open`) so the profile context stays intact while still supporting shareable state.
 - [x] [Improved] 🗺️ Added per-trip public visibility controls and enforced read-only public trip access mode where needed.
 - [x] [Improved] 🏳️ Added country flags to visited-country chips and improved profile metadata readability.
 - [x] [Improved] 📤 Added a one-click action to share your public profile URL directly from your profile summary.
@@ -57,6 +59,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧩 Simplified trip-card controls to reduce visual clutter while keeping open/favorite/pin/visibility actions.
 - [x] [Improved] 📱 Updated profile/public trip-card grids to a 2-column mobile layout for better small-screen scanability.
 - [x] [Improved] 🔢 Added right-aligned, tabular-number stat counters with animated count-up transitions for profile summary metrics.
+- [x] [Improved] ⏳ Added clearer expired-trip treatment in profile/public cards with an explicit status badge and cleaner fallback title for expired generation drafts.
 - [x] [Improved] ⚡ Added lazy chunk rendering + skeleton placeholders for profile trip grids and paged loading for public-profile trips to reduce first-load work.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.

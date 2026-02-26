@@ -12,9 +12,11 @@ const mocks = vi.hoisted(() => ({
     search: '',
     hash: '',
   },
+  profile: {
+    username: 'traveler',
+  } as { username?: string | null } | null,
   logout: vi.fn().mockResolvedValue(undefined),
   getAllTrips: vi.fn(),
-  getCurrentUserProfile: vi.fn(),
   trackEvent: vi.fn(),
 }));
 
@@ -26,15 +28,12 @@ vi.mock('react-router-dom', () => ({
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({
     logout: mocks.logout,
+    profile: mocks.profile,
   }),
 }));
 
 vi.mock('../../../services/storageService', () => ({
   getAllTrips: mocks.getAllTrips,
-}));
-
-vi.mock('../../../services/profileService', () => ({
-  getCurrentUserProfile: mocks.getCurrentUserProfile,
 }));
 
 vi.mock('../../../services/analyticsService', () => ({
@@ -48,9 +47,9 @@ describe('components/navigation/AccountMenu recent trips', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
-    mocks.getCurrentUserProfile.mockResolvedValue({
+    mocks.profile = {
       username: 'traveler',
-    });
+    };
 
     mocks.getAllTrips.mockReturnValue([
       makeTrip({ id: 'trip-1', title: 'Trip 1', createdAt: 100 }),

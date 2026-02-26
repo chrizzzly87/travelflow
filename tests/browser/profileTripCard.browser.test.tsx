@@ -82,4 +82,42 @@ describe('components/profile/ProfileTripCard', () => {
     expect(screen.queryByRole('button', { name: 'Favorite' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pin' })).not.toBeInTheDocument();
   });
+
+  it('renders an expired badge and fallback title for expired generation drafts', () => {
+    render(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(ProfileTripCard, {
+          trip: makeTrip({
+            id: 'card-trip-expired',
+            title: 'Trip generation failed. Please try again.',
+            status: 'expired',
+            items: [
+              makeCityItem({
+                id: 'loading-error-card-trip-expired',
+                title: 'Trip generation failed. Please try again.',
+                startDateOffset: 0,
+                duration: 2,
+              }),
+            ],
+          }),
+          locale: 'en',
+          sourceLabel: 'Created by you',
+          labels: {
+            ...baseLabels,
+            expiredTag: 'Expired',
+            expiredFallbackTitle: 'Expired trip draft',
+          },
+          onOpen: vi.fn(),
+          showFavoriteAction: false,
+          showPinAction: false,
+        })
+      )
+    );
+
+    expect(screen.getByText('Expired')).toBeInTheDocument();
+    expect(screen.getByText('Expired trip draft')).toBeInTheDocument();
+    expect(screen.queryByText('Trip generation failed. Please try again.')).toBeNull();
+  });
 });

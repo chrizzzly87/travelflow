@@ -38,7 +38,9 @@
       "copiedFromShared": "Copied from shared trip",
       "copiedFromYourTrip": "Copied from your trip",
       "startedFromExample": "Started from example"
-    }
+    },
+    "expiredTag": "Expired",
+    "expiredFallbackTitle": "Expired trip draft"
   },
   "actions": {
     "title": "Quick actions",

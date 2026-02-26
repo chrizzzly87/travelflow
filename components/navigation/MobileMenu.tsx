@@ -16,7 +16,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
-import { getCurrentUserProfile } from '../../services/profileService';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -46,10 +45,9 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { t, i18n } = useTranslation('common');
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
+    const { isAuthenticated, isAdmin, logout, isLoading, profile } = useAuth();
     const { openLoginModal } = useLoginModal();
     const [adminLinks, setAdminLinks] = useState<Array<{ id: string; label: string; path: string }>>([]);
-    const [publicProfilePath, setPublicProfilePath] = useState<string | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -111,29 +109,12 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         setAdminLinks([]);
     }, [isAdmin]);
 
-    useEffect(() => {
-        if (!isOpen || !isAuthenticated) return;
-        let active = true;
-
-        void getCurrentUserProfile()
-            .then((profile) => {
-                if (!active) return;
-                const normalizedUsername = profile?.username?.trim().toLowerCase();
-                if (!normalizedUsername) {
-                    setPublicProfilePath(null);
-                    return;
-                }
-                setPublicProfilePath(buildPath('publicProfile', { username: normalizedUsername }));
-            })
-            .catch(() => {
-                if (!active) return;
-                setPublicProfilePath(null);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [isAuthenticated, isOpen]);
+    const publicProfilePath = useMemo(() => {
+        if (!isAuthenticated) return null;
+        const normalizedUsername = profile?.username?.trim().toLowerCase();
+        if (!normalizedUsername) return null;
+        return buildPath('publicProfile', { username: normalizedUsername });
+    }, [isAuthenticated, profile?.username]);
 
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);

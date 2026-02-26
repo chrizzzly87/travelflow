@@ -87,14 +87,21 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
         </section>
       </div>
 
-      <ProfilePassportBook
-        title={labels.stampsTitle}
-        description={labels.stampsDescription}
-        openLabel={labels.stampsOpen}
-        stamps={stamps}
-        onOpen={handleOpenPassport}
-        countryCode={passportCountryCode}
-      />
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.stampsTitle}</p>
+          {labels.stampsDescription ? (
+            <p className="text-sm text-slate-600">{labels.stampsDescription}</p>
+          ) : null}
+        </header>
+        <ProfilePassportBook
+          title={labels.stampsTitle}
+          openLabel={labels.stampsOpen}
+          stamps={stamps}
+          onOpen={handleOpenPassport}
+          countryCode={passportCountryCode}
+        />
+      </section>
     </section>
   );
 };

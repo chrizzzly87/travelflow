@@ -6,7 +6,6 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analytic
 import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
-import { getCurrentUserProfile } from '../../services/profileService';
 import type { ITrip } from '../../types';
 
 interface AccountMenuProps {
@@ -64,10 +63,9 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { logout } = useAuth();
+    const { logout, profile } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => sortByCreatedDesc(getAllTrips()).slice(0, 5));
-    const [publicProfilePath, setPublicProfilePath] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
@@ -107,29 +105,11 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         };
     }, []);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        let active = true;
-
-        void getCurrentUserProfile()
-            .then((profile) => {
-                if (!active) return;
-                const normalizedUsername = profile?.username?.trim().toLowerCase();
-                if (!normalizedUsername) {
-                    setPublicProfilePath(null);
-                    return;
-                }
-                setPublicProfilePath(buildPath('publicProfile', { username: normalizedUsername }));
-            })
-            .catch(() => {
-                if (!active) return;
-                setPublicProfilePath(null);
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [isOpen]);
+    const publicProfilePath = useMemo(() => {
+        const normalizedUsername = profile?.username?.trim().toLowerCase();
+        if (!normalizedUsername) return null;
+        return buildPath('publicProfile', { username: normalizedUsername });
+    }, [profile?.username]);
 
     const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);

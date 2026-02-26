@@ -38,7 +38,9 @@
       "copiedFromShared": "Copied from shared trip",
       "copiedFromYourTrip": "Copied from your trip",
       "startedFromExample": "Started from example"
-    }
+    },
+    "expiredTag": "منقضی‌شده",
+    "expiredFallbackTitle": "پیش‌نویس سفر منقضی‌شده"
   },
   "actions": {
     "title": "Quick actions",
