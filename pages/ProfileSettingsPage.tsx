@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
-import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
+import { CheckCircle } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { Switch } from '../components/ui/switch';
@@ -10,7 +10,6 @@ import type { AppLanguage } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import {
     checkUsernameAvailability,
-    getCurrentUserProfile,
     updateCurrentUserProfile,
     type ProfileGender,
     type UserProfileRecord,
@@ -104,13 +103,20 @@ const formatDateLabel = (value: string, locale: string): string => {
 export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode = 'settings' }) => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation('profile');
-    const { isLoading, isAuthenticated, refreshAccess } = useAuth();
-    const [isProfileLoading, setIsProfileLoading] = useState(true);
+    const {
+        isLoading,
+        isAuthenticated,
+        refreshAccess,
+        refreshProfile,
+        profile: cachedProfile,
+        isProfileLoading: isAuthProfileLoading,
+    } = useAuth();
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
+    const [hasHydratedForm, setHasHydratedForm] = useState(false);
     const [usernameCheck, setUsernameCheck] = useState<UsernameCheckState>({
         loading: false,
         result: null,
@@ -129,39 +135,30 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        let active = true;
-        setIsProfileLoading(true);
+        if (!cachedProfile && !isAuthProfileLoading) {
+            void refreshProfile();
+            setHasHydratedForm(true);
+            return;
+        }
+        if (!cachedProfile) return;
 
-        void getCurrentUserProfile()
-            .then((nextProfile) => {
-                if (!active || !nextProfile) return;
-                setProfile(nextProfile);
-                setForm({
-                    firstName: nextProfile.firstName || '',
-                    lastName: nextProfile.lastName || '',
-                    username: nextProfile.username || '',
-                    bio: nextProfile.bio || '',
-                    gender: nextProfile.gender || '',
-                    country: nextProfile.country || '',
-                    city: nextProfile.city || '',
-                    preferredLanguage: normalizeLocale(nextProfile.preferredLanguage || 'en'),
-                    publicProfileEnabled: nextProfile.publicProfileEnabled !== false,
-                    defaultPublicTripVisibility: nextProfile.defaultPublicTripVisibility !== false,
-                });
-            })
-            .catch((error) => {
-                if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : t('errors.profileLoad'));
-            })
-            .finally(() => {
-                if (!active) return;
-                setIsProfileLoading(false);
-            });
+        setProfile(cachedProfile);
+        setForm({
+            firstName: cachedProfile.firstName || '',
+            lastName: cachedProfile.lastName || '',
+            username: cachedProfile.username || '',
+            bio: cachedProfile.bio || '',
+            gender: cachedProfile.gender || '',
+            country: cachedProfile.country || '',
+            city: cachedProfile.city || '',
+            preferredLanguage: normalizeLocale(cachedProfile.preferredLanguage || 'en'),
+            publicProfileEnabled: cachedProfile.publicProfileEnabled !== false,
+            defaultPublicTripVisibility: cachedProfile.defaultPublicTripVisibility !== false,
+        });
+        setHasHydratedForm(true);
+    }, [cachedProfile, isAuthenticated, isAuthProfileLoading, refreshProfile]);
 
-        return () => {
-            active = false;
-        };
-    }, [isAuthenticated, t]);
+    const isProfileLoading = isAuthProfileLoading || !hasHydratedForm;
 
     useEffect(() => {
         if (!isAuthenticated || isProfileLoading) return;
@@ -345,9 +342,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
 
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
                     {isProfileLoading ? (
-                        <div className="inline-flex items-center gap-2 text-sm text-slate-500">
-                            <SpinnerGap size={16} className="animate-spin" />
-                            {t('hero.loading')}
+                        <div className="space-y-2" aria-hidden="true">
+                            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
+                            <div className="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
+                            <div className="h-20 w-full animate-pulse rounded-lg bg-slate-100" />
                         </div>
                     ) : (
                         <>

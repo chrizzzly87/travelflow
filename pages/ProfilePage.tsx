@@ -25,7 +25,6 @@ import {
     getLastAchievedStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
-import { getCurrentUserProfile, type UserProfileRecord } from '../services/profileService';
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
@@ -38,7 +37,13 @@ import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
 
-const initialsFrom = (profile: UserProfileRecord | null, fallbackEmail: string | null): string => {
+const initialsFrom = (
+    profile: {
+        firstName?: string | null;
+        lastName?: string | null;
+    } | null,
+    fallbackEmail: string | null
+): string => {
     const first = profile?.firstName?.trim() || '';
     const last = profile?.lastName?.trim() || '';
     if (first || last) {
@@ -48,7 +53,10 @@ const initialsFrom = (profile: UserProfileRecord | null, fallbackEmail: string |
 };
 
 const formatMemberSince = (
-    profile: UserProfileRecord | null,
+    profile: {
+        onboardingCompletedAt?: string | null;
+        usernameChangedAt?: string | null;
+    } | null,
     trips: ITrip[],
     locale: string,
     fallbackLabel: string
@@ -83,10 +91,17 @@ export const ProfilePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
-    const { isLoading, isAuthenticated, access, isAdmin } = useAuth();
+    const {
+        isLoading,
+        isAuthenticated,
+        access,
+        isAdmin,
+        session,
+        profile,
+        isProfileLoading,
+        refreshProfile,
+    } = useAuth();
 
-    const [profile, setProfile] = useState<UserProfileRecord | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [trips, setTrips] = useState<ITrip[]>(() => getAllTrips());
     const [pinNotice, setPinNotice] = useState<string | null>(null);
 
@@ -99,7 +114,15 @@ export const ProfilePage: React.FC = () => {
     const tab = normalizeProfileTripTab(searchParams.get('tab'));
     const recentSort = normalizeProfileRecentSort(searchParams.get('recentSort'));
 
-    const fallbackDisplayName = access?.email || t('fallback.displayName');
+    const profileMetadata = session?.user?.user_metadata as Record<string, unknown> | undefined;
+    const metadataDisplayName = [
+        typeof profileMetadata?.given_name === 'string' ? profileMetadata.given_name.trim() : '',
+        typeof profileMetadata?.family_name === 'string' ? profileMetadata.family_name.trim() : '',
+    ].filter(Boolean).join(' ')
+        || (typeof profileMetadata?.full_name === 'string' ? profileMetadata.full_name.trim() : '');
+    const fallbackDisplayName = metadataDisplayName
+        || access?.email?.trim().split('@')[0]
+        || t('fallback.displayName');
     const displayName = profile?.displayName
         || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ')
         || fallbackDisplayName;
@@ -140,26 +163,9 @@ export const ProfilePage: React.FC = () => {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        let active = true;
-        setErrorMessage(null);
-
-        void getCurrentUserProfile()
-            .then((nextProfile) => {
-                if (!active) return;
-                setProfile(nextProfile);
-            })
-            .catch((error) => {
-                if (!active) return;
-                setErrorMessage(error instanceof Error ? error.message : t('errors.profileLoad'));
-            })
-            .finally(() => {
-                if (!active) return;
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [isAuthenticated, t]);
+        if (profile || isProfileLoading) return;
+        void refreshProfile();
+    }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -326,6 +332,17 @@ export const ProfilePage: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
+    if (isProfileLoading && !profile) {
+        return (
+            <div className="min-h-screen bg-slate-50">
+                <SiteHeader hideCreateTrip />
+                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-8 md:px-8 md:pt-10">
+                    <div className="h-24" aria-hidden="true" />
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
@@ -351,12 +368,6 @@ export const ProfilePage: React.FC = () => {
                         country: greeting.inspirationCountry,
                     })}
                 />
-
-                {errorMessage && (
-                    <section className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-                        {errorMessage}
-                    </section>
-                )}
 
                 {pinNotice && (
                     <section className="rounded-xl border border-accent-200 bg-accent-50 px-4 py-3 text-sm text-accent-900">

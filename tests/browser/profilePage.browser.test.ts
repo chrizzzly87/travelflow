@@ -11,6 +11,14 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
     isAuthenticated: true,
     isAdmin: false,
+    isProfileLoading: false,
+    refreshProfile: vi.fn(),
+    session: {
+      user: {
+        user_metadata: {},
+      },
+    },
+    profile: null,
     access: {
       email: 'traveler@example.com',
       tierKey: 'tier_free',
@@ -88,8 +96,8 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = true;
     mocks.auth.isAdmin = false;
-
-    mocks.getCurrentUserProfile.mockResolvedValue({
+    mocks.auth.isProfileLoading = false;
+    mocks.auth.profile = {
       id: 'user-1',
       email: 'traveler@example.com',
       displayName: 'Traveler One',
@@ -106,7 +114,7 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       publicProfileEnabled: true,
       defaultPublicTripVisibility: true,
       usernameChangedAt: '2026-01-10T00:00:00Z',
-    });
+    };
 
     mocks.getAllTrips.mockReturnValue([
       makeTrip({ id: 'trip-a', title: 'Trip A', isFavorite: true, createdAt: 300, updatedAt: 100 }),
@@ -182,5 +190,15 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(openSpy).toHaveBeenCalledTimes(1);
     expect(String(openSpy.mock.calls[0][0])).toContain('/u/traveler');
     openSpy.mockRestore();
+  });
+
+  it('defers hero rendering while profile session data is hydrating', () => {
+    mocks.auth.isProfileLoading = true;
+    mocks.auth.profile = null;
+
+    renderProfilePage('/profile');
+
+    expect(screen.queryByText('fallback.displayName')).not.toBeInTheDocument();
+    expect(mocks.auth.refreshProfile).not.toHaveBeenCalled();
   });
 });

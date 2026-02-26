@@ -10,8 +10,10 @@ const mocks = vi.hoisted(() => ({
     isLoading: false,
     isAuthenticated: true,
     refreshAccess: vi.fn().mockResolvedValue(undefined),
+    refreshProfile: vi.fn().mockResolvedValue(undefined),
+    isProfileLoading: false,
+    profile: null,
   },
-  getCurrentUserProfile: vi.fn(),
   updateCurrentUserProfile: vi.fn(),
   checkUsernameAvailability: vi.fn(),
   trackEvent: vi.fn(),
@@ -28,7 +30,6 @@ vi.mock('../../hooks/useAuth', () => ({
 }));
 
 vi.mock('../../services/profileService', () => ({
-  getCurrentUserProfile: mocks.getCurrentUserProfile,
   updateCurrentUserProfile: mocks.updateCurrentUserProfile,
   checkUsernameAvailability: mocks.checkUsernameAvailability,
 }));
@@ -68,7 +69,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     cleanup();
     vi.clearAllMocks();
 
-    mocks.getCurrentUserProfile.mockResolvedValue({
+    mocks.auth.profile = {
       id: 'user-1',
       email: 'traveler@example.com',
       displayName: 'Traveler One',
@@ -85,7 +86,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
       publicProfileEnabled: true,
       defaultPublicTripVisibility: true,
       usernameChangedAt: '2026-01-01T00:00:00Z',
-    });
+    };
 
     mocks.updateCurrentUserProfile.mockResolvedValue(null);
     mocks.checkUsernameAvailability.mockResolvedValue({

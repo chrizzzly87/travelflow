@@ -12,7 +12,6 @@ import {
     sortProfileStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
-import { getCurrentUserProfile } from '../services/profileService';
 import { getAllTrips } from '../services/storageService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
@@ -54,9 +53,16 @@ export const ProfileStampsPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
-    const { isLoading, isAuthenticated } = useAuth();
+    const {
+        isLoading,
+        isAuthenticated,
+        access,
+        session,
+        profile,
+        isProfileLoading,
+        refreshProfile,
+    } = useAuth();
 
-    const [displayName, setDisplayName] = useState<string>(() => t('fallback.displayName'));
     const [trips, setTrips] = useState(() => getAllTrips());
     const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
     const [stickerPositions, setStickerPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -78,26 +84,9 @@ export const ProfileStampsPage: React.FC = () => {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        let active = true;
-
-        void getCurrentUserProfile()
-            .then((profile) => {
-                if (!active || !profile) return;
-                const name = profile.displayName
-                    || [profile.firstName, profile.lastName].filter(Boolean).join(' ')
-                    || profile.username
-                    || t('fallback.displayName');
-                setDisplayName(name);
-            })
-            .catch(() => {
-                if (!active) return;
-                setDisplayName(t('fallback.displayName'));
-            });
-
-        return () => {
-            active = false;
-        };
-    }, [isAuthenticated, t]);
+        if (profile || isProfileLoading) return;
+        void refreshProfile();
+    }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -241,6 +230,30 @@ export const ProfileStampsPage: React.FC = () => {
     if (!isLoading && !isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
+
+    if (isProfileLoading && !profile) {
+        return (
+            <div className="min-h-screen bg-slate-50">
+                <SiteHeader hideCreateTrip />
+                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-8 md:px-8 md:pt-10">
+                    <div className="h-24" aria-hidden="true" />
+                </main>
+            </div>
+        );
+    }
+
+    const profileMetadata = session?.user?.user_metadata as Record<string, unknown> | undefined;
+    const metadataDisplayName = [
+        typeof profileMetadata?.given_name === 'string' ? profileMetadata.given_name.trim() : '',
+        typeof profileMetadata?.family_name === 'string' ? profileMetadata.family_name.trim() : '',
+    ].filter(Boolean).join(' ')
+        || (typeof profileMetadata?.full_name === 'string' ? profileMetadata.full_name.trim() : '');
+    const displayName = profile?.displayName
+        || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ')
+        || profile?.username
+        || metadataDisplayName
+        || access?.email?.trim().split('@')[0]
+        || t('fallback.displayName');
 
     const unlockedCount = allStampProgress.filter((stamp) => stamp.achieved).length;
 
