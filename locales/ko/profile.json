@@ -1,7 +1,7 @@
 {
   "hero": {
     "loading": "Loading profile...",
-    "inspirationCta": "Sounds good? Check our Inspirations for {flag} {country}"
+    "inspirationCta": "Sounds good? Check our Inspirations for {country}"
   },
   "tabs": {
     "recent": "Recent",

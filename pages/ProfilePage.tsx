@@ -93,7 +93,6 @@ export const ProfilePage: React.FC = () => {
     const { isLoading, isAuthenticated, access, isAdmin } = useAuth();
 
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
-    const [loadingProfile, setLoadingProfile] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [trips, setTrips] = useState<ITrip[]>(() => getAllTrips());
     const [pinNotice, setPinNotice] = useState<string | null>(null);
@@ -115,7 +114,8 @@ export const ProfilePage: React.FC = () => {
         profile?.firstName || '',
         profile?.lastName || '',
         displayName,
-        greeting.nameOrder
+        greeting.nameOrder,
+        { primaryNameOnly: true }
     );
 
     const locationLabel = [profile?.city || '', profile?.country || '']
@@ -144,7 +144,6 @@ export const ProfilePage: React.FC = () => {
     useEffect(() => {
         if (!isAuthenticated) return;
         let active = true;
-        setLoadingProfile(true);
         setErrorMessage(null);
 
         void getCurrentUserProfile()
@@ -158,7 +157,6 @@ export const ProfilePage: React.FC = () => {
             })
             .finally(() => {
                 if (!active) return;
-                setLoadingProfile(false);
             });
 
         return () => {
@@ -318,17 +316,16 @@ export const ProfilePage: React.FC = () => {
             <SiteHeader hideCreateTrip />
             <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <ProfileHero
-                    isLoading={loadingProfile}
-                    loadingLabel={t('hero.loading')}
-                    headline={`${greeting.greeting}, ${greetingDisplayName}`}
+                    greeting={greeting.greeting}
+                    name={greetingDisplayName}
                     transliteration={greeting.transliteration}
-                    phonetic={greeting.phonetic}
+                    ipa={greeting.ipa}
                     context={greeting.context}
                     ctaLabel={t('hero.inspirationCta', {
-                        flag: greeting.inspirationFlag,
                         country: greeting.inspirationCountry,
                     })}
                     ctaHref={inspirationPath}
+                    inspirationCountryCode={greeting.inspirationCountryCode}
                     onCtaClick={() => {
                         trackEvent('profile__hero_cta--inspirations_country', {
                             country: greeting.inspirationCountry,

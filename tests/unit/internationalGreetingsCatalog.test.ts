@@ -20,6 +20,15 @@ describe('data/internationalGreetingsCatalog', () => {
     expect(formatDisplayNameForGreeting('Mia', 'Lopez', 'Traveler', 'given_first')).toBe('Mia Lopez');
   });
 
+  it('can prefer the primary name token for hero headlines', () => {
+    expect(
+      formatDisplayNameForGreeting('Haruto', 'Tanaka', 'Traveler', 'family_first', { primaryNameOnly: true })
+    ).toBe('Tanaka');
+    expect(
+      formatDisplayNameForGreeting('Mia', 'Lopez', 'Traveler', 'given_first', { primaryNameOnly: true })
+    ).toBe('Mia');
+  });
+
   it('uses fallback name when first and last names are missing', () => {
     expect(formatDisplayNameForGreeting('', '', 'Traveler', 'family_first')).toBe('Traveler');
   });
