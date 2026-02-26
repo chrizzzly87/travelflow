@@ -280,6 +280,18 @@ const loadProfileByQuery = async (
     return mapProfileRow(data as Record<string, unknown>, null);
 };
 
+const isCurrentViewerAdmin = async (): Promise<boolean> => {
+    if (!supabase) return false;
+    try {
+        const accessAttempt = await supabase.rpc('get_current_user_access');
+        if (accessAttempt.error) return false;
+        const row = parseRpcSingle<Record<string, unknown>>(accessAttempt.data);
+        return row?.system_role === 'admin';
+    } catch {
+        return false;
+    }
+};
+
 export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
     const { data: authData, error: authError } = await supabase.auth.getUser();
@@ -557,6 +569,10 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         };
     }
 
+    const viewerIsAdmin = await isCurrentViewerAdmin();
+    const canViewerAccessProfile = (profile: UserProfileRecord | null): profile is UserProfileRecord =>
+        Boolean(profile && (profile.publicProfileEnabled || viewerIsAdmin));
+
     const rpcAttempt = await supabase.rpc('profile_resolve_public_handle', {
         p_handle: normalized,
     });
@@ -573,24 +589,38 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
                 : baseProfile;
 
             if (status === 'found') {
+                const canAccess = canViewerAccessProfile(profile);
                 return {
-                    status: profile.publicProfileEnabled ? 'found' : 'private',
-                    profile: profile.publicProfileEnabled ? profile : null,
+                    status: canAccess ? 'found' : 'private',
+                    profile: canAccess ? profile : null,
                     canonicalUsername: canonicalUsername || profile.username || null,
                     redirectFromUsername: null,
                 };
             }
 
             if (status === 'redirect') {
+                const canAccess = canViewerAccessProfile(profile);
                 return {
-                    status: profile.publicProfileEnabled ? 'redirect' : 'private',
-                    profile: profile.publicProfileEnabled ? profile : null,
+                    status: canAccess ? 'redirect' : 'private',
+                    profile: canAccess ? profile : null,
                     canonicalUsername: canonicalUsername || profile.username || null,
                     redirectFromUsername: normalized,
                 };
             }
 
             if (status === 'private') {
+                if (viewerIsAdmin) {
+                    const usernameToLoad = canonicalUsername || profile.username || normalized;
+                    const adminProfile = await findProfileByUsername(usernameToLoad);
+                    if (adminProfile) {
+                        return {
+                            status: 'found',
+                            profile: adminProfile,
+                            canonicalUsername: adminProfile.username || usernameToLoad,
+                            redirectFromUsername: null,
+                        };
+                    }
+                }
                 return {
                     status: 'private',
                     profile: null,
@@ -603,7 +633,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
 
     const directProfile = await findProfileByUsername(normalized);
     if (directProfile) {
-        if (!directProfile.publicProfileEnabled) {
+        if (!canViewerAccessProfile(directProfile)) {
             return {
                 status: 'private',
                 profile: null,
@@ -636,7 +666,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
             if (targetUserId) {
                 const targetProfile = await findProfileByUserId(targetUserId);
                 if (targetProfile) {
-                    if (!targetProfile.publicProfileEnabled) {
+                    if (!canViewerAccessProfile(targetProfile)) {
                         return {
                             status: 'private',
                             profile: null,

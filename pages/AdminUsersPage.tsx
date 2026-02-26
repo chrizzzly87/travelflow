@@ -23,6 +23,7 @@ import {
 import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
 import { PROFILE_ACCOUNT_STATUS_OPTIONS, PROFILE_GENDER_OPTIONS } from '../config/profileFields';
+import { buildPath } from '../config/routes';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
@@ -1076,6 +1077,11 @@ export const AdminUsersPage: React.FC = () => {
         const token = (selectedUser.email || '').trim() || selectedUser.user_id;
         return `/admin/trips?q=${encodeURIComponent(token)}`;
     }, [selectedUser]);
+    const selectedUserPublicProfilePath = useMemo(() => {
+        const normalizedUsername = (selectedUser?.username || '').trim().toLowerCase();
+        if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) return null;
+        return buildPath('publicProfile', { username: normalizedUsername });
+    }, [selectedUser?.username]);
 
     const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
@@ -2504,15 +2510,32 @@ export const AdminUsersPage: React.FC = () => {
                                     <p className="text-xs font-semibold text-slate-600">
                                         {selectedUserTripStats.active} active trips / {selectedUserTripStats.total} total trips
                                     </p>
-                                    {selectedUserTripsPageLink && (
-                                        <a
-                                            href={selectedUserTripsPageLink}
-                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Open in Trips
-                                            <ArrowSquareOut size={12} />
-                                        </a>
-                                    )}
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {selectedUserTripsPageLink && (
+                                            <a
+                                                href={selectedUserTripsPageLink}
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Open in Trips
+                                                <ArrowSquareOut size={12} />
+                                            </a>
+                                        )}
+                                        {selectedUserPublicProfilePath ? (
+                                            <a
+                                                href={selectedUserPublicProfilePath}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                            >
+                                                Open public profile
+                                                <ArrowSquareOut size={12} />
+                                            </a>
+                                        ) : (
+                                            <span className="text-[11px] font-semibold text-slate-500">
+                                                Public profile unavailable (missing username)
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

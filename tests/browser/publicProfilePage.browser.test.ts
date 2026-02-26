@@ -241,4 +241,22 @@ describe('pages/PublicProfilePage', () => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeInTheDocument();
     });
   });
+
+  it('shows back-to-profile CTA for authenticated users on not found state', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'not_found',
+      canonicalUsername: null,
+      redirectFromUsername: null,
+      profile: null,
+    });
+    mocks.auth.isAuthenticated = true;
+
+    renderPublicProfilePage('/u/unknown-handle');
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaBackProfile' })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeNull();
+  });
 });
