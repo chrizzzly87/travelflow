@@ -13,11 +13,11 @@ interface ProfileSummaryStatsProps {
 
 export const ProfileSummaryStats: React.FC<ProfileSummaryStatsProps> = ({ stats }) => {
   return (
-    <div className="grid gap-0 border-y border-slate-200 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => (
         <article
           key={stat.id}
-          className="border-b border-slate-200 px-4 py-4 sm:border-b-0 sm:border-r last:border-r-0 xl:border-r"
+          className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
         >
           <p className={stat.accent ? 'text-3xl font-black tracking-tight text-accent-700' : 'text-3xl font-black tracking-tight text-slate-900'}>
             {stat.value}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-icons/react';
 import { ProfileMetaPanel } from './ProfileMetaPanel';
+import { ProfileAvatarOrbitText } from './ProfileAvatarOrbitText';
 import type { VisitedCountry } from './profileCountryUtils';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
@@ -43,6 +44,7 @@ interface ProfileOwnerSummaryProps {
   onOpenStamps: () => void;
   canViewPublicProfile: boolean;
   canShareProfile: boolean;
+  showAvatarOrbitText?: boolean;
 }
 
 export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
@@ -64,33 +66,22 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   onOpenStamps,
   canViewPublicProfile,
   canShareProfile,
+  showAvatarOrbitText = false,
 }) => {
-  const orbitPathId = React.useId();
   return (
-    <section className="grid gap-8 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-      <article className="relative border border-slate-200 bg-white px-5 pb-5 pt-12 text-center">
+    <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+      <article className="relative rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
           <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
             <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
               {initials}
             </span>
-            <svg
-              viewBox="0 0 120 120"
-              className="profile-avatar-orbit pointer-events-none absolute -inset-4 h-[calc(100%+2rem)] w-[calc(100%+2rem)]"
-              aria-hidden="true"
-            >
-              <defs>
-                <path id={orbitPathId} d="M 60,60 m -47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0" />
-              </defs>
-              <text className="fill-current text-[8px] font-semibold uppercase tracking-[0.2em]">
-                <textPath href={`#${orbitPathId}`} startOffset="50%" textAnchor="middle">
-                  {`${status.orbitLabel} • ${status.orbitLabel} • ${status.orbitLabel}`}
-                </textPath>
-              </text>
-            </svg>
+            {showAvatarOrbitText && (
+              <ProfileAvatarOrbitText label={status.orbitLabel} />
+            )}
           </div>
         </div>
-        <h2 className="text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
+        <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
         <p className="mt-1 text-sm font-semibold text-slate-600">
           {labels.usernamePrefix}
           {username || 'traveler'}
@@ -130,28 +121,30 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
         </div>
       </article>
 
-      <div className="space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <ProfileSummaryStats stats={stats} />
-        <ProfileMetaPanel
-          bio={bio}
-          location={location}
-          distanceLabel={distanceLabel}
-          countries={countries}
-          stamps={stamps}
-          onOpenStamps={onOpenStamps}
-          labels={{
-            bio: labels.bio,
-            bioFallback: labels.bioFallback,
-            location: labels.location,
-            distance: labels.distance,
-            countries: labels.countries,
-            countriesEmpty: labels.countriesEmpty,
-            stampsTitle: labels.stampsTitle,
-            stampsDescription: labels.stampsDescription,
-            stampsOpen: labels.stampsOpen,
-            stampsEmpty: labels.stampsEmpty,
-          }}
-        />
+        <div className="mt-6">
+          <ProfileMetaPanel
+            bio={bio}
+            location={location}
+            distanceLabel={distanceLabel}
+            countries={countries}
+            stamps={stamps}
+            onOpenStamps={onOpenStamps}
+            labels={{
+              bio: labels.bio,
+              bioFallback: labels.bioFallback,
+              location: labels.location,
+              distance: labels.distance,
+              countries: labels.countries,
+              countriesEmpty: labels.countriesEmpty,
+              stampsTitle: labels.stampsTitle,
+              stampsDescription: labels.stampsDescription,
+              stampsOpen: labels.stampsOpen,
+              stampsEmpty: labels.stampsEmpty,
+            }}
+          />
+        </div>
       </div>
     </section>
   );

@@ -38,14 +38,14 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   labels,
 }) => {
   return (
-    <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
-      <div className="space-y-5">
+    <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.62fr)]">
+      <div className="space-y-6">
         <section>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.bio}</p>
           <p className="mt-2 text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2">
+        <section className="grid gap-4 border-y border-slate-200 py-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.location}</p>
             <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">

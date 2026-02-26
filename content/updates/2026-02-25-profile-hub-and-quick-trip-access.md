@@ -16,11 +16,14 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔗 Updated the hero subline so only “Inspirations for {country}” is linked while the lead-in text stays plain.
 - [x] [New feature] 🧾 Added social-style owner and visitor profile summaries with travel stats, bio/location metadata, and a travel footprint block.
 - [x] [Improved] 🖼️ Updated profile identity blocks with centered avatar-overlap styling, cleaner spacing, and reduced repetitive copy.
-- [x] [Improved] 🪐 Replaced static role labels with dynamic traveler status rings and rotating orbit text around profile avatars.
+- [x] [Improved] 🪐 Replaced static role labels with dynamic traveler status rings around profile avatars.
 - [x] [Improved] 🎯 Corrected avatar-orbit alignment so rotating status text wraps the avatar ring cleanly.
+- [x] [Improved] 🧼 Removed redundant public-profile top heading and unified owner/public summary spacing for a cleaner, less clustered layout.
+- [x] [Improved] 🔧 Kept orbit text as a reusable component for later, but removed it from active profile avatar rendering.
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
 - [x] [Improved] ⚙️ Expanded profile settings with username availability/cooldown guidance, public URL preview, bio, and profile visibility defaults.
 - [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
+- [x] [Improved] 🛡️ Updated the admin user editor to use the same Country/Region ISO picker so admin profile edits stay consistent with app profile rules.
 - [x] [Improved] 🧩 Added settings breadcrumb navigation, grouped gender + name fields into one row, and introduced a lock-and-edit username flow with cooldown-aware guidance.
 - [x] [Improved] 🧠 Cached current-profile data in app session state so profile surfaces avoid fallback-name flicker after login.
 - [x] [Improved] 🧭 Added “View public profile” shortcuts to account and mobile menus plus kept recent-trip quick access.

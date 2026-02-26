@@ -55,6 +55,7 @@ import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { AdminCountUpNumber } from '../components/admin/AdminCountUpNumber';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
+import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 
@@ -2570,11 +2571,14 @@ export const AdminUsersPage: React.FC = () => {
                                         </Select>
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country</span>
-                                        <input
+                                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Country/Region</span>
+                                        <ProfileCountryRegionSelect
                                             value={profileDraft.country}
-                                            onChange={(event) => setProfileDraft((current) => ({ ...current, country: event.target.value }))}
-                                            className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
+                                            placeholder="Search country or region"
+                                            clearLabel="Clear country/region"
+                                            emptyLabel="No countries found"
+                                            toggleLabel="Toggle country/region options"
+                                            onValueChange={(nextCode) => setProfileDraft((current) => ({ ...current, country: nextCode }))}
                                         />
                                     </label>
                                     <label className="space-y-1">

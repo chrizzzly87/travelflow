@@ -183,11 +183,6 @@ export const PublicProfilePage: React.FC = () => {
 
                 {state.status === 'found' && state.profile && (
                     <>
-                        <section className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-700">{t('publicProfile.title')}</p>
-                            <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{displayName}</h1>
-                        </section>
-
                         <ProfileVisitorSummary
                             displayName={displayName}
                             username={state.profile.username || ''}
