@@ -29,6 +29,8 @@ interface ProfileMetaPanelProps {
   allStamps?: ProfileStampProgress[];
   passportCountryCode?: string;
   passportStickerPositions?: Record<string, PassportStickerPosition>;
+  allowStickerDrag?: boolean;
+  onStickerMoveEnd?: (positions: Record<string, PassportStickerPosition>, movedStampId: string) => void;
   locale?: string;
   onOpenPassport?: () => void;
   labels: ProfileMetaPanelLabels;
@@ -43,6 +45,8 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   allStamps,
   passportCountryCode,
   passportStickerPositions,
+  allowStickerDrag = false,
+  onStickerMoveEnd,
   locale = 'en',
   onOpenPassport,
   labels,
@@ -113,6 +117,8 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
         onOpen={handleOpenPassport}
         countryCode={passportCountryCode}
         stickerPositions={passportStickerPositions}
+        draggableStickers={allowStickerDrag}
+        onStickerMoveEnd={onStickerMoveEnd}
       />
 
       <ProfilePassportDialog

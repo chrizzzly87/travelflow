@@ -47,6 +47,7 @@ interface ProfileOwnerSummaryProps {
   onViewPublicProfile: () => void;
   onShareProfile: () => void;
   onOpenPassport?: () => void;
+  onPassportStickerMoveEnd?: (positions: Record<string, PassportStickerPosition>, movedStampId: string) => void;
   canViewPublicProfile: boolean;
   canShareProfile: boolean;
   locale?: string;
@@ -73,6 +74,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   onViewPublicProfile,
   onShareProfile,
   onOpenPassport,
+  onPassportStickerMoveEnd,
   canViewPublicProfile,
   canShareProfile,
   locale = 'en',
@@ -143,6 +145,8 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             allStamps={allStamps}
             passportCountryCode={passportCountryCode}
             passportStickerPositions={passportStickerPositions}
+            allowStickerDrag
+            onStickerMoveEnd={onPassportStickerMoveEnd}
             locale={locale}
             onOpenPassport={onOpenPassport}
             labels={{

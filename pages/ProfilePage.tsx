@@ -29,6 +29,7 @@ import { getProfileCountryDisplayName } from '../services/profileCountryService'
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { updateCurrentUserPassportStickerPositions } from '../services/profileService';
 import {
     formatDisplayNameForGreeting,
     pickRandomInternationalGreeting,
@@ -319,6 +320,19 @@ export const ProfilePage: React.FC = () => {
         });
     }, [persistTrip, tab, trips]);
 
+    const handlePassportStickerMoveEnd = useCallback((
+        positions: Record<string, { x: number; y: number }>,
+        movedStampId: string
+    ) => {
+        trackEvent('profile__passport_sticker--move', {
+            stamp_id: movedStampId,
+            surface: 'profile_summary',
+        });
+        void updateCurrentUserPassportStickerPositions(positions)
+            .then(() => refreshProfile())
+            .catch(() => undefined);
+    }, [refreshProfile]);
+
     const publicProfilePath = profile?.username
         ? buildPath('publicProfile', { username: profile.username })
         : null;
@@ -438,6 +452,7 @@ export const ProfilePage: React.FC = () => {
                     onOpenPassport={() => {
                         trackEvent('profile__summary--open_stamps');
                     }}
+                    onPassportStickerMoveEnd={handlePassportStickerMoveEnd}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}

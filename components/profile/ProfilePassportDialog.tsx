@@ -36,7 +36,7 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[min(96vw,1120px)] max-w-6xl overflow-hidden p-0">
-        <section className="grid max-h-[88vh] gap-0 overflow-y-auto md:grid-cols-[minmax(320px,0.88fr)_minmax(0,1.12fr)]">
+        <section className="profile-passport-modal-shell grid max-h-[88vh] gap-0 overflow-y-auto md:grid-cols-[minmax(320px,0.88fr)_minmax(0,1.12fr)]">
           <div className="profile-passport-modal-cover border-e border-slate-200 bg-slate-50 p-4 sm:p-5">
             <ProfilePassportBook
               title={title}

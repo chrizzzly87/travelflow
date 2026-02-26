@@ -502,32 +502,56 @@ h6,
 @keyframes profile-passport-open-in {
   from {
     opacity: 0;
-    transform: perspective(1200px) rotateY(-14deg) translateX(-16px);
+    transform: translateY(12px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: perspective(1200px) rotateY(0deg) translateX(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes profile-passport-grid-in {
   from {
     opacity: 0;
-    transform: translateX(14px);
+    transform: perspective(1600px) rotateY(16deg) translateX(18px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: perspective(1600px) rotateY(0deg) translateX(0);
   }
+}
+
+.profile-passport-modal-shell {
+  transform-style: preserve-3d;
+  animation: profile-passport-open-in 280ms cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 
 .profile-passport-modal-cover {
   transform-origin: 0% 50%;
-  animation: profile-passport-open-in 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: profile-passport-open-cover 460ms cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .profile-passport-modal-grid {
-  animation: profile-passport-grid-in 340ms ease;
+  transform-origin: 0% 50%;
+  animation: profile-passport-grid-in 400ms cubic-bezier(0.18, 0.84, 0.24, 1);
+}
+
+@keyframes profile-passport-open-cover {
+  from {
+    opacity: 0;
+    transform: perspective(1600px) rotateY(-84deg) translateX(-26px);
+    filter: blur(1.4px);
+  }
+  72% {
+    opacity: 1;
+    transform: perspective(1600px) rotateY(4deg) translateX(2px);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1600px) rotateY(0deg) translateX(0);
+    filter: blur(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -557,6 +581,7 @@ h6,
     transform: none !important;
   }
 
+  .profile-passport-modal-shell,
   .profile-passport-modal-cover,
   .profile-passport-modal-grid {
     animation: none;
