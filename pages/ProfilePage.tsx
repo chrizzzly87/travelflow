@@ -336,7 +336,8 @@ export const ProfilePage: React.FC = () => {
                     transliteration={greeting.transliteration}
                     ipa={greeting.ipa}
                     context={greeting.context}
-                    ctaLabel={t('hero.inspirationCta', {
+                    ctaIntroLabel={t('hero.inspirationIntro')}
+                    ctaLinkLabel={t('hero.inspirationCta', {
                         country: greeting.inspirationCountry,
                     })}
                     ctaHref={inspirationPath}

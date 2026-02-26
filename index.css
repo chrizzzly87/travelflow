@@ -459,14 +459,15 @@ h6,
 
 @keyframes profile-avatar-orbit-spin {
   from {
-    transform: translateY(-50%) rotate(0deg);
+    transform: rotate(0deg);
   }
   to {
-    transform: translateY(-50%) rotate(360deg);
+    transform: rotate(360deg);
   }
 }
 
 .profile-avatar-orbit {
+  transform-origin: 50% 50%;
   animation: profile-avatar-orbit-spin 26s linear infinite;
 }
 
@@ -508,12 +509,12 @@ h6,
 
   .profile-avatar-orbit {
     animation: none;
-    transform: translateY(-50%);
+    transform: none;
   }
 
   .profile-stamp-card {
     transform: none !important;
-    transition: border-color 180ms ease, box-shadow 180ms ease;
+    transition: none;
   }
 
   .profile-stamp-card::after {

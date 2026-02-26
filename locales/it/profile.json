@@ -1,7 +1,8 @@
 {
   "hero": {
     "loading": "Loading profile...",
-    "inspirationCta": "Sounds good? Check our Inspirations for {country}"
+    "inspirationIntro": "Sounds good? Check our",
+    "inspirationCta": "Inspirations for {country}"
   },
   "tabs": {
     "recent": "Recent",

@@ -8,7 +8,8 @@ interface ProfileHeroProps {
   transliteration: string;
   ipa: string;
   context: string;
-  ctaLabel: string;
+  ctaIntroLabel: string;
+  ctaLinkLabel: string;
   ctaHref: string;
   inspirationCountryCode?: string | null;
   onCtaClick?: () => void;
@@ -29,7 +30,8 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
   transliteration,
   ipa,
   context,
-  ctaLabel,
+  ctaIntroLabel,
+  ctaLinkLabel,
   ctaHref,
   inspirationCountryCode,
   onCtaClick,
@@ -63,15 +65,16 @@ export const ProfileHero: React.FC<ProfileHeroProps> = ({
           <span>{context}</span>
         </p>
 
-        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 text-sm text-slate-600">
-          <FlagIcon code={inspirationCountryCode} size="sm" fallback={null} />
+        <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-1.5 text-sm text-slate-600">
+          <span>{ctaIntroLabel}</span>
           <Link
             to={ctaHref}
             onClick={onCtaClick}
             className="inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
             {...(analyticsAttributes || {})}
           >
-            {ctaLabel}
+            <FlagIcon code={inspirationCountryCode} size="sm" fallback={null} />
+            {ctaLinkLabel}
           </Link>
         </p>
       </div>

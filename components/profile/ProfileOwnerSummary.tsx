@@ -70,23 +70,25 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
     <section className="grid gap-8 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
       <article className="relative border border-slate-200 bg-white px-5 pb-5 pt-12 text-center">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
-          <span className={`mx-auto inline-flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current ${status.ringClassName}`}>
-            {initials}
-          </span>
-          <svg
-            viewBox="0 0 120 120"
-            className={`pointer-events-none absolute inset-x-0 top-1/2 mx-auto h-32 w-32 -translate-y-1/2 profile-avatar-orbit ${status.ringClassName}`}
-            aria-hidden="true"
-          >
-            <defs>
-              <path id={orbitPathId} d="M 60,60 m -46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" />
-            </defs>
-            <text className="fill-current text-[8px] font-semibold uppercase tracking-[0.2em]">
-              <textPath href={`#${orbitPathId}`} startOffset="50%" textAnchor="middle">
-                {`${status.orbitLabel} • ${status.orbitLabel} • ${status.orbitLabel}`}
-              </textPath>
-            </text>
-          </svg>
+          <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
+            <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
+              {initials}
+            </span>
+            <svg
+              viewBox="0 0 120 120"
+              className="profile-avatar-orbit pointer-events-none absolute -inset-4 h-[calc(100%+2rem)] w-[calc(100%+2rem)]"
+              aria-hidden="true"
+            >
+              <defs>
+                <path id={orbitPathId} d="M 60,60 m -47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0" />
+              </defs>
+              <text className="fill-current text-[8px] font-semibold uppercase tracking-[0.2em]">
+                <textPath href={`#${orbitPathId}`} startOffset="50%" textAnchor="middle">
+                  {`${status.orbitLabel} • ${status.orbitLabel} • ${status.orbitLabel}`}
+                </textPath>
+              </text>
+            </svg>
+          </div>
         </div>
         <h2 className="text-3xl font-black tracking-tight text-slate-900">{displayName}</h2>
         <p className="mt-1 text-sm font-semibold text-slate-600">
