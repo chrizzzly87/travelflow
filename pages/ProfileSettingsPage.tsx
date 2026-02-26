@@ -422,7 +422,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value={PROFILE_GENDER_UNSPECIFIED}>{t('settings.fields.unspecified')}</SelectItem>
-                                            {PROFILE_GENDER_OPTIONS.map((option) => (
+                                            {PROFILE_GENDER_OPTIONS.filter((option) => option.value !== '').map((option) => (
                                                 <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                             ))}
                                         </SelectContent>
