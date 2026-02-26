@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import { Passport, SealCheck } from '@phosphor-icons/react';
+import { IdentificationCard, SealCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileStampCard } from '../components/profile/ProfileStampCard';
@@ -56,7 +56,7 @@ export const ProfileStampsPage: React.FC = () => {
     const { t, i18n } = useTranslation('profile');
     const { isLoading, isAuthenticated } = useAuth();
 
-    const [displayName, setDisplayName] = useState<string>(t('fallback.displayName'));
+    const [displayName, setDisplayName] = useState<string>(() => t('fallback.displayName'));
     const [trips, setTrips] = useState(() => getAllTrips());
     const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
     const [stickerPositions, setStickerPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -259,7 +259,7 @@ export const ProfileStampsPage: React.FC = () => {
                 <section className="grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
                     <article className="profile-passport-cover relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-6 py-6 text-slate-100">
                         <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
-                            <Passport size={15} weight="duotone" />
+                            <IdentificationCard size={15} weight="duotone" />
                             {t('stamps.passportTitle')}
                         </p>
                         <p className="mt-1 text-sm text-slate-300">{t('stamps.passportDescription')}</p>
