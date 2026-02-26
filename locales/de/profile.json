@@ -58,7 +58,7 @@
     "bioLabel": "Bio",
     "bioFallback": "Add a short bio so others can understand your travel style.",
     "locationLabel": "Location",
-    "locationUnknown": "Location not set",
+    "locationUnknown": "Probably Planet Earth",
     "distanceLabel": "Total distance",
     "distanceUnknown": "No tracked distance yet",
     "countriesLabel": "Countries visited",
