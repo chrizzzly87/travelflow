@@ -81,4 +81,5 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
 - [ ] [Internal] 🧪 Added regression coverage for username cooldown fallback loading and `@`-prefixed username normalization on save.
 - [ ] [Internal] 🧪 Added regression coverage for public-profile resolver fallback paths after Supabase query-chain hardening.
+- [ ] [Internal] 📘 Documented public-profile handle resolver guardrails in the Supabase runbook (query-chain order, exact username matching, and verification checklist).
 - [ ] [Internal] 📌 Tracked deferred backend work in issue #181 for DB-backed pins, reactions, bookmarks, follows, and anti-abuse/RLS contracts.

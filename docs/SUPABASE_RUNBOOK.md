@@ -321,6 +321,27 @@ Cause:
 Fix:
 - Use `.maybeSingle()` for optional row loads.
 
+### Public profile shows `Profile not found` for valid handles
+
+Cause:
+- Client-side resolver fallback query is malformed (for example filter chaining before `.select(...)`).
+- Username lookup uses pattern matching where exact matching is required.
+- Resolver performs unnecessary enrichment calls that fail in partially migrated schemas.
+
+Fix:
+- Keep the public-handle resolution order:
+  1. `profile_resolve_public_handle` RPC
+  2. direct `profiles.username` exact lookup fallback
+  3. `profile_handle_redirects` fallback
+- For username fallback queries, always use exact `eq('username', value)` (not wildcard matching).
+- Chain Supabase reads in the standard order: `.from(...).select(...).eq(...).maybeSingle()`.
+- Do not issue admin-only identity RPC checks for anonymous viewers.
+
+Verification:
+- `POST /rest/v1/rpc/profile_resolve_public_handle` returns `found` for a known handle.
+- `GET /u/{username}` renders profile content (not `Profile not found`).
+- Browser network tab has no repeated `400` profile resolver fallback calls for a successful public profile load.
+
 ### Share modal says `Could not create share link` after SQL run
 
 Cause:
