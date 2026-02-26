@@ -638,11 +638,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         if (row) {
             const status = typeof row.status === 'string' ? row.status : 'not_found';
             const canonicalUsername = normalizeUsername(row.canonical_username);
-            const hasSelectionField = Object.prototype.hasOwnProperty.call(row, 'passport_sticker_selection');
-            const baseProfile = mapProfileRow(row, null);
-            const profile = !hasSelectionField && baseProfile.username
-                ? (await findProfileByUsername(baseProfile.username) || baseProfile)
-                : baseProfile;
+            const profile = mapProfileRow(row, null);
 
             if (status === 'found') {
                 const canAccess = canViewerAccessProfile(profile);
@@ -665,17 +661,13 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
             }
 
             if (status === 'private') {
-                if (viewerIsAdmin) {
-                    const usernameToLoad = canonicalUsername || profile.username || normalized;
-                    const adminProfile = await findProfileByUsername(usernameToLoad);
-                    if (adminProfile) {
-                        return {
-                            status: 'found',
-                            profile: adminProfile,
-                            canonicalUsername: adminProfile.username || usernameToLoad,
-                            redirectFromUsername: null,
-                        };
-                    }
+                if (viewerIsAdmin && profile.id) {
+                    return {
+                        status: 'found',
+                        profile,
+                        canonicalUsername: canonicalUsername || profile.username || normalized,
+                        redirectFromUsername: null,
+                    };
                 }
                 return {
                     status: 'private',

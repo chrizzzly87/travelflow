@@ -23,6 +23,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
 - [x] [Fixed] 🧭 Hardened public-profile handle resolution so valid profiles no longer fall into false “profile not found” states in mixed-schema environments.
 - [x] [Fixed] 🔎 Fixed public handle resolution for canonical usernames (including underscore handles) by correcting fallback profile lookup chaining so `/u/{username}` no longer drops into false “Profile not found”.
+- [x] [Improved] 🧼 Reduced noisy background profile-access failures on public profile pages by removing unnecessary fallback lookups and guest-only admin probes.
 - [x] [Fixed] 🧭 Decoupled public-profile identity loading from public-trip loading so profile pages still render even if trip queries fail temporarily.
 - [x] [Improved] 🚀 Added a guest-first public-profile fallback CTA so signed-out visitors can register for free directly from unavailable/private profile states.
 - [x] [Improved] 🛡️ Allowed admins to open user public profiles even when profile visibility is disabled, so moderation/review workflows are never blocked.

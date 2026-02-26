@@ -157,7 +157,7 @@ describe('services/profileService username cooldown fallback', () => {
     expect(profile?.usernameChangedAt).toBeNull();
   });
 
-  it('resolves public profile when RPC row requires secondary profile lookup', async () => {
+  it('resolves public profile from RPC rows when optional passport fields are absent', async () => {
     supabaseMocks.rpc.mockImplementation(async (fn: string) => {
       if (fn === 'get_current_user_access') {
         return {
