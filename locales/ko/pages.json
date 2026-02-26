@@ -96,7 +96,8 @@
     "title": "이 공유 여행은 더 이상 이용할 수 없습니다",
     "description": "링크가 만료되었거나 여행 소유자가 비활성화했을 수 있습니다. 새 링크를 요청하거나 직접 여행을 만들어 보세요.",
     "backToHomepage": "홈페이지로 돌아가기",
-    "createNewTrip": "새 여행 만들기"
+    "createNewTrip": "새 여행 만들기",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "이 페이지는 이미 휴가를 떠난 것 같습니다!",

@@ -1,6 +1,7 @@
 import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, IViewSettings, IUserSettings, ShareMode } from '../types';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
+import { appendClientErrorLog } from './clientErrorLogger';
 import {
     readLocalStorageItem,
     writeLocalStorageItem,
@@ -8,6 +9,10 @@ import {
 import { getAllTrips, setAllTrips } from './storageService';
 import { ANONYMOUS_TRIP_LIMIT, isTripExpiredByTimestamp } from '../config/productLimits';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from './simulatedLoginService';
+import {
+    markConnectivityFailure,
+    markConnectivitySuccess,
+} from './supabaseHealthMonitor';
 
 export const DB_ENABLED = isSupabaseEnabled;
 export { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin };
@@ -83,6 +88,27 @@ const requireSupabase = () => {
     return supabase;
 };
 
+const reportDbFailure = (
+    error: unknown,
+    options: { operation: string; tripId?: string; route?: string }
+) => {
+    markConnectivityFailure(error, {
+        source: 'db_service',
+        operation: options.operation,
+        tripId: options.tripId,
+    });
+    appendClientErrorLog({
+        errorType: `supabase_${options.operation}`,
+        error,
+        route: options.route,
+        tripId: options.tripId,
+    });
+};
+
+const reportDbSuccess = (operation: string) => {
+    markConnectivitySuccess(`db:${operation}`);
+};
+
 export const ensureDbSession = async (): Promise<string | null> => {
     if (!DB_ENABLED) return null;
     if (sessionPromise) return sessionPromise;
@@ -95,10 +121,12 @@ export const ensureDbSession = async (): Promise<string | null> => {
                     const { data: sessionData, error: sessionError } = await client.auth.getSession();
                     if (sessionError) {
                         console.warn('Supabase session error', sessionError);
+                        reportDbFailure(sessionError, { operation: 'ensure_session_get', route: '/db/session' });
                     }
                     const sessionUserId = sessionData?.session?.user?.id ?? null;
                     if (sessionUserId) {
                         debugLog('ensureDbSession:session', { userId: sessionUserId, expiresAt: sessionData?.session?.expires_at });
+                        reportDbSuccess('ensure_session_get');
                         return sessionUserId;
                     }
                     if (i < SESSION_POLL_ATTEMPTS - 1) {
@@ -129,6 +157,7 @@ export const ensureDbSession = async (): Promise<string | null> => {
             const { data, error } = await client.auth.signInAnonymously();
             if (error) {
                 console.error('Supabase anonymous sign-in failed', error);
+                reportDbFailure(error, { operation: 'ensure_session_sign_in', route: '/db/session' });
                 if (error.status === 429 || /rate limit/i.test(error.message || '')) {
                     authBlockedUntil = Date.now() + 60000;
                 }
@@ -146,6 +175,7 @@ export const ensureDbSession = async (): Promise<string | null> => {
                 if (data.session.user?.id) {
                     debugLog('ensureDbSession:signIn', { userId: data.session.user.id });
                     cachedUserId = data.session.user.id;
+                    reportDbSuccess('ensure_session_sign_in');
                     await maybeLogAuthContext();
                     return cachedUserId;
                 }
@@ -172,8 +202,10 @@ export const dbGetAccessToken = async (): Promise<string | null> => {
     const { data, error } = await client.auth.getSession();
     if (error) {
         console.error('Failed to read Supabase access token', error);
+        reportDbFailure(error, { operation: 'get_access_token', route: '/db/session' });
         return null;
     }
+    reportDbSuccess('get_access_token');
     return data?.session?.access_token ?? null;
 };
 
@@ -183,6 +215,31 @@ type DbErrorLike = {
     details?: string | null;
     hint?: string | null;
     constraint?: string | null;
+};
+
+const buildDbErrorText = (error: DbErrorLike | null): string => (
+    `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase()
+);
+
+const isRpcOverloadResolutionError = (error: DbErrorLike | null): boolean => {
+    if (!error) return false;
+    if (error.code === 'PGRST203') return true;
+    const text = buildDbErrorText(error);
+    return text.includes('could not choose the best candidate function')
+        || text.includes('function overloading can be resolved');
+};
+
+const isUpsertTripRpcSignatureError = (error: DbErrorLike | null): boolean => {
+    if (!error) return false;
+    const text = buildDbErrorText(error);
+    return isRpcOverloadResolutionError(error)
+        || (text.includes('upsert_trip') && text.includes('function'));
+};
+
+const isMissingTripAccessColumnsError = (error: DbErrorLike | null): boolean => {
+    if (!error) return false;
+    return /column/i.test(error.message || '')
+        && /(status|trip_expires_at|source_kind|source_template_id)/i.test(error.message || '');
 };
 
 const isRlsViolation = (error: DbErrorLike | null) => {
@@ -350,7 +407,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     };
 
     let { data, error } = await client.rpc('upsert_trip', extendedPayload);
-    if (error && /upsert_trip/i.test(error.message || '') && /function/i.test(error.message || '')) {
+    if (error && isUpsertTripRpcSignatureError(error)) {
         debugLog('dbUpsertTrip:fallbackToLegacySignature', { message: error.message });
         const legacyPayload = {
             p_id: normalizedTrip.id,
@@ -367,6 +424,55 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         error = fallback.error;
     }
 
+    if (error && isRpcOverloadResolutionError(error)) {
+        debugLog('dbUpsertTrip:fallbackToTableUpsert', { code: error.code, message: error.message });
+        const tablePayload = normalizeTripPayload(trip, view);
+        let rowPayload: Record<string, unknown> = {
+            id: tablePayload.id,
+            owner_id: ownerId,
+            title: tablePayload.title,
+            start_date: tablePayload.start_date,
+            data: tablePayload.data,
+            view_settings: tablePayload.view_settings,
+            is_favorite: tablePayload.is_favorite,
+            forked_from_trip_id: tablePayload.forked_from_trip_id,
+            forked_from_share_token: tablePayload.forked_from_share_token,
+            status: tablePayload.status,
+            trip_expires_at: tablePayload.trip_expires_at,
+            source_kind: tablePayload.source_kind,
+            source_template_id: tablePayload.source_template_id,
+        };
+
+        let tableFallback = await client
+            .from('trips')
+            .upsert(rowPayload, { onConflict: 'id' })
+            .select('id')
+            .maybeSingle();
+
+        if (tableFallback.error && isMissingTripAccessColumnsError(tableFallback.error)) {
+            debugLog('dbUpsertTrip:fallbackToLegacyTableColumns', { message: tableFallback.error.message });
+            rowPayload = {
+                id: tablePayload.id,
+                owner_id: ownerId,
+                title: tablePayload.title,
+                start_date: tablePayload.start_date,
+                data: tablePayload.data,
+                view_settings: tablePayload.view_settings,
+                is_favorite: tablePayload.is_favorite,
+                forked_from_trip_id: tablePayload.forked_from_trip_id,
+                forked_from_share_token: tablePayload.forked_from_share_token,
+            };
+            tableFallback = await client
+                .from('trips')
+                .upsert(rowPayload, { onConflict: 'id' })
+                .select('id')
+                .maybeSingle();
+        }
+
+        data = tableFallback.data;
+        error = tableFallback.error;
+    }
+
     if (error) {
         if (isSimulatedLoggedIn() && /trip limit reached/i.test(error.message || '')) {
             debugLog('dbUpsertTrip:simulatedLoginLocalFallback', { tripId: trip.id, message: error.message });
@@ -376,6 +482,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
             debugLog('dbUpsertTrip:rls', { code: error.code, message: error.message });
         }
         console.error('Failed to upsert trip', error);
+        reportDbFailure(error, { operation: 'upsert_trip', tripId: trip.id, route: `/trip/${trip.id}` });
         return null;
     }
 
@@ -383,6 +490,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     if (!row) {
         debugLog('dbUpsertTrip:empty', { tripId: trip.id });
     }
+    reportDbSuccess('upsert_trip');
     return (row?.trip_id ?? row?.id) ?? null;
 };
 
@@ -415,6 +523,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
 
     if (error) {
         console.error('Failed to fetch trip', error);
+        reportDbFailure(error, { operation: 'get_trip', tripId, route: `/trip/${tripId}` });
         return null;
     }
 
@@ -445,6 +554,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             }
         } else if (!/not allowed/i.test(adminError.message || '')) {
             console.error('Failed admin trip-view fallback', adminError);
+            reportDbFailure(adminError, { operation: 'admin_get_trip_for_view', tripId, route: `/trip/${tripId}` });
         }
     }
 
@@ -464,6 +574,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             ? (data as { updated_at: string }).updated_at
             : null;
     }
+    reportDbSuccess('get_trip');
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(data.view_settings),
@@ -492,12 +603,14 @@ export const dbGetTripVersion = async (tripId: string, versionId: string) => {
 
     if (error) {
         console.error('Failed to fetch trip version', error);
+        reportDbFailure(error, { operation: 'get_trip_version', tripId, route: `/trip/${tripId}` });
         return null;
     }
 
     if (!data) return null;
     const trip = data.data as ITrip;
     const normalized = trip && trip.id !== tripId ? { ...trip, id: tripId } : trip;
+    reportDbSuccess('get_trip_version');
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(data.view_settings),
@@ -535,10 +648,12 @@ export const dbCreateTripVersion = async (
             debugLog('dbCreateTripVersion:rls', { code: error.code, message: error.message });
         }
         console.error('Failed to create trip version', error);
+        reportDbFailure(error, { operation: 'create_trip_version', tripId: trip.id, route: `/trip/${trip.id}` });
         return null;
     }
 
     const row = Array.isArray(data) ? data[0] : data;
+    reportDbSuccess('create_trip_version');
     return (row?.trip_id ?? row?.id) ?? null;
 };
 
@@ -566,11 +681,13 @@ export const dbAdminOverrideTripCommit = async (
     const { data, error } = await client.rpc('admin_override_trip_commit', payload);
     if (error) {
         console.error('Failed admin override trip commit', error);
+        reportDbFailure(error, { operation: 'admin_override_trip_commit', tripId: trip.id, route: `/trip/${trip.id}` });
         return null;
     }
 
     const row = Array.isArray(data) ? data[0] : data;
     if (!row || typeof row.trip_id !== 'string') return null;
+    reportDbSuccess('admin_override_trip_commit');
 
     return {
         tripId: row.trip_id as string,
@@ -579,7 +696,7 @@ export const dbAdminOverrideTripCommit = async (
     };
 };
 
-export const dbListTrips = async (): Promise<ITrip[]> => {
+export const dbListTrips = async (): Promise<ITrip[] | null> => {
     if (!DB_ENABLED) return [];
     const client = requireSupabase();
     await ensureDbSession();
@@ -602,9 +719,11 @@ export const dbListTrips = async (): Promise<ITrip[]> => {
 
     if (error) {
         console.error('Failed to list trips', error);
-        return [];
+        reportDbFailure(error, { operation: 'list_trips', route: '/trip/list' });
+        return null;
     }
 
+    reportDbSuccess('list_trips');
     return (data || [])
         .map((row) => {
             const trip = row.data as ITrip;
@@ -630,6 +749,9 @@ export const uploadLocalTripsToDb = async () => {
 export const syncTripsFromDb = async () => {
     if (!DB_ENABLED) return;
     const trips = await dbListTrips();
+    if (!trips) {
+        return;
+    }
     if (isSimulatedLoggedIn()) {
         const localTrips = getAllTrips().filter((trip) => (trip.status || 'active') !== 'archived');
         const dbIds = new Set(trips.map((trip) => trip.id));
@@ -642,8 +764,8 @@ export const syncTripsFromDb = async () => {
     setAllTrips(trips);
 };
 
-export const dbDeleteTrip = async (tripId: string) => {
-    if (!DB_ENABLED) return;
+export const dbDeleteTrip = async (tripId: string): Promise<boolean> => {
+    if (!DB_ENABLED) return false;
     const client = requireSupabase();
     await ensureDbSession();
     let { error } = await client
@@ -660,7 +782,11 @@ export const dbDeleteTrip = async (tripId: string) => {
     }
     if (error) {
         console.error('Failed to delete trip', error);
+        reportDbFailure(error, { operation: 'delete_trip', tripId, route: `/trip/${tripId}` });
+        return false;
     }
+    reportDbSuccess('delete_trip');
+    return true;
 };
 
 export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
@@ -677,10 +803,12 @@ export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
 
     if (error) {
         console.error('Failed to fetch user settings', error);
+        reportDbFailure(error, { operation: 'get_user_settings', route: '/settings' });
         return null;
     }
 
     if (!data) return null;
+    reportDbSuccess('get_user_settings');
 
     return {
         language: data.language ?? undefined,
@@ -735,11 +863,15 @@ export const dbUpsertUserSettings = async (settings: IUserSettings) => {
                     'Failed to save user settings: authenticated account has no matching user owner row.',
                     error
                 );
+                reportDbFailure(error, { operation: 'upsert_user_settings', route: '/settings' });
             }
             return;
         }
         console.error('Failed to save user settings', error);
+        reportDbFailure(error, { operation: 'upsert_user_settings', route: '/settings' });
+        return;
     }
+    reportDbSuccess('upsert_user_settings');
 };
 
 export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promise<{ token?: string; error?: string }> => {
@@ -759,12 +891,14 @@ export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promis
 
     if (error) {
         console.error('Failed to create share link', error);
+        reportDbFailure(error, { operation: 'create_share_link', tripId, route: `/trip/${tripId}` });
         return { error: error.message || 'Unknown error' };
     }
 
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return { error: 'No share token returned' };
     const token = row.token as string | undefined;
+    reportDbSuccess('create_share_link');
     return token ? { token } : { error: 'Invalid share token' };
 };
 
@@ -776,6 +910,7 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     const { data, error } = await client.rpc('get_shared_trip', { p_token: token });
     if (error) {
         console.error('Failed to load shared trip', error);
+        reportDbFailure(error, { operation: 'get_shared_trip', route: `/s/${token}` });
         return null;
     }
 
@@ -786,6 +921,7 @@ export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult 
     const normalizedBase = trip && row.trip_id && trip.id !== row.trip_id ? { ...trip, id: row.trip_id } : trip;
     if (!normalizedBase) return null;
     const normalized = applyTripAccessFields(normalizedBase, row as Record<string, unknown>);
+    reportDbSuccess('get_shared_trip');
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(row.view_settings),
@@ -810,6 +946,7 @@ export const dbGetSharedTripVersion = async (
     });
     if (error) {
         console.error('Failed to load shared trip version', error);
+        reportDbFailure(error, { operation: 'get_shared_trip_version', route: `/s/${token}` });
         return null;
     }
 
@@ -821,6 +958,7 @@ export const dbGetSharedTripVersion = async (
     if (!normalizedBase) return null;
     const normalized = applyTripAccessFields(normalizedBase, row as Record<string, unknown>);
     const resolvedVersionId = (row.version_id as string | undefined) || versionId;
+    reportDbSuccess('get_shared_trip_version');
 
     return {
         trip: normalized,
@@ -853,11 +991,13 @@ export const dbUpdateSharedTrip = async (
 
     if (error) {
         console.error('Failed to update shared trip', error);
+        reportDbFailure(error, { operation: 'update_shared_trip', tripId: trip.id, route: `/s/${token}` });
         return null;
     }
 
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;
+    reportDbSuccess('update_shared_trip');
     return row.version_id as string | null;
 };
 
@@ -878,10 +1018,12 @@ export const dbListTripShares = async (tripId?: string): Promise<ITripShareRecor
     const { data, error } = await query;
     if (error) {
         console.error('Failed to list trip shares', error);
+        reportDbFailure(error, { operation: 'list_trip_shares', tripId, route: '/trip/shares' });
         return [];
     }
 
     const nowMs = Date.now();
+    reportDbSuccess('list_trip_shares');
     return (data || []).map((row) => {
         const expiresAt = row.expires_at as string | null | undefined;
         const revokedAt = row.revoked_at as string | null | undefined;
@@ -919,9 +1061,11 @@ export const dbSetTripSharingEnabled = async (tripId: string, enabled: boolean):
             return false;
         }
         console.error('Failed to update trip sharing flag', error);
+        reportDbFailure(error, { operation: 'set_trip_sharing_enabled', tripId, route: `/trip/${tripId}` });
         return false;
     }
 
+    reportDbSuccess('set_trip_sharing_enabled');
     return true;
 };
 
@@ -939,9 +1083,11 @@ export const dbRevokeTripShares = async (tripId: string): Promise<number> => {
 
     if (error) {
         console.error('Failed to revoke trip share links', error);
+        reportDbFailure(error, { operation: 'revoke_trip_shares', tripId, route: `/trip/${tripId}` });
         return 0;
     }
 
+    reportDbSuccess('revoke_trip_shares');
     return Array.isArray(data) ? data.length : 0;
 };
 
@@ -975,6 +1121,7 @@ export const dbCanCreateTrip = async (): Promise<{
     const { data, error } = await client.rpc('can_create_trip');
     if (error) {
         console.error('Failed to check trip creation limit', error);
+        reportDbFailure(error, { operation: 'can_create_trip', route: '/create-trip' });
         return fallbackResult;
     }
 
@@ -984,6 +1131,7 @@ export const dbCanCreateTrip = async (): Promise<{
     const activeTripCount = Number.isFinite(activeTripCountRaw) ? activeTripCountRaw : fallbackCount;
     const maxTripCount = Number.isFinite(maxTripCountRaw) ? maxTripCountRaw : fallbackMax;
     const allowCreate = Boolean(row?.allow_create ?? activeTripCount < maxTripCount);
+    reportDbSuccess('can_create_trip');
 
     return {
         allowCreate,

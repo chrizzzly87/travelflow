@@ -131,6 +131,28 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'travelflow_offline_sync_queue_v1',
+      purpose: 'Stores queued trip edits while Supabase is unavailable so they can sync after reconnect.',
+      duration: 'Persistent (bounded queue)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
+      name: 'travelflow_sync_conflict_backups_v1',
+      purpose: 'Stores server-side trip backup snapshots captured before client-wins replay applies.',
+      duration: 'Persistent (bounded history)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
+      name: 'tf_client_error_buffer_v1',
+      purpose: 'Stores recent Supabase/client error diagnostics in a bounded local ring buffer.',
+      duration: 'Persistent (bounded history)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Debug/support diagnostics only; can be cleared safely.',
+    },
+    {
       name: 'travelflow_country_cache_v1',
       purpose: 'Caches reverse-geocoded country lookups for trip items.',
       duration: 'Persistent',
@@ -336,6 +358,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key; not used for production user profiling.',
     },
     {
+      name: 'tf_debug_supabase_connectivity_override',
+      purpose: 'Stores forced Supabase connectivity mode (offline/degraded/online) for outage simulation.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Debug-only key.',
+    },
+    {
       name: 'tf_debug_trip_expired_overrides_v1',
       purpose: 'Stores debug overrides for trip expiry simulation.',
       duration: 'Persistent',
@@ -414,6 +444,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       provider: 'TravelFlow',
       storage: 'sessionStorage',
       notes: 'Dynamic key suffix is module-specific.',
+    },
+    {
+      name: 'tf_connectivity_banner_dismissed_state_v1',
+      purpose: 'Stores per-session dismissal state for outage/connectivity planner banner.',
+      duration: 'Session',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      storageFallbacks: ['sessionStorage'],
     },
   ],
   analytics: [

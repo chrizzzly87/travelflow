@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { DB_ENABLED } from '../config/db';
 import {
     dbGetTrip,
@@ -73,6 +74,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const location = useLocation();
     const navigate = useNavigate();
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -87,11 +89,12 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     useEffect(() => {
         if (isAuthLoading) return;
         if (!tripId) return;
-        const loadKey = `${tripId}:${versionId || ''}`;
+        const loadKey = `${tripId}:${versionId || ''}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
 
         const load = async () => {
+            const connectivityState = connectivitySnapshot.state;
             const currentPath = buildPathFromLocationParts({
                 pathname: location.pathname,
                 search: location.search,
@@ -115,25 +118,43 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 return;
             }
 
-            if (DB_ENABLED) {
+            let localResolvedTrip: ITrip | null = null;
+            let localResolvedView: IViewSettings | undefined;
+
+            if (versionId) {
+                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
+                if (localEntry?.snapshot?.trip) {
+                    saveTrip(localEntry.snapshot.trip);
+                    localResolvedTrip = localEntry.snapshot.trip;
+                    localResolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    setViewSettings(localResolvedView);
+                    onTripLoaded(localResolvedTrip, localResolvedView);
+                    if (connectivityState === 'offline') return;
+                }
+            }
+
+            const localTrip = getTripById(tripId);
+            if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
+                localResolvedTrip = localTrip;
+                localResolvedView = localTrip.defaultView;
+                setViewSettings(localResolvedView);
+                onTripLoaded(localTrip, localResolvedView);
+                if (connectivityState === 'offline') return;
+            }
+
+            if (DB_ENABLED && connectivityState !== 'offline') {
                 await ensureDbSession();
                 if (versionId && isUuid(versionId)) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         saveTrip(version.trip);
                         const resolvedView = version.view ?? version.trip.defaultView;
-                        setViewSettings(resolvedView);
-                        onTripLoaded(version.trip, resolvedView);
-                        return;
-                    }
-                }
-                if (versionId) {
-                    const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
-                    if (localEntry?.snapshot?.trip) {
-                        saveTrip(localEntry.snapshot.trip);
-                        const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                        setViewSettings(resolvedView);
-                        onTripLoaded(localEntry.snapshot.trip, resolvedView);
+                        const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
+                        const dbUpdatedAt = version.trip.updatedAt ?? 0;
+                        if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
+                            setViewSettings(resolvedView);
+                            onTripLoaded(version.trip, resolvedView);
+                        }
                         return;
                     }
                 }
@@ -141,31 +162,26 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 if (dbTrip?.trip) {
                     saveTrip(dbTrip.trip);
                     const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
-                    setTripAccess(dbTrip.access);
-                    setViewSettings(resolvedView);
-                    onTripLoaded(dbTrip.trip, resolvedView);
+                    const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
+                    const dbUpdatedAt = dbTrip.trip.updatedAt ?? 0;
+                    if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
+                        setTripAccess(dbTrip.access);
+                        setViewSettings(resolvedView);
+                        onTripLoaded(dbTrip.trip, resolvedView);
+                    }
                     return;
                 }
             }
 
-            if (versionId) {
-                const localEntry = findHistoryEntryByUrl(tripId, buildTripUrl(tripId, versionId));
-                if (localEntry?.snapshot?.trip) {
-                    saveTrip(localEntry.snapshot.trip);
-                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
-                    setViewSettings(resolvedView);
-                    onTripLoaded(localEntry.snapshot.trip, resolvedView);
-                    return;
-                }
-            }
-
-            const localTrip = getTripById(tripId);
-            if (localTrip) {
-                onTripLoaded(localTrip, localTrip.defaultView);
+            if (localResolvedTrip || localTrip) {
                 return;
             }
 
             if (DB_ENABLED) {
+                if (connectivityState !== 'online') {
+                    navigate('/share-unavailable?reason=offline', { replace: true });
+                    return;
+                }
                 const sharedPath = await resolveSharedTripPathByTripId(tripId, versionId);
                 if (sharedPath) {
                     navigate(sharedPath, { replace: true });
@@ -197,6 +213,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
         onTripLoaded,
         tripId,
         versionId,
+        connectivitySnapshot.state,
     ]);
 
     if (!trip) return null;

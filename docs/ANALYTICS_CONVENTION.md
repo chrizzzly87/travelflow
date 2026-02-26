@@ -149,6 +149,16 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__admin_override--toggle` | — | `{ trip_id, enabled }` | `TripView.tsx` |
 | `trip_view__admin_owner--open_users` | — | `{ trip_id, owner_id }` | `TripView.tsx` |
 
+### Trip Connectivity
+| Event | Detail | Payload | File |
+|-------|--------|---------|------|
+| `trip_connectivity__banner--dismiss` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--retry_sync` | — | `{ connectivity_state, pending_count, failed_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--contact` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__banner--email` | — | `{ connectivity_state, pending_count }` | `ConnectivityStatusBanner.tsx` |
+| `trip_connectivity__trip_strip--retry_sync` | — | `{ trip_id, connectivity_state, pending_count, failed_count }` | `TripViewStatusBanners.tsx` |
+| `trip_connectivity__trip_strip--restore_backup` | — | `{ trip_id }` | `TripViewStatusBanners.tsx` |
+
 ### Not Found
 | Event | Detail | Payload | File |
 |-------|--------|---------|------|

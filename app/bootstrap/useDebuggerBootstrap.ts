@@ -2,11 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { readLocalStorageItem } from '../../services/browserStorageService';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from '../../services/simulatedLoginService';
+import {
+    applyConnectivityOverrideFromSearch,
+    clearConnectivityOverride,
+    getConnectivitySnapshot,
+    setConnectivityOverride,
+    type ConnectivityState,
+} from '../../services/supabaseHealthMonitor';
 
 type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
     toggleSimulatedLogin?: (force?: boolean) => boolean;
     getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
+    toggleSupabaseConnectivity?: (mode?: ConnectivityState | 'clear') => ConnectivityState;
+    getSupabaseConnectivityState?: () => ConnectivityState;
 };
 
 type AppDebugCommand =
@@ -17,6 +26,7 @@ type AppDebugCommand =
         seo?: boolean;
         a11y?: boolean;
         simulatedLogin?: boolean;
+        offline?: boolean | 'offline' | 'degraded' | 'online';
     };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -47,6 +57,10 @@ export const useDebuggerBootstrap = ({ appName, isDev }: { appName: string; isDe
             setShouldLoadDebugger(true);
         }
     }, [location.search, shouldLoadDebugger]);
+
+    useEffect(() => {
+        applyConnectivityOverrideFromSearch(location.search);
+    }, [location.search]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -109,10 +123,34 @@ export const useDebuggerBootstrap = ({ appName, isDev }: { appName: string; isDe
             return next;
         };
         host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');
+        host.toggleSupabaseConnectivity = (mode?: ConnectivityState | 'clear') => {
+            let nextState: ConnectivityState;
+            if (!mode) {
+                const current = getConnectivitySnapshot();
+                if (current.isForced) {
+                    nextState = clearConnectivityOverride().state;
+                } else {
+                    nextState = setConnectivityOverride('offline').state;
+                }
+            } else if (mode === 'clear') {
+                nextState = clearConnectivityOverride().state;
+            } else {
+                nextState = setConnectivityOverride(mode).state;
+            }
+
+            if (isDev) {
+                console.info(`[${appName}] toggleSupabaseConnectivity(${mode || 'toggle'}) -> ${nextState.toUpperCase()}`);
+            }
+
+            return nextState;
+        };
+        host.getSupabaseConnectivityState = () => getConnectivitySnapshot().state;
 
         return () => {
             delete host.toggleSimulatedLogin;
             delete host.getSimulatedLoginState;
+            delete host.toggleSupabaseConnectivity;
+            delete host.getSupabaseConnectivityState;
         };
     }, [appName, isDev]);
 

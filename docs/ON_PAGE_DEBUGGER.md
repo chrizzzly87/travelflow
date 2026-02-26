@@ -16,13 +16,16 @@ Opens and controls the toolbar.
 Supported calls:
 - `debug()` -> open toolbar
 - `debug(true|false)` -> force open/close
-- `debug({ open, tracking, seo, a11y, simulatedLogin, viewTransition })`
+- `debug({ open, tracking, seo, a11y, simulatedLogin, viewTransition, offline })`
 
 Examples:
 - `debug()`
 - `debug({ tracking: false })`
 - `debug({ seo: true, a11y: true })`
 - `debug({ simulatedLogin: true })`
+- `debug({ offline: 'offline' })`
+- `debug({ offline: 'degraded' })`
+- `debug({ offline: 'online' })`
 
 ### `window.onPageDebugger`
 Programmatic API object exposed by `OnPageDebugger`.
@@ -34,6 +37,9 @@ Current methods:
 - `setTracking(boolean)`
 - `toggleSimulatedLogin(next?)`
 - `getSimulatedLogin()`
+- `setSupabaseConnectivity(mode)` (`offline` | `degraded` | `clear`)
+- `getSupabaseConnectivity()`
+- `retryTripSync()`
 - `openUmami()`
 - `openOgPlayground()`
 - `openLighthouse()`
@@ -55,6 +61,18 @@ Behavior:
 Safe call pattern when debug APIs may be stripped in production:
 - `window.toggleSimulatedLogin?.()`
 - `window.toggleExpired?.(true)`
+- `window.toggleSupabaseConnectivity?.('offline')`
+- `window.retryTripSyncNow?.()`
+
+### `window.toggleSupabaseConnectivity(mode?)`
+Defined globally on all routes.
+
+Behavior:
+- `toggleSupabaseConnectivity('offline')` forces outage simulation mode.
+- `toggleSupabaseConnectivity('degraded')` forces degraded simulation mode.
+- `toggleSupabaseConnectivity('clear')` clears forced override and resumes health monitor.
+- Returns resulting connectivity state (`online` | `degraded` | `offline`).
+- Persists to local storage key `tf_debug_supabase_connectivity_override`.
 
 ### `window.toggleExpired(next?)` (trip page only)
 Defined only when route matches `/trip/:tripId`.
@@ -74,6 +92,7 @@ The toolbar now saves toggle state in `localStorage` and restores it after reloa
 - `tf_debug_panel_expanded` (`Expand/Collapse`)
 - `tf_debug_h1_highlight` (`Mark/Unmark H1`)
 - `tf_debug_simulated_login` (`Enable/Disable Sim Login`)
+- `tf_debug_supabase_connectivity_override` (`Force Supabase connectivity mode`)
 
 ## Route-aware behavior
 
@@ -182,6 +201,28 @@ Producers:
 Consumer:
 - `OnPageDebugger` (View Transition Diagnostics panel)
 
+Event name:
+- `tf:supabase-connectivity-status`
+
+Payload shape:
+```ts
+{
+  state: 'online' | 'degraded' | 'offline';
+  reason: string | null;
+  lastSuccessAt: number | null;
+  lastFailureAt: number | null;
+  consecutiveFailures: number;
+  isForced: boolean;
+  forcedState: 'online' | 'degraded' | 'offline' | null;
+}
+```
+
+Producer:
+- `supabaseHealthMonitor`
+
+Consumer:
+- `OnPageDebugger`, planner outage banner/hook state
+
 ## Quick verification checklist
 - `debug()` opens toolbar.
 - Tracking boxes appear on known tracked controls.
@@ -189,4 +230,6 @@ Consumer:
 - On `/trip/:id`, SEO UI is hidden and `Set Trip Expired` is visible.
 - `window.toggleExpired(true)` shows expired banner and disables editing.
 - `window.toggleSimulatedLogin(true)` sets simulated login to enabled.
+- `window.toggleSupabaseConnectivity('offline')` forces outage mode for planner resilience checks.
+- `window.retryTripSyncNow()` retries failed queued trip sync entries.
 - On marketing pages, Meta + H1 tools are visible and H1 highlight works.

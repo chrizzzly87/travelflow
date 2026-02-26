@@ -27,6 +27,21 @@ import {
 } from '../services/browserStorageService';
 import { APP_NAME } from '../config/appGlobals';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
+import { getQueueSnapshot, subscribeOfflineQueue, type OfflineQueueSnapshot } from '../services/offlineChangeQueue';
+import {
+    clearConnectivityOverride,
+    getConnectivitySnapshot,
+    setConnectivityOverride,
+    subscribeConnectivityStatus,
+    type ConnectivitySnapshot,
+    type ConnectivityState,
+} from '../services/supabaseHealthMonitor';
+import {
+    getSyncRunSnapshot,
+    retrySyncNow,
+    subscribeSyncStatus,
+    type SyncRunSnapshot,
+} from '../services/tripSyncManager';
 import {
     PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
     PREFETCH_STATS_DEBUG_EVENT,
@@ -50,6 +65,7 @@ const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
+const CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY = 'tf_debug_supabase_connectivity_override';
 
 interface TrackingBox {
     id: string;
@@ -153,6 +169,9 @@ interface OnPageDebuggerApi {
     setTracking: (enabled: boolean) => void;
     toggleSimulatedLogin: (next?: boolean) => boolean;
     getSimulatedLogin: () => boolean;
+    setSupabaseConnectivity: (mode: ConnectivityState | 'clear') => ConnectivityState;
+    getSupabaseConnectivity: () => ConnectivityState;
+    retryTripSync: () => Promise<SyncRunSnapshot>;
     openUmami: () => void;
     openOgPlayground: () => void;
     openLighthouse: () => void;
@@ -171,6 +190,7 @@ type DebugCommand =
         a11y?: boolean;
         simulatedLogin?: boolean;
         viewTransition?: boolean;
+        offline?: boolean | 'offline' | 'degraded' | 'online';
     };
 
 declare global {
@@ -180,6 +200,9 @@ declare global {
         toggleExpired?: (next?: boolean) => boolean;
         toggleSimulatedLogin?: (next?: boolean) => boolean;
         getSimulatedLogin?: () => boolean;
+        toggleSupabaseConnectivity?: (mode?: ConnectivityState | 'clear') => ConnectivityState;
+        getSupabaseConnectivityState?: () => ConnectivityState;
+        retryTripSyncNow?: () => Promise<SyncRunSnapshot>;
     }
 }
 
@@ -576,6 +599,9 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [connectivitySnapshot, setConnectivitySnapshot] = useState<ConnectivitySnapshot>(() => getConnectivitySnapshot());
+    const [offlineQueueSnapshot, setOfflineQueueSnapshot] = useState<OfflineQueueSnapshot>(() => getQueueSnapshot());
+    const [syncRunSnapshot, setSyncRunSnapshot] = useState<SyncRunSnapshot>(() => getSyncRunSnapshot());
     const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
     const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
@@ -667,6 +693,23 @@ export const OnPageDebugger: React.FC = () => {
         window.addEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
         return () => {
             window.removeEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
+        const unsubscribeConnectivity = subscribeConnectivityStatus((next) => {
+            setConnectivitySnapshot(next);
+        });
+        const unsubscribeQueue = subscribeOfflineQueue((next) => {
+            setOfflineQueueSnapshot(next);
+        });
+        const unsubscribeSync = subscribeSyncStatus((next) => {
+            setSyncRunSnapshot(next);
+        });
+        return () => {
+            unsubscribeConnectivity();
+            unsubscribeQueue();
+            unsubscribeSync();
         };
     }, []);
 
@@ -897,6 +940,24 @@ export const OnPageDebugger: React.FC = () => {
         return setSimulatedLogin(resolved);
     }, [setSimulatedLogin]);
 
+    const setSupabaseConnectivityMode = useCallback((mode?: ConnectivityState | 'clear'): ConnectivityState => {
+        if (!mode) {
+            const current = getConnectivitySnapshot();
+            if (current.isForced) {
+                return clearConnectivityOverride().state;
+            }
+            return setConnectivityOverride('offline').state;
+        }
+        if (mode === 'clear') {
+            return clearConnectivityOverride().state;
+        }
+        return setConnectivityOverride(mode).state;
+    }, []);
+
+    const retryTripSyncNow = useCallback(async (): Promise<SyncRunSnapshot> => {
+        return retrySyncNow();
+    }, []);
+
     const handleTripExpiredEvent = useCallback((event: Event) => {
         const detail = (event as CustomEvent<TripExpiredDebugDetail>).detail;
         if (!detail) return;
@@ -1008,6 +1069,9 @@ export const OnPageDebugger: React.FC = () => {
         setTracking: (enabled: boolean) => setTrackingEnabled(enabled),
         toggleSimulatedLogin,
         getSimulatedLogin: () => simulatedLoggedInRef.current,
+        setSupabaseConnectivity: setSupabaseConnectivityMode,
+        getSupabaseConnectivity: () => getConnectivitySnapshot().state,
+        retryTripSync: retryTripSyncNow,
         openUmami,
         openOgPlayground,
         openLighthouse,
@@ -1015,7 +1079,7 @@ export const OnPageDebugger: React.FC = () => {
         runA11yAudit: runA11yAuditAndStore,
         runViewTransitionAudit: runViewTransitionAuditAndStore,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
+    }), [isOpen, openLighthouse, openOgPlayground, openUmami, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setSupabaseConnectivityMode, toggleSimulatedLogin, trackingEnabled]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
@@ -1040,6 +1104,13 @@ export const OnPageDebugger: React.FC = () => {
                 if (typeof command.simulatedLogin === 'boolean') {
                     toggleSimulatedLogin(command.simulatedLogin);
                 }
+                if (typeof command.offline === 'boolean') {
+                    setSupabaseConnectivityMode(command.offline ? 'offline' : 'clear');
+                } else if (command.offline === 'offline' || command.offline === 'degraded') {
+                    setSupabaseConnectivityMode(command.offline);
+                } else if (command.offline === 'online') {
+                    setSupabaseConnectivityMode('clear');
+                }
                 if (command.seo && showSeoTools) {
                     runSeoAuditAndStore();
                 }
@@ -1062,13 +1133,19 @@ export const OnPageDebugger: React.FC = () => {
         window.onPageDebugger = api;
         window.toggleSimulatedLogin = (next?: boolean) => toggleSimulatedLogin(next);
         window.getSimulatedLogin = () => simulatedLoggedInRef.current;
+        window.toggleSupabaseConnectivity = (mode?: ConnectivityState | 'clear') => setSupabaseConnectivityMode(mode);
+        window.getSupabaseConnectivityState = () => getConnectivitySnapshot().state;
+        window.retryTripSyncNow = () => retryTripSyncNow();
         return () => {
             delete window.debug;
             delete window.onPageDebugger;
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
+            delete window.toggleSupabaseConnectivity;
+            delete window.getSupabaseConnectivityState;
+            delete window.retryTripSyncNow;
         };
-    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+    }, [api, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setSupabaseConnectivityMode, showSeoTools, toggleSimulatedLogin]);
 
     useEffect(() => {
         return () => {
@@ -1203,6 +1280,25 @@ export const OnPageDebugger: React.FC = () => {
                         }`}>
                             Sim login {simulatedLoggedIn ? 'on' : 'off'}
                         </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            connectivitySnapshot.state === 'offline'
+                                ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                : connectivitySnapshot.state === 'degraded'
+                                    ? 'border-amber-300 bg-amber-50 text-amber-700'
+                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                        }`}>
+                            Supabase {connectivitySnapshot.state}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Queue {offlineQueueSnapshot.pendingCount}
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            syncRunSnapshot.isSyncing
+                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                        }`}>
+                            Sync {syncRunSnapshot.isSyncing ? 'running' : 'idle'}
+                        </span>
                         {isTripDetailRoute && tripExpiredToggleAvailable && (
                             <span className={`rounded-md border px-2 py-1 text-xs ${
                                 tripExpiredDebug
@@ -1294,6 +1390,56 @@ export const OnPageDebugger: React.FC = () => {
 
                                 <button
                                     type="button"
+                                    onClick={() => setSupabaseConnectivityMode('offline')}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                        connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
+                                            ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <Flask size={16} weight="duotone" />
+                                    Force Supabase Offline
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setSupabaseConnectivityMode('degraded')}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                        connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
+                                            ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <Flask size={16} weight="duotone" />
+                                    Force Supabase Degraded
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setSupabaseConnectivityMode('clear')}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                        connectivitySnapshot.isForced
+                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                            : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <Flask size={16} weight="duotone" />
+                                    {connectivitySnapshot.isForced ? 'Clear Supabase Override' : 'Force Supabase Online'}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        void retryTripSyncNow();
+                                    }}
+                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <RocketLaunch size={16} weight="duotone" />
+                                    Retry Trip Sync
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={openOgPlayground}
                                     className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                                 >
@@ -1375,6 +1521,8 @@ export const OnPageDebugger: React.FC = () => {
                                 <span>
                                     Console: run <code className="rounded bg-slate-200 px-1 py-0.5">debug()</code> to reopen,{' '}
                                     <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation,{' '}
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSupabaseConnectivity('offline')</code> for outage simulation,{' '}
+                                    <code className="rounded bg-slate-200 px-1 py-0.5">retryTripSyncNow()</code> to replay failed queue items,{' '}
                                     <code className="rounded bg-slate-200 px-1 py-0.5">onPageDebugger.runViewTransitionAudit()</code> for transition anchors.
                                 </span>
                                 <button
@@ -1388,6 +1536,26 @@ export const OnPageDebugger: React.FC = () => {
                                 >
                                     {autoOpenEnabled ? 'Auto-open enabled' : 'Enable auto-open'}
                                 </button>
+                            </div>
+
+                            <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-4">
+                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <strong className="text-slate-900">Connectivity:</strong>{' '}
+                                    {connectivitySnapshot.state}
+                                    {connectivitySnapshot.isForced ? ' (forced)' : ''}
+                                </div>
+                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <strong className="text-slate-900">Override key:</strong>{' '}
+                                    <code>{CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY}</code>
+                                </div>
+                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <strong className="text-slate-900">Queue:</strong>{' '}
+                                    pending {offlineQueueSnapshot.pendingCount}, failed {offlineQueueSnapshot.failedCount}
+                                </div>
+                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <strong className="text-slate-900">Replay:</strong>{' '}
+                                    processed {syncRunSnapshot.processedCount}, ok {syncRunSnapshot.successCount}, failed {syncRunSnapshot.failedDuringRun}
+                                </div>
                             </div>
 
                             <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">

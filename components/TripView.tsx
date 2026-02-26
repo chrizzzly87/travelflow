@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem, IViewSettings, ShareMode } from '../types';
 import { GoogleMapsLoader } from './GoogleMapsLoader';
 import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UNIT, buildShareUrl, formatDistance, getTimelineBounds, getTripDistanceKm, isInternalMapColorModeControlEnabled, normalizeMapColorMode } from '../utils';
@@ -13,6 +14,9 @@ import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../services/authNavigationService';
 import { useAuth } from '../hooks/useAuth';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { getLatestConflictBackupForTrip } from '../services/offlineChangeQueue';
 import { loadLazyComponentWithRecovery } from '../services/lazyImportRecovery';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useDeferredMapBootstrap } from './tripview/useDeferredMapBootstrap';
@@ -42,6 +46,7 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
+import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
     ChangeTone,
     getToneMeta,
@@ -735,8 +740,11 @@ const useTripViewRender = ({
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t } = useTranslation('common');
     const { openLoginModal } = useLoginModal();
     const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -932,6 +940,65 @@ const useTripViewRender = ({
         tripId: trip.id,
         showToast,
     });
+
+    useEffect(() => {
+        const handleSyncToast = (event: Event) => {
+            const detail = (event as CustomEvent<SyncToastEventDetail | undefined>).detail;
+            if (!detail) return;
+            if (detail.type === 'sync_started') {
+                const messageKey = detail.pendingCount === 1
+                    ? 'connectivity.toast.syncStartedOne'
+                    : 'connectivity.toast.syncStartedMany';
+                showToast(t(messageKey, { count: detail.pendingCount }), {
+                    tone: 'info',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_completed') {
+                showToast(t('connectivity.toast.syncCompleted'), {
+                    tone: 'add',
+                    title: t('connectivity.toast.title'),
+                });
+                return;
+            }
+            if (detail.type === 'sync_partial_failure') {
+                const messageKey = detail.failedCount === 1
+                    ? 'connectivity.toast.syncPartialFailureOne'
+                    : 'connectivity.toast.syncPartialFailureMany';
+                showToast(t(messageKey, { count: detail.failedCount }), {
+                    tone: 'neutral',
+                    title: t('connectivity.toast.title'),
+                });
+            }
+        };
+
+        window.addEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        return () => {
+            window.removeEventListener(TRIP_SYNC_TOAST_EVENT, handleSyncToast as EventListener);
+        };
+    }, [showToast, t]);
+
+    const handleRestoreServerBackup = useCallback(() => {
+        const latestConflictBackup = getLatestConflictBackupForTrip(trip.id);
+        if (!latestConflictBackup) return;
+        const restoredTrip: ITrip = {
+            ...latestConflictBackup.serverTripSnapshot,
+            updatedAt: Date.now(),
+        };
+        onUpdateTrip(restoredTrip);
+        if (onCommitState) {
+            onCommitState(
+                restoredTrip,
+                restoredTrip.defaultView ?? initialViewSettings ?? trip.defaultView,
+                { label: 'Data: Restored server backup' }
+            );
+        }
+        showToast(t('connectivity.toast.serverBackupRestored'), {
+            tone: 'neutral',
+            title: t('connectivity.toast.title'),
+        });
+    }, [initialViewSettings, onCommitState, onUpdateTrip, showToast, t, trip.defaultView, trip.id]);
 
     const requireEdit = useCallback(() => {
         if (isTripLockedByArchive) {
@@ -1399,6 +1466,11 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const showOwnedTripConnectivityStatus = !shareStatus && !isExamplePreview && !isAdminFallbackView;
+    const latestConflictBackup = useMemo(() => {
+        if (!showOwnedTripConnectivityStatus) return null;
+        return getLatestConflictBackupForTrip(trip.id);
+    }, [showOwnedTripConnectivityStatus, syncSnapshot.hasConflictBackups, syncSnapshot.lastRunAt, trip.id]);
 
     const timelineCanvas = (
         <TripTimelineCanvas
@@ -1550,6 +1622,18 @@ const useTripViewRender = ({
                     expirationRelativeLabel={expirationRelativeLabel}
                     onPaywallLoginClick={handlePaywallLoginClick}
                     tripId={trip.id}
+                    connectivityState={showOwnedTripConnectivityStatus ? connectivitySnapshot.state : undefined}
+                    connectivityForced={showOwnedTripConnectivityStatus ? connectivitySnapshot.isForced : false}
+                    pendingSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.pendingCount : 0}
+                    failedSyncCount={showOwnedTripConnectivityStatus ? syncSnapshot.failedCount : 0}
+                    isSyncingQueue={showOwnedTripConnectivityStatus ? syncSnapshot.isSyncing : false}
+                    onRetrySyncQueue={showOwnedTripConnectivityStatus
+                        ? (() => {
+                            void retrySyncNow();
+                        })
+                        : undefined}
+                    hasConflictBackupForTrip={showOwnedTripConnectivityStatus ? Boolean(latestConflictBackup) : false}
+                    onRestoreConflictBackup={showOwnedTripConnectivityStatus && latestConflictBackup ? handleRestoreServerBackup : undefined}
                     exampleTripBanner={exampleTripBanner}
                 />
 

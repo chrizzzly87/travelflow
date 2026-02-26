@@ -5,6 +5,8 @@ import { readLocalStorageItem, writeLocalStorageItem } from '../services/browser
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
+import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
@@ -1170,15 +1172,41 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
     if (!shouldDelete) return;
 
+    const tripToArchive = trips.find((trip) => trip.id === id);
     deleteTrip(id);
     if (DB_ENABLED) {
-      void dbDeleteTrip(id);
+      const archivedSnapshot = tripToArchive
+        ? {
+            ...tripToArchive,
+            status: 'archived' as const,
+            updatedAt: Date.now(),
+          }
+        : null;
+      const connectivityState = getConnectivitySnapshot().state;
+      if (archivedSnapshot && connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: archivedSnapshot.id,
+          tripSnapshot: archivedSnapshot,
+          viewSnapshot: archivedSnapshot.defaultView ?? null,
+          label: 'Data: Archived trip',
+        });
+      } else {
+        const deleted = await dbDeleteTrip(id);
+        if (!deleted && archivedSnapshot) {
+          enqueueTripCommitAndSync({
+            tripId: archivedSnapshot.id,
+            tripSnapshot: archivedSnapshot,
+            viewSnapshot: archivedSnapshot.defaultView ?? null,
+            label: 'Data: Archived trip',
+          });
+        }
+      }
     }
     if (hoverAnchor?.tripId === id) hideHoverNow();
     void refreshTrips();
   };
 
-  const handleToggleFavorite = (trip: ITrip) => {
+  const handleToggleFavorite = async (trip: ITrip) => {
     const updatedTrip: ITrip = {
       ...trip,
       isFavorite: !trip.isFavorite,
@@ -1187,7 +1215,25 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     saveTrip(updatedTrip);
     if (DB_ENABLED) {
-      void dbUpsertTrip(updatedTrip);
+      const connectivityState = getConnectivitySnapshot().state;
+      if (connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: updatedTrip.id,
+          tripSnapshot: updatedTrip,
+          viewSnapshot: updatedTrip.defaultView ?? null,
+          label: 'Data: Updated trip favorite',
+        });
+      } else {
+        const upserted = await dbUpsertTrip(updatedTrip);
+        if (!upserted) {
+          enqueueTripCommitAndSync({
+            tripId: updatedTrip.id,
+            tripSnapshot: updatedTrip,
+            viewSnapshot: updatedTrip.defaultView ?? null,
+            label: 'Data: Updated trip favorite',
+          });
+        }
+      }
     }
     if (onUpdateTrip && currentTripId === updatedTrip.id) {
       onUpdateTrip(updatedTrip);

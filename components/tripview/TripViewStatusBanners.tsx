@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
+import { Spinner } from '../ui/spinner';
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;
@@ -35,6 +38,14 @@ interface TripViewStatusBannersProps {
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
     tripId: string;
+    connectivityState?: ConnectivityState;
+    connectivityForced?: boolean;
+    pendingSyncCount?: number;
+    failedSyncCount?: number;
+    isSyncingQueue?: boolean;
+    onRetrySyncQueue?: () => void;
+    hasConflictBackupForTrip?: boolean;
+    onRestoreConflictBackup?: () => void;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -65,10 +76,115 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     expirationRelativeLabel,
     onPaywallLoginClick,
     tripId,
+    connectivityState,
+    connectivityForced = false,
+    pendingSyncCount = 0,
+    failedSyncCount = 0,
+    isSyncingQueue = false,
+    onRetrySyncQueue,
+    hasConflictBackupForTrip = false,
+    onRestoreConflictBackup,
     exampleTripBanner,
 }) => {
+    const { t } = useTranslation('common');
+    const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
+    const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
+    const queueCountVariant = pendingSyncCount === 0 ? 'None' : (pendingSyncCount === 1 ? 'One' : 'Many');
+    const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
+
     return (
         <>
+            {shouldShowConnectivityStrip && (
+                <div className={`px-4 sm:px-6 py-2 border-b text-xs flex items-center justify-between gap-3 ${
+                    connectivityState === 'offline'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        : 'border-amber-200 bg-amber-50 text-amber-900'
+                }`}>
+                    <span>
+                        {t(`connectivity.tripStrip.${connectivityState}.message${queueCountVariant}`, { count: pendingSyncCount })}
+                        {connectivityForced ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
+                    </span>
+                    {failedSyncCount > 0 && onRetrySyncQueue && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                                    trip_id: tripId,
+                                    failed_count: failedSyncCount,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState,
+                                });
+                                onRetrySyncQueue();
+                            }}
+                            className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                            {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
+                                trip_id: tripId,
+                                failed_count: failedSyncCount,
+                                pending_count: pendingSyncCount,
+                                connectivity_state: connectivityState,
+                            })}
+                        >
+                            {t('connectivity.tripStrip.retry')}
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {shouldShowSyncStrip && (
+                <div className="px-4 sm:px-6 py-2 border-b border-sky-200 bg-sky-50 text-sky-900 text-xs flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-2">
+                        {isSyncingQueue && <Spinner className="h-3.5 w-3.5" />}
+                        {isSyncingQueue
+                            ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
+                            : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount })}
+                    </span>
+                    {failedSyncCount > 0 && onRetrySyncQueue && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                                    trip_id: tripId,
+                                    failed_count: failedSyncCount,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState || 'online',
+                                });
+                                onRetrySyncQueue();
+                            }}
+                            className="px-3 py-1 rounded-md bg-sky-100 text-sky-900 text-xs font-semibold hover:bg-sky-200"
+                            {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
+                                trip_id: tripId,
+                                failed_count: failedSyncCount,
+                                pending_count: pendingSyncCount,
+                                connectivity_state: connectivityState || 'online',
+                            })}
+                        >
+                            {t('connectivity.tripStrip.retry')}
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {hasConflictBackupForTrip && onRestoreConflictBackup && (
+                <div className="px-4 sm:px-6 py-2 border-b border-violet-200 bg-violet-50 text-violet-900 text-xs flex items-center justify-between gap-3">
+                    <span>{t('connectivity.tripStrip.serverBackup')}</span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            trackEvent('trip_connectivity__trip_strip--restore_backup', {
+                                trip_id: tripId,
+                            });
+                            onRestoreConflictBackup();
+                        }}
+                        className="px-3 py-1 rounded-md bg-violet-100 text-violet-900 text-xs font-semibold hover:bg-violet-200"
+                        {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--restore_backup', {
+                            trip_id: tripId,
+                        })}
+                    >
+                        {t('connectivity.tripStrip.restoreServerVersion')}
+                    </button>
+                </div>
+            )}
+
             {shareStatus && (
                 <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
                     <span>

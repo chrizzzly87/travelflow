@@ -18,12 +18,15 @@ const mocks = vi.hoisted(() => ({
     isAuthenticated: false,
     isLoading: false,
   },
+  dbEnabled: false,
+  connectivityState: 'online' as 'online' | 'degraded' | 'offline',
   decompressTrip: vi.fn(),
   getTripById: vi.fn(),
   saveTrip: vi.fn(),
   findHistoryEntryByUrl: vi.fn(),
   rememberAuthReturnPath: vi.fn(),
   useDbSync: vi.fn(),
+  useConnectivityStatus: vi.fn(),
   dbGetTrip: vi.fn(),
   dbGetTripVersion: vi.fn(),
   ensureDbSession: vi.fn(),
@@ -47,8 +50,24 @@ vi.mock('../../../hooks/useDbSync', () => ({
   useDbSync: mocks.useDbSync,
 }));
 
+vi.mock('../../../hooks/useConnectivityStatus', () => ({
+  useConnectivityStatus: () => ({
+    snapshot: {
+      state: mocks.connectivityState,
+      reason: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      consecutiveFailures: 0,
+      isForced: false,
+      forcedState: null,
+    },
+  }),
+}));
+
 vi.mock('../../../config/db', () => ({
-  DB_ENABLED: false,
+  get DB_ENABLED() {
+    return mocks.dbEnabled;
+  },
 }));
 
 vi.mock('../../../services/storageService', () => ({
@@ -104,6 +123,8 @@ describe('routes/TripLoaderRoute', () => {
     mocks.route.hash = '';
     mocks.auth.isAuthenticated = false;
     mocks.auth.isLoading = false;
+    mocks.dbEnabled = false;
+    mocks.connectivityState = 'online';
     mocks.decompressTrip.mockReturnValue(null);
     mocks.getTripById.mockReturnValue(undefined);
     mocks.findHistoryEntryByUrl.mockReturnValue(null);
@@ -166,5 +187,74 @@ describe('routes/TripLoaderRoute', () => {
     expect(loadedTrip.isFavorite).toBe(true);
     expect(loadedView).toEqual(sharedView);
     expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('loads local trip immediately when connectivity is offline', async () => {
+    mocks.dbEnabled = true;
+    mocks.connectivityState = 'offline';
+    mocks.route.tripId = 'trip-local-offline';
+    mocks.route.pathname = '/trip/trip-local-offline';
+    const localTrip = makeTrip({ id: 'trip-local-offline', title: 'Local offline trip' });
+    mocks.getTripById.mockReturnValue(localTrip);
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localTrip.defaultView);
+    });
+    expect(mocks.dbGetTrip).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalledWith('/share-unavailable?reason=offline', { replace: true });
+  });
+
+  it('redirects to offline fallback when trip is missing and connectivity is offline', async () => {
+    mocks.dbEnabled = true;
+    mocks.connectivityState = 'offline';
+    mocks.route.tripId = 'trip-missing-offline';
+    mocks.route.pathname = '/trip/trip-missing-offline';
+    mocks.getTripById.mockReturnValue(undefined);
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.navigate).toHaveBeenCalledWith('/share-unavailable?reason=offline', { replace: true });
+    });
+    expect(props.onTripLoaded).not.toHaveBeenCalled();
+  });
+
+  it('refreshes from DB after reconnect when newer data is available', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-reconnect';
+    mocks.route.pathname = '/trip/trip-reconnect';
+    const localTrip = makeTrip({ id: 'trip-reconnect', title: 'Local copy', updatedAt: 1000 });
+    const dbTrip = makeTrip({ id: 'trip-reconnect', title: 'DB copy', updatedAt: 2000 });
+    mocks.getTripById.mockReturnValue(localTrip);
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: dbTrip.defaultView,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'owner@example.com',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    mocks.connectivityState = 'offline';
+    const props = makeRouteProps();
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localTrip.defaultView);
+    });
+
+    mocks.connectivityState = 'online';
+    view.rerender(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(dbTrip, dbTrip.defaultView);
+    });
   });
 });

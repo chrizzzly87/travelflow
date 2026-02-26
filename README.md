@@ -146,6 +146,7 @@ All available `pnpm` commands in this repo:
 - `pnpm test:run` — Run the full Vitest suite once.
 - `pnpm test:core` — Run core-module Vitest coverage gate (85/80 thresholds).
 - `pnpm test:e2e` — Run Playwright end-to-end smoke tests.
+- `pnpm test:e2e:offline` — Run opt-in Playwright outage/offline resilience checks (navigator.onLine emulation + forced outage banner flows).
 - `pnpm build:images` — Generate missing inspiration source images, then create responsive derivatives and optimize oversized assets.
 - `pnpm inspirations:images:optimize` — Optimize inspiration images only (`--skip-generation`).
 - `pnpm inspirations:images:jobs` — Build inspiration image batch job file only.
