@@ -11,6 +11,20 @@ const supabaseMocks = vi.hoisted(() => ({
 
 vi.mock('../../services/supabaseClient', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../services/supabaseClient')>();
+  const resolveSelectMaybeSingle = (query: string) => {
+    const compact = query.replace(/\s+/g, '');
+    if (query.includes('passport_sticker_selection')) {
+      return supabaseMocks.fullMaybeSingle();
+    }
+    if (compact === 'id,username') {
+      return supabaseMocks.lookupMaybeSingle();
+    }
+    if (query.includes('username_changed_at')) {
+      return supabaseMocks.legacyMaybeSingle();
+    }
+    return supabaseMocks.minimalMaybeSingle();
+  };
+
   return {
     ...actual,
     supabase: {
@@ -20,45 +34,10 @@ vi.mock('../../services/supabaseClient', async (importOriginal) => {
       from: () => ({
         select: (query: string) => ({
           eq: () => ({
-            maybeSingle: () => {
-              const compact = query.replace(/\s+/g, '');
-              if (query.includes('passport_sticker_selection')) {
-                return supabaseMocks.fullMaybeSingle();
-              }
-              if (compact === 'id,username') {
-                return supabaseMocks.lookupMaybeSingle();
-              }
-              if (query.includes('username_changed_at')) {
-                return supabaseMocks.legacyMaybeSingle();
-              }
-              return supabaseMocks.minimalMaybeSingle();
-            },
+            maybeSingle: () => resolveSelectMaybeSingle(query),
           }),
-        }),
-        ilike: () => ({
-          select: (query: string) => ({
-            maybeSingle: () => {
-              if (query.includes('passport_sticker_selection')) {
-                return supabaseMocks.fullMaybeSingle();
-              }
-              if (query.includes('username_changed_at')) {
-                return supabaseMocks.legacyMaybeSingle();
-              }
-              return supabaseMocks.minimalMaybeSingle();
-            },
-          }),
-        }),
-        eq: () => ({
-          select: (query: string) => ({
-            maybeSingle: () => {
-              if (query.includes('passport_sticker_selection')) {
-                return supabaseMocks.fullMaybeSingle();
-              }
-              if (query.includes('username_changed_at')) {
-                return supabaseMocks.legacyMaybeSingle();
-              }
-              return supabaseMocks.minimalMaybeSingle();
-            },
+          ilike: () => ({
+            maybeSingle: () => resolveSelectMaybeSingle(query),
           }),
         }),
       }),
@@ -67,7 +46,11 @@ vi.mock('../../services/supabaseClient', async (importOriginal) => {
   };
 });
 
-import { checkUsernameAvailability, getCurrentUserProfile } from '../../services/profileService';
+import {
+  checkUsernameAvailability,
+  getCurrentUserProfile,
+  resolvePublicProfileByHandle,
+} from '../../services/profileService';
 
 describe('services/profileService username cooldown fallback', () => {
   beforeEach(() => {
@@ -172,5 +155,54 @@ describe('services/profileService username cooldown fallback', () => {
     expect(profile?.id).toBe('user-1');
     expect(profile?.username).toBe('traveler');
     expect(profile?.usernameChangedAt).toBeNull();
+  });
+
+  it('resolves public profile when RPC row requires secondary profile lookup', async () => {
+    supabaseMocks.rpc.mockImplementation(async (fn: string) => {
+      if (fn === 'get_current_user_access') {
+        return {
+          data: null,
+          error: {
+            message: 'Not authenticated',
+          },
+        };
+      }
+
+      if (fn === 'profile_resolve_public_handle') {
+        return {
+          data: [
+            {
+              status: 'found',
+              canonical_username: 'traveler',
+              id: 'user-1',
+              display_name: 'Chris',
+              first_name: 'Chris',
+              last_name: 'W',
+              username: 'traveler',
+              bio: '',
+              country: 'DE',
+              city: 'Hamburg',
+              preferred_language: 'en',
+              public_profile_enabled: true,
+              account_status: 'active',
+              username_changed_at: '2026-01-15T00:00:00Z',
+            },
+          ],
+          error: null,
+        };
+      }
+
+      return {
+        data: null,
+        error: null,
+      };
+    });
+
+    const result = await resolvePublicProfileByHandle('traveler');
+
+    expect(result.status).toBe('found');
+    expect(result.profile?.id).toBe('user-1');
+    expect(result.profile?.username).toBe('traveler');
+    expect(result.canonicalUsername).toBe('traveler');
   });
 });

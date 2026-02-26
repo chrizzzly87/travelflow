@@ -22,6 +22,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔧 Kept orbit text as a reusable component for later, but removed it from active profile avatar rendering.
 - [x] [New feature] 🔗 Added public profile handles at `/u/:username` with canonical redirect handling for renamed usernames.
 - [x] [Fixed] 🧭 Hardened public-profile handle resolution so valid profiles no longer fall into false “profile not found” states in mixed-schema environments.
+- [x] [Fixed] 🔎 Fixed public handle resolution for canonical usernames (including underscore handles) by correcting fallback profile lookup chaining so `/u/{username}` no longer drops into false “Profile not found”.
 - [x] [Fixed] 🧭 Decoupled public-profile identity loading from public-trip loading so profile pages still render even if trip queries fail temporarily.
 - [x] [Improved] 🚀 Added a guest-first public-profile fallback CTA so signed-out visitors can register for free directly from unavailable/private profile states.
 - [x] [Improved] 🛡️ Allowed admins to open user public profiles even when profile visibility is disabled, so moderation/review workflows are never blocked.
@@ -78,4 +79,5 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [ ] [Internal] 🧾 Added profile schema/service support for explicit passport sticker selection persistence in addition to sticker-position persistence.
 - [ ] [Internal] 🧪 Added and updated regression coverage for greeting/name formatting, country-flag derivation, profile sharing action, and public profile behavior.
 - [ ] [Internal] 🧪 Added regression coverage for username cooldown fallback loading and `@`-prefixed username normalization on save.
+- [ ] [Internal] 🧪 Added regression coverage for public-profile resolver fallback paths after Supabase query-chain hardening.
 - [ ] [Internal] 📌 Tracked deferred backend work in issue #181 for DB-backed pins, reactions, bookmarks, follows, and anti-abuse/RLS contracts.

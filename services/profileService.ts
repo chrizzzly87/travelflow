@@ -92,6 +92,18 @@ const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
 const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
 const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
 const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
+type ProfileSelectTier = 'full' | 'legacy' | 'minimal';
+let profileSelectTierHint: ProfileSelectTier = 'full';
+const PROFILE_SELECT_BY_TIER: Record<ProfileSelectTier, string> = {
+    full: PROFILE_SELECT_FULL,
+    legacy: PROFILE_SELECT_LEGACY,
+    minimal: PROFILE_SELECT_MINIMAL,
+};
+const PROFILE_SELECT_FALLBACK_ORDER: Record<ProfileSelectTier, ProfileSelectTier[]> = {
+    full: ['full', 'legacy', 'minimal'],
+    legacy: ['legacy', 'minimal'],
+    minimal: ['minimal'],
+};
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
     return normalizeLocale(typeof value === 'string' ? value : null);
@@ -122,6 +134,37 @@ const normalizeUsername = (value: unknown): string => (
 
 const isProfileColumnMissing = (message: string): boolean =>
     /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
+
+interface ProfileSelectResult {
+    data: unknown;
+    error: { message?: string } | null;
+}
+
+const runProfileSelectWithFallback = async (
+    queryFactory: (selectColumns: string) => Promise<ProfileSelectResult>
+): Promise<ProfileSelectResult> => {
+    const fallbackOrder = PROFILE_SELECT_FALLBACK_ORDER[profileSelectTierHint];
+    let latestColumnError: ProfileSelectResult | null = null;
+
+    for (const tier of fallbackOrder) {
+        const result = await queryFactory(PROFILE_SELECT_BY_TIER[tier]);
+        if (!result.error) {
+            profileSelectTierHint = tier;
+            return result;
+        }
+
+        const message = result.error.message || '';
+        if (!isProfileColumnMissing(message)) {
+            return result;
+        }
+        latestColumnError = result;
+    }
+
+    return latestColumnError || {
+        data: null,
+        error: null,
+    };
+};
 
 const toPassportStickerPosition = (value: unknown): PassportStickerPosition | null => {
     if (!value || typeof value !== 'object') return null;
@@ -258,29 +301,11 @@ const validateUsername = (candidate: string): UsernameAvailabilityResult | null 
 };
 
 const loadProfileByQuery = async (
-    queryFactory: () => any
+    queryFactory: (selectColumns: string) => Promise<ProfileSelectResult>
 ): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
 
-    let { data, error } = await queryFactory()
-        .select(PROFILE_SELECT_FULL)
-        .maybeSingle();
-
-    if (error && isProfileColumnMissing(error.message || '')) {
-        const fallback = await queryFactory()
-            .select(PROFILE_SELECT_LEGACY)
-            .maybeSingle();
-        data = fallback.data as typeof data;
-        error = fallback.error as typeof error;
-
-        if (error && isProfileColumnMissing(error.message || '')) {
-            const minimalFallback = await queryFactory()
-                .select(PROFILE_SELECT_MINIMAL)
-                .maybeSingle();
-            data = minimalFallback.data as typeof data;
-            error = minimalFallback.error as typeof error;
-        }
-    }
+    const { data, error } = await runProfileSelectWithFallback(queryFactory);
 
     if (error) {
         if (/row-level security|permission denied/i.test(error.message || '')) return null;
@@ -294,6 +319,10 @@ const loadProfileByQuery = async (
 const isCurrentViewerAdmin = async (): Promise<boolean> => {
     if (!supabase) return false;
     try {
+        if (typeof supabase.auth?.getSession === 'function') {
+            const sessionAttempt = await supabase.auth.getSession();
+            if (!sessionAttempt.data.session) return false;
+        }
         const accessAttempt = await supabase.rpc('get_current_user_access');
         if (accessAttempt.error) return false;
         const row = parseRpcSingle<Record<string, unknown>>(accessAttempt.data);
@@ -310,31 +339,13 @@ export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null>
     const userId = authData.user.id;
     const emailFallback = authData.user.email ?? null;
 
-    let { data, error } = await supabase
-        .from('profiles')
-        .select(PROFILE_SELECT_FULL)
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (error && isProfileColumnMissing(error.message || '')) {
-        const fallback = await supabase
+    const { data, error } = await runProfileSelectWithFallback((selectColumns) => (
+        supabase
             .from('profiles')
-            .select(PROFILE_SELECT_LEGACY)
+            .select(selectColumns)
             .eq('id', userId)
-            .maybeSingle();
-        data = fallback.data as typeof data;
-        error = fallback.error as typeof error;
-
-        if (error && isProfileColumnMissing(error.message || '')) {
-            const minimalFallback = await supabase
-                .from('profiles')
-                .select(PROFILE_SELECT_MINIMAL)
-                .eq('id', userId)
-                .maybeSingle();
-            data = minimalFallback.data as typeof data;
-            error = minimalFallback.error as typeof error;
-        }
-    }
+            .maybeSingle()
+    ));
 
     if (error) {
         throw new Error(error.message || 'Could not load profile.');
@@ -564,26 +575,32 @@ const findProfileByUsername = async (username: string): Promise<UserProfileRecor
     const normalized = normalizeUsername(username);
     if (!normalized) return null;
 
-    const canonicalProfile = await loadProfileByQuery(() => (
+    const canonicalProfile = await loadProfileByQuery((selectColumns) => (
         supabase
             .from('profiles')
-            .ilike('username', normalized)
+            .select(selectColumns)
+            .eq('username', normalized)
+            .maybeSingle()
     ));
     if (canonicalProfile) return canonicalProfile;
 
-    return loadProfileByQuery(() => (
+    return loadProfileByQuery((selectColumns) => (
         supabase
             .from('profiles')
-            .ilike('username', `@${normalized}`)
+            .select(selectColumns)
+            .eq('username', `@${normalized}`)
+            .maybeSingle()
     ));
 };
 
 const findProfileByUserId = async (userId: string): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
-    return loadProfileByQuery(() => (
+    return loadProfileByQuery((selectColumns) => (
         supabase
             .from('profiles')
+            .select(selectColumns)
             .eq('id', userId)
+            .maybeSingle()
     ));
 };
 
