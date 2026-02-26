@@ -32,4 +32,11 @@ describe('data/internationalGreetingsCatalog', () => {
   it('uses fallback name when first and last names are missing', () => {
     expect(formatDisplayNameForGreeting('', '', 'Traveler', 'family_first')).toBe('Traveler');
   });
+
+  it('includes regional greetings with specific local context', () => {
+    const moinEntry = INTERNATIONAL_GREETINGS_CATALOG.find((entry) => entry.id === 'deu-moin');
+    expect(moinEntry).toBeDefined();
+    expect(moinEntry?.greeting).toBe('Moin');
+    expect(moinEntry?.context.toLowerCase()).toContain('tourists');
+  });
 });

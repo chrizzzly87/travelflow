@@ -25,6 +25,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🌍 Replaced free-text country with a searchable Country/Region picker and now store canonical ISO country codes for cleaner cross-feature matching.
 - [x] [Improved] 🛡️ Updated the admin user editor to use the same Country/Region ISO picker so admin profile edits stay consistent with app profile rules.
 - [x] [Improved] 🌎 Updated empty profile-location fallback copy to “Probably Planet Earth” for a friendlier profile touch.
+- [x] [Improved] 🗣️ Expanded the international greeting catalog with more regional/local greetings (including Northern Germany’s “Moin”) and richer usage/fun-fact context lines.
 - [x] [Improved] 🧩 Added settings breadcrumb navigation, grouped gender + name fields into one row, and introduced a lock-and-edit username flow with cooldown-aware guidance.
 - [x] [Improved] 🧠 Cached current-profile data in app session state so profile surfaces avoid fallback-name flicker after login.
 - [x] [Improved] 🧭 Added “View public profile” shortcuts to account and mobile menus plus kept recent-trip quick access.
