@@ -28,6 +28,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Fixed] 🧭 Scoped local dev admin bypass auth to admin routes only, preventing unintended login-state flips and page blinking when guests interact with public profile trip cards.
 - [x] [Improved] 🧱 Increased profile/public top content spacing so avatar-overlap sections no longer collide with the sticky navigation bar.
 - [x] [Improved] 🧭 Reworked public-profile not-found into a cleaner full-bleed empty state (no boxed card) with “Plan your trip” and “Get inspired” calls to action.
+- [x] [Improved] 🧭 Aligned public-profile unavailable states with the 404 visual language and restored standard rectangular CTA/button styling.
+- [x] [Fixed] 📱 Restored the normal “Create trip” mobile navigation entry on public-profile unavailable states by removing accidental header CTA suppression.
 - [x] [Fixed] ↩️ Restored expected browser Back behavior from trip pages opened via profile/public-profile cards by removing an over-aggressive popstate trap in trip history handling.
 - [x] [Fixed] 🧭 Decoupled public-profile identity loading from public-trip loading so profile pages still render even if trip queries fail temporarily.
 - [x] [Improved] 🚀 Added a guest-first public-profile fallback CTA so signed-out visitors can register for free directly from unavailable/private profile states.

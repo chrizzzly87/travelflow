@@ -277,7 +277,7 @@ export const PublicProfilePage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <SiteHeader hideCreateTrip />
+            <SiteHeader />
             <main className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
                     <>
@@ -297,21 +297,21 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'private' && (
-                    <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.privateTitle')}</h1>
-                        <p className="mt-2 text-sm text-slate-600">{t('publicProfile.privateDescription')}</p>
+                    <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
+                        <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('publicProfile.privateTitle')}</h1>
+                        <p className="mt-2 max-w-xl text-sm text-slate-600 md:text-base">{t('publicProfile.privateDescription')}</p>
                         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                             {!isAuthenticated ? (
                                 <NavLink
                                     to="/login"
-                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                    className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
                                 >
                                     {t('publicProfile.ctaRegisterFree')}
                                 </NavLink>
                             ) : null}
                             <NavLink
                                 to={buildPath('inspirations')}
-                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
                             >
                                 {t('publicProfile.ctaExploreInspirations')}
                             </NavLink>
@@ -320,12 +320,12 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'not_found' && (
-                    <section className="py-6 text-center">
+                    <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
                         <div className="mx-auto max-w-3xl space-y-4">
                             <img
                                 src="/images/feet.png"
                                 alt=""
-                                className="mx-auto h-auto w-full max-w-[420px]"
+                                className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-90 [filter:saturate(0.75)_sepia(0.25)]"
                                 loading="lazy"
                             />
                             <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
@@ -337,13 +337,13 @@ export const PublicProfilePage: React.FC = () => {
                             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                                 <NavLink
                                     to={buildPath('createTrip')}
-                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                    className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
                                 >
                                     {t('publicProfile.ctaPlanTrip')}
                                 </NavLink>
                                 <NavLink
                                     to={buildPath('inspirations')}
-                                    className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
                                 >
                                     {t('publicProfile.ctaGetInspired')}
                                 </NavLink>
