@@ -158,4 +158,58 @@ describe('pages/PublicProfilePage', () => {
       expect(screen.getByTestId('location-probe').textContent).toBe('/u/traveler-new');
     });
   });
+
+  it('loads public trips in paged batches and appends next pages', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'TH',
+        city: 'Bangkok',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+      },
+    });
+
+    mocks.getPublicTripsPageByUserId
+      .mockResolvedValueOnce({
+        trips: [makeTrip({ id: 'trip-1', title: 'Trip One', showOnPublicProfile: true })],
+        hasMore: true,
+        nextOffset: 1,
+      })
+      .mockResolvedValueOnce({
+        trips: [makeTrip({ id: 'trip-2', title: 'Trip Two', showOnPublicProfile: true })],
+        hasMore: false,
+        nextOffset: 2,
+      });
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip One')).toBeInTheDocument();
+      expect(screen.getByText('Trip Two')).toBeInTheDocument();
+    });
+
+    expect(mocks.getPublicTripsPageByUserId).toHaveBeenNthCalledWith(1, 'user-1', {
+      offset: 0,
+      limit: 9,
+    });
+    expect(mocks.getPublicTripsPageByUserId).toHaveBeenNthCalledWith(2, 'user-1', {
+      offset: 1,
+      limit: 9,
+    });
+  });
 });

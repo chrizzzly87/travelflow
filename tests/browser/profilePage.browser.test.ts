@@ -201,4 +201,34 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(screen.queryByText('fallback.displayName')).not.toBeInTheDocument();
     expect(mocks.auth.refreshProfile).not.toHaveBeenCalled();
   });
+
+  it('renders trip cards in lazy chunks before loading additional pages', async () => {
+    const originalIntersectionObserver = (window as Window & { IntersectionObserver?: unknown }).IntersectionObserver;
+    (window as Window & { IntersectionObserver?: unknown }).IntersectionObserver = class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    };
+    try {
+      mocks.getAllTrips.mockReturnValue(Array.from({ length: 8 }).map((_, index) => (
+        makeTrip({
+          id: `trip-${index + 1}`,
+          title: `Trip ${index + 1}`,
+          createdAt: 900 - index,
+          updatedAt: 900 - index,
+        })
+      )));
+
+      renderProfilePage('/profile?tab=all&recentSort=updated');
+
+      await waitFor(() => {
+        expect(screen.getByText('Trip 1')).toBeInTheDocument();
+        expect(screen.getByText('Trip 6')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Trip 8')).not.toBeInTheDocument();
+    } finally {
+      (window as Window & { IntersectionObserver?: unknown }).IntersectionObserver = originalIntersectionObserver;
+    }
+  });
 });
