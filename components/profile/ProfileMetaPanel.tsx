@@ -2,8 +2,9 @@ import React from 'react';
 import { MapPin, Mountains } from '@phosphor-icons/react';
 import { FlagIcon } from '../flags/FlagIcon';
 import type { VisitedCountry } from './profileCountryUtils';
-import type { ProfileStampProgress } from './profileStamps';
-import { ProfileStampsPreview } from './ProfileStampsPreview';
+import type { PassportStickerPosition, ProfileStampProgress } from './profileStamps';
+import { ProfilePassportBook } from './ProfilePassportBook';
+import { ProfilePassportDialog } from './ProfilePassportDialog';
 
 interface ProfileMetaPanelLabels {
   bio: string;
@@ -16,6 +17,7 @@ interface ProfileMetaPanelLabels {
   stampsDescription: string;
   stampsOpen: string;
   stampsEmpty: string;
+  stampsUnlockedOn: string;
 }
 
 interface ProfileMetaPanelProps {
@@ -24,7 +26,11 @@ interface ProfileMetaPanelProps {
   distanceLabel: string;
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
-  onOpenStamps?: () => void;
+  allStamps?: ProfileStampProgress[];
+  passportCountryCode?: string;
+  passportStickerPositions?: Record<string, PassportStickerPosition>;
+  locale?: string;
+  onOpenPassport?: () => void;
   labels: ProfileMetaPanelLabels;
 }
 
@@ -34,9 +40,25 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   distanceLabel,
   countries,
   stamps,
-  onOpenStamps,
+  allStamps,
+  passportCountryCode,
+  passportStickerPositions,
+  locale = 'en',
+  onOpenPassport,
   labels,
 }) => {
+  const [passportOpen, setPassportOpen] = React.useState(false);
+
+  const handleOpenPassport = React.useCallback(() => {
+    setPassportOpen(true);
+    onOpenPassport?.();
+  }, [onOpenPassport]);
+
+  const allPassportStamps = React.useMemo(
+    () => allStamps || stamps,
+    [allStamps, stamps]
+  );
+
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.62fr)]">
       <div className="space-y-6">
@@ -82,13 +104,30 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
         </section>
       </div>
 
-      <ProfileStampsPreview
+      <ProfilePassportBook
         title={labels.stampsTitle}
         description={labels.stampsDescription}
         openLabel={labels.stampsOpen}
         emptyLabel={labels.stampsEmpty}
-        stamps={stamps.slice(0, 3)}
-        onOpen={onOpenStamps}
+        stamps={stamps}
+        onOpen={handleOpenPassport}
+        countryCode={passportCountryCode}
+        stickerPositions={passportStickerPositions}
+      />
+
+      <ProfilePassportDialog
+        open={passportOpen}
+        onOpenChange={setPassportOpen}
+        title={labels.stampsTitle}
+        description={labels.stampsDescription}
+        openLabel={labels.stampsOpen}
+        emptyLabel={labels.stampsEmpty}
+        unlockedOnLabel={labels.stampsUnlockedOn}
+        stamps={allPassportStamps}
+        previewStamps={stamps}
+        countryCode={passportCountryCode}
+        stickerPositions={passportStickerPositions}
+        locale={locale}
       />
     </section>
   );

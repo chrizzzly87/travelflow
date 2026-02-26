@@ -10,7 +10,7 @@ import { resolveProfileStatusByTripCount } from '../components/profile/profileSt
 import {
     buildProfileStampProgress,
     computeProfileStampMetrics,
-    getLastAchievedStamps,
+    getPassportDisplayStamps,
 } from '../components/profile/profileStamps';
 import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { getPublicTripsByUserId, resolvePublicProfileByHandle, type UserProfileRecord } from '../services/profileService';
@@ -129,13 +129,19 @@ export const PublicProfilePage: React.FC = () => {
         () => resolveProfileStatusByTripCount(trips.length),
         [trips.length]
     );
-    const latestStamps = useMemo(() => {
+    const allStampProgress = useMemo(() => {
         const metrics = computeProfileStampMetrics(trips, {
             likesGiven: 0,
             likesEarned: 0,
         });
-        return getLastAchievedStamps(buildProfileStampProgress(metrics), 3);
+        return buildProfileStampProgress(metrics);
     }, [trips]);
+    const passportDisplayStamps = useMemo(() => {
+        return getPassportDisplayStamps(
+            allStampProgress,
+            state.profile?.passportStickerSelection
+        );
+    }, [allStampProgress, state.profile?.passportStickerSelection]);
 
     const handleOpenTrip = (trip: ITrip) => {
         trackEvent('public_profile__trip--open', {
@@ -192,7 +198,10 @@ export const PublicProfilePage: React.FC = () => {
                             location={locationLabel}
                             distanceLabel={distanceLabel}
                             countries={visitedCountries}
-                            stamps={latestStamps}
+                            stamps={passportDisplayStamps}
+                            allStamps={allStampProgress}
+                            passportCountryCode={state.profile.country}
+                            passportStickerPositions={state.profile.passportStickerPositions}
                             stats={[
                                 { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                                 { id: 'likes_saved', label: t('stats.likesSaved'), value: 0 },
@@ -211,10 +220,15 @@ export const PublicProfilePage: React.FC = () => {
                                 countries: t('summary.countriesLabel'),
                                 countriesEmpty: t('summary.countriesEmpty'),
                                 stampsTitle: t('summary.stampsTitle'),
-                                stampsDescription: t('summary.stampsDescription'),
+                                stampsDescription: '',
                                 stampsOpen: t('summary.stampsOpen'),
                                 stampsEmpty: t('summary.stampsEmpty'),
+                                stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                             }}
+                            onOpenPassport={() => {
+                                trackEvent('public_profile__summary--open_passport');
+                            }}
+                            locale={appLocale}
                         />
 
                         {errorMessage && (

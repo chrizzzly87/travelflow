@@ -22,7 +22,7 @@ import { resolveProfileStatusByTier } from '../components/profile/profileStatus'
 import {
     buildProfileStampProgress,
     computeProfileStampMetrics,
-    getLastAchievedStamps,
+    getPassportDisplayStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
 import { getProfileCountryDisplayName } from '../services/profileCountryService';
@@ -229,9 +229,9 @@ export const ProfilePage: React.FC = () => {
         () => buildProfileStampProgress(stampMetrics),
         [stampMetrics]
     );
-    const latestStamps = useMemo(
-        () => getLastAchievedStamps(stampProgress, 3),
-        [stampProgress]
+    const passportDisplayStamps = useMemo(
+        () => getPassportDisplayStamps(stampProgress, profile?.passportStickerSelection),
+        [profile?.passportStickerSelection, stampProgress]
     );
 
     const handleTabChange = useCallback((nextTab: 'recent' | 'favorites' | 'all' | 'liked') => {
@@ -387,7 +387,10 @@ export const ProfilePage: React.FC = () => {
                     location={locationLabel}
                     distanceLabel={distanceLabel}
                     countries={visitedCountries}
-                    stamps={latestStamps}
+                    stamps={passportDisplayStamps}
+                    allStamps={stampProgress}
+                    passportCountryCode={profile?.country}
+                    passportStickerPositions={profile?.passportStickerPositions}
                     stats={[
                         { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                         { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
@@ -410,6 +413,7 @@ export const ProfilePage: React.FC = () => {
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
                         stampsEmpty: t('summary.stampsEmpty'),
+                        stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                     }}
                     onEditProfile={() => {
                         trackEvent('profile__summary--edit_profile');
@@ -431,12 +435,12 @@ export const ProfilePage: React.FC = () => {
                             window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
                         }
                     }}
-                    onOpenStamps={() => {
+                    onOpenPassport={() => {
                         trackEvent('profile__summary--open_stamps');
-                        navigate(buildPath('profileStamps'));
                     }}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
+                    locale={appLocale}
                 />
 
                 <section className="space-y-2">

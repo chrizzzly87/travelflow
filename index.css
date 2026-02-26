@@ -499,6 +499,37 @@ h6,
   box-shadow: 0 14px 28px rgba(15, 23, 42, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+@keyframes profile-passport-open-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-14deg) translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0);
+  }
+}
+
+@keyframes profile-passport-grid-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.profile-passport-modal-cover {
+  transform-origin: 0% 50%;
+  animation: profile-passport-open-in 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.profile-passport-modal-grid {
+  animation: profile-passport-grid-in 340ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-greeting-letter {
     opacity: 1;
@@ -524,6 +555,12 @@ h6,
   .profile-passport-sticker {
     transition: none;
     transform: none !important;
+  }
+
+  .profile-passport-modal-cover,
+  .profile-passport-modal-grid {
+    animation: none;
+    transform: none;
   }
 }
 

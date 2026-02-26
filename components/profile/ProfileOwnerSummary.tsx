@@ -3,6 +3,7 @@ import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-i
 import { ProfileMetaPanel } from './ProfileMetaPanel';
 import { ProfileAvatarOrbitText } from './ProfileAvatarOrbitText';
 import type { VisitedCountry } from './profileCountryUtils';
+import type { PassportStickerPosition } from './profileStamps';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
 import type { ProfileStampProgress } from './profileStamps';
@@ -23,6 +24,7 @@ interface ProfileOwnerSummaryLabels {
   stampsDescription: string;
   stampsOpen: string;
   stampsEmpty: string;
+  stampsUnlockedOn: string;
 }
 
 interface ProfileOwnerSummaryProps {
@@ -36,14 +38,18 @@ interface ProfileOwnerSummaryProps {
   distanceLabel: string;
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
+  allStamps: ProfileStampProgress[];
+  passportCountryCode?: string;
+  passportStickerPositions?: Record<string, PassportStickerPosition>;
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
   onEditProfile: () => void;
   onViewPublicProfile: () => void;
   onShareProfile: () => void;
-  onOpenStamps: () => void;
+  onOpenPassport?: () => void;
   canViewPublicProfile: boolean;
   canShareProfile: boolean;
+  locale?: string;
   showAvatarOrbitText?: boolean;
 }
 
@@ -58,14 +64,18 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   distanceLabel,
   countries,
   stamps,
+  allStamps,
+  passportCountryCode,
+  passportStickerPositions,
   stats,
   labels,
   onEditProfile,
   onViewPublicProfile,
   onShareProfile,
-  onOpenStamps,
+  onOpenPassport,
   canViewPublicProfile,
   canShareProfile,
+  locale = 'en',
   showAvatarOrbitText = false,
 }) => {
   return (
@@ -130,7 +140,11 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             distanceLabel={distanceLabel}
             countries={countries}
             stamps={stamps}
-            onOpenStamps={onOpenStamps}
+            allStamps={allStamps}
+            passportCountryCode={passportCountryCode}
+            passportStickerPositions={passportStickerPositions}
+            locale={locale}
+            onOpenPassport={onOpenPassport}
             labels={{
               bio: labels.bio,
               bioFallback: labels.bioFallback,
@@ -142,6 +156,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
               stampsDescription: labels.stampsDescription,
               stampsOpen: labels.stampsOpen,
               stampsEmpty: labels.stampsEmpty,
+              stampsUnlockedOn: labels.stampsUnlockedOn,
             }}
           />
         </div>

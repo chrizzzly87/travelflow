@@ -1,4 +1,5 @@
 import type { ITrip } from '../../types';
+import { MAX_PROFILE_PASSPORT_STICKERS, normalizePassportStickerSelection } from '../../services/passportService';
 import { getTripDistanceKm } from '../../utils';
 import { collectVisitedCountries } from './profileCountryUtils';
 
@@ -52,6 +53,16 @@ export interface ProfileStampProgress {
   currentValue: number;
   targetValue: number;
 }
+
+export interface PassportStickerPosition {
+  x: number;
+  y: number;
+}
+
+export const PROFILE_PASSPORT_CANVAS_WIDTH = 300;
+export const PROFILE_PASSPORT_CANVAS_HEIGHT = 300;
+export const PROFILE_PASSPORT_STICKER_WIDTH = 98;
+export const PROFILE_PASSPORT_STICKER_HEIGHT = 108;
 
 const PLACEHOLDER_ASSET_BY_GROUP: Record<ProfileStampGroup, string> = {
   trips: '/images/stamps/trips.svg',
@@ -292,6 +303,40 @@ export const getLastAchievedStamps = (stamps: ProfileStampProgress[], limit = 3)
     .filter((stamp) => stamp.achieved)
     .sort((a, b) => (b.achievedAt || 0) - (a.achievedAt || 0))
     .slice(0, Math.max(0, limit));
+};
+
+export const getDefaultPassportStickerPosition = (index: number): PassportStickerPosition => {
+  if (index === 0) return { x: 20, y: 36 };
+  if (index === 1) return { x: 128, y: 84 };
+  return { x: 74, y: 176 };
+};
+
+export const getPassportDisplayStamps = (
+  stamps: ProfileStampProgress[],
+  selectedStampIds: unknown,
+  limit = MAX_PROFILE_PASSPORT_STICKERS
+): ProfileStampProgress[] => {
+  const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : MAX_PROFILE_PASSPORT_STICKERS;
+  const unlocked = stamps.filter((stamp) => stamp.achieved);
+  if (unlocked.length === 0 || normalizedLimit === 0) return [];
+
+  const selectedIds = normalizePassportStickerSelection(selectedStampIds, normalizedLimit);
+  const selectedMap = new Map(unlocked.map((stamp) => [stamp.definition.id, stamp] as const));
+
+  const selectedStamps = selectedIds
+    .map((stampId) => selectedMap.get(stampId) || null)
+    .filter((stamp): stamp is ProfileStampProgress => Boolean(stamp));
+
+  if (selectedStamps.length >= normalizedLimit) {
+    return selectedStamps.slice(0, normalizedLimit);
+  }
+
+  const selectedIdsSet = new Set(selectedStamps.map((stamp) => stamp.definition.id));
+  const fallback = getLastAchievedStamps(unlocked, Math.max(0, normalizedLimit * 2))
+    .filter((stamp) => !selectedIdsSet.has(stamp.definition.id))
+    .slice(0, normalizedLimit - selectedStamps.length);
+
+  return [...selectedStamps, ...fallback];
 };
 
 export const sortProfileStamps = (stamps: ProfileStampProgress[], sortBy: ProfileStampSort): ProfileStampProgress[] => {
