@@ -1,5 +1,6 @@
 import type { PlanTierKey } from '../types';
 import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
 
@@ -168,6 +169,9 @@ export const adminUpdateUserProfile = async (
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
+    const normalizedCountry = typeof payload.country === 'string'
+        ? normalizeProfileCountryCode(payload.country)
+        : '';
     const client = requireSupabase();
     const rpcPayload = {
         p_user_id: userId,
@@ -175,7 +179,9 @@ export const adminUpdateUserProfile = async (
         p_last_name: payload.lastName ?? null,
         p_username: payload.username ?? null,
         p_gender: normalizeProfileGender(payload.gender),
-        p_country: payload.country ?? null,
+        p_country: typeof payload.country === 'string'
+            ? (normalizedCountry || payload.country.trim() || null)
+            : null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
         p_account_status: payload.accountStatus ?? null,

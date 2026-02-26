@@ -1,6 +1,7 @@
 import type { AppLanguage, ITrip } from '../types';
 import { normalizeLocale } from '../config/locales';
 import { dbUpsertUserSettings } from './dbService';
+import { normalizeProfileCountryCode } from './profileCountryService';
 import { supabase } from './supabaseClient';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
@@ -147,7 +148,7 @@ const mapProfileRow = (
     username: normalizeUsername(row?.username),
     bio: toSafeText(row?.bio),
     gender: normalizeGender(row?.gender),
-    country: toSafeText(row?.country),
+    country: normalizeProfileCountryCode(row?.country),
     city: toSafeText(row?.city),
     preferredLanguage: normalizeLanguage(row?.preferred_language),
     onboardingCompletedAt: typeof row?.onboarding_completed_at === 'string' ? row.onboarding_completed_at : null,
@@ -298,7 +299,7 @@ export const updateCurrentUserProfile = async (
     const lastName = payload.lastName.trim();
     const username = normalizeUsername(payload.username);
     const bio = toSafeText(payload.bio);
-    const country = payload.country.trim();
+    const country = normalizeProfileCountryCode(payload.country);
     const city = payload.city.trim();
     const preferredLanguage = normalizeLanguage(payload.preferredLanguage);
 

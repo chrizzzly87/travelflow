@@ -2507,6 +2507,260 @@ begin
 end;
 $$;
 
+create or replace function public.profile_normalize_country_code(p_country text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  with normalized_input as (
+    select nullif(btrim(coalesce(p_country, '')), '') as raw
+  ),
+  country_name_map(name, code) as (
+    values
+    ('afghanistan', 'AF'),
+    ('albania', 'AL'),
+    ('algeria', 'DZ'),
+    ('andorra', 'AD'),
+    ('angola', 'AO'),
+    ('antigua and barbuda', 'AG'),
+    ('argentina', 'AR'),
+    ('armenia', 'AM'),
+    ('australia', 'AU'),
+    ('austria', 'AT'),
+    ('azerbaijan', 'AZ'),
+    ('bahamas', 'BS'),
+    ('bahrain', 'BH'),
+    ('bangladesh', 'BD'),
+    ('barbados', 'BB'),
+    ('belarus', 'BY'),
+    ('belgium', 'BE'),
+    ('belize', 'BZ'),
+    ('benin', 'BJ'),
+    ('bhutan', 'BT'),
+    ('bolivia', 'BO'),
+    ('bolivia (plurinational state of)', 'BO'),
+    ('bosnia and herzegovina', 'BA'),
+    ('botswana', 'BW'),
+    ('brazil', 'BR'),
+    ('brunei', 'BN'),
+    ('bulgaria', 'BG'),
+    ('burkina faso', 'BF'),
+    ('burma', 'MM'),
+    ('burundi', 'BI'),
+    ('cambodia', 'KH'),
+    ('cameroon', 'CM'),
+    ('canada', 'CA'),
+    ('cape verde', 'CV'),
+    ('central african republic', 'CF'),
+    ('chad', 'TD'),
+    ('chile', 'CL'),
+    ('china', 'CN'),
+    ('colombia', 'CO'),
+    ('comoros', 'KM'),
+    ('congo (democratic republic)', 'CD'),
+    ('congo (republic)', 'CG'),
+    ('costa rica', 'CR'),
+    ('cote d''ivoire', 'CI'),
+    ('côte d''ivoire', 'CI'),
+    ('croatia', 'HR'),
+    ('cuba', 'CU'),
+    ('cyprus', 'CY'),
+    ('czech republic', 'CZ'),
+    ('czechia', 'CZ'),
+    ('denmark', 'DK'),
+    ('djibouti', 'DJ'),
+    ('dominica', 'DM'),
+    ('dominican republic', 'DO'),
+    ('east timor', 'TL'),
+    ('ecuador', 'EC'),
+    ('egypt', 'EG'),
+    ('el salvador', 'SV'),
+    ('equatorial guinea', 'GQ'),
+    ('eritrea', 'ER'),
+    ('estonia', 'EE'),
+    ('eswatini', 'SZ'),
+    ('ethiopia', 'ET'),
+    ('fiji', 'FJ'),
+    ('finland', 'FI'),
+    ('france', 'FR'),
+    ('gabon', 'GA'),
+    ('gambia', 'GM'),
+    ('georgia', 'GE'),
+    ('germany', 'DE'),
+    ('ghana', 'GH'),
+    ('great britain', 'GB'),
+    ('greece', 'GR'),
+    ('grenada', 'GD'),
+    ('guatemala', 'GT'),
+    ('guinea', 'GN'),
+    ('guinea-bissau', 'GW'),
+    ('guyana', 'GY'),
+    ('haiti', 'HT'),
+    ('holy see', 'VA'),
+    ('honduras', 'HN'),
+    ('hungary', 'HU'),
+    ('iceland', 'IS'),
+    ('india', 'IN'),
+    ('indonesia', 'ID'),
+    ('iran', 'IR'),
+    ('iran, islamic republic of', 'IR'),
+    ('iraq', 'IQ'),
+    ('ireland', 'IE'),
+    ('israel', 'IL'),
+    ('italy', 'IT'),
+    ('ivory coast', 'CI'),
+    ('jamaica', 'JM'),
+    ('japan', 'JP'),
+    ('jordan', 'JO'),
+    ('kazakhstan', 'KZ'),
+    ('kenya', 'KE'),
+    ('kiribati', 'KI'),
+    ('kosovo', 'XK'),
+    ('kuwait', 'KW'),
+    ('kyrgyzstan', 'KG'),
+    ('lao pdr', 'LA'),
+    ('lao people''s democratic republic', 'LA'),
+    ('laos', 'LA'),
+    ('latvia', 'LV'),
+    ('lebanon', 'LB'),
+    ('lesotho', 'LS'),
+    ('liberia', 'LR'),
+    ('libya', 'LY'),
+    ('liechtenstein', 'LI'),
+    ('lithuania', 'LT'),
+    ('luxembourg', 'LU'),
+    ('madagascar', 'MG'),
+    ('malawi', 'MW'),
+    ('malaysia', 'MY'),
+    ('maldives', 'MV'),
+    ('mali', 'ML'),
+    ('malta', 'MT'),
+    ('marshall islands', 'MH'),
+    ('mauritania', 'MR'),
+    ('mauritius', 'MU'),
+    ('mexico', 'MX'),
+    ('micronesia', 'FM'),
+    ('micronesia (federated states of)', 'FM'),
+    ('moldova', 'MD'),
+    ('moldova, republic of', 'MD'),
+    ('monaco', 'MC'),
+    ('mongolia', 'MN'),
+    ('montenegro', 'ME'),
+    ('morocco', 'MA'),
+    ('mozambique', 'MZ'),
+    ('myanmar', 'MM'),
+    ('namibia', 'NA'),
+    ('nauru', 'NR'),
+    ('nepal', 'NP'),
+    ('netherlands', 'NL'),
+    ('new zealand', 'NZ'),
+    ('nicaragua', 'NI'),
+    ('niger', 'NE'),
+    ('nigeria', 'NG'),
+    ('north korea', 'KP'),
+    ('north macedonia', 'MK'),
+    ('norway', 'NO'),
+    ('oman', 'OM'),
+    ('pakistan', 'PK'),
+    ('palau', 'PW'),
+    ('palestine', 'PS'),
+    ('palestine, state of', 'PS'),
+    ('panama', 'PA'),
+    ('papua new guinea', 'PG'),
+    ('paraguay', 'PY'),
+    ('peru', 'PE'),
+    ('philippines', 'PH'),
+    ('poland', 'PL'),
+    ('portugal', 'PT'),
+    ('qatar', 'QA'),
+    ('republic of korea', 'KR'),
+    ('romania', 'RO'),
+    ('russia', 'RU'),
+    ('russian federation', 'RU'),
+    ('rwanda', 'RW'),
+    ('saint kitts and nevis', 'KN'),
+    ('saint lucia', 'LC'),
+    ('saint vincent and the grenadines', 'VC'),
+    ('samoa', 'WS'),
+    ('san marino', 'SM'),
+    ('sao tome and principe', 'ST'),
+    ('saudi arabia', 'SA'),
+    ('senegal', 'SN'),
+    ('serbia', 'RS'),
+    ('seychelles', 'SC'),
+    ('sierra leone', 'SL'),
+    ('singapore', 'SG'),
+    ('slovakia', 'SK'),
+    ('slovenia', 'SI'),
+    ('solomon islands', 'SB'),
+    ('somalia', 'SO'),
+    ('south africa', 'ZA'),
+    ('south korea', 'KR'),
+    ('south sudan', 'SS'),
+    ('spain', 'ES'),
+    ('sri lanka', 'LK'),
+    ('sudan', 'SD'),
+    ('suriname', 'SR'),
+    ('swaziland', 'SZ'),
+    ('sweden', 'SE'),
+    ('switzerland', 'CH'),
+    ('syria', 'SY'),
+    ('syrian arab republic', 'SY'),
+    ('taiwan', 'TW'),
+    ('taiwan, province of china', 'TW'),
+    ('tajikistan', 'TJ'),
+    ('tanzania', 'TZ'),
+    ('tanzania, united republic of', 'TZ'),
+    ('thailand', 'TH'),
+    ('the czech republic', 'CZ'),
+    ('timor-leste', 'TL'),
+    ('togo', 'TG'),
+    ('tonga', 'TO'),
+    ('trinidad and tobago', 'TT'),
+    ('tunisia', 'TN'),
+    ('turkey', 'TR'),
+    ('turkmenistan', 'TM'),
+    ('tuvalu', 'TV'),
+    ('u.k.', 'GB'),
+    ('uganda', 'UG'),
+    ('uk', 'GB'),
+    ('ukraine', 'UA'),
+    ('united arab emirates', 'AE'),
+    ('united kingdom', 'GB'),
+    ('united states', 'US'),
+    ('united states of america', 'US'),
+    ('uruguay', 'UY'),
+    ('usa', 'US'),
+    ('uzbekistan', 'UZ'),
+    ('vanuatu', 'VU'),
+    ('vatican city', 'VA'),
+    ('venezuela', 'VE'),
+    ('venezuela (bolivarian republic of)', 'VE'),
+    ('viet nam', 'VN'),
+    ('vietnam', 'VN'),
+    ('yemen', 'YE'),
+    ('zambia', 'ZM'),
+    ('zimbabwe', 'ZW')
+  )
+  select case
+    when normalized_input.raw is null then null
+    when normalized_input.raw ~ '^[A-Za-z]{2}$' then (
+      select m.code
+      from country_name_map m
+      where m.code = upper(normalized_input.raw)
+      limit 1
+    )
+    else (
+      select m.code
+      from country_name_map m
+      where m.name = lower(normalized_input.raw)
+      limit 1
+    )
+  end
+  from normalized_input;
+$$;
+
 create or replace function public.admin_update_user_profile(
   p_user_id uuid,
   p_first_name text default null,
@@ -2537,6 +2791,8 @@ as $$
 declare
   v_before jsonb;
   v_after jsonb;
+  v_country_raw text;
+  v_country_normalized text;
 begin
   if not public.has_admin_permission('users.write') then
     raise exception 'Not allowed';
@@ -2562,6 +2818,14 @@ begin
     raise exception 'Unknown tier key';
   end if;
 
+  v_country_raw := nullif(btrim(coalesce(p_country, '')), '');
+  if v_country_raw is not null then
+    v_country_normalized := public.profile_normalize_country_code(v_country_raw);
+    if v_country_normalized is null then
+      raise exception 'Country/Region must be a valid ISO 3166-1 alpha-2 country code';
+    end if;
+  end if;
+
   select to_jsonb(p)
     into v_before
     from public.profiles p
@@ -2576,7 +2840,7 @@ begin
          last_name = coalesce(p_last_name, p.last_name),
          username = coalesce(p_username, p.username),
          gender = coalesce(p_gender, p.gender),
-         country = coalesce(p_country, p.country),
+         country = coalesce(v_country_normalized, p.country),
          city = coalesce(p_city, p.city),
          preferred_language = coalesce(p_preferred_language, p.preferred_language),
          account_status = coalesce(p_account_status, p.account_status),
@@ -3401,6 +3665,58 @@ alter table public.profiles add column if not exists bio text;
 alter table public.profiles add column if not exists public_profile_enabled boolean not null default true;
 alter table public.profiles add column if not exists default_public_trip_visibility boolean not null default true;
 alter table public.profiles add column if not exists username_changed_at timestamptz;
+
+update public.profiles p
+set country = public.profile_normalize_country_code(p.country)
+where coalesce(btrim(p.country), '') <> '';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_country_iso2_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_country_iso2_check
+      check (country is null or country ~ '^[A-Z]{2}$');
+  end if;
+end;
+$$;
+
+create or replace function public.profile_apply_country_rules()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_raw_country text := nullif(btrim(coalesce(new.country, '')), '');
+  v_country_code text;
+begin
+  if v_raw_country is null then
+    new.country := null;
+    return new;
+  end if;
+
+  v_country_code := public.profile_normalize_country_code(v_raw_country);
+
+  if v_country_code is null then
+    raise exception 'Country/Region must be a valid ISO 3166-1 alpha-2 country code';
+  end if;
+
+  new.country := v_country_code;
+  return new;
+end;
+$$;
+
+drop trigger if exists profile_apply_country_rules on public.profiles;
+create trigger profile_apply_country_rules
+before insert or update of country
+on public.profiles
+for each row execute function public.profile_apply_country_rules();
 
 create table if not exists public.profile_handle_redirects (
   id uuid primary key default gen_random_uuid(),
