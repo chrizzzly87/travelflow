@@ -65,6 +65,7 @@ describe('config/routes', () => {
       buildPath('adminAudit'),
       buildPath('adminAiBenchmark'),
       buildPath('profile'),
+      buildPath('profileStamps'),
       buildPath('profileSettings'),
       buildPath('profileOnboarding'),
       buildPath('publicProfile', { username: 'traveler' }),

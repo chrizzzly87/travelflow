@@ -51,14 +51,16 @@ export const ProfileStampsPreview: React.FC<ProfileStampsPreviewProps> = ({
         <p className="mt-3 text-sm text-slate-500">{emptyLabel}</p>
       )}
 
-      <button
-        type="button"
-        onClick={onOpen}
-        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
-      >
-        <Sparkle size={15} weight="duotone" />
-        {openLabel}
-      </button>
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800"
+        >
+          <Sparkle size={15} weight="duotone" />
+          {openLabel}
+        </button>
+      ) : null}
     </article>
   );
 };

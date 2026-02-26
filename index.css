@@ -470,6 +470,34 @@ h6,
   animation: profile-avatar-orbit-spin 26s linear infinite;
 }
 
+.profile-stamp-card {
+  --stamp-tilt-x: 0deg;
+  --stamp-tilt-y: 0deg;
+  --stamp-shine-x: 50%;
+  --stamp-shine-y: 50%;
+  --stamp-shine-opacity: 0.2;
+  transform: perspective(920px) rotateX(var(--stamp-tilt-x)) rotateY(var(--stamp-tilt-y));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  will-change: transform;
+}
+
+.profile-stamp-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--stamp-shine-x) var(--stamp-shine-y), rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 46%),
+    linear-gradient(125deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.13), rgba(236, 72, 153, 0.15));
+  mix-blend-mode: screen;
+  opacity: var(--stamp-shine-opacity);
+}
+
+.profile-passport-cover {
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .profile-greeting-letter {
     opacity: 1;
@@ -481,6 +509,15 @@ h6,
   .profile-avatar-orbit {
     animation: none;
     transform: translateY(-50%);
+  }
+
+  .profile-stamp-card {
+    transform: none !important;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+
+  .profile-stamp-card::after {
+    opacity: 0.18;
   }
 }
 

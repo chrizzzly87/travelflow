@@ -32,6 +32,7 @@ const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../pages/Pr
 const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
 const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
@@ -366,6 +367,14 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 element={renderWithSuspense(
                     <AuthenticatedRoute>
                         <ProfilePage />
+                    </AuthenticatedRoute>
+                )}
+            />
+            <Route
+                path="/profile/stamps"
+                element={renderWithSuspense(
+                    <AuthenticatedRoute>
+                        <ProfileStampsPage />
                     </AuthenticatedRoute>
                 )}
             />

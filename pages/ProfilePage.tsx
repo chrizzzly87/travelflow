@@ -419,7 +419,7 @@ export const ProfilePage: React.FC = () => {
                     }}
                     onOpenStamps={() => {
                         trackEvent('profile__summary--open_stamps');
-                        navigate('/profile/stamps');
+                        navigate(buildPath('profileStamps'));
                     }}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
