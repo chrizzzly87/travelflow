@@ -4,21 +4,30 @@ import { IdentificationCard, SealCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileStampCard } from '../components/profile/ProfileStampCard';
-import type { ProfileStampGroup, ProfileStampProgress, ProfileStampSort } from '../components/profile/profileStamps';
+import type {
+    PassportStickerPosition,
+    ProfileStampGroup,
+    ProfileStampProgress,
+    ProfileStampSort,
+} from '../components/profile/profileStamps';
 import {
     buildProfileStampProgress,
     computeProfileStampMetrics,
-    getLastAchievedStamps,
+    getDefaultPassportStickerPosition,
+    getPassportDisplayStamps,
+    PROFILE_PASSPORT_STICKER_HEIGHT,
+    PROFILE_PASSPORT_STICKER_WIDTH,
     sortProfileStamps,
 } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
 import { getAllTrips } from '../services/storageService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import { MAX_PROFILE_PASSPORT_STICKERS, normalizePassportStickerSelection } from '../services/passportService';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { buildPath } from '../config/routes';
 import {
+    updateCurrentUserPassportStickerSelection,
     updateCurrentUserPassportStickerPositions,
-    type PassportStickerPosition,
 } from '../services/profileService';
 
 type StampGroupFilter = 'all' | ProfileStampGroup;
@@ -45,12 +54,6 @@ const formatAchievementDate = (timestamp: number | null, locale: string): string
     });
 };
 
-const defaultStickerPosition = (index: number): { x: number; y: number } => {
-    if (index === 0) return { x: 20, y: 36 };
-    if (index === 1) return { x: 128, y: 84 };
-    return { x: 74, y: 176 };
-};
-
 const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 export const ProfileStampsPage: React.FC = () => {
@@ -70,6 +73,9 @@ export const ProfileStampsPage: React.FC = () => {
     const [trips, setTrips] = useState(() => getAllTrips());
     const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
     const [stickerPositions, setStickerPositions] = useState<Record<string, { x: number; y: number }>>({});
+    const [passportStickerSelection, setPassportStickerSelection] = useState<string[]>([]);
+    const [isSelectionSaving, setIsSelectionSaving] = useState(false);
+    const [selectionNotice, setSelectionNotice] = useState<string | null>(null);
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
     const dragStateRef = useRef<{
@@ -149,22 +155,65 @@ export const ProfileStampsPage: React.FC = () => {
         () => buildProfileStampProgress(stampMetrics),
         [stampMetrics]
     );
-    const recentStamps = useMemo(
-        () => getLastAchievedStamps(allStampProgress, 3),
+
+    const unlockedStamps = useMemo(
+        () => allStampProgress
+            .filter((stamp) => stamp.achieved)
+            .sort((a, b) => (b.achievedAt || 0) - (a.achievedAt || 0)),
         [allStampProgress]
+    );
+
+    useEffect(() => {
+        setPassportStickerSelection(normalizePassportStickerSelection(profile?.passportStickerSelection));
+    }, [profile?.passportStickerSelection]);
+
+    const passportCoverStamps = useMemo(
+        () => getPassportDisplayStamps(allStampProgress, passportStickerSelection, MAX_PROFILE_PASSPORT_STICKERS),
+        [allStampProgress, passportStickerSelection]
     );
 
     useEffect(() => {
         setStickerPositions((current) => {
             const next: Record<string, { x: number; y: number }> = {};
-            recentStamps.forEach((stamp, index) => {
+            passportCoverStamps.forEach((stamp, index) => {
                 const savedPosition = profile?.passportStickerPositions?.[stamp.definition.id];
-                next[stamp.definition.id] = current[stamp.definition.id] || savedPosition || defaultStickerPosition(index);
+                next[stamp.definition.id] = current[stamp.definition.id] || savedPosition || getDefaultPassportStickerPosition(index);
             });
             stickerPositionsRef.current = next;
             return next;
         });
-    }, [recentStamps, profile?.passportStickerPositions]);
+    }, [passportCoverStamps, profile?.passportStickerPositions]);
+
+    const handleTogglePassportSelection = useCallback((stampId: string) => {
+        const alreadySelected = passportStickerSelection.includes(stampId);
+        if (!alreadySelected && passportStickerSelection.length >= MAX_PROFILE_PASSPORT_STICKERS) {
+            setSelectionNotice(t('stamps.selectionLimitNotice', {
+                count: MAX_PROFILE_PASSPORT_STICKERS,
+            }));
+            trackEvent('profile__passport_cover--selection_limit', { stamp_id: stampId });
+            return;
+        }
+
+        const nextSelection = alreadySelected
+            ? passportStickerSelection.filter((id) => id !== stampId)
+            : [...passportStickerSelection, stampId];
+
+        setPassportStickerSelection(nextSelection);
+        setSelectionNotice(null);
+        setIsSelectionSaving(true);
+        trackEvent(alreadySelected ? 'profile__passport_cover--unselect' : 'profile__passport_cover--select', {
+            stamp_id: stampId,
+        });
+
+        void updateCurrentUserPassportStickerSelection(nextSelection)
+            .then(() => refreshProfile())
+            .catch(() => {
+                setSelectionNotice(t('stamps.selectionSaveFailed'));
+            })
+            .finally(() => {
+                setIsSelectionSaving(false);
+            });
+    }, [passportStickerSelection, refreshProfile, t]);
 
     const visibleStamps = useMemo(() => {
         const filtered = groupBy === 'all'
@@ -234,8 +283,8 @@ export const ProfileStampsPage: React.FC = () => {
         const dragState = dragStateRef.current;
         if (!dragState || !passportCanvasRef.current) return;
         const canvasRect = passportCanvasRef.current.getBoundingClientRect();
-        const nextX = clamp(event.clientX - canvasRect.left - dragState.offsetX, 8, canvasRect.width - 108);
-        const nextY = clamp(event.clientY - canvasRect.top - dragState.offsetY, 8, canvasRect.height - 116);
+        const nextX = clamp(event.clientX - canvasRect.left - dragState.offsetX, 8, canvasRect.width - PROFILE_PASSPORT_STICKER_WIDTH - 2);
+        const nextY = clamp(event.clientY - canvasRect.top - dragState.offsetY, 8, canvasRect.height - PROFILE_PASSPORT_STICKER_HEIGHT - 2);
 
         setStickerPositions((current) => {
             const next = {
@@ -308,7 +357,7 @@ export const ProfileStampsPage: React.FC = () => {
                         <p className="mt-1 text-sm text-slate-300">{t('stamps.passportDescription')}</p>
                         <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-300">
                             <span>{t('stamps.unlockedCount', { count: unlockedCount, total: allStampProgress.length })}</span>
-                            <span>{t('stamps.lastUpdated', { count: recentStamps.length })}</span>
+                            <span>{t('stamps.lastUpdated', { count: passportCoverStamps.length })}</span>
                         </div>
 
                         <div
@@ -319,13 +368,13 @@ export const ProfileStampsPage: React.FC = () => {
                             onPointerUp={handlePassportPointerUp}
                             onPointerLeave={handlePassportPointerUp}
                         >
-                            {recentStamps.length === 0 ? (
+                            {passportCoverStamps.length === 0 ? (
                                 <div className="absolute inset-0 flex items-center justify-center px-5 text-center text-sm text-slate-400">
                                     {t('stamps.passportEmpty')}
                                 </div>
                             ) : (
-                                recentStamps.map((stamp, index) => {
-                                    const position = stickerPositions[stamp.definition.id] || defaultStickerPosition(index);
+                                passportCoverStamps.map((stamp, index) => {
+                                    const position = stickerPositions[stamp.definition.id] || getDefaultPassportStickerPosition(index);
                                     return (
                                         <button
                                             key={`passport-sticker-${stamp.definition.id}`}
@@ -354,6 +403,61 @@ export const ProfileStampsPage: React.FC = () => {
                                 })
                             )}
                         </div>
+
+                        <section className="mt-4 border-t border-slate-800/60 pt-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300">
+                                    {t('stamps.selectionTitle')}
+                                </p>
+                                <p className="text-xs text-slate-300">
+                                    {t('stamps.selectionCount', {
+                                        count: passportStickerSelection.length,
+                                        total: MAX_PROFILE_PASSPORT_STICKERS,
+                                    })}
+                                </p>
+                            </div>
+
+                            {unlockedStamps.length === 0 ? (
+                                <p className="mt-2 text-xs text-slate-400">{t('stamps.selectionEmpty')}</p>
+                            ) : (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {unlockedStamps.map((stamp) => {
+                                        const selected = passportStickerSelection.includes(stamp.definition.id);
+                                        return (
+                                            <button
+                                                key={`passport-selection-${stamp.definition.id}`}
+                                                type="button"
+                                                data-testid={`passport-selection-${stamp.definition.id}`}
+                                                onClick={() => handleTogglePassportSelection(stamp.definition.id)}
+                                                className={[
+                                                    'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors',
+                                                    selected
+                                                        ? 'border-accent-300 bg-accent-100 text-accent-900'
+                                                        : 'border-slate-600 bg-slate-900/50 text-slate-200 hover:border-slate-400',
+                                                ].join(' ')}
+                                                disabled={isSelectionSaving}
+                                            >
+                                                <img
+                                                    src={stamp.definition.assetPath}
+                                                    alt=""
+                                                    className="h-5 w-5 rounded object-cover"
+                                                    loading="lazy"
+                                                    aria-hidden="true"
+                                                />
+                                                <span>{stamp.definition.title}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {selectionNotice ? (
+                                <p className="mt-2 text-xs font-medium text-amber-300">{selectionNotice}</p>
+                            ) : null}
+                            {isSelectionSaving ? (
+                                <p className="mt-2 text-xs text-slate-400">{t('stamps.selectionSaving')}</p>
+                            ) : null}
+                        </section>
                     </article>
 
                     <article className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">

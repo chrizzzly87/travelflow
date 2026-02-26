@@ -28,10 +28,12 @@ const mocks = vi.hoisted(() => ({
       lastName: string;
       username: string;
       passportStickerPositions: Record<string, { x: number; y: number }>;
+      passportStickerSelection: string[];
     },
   },
   getAllTrips: vi.fn(),
   updatePositions: vi.fn().mockResolvedValue(undefined),
+  updateSelection: vi.fn().mockResolvedValue(undefined),
   trackEvent: vi.fn(),
 }));
 
@@ -49,6 +51,7 @@ vi.mock('../../services/storageService', () => ({
 
 vi.mock('../../services/profileService', () => ({
   updateCurrentUserPassportStickerPositions: mocks.updatePositions,
+  updateCurrentUserPassportStickerSelection: mocks.updateSelection,
 }));
 
 vi.mock('../../services/analyticsService', () => ({
@@ -100,6 +103,7 @@ describe('pages/ProfileStampsPage', () => {
       passportStickerPositions: {
         first_trip_created: { x: 44, y: 55 },
       },
+      passportStickerSelection: ['first_trip_created'],
     };
 
     mocks.getAllTrips.mockReturnValue([
@@ -162,5 +166,19 @@ describe('pages/ProfileStampsPage', () => {
     });
 
     expect(screen.getByText('desc new.user')).toBeInTheDocument();
+  });
+
+  it('persists passport cover sticker selection changes', async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('passport-selection-first_trip_created')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('passport-selection-first_trip_created'));
+
+    await waitFor(() => {
+      expect(mocks.updateSelection).toHaveBeenCalledWith([]);
+    });
   });
 });

@@ -83,6 +83,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     defaultPublicTripVisibility: true,
     usernameChangedAt: '2025-01-01T00:00:00Z',
     passportStickerPositions: {},
+    passportStickerSelection: [],
     ...overrides,
   });
 
