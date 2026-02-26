@@ -51,7 +51,7 @@ import { IdealTravelTimeline } from '../components/IdealTravelTimeline';
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
-import { Select, SelectContent, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
 import { useDbSync } from '../hooks/useDbSync';
 import { generateItinerary } from '../services/aiService';
@@ -2356,50 +2356,54 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         </SelectTrigger>
                                         <SelectContent className="max-h-[26rem]">
                                             {preferredCreateTripModels.length > 0 && (
-                                                <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
-                                            )}
-                                            {preferredCreateTripModels.map((model) => {
-                                                const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
-                                                return (
-                                                    <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                                        <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                            <span className="min-w-0">
-                                                                <span className="block truncate font-semibold">{model.label}</span>
-                                                                <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                            </span>
-                                                            <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                                    {model.providerShortName}
-                                                                </span>
-                                                                {noteKey && (
-                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                                        {t(noteKey)}
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                                    {preferredCreateTripModels.map((model) => {
+                                                        const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                        return (
+                                                            <SelectItem key={`create-trip-model-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                                <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                    <span className="min-w-0">
+                                                                        <span className="block truncate font-semibold">{model.label}</span>
+                                                                        <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
                                                                     </span>
-                                                                )}
-                                                            </span>
-                                                        </span>
-                                                    </SelectItem>
-                                                );
-                                            })}
+                                                                    <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                            {model.providerShortName}
+                                                                        </span>
+                                                                        {noteKey && (
+                                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                                {t(noteKey)}
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                </span>
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectGroup>
+                                            )}
                                             {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
                                                 <SelectSeparator />
                                             )}
                                             {remainingCreateTripModels.length > 0 && (
-                                                <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                <SelectGroup>
+                                                    <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                                    {remainingCreateTripModels.map((model) => (
+                                                        <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                                <span className="min-w-0">
+                                                                    <span className="block truncate font-semibold">{model.label}</span>
+                                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                                </span>
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                            </span>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
                                             )}
-                                            {remainingCreateTripModels.map((model) => (
-                                                <SelectItem key={`create-trip-model-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                        <span className="min-w-0">
-                                                            <span className="block truncate font-semibold">{model.label}</span>
-                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                        </span>
-                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                            {model.providerShortName}
-                                                        </span>
-                                                    </span>
-                                                </SelectItem>
-                                            ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -2478,50 +2482,54 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 </SelectTrigger>
                                 <SelectContent className="max-h-[24rem]">
                                     {preferredCreateTripModels.length > 0 && (
-                                        <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
-                                    )}
-                                    {preferredCreateTripModels.map((model) => {
-                                        const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
-                                        return (
-                                            <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                                <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                    <span className="min-w-0">
-                                                        <span className="block truncate font-semibold">{model.label}</span>
-                                                        <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                    </span>
-                                                    <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
-                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                            {model.providerShortName}
-                                                        </span>
-                                                        {noteKey && (
-                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
-                                                                {t(noteKey)}
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.topPicks')}</SelectLabel>
+                                            {preferredCreateTripModels.map((model) => {
+                                                const noteKey = MODEL_PREFERENCE_NOTE_KEY_BY_ID[model.id];
+                                                return (
+                                                    <SelectItem key={`create-trip-model-mobile-pref-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                        <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                            <span className="min-w-0">
+                                                                <span className="block truncate font-semibold">{model.label}</span>
+                                                                <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
                                                             </span>
-                                                        )}
-                                                    </span>
-                                                </span>
-                                            </SelectItem>
-                                        );
-                                    })}
+                                                            <span className="inline-flex shrink-0 flex-wrap justify-end gap-1">
+                                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                                    {model.providerShortName}
+                                                                </span>
+                                                                {noteKey && (
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                                                        {t(noteKey)}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </span>
+                                                    </SelectItem>
+                                                );
+                                            })}
+                                        </SelectGroup>
+                                    )}
                                     {preferredCreateTripModels.length > 0 && remainingCreateTripModels.length > 0 && (
                                         <SelectSeparator />
                                     )}
                                     {remainingCreateTripModels.length > 0 && (
-                                        <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                        <SelectGroup>
+                                            <SelectLabel>{t('modelPicker.allModels')}</SelectLabel>
+                                            {remainingCreateTripModels.map((model) => (
+                                                <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
+                                                    <span className="flex w-full min-w-0 items-start justify-between gap-2">
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate font-semibold">{model.label}</span>
+                                                            <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
+                                                        </span>
+                                                        <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                                                            {model.providerShortName}
+                                                        </span>
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
                                     )}
-                                    {remainingCreateTripModels.map((model) => (
-                                        <SelectItem key={`create-trip-model-mobile-all-${model.id}`} value={model.id} textValue={`${model.label} ${model.model}`}>
-                                            <span className="flex w-full min-w-0 items-start justify-between gap-2">
-                                                <span className="min-w-0">
-                                                    <span className="block truncate font-semibold">{model.label}</span>
-                                                    <span className="block truncate text-[11px] text-slate-500">{model.model}</span>
-                                                </span>
-                                                <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
-                                                    {model.providerShortName}
-                                                </span>
-                                            </span>
-                                        </SelectItem>
-                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
