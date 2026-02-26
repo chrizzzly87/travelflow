@@ -140,6 +140,40 @@
       "failed": "Could not verify username availability right now."
     }
   },
+  "stamps": {
+    "eyebrow": "Passport collection",
+    "title": "Your travel passport",
+    "description": "{name}, these stamps track your TravelFlow milestones and how rare they are across the community.",
+    "passportTitle": "Passport cover",
+    "passportDescription": "Last three unlocked stamps. Drag to position your sticker layout.",
+    "unlockedCount": "{count} of {total} stamps unlocked",
+    "lastUpdated": "{count} recent stamps shown",
+    "passportEmpty": "No stamps yet. Create or save trips to unlock your first achievement.",
+    "detailTitle": "Stamp details",
+    "backToProfile": "Back to profile",
+    "detailRarity": "Rarity",
+    "detailProgress": "Progress",
+    "detailUnlocked": "Unlocked",
+    "detailUnlockedNow": "Just unlocked",
+    "detailLocked": "Locked",
+    "selectHint": "Select a stamp to view details and rarity.",
+    "sortLabel": "Sort",
+    "groupLabel": "Group",
+    "empty": "No stamps match this filter yet.",
+    "sort": {
+      "date": "Latest unlocked",
+      "rarity": "Rarest first",
+      "group": "Group"
+    },
+    "group": {
+      "all": "All groups",
+      "trips": "Trips",
+      "curation": "Curation",
+      "exploration": "Exploration",
+      "social": "Social",
+      "momentum": "Momentum"
+    }
+  },
   "likedPlaceholder": {
     "title": "Liked trips are coming soon",
     "description": "You will soon be able to save and revisit trips from other travelers here."
