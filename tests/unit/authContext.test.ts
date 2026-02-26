@@ -5,14 +5,15 @@ import {
 } from '../../contexts/AuthContext';
 
 describe('contexts/AuthContext dev admin bypass', () => {
-  it('enables bypass only when explicitly configured in dev', () => {
-    expect(shouldEnableDevAdminBypass(true, 'true', false)).toBe(true);
-    expect(shouldEnableDevAdminBypass(true, 'false', false)).toBe(false);
-    expect(shouldEnableDevAdminBypass(false, 'true', false)).toBe(false);
+  it('enables bypass only when explicitly configured in dev and on admin routes', () => {
+    expect(shouldEnableDevAdminBypass(true, 'true', false, '/admin/dashboard')).toBe(true);
+    expect(shouldEnableDevAdminBypass(true, 'true', false, '/u/traveler')).toBe(false);
+    expect(shouldEnableDevAdminBypass(true, 'false', false, '/admin/dashboard')).toBe(false);
+    expect(shouldEnableDevAdminBypass(false, 'true', false, '/admin/dashboard')).toBe(false);
   });
 
   it('disables bypass after explicit bypass logout', () => {
-    expect(shouldEnableDevAdminBypass(true, 'true', true)).toBe(false);
+    expect(shouldEnableDevAdminBypass(true, 'true', true, '/admin/dashboard')).toBe(false);
   });
 });
 

@@ -92,7 +92,12 @@
     "tripsTitle": "Public trips",
     "emptyTrips": "No public trips yet.",
     "followHint": "Follow and message actions are coming soon.",
-    "ctaRegisterFree": "Registrati gratis"
+    "ctaRegisterFree": "Registrati gratis",
+    "sourceCreatedByTraveler": "Created by traveler",
+    "notFoundFunTitle": "Seems like this user already found their next trip.",
+    "notFoundFunSubtitle": "Don't wait any longer",
+    "ctaPlanTrip": "Plan your trip",
+    "ctaGetInspired": "Get inspired"
   },
   "settings": {
     "title": "Profile settings",

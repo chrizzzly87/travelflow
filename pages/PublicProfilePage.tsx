@@ -252,6 +252,14 @@ export const PublicProfilePage: React.FC = () => {
         navigate(buildPath('tripDetail', { tripId: trip.id }));
     };
 
+    const resolveSourceLabel = useCallback((trip: ITrip): string => {
+        const sourceKey = getTripSourceLabelKey(trip);
+        if (sourceKey === 'createdByYou') {
+            return t('publicProfile.sourceCreatedByTraveler');
+        }
+        return t(`cards.source.${sourceKey}`);
+    }, [t]);
+
     const handlePassportDialogOpenChange = useCallback((nextOpen: boolean) => {
         const next = new URLSearchParams(searchParams);
         if (nextOpen) {
@@ -270,7 +278,7 @@ export const PublicProfilePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <main className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+            <main className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
                     <>
                         <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8">
@@ -312,31 +320,34 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'not_found' && (
-                    <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.notFoundTitle')}</h1>
-                        <p className="mt-2 text-sm text-slate-600">{t('publicProfile.notFoundDescription')}</p>
-                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                            {!isAuthenticated ? (
+                    <section className="py-6 text-center">
+                        <div className="mx-auto max-w-3xl space-y-4">
+                            <img
+                                src="/images/feet.png"
+                                alt=""
+                                className="mx-auto h-auto w-full max-w-[420px]"
+                                loading="lazy"
+                            />
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                                {t('publicProfile.notFoundFunTitle')}
+                            </h1>
+                            <p className="text-sm font-medium text-slate-600 md:text-base">
+                                {t('publicProfile.notFoundFunSubtitle')}
+                            </p>
+                            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                                 <NavLink
-                                    to="/login"
+                                    to={buildPath('createTrip')}
                                     className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
                                 >
-                                    {t('publicProfile.ctaRegisterFree')}
+                                    {t('publicProfile.ctaPlanTrip')}
                                 </NavLink>
-                            ) : (
                                 <NavLink
-                                    to={buildPath('profile')}
+                                    to={buildPath('inspirations')}
                                     className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
                                 >
-                                    {t('publicProfile.ctaBackProfile')}
+                                    {t('publicProfile.ctaGetInspired')}
                                 </NavLink>
-                            )}
-                            <NavLink
-                                to={buildPath('inspirations')}
-                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                            >
-                                {t('publicProfile.ctaExploreInspirations')}
-                            </NavLink>
+                            </div>
                         </div>
                     </section>
                 )}
@@ -398,10 +409,10 @@ export const PublicProfilePage: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                     {pinnedTrips.map((trip) => (
                                         <ProfileTripCard
-                                            key={`public-pinned-${trip.id}`}
-                                            trip={trip}
-                                            locale={appLocale}
-                                            sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                                key={`public-pinned-${trip.id}`}
+                                                trip={trip}
+                                                locale={appLocale}
+                                                sourceLabel={resolveSourceLabel(trip)}
                                             labels={{
                                                 open: t('cards.actions.open'),
                                                 favorite: t('cards.actions.favorite'),
@@ -447,7 +458,7 @@ export const PublicProfilePage: React.FC = () => {
                                                 key={`public-trip-${trip.id}`}
                                                 trip={trip}
                                                 locale={appLocale}
-                                                sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                                sourceLabel={resolveSourceLabel(trip)}
                                                 labels={{
                                                     open: t('cards.actions.open'),
                                                     favorite: t('cards.actions.favorite'),

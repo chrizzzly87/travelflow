@@ -229,7 +229,7 @@ describe('pages/PublicProfilePage', () => {
     });
   });
 
-  it('shows register CTA for guests on not found state', async () => {
+  it('shows plan-trip and inspirations CTAs for guests on not found state', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'not_found',
       canonicalUsername: null,
@@ -241,11 +241,12 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
   });
 
-  it('shows back-to-profile CTA for authenticated users on not found state', async () => {
+  it('shows the same public CTAs for authenticated users on not found state', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'not_found',
       canonicalUsername: null,
@@ -257,10 +258,12 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'publicProfile.ctaBackProfile' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
 
     expect(screen.queryByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'publicProfile.ctaBackProfile' })).toBeNull();
   });
 
   it('falls back to the authenticated viewer profile when own public handle resolve fails', async () => {

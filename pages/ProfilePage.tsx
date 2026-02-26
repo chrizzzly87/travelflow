@@ -398,7 +398,7 @@ export const ProfilePage: React.FC = () => {
         return (
             <div className="min-h-screen bg-slate-50">
                 <SiteHeader hideCreateTrip />
-                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-8 md:px-8 md:pt-10">
+                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
                 </main>
             </div>
@@ -408,7 +408,7 @@ export const ProfilePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
                     greeting={greeting.greeting}
                     name={greetingDisplayName}
