@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-25-profile-hub-and-quick-trip-access
-version: v0.58.0
+version: v0.65.0
 title: "Profile hub with highlights and quick trip access"
-date: 2026-02-25
-published_at: 2026-02-25T21:10:00Z
-status: draft
+date: 2026-02-26
+published_at: 2026-02-26T12:20:38Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Profile now ships as a full hub with animated greeting hero, public handles, social-style stats, passport stamps, and public trip visibility controls."
