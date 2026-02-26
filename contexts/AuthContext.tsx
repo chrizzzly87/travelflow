@@ -5,17 +5,27 @@ import { appendAuthTraceEntry } from '../services/authTraceService';
 import type { UserAccessContext } from '../types';
 import { stripLocalePrefix } from '../config/routes';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
+import type { UserProfileRecord } from '../services/profileService';
 
 type AuthServiceModule = typeof import('../services/authService');
+type ProfileServiceModule = typeof import('../services/profileService');
 type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
 let authServicePromise: Promise<AuthServiceModule> | null = null;
+let profileServicePromise: Promise<ProfileServiceModule> | null = null;
 
 const loadAuthService = async (): Promise<AuthServiceModule> => {
     if (!authServicePromise) {
         authServicePromise = import('../services/authService');
     }
     return authServicePromise;
+};
+
+const loadProfileService = async (): Promise<ProfileServiceModule> => {
+    if (!profileServicePromise) {
+        profileServicePromise = import('../services/profileService');
+    }
+    return profileServicePromise;
 };
 
 const loadSupabaseClient = async () => {
@@ -64,11 +74,14 @@ export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
 interface AuthContextValue {
     session: Session | null;
     access: UserAccessContext | null;
+    profile: UserProfileRecord | null;
     isLoading: boolean;
+    isProfileLoading: boolean;
     isAuthenticated: boolean;
     isAnonymous: boolean;
     isAdmin: boolean;
     refreshAccess: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
     loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>;
     registerWithPassword: (
         email: string,
@@ -89,7 +102,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
+    const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isProfileLoading, setIsProfileLoading] = useState(false);
     const [isDevAdminBypassDisabled, setIsDevAdminBypassDisabled] = useState<boolean>(() => {
         if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return false;
         if (typeof window === 'undefined') return false;
@@ -101,6 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const hasBootstrappedRef = useRef(false);
     const isBootstrappingRef = useRef(false);
+    const profileLoadRequestIdRef = useRef(0);
+
+    const resetProfileState = useCallback(() => {
+        profileLoadRequestIdRef.current += 1;
+        setProfile(null);
+        setIsProfileLoading(false);
+    }, []);
 
     useEffect(() => {
         if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return;
@@ -147,11 +169,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }, []);
 
+    const refreshProfile = useCallback(async () => {
+        const requestId = profileLoadRequestIdRef.current + 1;
+        profileLoadRequestIdRef.current = requestId;
+        setIsProfileLoading(true);
+
+        try {
+            const profileService = await loadProfileService();
+            const nextProfile = await profileService.getCurrentUserProfile();
+            if (profileLoadRequestIdRef.current !== requestId) return;
+            setProfile(nextProfile);
+        } catch {
+            if (profileLoadRequestIdRef.current !== requestId) return;
+            setProfile(null);
+        } finally {
+            if (profileLoadRequestIdRef.current === requestId) {
+                setIsProfileLoading(false);
+            }
+        }
+    }, []);
+
     const refreshAccess = useCallback(async () => {
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
-    }, []);
+        if (nextAccess?.userId) {
+            await refreshProfile();
+            return;
+        }
+        resetProfileState();
+    }, [refreshProfile, resetProfileState]);
 
     useEffect(() => {
         let cancelled = false;
@@ -228,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (!cancelled) {
                         setSession(null);
                         setAccess(null);
+                        resetProfileState();
                         setIsLoading(false);
                     }
                     hasBootstrappedRef.current = true;
@@ -285,6 +333,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshAccess();
                 } else {
                     setAccess(null);
+                    resetProfileState();
                 }
                 if (!cancelled) setIsLoading(false);
                 if (cancelled) return;
@@ -307,6 +356,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         return;
                     }
                     setAccess(null);
+                    resetProfileState();
                 });
 
                 hasBootstrappedRef.current = true;
@@ -362,7 +412,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             unsubscribe();
         };
-    }, [logAuthStateEvent, refreshAccess]);
+    }, [logAuthStateEvent, refreshAccess, resetProfileState]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
         const authService = await loadAuthService();
@@ -414,8 +464,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setAccess(null);
             setSession(null);
+            resetProfileState();
         }
-    }, []);
+    }, [resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
         // Development bypass for local admin testing.
@@ -443,11 +494,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     tierKey: 'free',
                     entitlements: {},
                 } as any,
+                profile: null,
                 isLoading: false,
+                isProfileLoading: false,
                 isAuthenticated: true,
                 isAnonymous: false,
                 isAdmin: true,
                 refreshAccess,
+                refreshProfile,
                 loginWithPassword,
                 registerWithPassword,
                 loginWithOAuth,
@@ -473,11 +527,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
             session,
             access,
+            profile,
             isLoading,
+            isProfileLoading,
             isAuthenticated,
             isAnonymous,
             isAdmin,
             refreshAccess,
+            refreshProfile,
             loginWithPassword,
             registerWithPassword,
             loginWithOAuth,
@@ -487,12 +544,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, [
         access,
+        profile,
         isDevAdminBypassDisabled,
         isLoading,
+        isProfileLoading,
         loginWithOAuth,
         loginWithPassword,
         logout,
         refreshAccess,
+        refreshProfile,
         registerWithPassword,
         sendPasswordResetEmail,
         session,

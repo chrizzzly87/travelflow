@@ -12,7 +12,7 @@ import { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin } from 
 export const DB_ENABLED = isSupabaseEnabled;
 export { isSimulatedLoggedIn, setSimulatedLoggedIn, toggleSimulatedLogin };
 
-export type DbTripAccessSource = 'owner' | 'admin_fallback';
+export type DbTripAccessSource = 'owner' | 'admin_fallback' | 'public_read';
 
 export interface DbTripAccessMetadata {
     source: DbTripAccessSource;
@@ -280,6 +280,7 @@ const normalizeTripPayload = (trip: ITrip, view?: IViewSettings | null) => {
         data: normalizedTrip,
         view_settings: normalizedView,
         is_favorite: Boolean(normalizedTrip.isFavorite),
+        show_on_public_profile: normalizedTrip.showOnPublicProfile !== false,
         forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
         forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
         status,
@@ -303,6 +304,7 @@ const applyTripAccessFields = (
         trip_expires_at?: unknown;
         source_kind?: unknown;
         source_template_id?: unknown;
+        show_on_public_profile?: unknown;
     }
 ): ITrip => {
     const tripExpiresAt = typeof row.trip_expires_at === 'string'
@@ -315,6 +317,7 @@ const applyTripAccessFields = (
         ...trip,
         status: resolveTripStatus(row.status, tripExpiresAt),
         tripExpiresAt,
+        showOnPublicProfile: row.show_on_public_profile === false ? false : trip.showOnPublicProfile !== false,
         sourceKind: typeof row.source_kind === 'string' ? row.source_kind as ITrip['sourceKind'] : trip.sourceKind,
         sourceTemplateId,
     };
@@ -341,6 +344,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         p_title: normalizedTrip.title || 'Untitled trip',
         p_start_date: startDate,
         p_is_favorite: Boolean(normalizedTrip.isFavorite),
+        p_show_on_public_profile: normalizedTrip.showOnPublicProfile !== false,
         p_forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
         p_forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
         p_status: status,
@@ -350,6 +354,25 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     };
 
     let { data, error } = await client.rpc('upsert_trip', extendedPayload);
+    if (error && /upsert_trip/i.test(error.message || '') && /function/i.test(error.message || '')) {
+        debugLog('dbUpsertTrip:fallbackToExtendedSignatureWithoutVisibility', { message: error.message });
+        const fallbackWithExtendedSignature = await client.rpc('upsert_trip', {
+            p_id: normalizedTrip.id,
+            p_data: normalizedTrip,
+            p_view: normalizedView,
+            p_title: normalizedTrip.title || 'Untitled trip',
+            p_start_date: startDate,
+            p_is_favorite: Boolean(normalizedTrip.isFavorite),
+            p_forked_from_trip_id: normalizedTrip.forkedFromTripId ?? null,
+            p_forked_from_share_token: normalizedTrip.forkedFromShareToken ?? null,
+            p_status: status,
+            p_trip_expires_at: normalizedTrip.tripExpiresAt ?? null,
+            p_source_kind: normalizedTrip.sourceKind ?? null,
+            p_source_template_id: normalizedTrip.sourceTemplateId ?? null,
+        });
+        data = fallbackWithExtendedSignature.data;
+        error = fallbackWithExtendedSignature.error;
+    }
     if (error && /upsert_trip/i.test(error.message || '') && /function/i.test(error.message || '')) {
         debugLog('dbUpsertTrip:fallbackToLegacySignature', { message: error.message });
         const legacyPayload = {
@@ -389,7 +412,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
 export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    const currentUserId = await ensureDbSession();
     let loadedViaAdminBypass = false;
     let ownerId: string | null = null;
     let ownerEmail: string | null = null;
@@ -398,11 +421,11 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
 
     let { data, error } = await client
         .from('trips')
-        .select('id, owner_id, data, view_settings, status, trip_expires_at, source_kind, source_template_id, updated_at')
+        .select('id, owner_id, data, view_settings, status, trip_expires_at, source_kind, source_template_id, show_on_public_profile, updated_at')
         .eq('id', tripId)
         .maybeSingle();
 
-    if (error && /column/i.test(error.message || '') && /(status|trip_expires_at|source_kind|source_template_id)/i.test(error.message || '')) {
+    if (error && /column/i.test(error.message || '') && /(status|trip_expires_at|source_kind|source_template_id|show_on_public_profile)/i.test(error.message || '')) {
         debugLog('dbGetTrip:fallbackLegacySelect', { message: error.message });
         const fallback = await client
             .from('trips')
@@ -435,6 +458,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
                     trip_expires_at: row.trip_expires_at,
                     source_kind: row.source_kind,
                     source_template_id: row.source_template_id,
+                    show_on_public_profile: row.show_on_public_profile,
                     updated_at: row.updated_at,
                 };
                 loadedViaAdminBypass = true;
@@ -464,11 +488,15 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             ? (data as { updated_at: string }).updated_at
             : null;
     }
+    const isPublicRead = !loadedViaAdminBypass
+        && Boolean(ownerId)
+        && (!currentUserId || ownerId !== currentUserId)
+        && ((data as { show_on_public_profile?: unknown }).show_on_public_profile === true);
     return {
         trip: normalized,
         view: normalizeViewSettingsPayload(data.view_settings),
         access: {
-            source: loadedViaAdminBypass ? 'admin_fallback' : 'owner',
+            source: loadedViaAdminBypass ? 'admin_fallback' : (isPublicRead ? 'public_read' : 'owner'),
             ownerId,
             ownerEmail,
             canAdminWrite: loadedViaAdminBypass ? canAdminWrite : false,
@@ -586,11 +614,11 @@ export const dbListTrips = async (): Promise<ITrip[]> => {
 
     let { data, error } = await client
         .from('trips')
-        .select('id, data, status, trip_expires_at, source_kind, source_template_id')
+        .select('id, data, status, trip_expires_at, source_kind, source_template_id, show_on_public_profile')
         .neq('status', 'archived')
         .order('updated_at', { ascending: false });
 
-    if (error && /column/i.test(error.message || '') && /(status|trip_expires_at|source_kind|source_template_id)/i.test(error.message || '')) {
+    if (error && /column/i.test(error.message || '') && /(status|trip_expires_at|source_kind|source_template_id|show_on_public_profile)/i.test(error.message || '')) {
         debugLog('dbListTrips:fallbackLegacySelect', { message: error.message });
         const fallback = await client
             .from('trips')

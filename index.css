@@ -25,6 +25,7 @@
 @source not "./pages/TermsPage.tsx";
 @source not "./pages/CookiesPage.tsx";
 @source not "./pages/ProfilePage.tsx";
+@source not "./pages/PublicProfilePage.tsx";
 @source not "./pages/ProfileSettingsPage.tsx";
 @source not "./pages/ProfileOnboardingPage.tsx";
 @source not "./pages/AdminWorkspaceRouter.tsx";
@@ -435,6 +436,156 @@ h6,
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes profile-greeting-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.profile-greeting-letter {
+  opacity: 0;
+  animation: profile-greeting-letter-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes profile-avatar-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.profile-avatar-orbit {
+  transform-origin: 50% 50%;
+  animation: profile-avatar-orbit-spin 26s linear infinite;
+}
+
+.profile-stamp-card {
+  --stamp-tilt-x: 0deg;
+  --stamp-tilt-y: 0deg;
+  --stamp-shine-x: 50%;
+  --stamp-shine-y: 50%;
+  --stamp-shine-opacity: 0.2;
+  transform: perspective(920px) rotateX(var(--stamp-tilt-x)) rotateY(var(--stamp-tilt-y));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  will-change: transform;
+}
+
+.profile-stamp-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--stamp-shine-x) var(--stamp-shine-y), rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 46%),
+    linear-gradient(125deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.13), rgba(236, 72, 153, 0.15));
+  mix-blend-mode: screen;
+  opacity: var(--stamp-shine-opacity);
+}
+
+.profile-passport-cover {
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.24), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+@keyframes profile-passport-open-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes profile-passport-grid-in {
+  from {
+    opacity: 0;
+    transform: perspective(1600px) rotateY(16deg) translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1600px) rotateY(0deg) translateX(0);
+  }
+}
+
+.profile-passport-modal-shell {
+  transform-style: preserve-3d;
+  animation: profile-passport-open-in 280ms cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+.profile-passport-modal-cover {
+  transform-origin: 0% 50%;
+  animation: profile-passport-open-cover 460ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.profile-passport-modal-grid {
+  transform-origin: 0% 50%;
+  animation: profile-passport-grid-in 400ms cubic-bezier(0.18, 0.84, 0.24, 1);
+}
+
+@keyframes profile-passport-open-cover {
+  from {
+    opacity: 0;
+    transform: perspective(1600px) rotateY(-84deg) translateX(-26px);
+    filter: blur(1.4px);
+  }
+  72% {
+    opacity: 1;
+    transform: perspective(1600px) rotateY(4deg) translateX(2px);
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1600px) rotateY(0deg) translateX(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-greeting-letter {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+
+  .profile-avatar-orbit {
+    animation: none;
+    transform: none;
+  }
+
+  .profile-stamp-card {
+    transform: none !important;
+    transition: none;
+  }
+
+  .profile-stamp-card::after {
+    opacity: 0.18;
+  }
+
+  .profile-passport-sticker {
+    transition: none;
+    transform: none !important;
+  }
+
+  .profile-passport-modal-shell,
+  .profile-passport-modal-cover,
+  .profile-passport-modal-grid {
+    animation: none;
+    transform: none;
   }
 }
 

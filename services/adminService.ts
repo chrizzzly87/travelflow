@@ -1,5 +1,6 @@
 import type { PlanTierKey } from '../types';
 import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
 
@@ -168,20 +169,39 @@ export const adminUpdateUserProfile = async (
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
+    const normalizedCountry = typeof payload.country === 'string'
+        ? normalizeProfileCountryCode(payload.country)
+        : '';
+    if (typeof payload.country === 'string' && payload.country.trim() && !normalizedCountry) {
+        throw new Error('Country/Region must be a valid ISO 3166-1 alpha-2 country code.');
+    }
     const client = requireSupabase();
-    const { error } = await client.rpc('admin_update_user_profile', {
+    const rpcPayload = {
         p_user_id: userId,
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
         p_username: payload.username ?? null,
         p_gender: normalizeProfileGender(payload.gender),
-        p_country: payload.country ?? null,
+        p_country: typeof payload.country === 'string'
+            ? (normalizedCountry || null)
+            : null,
         p_city: payload.city ?? null,
         p_preferred_language: payload.preferredLanguage ?? null,
         p_account_status: payload.accountStatus ?? null,
         p_system_role: payload.systemRole ?? null,
         p_tier_key: payload.tierKey ?? null,
+    };
+
+    let { error } = await client.rpc('admin_update_user_profile', {
+        ...rpcPayload,
+        p_bypass_username_cooldown: true,
     });
+
+    if (error && /function/i.test(error.message || '') && /admin_update_user_profile/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_update_user_profile', rpcPayload);
+        error = fallback.error;
+    }
+
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 

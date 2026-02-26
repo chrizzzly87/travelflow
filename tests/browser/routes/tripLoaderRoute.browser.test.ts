@@ -7,6 +7,7 @@ import type { IViewSettings } from '../../../types';
 import { makeTrip } from '../../helpers/tripFixtures';
 
 const mocks = vi.hoisted(() => ({
+  dbEnabled: false,
   navigate: vi.fn(),
   route: {
     tripId: 'trip-missing',
@@ -27,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   dbGetTrip: vi.fn(),
   dbGetTripVersion: vi.fn(),
   ensureDbSession: vi.fn(),
+  renderedTripViewProps: null as Record<string, unknown> | null,
 }));
 
 vi.mock('react-router-dom', () => ({
@@ -48,7 +50,9 @@ vi.mock('../../../hooks/useDbSync', () => ({
 }));
 
 vi.mock('../../../config/db', () => ({
-  DB_ENABLED: false,
+  get DB_ENABLED() {
+    return mocks.dbEnabled;
+  },
 }));
 
 vi.mock('../../../services/storageService', () => ({
@@ -78,7 +82,10 @@ vi.mock('../../../utils', () => ({
 }));
 
 vi.mock('../../../components/TripView', () => ({
-  TripView: () => null,
+  TripView: (props: Record<string, unknown>) => {
+    mocks.renderedTripViewProps = props;
+    return null;
+  },
 }));
 
 import { TripLoaderRoute } from '../../../routes/TripLoaderRoute';
@@ -98,6 +105,7 @@ const makeRouteProps = () => ({
 describe('routes/TripLoaderRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.dbEnabled = false;
     mocks.route.tripId = 'trip-missing';
     mocks.route.pathname = '/trip/trip-missing';
     mocks.route.search = '';
@@ -110,6 +118,7 @@ describe('routes/TripLoaderRoute', () => {
     mocks.dbGetTripVersion.mockResolvedValue(null);
     mocks.dbGetTrip.mockResolvedValue(null);
     mocks.ensureDbSession.mockResolvedValue(null);
+    mocks.renderedTripViewProps = null;
   });
 
   it('navigates to create-trip when trip cannot be loaded and db is disabled', async () => {
@@ -166,5 +175,41 @@ describe('routes/TripLoaderRoute', () => {
     expect(loadedTrip.isFavorite).toBe(true);
     expect(loadedView).toEqual(sharedView);
     expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('enforces read-only mode when trip access source is public_read', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-public-read';
+    mocks.route.pathname = '/trip/trip-public-read';
+
+    const dbTrip = makeTrip({
+      id: 'trip-public-read',
+      title: 'Public read trip',
+      items: [],
+    });
+
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: null,
+      access: {
+        source: 'public_read',
+        ownerId: 'owner-1',
+        ownerEmail: null,
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    const props = {
+      ...makeRouteProps(),
+      trip: dbTrip,
+    };
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.readOnly).toBe(true);
+    });
+
+    expect(mocks.renderedTripViewProps?.canShare).toBe(false);
   });
 });

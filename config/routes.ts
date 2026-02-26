@@ -42,8 +42,10 @@ export type RouteKey =
     | 'adminAudit'
     | 'adminAiBenchmark'
     | 'profile'
+    | 'profileStamps'
     | 'profileSettings'
-    | 'profileOnboarding';
+    | 'profileOnboarding'
+    | 'publicProfile';
 
 type RouteParamsByKey = {
     inspirationsCountryDetail: { countryName: string };
@@ -51,6 +53,7 @@ type RouteParamsByKey = {
     tripDetail: { tripId: string };
     exampleTrip: { templateId: string };
     shareTrip: { token: string };
+    publicProfile: { username: string };
 };
 
 const encodeSegment = (value: string): string => encodeURIComponent(value);
@@ -80,7 +83,7 @@ const MARKETING_PATH_PATTERNS: RegExp[] = [
     /^\/cookies$/,
 ];
 
-const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/api'];
+const TOOL_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example', '/admin', '/profile', '/u', '/api'];
 const ONBOARDING_EXEMPT_ROUTE_PREFIXES = ['/create-trip', '/trip', '/s', '/example'];
 
 export const LOCALIZED_MARKETING_ROUTE_KEYS: RouteKey[] = [
@@ -197,10 +200,14 @@ export const buildPath = <K extends RouteKey>(
             return '/admin/ai-benchmark';
         case 'profile':
             return '/profile';
+        case 'profileStamps':
+            return '/profile/stamps';
         case 'profileSettings':
             return '/profile/settings';
         case 'profileOnboarding':
             return '/profile/onboarding';
+        case 'publicProfile':
+            return `/u/${encodeSegment((params as RouteParamsByKey['publicProfile']).username)}`;
         default:
             return '/';
     }
@@ -292,5 +299,7 @@ export const getNamespacesForMarketingPath = (pathname: string): string[] => {
 export const getNamespacesForToolPath = (pathname: string): string[] => {
     const stripped = stripLocalePrefix(pathname);
     if (stripped.startsWith('/create-trip')) return ['common', 'createTrip'];
+    if (stripped.startsWith('/profile')) return ['common', 'profile'];
+    if (stripped.startsWith('/u/')) return ['common', 'profile'];
     return ['common'];
 };

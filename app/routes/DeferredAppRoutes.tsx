@@ -32,6 +32,8 @@ const PrivacyPage = lazyWithRecovery('PrivacyPage', () => import('../../pages/Pr
 const TermsPage = lazyWithRecovery('TermsPage', () => import('../../pages/TermsPage').then((module) => ({ default: module.TermsPage })));
 const CookiesPage = lazyWithRecovery('CookiesPage', () => import('../../pages/CookiesPage').then((module) => ({ default: module.CookiesPage })));
 const ProfilePage = lazyWithRecovery('ProfilePage', () => import('../../pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ProfileStampsPage = lazyWithRecovery('ProfileStampsPage', () => import('../../pages/ProfileStampsPage').then((module) => ({ default: module.ProfileStampsPage })));
+const PublicProfilePage = lazyWithRecovery('PublicProfilePage', () => import('../../pages/PublicProfilePage').then((module) => ({ default: module.PublicProfilePage })));
 const ProfileSettingsPage = lazyWithRecovery('ProfileSettingsPage', () => import('../../pages/ProfileSettingsPage').then((module) => ({ default: module.ProfileSettingsPage })));
 const ProfileOnboardingPage = lazyWithRecovery('ProfileOnboardingPage', () => import('../../pages/ProfileOnboardingPage').then((module) => ({ default: module.ProfileOnboardingPage })));
 const AdminAccessDeniedPage = lazyWithRecovery('AdminAccessDeniedPage', () => import('../../pages/AdminAccessDeniedPage').then((module) => ({ default: module.AdminAccessDeniedPage })));
@@ -57,6 +59,25 @@ const renderWithSuspense = (node: React.ReactElement) => (
         {node}
     </Suspense>
 );
+
+const AuthenticatedMarketingHomeRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
+    const { isLoading, isAuthenticated } = useAuth();
+
+    if (isLoading) return <RouteLoadingFallback />;
+    if (isAuthenticated) {
+        return <Navigate to="/profile" replace />;
+    }
+    return children;
+};
+
+const wrapMarketingRouteElement = (path: string, element: React.ReactElement): React.ReactElement => {
+    if (path !== '/') return element;
+    return (
+        <AuthenticatedMarketingHomeRoute>
+            {element}
+        </AuthenticatedMarketingHomeRoute>
+    );
+};
 
 const LOCALIZED_MARKETING_LOCALES: AppLanguage[] = SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 
@@ -221,7 +242,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 <Route
                     key={`marketing:${path}`}
                     path={path}
-                    element={renderWithSuspense(element)}
+                    element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                 />
             ))}
             {LOCALIZED_MARKETING_LOCALES.flatMap((locale) =>
@@ -229,7 +250,7 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                     <Route
                         key={`marketing:${locale}:${path}`}
                         path={getLocalizedMarketingRoutePath(path, locale)}
-                        element={renderWithSuspense(element)}
+                        element={renderWithSuspense(wrapMarketingRouteElement(path, element))}
                     />
                 ))
             )}
@@ -350,12 +371,24 @@ export const DeferredAppRoutes: React.FC<DeferredAppRoutesProps> = ({
                 )}
             />
             <Route
+                path="/profile/stamps"
+                element={renderWithSuspense(
+                    <AuthenticatedRoute>
+                        <ProfileStampsPage />
+                    </AuthenticatedRoute>
+                )}
+            />
+            <Route
                 path="/profile/settings"
                 element={renderWithSuspense(
                     <AuthenticatedRoute>
                         <ProfileSettingsPage />
                     </AuthenticatedRoute>
                 )}
+            />
+            <Route
+                path="/u/:username"
+                element={renderWithSuspense(<PublicProfilePage />)}
             />
             <Route
                 path="/admin/access-denied"

@@ -6,7 +6,7 @@ import { NAV_ITEMS } from '../../config/navigation';
 import { LanguageSelect } from './LanguageSelect';
 import { useHasSavedTrips } from '../../hooks/useHasSavedTrips';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
+import { buildLocalizedCreateTripPath, buildLocalizedMarketingPath, buildPath, extractLocaleFromPath, getNamespacesForMarketingPath, getNamespacesForToolPath, isToolRoute } from '../../config/routes';
 import { AppLanguage } from '../../types';
 import { applyDocumentLocale, DEFAULT_LOCALE, normalizeLocale } from '../../config/locales';
 import { buildLocalizedLocation } from '../../services/localeRoutingService';
@@ -16,6 +16,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useLoginModal } from '../../hooks/useLoginModal';
 import { buildPathFromLocationParts } from '../../services/authNavigationService';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { getCurrentUserProfile } from '../../services/profileService';
 
 interface MobileMenuProps {
     isOpen: boolean;
@@ -48,6 +49,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const { isAuthenticated, isAdmin, logout, isLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
     const [adminLinks, setAdminLinks] = useState<Array<{ id: string; label: string; path: string }>>([]);
+    const [publicProfilePath, setPublicProfilePath] = useState<string | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -108,6 +110,30 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         if (isAdmin) return;
         setAdminLinks([]);
     }, [isAdmin]);
+
+    useEffect(() => {
+        if (!isOpen || !isAuthenticated) return;
+        let active = true;
+
+        void getCurrentUserProfile()
+            .then((profile) => {
+                if (!active) return;
+                const normalizedUsername = profile?.username?.trim().toLowerCase();
+                if (!normalizedUsername) {
+                    setPublicProfilePath(null);
+                    return;
+                }
+                setPublicProfilePath(buildPath('publicProfile', { username: normalizedUsername }));
+            })
+            .catch(() => {
+                if (!active) return;
+                setPublicProfilePath(null);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [isAuthenticated, isOpen]);
 
     const handleNavClick = (target: string) => {
         trackEvent(`mobile_nav__${target}`);
@@ -277,6 +303,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         {isAuthenticated ? (
                             <>
                                 <NavLink
+                                    to="/profile?tab=recent"
+                                    onClick={() => handleNavClick('profile_recent')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('profile_recent')}
+                                >
+                                    Recent trips
+                                </NavLink>
+                                <NavLink
                                     to="/profile"
                                     onClick={() => handleNavClick('profile')}
                                     className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
@@ -291,6 +325,22 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     {...mobileNavDebugAttributes('settings')}
                                 >
                                     Settings
+                                </NavLink>
+                                <NavLink
+                                    to="/profile/stamps"
+                                    onClick={() => handleNavClick('stamps')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('stamps')}
+                                >
+                                    Stamps
+                                </NavLink>
+                                <NavLink
+                                    to={publicProfilePath || '/profile/settings'}
+                                    onClick={() => handleNavClick(publicProfilePath ? 'public_profile' : 'public_profile_setup')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes(publicProfilePath ? 'public_profile' : 'public_profile_setup')}
+                                >
+                                    View public profile
                                 </NavLink>
                                 {isAdmin && (
                                     <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2">

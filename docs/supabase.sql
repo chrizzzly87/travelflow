@@ -59,6 +59,8 @@ create table if not exists public.trip_collaborators (
 create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
   display_name text,
+  passport_sticker_positions jsonb not null default '{}'::jsonb,
+  passport_sticker_selection jsonb not null default '[]'::jsonb,
   plan_id uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -175,6 +177,8 @@ alter table public.trips add column if not exists trip_expires_at timestamptz;
 alter table public.trips add column if not exists archived_at timestamptz;
 alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
+alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;
@@ -2505,6 +2509,19 @@ begin
 end;
 $$;
 
+create or replace function public.profile_normalize_country_code(p_country text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select case
+    when nullif(btrim(coalesce(p_country, '')), '') is null then null
+    when btrim(p_country) ~ '^[A-Za-z]{2}$' then upper(btrim(p_country))
+    else null
+  end;
+$$;
+
 create or replace function public.admin_update_user_profile(
   p_user_id uuid,
   p_first_name text default null,
@@ -2516,7 +2533,8 @@ create or replace function public.admin_update_user_profile(
   p_preferred_language text default null,
   p_account_status text default null,
   p_system_role text default null,
-  p_tier_key text default null
+  p_tier_key text default null,
+  p_bypass_username_cooldown boolean default false
 )
 returns table(
   user_id uuid,
@@ -2534,10 +2552,18 @@ as $$
 declare
   v_before jsonb;
   v_after jsonb;
+  v_country_raw text;
+  v_country_normalized text;
 begin
   if not public.has_admin_permission('users.write') then
     raise exception 'Not allowed';
   end if;
+
+  perform set_config(
+    'app.username_cooldown_bypass',
+    case when coalesce(p_bypass_username_cooldown, false) then 'true' else 'false' end,
+    true
+  );
 
   if p_system_role is not null and p_system_role not in ('admin', 'user') then
     raise exception 'Invalid system role';
@@ -2551,6 +2577,14 @@ begin
     select 1 from public.plans pl where pl.key = p_tier_key
   ) then
     raise exception 'Unknown tier key';
+  end if;
+
+  v_country_raw := nullif(btrim(coalesce(p_country, '')), '');
+  if v_country_raw is not null then
+    v_country_normalized := public.profile_normalize_country_code(v_country_raw);
+    if v_country_normalized is null then
+      raise exception 'Country/Region must be a valid ISO 3166-1 alpha-2 country code';
+    end if;
   end if;
 
   select to_jsonb(p)
@@ -2567,7 +2601,7 @@ begin
          last_name = coalesce(p_last_name, p.last_name),
          username = coalesce(p_username, p.username),
          gender = coalesce(p_gender, p.gender),
-         country = coalesce(p_country, p.country),
+         country = coalesce(v_country_normalized, p.country),
          city = coalesce(p_city, p.city),
          preferred_language = coalesce(p_preferred_language, p.preferred_language),
          account_status = coalesce(p_account_status, p.account_status),
@@ -3369,7 +3403,7 @@ grant execute on function public.has_admin_permission(text, uuid) to authenticat
 grant execute on function public.admin_write_audit(text, text, text, jsonb, jsonb, jsonb) to authenticated;
 grant execute on function public.admin_list_users(integer, integer, text) to authenticated;
 grant execute on function public.admin_get_user_profile(uuid) to authenticated;
-grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text) to authenticated;
+grant execute on function public.admin_update_user_profile(uuid, text, text, text, text, text, text, text, text, text, text, boolean) to authenticated;
 grant execute on function public.admin_update_user_tier(uuid, text) to authenticated;
 grant execute on function public.admin_update_user_overrides(uuid, jsonb) to authenticated;
 grant execute on function public.admin_update_plan_entitlements(text, jsonb) to authenticated;
@@ -3382,3 +3416,502 @@ grant execute on function public.admin_hard_delete_trip(text) to authenticated;
 grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
 grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
 grant execute on function public.admin_preview_tier_reapply(text) to authenticated;
+
+-- =============================================================================
+-- Public profile handles + profile visibility extensions
+-- =============================================================================
+
+alter table public.trips add column if not exists show_on_public_profile boolean not null default true;
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists public_profile_enabled boolean not null default true;
+alter table public.profiles add column if not exists default_public_trip_visibility boolean not null default true;
+alter table public.profiles add column if not exists username_changed_at timestamptz;
+
+update public.profiles p
+set country = upper(btrim(p.country))
+where p.country is not null
+  and btrim(p.country) ~ '^[a-z]{2}$';
+
+update public.profiles p
+set country = 'DE'
+where p.country is null
+   or nullif(btrim(p.country), '') is null
+   or public.profile_normalize_country_code(p.country) is null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_country_iso2_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_country_iso2_check
+      check (country is null or country ~ '^[A-Z]{2}$');
+  end if;
+end;
+$$;
+
+create or replace function public.profile_apply_country_rules()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_raw_country text := nullif(btrim(coalesce(new.country, '')), '');
+  v_country_code text;
+begin
+  if v_raw_country is null then
+    new.country := null;
+    return new;
+  end if;
+
+  v_country_code := public.profile_normalize_country_code(v_raw_country);
+
+  if v_country_code is null then
+    raise exception 'Country/Region must be a valid ISO 3166-1 alpha-2 country code';
+  end if;
+
+  new.country := v_country_code;
+  return new;
+end;
+$$;
+
+drop trigger if exists profile_apply_country_rules on public.profiles;
+create trigger profile_apply_country_rules
+before insert or update of country
+on public.profiles
+for each row execute function public.profile_apply_country_rules();
+
+create table if not exists public.profile_handle_redirects (
+  id uuid primary key default gen_random_uuid(),
+  handle text not null,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists profile_handle_redirects_handle_uidx
+  on public.profile_handle_redirects (lower(handle));
+create index if not exists profile_handle_redirects_user_idx
+  on public.profile_handle_redirects (user_id, expires_at desc);
+create index if not exists profile_handle_redirects_expiry_idx
+  on public.profile_handle_redirects (expires_at desc);
+
+alter table public.profile_handle_redirects enable row level security;
+
+drop policy if exists "Profile handle redirects active read" on public.profile_handle_redirects;
+create policy "Profile handle redirects active read"
+on public.profile_handle_redirects for select
+using (expires_at > now());
+
+drop policy if exists "Profile handle redirects admin manage" on public.profile_handle_redirects;
+create policy "Profile handle redirects admin manage"
+on public.profile_handle_redirects for all
+using (public.is_admin(auth.uid()))
+with check (public.is_admin(auth.uid()));
+
+drop policy if exists "Profiles are publicly readable when enabled" on public.profiles;
+create policy "Profiles are publicly readable when enabled"
+on public.profiles for select
+using (
+  coalesce(public_profile_enabled, true) = true
+  and coalesce(account_status, 'active') = 'active'
+);
+
+drop policy if exists "Trips are publicly readable when profile is public" on public.trips;
+create policy "Trips are publicly readable when profile is public"
+on public.trips for select
+using (
+  coalesce(show_on_public_profile, true) = true
+  and coalesce(status, 'active') <> 'archived'
+  and exists (
+    select 1
+    from public.profiles p
+    where p.id = trips.owner_id
+      and coalesce(p.public_profile_enabled, true) = true
+      and coalesce(p.account_status, 'active') = 'active'
+  )
+);
+
+create or replace function public.profile_apply_username_rules()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_now timestamptz := now();
+  v_old_username text := null;
+  v_new_username text := nullif(lower(btrim(coalesce(new.username, ''))), '');
+  v_is_self boolean := auth.uid() = coalesce(case when tg_op = 'INSERT' then new.id else old.id end, new.id);
+  v_is_admin boolean := public.is_admin(auth.uid());
+  v_bypass_cooldown boolean := coalesce(current_setting('app.username_cooldown_bypass', true), 'false') = 'true';
+  v_cooldown_ends_at timestamptz;
+begin
+  if tg_op <> 'INSERT' then
+    v_old_username := nullif(lower(btrim(coalesce(old.username, ''))), '');
+  end if;
+
+  if v_new_username is not null then
+    if v_new_username !~ '^[a-z0-9_]{3,30}$' then
+      raise exception 'Username must be 3-30 chars and use only lowercase letters, numbers, and underscores';
+    end if;
+
+    if v_new_username in (
+      'admin','support','settings','profile','profiles','login','logout','signup',
+      'api','trip','trips','create','privacy','terms','cookies','imprint','u'
+    ) then
+      raise exception 'Username is reserved';
+    end if;
+  end if;
+
+  new.username := v_new_username;
+
+  if tg_op = 'INSERT' then
+    if v_new_username is not null and new.username_changed_at is null then
+      new.username_changed_at := v_now;
+    end if;
+    return new;
+  end if;
+
+  if coalesce(v_old_username, '') = coalesce(v_new_username, '') then
+    return new;
+  end if;
+
+  if v_is_self and not v_is_admin and not v_bypass_cooldown and v_old_username is not null and old.username_changed_at is not null then
+    v_cooldown_ends_at := old.username_changed_at + interval '90 days';
+    if v_now < v_cooldown_ends_at then
+      raise exception 'Username can only be changed every 90 days';
+    end if;
+  end if;
+
+  if v_old_username is not null then
+    insert into public.profile_handle_redirects (handle, user_id, expires_at, created_at, updated_at)
+    values (v_old_username, old.id, v_now + interval '180 days', v_now, v_now)
+    on conflict ((lower(handle)))
+    do update
+      set user_id = excluded.user_id,
+          expires_at = excluded.expires_at,
+          updated_at = v_now;
+  end if;
+
+  if v_new_username is not null then
+    delete from public.profile_handle_redirects phr where lower(phr.handle) = v_new_username;
+    new.username_changed_at := v_now;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists profile_apply_username_rules on public.profiles;
+create trigger profile_apply_username_rules
+before insert or update of username
+on public.profiles
+for each row execute function public.profile_apply_username_rules();
+
+create or replace function public.profile_check_username_availability(p_username text)
+returns table(
+  availability text,
+  reason text,
+  cooldown_ends_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_username text := nullif(lower(btrim(coalesce(p_username, ''))), '');
+  v_uid uuid := auth.uid();
+  v_current_username text;
+  v_username_changed_at timestamptz;
+  v_cooldown_ends_at timestamptz;
+begin
+  if v_username is null then
+    return query select 'invalid'::text, 'empty'::text, null::timestamptz;
+    return;
+  end if;
+
+  if v_username !~ '^[a-z0-9_]{3,30}$' then
+    return query select 'invalid'::text, 'format'::text, null::timestamptz;
+    return;
+  end if;
+
+  if v_username in (
+    'admin','support','settings','profile','profiles','login','logout','signup',
+    'api','trip','trips','create','privacy','terms','cookies','imprint','u'
+  ) then
+    return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
+    return;
+  end if;
+
+  if v_uid is not null then
+    select nullif(lower(btrim(coalesce(p.username, ''))), ''), p.username_changed_at
+      into v_current_username, v_username_changed_at
+      from public.profiles p
+     where p.id = v_uid
+     limit 1;
+
+    if v_current_username is not null and v_current_username = v_username then
+      return query select 'unchanged'::text, null::text, null::timestamptz;
+      return;
+    end if;
+
+    if v_current_username is not null and v_username_changed_at is not null and not public.is_admin(v_uid) then
+      v_cooldown_ends_at := v_username_changed_at + interval '90 days';
+      if now() < v_cooldown_ends_at then
+        return query select 'cooldown'::text, 'cooldown'::text, v_cooldown_ends_at;
+        return;
+      end if;
+    end if;
+  end if;
+
+  if exists (
+    select 1
+    from public.profiles p
+    where lower(coalesce(p.username, '')) = v_username
+      and (v_uid is null or p.id <> v_uid)
+  ) then
+    return query select 'taken'::text, null::text, null::timestamptz;
+    return;
+  end if;
+
+  if exists (
+    select 1
+    from public.profile_handle_redirects phr
+    where lower(phr.handle) = v_username
+      and phr.expires_at > now()
+      and (v_uid is null or phr.user_id <> v_uid)
+  ) then
+    return query select 'reserved'::text, 'redirect_reserved'::text, null::timestamptz;
+    return;
+  end if;
+
+  return query select 'available'::text, null::text, null::timestamptz;
+end;
+$$;
+
+create or replace function public.profile_resolve_public_handle(p_handle text)
+returns table(
+  status text,
+  canonical_username text,
+  id uuid,
+  display_name text,
+  first_name text,
+  last_name text,
+  username text,
+  bio text,
+  country text,
+  city text,
+  preferred_language text,
+  public_profile_enabled boolean,
+  account_status text,
+  username_changed_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_handle text := nullif(lower(btrim(coalesce(p_handle, ''))), '');
+  v_redirect_user_id uuid;
+begin
+  if v_handle is null or v_handle !~ '^[a-z0-9_]{3,30}$' then
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+    return;
+  end if;
+
+  return query
+  select
+    case
+      when coalesce(p.public_profile_enabled, true) = true and coalesce(p.account_status, 'active') = 'active' then 'found'
+      else 'private'
+    end as status,
+    p.username as canonical_username,
+    p.id,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.bio,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.public_profile_enabled,
+    p.account_status,
+    p.username_changed_at
+  from public.profiles p
+  where lower(coalesce(p.username, '')) = v_handle
+  limit 1;
+
+  if found then
+    return;
+  end if;
+
+  select phr.user_id
+    into v_redirect_user_id
+    from public.profile_handle_redirects phr
+   where lower(phr.handle) = v_handle
+     and phr.expires_at > now()
+   order by phr.expires_at desc
+   limit 1;
+
+  if v_redirect_user_id is null then
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+    return;
+  end if;
+
+  return query
+  select
+    case
+      when coalesce(p.public_profile_enabled, true) = true and coalesce(p.account_status, 'active') = 'active' then 'redirect'
+      else 'private'
+    end as status,
+    p.username as canonical_username,
+    p.id,
+    p.display_name,
+    p.first_name,
+    p.last_name,
+    p.username,
+    p.bio,
+    p.country,
+    p.city,
+    p.preferred_language,
+    p.public_profile_enabled,
+    p.account_status,
+    p.username_changed_at
+  from public.profiles p
+  where p.id = v_redirect_user_id
+  limit 1;
+
+  if not found then
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+  end if;
+end;
+$$;
+
+create or replace function public.upsert_trip(
+  p_id text,
+  p_data jsonb,
+  p_view jsonb,
+  p_title text,
+  p_start_date date,
+  p_is_favorite boolean,
+  p_show_on_public_profile boolean default true,
+  p_forked_from_trip_id text default null,
+  p_forked_from_share_token text default null,
+  p_status text default 'active',
+  p_trip_expires_at timestamptz default null,
+  p_source_kind text default null,
+  p_source_template_id text default null
+)
+returns table(trip_id text)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_owner uuid;
+  v_limit integer;
+  v_count integer;
+  v_status text;
+  v_trip_expires_at timestamptz;
+  v_expiration_days integer;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  v_status := case
+    when p_status in ('active', 'archived', 'expired') then p_status
+    else 'active'
+  end;
+
+  if exists (select 1 from public.trips t where t.id = p_id) then
+    if not exists (select 1 from public.trips t where t.id = p_id and t.owner_id = v_owner) then
+      raise exception 'Not allowed';
+    end if;
+
+    update public.trips
+       set data = p_data,
+           view_settings = p_view,
+           title = coalesce(p_title, title),
+           start_date = coalesce(p_start_date, start_date),
+           is_favorite = coalesce(p_is_favorite, is_favorite),
+           show_on_public_profile = coalesce(p_show_on_public_profile, show_on_public_profile),
+           forked_from_trip_id = coalesce(p_forked_from_trip_id, forked_from_trip_id),
+           forked_from_share_token = coalesce(p_forked_from_share_token, forked_from_share_token),
+           status = coalesce(v_status, status),
+           trip_expires_at = coalesce(p_trip_expires_at, trip_expires_at),
+           source_kind = coalesce(p_source_kind, source_kind),
+           source_template_id = coalesce(p_source_template_id, source_template_id),
+           updated_at = now()
+     where id = p_id;
+  else
+    v_limit := public.get_trip_limit_for_user(v_owner);
+    select count(*)
+      into v_count
+      from public.trips t
+     where t.owner_id = v_owner
+       and coalesce(t.status, 'active') <> 'archived';
+    if v_limit < 2147483647 and v_count >= v_limit then
+      raise exception 'Trip limit reached';
+    end if;
+
+    v_expiration_days := public.get_trip_expiration_days_for_user(v_owner);
+    v_trip_expires_at := p_trip_expires_at;
+    if v_trip_expires_at is null and v_expiration_days is not null then
+      v_trip_expires_at := now() + make_interval(days => v_expiration_days);
+    end if;
+
+    insert into public.trips (
+      id,
+      owner_id,
+      title,
+      start_date,
+      data,
+      view_settings,
+      is_favorite,
+      show_on_public_profile,
+      status,
+      trip_expires_at,
+      source_kind,
+      source_template_id,
+      forked_from_trip_id,
+      forked_from_share_token
+    )
+    values (
+      p_id,
+      v_owner,
+      coalesce(p_title, 'Untitled trip'),
+      p_start_date,
+      p_data,
+      p_view,
+      coalesce(p_is_favorite, false),
+      coalesce(p_show_on_public_profile, true),
+      v_status,
+      v_trip_expires_at,
+      p_source_kind,
+      p_source_template_id,
+      p_forked_from_trip_id,
+      p_forked_from_share_token
+    );
+  end if;
+
+  return query select p_id as trip_id;
+end;
+$$;
+
+grant execute on function public.profile_check_username_availability(text) to anon, authenticated;
+grant execute on function public.profile_resolve_public_handle(text) to anon, authenticated;
+grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;

@@ -19,6 +19,11 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
         createdAt,
         updatedAt,
         isFavorite: Boolean(candidate.isFavorite),
+        isPinned: Boolean(candidate.isPinned),
+        pinnedAt: typeof candidate.pinnedAt === 'number' && Number.isFinite(candidate.pinnedAt)
+            ? candidate.pinnedAt
+            : undefined,
+        showOnPublicProfile: candidate.showOnPublicProfile !== false,
         status: candidate.status === 'archived' ? 'archived' : candidate.status === 'expired' ? 'expired' : 'active',
         tripExpiresAt: typeof candidate.tripExpiresAt === 'string' ? candidate.tripExpiresAt : null,
     } as ITrip;
@@ -54,6 +59,11 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
             createdAt: typeof trip.createdAt === 'number' ? trip.createdAt : Date.now(),
             updatedAt,
             isFavorite: Boolean(trip.isFavorite),
+            isPinned: Boolean(trip.isPinned),
+            pinnedAt: typeof trip.pinnedAt === 'number' && Number.isFinite(trip.pinnedAt)
+                ? trip.pinnedAt
+                : undefined,
+            showOnPublicProfile: trip.showOnPublicProfile !== false,
         };
         
         if (existingIndex >= 0) {
