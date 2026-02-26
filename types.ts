@@ -122,6 +122,7 @@ export interface ITrip {
   isFavorite?: boolean;
   isPinned?: boolean;
   pinnedAt?: number;
+  showOnPublicProfile?: boolean;
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;

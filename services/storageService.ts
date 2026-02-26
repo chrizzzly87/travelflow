@@ -23,6 +23,7 @@ const normalizeTrip = (trip: unknown): ITrip | null => {
         pinnedAt: typeof candidate.pinnedAt === 'number' && Number.isFinite(candidate.pinnedAt)
             ? candidate.pinnedAt
             : undefined,
+        showOnPublicProfile: candidate.showOnPublicProfile !== false,
         status: candidate.status === 'archived' ? 'archived' : candidate.status === 'expired' ? 'expired' : 'active',
         tripExpiresAt: typeof candidate.tripExpiresAt === 'string' ? candidate.tripExpiresAt : null,
     } as ITrip;
@@ -62,6 +63,7 @@ export const saveTrip = (trip: ITrip, options?: { preserveUpdatedAt?: boolean })
             pinnedAt: typeof trip.pinnedAt === 'number' && Number.isFinite(trip.pinnedAt)
                 ? trip.pinnedAt
                 : undefined,
+            showOnPublicProfile: trip.showOnPublicProfile !== false,
         };
         
         if (existingIndex >= 0) {

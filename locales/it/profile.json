@@ -1,14 +1,7 @@
 {
   "hero": {
-    "accountLabel": "Account profile",
-    "title": "Your profile hub",
-    "subtitle": "Track recent plans, favorites, and highlighted trips in one place.",
     "loading": "Loading profile...",
-    "labels": {
-      "tier": "Tier",
-      "role": "Role",
-      "language": "Language"
-    }
+    "inspirationCta": "Sounds good? Check our Inspirations for {flag} {country}"
   },
   "tabs": {
     "recent": "Recent",
@@ -29,12 +22,15 @@
     "pinnedTag": "Pinned",
     "mapUnavailable": "Map preview unavailable",
     "mapLoading": "Loading preview...",
+    "creatorPrefix": "By",
     "actions": {
       "open": "Open",
       "favorite": "Favorite",
       "unfavorite": "Unfavorite",
       "pin": "Pin",
-      "unpin": "Unpin"
+      "unpin": "Unpin",
+      "makePublic": "Public",
+      "makePrivate": "Private"
     },
     "source": {
       "createdByYou": "Created by you",
@@ -48,6 +44,98 @@
     "settings": "Profile settings",
     "planner": "Go to planner",
     "adminWorkspace": "Open admin workspace"
+  },
+  "summary": {
+    "editProfile": "Edit profile",
+    "viewPublicProfile": "View public profile",
+    "memberSinceLabel": "Member since",
+    "memberSinceUnknown": "Not available",
+    "usernamePrefix": "@",
+    "roleLabel": "Role",
+    "bioLabel": "Bio",
+    "bioFallback": "Add a short bio so others can understand your travel style.",
+    "locationLabel": "Location",
+    "locationUnknown": "Location not set",
+    "distanceLabel": "Total distance",
+    "distanceUnknown": "No tracked distance yet",
+    "countriesLabel": "Countries visited",
+    "countriesEmpty": "No countries tracked yet",
+    "scratchMapTitle": "Scratch map",
+    "scratchMapDescription": "Your visited-country map layer is coming soon.",
+    "follow": "Follow",
+    "message": "Message"
+  },
+  "stats": {
+    "totalTrips": "Total trips",
+    "likesSaved": "Likes saved",
+    "followers": "Followers",
+    "likesEarned": "Likes earned"
+  },
+  "publicProfile": {
+    "loading": "Loading public profile...",
+    "title": "Public profile",
+    "privateTitle": "This profile is private",
+    "privateDescription": "This traveler has hidden their public profile for now.",
+    "notFoundTitle": "Profile not found",
+    "notFoundDescription": "We could not find a profile for this handle.",
+    "ctaExploreInspirations": "Explore inspirations",
+    "ctaBackProfile": "Go to your profile",
+    "tripsTitle": "Public trips",
+    "emptyTrips": "No public trips yet.",
+    "followHint": "Follow and message actions are coming soon."
+  },
+  "settings": {
+    "title": "Profile settings",
+    "description": "Update your profile details, public URL, and visibility defaults.",
+    "onboardingTitle": "Complete your profile",
+    "onboardingDescription": "Before using TravelFlow, add your core profile details so personalization works reliably.",
+    "fields": {
+      "firstName": "First name *",
+      "lastName": "Last name *",
+      "username": "Username *",
+      "bio": "Bio",
+      "gender": "Gender",
+      "unspecified": "Unspecified",
+      "country": "Country *",
+      "city": "City *",
+      "preferredLanguage": "Preferred language *"
+    },
+    "usernameHelp": "Lowercase letters, numbers, and underscores only. 3-30 characters.",
+    "usernameCooldownHint": "You can change your username again on {date}.",
+    "bioHelp": "Share a short intro travelers can see on your public profile.",
+    "publicProfileToggleTitle": "Enable public profile",
+    "publicProfileToggleDescription": "Allow others to discover your public profile and visible trips.",
+    "defaultVisibilityToggleTitle": "Default trip visibility",
+    "defaultVisibilityToggleDescription": "Choose whether new trips are public on your profile by default.",
+    "publicUrlLabel": "Public URL",
+    "publicUrlEmpty": "Set a username to generate your public profile URL.",
+    "viewPublicProfile": "Open public profile",
+    "requiredHint": "Complete all required fields to continue.",
+    "actions": {
+      "save": "Save profile settings",
+      "saveAndContinue": "Save and continue"
+    },
+    "messages": {
+      "saved": "Profile settings saved successfully.",
+      "onboardingSaved": "Profile completed successfully."
+    },
+    "errors": {
+      "required": "Please fill all required fields.",
+      "usernameUnavailable": "Choose an available username before saving.",
+      "saveFailed": "Could not update your profile."
+    },
+    "usernameStatus": {
+      "idle": "Set your username to claim a public profile URL.",
+      "checking": "Checking username availability...",
+      "available": "Great, this username is available.",
+      "taken": "This username is already taken.",
+      "reserved": "This username is reserved.",
+      "invalid": "Use 3-30 lowercase letters, numbers, or underscores.",
+      "unchanged": "This is your current username.",
+      "cooldown": "Username changes are currently on cooldown.",
+      "cooldownDate": "Username changes are on cooldown until {date}.",
+      "failed": "Could not verify username availability right now."
+    }
   },
   "likedPlaceholder": {
     "title": "Liked trips are coming soon",

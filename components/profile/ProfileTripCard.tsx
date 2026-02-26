@@ -1,6 +1,8 @@
 import React from 'react';
 import { ArrowUpRight, CalendarBlank, Clock, MapPin, PushPin, Star } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
 import type { AppLanguage, ITrip } from '../../types';
+import { trackEvent } from '../../services/analyticsService';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -16,9 +18,12 @@ interface ProfileTripCardLabels {
   unfavorite: string;
   pin: string;
   unpin: string;
+  makePublic?: string;
+  makePrivate?: string;
   pinnedTag: string;
   mapUnavailable: string;
   mapLoading: string;
+  creatorPrefix?: string;
 }
 
 interface ProfileTripCardProps {
@@ -27,9 +32,16 @@ interface ProfileTripCardProps {
   sourceLabel: string;
   labels: ProfileTripCardLabels;
   onOpen: (trip: ITrip) => void;
-  onToggleFavorite: (trip: ITrip) => void;
-  onTogglePin: (trip: ITrip) => void;
-  analyticsAttrs?: (action: 'open' | 'favorite' | 'pin') => Record<string, string>;
+  onToggleFavorite?: (trip: ITrip) => void;
+  onTogglePin?: (trip: ITrip) => void;
+  onToggleVisibility?: (trip: ITrip) => void;
+  analyticsAttrs?: (action: 'open' | 'favorite' | 'pin' | 'visibility' | 'creator') => Record<string, string>;
+  creatorHandle?: string | null;
+  creatorProfilePath?: string | null;
+  showCreatorAttribution?: boolean;
+  onCreatorClick?: () => void;
+  showFavoriteAction?: boolean;
+  showPinAction?: boolean;
 }
 
 export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
@@ -40,7 +52,14 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   onOpen,
   onToggleFavorite,
   onTogglePin,
+  onToggleVisibility,
   analyticsAttrs,
+  creatorHandle = null,
+  creatorProfilePath = null,
+  showCreatorAttribution = false,
+  onCreatorClick,
+  showFavoriteAction = true,
+  showPinAction = true,
 }) => {
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
@@ -56,6 +75,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   const summaryLine = React.useMemo(() => formatTripSummaryLine(trip, locale), [trip, locale]);
   const dateRange = React.useMemo(() => formatTripDateRange(trip, locale), [trip, locale]);
   const durationDays = React.useMemo(() => getTripDurationDays(trip), [trip]);
+  const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
 
   const cityLanes = React.useMemo(() => (
     cityItems.map((item, index) => ({
@@ -202,7 +222,29 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         </div>
       )}
 
-      <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} flex flex-wrap items-center justify-between gap-2 px-4 py-3`}>
+      {hasCreatorAttribution && creatorHandle && creatorProfilePath && (
+        <div className={`${cityLanes.length > 0 ? '' : 'border-t border-slate-100'} border-b border-slate-100 px-4 py-2.5`}>
+          <p className="text-xs text-slate-500">
+            {labels.creatorPrefix || 'By'}{' '}
+            <Link
+              to={creatorProfilePath}
+              onClick={() => {
+                onCreatorClick?.();
+                trackEvent('trip_preview_card__creator_handle', {
+                  creator_handle: creatorHandle,
+                  trip_id: trip.id,
+                });
+              }}
+              className="font-semibold text-slate-700 hover:text-accent-700 hover:underline"
+              {...(analyticsAttrs ? analyticsAttrs('creator') : {})}
+            >
+              @{creatorHandle}
+            </Link>
+          </p>
+        </div>
+      )}
+
+      <div className={`${cityLanes.length > 0 || hasCreatorAttribution ? '' : 'border-t border-slate-100'} flex flex-wrap items-center justify-between gap-2 px-4 py-3`}>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -213,36 +255,55 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             <ArrowUpRight size={14} weight="bold" />
             {labels.open}
           </button>
-          <button
-            type="button"
-            onClick={() => onToggleFavorite(trip)}
-            className={[
-              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
-              trip.isFavorite
-                ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
-            ].join(' ')}
-            {...(analyticsAttrs ? analyticsAttrs('favorite') : {})}
-          >
-            <Star size={14} weight={trip.isFavorite ? 'fill' : 'regular'} />
-            {trip.isFavorite ? labels.unfavorite : labels.favorite}
-          </button>
+          {showFavoriteAction && onToggleFavorite && (
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(trip)}
+              className={[
+                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+                trip.isFavorite
+                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+              ].join(' ')}
+              {...(analyticsAttrs ? analyticsAttrs('favorite') : {})}
+            >
+              <Star size={14} weight={trip.isFavorite ? 'fill' : 'regular'} />
+              {trip.isFavorite ? labels.unfavorite : labels.favorite}
+            </button>
+          )}
+          {onToggleVisibility && (
+            <button
+              type="button"
+              onClick={() => onToggleVisibility(trip)}
+              className={[
+                'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+                trip.showOnPublicProfile !== false
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+              ].join(' ')}
+              {...(analyticsAttrs ? analyticsAttrs('visibility') : {})}
+            >
+              {trip.showOnPublicProfile !== false ? labels.makePrivate || 'Private' : labels.makePublic || 'Public'}
+            </button>
+          )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => onTogglePin(trip)}
-          className={[
-            'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
-            trip.isPinned
-              ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
-              : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
-          ].join(' ')}
-          {...(analyticsAttrs ? analyticsAttrs('pin') : {})}
-        >
-          <PushPin size={14} weight={trip.isPinned ? 'fill' : 'regular'} />
-          {trip.isPinned ? labels.unpin : labels.pin}
-        </button>
+        {showPinAction && onTogglePin && (
+          <button
+            type="button"
+            onClick={() => onTogglePin(trip)}
+            className={[
+              'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors',
+              trip.isPinned
+                ? 'border-accent-200 bg-accent-50 text-accent-700 hover:bg-accent-100'
+                : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+            ].join(' ')}
+            {...(analyticsAttrs ? analyticsAttrs('pin') : {})}
+          >
+            <PushPin size={14} weight={trip.isPinned ? 'fill' : 'regular'} />
+            {trip.isPinned ? labels.unpin : labels.pin}
+          </button>
+        )}
       </div>
     </article>
   );

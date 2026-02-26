@@ -19,6 +19,10 @@ vi.mock('../../../pages/ProfilePage', () => ({
   ProfilePage: () => React.createElement('div', { 'data-testid': 'mock-profile-page' }, 'Profile page'),
 }));
 
+vi.mock('../../../pages/PublicProfilePage', () => ({
+  PublicProfilePage: () => React.createElement('div', { 'data-testid': 'mock-public-profile-page' }, 'Public profile page'),
+}));
+
 import { DeferredAppRoutes } from '../../../app/routes/DeferredAppRoutes';
 
 const LocationProbe: React.FC = () => {
@@ -75,5 +79,13 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
 
     expect(getByTestId('location-probe').textContent).toBe('/');
     expect(container.querySelector('div[aria-hidden="true"]')).toBeTruthy();
+  });
+
+  it('supports public profile routes', async () => {
+    const { getByTestId } = renderDeferredRoutes('/u/traveler');
+
+    await waitFor(() => {
+      expect(getByTestId('location-probe').textContent).toBe('/u/traveler');
+    });
   });
 });

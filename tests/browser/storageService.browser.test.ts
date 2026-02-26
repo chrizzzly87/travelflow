@@ -94,6 +94,7 @@ describe('services/storageService', () => {
     expect(fallback?.isFavorite).toBe(false);
     expect(fallback?.isPinned).toBe(true);
     expect(fallback?.pinnedAt).toBeUndefined();
+    expect(fallback?.showOnPublicProfile).toBe(true);
   });
 
   it('persists favorite and pin metadata through storage sync', () => {
@@ -111,6 +112,19 @@ describe('services/storageService', () => {
     expect(syncedTrip?.isFavorite).toBe(true);
     expect(syncedTrip?.isPinned).toBe(true);
     expect(syncedTrip?.pinnedAt).toBe(2000);
+  });
+
+  it('persists trip public visibility through storage sync', () => {
+    const trip = makeTrip({
+      id: 'visibility-trip',
+      showOnPublicProfile: false,
+    });
+
+    saveTrip(trip, { preserveUpdatedAt: true });
+    saveTrip({ ...trip, showOnPublicProfile: true }, { preserveUpdatedAt: true });
+
+    const syncedTrip = getTripById('visibility-trip');
+    expect(syncedTrip?.showOnPublicProfile).toBe(true);
   });
 
   it('swallows quota/storage write failures for save/delete/set-all', () => {

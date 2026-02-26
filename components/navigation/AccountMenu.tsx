@@ -3,9 +3,10 @@ import { AirplaneTakeoff, CaretDown, GearSix, ShieldCheck, SignOut, User } from 
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
 import { getAllTrips } from '../../services/storageService';
+import { getCurrentUserProfile } from '../../services/profileService';
 import type { ITrip } from '../../types';
 
 interface AccountMenuProps {
@@ -66,6 +67,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     const { logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => sortByCreatedDesc(getAllTrips()).slice(0, 5));
+    const [publicProfilePath, setPublicProfilePath] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
@@ -105,6 +107,30 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         };
     }, []);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        let active = true;
+
+        void getCurrentUserProfile()
+            .then((profile) => {
+                if (!active) return;
+                const normalizedUsername = profile?.username?.trim().toLowerCase();
+                if (!normalizedUsername) {
+                    setPublicProfilePath(null);
+                    return;
+                }
+                setPublicProfilePath(buildPath('publicProfile', { username: normalizedUsername }));
+            })
+            .catch(() => {
+                if (!active) return;
+                setPublicProfilePath(null);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [isOpen]);
+
     const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);
         setIsOpen(false);
@@ -123,6 +149,14 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         await logout();
         const locale = extractLocaleFromPath(location.pathname) || DEFAULT_LOCALE;
         navigate(buildLocalizedMarketingPath('home', locale));
+    };
+
+    const handleViewPublicProfile = () => {
+        if (publicProfilePath) {
+            navigateTo(publicProfilePath, 'navigation__account_menu--public_profile');
+            return;
+        }
+        navigateTo('/profile/settings', 'navigation__account_menu--public_profile_setup');
     };
 
     const accountIdentityLabel = useMemo(() => {
@@ -225,6 +259,15 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         >
                             <GearSix size={16} />
                             Settings
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleViewPublicProfile}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            {...getAnalyticsDebugAttributes(publicProfilePath ? 'navigation__account_menu--public_profile' : 'navigation__account_menu--public_profile_setup')}
+                        >
+                            <User size={16} />
+                            View public profile
                         </button>
                         <button
                             type="button"

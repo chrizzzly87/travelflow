@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { IdentificationCard, GearSix, ShieldCheck } from '@phosphor-icons/react';
+import { IdentificationCard, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileHero } from '../components/profile/ProfileHero';
+import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
 import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import {
@@ -21,9 +22,13 @@ import { getCurrentUserProfile, type UserProfileRecord } from '../services/profi
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { pickRandomInternationalGreeting } from '../data/internationalGreetings';
+import {
+    formatDisplayNameForGreeting,
+    pickRandomInternationalGreeting,
+} from '../data/internationalGreetingsCatalog';
 import { normalizeLocale } from '../config/locales';
-import { buildPath } from '../config/routes';
+import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
+import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
 
 const initialsFrom = (profile: UserProfileRecord | null, fallbackEmail: string | null): string => {
@@ -33,6 +38,52 @@ const initialsFrom = (profile: UserProfileRecord | null, fallbackEmail: string |
         return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'U';
     }
     return (fallbackEmail || 'user').charAt(0).toUpperCase();
+};
+
+const collectVisitedCountries = (trips: ITrip[]): string[] => {
+    const countries = new Set<string>();
+
+    trips.forEach((trip) => {
+        trip.items.forEach((item) => {
+            if (item.type !== 'city') return;
+            const name = typeof item.countryName === 'string' ? item.countryName.trim() : '';
+            if (name) countries.add(name);
+        });
+    });
+
+    return [...countries].sort((a, b) => a.localeCompare(b));
+};
+
+const formatMemberSince = (
+    profile: UserProfileRecord | null,
+    trips: ITrip[],
+    locale: string,
+    fallbackLabel: string
+): string => {
+    const candidateTimestamps: number[] = [];
+
+    if (profile?.onboardingCompletedAt) {
+        const parsed = Date.parse(profile.onboardingCompletedAt);
+        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
+    }
+
+    if (profile?.usernameChangedAt) {
+        const parsed = Date.parse(profile.usernameChangedAt);
+        if (Number.isFinite(parsed)) candidateTimestamps.push(parsed);
+    }
+
+    trips.forEach((trip) => {
+        if (typeof trip.createdAt === 'number' && Number.isFinite(trip.createdAt)) {
+            candidateTimestamps.push(trip.createdAt);
+        }
+    });
+
+    if (candidateTimestamps.length === 0) return fallbackLabel;
+    const earliest = Math.min(...candidateTimestamps);
+    return new Date(earliest).toLocaleDateString(locale, {
+        month: 'short',
+        year: 'numeric',
+    });
 };
 
 export const ProfilePage: React.FC = () => {
@@ -56,10 +107,35 @@ export const ProfilePage: React.FC = () => {
     const tab = normalizeProfileTripTab(searchParams.get('tab'));
     const recentSort = normalizeProfileRecentSort(searchParams.get('recentSort'));
 
+    const fallbackDisplayName = access?.email || t('fallback.displayName');
     const displayName = profile?.displayName
         || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ')
-        || access?.email
-        || t('fallback.displayName');
+        || fallbackDisplayName;
+    const greetingDisplayName = formatDisplayNameForGreeting(
+        profile?.firstName || '',
+        profile?.lastName || '',
+        displayName,
+        greeting.nameOrder
+    );
+
+    const locationLabel = [profile?.city || '', profile?.country || '']
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(', ') || t('summary.locationUnknown');
+
+    const totalDistanceKm = useMemo(
+        () => trips.reduce((sum, trip) => sum + getTripDistanceKm(trip.items), 0),
+        [trips]
+    );
+    const distanceLabel = totalDistanceKm > 0
+        ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
+        : t('summary.distanceUnknown');
+
+    const visitedCountries = useMemo(() => collectVisitedCountries(trips), [trips]);
+    const memberSince = useMemo(
+        () => formatMemberSince(profile, trips, appLocale, t('summary.memberSinceUnknown')),
+        [appLocale, profile, t, trips]
+    );
 
     const refreshTrips = useCallback(() => {
         setTrips(getAllTrips());
@@ -200,6 +276,39 @@ export const ProfilePage: React.FC = () => {
         });
     }, [persistTrip, t, tab, trips]);
 
+    const handleToggleVisibility = useCallback((trip: ITrip) => {
+        const nextVisibility = trip.showOnPublicProfile === false;
+        const now = Date.now();
+
+        const nextTrips = trips.map((candidate) => {
+            if (candidate.id !== trip.id) return candidate;
+            return {
+                ...candidate,
+                showOnPublicProfile: nextVisibility,
+                updatedAt: now,
+            };
+        });
+
+        setTrips(nextTrips);
+        const updated = nextTrips.find((candidate) => candidate.id === trip.id);
+        if (updated) {
+            persistTrip(updated);
+        }
+
+        trackEvent(nextVisibility ? 'profile__trip_visibility--public' : 'profile__trip_visibility--private', {
+            trip_id: trip.id,
+            tab,
+        });
+    }, [persistTrip, tab, trips]);
+
+    const publicProfilePath = profile?.username
+        ? buildPath('publicProfile', { username: profile.username })
+        : null;
+
+    const inspirationPath = buildLocalizedMarketingPath('inspirationsCountryDetail', appLocale, {
+        countryName: greeting.inspirationCountry,
+    });
+
     if (!isLoading && !isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
@@ -207,27 +316,27 @@ export const ProfilePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <div className="w-full space-y-6 px-4 py-6 sm:px-6 md:py-8 lg:px-8 xl:px-10 2xl:px-14">
+            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <ProfileHero
                     isLoading={loadingProfile}
-                    displayName={displayName}
-                    email={access?.email || t('fallback.email')}
-                    initials={initialsFrom(profile, access?.email || null)}
-                    tier={access?.tierKey || 'tier_free'}
-                    role={access?.role || 'user'}
-                    preferredLanguage={profile?.preferredLanguage || null}
-                    greetingText={greeting.greeting}
-                    greetingLanguage={greeting.language}
-                    greetingContext={greeting.context}
-                    title={t('hero.title')}
-                    subtitle={t('hero.subtitle')}
-                    accountLabel={t('hero.accountLabel')}
                     loadingLabel={t('hero.loading')}
-                    labels={{
-                        tier: t('hero.labels.tier'),
-                        role: t('hero.labels.role'),
-                        language: t('hero.labels.language'),
+                    headline={`${greeting.greeting}, ${greetingDisplayName}`}
+                    transliteration={greeting.transliteration}
+                    phonetic={greeting.phonetic}
+                    context={greeting.context}
+                    ctaLabel={t('hero.inspirationCta', {
+                        flag: greeting.inspirationFlag,
+                        country: greeting.inspirationCountry,
+                    })}
+                    ctaHref={inspirationPath}
+                    onCtaClick={() => {
+                        trackEvent('profile__hero_cta--inspirations_country', {
+                            country: greeting.inspirationCountry,
+                        });
                     }}
+                    analyticsAttributes={getAnalyticsDebugAttributes('profile__hero_cta--inspirations_country', {
+                        country: greeting.inspirationCountry,
+                    })}
                 />
 
                 {errorMessage && (
@@ -242,20 +351,53 @@ export const ProfilePage: React.FC = () => {
                     </section>
                 )}
 
+                <ProfileOwnerSummary
+                    displayName={displayName}
+                    username={profile?.username || ''}
+                    initials={initialsFrom(profile, access?.email || null)}
+                    role={access?.role || 'user'}
+                    memberSince={memberSince}
+                    bio={profile?.bio || ''}
+                    location={locationLabel}
+                    distanceLabel={distanceLabel}
+                    countries={visitedCountries}
+                    stats={[
+                        { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
+                        { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
+                        { id: 'followers', label: t('stats.followers'), value: 0 },
+                        { id: 'likes_earned', label: t('stats.likesEarned'), value: 0, accent: true },
+                    ]}
+                    labels={{
+                        editProfile: t('summary.editProfile'),
+                        viewPublicProfile: t('summary.viewPublicProfile'),
+                        memberSinceLabel: t('summary.memberSinceLabel'),
+                        usernamePrefix: t('summary.usernamePrefix'),
+                        roleLabel: t('summary.roleLabel'),
+                        bio: t('summary.bioLabel'),
+                        bioFallback: t('summary.bioFallback'),
+                        location: t('summary.locationLabel'),
+                        distance: t('summary.distanceLabel'),
+                        countries: t('summary.countriesLabel'),
+                        countriesEmpty: t('summary.countriesEmpty'),
+                        scratchMapTitle: t('summary.scratchMapTitle'),
+                        scratchMapDescription: t('summary.scratchMapDescription'),
+                    }}
+                    onEditProfile={() => {
+                        trackEvent('profile__summary--edit_profile');
+                        navigate(buildPath('profileSettings'));
+                    }}
+                    onViewPublicProfile={() => {
+                        trackEvent(publicProfilePath ? 'profile__summary--view_public_profile' : 'profile__summary--view_public_profile_setup');
+                        navigate(publicProfilePath || buildPath('profileSettings'));
+                    }}
+                    canViewPublicProfile={Boolean(publicProfilePath)}
+                />
+
                 <section className="space-y-2">
                     <h2 className="text-sm font-black tracking-tight text-slate-900">{t('actions.title')}</h2>
                     <div className="flex flex-wrap items-center gap-2">
                         <NavLink
-                            to="/profile/settings"
-                            onClick={() => trackEvent('profile__shortcut--settings')}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
-                            {...getAnalyticsDebugAttributes('profile__shortcut--settings')}
-                        >
-                            <GearSix size={16} />
-                            {t('actions.settings')}
-                        </NavLink>
-                        <NavLink
-                            to="/create-trip"
+                            to={buildPath('createTrip')}
                             onClick={() => trackEvent('profile__shortcut--planner')}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
@@ -265,7 +407,7 @@ export const ProfilePage: React.FC = () => {
                         </NavLink>
                         {isAdmin && (
                             <NavLink
-                                to="/admin/dashboard"
+                                to={buildPath('adminDashboard')}
                                 onClick={() => trackEvent('profile__shortcut--admin_workspace')}
                                 className="inline-flex items-center gap-2 rounded-full border border-accent-200 bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-900 transition-colors hover:bg-accent-100"
                                 {...getAnalyticsDebugAttributes('profile__shortcut--admin_workspace')}
@@ -285,7 +427,7 @@ export const ProfilePage: React.FC = () => {
                                 {t('sections.highlightsCount', { count: pinnedTrips.length })}
                             </span>
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {pinnedTrips.map((trip) => (
                                 <ProfileTripCard
                                     key={`pinned-${trip.id}`}
@@ -298,13 +440,17 @@ export const ProfilePage: React.FC = () => {
                                         unfavorite: t('cards.actions.unfavorite'),
                                         pin: t('cards.actions.pin'),
                                         unpin: t('cards.actions.unpin'),
+                                        makePublic: t('cards.actions.makePublic'),
+                                        makePrivate: t('cards.actions.makePrivate'),
                                         pinnedTag: t('cards.pinnedTag'),
                                         mapUnavailable: t('cards.mapUnavailable'),
                                         mapLoading: t('cards.mapLoading'),
+                                        creatorPrefix: t('cards.creatorPrefix'),
                                     }}
                                     onOpen={handleOpenTrip}
                                     onToggleFavorite={handleToggleFavorite}
                                     onTogglePin={handleTogglePin}
+                                    onToggleVisibility={handleToggleVisibility}
                                     analyticsAttrs={(action) =>
                                         getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
                                             trip_id: trip.id,
@@ -379,7 +525,7 @@ export const ProfilePage: React.FC = () => {
                             <p className="mt-1 text-sm text-slate-600">{t('empty.description')}</p>
                         </div>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {tripsForTab.map((trip) => (
                                 <ProfileTripCard
                                     key={trip.id}
@@ -392,13 +538,17 @@ export const ProfilePage: React.FC = () => {
                                         unfavorite: t('cards.actions.unfavorite'),
                                         pin: t('cards.actions.pin'),
                                         unpin: t('cards.actions.unpin'),
+                                        makePublic: t('cards.actions.makePublic'),
+                                        makePrivate: t('cards.actions.makePrivate'),
                                         pinnedTag: t('cards.pinnedTag'),
                                         mapUnavailable: t('cards.mapUnavailable'),
                                         mapLoading: t('cards.mapLoading'),
+                                        creatorPrefix: t('cards.creatorPrefix'),
                                     }}
                                     onOpen={handleOpenTrip}
                                     onToggleFavorite={handleToggleFavorite}
                                     onTogglePin={handleTogglePin}
+                                    onToggleVisibility={handleToggleVisibility}
                                     analyticsAttrs={(action) =>
                                         getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
                                             trip_id: trip.id,
@@ -409,7 +559,7 @@ export const ProfilePage: React.FC = () => {
                         </div>
                     )}
                 </section>
-            </div>
+            </main>
         </div>
     );
 };

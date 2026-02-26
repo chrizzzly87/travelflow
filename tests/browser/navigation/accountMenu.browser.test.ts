@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   },
   logout: vi.fn().mockResolvedValue(undefined),
   getAllTrips: vi.fn(),
+  getCurrentUserProfile: vi.fn(),
   trackEvent: vi.fn(),
 }));
 
@@ -32,6 +33,10 @@ vi.mock('../../../services/storageService', () => ({
   getAllTrips: mocks.getAllTrips,
 }));
 
+vi.mock('../../../services/profileService', () => ({
+  getCurrentUserProfile: mocks.getCurrentUserProfile,
+}));
+
 vi.mock('../../../services/analyticsService', () => ({
   trackEvent: mocks.trackEvent,
   getAnalyticsDebugAttributes: () => ({}),
@@ -43,6 +48,9 @@ describe('components/navigation/AccountMenu recent trips', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mocks.getCurrentUserProfile.mockResolvedValue({
+      username: 'traveler',
+    });
 
     mocks.getAllTrips.mockReturnValue([
       makeTrip({ id: 'trip-1', title: 'Trip 1', createdAt: 100 }),
@@ -90,5 +98,25 @@ describe('components/navigation/AccountMenu recent trips', () => {
 
     expect(mocks.navigate).toHaveBeenCalledWith('/profile?tab=recent');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--recent_view_all');
+  });
+
+  it('opens public profile shortcut when username is available', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(AccountMenu, {
+      email: 'traveler@example.com',
+      userId: 'user-1',
+      isAdmin: false,
+    }));
+
+    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'View public profile' })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'View public profile' }));
+
+    expect(mocks.navigate).toHaveBeenCalledWith('/u/traveler');
+    expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--public_profile');
   });
 });

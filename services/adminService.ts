@@ -169,7 +169,7 @@ export const adminUpdateUserProfile = async (
         return;
     }
     const client = requireSupabase();
-    const { error } = await client.rpc('admin_update_user_profile', {
+    const rpcPayload = {
         p_user_id: userId,
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
@@ -181,7 +181,18 @@ export const adminUpdateUserProfile = async (
         p_account_status: payload.accountStatus ?? null,
         p_system_role: payload.systemRole ?? null,
         p_tier_key: payload.tierKey ?? null,
+    };
+
+    let { error } = await client.rpc('admin_update_user_profile', {
+        ...rpcPayload,
+        p_bypass_username_cooldown: true,
     });
+
+    if (error && /function/i.test(error.message || '') && /admin_update_user_profile/i.test(error.message || '')) {
+        const fallback = await client.rpc('admin_update_user_profile', rpcPayload);
+        error = fallback.error;
+    }
+
     if (error) throw new Error(error.message || 'Could not update user profile.');
 };
 

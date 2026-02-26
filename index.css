@@ -25,6 +25,7 @@
 @source not "./pages/TermsPage.tsx";
 @source not "./pages/CookiesPage.tsx";
 @source not "./pages/ProfilePage.tsx";
+@source not "./pages/PublicProfilePage.tsx";
 @source not "./pages/ProfileSettingsPage.tsx";
 @source not "./pages/ProfileOnboardingPage.tsx";
 @source not "./pages/AdminWorkspaceRouter.tsx";
@@ -435,6 +436,33 @@ h6,
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes profile-greeting-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.profile-greeting-letter {
+  opacity: 0;
+  animation: profile-greeting-letter-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-greeting-letter {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
   }
 }
 

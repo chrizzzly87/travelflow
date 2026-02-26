@@ -96,12 +96,16 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       firstName: 'Traveler',
       lastName: 'One',
       username: 'traveler',
+      bio: 'Bio',
       gender: '',
       country: 'Germany',
       city: 'Berlin',
       preferredLanguage: 'en',
       onboardingCompletedAt: '2026-01-01T00:00:00Z',
       accountStatus: 'active',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      usernameChangedAt: '2026-01-10T00:00:00Z',
     });
 
     mocks.getAllTrips.mockReturnValue([
@@ -144,5 +148,18 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toContain('recentSort=updated');
     });
+  });
+
+  it('uses the shared page content grid width', async () => {
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-page-container')).toBeInTheDocument();
+    });
+
+    const container = screen.getByTestId('profile-page-container');
+    expect(container.className).toContain('max-w-7xl');
+    expect(container.className).toContain('px-5');
+    expect(container.className).toContain('md:px-8');
   });
 });
