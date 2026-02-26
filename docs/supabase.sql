@@ -60,6 +60,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
   display_name text,
   passport_sticker_positions jsonb not null default '{}'::jsonb,
+  passport_sticker_selection jsonb not null default '[]'::jsonb,
   plan_id uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -177,6 +178,7 @@ alter table public.trips add column if not exists archived_at timestamptz;
 alter table public.trips add column if not exists source_kind text;
 alter table public.trips add column if not exists source_template_id text;
 alter table public.profiles add column if not exists passport_sticker_positions jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists passport_sticker_selection jsonb not null default '[]'::jsonb;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_rating text;
 alter table public.ai_benchmark_runs add column if not exists satisfaction_updated_at timestamptz;
 alter table public.ai_benchmark_runs add column if not exists run_comment text;

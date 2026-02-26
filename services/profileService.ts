@@ -2,6 +2,7 @@ import type { AppLanguage, ITrip } from '../types';
 import { normalizeLocale } from '../config/locales';
 import { dbUpsertUserSettings } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
+import { normalizePassportStickerSelection } from './passportService';
 import { supabase } from './supabaseClient';
 
 export type ProfileGender = '' | 'female' | 'male' | 'non-binary' | 'prefer-not';
@@ -29,6 +30,7 @@ export interface UserProfileRecord {
     defaultPublicTripVisibility: boolean;
     usernameChangedAt: string | null;
     passportStickerPositions: Record<string, PassportStickerPosition>;
+    passportStickerSelection: string[];
 }
 
 export interface UpdateUserProfilePayload {
@@ -107,7 +109,7 @@ const normalizeUsername = (value: unknown): string => (
 );
 
 const isProfileColumnMissing = (message: string): boolean =>
-    /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions)/i.test(message);
+    /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
 
 const toPassportStickerPosition = (value: unknown): PassportStickerPosition | null => {
     if (!value || typeof value !== 'object') return null;
@@ -157,6 +159,7 @@ const mapProfileRow = (
     defaultPublicTripVisibility: toBooleanWithDefault(row?.default_public_trip_visibility, true),
     usernameChangedAt: typeof row?.username_changed_at === 'string' ? row.username_changed_at : null,
     passportStickerPositions: normalizePassportStickerPositions(row?.passport_sticker_positions),
+    passportStickerSelection: normalizePassportStickerSelection(row?.passport_sticker_selection),
 });
 
 const mapTripRow = (row: Record<string, unknown>): ITrip | null => {
@@ -251,7 +254,7 @@ export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null>
 
     let { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
+        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
         .eq('id', userId)
         .maybeSingle();
 
@@ -364,6 +367,30 @@ export const updateCurrentUserPassportStickerPositions = async (
     }
 };
 
+export const updateCurrentUserPassportStickerSelection = async (
+    selection: string[]
+): Promise<void> => {
+    if (!supabase) return;
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) return;
+
+    const normalizedSelection = normalizePassportStickerSelection(selection);
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            passport_sticker_selection: normalizedSelection,
+        })
+        .eq('id', authData.user.id);
+
+    if (error) {
+        const message = error.message || '';
+        if (/column/i.test(message) && /passport_sticker_selection/i.test(message)) {
+            return;
+        }
+        throw new Error(error.message || 'Could not update passport sticker selection.');
+    }
+};
+
 export const checkUsernameAvailability = async (candidateRaw: string): Promise<UsernameAvailabilityResult> => {
     const normalizedUsername = normalizeUsername(candidateRaw);
     const validationFailure = validateUsername(normalizedUsername);
@@ -461,7 +488,7 @@ const findProfileByUsername = async (username: string): Promise<UserProfileRecor
 
     const { data, error } = await supabase
         .from('profiles')
-        .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
+        .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
         .eq('username', username)
         .maybeSingle();
 
@@ -570,7 +597,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
             if (targetUserId) {
                 const { data: targetProfileRow, error: targetProfileError } = await supabase
                     .from('profiles')
-                    .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions')
+                    .select('id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
                     .eq('id', targetUserId)
                     .maybeSingle();
 
