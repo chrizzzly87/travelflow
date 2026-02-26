@@ -327,6 +327,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                     Settings
                                 </NavLink>
                                 <NavLink
+                                    to="/profile/stamps"
+                                    onClick={() => handleNavClick('stamps')}
+                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                    {...mobileNavDebugAttributes('stamps')}
+                                >
+                                    Stamps
+                                </NavLink>
+                                <NavLink
                                     to={publicProfilePath || '/profile/settings'}
                                     onClick={() => handleNavClick(publicProfilePath ? 'public_profile' : 'public_profile_setup')}
                                     className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"

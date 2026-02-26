@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AirplaneTakeoff, CaretDown, GearSix, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
+import { AirplaneTakeoff, CaretDown, GearSix, SealCheck, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
@@ -259,6 +259,15 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         >
                             <GearSix size={16} />
                             Settings
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigateTo('/profile/stamps', 'navigation__account_menu--stamps')}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            {...getAnalyticsDebugAttributes('navigation__account_menu--stamps')}
+                        >
+                            <SealCheck size={16} weight="duotone" />
+                            Stamps
                         </button>
                         <button
                             type="button"

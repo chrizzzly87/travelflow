@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { IdentificationCard, ShieldCheck } from '@phosphor-icons/react';
+import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { ProfileHero } from '../components/profile/ProfileHero';
@@ -436,6 +436,15 @@ export const ProfilePage: React.FC = () => {
                         >
                             <IdentificationCard size={16} />
                             {t('actions.planner')}
+                        </NavLink>
+                        <NavLink
+                            to={buildPath('profileStamps')}
+                            onClick={() => trackEvent('profile__shortcut--stamps')}
+                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
+                            {...getAnalyticsDebugAttributes('profile__shortcut--stamps')}
+                        >
+                            <SealCheck size={16} weight="duotone" />
+                            {t('actions.stamps')}
                         </NavLink>
                         {isAdmin && (
                             <NavLink

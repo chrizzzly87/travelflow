@@ -119,4 +119,19 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/u/traveler');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--public_profile');
   });
+
+  it('opens stamp collection shortcut', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(AccountMenu, {
+      email: 'traveler@example.com',
+      userId: 'user-1',
+      isAdmin: false,
+    }));
+
+    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+    await user.click(screen.getByRole('button', { name: 'Stamps' }));
+
+    expect(mocks.navigate).toHaveBeenCalledWith('/profile/stamps');
+    expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--stamps');
+  });
 });
