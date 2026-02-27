@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { getPassportCoverTheme } from '../../services/passportService';
 import { ProfileStampBookViewer } from './ProfileStampBookViewer';
 import type { ProfileStampGroup, ProfileStampProgress } from './profileStamps';
 
@@ -20,6 +21,8 @@ interface ProfilePassportDialogProps {
   labels: ProfilePassportDialogLabels;
   resolveGroupLabel: (group: ProfileStampGroup) => string;
   onPageChange?: (page: number) => void;
+  countryCode?: string | null;
+  triggerRect?: DOMRect | null;
 }
 
 export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
@@ -32,10 +35,22 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
   labels,
   resolveGroupLabel,
   onPageChange,
+  countryCode,
+  triggerRect,
 }) => {
+  const theme = getPassportCoverTheme(countryCode);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[min(96vw,1120px)] max-w-6xl overflow-visible border-none bg-transparent p-0 shadow-none">
+      <DialogContent 
+        ref={contentRef as any}
+        className="profile-passport-dialog-content !fixed !top-1/2 !left-1/2 !translate-x-0 !translate-y-0 w-[min(96vw,1120px)] max-w-6xl overflow-visible !border-none !bg-transparent !p-0 !shadow-none !rounded-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+        overlayClassName="bg-black/5 backdrop-blur-[1px] transition-all duration-500"
+        style={{ 
+          animationDuration: '820ms' 
+        } as React.CSSProperties}
+      >
         <section className="profile-passport-dialog-shell px-2 pb-2 pt-4 sm:px-3 sm:pt-5">
           <DialogHeader className="sr-only">
             <DialogTitle>{title}</DialogTitle>
@@ -51,11 +66,18 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
               <span className="profile-passport-dialog-opening-spine" />
               <span className="profile-passport-dialog-opening-page profile-passport-dialog-opening-page--back" />
               <span className="profile-passport-dialog-opening-page profile-passport-dialog-opening-page--front" />
-              <span className="profile-passport-dialog-opening-cover" />
+              <span 
+                className="profile-passport-dialog-opening-cover"
+                style={{ backgroundColor: theme.coverHex, borderColor: theme.borderHex }}
+              />
             </div>
 
-            <div className="profile-passport-dialog-book rounded-2xl border border-slate-200 bg-white/96 p-3 shadow-2xl shadow-slate-900/20 backdrop-blur-[1px] sm:p-4">
-              <ProfileStampBookViewer
+            <div 
+              className="profile-passport-dialog-book rounded-2xl border p-2 shadow-2xl shadow-slate-900/40 sm:p-3"
+              style={{ backgroundColor: theme.coverHex, borderColor: theme.borderHex }}
+            >
+              <div className="rounded-xl bg-white/96 backdrop-blur-[1px]">
+                <ProfileStampBookViewer
                 stamps={stamps}
                 locale={locale}
                 labels={labels}
@@ -64,6 +86,7 @@ export const ProfilePassportDialog: React.FC<ProfilePassportDialogProps> = ({
                 compact
                 disableInitialOpenAnimation
               />
+              </div>
             </div>
           </div>
         </section>

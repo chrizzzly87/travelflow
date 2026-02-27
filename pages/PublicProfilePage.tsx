@@ -323,11 +323,13 @@ export const PublicProfilePage: React.FC = () => {
         }
         setSearchParams(next, { replace: !nextOpen });
     }, [searchParams, setSearchParams]);
+    const [passportTriggerRect, setPassportTriggerRect] = useState<DOMRect | null>(null);
 
-    const handleOpenPassportDialog = useCallback(() => {
+    const handleOpenPassportDialog = useCallback((rect?: DOMRect) => {
         trackEvent('public_profile__summary--open_passport');
+        if (rect) setPassportTriggerRect(rect);
         handlePassportDialogOpenChange(true);
-    }, [handlePassportDialogOpenChange]);
+    }, [handlePassportDialogOpenChange, trackEvent]);
 
     useEffect(() => {
         const titleByState = (() => {
@@ -482,8 +484,8 @@ export const PublicProfilePage: React.FC = () => {
                                 stampsDescription: '',
                                 stampsOpen: t('summary.stampsOpen'),
                             }}
-                            onOpenPassport={() => {
-                                handleOpenPassportDialog();
+                            onOpenPassport={(rect: DOMRect) => {
+                                handleOpenPassportDialog(rect);
                             }}
                             locale={appLocale}
                             isOwnProfile={isOwnPublicProfile}
@@ -603,7 +605,7 @@ export const PublicProfilePage: React.FC = () => {
 
                 {state.status === 'found' && (
                     <ProfilePassportDialog
-                        open={isPassportDialogOpen}
+                        open={searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE}
                         onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
                         title={t('stamps.title')}
                         description={t('stamps.description', { name: displayName })}
@@ -619,6 +621,8 @@ export const PublicProfilePage: React.FC = () => {
                         onPageChange={(page) => {
                             trackEvent('public_profile__stamps_page--change', { page });
                         }}
+                        countryCode={state.profile?.country}
+                        triggerRect={passportTriggerRect}
                     />
                 )}
             </main>
