@@ -11,12 +11,13 @@ describe('components/ui/appToast', () => {
 
     showAppToast({
       tone: 'success',
-      title: 'Saved profile',
+      title: 'Saved profile.',
       description: 'Your changes were stored.',
     });
 
     await waitFor(() => {
       expect(screen.getByText('Saved profile')).toBeInTheDocument();
+      expect(screen.queryByText('Saved profile.')).not.toBeInTheDocument();
       expect(screen.getByText('Your changes were stored.')).toBeInTheDocument();
     });
   });

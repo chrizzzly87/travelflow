@@ -524,7 +524,7 @@ export const ProfilePage: React.FC = () => {
             id: toastId,
             tone: 'remove',
             title: t('archive.successSingle'),
-            description: `“${trip.title}”`,
+            description: t('archive.successSingleMessage', { title: trip.title }),
             action: {
                 label: t('archive.undoLabel'),
                 onClick: () => {

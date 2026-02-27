@@ -1002,7 +1002,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       id: toastId,
       tone: 'remove',
       title: 'Trip archived',
-      description: `“${tripToArchive.title}” removed from My Trips.`,
+      description: `Your trip "${tripToArchive.title}" was archived successfully.`,
       action: {
         label: 'Undo',
         onClick: () => {

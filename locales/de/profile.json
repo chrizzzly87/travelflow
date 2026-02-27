@@ -319,6 +319,7 @@
     "undoSuccessBatchMessage": "{count} trip(s) restored.",
     "undoErrorTitle": "Undo failed",
     "undoErrorSingle": "Could not restore this trip.",
-    "undoErrorBatch": "Could not restore selected trips."
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Deine Reise \"{title}\" wurde erfolgreich archiviert."
   }
 }

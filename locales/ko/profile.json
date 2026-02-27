@@ -319,6 +319,7 @@
     "undoSuccessBatchMessage": "{count} trip(s) restored.",
     "undoErrorTitle": "Undo failed",
     "undoErrorSingle": "Could not restore this trip.",
-    "undoErrorBatch": "Could not restore selected trips."
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "여행 \"{title}\"이(가) 성공적으로 보관 처리되었습니다."
   }
 }

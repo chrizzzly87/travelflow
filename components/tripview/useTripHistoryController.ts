@@ -18,6 +18,7 @@ type HistoryToastTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 interface HistoryToastOptions {
     tone?: HistoryToastTone;
     title?: string;
+    iconVariant?: 'undo' | 'redo';
 }
 
 interface UseTripHistoryControllerOptions {
@@ -107,6 +108,7 @@ export const useTripHistoryController = ({
             showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
                 tone: 'neutral',
                 title: action === 'undo' ? 'Undo' : 'Redo',
+                iconVariant: action,
             });
             return;
         }
@@ -116,6 +118,7 @@ export const useTripHistoryController = ({
         showToast(stripHistoryPrefix(target.label), {
             tone: 'neutral',
             title: action === 'undo' ? 'Undo' : 'Redo',
+            iconVariant: action,
         });
     }, [getHistoryEntryForAction, navigate, showToast, stripHistoryPrefix, suppressCommitRef]);
 
@@ -221,6 +224,7 @@ export const useTripHistoryController = ({
                 showToast(stripHistoryPrefix(entry.label), {
                     tone: 'neutral',
                     title: inferredAction === 'redo' ? 'Redo' : 'Undo',
+                    iconVariant: inferredAction === 'redo' ? 'redo' : 'undo',
                 });
             }
         };

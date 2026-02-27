@@ -21,6 +21,7 @@ summary: "Profile now supports hover-based multi-select actions, public-only pre
 - [x] [Improved] 🔔 Standardized profile and trip history feedback on bottom-right Sonner toasts with in-progress, success, and error states.
 - [x] [Improved] ↩️ Added archive undo actions directly in archive-complete toasts, including trip-specific context in follow-up feedback.
 - [x] [Improved] 🎛️ Refined trip-change toasts with clearer action titles, longer visibility, and a unified neutral icon style.
+- [x] [Improved] 🧭 Updated toast icon spacing/sizing, removed trailing title dots, and switched undo/redo feedback to directional arrow icons.
 - [ ] [Internal] 🗃️ Added DB-backed user trip archive event logging and archive RPC coverage for durable recovery/audit context.
 - [ ] [Internal] 🧪 Added regression coverage for profile archive controls, multi-select quick actions, and card-level hidden/selection states.
 - [ ] [Internal] 📚 Added a follow-up open issue spec for trip collections/folders (default + custom organization model).

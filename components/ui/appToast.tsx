@@ -5,8 +5,10 @@ import {
   Info,
   LoaderCircle,
   PencilLine,
+  Redo2,
   Save,
   Trash2,
+  Undo2,
   XCircle,
 } from 'lucide-react';
 import { toast, type ExternalToast } from 'sonner';
@@ -35,6 +37,7 @@ interface AppToastOptions {
   duration?: number;
   dismissible?: boolean;
   action?: AppToastAction;
+  iconVariant?: 'undo' | 'redo';
 }
 
 interface AppToastToneMeta {
@@ -109,11 +112,14 @@ export const showAppToast = ({
   duration,
   dismissible = true,
   action,
+  iconVariant,
 }: AppToastOptions): string | number => {
+  const normalizedTitle = title.trim().replace(/\.+$/u, '') || title;
   const meta = TONE_META[tone];
   const resolvedDuration = duration ?? (tone === 'loading' ? Infinity : 3200);
-  const Icon = meta.Icon;
-  const titleNode = <span className={`font-semibold ${meta.titleClass}`}>{title}</span>;
+  const ToneIcon = meta.Icon;
+  const Icon = iconVariant === 'undo' ? Undo2 : iconVariant === 'redo' ? Redo2 : ToneIcon;
+  const titleNode = <span className={`font-semibold ${meta.titleClass}`}>{normalizedTitle}</span>;
   const options: ExternalToast = {
     id,
     description,
@@ -123,8 +129,8 @@ export const showAppToast = ({
     position: 'bottom-right',
     className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
     icon: (
-      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
-        <Icon size={14} className={tone === 'loading' ? 'animate-spin' : undefined} />
+      <span className={`mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
+        <Icon size={16} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />
       </span>
     ),
   };

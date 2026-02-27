@@ -898,13 +898,14 @@ const useTripViewRender = ({
         setZoomLevel,
     });
 
-    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
+    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string; iconVariant?: 'undo' | 'redo' }) => {
         if (suppressToasts) return;
         showAppToast({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
             description: message,
             duration: 3200,
+            iconVariant: options?.iconVariant,
         });
     }, [suppressToasts]);
 
