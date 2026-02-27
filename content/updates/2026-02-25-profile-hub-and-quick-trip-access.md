@@ -86,6 +86,10 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🦶 Replaced the public-profile not-found footprint asset with the intended softer travel-footprint artwork.
 - [x] [Improved] 🧭 Added footer consistency across profile, settings, stamps, and public-profile surfaces (including unavailable/error states).
 - [x] [Improved] 📱 Added legal quick links (Imprint, Privacy, Terms, Cookies) to the mobile burger menu so legal routes stay reachable on views where footer placement is constrained.
+- [x] [Improved] 📱 Unified mobile navigation into one cleaner menu flow with signed-in account shortcuts and a single admin-dashboard shortcut on mobile.
+- [x] [Fixed] 🔐 Removed deferred first-interaction auth bootstrap so auth state now initializes on page load across routes.
+- [x] [Improved] 🎯 Aligned profile trip color-lane hover affordance with inspiration example cards for consistent interaction feedback.
+- [x] [Improved] 🧷 Added cache-busting for the public-profile not-found footprint artwork to avoid stale CDN/browser image mismatches.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.
