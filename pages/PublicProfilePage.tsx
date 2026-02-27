@@ -379,7 +379,7 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'private' && (
-                    <section className="grid justify-items-center gap-6 text-center md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:items-center md:justify-items-start md:text-start">
+                    <section className="flex justify-center">
                         <ProfileVisitorSummary
                             displayName={displayName}
                             username={state.profile?.username || ''}
@@ -414,26 +414,6 @@ export const PublicProfilePage: React.FC = () => {
                             editProfileHref={buildPath('profileSettings')}
                             onEditProfile={() => trackEvent('public_profile__summary--edit_profile')}
                         />
-                        <div className="w-full max-w-2xl space-y-2">
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('publicProfile.privateTitle')}</h1>
-                            <p className="text-sm text-slate-600 md:text-base">{t('publicProfile.privateDescription')}</p>
-                            <div className="flex flex-wrap items-center justify-center gap-2 pt-1 md:justify-start">
-                                {!isAuthenticated ? (
-                                    <NavLink
-                                        to="/login"
-                                        className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
-                                    >
-                                        {t('publicProfile.ctaRegisterFree')}
-                                    </NavLink>
-                                ) : null}
-                                <NavLink
-                                    to={buildPath('inspirations')}
-                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-                                >
-                                    {t('publicProfile.ctaExploreInspirations')}
-                                </NavLink>
-                            </div>
-                        </div>
                     </section>
                 )}
 

@@ -401,7 +401,7 @@ describe('pages/PublicProfilePage', () => {
     expect(screen.getByText('stamps.title')).toBeInTheDocument();
   });
 
-  it('renders masked private profile shell without public trips', async () => {
+  it('renders centered masked private profile card without public trips', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'private',
       canonicalUsername: 'traveler',
@@ -431,10 +431,11 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
-      expect(screen.getByText('publicProfile.privateTitle')).toBeInTheDocument();
+      expect(screen.getByText('publicProfile.visibilityPrivate')).toBeInTheDocument();
     });
 
     expect(screen.queryByText('publicProfile.tripsTitle')).toBeNull();
+    expect(screen.queryByText('publicProfile.privateTitle')).toBeNull();
     expect(screen.getByText('Traveler O.')).toBeInTheDocument();
     expect(document.documentElement.getAttribute('data-public-profile-status')).toBeNull();
     expect(
