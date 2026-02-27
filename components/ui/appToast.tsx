@@ -22,6 +22,11 @@ export type AppToastTone =
   | 'update'
   | 'neutral';
 
+interface AppToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface AppToastOptions {
   id?: string | number;
   tone?: AppToastTone;
@@ -29,6 +34,7 @@ interface AppToastOptions {
   description?: string;
   duration?: number;
   dismissible?: boolean;
+  action?: AppToastAction;
 }
 
 interface AppToastToneMeta {
@@ -53,9 +59,9 @@ const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
   },
   info: {
     Icon: Info,
-    borderClass: 'border-slate-200',
-    iconWrapClass: 'bg-slate-100 text-slate-700',
-    titleClass: 'text-slate-800',
+    borderClass: 'border-sky-200',
+    iconWrapClass: 'bg-sky-100 text-sky-700',
+    titleClass: 'text-sky-800',
   },
   warning: {
     Icon: WarningCircle,
@@ -102,36 +108,28 @@ export const showAppToast = ({
   description,
   duration,
   dismissible = true,
+  action,
 }: AppToastOptions): string | number => {
   const meta = TONE_META[tone];
   const resolvedDuration = duration ?? (tone === 'loading' ? Infinity : 3200);
   const Icon = meta.Icon;
+  const titleNode = <span className={`font-semibold ${meta.titleClass}`}>{title}</span>;
   const options: ExternalToast = {
     id,
     description,
     duration: resolvedDuration,
     dismissible,
+    action,
     position: 'bottom-right',
-    className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur ${meta.borderClass}`,
-    icon: <Icon size={18} className={tone === 'loading' ? `animate-spin ${meta.titleClass}` : meta.titleClass} />,
+    className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
+    icon: (
+      <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
+        <Icon size={14} className={tone === 'loading' ? 'animate-spin' : undefined} />
+      </span>
+    ),
   };
 
-  if (tone === 'loading') {
-    return toast.loading(title, options);
-  }
-  if (tone === 'error' || tone === 'remove') {
-    return toast.error(title, options);
-  }
-  if (tone === 'warning' || tone === 'neutral') {
-    return toast.warning(title, options);
-  }
-  if (tone === 'success' || tone === 'add') {
-    return toast.success(title, options);
-  }
-  if (tone === 'update') {
-    return toast.info(title, options);
-  }
-  return toast.info(title, options);
+  return toast(titleNode, options);
 };
 
 export const dismissAppToast = (id?: string | number): string | number => toast.dismiss(id);

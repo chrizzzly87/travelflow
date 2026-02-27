@@ -174,7 +174,9 @@
     },
     "messages": {
       "saved": "프로필 설정이 성공적으로 저장되었습니다.",
-      "onboardingSaved": "프로필이 성공적으로 완료되었습니다."
+      "onboardingSaved": "프로필이 성공적으로 완료되었습니다.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
     },
     "errors": {
       "required": "필수 입력란을 모두 작성해 주세요.",
@@ -310,6 +312,13 @@
     "inProgressBatchTitle": "Archiving selected trips",
     "inProgressBatchMessage": "Saving changes for {count} selected trips...",
     "successTitle": "Archive complete",
-    "errorTitle": "Archive failed"
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips."
   }
 }

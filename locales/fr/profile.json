@@ -174,7 +174,9 @@
     },
     "messages": {
       "saved": "Paramètres de profil enregistrés avec succès.",
-      "onboardingSaved": "Profil complété avec succès."
+      "onboardingSaved": "Profil complété avec succès.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
     },
     "errors": {
       "required": "Veuillez remplir tous les champs obligatoires.",
@@ -310,6 +312,13 @@
     "inProgressBatchTitle": "Archiving selected trips",
     "inProgressBatchMessage": "Saving changes for {count} selected trips...",
     "successTitle": "Archive complete",
-    "errorTitle": "Archive failed"
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips."
   }
 }

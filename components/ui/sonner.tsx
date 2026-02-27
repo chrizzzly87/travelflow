@@ -6,9 +6,14 @@ export const Toaster: React.FC<ToasterProps> = (props) => {
     <Sonner
       position="bottom-right"
       closeButton={false}
-      richColors
       toastOptions={{
-        className: 'border border-slate-200 bg-white text-slate-900 shadow-lg',
+        className: 'border border-slate-200 bg-white/95 text-slate-900 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/90',
+        actionButtonStyle: {
+          background: '#f8fafc',
+          color: '#0f172a',
+          border: '1px solid #cbd5e1',
+          fontWeight: 600,
+        },
       }}
       {...props}
     />

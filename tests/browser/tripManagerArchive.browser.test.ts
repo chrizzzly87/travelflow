@@ -69,6 +69,7 @@ describe('components/TripManager archive flow', () => {
     mocks.syncTripsFromDb.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);
     mocks.dbArchiveTrip.mockResolvedValue(true);
+    mocks.dbUpsertTrip.mockResolvedValue('trip-1');
   });
 
   it('archives through dbArchiveTrip before local removal', async () => {
@@ -82,10 +83,11 @@ describe('components/TripManager archive flow', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Archive Candidate')).toBeInTheDocument();
+      expect(screen.getAllByText('Archive Candidate').length).toBeGreaterThan(0);
     });
 
-    await user.click(screen.getByRole('button', { name: 'Archive trip' }));
+    const archiveButtons = screen.getAllByRole('button', { name: 'Archive trip' });
+    await user.click(archiveButtons[0]);
 
     await waitFor(() => {
       expect(mocks.dbArchiveTrip).toHaveBeenCalledWith('trip-1', {
@@ -110,14 +112,56 @@ describe('components/TripManager archive flow', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Archive Candidate')).toBeInTheDocument();
+      expect(screen.getAllByText('Archive Candidate').length).toBeGreaterThan(0);
     });
 
-    await user.click(screen.getByRole('button', { name: 'Archive trip' }));
+    const archiveButtons = screen.getAllByRole('button', { name: 'Archive trip' });
+    await user.click(archiveButtons[0]);
 
     await waitFor(() => {
       expect(mocks.dbArchiveTrip).toHaveBeenCalledTimes(1);
     });
     expect(mocks.deleteTrip).not.toHaveBeenCalled();
+  });
+
+  it('offers undo after archive and restores the trip when undo is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      React.createElement(TripManager, {
+        isOpen: true,
+        onClose: vi.fn(),
+        onSelectTrip: vi.fn(),
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Archive Candidate').length).toBeGreaterThan(0);
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: 'Archive trip' });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.deleteTrip).toHaveBeenCalledWith('trip-1');
+    });
+
+    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0] as Record<string, unknown>);
+    const archiveToast = toastPayloads.find((payload) => payload.tone === 'remove' && typeof payload.action === 'object') as {
+      action?: { onClick?: () => void };
+    } | undefined;
+    expect(archiveToast).toBeDefined();
+    expect(archiveToast?.action?.onClick).toBeTypeOf('function');
+
+    archiveToast?.action?.onClick?.();
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
+      expect(mocks.dbUpsertTrip).toHaveBeenCalledTimes(1);
+      expect(mocks.trackEvent).toHaveBeenCalledWith('my_trips__trip_archive--undo', { trip_id: 'trip-1' });
+      expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+        tone: 'add',
+        title: 'Archive undone',
+      }));
+    });
   });
 });

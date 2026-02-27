@@ -412,7 +412,12 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             trackEvent(mode === 'onboarding' ? 'profile__onboarding--completed' : 'profile__settings--saved');
             showAppToast({
                 tone: 'success',
-                title: mode === 'onboarding' ? t('settings.messages.onboardingSaved') : t('settings.messages.saved'),
+                title: mode === 'onboarding'
+                    ? t('settings.messages.onboardingSavedTitle')
+                    : t('settings.messages.savedTitle'),
+                description: mode === 'onboarding'
+                    ? t('settings.messages.onboardingSaved')
+                    : t('settings.messages.saved'),
             });
 
             if (mode === 'onboarding') {

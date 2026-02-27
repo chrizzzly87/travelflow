@@ -201,6 +201,28 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     });
   });
 
+  it('matches public-profile visibility by hiding trips without explicit public=true', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-public', title: 'Trip Public', showOnPublicProfile: true, updatedAt: 300 }),
+      makeTrip({ id: 'trip-legacy', title: 'Trip Legacy', showOnPublicProfile: undefined, updatedAt: 200 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.getByText('Trip Legacy')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('switch', { name: /filters\.showOnlyPublic/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.queryByText('Trip Legacy')).not.toBeInTheDocument();
+    });
+  });
+
   it('uses the shared page content grid width', async () => {
     renderProfilePage('/profile');
 
@@ -303,6 +325,40 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     await waitFor(() => {
       expect(mocks.confirmDialog).toHaveBeenCalled();
       expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('offers undo after single archive and restores the trip when undo is clicked', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+
+    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0] as Record<string, unknown>);
+    const archiveToast = toastPayloads.find((payload) => payload.tone === 'remove' && typeof payload.action === 'object') as {
+      action?: { onClick?: () => void };
+    } | undefined;
+    expect(archiveToast).toBeDefined();
+    expect(archiveToast?.action?.onClick).toBeTypeOf('function');
+
+    archiveToast?.action?.onClick?.();
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
+      expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+        tone: 'add',
+        title: 'archive.undoSuccessTitle',
+      }));
     });
   });
 

@@ -249,7 +249,7 @@ export const ProfilePage: React.FC = () => {
     );
     const tripsForVisibilityPreview = useMemo(
         () => (showOnlyPublicTrips
-            ? trips.filter((trip) => trip.showOnPublicProfile !== false)
+            ? trips.filter((trip) => trip.showOnPublicProfile === true)
             : trips),
         [showOnlyPublicTrips, trips]
     );
@@ -412,10 +412,11 @@ export const ProfilePage: React.FC = () => {
     const archiveTripsByIds = useCallback(async (
         tripIds: string[],
         source: 'profile_single' | 'profile_batch'
-    ): Promise<number> => {
+    ): Promise<ITrip[]> => {
+        const tripById = new Map(trips.map((trip) => [trip.id, trip]));
         const uniqueIds = Array.from(new Set(tripIds))
-            .filter((tripId) => trips.some((trip) => trip.id === tripId));
-        if (uniqueIds.length === 0) return 0;
+            .filter((tripId) => tripById.has(tripId));
+        if (uniqueIds.length === 0) return [];
 
         let archivedIds = uniqueIds;
         if (DB_ENABLED) {
@@ -432,7 +433,10 @@ export const ProfilePage: React.FC = () => {
             archivedIds = results.filter((result) => result.archived).map((result) => result.tripId);
         }
 
-        if (archivedIds.length === 0) return 0;
+        if (archivedIds.length === 0) return [];
+        const archivedTrips = archivedIds
+            .map((tripId) => tripById.get(tripId))
+            .filter((trip): trip is ITrip => Boolean(trip));
 
         const archivedSet = new Set(archivedIds);
         setTrips((current) => current.filter((trip) => !archivedSet.has(trip.id)));
@@ -444,8 +448,43 @@ export const ProfilePage: React.FC = () => {
             );
         });
 
-        return archivedIds.length;
+        return archivedTrips;
     }, [tab, trips]);
+
+    const restoreArchivedTrips = useCallback(async (
+        archivedTrips: ITrip[],
+        source: 'profile_single' | 'profile_batch'
+    ): Promise<number> => {
+        if (archivedTrips.length === 0) return 0;
+
+        const restoredAt = Date.now();
+        const restoredTrips = archivedTrips.map((trip) => ({
+            ...trip,
+            status: 'active' as const,
+            updatedAt: restoredAt,
+        }));
+
+        restoredTrips.forEach((trip) => saveTrip(trip, { preserveUpdatedAt: true }));
+        if (DB_ENABLED) {
+            await Promise.all(restoredTrips.map((trip) => dbUpsertTrip(trip)));
+        }
+
+        setTrips((current) => {
+            const byId = new Map(current.map((trip) => [trip.id, trip]));
+            restoredTrips.forEach((trip) => byId.set(trip.id, trip));
+            return Array.from(byId.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+        });
+
+        restoredTrips.forEach((trip) => {
+            trackEvent('profile__trip_archive--undo', {
+                trip_id: trip.id,
+                tab,
+                source,
+            });
+        });
+
+        return restoredTrips.length;
+    }, [tab]);
 
     const handleArchiveTrip = useCallback(async (trip: ITrip) => {
         const confirmed = await confirmDialog({
@@ -464,14 +503,14 @@ export const ProfilePage: React.FC = () => {
             dismissible: false,
         });
 
-        let archivedCount = 0;
+        let archivedTrips: ITrip[] = [];
         try {
-            archivedCount = await archiveTripsByIds([trip.id], 'profile_single');
+            archivedTrips = await archiveTripsByIds([trip.id], 'profile_single');
         } catch {
-            archivedCount = 0;
+            archivedTrips = [];
         }
 
-        if (archivedCount === 0) {
+        if (archivedTrips.length === 0) {
             showAppToast({
                 id: toastId,
                 tone: 'error',
@@ -483,11 +522,39 @@ export const ProfilePage: React.FC = () => {
         clearSelectedTrips();
         showAppToast({
             id: toastId,
-            tone: 'success',
-            title: t('archive.successTitle'),
-            description: t('archive.successSingle'),
+            tone: 'remove',
+            title: t('archive.successSingle'),
+            description: `“${trip.title}”`,
+            action: {
+                label: t('archive.undoLabel'),
+                onClick: () => {
+                    void restoreArchivedTrips(archivedTrips, 'profile_single')
+                        .then((restoredCount) => {
+                            if (restoredCount === 0) {
+                                showAppToast({
+                                    tone: 'error',
+                                    title: t('archive.undoErrorTitle'),
+                                    description: t('archive.undoErrorSingle'),
+                                });
+                                return;
+                            }
+                            showAppToast({
+                                tone: 'add',
+                                title: t('archive.undoSuccessTitle'),
+                                description: t('archive.undoSuccessSingleMessage', { title: trip.title }),
+                            });
+                        })
+                        .catch(() => {
+                            showAppToast({
+                                tone: 'error',
+                                title: t('archive.undoErrorTitle'),
+                                description: t('archive.undoErrorSingle'),
+                            });
+                        });
+                },
+            },
         });
-    }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, t]);
+    }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, restoreArchivedTrips, t]);
 
     const handleArchiveSelectedTrips = useCallback(async () => {
         if (selectedTripIds.length === 0) return;
@@ -507,14 +574,14 @@ export const ProfilePage: React.FC = () => {
             dismissible: false,
         });
 
-        let archivedCount = 0;
+        let archivedTrips: ITrip[] = [];
         try {
-            archivedCount = await archiveTripsByIds(selectedTripIds, 'profile_batch');
+            archivedTrips = await archiveTripsByIds(selectedTripIds, 'profile_batch');
         } catch {
-            archivedCount = 0;
+            archivedTrips = [];
         }
 
-        if (archivedCount === 0) {
+        if (archivedTrips.length === 0) {
             showAppToast({
                 id: toastId,
                 tone: 'error',
@@ -524,13 +591,49 @@ export const ProfilePage: React.FC = () => {
             return;
         }
         clearSelectedTrips();
+        const archivedTitles = archivedTrips
+            .map((candidate) => candidate.title)
+            .filter((candidate) => Boolean(candidate))
+            .slice(0, 3)
+            .map((title) => `“${title}”`)
+            .join(', ');
+        const hiddenCount = Math.max(0, archivedTrips.length - 3);
+        const summarySuffix = hiddenCount > 0 ? ` +${hiddenCount}` : '';
         showAppToast({
             id: toastId,
-            tone: 'success',
-            title: t('archive.successTitle'),
-            description: t('archive.successBatch', { count: archivedCount }),
+            tone: 'remove',
+            title: t('archive.successBatch', { count: archivedTrips.length }),
+            description: `${archivedTitles}${summarySuffix}`,
+            action: {
+                label: t('archive.undoLabel'),
+                onClick: () => {
+                    void restoreArchivedTrips(archivedTrips, 'profile_batch')
+                        .then((restoredCount) => {
+                            if (restoredCount === 0) {
+                                showAppToast({
+                                    tone: 'error',
+                                    title: t('archive.undoErrorTitle'),
+                                    description: t('archive.undoErrorBatch'),
+                                });
+                                return;
+                            }
+                            showAppToast({
+                                tone: 'add',
+                                title: t('archive.undoSuccessTitle'),
+                                description: t('archive.undoSuccessBatchMessage', { count: restoredCount }),
+                            });
+                        })
+                        .catch(() => {
+                            showAppToast({
+                                tone: 'error',
+                                title: t('archive.undoErrorTitle'),
+                                description: t('archive.undoErrorBatch'),
+                            });
+                        });
+                },
+            },
         });
-    }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, selectedTripIds, t]);
+    }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, restoreArchivedTrips, selectedTripIds, t]);
 
     useEffect(() => {
         if (selectedTripIds.length === 0) return;

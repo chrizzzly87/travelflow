@@ -959,6 +959,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    const tripToArchive = trips.find((trip) => trip.id === id);
+    if (!tripToArchive) return;
+
     const shouldDelete = await confirm({
       title: 'Archive Trip?',
       message: 'This trip will be removed from your list and can be restored later.',
@@ -997,9 +1000,40 @@ export const TripManager: React.FC<TripManagerProps> = ({
     void refreshTrips();
     showAppToast({
       id: toastId,
-      tone: 'success',
+      tone: 'remove',
       title: 'Trip archived',
-      description: 'The trip was archived and can be restored later.',
+      description: `“${tripToArchive.title}” removed from My Trips.`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          void (async () => {
+            const restoredTrip: ITrip = {
+              ...tripToArchive,
+              status: 'active',
+              updatedAt: Date.now(),
+            };
+            saveTrip(restoredTrip, { preserveUpdatedAt: true });
+            if (DB_ENABLED) {
+              const upserted = await dbUpsertTrip(restoredTrip);
+              if (!upserted) {
+                showAppToast({
+                  tone: 'error',
+                  title: 'Undo failed',
+                  description: 'Could not restore this trip right now.',
+                });
+                return;
+              }
+            }
+            trackEvent('my_trips__trip_archive--undo', { trip_id: id });
+            void refreshTrips();
+            showAppToast({
+              tone: 'add',
+              title: 'Archive undone',
+              description: `“${tripToArchive.title}” restored to My Trips.`,
+            });
+          })();
+        },
+      },
     });
   };
 
