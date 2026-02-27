@@ -231,6 +231,21 @@ const isAnonymousAuthSession = (
     return Boolean(metadata.is_anonymous === true || providers.includes('anonymous'));
 };
 
+const getAuthenticatedNonAnonymousUserId = async (): Promise<string | null> => {
+    const client = requireSupabase();
+    const { data: sessionData, error } = await client.auth.getSession();
+    if (error) {
+        debugLog('getAuthenticatedNonAnonymousUserId:sessionError', {
+            message: error.message,
+        });
+        return null;
+    }
+    const session = sessionData?.session ?? null;
+    if (!session?.user?.id) return null;
+    if (isAnonymousAuthSession(session)) return null;
+    return session.user.id;
+};
+
 const isLayoutModeValue = (value: unknown): value is IViewSettings['layoutMode'] =>
     value === 'vertical' || value === 'horizontal';
 
@@ -694,7 +709,7 @@ export const dbDeleteTrip = async (tripId: string) => {
 export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    const userId = await ensureDbSession();
+    const userId = await getAuthenticatedNonAnonymousUserId();
     if (!userId) return null;
 
     const { data, error } = await client
@@ -726,7 +741,7 @@ export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
 export const dbUpsertUserSettings = async (settings: IUserSettings) => {
     if (!DB_ENABLED) return;
     const client = requireSupabase();
-    const userId = await ensureDbSession();
+    const userId = await getAuthenticatedNonAnonymousUserId();
     if (!userId) return;
 
     const payload = {

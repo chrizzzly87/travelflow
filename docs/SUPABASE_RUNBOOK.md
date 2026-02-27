@@ -26,8 +26,9 @@ Implemented in this project:
 4. For local testing, disable captcha if it blocks anonymous signup.
 
 Why this matters:
-- The app expects an anonymous session for every DB operation.
-- If anonymous auth is disabled, writes and share RPCs fail immediately.
+- Guest trip/share flows rely on anonymous sessions when no authenticated user exists.
+- Authenticated profile/access/settings flows must not auto-create anonymous sessions.
+- If anonymous auth is disabled, guest trip writes and share RPCs fail immediately.
 
 ### 2. Run schema + RPC SQL
 
@@ -175,7 +176,7 @@ Future monetization/auth tables already present:
 
 Main write path (client):
 
-1. Ensure anonymous session.
+1. Ensure DB session (authenticated owner if available, anonymous only for guest trip flows).
 2. Upsert latest trip via `rpc('upsert_trip', ...)`.
 3. Append snapshot via `rpc('add_trip_version', ...)`.
 
@@ -217,6 +218,33 @@ Fix:
 - Stop rapid refresh/reload loops.
 - Clear local auth token in browser storage (`sb-<project-ref>-auth-token`) and reload once.
 - Wait for rate limit window to cool down.
+
+### Interaction triggers repeated auth/profile RPC bursts on public pages
+
+Symptom:
+- Clicking anywhere on a public profile or other marketing page triggers many requests:
+  - `/auth/v1/user`
+  - `rpc/get_current_user_access`
+  - `profiles?...`
+  - repeated public-handle resolver calls
+- In severe cases this appears as flashing/re-render loops and can create many anonymous users.
+
+Root cause (incident 2026-02-27):
+- Public/guest pages were indirectly calling user-settings sync code that used `ensureDbSession()`.
+- `ensureDbSession()` creates anonymous auth sessions when no session exists.
+- The new anonymous session then triggered `getCurrentAccessContext()` + profile refresh chains.
+- Interaction-gated auth bootstrap made this especially visible on first click.
+
+Current mitigation:
+1. `dbGetUserSettings` and `dbUpsertUserSettings` now require an existing non-anonymous session.
+2. Auth access resolution short-circuits anonymous sessions (no `get_current_user_access` RPC for anon).
+3. Auth context does not load profile data for anonymous sessions.
+4. App-level settings persistence runs only for authenticated non-anonymous users.
+
+Verification:
+1. Open `/u/<missing-handle>` in a clean browser profile.
+2. Click body/background.
+3. Confirm no new Supabase auth/access/profile request burst occurs.
 
 ### `403 session_not_found` after `logout -> immediate OAuth login`
 
@@ -320,6 +348,27 @@ Cause:
 
 Fix:
 - Use `.maybeSingle()` for optional row loads.
+
+### Public profile shows `Profile not found` for valid handles
+
+Cause:
+- Client-side resolver fallback query is malformed (for example filter chaining before `.select(...)`).
+- Username lookup uses pattern matching where exact matching is required.
+- Resolver performs unnecessary enrichment calls that fail in partially migrated schemas.
+
+Fix:
+- Keep the public-handle resolution order:
+  1. `profile_resolve_public_handle` RPC
+  2. direct `profiles.username` exact lookup fallback
+  3. `profile_handle_redirects` fallback
+- For username fallback queries, always use exact `eq('username', value)` (not wildcard matching).
+- Chain Supabase reads in the standard order: `.from(...).select(...).eq(...).maybeSingle()`.
+- Do not issue admin-only identity RPC checks for anonymous viewers.
+
+Verification:
+- `POST /rest/v1/rpc/profile_resolve_public_handle` returns `found` for a known handle.
+- `GET /u/{username}` renders profile content (not `Profile not found`).
+- Browser network tab has no repeated `400` profile resolver fallback calls for a successful public profile load.
 
 ### Share modal says `Could not create share link` after SQL run
 

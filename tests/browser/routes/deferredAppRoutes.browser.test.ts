@@ -27,6 +27,10 @@ vi.mock('../../../pages/PublicProfilePage', () => ({
   PublicProfilePage: () => React.createElement('div', { 'data-testid': 'mock-public-profile-page' }, 'Public profile page'),
 }));
 
+vi.mock('../../../pages/PublicProfileStampsPage', () => ({
+  PublicProfileStampsPage: () => React.createElement('div', { 'data-testid': 'mock-public-profile-stamps-page' }, 'Public profile stamps page'),
+}));
+
 import { DeferredAppRoutes } from '../../../app/routes/DeferredAppRoutes';
 
 const LocationProbe: React.FC = () => {
@@ -90,6 +94,14 @@ describe('app/routes/DeferredAppRoutes root auth gate', () => {
 
     await waitFor(() => {
       expect(getByTestId('location-probe').textContent).toBe('/u/traveler');
+    });
+  });
+
+  it('supports public profile stamps routes', async () => {
+    const { getByTestId } = renderDeferredRoutes('/u/traveler/stamps');
+
+    await waitFor(() => {
+      expect(getByTestId('location-probe').textContent).toBe('/u/traveler/stamps');
     });
   });
 

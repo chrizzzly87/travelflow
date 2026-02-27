@@ -84,6 +84,12 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
     return VALID_PROFILE_GENDERS.has(normalized) ? normalized : null;
 };
 
+const normalizeUsernameHandle = (value: string | null | undefined): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim().toLowerCase().replace(/^@+/, '');
+    return normalized || null;
+};
+
 export const shouldUseAdminMockData = (
     isDevRuntime = import.meta.env.DEV,
     simulatedLoginEnabled = isSimulatedLoggedIn()
@@ -180,7 +186,7 @@ export const adminUpdateUserProfile = async (
         p_user_id: userId,
         p_first_name: payload.firstName ?? null,
         p_last_name: payload.lastName ?? null,
-        p_username: payload.username ?? null,
+        p_username: normalizeUsernameHandle(payload.username),
         p_gender: normalizeProfileGender(payload.gender),
         p_country: typeof payload.country === 'string'
             ? (normalizedCountry || null)

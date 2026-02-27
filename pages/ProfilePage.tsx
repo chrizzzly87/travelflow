@@ -1,13 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
 import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
+import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import {
     getPinnedTrips,
     getRecentTrips,
@@ -30,7 +33,6 @@ import { getProfileCountryDisplayName } from '../services/profileCountryService'
 import { getAllTrips, saveTrip } from '../services/storageService';
 import { DB_ENABLED, dbUpsertTrip } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
-import { updateCurrentUserPassportStickerPositions } from '../services/profileService';
 import {
     formatDisplayNameForGreeting,
     pickRandomInternationalGreeting,
@@ -42,6 +44,8 @@ import type { ITrip } from '../types';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 
 const PROFILE_TRIPS_PAGE_SIZE = 6;
+const PROFILE_PASSPORT_QUERY_KEY = 'passport';
+const PROFILE_PASSPORT_QUERY_VALUE = 'open';
 
 const initialsFrom = (
     profile: {
@@ -112,6 +116,7 @@ export const ProfilePage: React.FC = () => {
     const [pinNotice, setPinNotice] = useState<string | null>(null);
     const [visibleTripCount, setVisibleTripCount] = useState(PROFILE_TRIPS_PAGE_SIZE);
     const [isTripPaginationPending, startTripPaginationTransition] = useTransition();
+    const hasRequestedMissingProfileRef = useRef(false);
 
     const greeting = useMemo(() => pickRandomInternationalGreeting(), []);
     const appLocale = useMemo(
@@ -121,6 +126,7 @@ export const ProfilePage: React.FC = () => {
 
     const tab = normalizeProfileTripTab(searchParams.get('tab'));
     const recentSort = normalizeProfileRecentSort(searchParams.get('recentSort'));
+    const isPassportDialogOpen = searchParams.get(PROFILE_PASSPORT_QUERY_KEY) === PROFILE_PASSPORT_QUERY_VALUE;
 
     const profileMetadata = session?.user?.user_metadata as Record<string, unknown> | undefined;
     const metadataDisplayName = [
@@ -171,8 +177,16 @@ export const ProfilePage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
-        if (profile || isProfileLoading) return;
+        if (!isAuthenticated) {
+            hasRequestedMissingProfileRef.current = false;
+            return;
+        }
+        if (profile) {
+            hasRequestedMissingProfileRef.current = false;
+            return;
+        }
+        if (isProfileLoading || hasRequestedMissingProfileRef.current) return;
+        hasRequestedMissingProfileRef.current = true;
         void refreshProfile();
     }, [isAuthenticated, isProfileLoading, profile, refreshProfile]);
 
@@ -263,6 +277,21 @@ export const ProfilePage: React.FC = () => {
         trackEvent(`profile__recent_sort--${nextSort}`);
     }, [searchParams, setSearchParams, tab]);
 
+    const handlePassportDialogOpenChange = useCallback((nextOpen: boolean) => {
+        const next = new URLSearchParams(searchParams);
+        if (nextOpen) {
+            next.set(PROFILE_PASSPORT_QUERY_KEY, PROFILE_PASSPORT_QUERY_VALUE);
+        } else {
+            next.delete(PROFILE_PASSPORT_QUERY_KEY);
+        }
+        setSearchParams(next, { replace: !nextOpen });
+    }, [searchParams, setSearchParams]);
+
+    const handleOpenPassportDialog = useCallback(() => {
+        trackEvent('profile__summary--open_stamps');
+        handlePassportDialogOpenChange(true);
+    }, [handlePassportDialogOpenChange]);
+
     useEffect(() => {
         setVisibleTripCount(PROFILE_TRIPS_PAGE_SIZE);
     }, [tab, recentSort, tripsForTab.length]);
@@ -351,19 +380,6 @@ export const ProfilePage: React.FC = () => {
         });
     }, [persistTrip, tab, trips]);
 
-    const handlePassportStickerMoveEnd = useCallback((
-        positions: Record<string, { x: number; y: number }>,
-        movedStampId: string
-    ) => {
-        trackEvent('profile__passport_sticker--move', {
-            stamp_id: movedStampId,
-            surface: 'profile_summary',
-        });
-        void updateCurrentUserPassportStickerPositions(positions)
-            .then(() => refreshProfile())
-            .catch(() => undefined);
-    }, [refreshProfile]);
-
     const publicProfilePath = profile?.username
         ? buildPath('publicProfile', { username: profile.username })
         : null;
@@ -381,19 +397,20 @@ export const ProfilePage: React.FC = () => {
 
     if (isProfileLoading && !profile) {
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50">
                 <SiteHeader hideCreateTrip />
-                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-8 md:px-8 md:pt-10">
+                <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
                 </main>
+                <SiteFooter />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
                     greeting={greeting.greeting}
                     name={greetingDisplayName}
@@ -433,9 +450,7 @@ export const ProfilePage: React.FC = () => {
                     distanceLabel={distanceLabel}
                     countries={visitedCountries}
                     stamps={passportDisplayStamps}
-                    allStamps={stampProgress}
                     passportCountryCode={profile?.country}
-                    passportStickerPositions={profile?.passportStickerPositions}
                     stats={[
                         { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                         { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
@@ -457,8 +472,6 @@ export const ProfilePage: React.FC = () => {
                         stampsTitle: t('summary.stampsTitle'),
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
-                        stampsEmpty: t('summary.stampsEmpty'),
-                        stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                     }}
                     onEditProfile={() => {
                         trackEvent('profile__summary--edit_profile');
@@ -475,15 +488,22 @@ export const ProfilePage: React.FC = () => {
                         }
                         trackEvent('profile__summary--share_public_profile');
                         if (navigator.clipboard?.writeText) {
-                            void navigator.clipboard.writeText(publicProfileUrl);
+                            void navigator.clipboard.writeText(publicProfileUrl)
+                                .then(() => {
+                                    toast.success(t('summary.shareCopied'));
+                                })
+                                .catch(() => {
+                                    window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
+                                    toast.info(t('summary.shareOpened'));
+                                });
                         } else {
                             window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
+                            toast.info(t('summary.shareOpened'));
                         }
                     }}
                     onOpenPassport={() => {
-                        trackEvent('profile__summary--open_stamps');
+                        handleOpenPassportDialog();
                     }}
-                    onPassportStickerMoveEnd={handlePassportStickerMoveEnd}
                     canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}
@@ -501,15 +521,18 @@ export const ProfilePage: React.FC = () => {
                             <IdentificationCard size={16} />
                             {t('actions.planner')}
                         </NavLink>
-                        <NavLink
-                            to={buildPath('profileStamps')}
-                            onClick={() => trackEvent('profile__shortcut--stamps')}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                trackEvent('profile__shortcut--stamps');
+                                handleOpenPassportDialog();
+                            }}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('profile__shortcut--stamps')}
                         >
                             <SealCheck size={16} weight="duotone" />
                             {t('actions.stamps')}
-                        </NavLink>
+                        </button>
                         {isAdmin && (
                             <NavLink
                                 to={buildPath('adminDashboard')}
@@ -532,7 +555,7 @@ export const ProfilePage: React.FC = () => {
                                 {t('sections.highlightsCount', { count: pinnedTrips.length })}
                             </span>
                         </div>
-                        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                             {pinnedTrips.map((trip) => (
                                 <ProfileTripCard
                                     key={`pinned-${trip.id}`}
@@ -548,6 +571,8 @@ export const ProfilePage: React.FC = () => {
                                         makePublic: t('cards.actions.makePublic'),
                                         makePrivate: t('cards.actions.makePrivate'),
                                         pinnedTag: t('cards.pinnedTag'),
+                                        expiredTag: t('cards.expiredTag'),
+                                        expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                         mapUnavailable: t('cards.mapUnavailable'),
                                         mapLoading: t('cards.mapLoading'),
                                         creatorPrefix: t('cards.creatorPrefix'),
@@ -631,7 +656,7 @@ export const ProfilePage: React.FC = () => {
                         </div>
                     ) : (
                         <>
-                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                 {visibleTripsForTab.map((trip) => (
                                     <ProfileTripCard
                                         key={trip.id}
@@ -647,6 +672,8 @@ export const ProfilePage: React.FC = () => {
                                             makePublic: t('cards.actions.makePublic'),
                                             makePrivate: t('cards.actions.makePrivate'),
                                             pinnedTag: t('cards.pinnedTag'),
+                                            expiredTag: t('cards.expiredTag'),
+                                            expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                             mapUnavailable: t('cards.mapUnavailable'),
                                             mapLoading: t('cards.mapLoading'),
                                             creatorPrefix: t('cards.creatorPrefix'),
@@ -666,7 +693,7 @@ export const ProfilePage: React.FC = () => {
 
                             {hasMoreTripsForTab && (
                                 <>
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                         {Array.from({ length: skeletonTripCount || PROFILE_TRIPS_PAGE_SIZE }).map((_, index) => (
                                             <ProfileTripCardSkeleton key={`profile-trip-skeleton-${index}`} pulse={isTripPaginationPending} />
                                         ))}
@@ -677,7 +704,27 @@ export const ProfilePage: React.FC = () => {
                         </>
                     )}
                 </section>
+
+                <ProfilePassportDialog
+                    open={isPassportDialogOpen}
+                    onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
+                    title={t('stamps.title')}
+                    description={t('stamps.description', { name: displayName })}
+                    stamps={stampProgress}
+                    locale={appLocale}
+                    labels={{
+                        pageIndicator: t('stamps.pageIndicator'),
+                        previousPage: t('stamps.previousPage'),
+                        nextPage: t('stamps.nextPage'),
+                        emptySlot: t('stamps.emptySlot'),
+                    }}
+                    resolveGroupLabel={(group) => t(`stamps.group.${group}`)}
+                    onPageChange={(page) => {
+                        trackEvent('profile__stamps_page--change', { page });
+                    }}
+                />
             </main>
+            <SiteFooter />
         </div>
     );
 };

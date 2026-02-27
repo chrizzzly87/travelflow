@@ -332,13 +332,14 @@ const AppContent: React.FC = () => {
             isInitialLanguageRef.current = false;
             return;
         }
-        if (DB_ENABLED) {
+        if (DB_ENABLED && isAuthenticated && access && !access.isAnonymous) {
             void dbUpsertUserSettings({ language: appLanguage });
         }
-    }, [appLanguage]);
+    }, [access, appLanguage, isAuthenticated]);
 
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;
+        if (!isAuthenticated || !access || access.isAnonymous) return;
         if (userSettingsSaveRef.current) {
             clearTimeout(userSettingsSaveRef.current);
         }
@@ -356,11 +357,19 @@ const AppContent: React.FC = () => {
         }, 800);
     };
 
-    const handleUpdateTrip = (updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
         setTrip(updatedTrip);
         if (options?.persist === false) return;
         saveTrip(updatedTrip);
-    };
+    }, []);
+
+    const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {
+        setTrip((currentTrip) => {
+            if (!currentTrip || currentTrip.id !== updatedTrip.id) return currentTrip;
+            if (Object.is(currentTrip, updatedTrip)) return currentTrip;
+            return updatedTrip;
+        });
+    }, []);
 
     const handleCommitState = (updatedTrip: ITrip, view: IViewSettings | undefined, options?: { replace?: boolean; label?: string; adminOverride?: boolean }) => {
         const label = options?.label || 'Updated trip';
@@ -513,10 +522,7 @@ const AppContent: React.FC = () => {
                         onClose={() => setIsManagerOpen(false)}
                         onSelectTrip={handleLoadTrip}
                         currentTripId={trip?.id}
-                        onUpdateTrip={(updatedTrip) => {
-                            if (!trip || trip.id !== updatedTrip.id) return;
-                            handleUpdateTrip(updatedTrip, { persist: false });
-                        }}
+                        onUpdateTrip={handleTripManagerUpdate}
                         appLanguage={appLanguage}
                     />
                 </Suspense>

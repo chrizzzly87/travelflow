@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSummary';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
+import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import { collectVisitedCountries } from '../components/profile/profileCountryUtils';
 import { getPinnedTrips, getTripSourceLabelKey, sortTripsByUpdatedDesc } from '../components/profile/profileTripState';
 import { resolveProfileStatusByTripCount } from '../components/profile/profileStatus';
@@ -28,6 +30,8 @@ import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { useAuth } from '../hooks/useAuth';
 
 const PUBLIC_PROFILE_TRIPS_PAGE_SIZE = 9;
+const PUBLIC_PROFILE_PASSPORT_QUERY_KEY = 'passport';
+const PUBLIC_PROFILE_PASSPORT_QUERY_VALUE = 'open';
 
 interface ProfileState {
     status: 'loading' | 'found' | 'private' | 'not_found';
@@ -49,11 +53,16 @@ const mergeTripsById = (currentTrips: ITrip[], nextTrips: ITrip[]): ITrip[] => {
     return sortTripsByUpdatedDesc(Array.from(mergedById.values()));
 };
 
+const normalizeUsername = (value: unknown): string => (
+    typeof value === 'string' ? value.trim().toLowerCase() : ''
+);
+
 export const PublicProfilePage: React.FC = () => {
     const { username = '' } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
-    const { isAuthenticated } = useAuth();
+    const { isLoading: isAuthLoading, isAuthenticated, profile: viewerProfile } = useAuth();
 
     const [state, setState] = useState<ProfileState>({
         status: 'loading',
@@ -74,8 +83,16 @@ export const PublicProfilePage: React.FC = () => {
         () => t('errors.profileLoad'),
         [i18n.language, i18n.resolvedLanguage, t]
     );
+    const viewerHandle = useMemo(
+        () => normalizeUsername(viewerProfile?.username),
+        [viewerProfile?.username]
+    );
+    const viewerProfileId = viewerProfile?.id || null;
+    const isPassportDialogOpen = searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE;
 
     useEffect(() => {
+        if (isAuthLoading) return;
+
         const handle = (username || '').trim().toLowerCase();
         if (!handle) {
             setState({ status: 'not_found', profile: null });
@@ -91,6 +108,34 @@ export const PublicProfilePage: React.FC = () => {
         setIsTripsLoading(false);
         setIsTripsLoadingMore(false);
 
+        const loadFirstTripsPage = async (profileRecord: UserProfileRecord) => {
+            setState({ status: 'found', profile: profileRecord });
+            trackEvent('public_profile__view', {
+                username: profileRecord.username || handle,
+            });
+
+            setIsTripsLoading(true);
+            try {
+                const firstPage = await getPublicTripsPageByUserId(profileRecord.id, {
+                    offset: 0,
+                    limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
+                });
+                if (!active) return;
+                setTrips(firstPage.trips);
+                setNextTripsOffset(firstPage.nextOffset);
+                setHasMoreTrips(firstPage.hasMore);
+            } catch (error) {
+                if (!active) return;
+                setTrips([]);
+                setNextTripsOffset(0);
+                setHasMoreTrips(false);
+                setErrorMessage(error instanceof Error ? error.message : profileLoadErrorLabel);
+            } finally {
+                if (!active) return;
+                setIsTripsLoading(false);
+            }
+        };
+
         void resolvePublicProfileByHandle(handle)
             .then(async (result) => {
                 if (!active) return;
@@ -105,30 +150,24 @@ export const PublicProfilePage: React.FC = () => {
                 }
 
                 if (result.status === 'private') {
+                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
+                        await loadFirstTripsPage(viewerProfile);
+                        return;
+                    }
                     setState({ status: 'private', profile: null });
                     return;
                 }
 
                 if (result.status === 'not_found' || !result.profile) {
+                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
+                        await loadFirstTripsPage(viewerProfile);
+                        return;
+                    }
                     setState({ status: 'not_found', profile: null });
                     return;
                 }
 
-                setState({ status: 'found', profile: result.profile });
-                trackEvent('public_profile__view', {
-                    username: result.profile.username || handle,
-                });
-
-                setIsTripsLoading(true);
-                const firstPage = await getPublicTripsPageByUserId(result.profile.id, {
-                    offset: 0,
-                    limit: PUBLIC_PROFILE_TRIPS_PAGE_SIZE,
-                });
-                if (!active) return;
-                setTrips(firstPage.trips);
-                setNextTripsOffset(firstPage.nextOffset);
-                setHasMoreTrips(firstPage.hasMore);
-                setIsTripsLoading(false);
+                await loadFirstTripsPage(result.profile);
             })
             .catch((error) => {
                 if (!active) return;
@@ -140,7 +179,7 @@ export const PublicProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [navigate, profileLoadErrorLabel, username]);
+    }, [isAuthLoading, isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfileId]);
 
     const loadMoreTrips = useCallback(() => {
         if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
@@ -217,10 +256,33 @@ export const PublicProfilePage: React.FC = () => {
         navigate(buildPath('tripDetail', { tripId: trip.id }));
     };
 
+    const resolveSourceLabel = useCallback((trip: ITrip): string => {
+        const sourceKey = getTripSourceLabelKey(trip);
+        if (sourceKey === 'createdByYou') {
+            return t('publicProfile.sourceCreatedByTraveler');
+        }
+        return t(`cards.source.${sourceKey}`);
+    }, [t]);
+
+    const handlePassportDialogOpenChange = useCallback((nextOpen: boolean) => {
+        const next = new URLSearchParams(searchParams);
+        if (nextOpen) {
+            next.set(PUBLIC_PROFILE_PASSPORT_QUERY_KEY, PUBLIC_PROFILE_PASSPORT_QUERY_VALUE);
+        } else {
+            next.delete(PUBLIC_PROFILE_PASSPORT_QUERY_KEY);
+        }
+        setSearchParams(next, { replace: !nextOpen });
+    }, [searchParams, setSearchParams]);
+
+    const handleOpenPassportDialog = useCallback(() => {
+        trackEvent('public_profile__summary--open_passport');
+        handlePassportDialogOpenChange(true);
+    }, [handlePassportDialogOpenChange]);
+
     return (
-        <div className="min-h-screen bg-slate-50">
-            <SiteHeader hideCreateTrip />
-            <main className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+        <div className="flex min-h-screen flex-col bg-slate-50">
+            <SiteHeader />
+            <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
                     <>
                         <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8">
@@ -230,7 +292,7 @@ export const PublicProfilePage: React.FC = () => {
                                 <div className="h-4 w-1/2 rounded bg-slate-100" />
                             </div>
                         </section>
-                        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                        <section className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                             {Array.from({ length: 3 }).map((_, index) => (
                                 <ProfileTripCardSkeleton key={`public-profile-loading-skeleton-${index}`} />
                             ))}
@@ -239,21 +301,21 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'private' && (
-                    <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.privateTitle')}</h1>
-                        <p className="mt-2 text-sm text-slate-600">{t('publicProfile.privateDescription')}</p>
+                    <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
+                        <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('publicProfile.privateTitle')}</h1>
+                        <p className="mt-2 max-w-xl text-sm text-slate-600 md:text-base">{t('publicProfile.privateDescription')}</p>
                         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                             {!isAuthenticated ? (
                                 <NavLink
                                     to="/login"
-                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                    className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
                                 >
                                     {t('publicProfile.ctaRegisterFree')}
                                 </NavLink>
                             ) : null}
                             <NavLink
                                 to={buildPath('inspirations')}
-                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
                             >
                                 {t('publicProfile.ctaExploreInspirations')}
                             </NavLink>
@@ -262,31 +324,34 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'not_found' && (
-                    <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8 text-center">
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('publicProfile.notFoundTitle')}</h1>
-                        <p className="mt-2 text-sm text-slate-600">{t('publicProfile.notFoundDescription')}</p>
-                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                            {!isAuthenticated ? (
+                    <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
+                        <div className="mx-auto max-w-3xl space-y-4">
+                            <img
+                                src="/images/feet.png"
+                                alt=""
+                                className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-90 [filter:saturate(0.75)_sepia(0.25)]"
+                                loading="lazy"
+                            />
+                            <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
+                                {t('publicProfile.notFoundFunTitle')}
+                            </h1>
+                            <p className="text-sm font-medium text-slate-600 md:text-base">
+                                {t('publicProfile.notFoundFunSubtitle')}
+                            </p>
+                            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                                 <NavLink
-                                    to="/login"
-                                    className="inline-flex rounded-full bg-accent-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-700"
+                                    to={buildPath('createTrip')}
+                                    className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
                                 >
-                                    {t('publicProfile.ctaRegisterFree')}
+                                    {t('publicProfile.ctaPlanTrip')}
                                 </NavLink>
-                            ) : (
                                 <NavLink
-                                    to={buildPath('profile')}
-                                    className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                    to={buildPath('inspirations')}
+                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
                                 >
-                                    {t('publicProfile.ctaBackProfile')}
+                                    {t('publicProfile.ctaGetInspired')}
                                 </NavLink>
-                            )}
-                            <NavLink
-                                to={buildPath('inspirations')}
-                                className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                            >
-                                {t('publicProfile.ctaExploreInspirations')}
-                            </NavLink>
+                            </div>
                         </div>
                     </section>
                 )}
@@ -303,9 +368,7 @@ export const PublicProfilePage: React.FC = () => {
                             distanceLabel={distanceLabel}
                             countries={visitedCountries}
                             stamps={passportDisplayStamps}
-                            allStamps={allStampProgress}
                             passportCountryCode={state.profile.country}
-                            passportStickerPositions={state.profile.passportStickerPositions}
                             stats={[
                                 { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
                                 { id: 'likes_saved', label: t('stats.likesSaved'), value: 0 },
@@ -326,11 +389,9 @@ export const PublicProfilePage: React.FC = () => {
                                 stampsTitle: t('summary.stampsTitle'),
                                 stampsDescription: '',
                                 stampsOpen: t('summary.stampsOpen'),
-                                stampsEmpty: t('summary.stampsEmpty'),
-                                stampsUnlockedOn: t('stamps.cardUnlockedOn'),
                             }}
                             onOpenPassport={() => {
-                                trackEvent('public_profile__summary--open_passport');
+                                handleOpenPassportDialog();
                             }}
                             locale={appLocale}
                         />
@@ -349,13 +410,13 @@ export const PublicProfilePage: React.FC = () => {
                                         {t('sections.highlightsCount', { count: pinnedTrips.length })}
                                     </span>
                                 </div>
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                     {pinnedTrips.map((trip) => (
                                         <ProfileTripCard
-                                            key={`public-pinned-${trip.id}`}
-                                            trip={trip}
-                                            locale={appLocale}
-                                            sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                                key={`public-pinned-${trip.id}`}
+                                                trip={trip}
+                                                locale={appLocale}
+                                                sourceLabel={resolveSourceLabel(trip)}
                                             labels={{
                                                 open: t('cards.actions.open'),
                                                 favorite: t('cards.actions.favorite'),
@@ -363,6 +424,8 @@ export const PublicProfilePage: React.FC = () => {
                                                 pin: t('cards.actions.pin'),
                                                 unpin: t('cards.actions.unpin'),
                                                 pinnedTag: t('cards.pinnedTag'),
+                                                expiredTag: t('cards.expiredTag'),
+                                                expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                                 mapUnavailable: t('cards.mapUnavailable'),
                                                 mapLoading: t('cards.mapLoading'),
                                             }}
@@ -382,7 +445,7 @@ export const PublicProfilePage: React.FC = () => {
                         <section className="space-y-3">
                             <h2 className="text-lg font-black tracking-tight text-slate-900">{t('publicProfile.tripsTitle')}</h2>
                             {isTripsLoading && trips.length === 0 ? (
-                                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                     {Array.from({ length: 3 }).map((_, index) => (
                                         <ProfileTripCardSkeleton key={`public-trip-loading-${index}`} />
                                     ))}
@@ -393,13 +456,13 @@ export const PublicProfilePage: React.FC = () => {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                         {trips.map((trip) => (
                                             <ProfileTripCard
                                                 key={`public-trip-${trip.id}`}
                                                 trip={trip}
                                                 locale={appLocale}
-                                                sourceLabel={t(`cards.source.${getTripSourceLabelKey(trip)}`)}
+                                                sourceLabel={resolveSourceLabel(trip)}
                                                 labels={{
                                                     open: t('cards.actions.open'),
                                                     favorite: t('cards.actions.favorite'),
@@ -407,6 +470,8 @@ export const PublicProfilePage: React.FC = () => {
                                                     pin: t('cards.actions.pin'),
                                                     unpin: t('cards.actions.unpin'),
                                                     pinnedTag: t('cards.pinnedTag'),
+                                                    expiredTag: t('cards.expiredTag'),
+                                                    expiredFallbackTitle: t('cards.expiredFallbackTitle'),
                                                     mapUnavailable: t('cards.mapUnavailable'),
                                                     mapLoading: t('cards.mapLoading'),
                                                 }}
@@ -423,7 +488,7 @@ export const PublicProfilePage: React.FC = () => {
 
                                     {(hasMoreTrips || isTripsLoadingMore) && (
                                         <>
-                                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
+                                            <div className="grid grid-cols-2 gap-4 xl:grid-cols-3" aria-hidden="true">
                                                 {Array.from({ length: 3 }).map((_, index) => (
                                                     <ProfileTripCardSkeleton
                                                         key={`public-trip-more-skeleton-${index}`}
@@ -439,7 +504,29 @@ export const PublicProfilePage: React.FC = () => {
                         </section>
                     </>
                 )}
+
+                {state.status === 'found' && (
+                    <ProfilePassportDialog
+                        open={isPassportDialogOpen}
+                        onOpenChange={(nextOpen) => handlePassportDialogOpenChange(nextOpen)}
+                        title={t('stamps.title')}
+                        description={t('stamps.description', { name: displayName })}
+                        stamps={allStampProgress}
+                        locale={appLocale}
+                        labels={{
+                            pageIndicator: t('stamps.pageIndicator'),
+                            previousPage: t('stamps.previousPage'),
+                            nextPage: t('stamps.nextPage'),
+                            emptySlot: t('stamps.emptySlot'),
+                        }}
+                        resolveGroupLabel={(group) => t(`stamps.group.${group}`)}
+                        onPageChange={(page) => {
+                            trackEvent('public_profile__stamps_page--change', { page });
+                        }}
+                    />
+                )}
             </main>
+            <SiteFooter />
         </div>
     );
 };

@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { makeCityItem, makeTrip } from '../helpers/tripFixtures';
 
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
   auth: {
     isAuthenticated: false,
+    profile: null as any,
   },
 }));
 
@@ -79,6 +81,7 @@ describe('pages/PublicProfilePage', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.auth.isAuthenticated = false;
+    mocks.auth.profile = null;
     mocks.getPublicTripsPageByUserId.mockResolvedValue({
       trips: [],
       hasMore: false,
@@ -226,7 +229,7 @@ describe('pages/PublicProfilePage', () => {
     });
   });
 
-  it('shows register CTA for guests on not found state', async () => {
+  it('shows plan-trip and inspirations CTAs for guests on not found state', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'not_found',
       canonicalUsername: null,
@@ -238,11 +241,12 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
   });
 
-  it('shows back-to-profile CTA for authenticated users on not found state', async () => {
+  it('shows the same public CTAs for authenticated users on not found state', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'not_found',
       canonicalUsername: null,
@@ -254,9 +258,135 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/unknown-handle');
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: 'publicProfile.ctaBackProfile' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
 
     expect(screen.queryByRole('link', { name: 'publicProfile.ctaRegisterFree' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'publicProfile.ctaBackProfile' })).toBeNull();
+  });
+
+  it('falls back to the authenticated viewer profile when own public handle resolve fails', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'not_found',
+      canonicalUsername: null,
+      redirectFromUsername: null,
+      profile: null,
+    });
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.profile = {
+      id: 'viewer-1',
+      email: 'viewer@example.com',
+      displayName: 'Viewer Traveler',
+      firstName: 'Viewer',
+      lastName: 'Traveler',
+      username: 'viewer_traveler',
+      bio: '',
+      gender: '',
+      country: 'DE',
+      city: 'Hamburg',
+      preferredLanguage: 'en',
+      onboardingCompletedAt: null,
+      accountStatus: 'active',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      usernameChangedAt: null,
+      passportStickerPositions: {},
+      passportStickerSelection: [],
+    };
+    mocks.getPublicTripsPageByUserId.mockResolvedValue({
+      trips: [makeTrip({ id: 'self-trip-1', title: 'My Public Trip', showOnPublicProfile: true })],
+      hasMore: false,
+      nextOffset: 1,
+    });
+
+    renderPublicProfilePage('/u/viewer_traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Viewer Traveler')).toBeInTheDocument();
+      expect(screen.getByText('My Public Trip')).toBeInTheDocument();
+    });
+
+    expect(mocks.getPublicTripsPageByUserId).toHaveBeenCalledWith('viewer-1', {
+      offset: 0,
+      limit: 9,
+    });
+  });
+
+  it('keeps the profile visible when public trips loading fails', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'TH',
+        city: 'Bangkok',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+    mocks.getPublicTripsPageByUserId.mockRejectedValueOnce(new Error('Public trips unavailable'));
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Traveler One')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('publicProfile.notFoundTitle')).toBeNull();
+    expect(screen.getByText('Public trips unavailable')).toBeInTheDocument();
+  });
+
+  it('opens passport dialog using URL search state', async () => {
+    const user = userEvent.setup();
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'TH',
+        city: 'Bangkok',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+
+    renderPublicProfilePage('/u/traveler');
+
+    const openPassportButton = await screen.findByRole('button', { name: /summary\.stampsOpen/i });
+    await user.click(openPassportButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
+    });
+    expect(screen.getByText('stamps.title')).toBeInTheDocument();
   });
 });

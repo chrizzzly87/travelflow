@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   updateCurrentUserProfile: vi.fn(),
   checkUsernameAvailability: vi.fn(),
   trackEvent: vi.fn(),
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -37,6 +38,12 @@ vi.mock('../../services/profileService', () => ({
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: mocks.trackEvent,
   getAnalyticsDebugAttributes: () => ({}),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: mocks.toastSuccess,
+  },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -103,12 +110,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
   it('keeps username locked by default and unlocks editing via the tiny edit action', async () => {
     const user = userEvent.setup();
-    mocks.checkUsernameAvailability.mockResolvedValueOnce({
-      normalizedUsername: 'traveler',
-      availability: 'unchanged',
-      reason: null,
-      cooldownEndsAt: null,
-    }).mockResolvedValueOnce({
+    mocks.checkUsernameAvailability.mockResolvedValue({
       normalizedUsername: 'new_handle',
       availability: 'available',
       reason: null,
@@ -134,12 +136,43 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.clear(usernameInput);
     await user.type(usernameInput, 'new_handle');
 
-    await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle');
-    });
+    expect(mocks.checkUsernameAvailability).not.toHaveBeenCalledWith('new_handle');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(screen.getByText('settings.usernameStatus.available')).toBeInTheDocument();
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle');
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'new_handle',
+      }));
+    });
+  });
+
+  it('normalizes @-prefixed username input before availability check and save', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'chrizzzly_hh',
+      availability: 'available',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, '@chrizzzly_hh');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh');
+      expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
+        username: 'chrizzzly_hh',
+      }));
     });
   });
 
@@ -147,17 +180,6 @@ describe('pages/ProfileSettingsPage username governance', () => {
     const user = userEvent.setup();
     mocks.auth.profile = buildProfile({
       usernameChangedAt: '2026-01-15T00:00:00Z',
-    });
-    mocks.checkUsernameAvailability.mockResolvedValueOnce({
-      normalizedUsername: 'traveler',
-      availability: 'unchanged',
-      reason: null,
-      cooldownEndsAt: null,
-    }).mockResolvedValueOnce({
-      normalizedUsername: 'later_name',
-      availability: 'cooldown',
-      reason: 'cooldown',
-      cooldownEndsAt: '2026-05-01T00:00:00Z',
     });
 
     renderPage();
@@ -180,12 +202,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
 
     expect(usernameInput).toHaveAttribute('readonly');
 
-    await waitFor(() => {
-      expect(screen.getByText(/cooldown:/i)).toBeInTheDocument();
-    });
+    expect(screen.getByText('settings.usernameCooldownHint')).toBeInTheDocument();
   });
 
-  it('saves selected Country/Region as ISO code from the searchable picker', async () => {
+  it('saves selected Country/Region as ISO code from the searchable picker and closes on select', async () => {
     const user = userEvent.setup();
     mocks.updateCurrentUserProfile.mockResolvedValue(buildProfile({ country: 'DE' }));
 
@@ -199,6 +219,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(countrySearchInput);
     await user.type(countrySearchInput, 'ger');
     await user.click(screen.getByRole('option', { name: 'Germany' }));
+    expect(screen.queryByRole('listbox')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
@@ -206,6 +227,76 @@ describe('pages/ProfileSettingsPage username governance', () => {
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         country: 'DE',
       }));
+    });
+  });
+
+  it('shows username suggestions when the requested username is unavailable', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockImplementation(async (candidate: string) => {
+      if (candidate === 'taken_name') {
+        return {
+          normalizedUsername: candidate,
+          availability: 'taken',
+          reason: null,
+          cooldownEndsAt: null,
+        };
+      }
+      if (candidate === 'taken_name1') {
+        return {
+          normalizedUsername: candidate,
+          availability: 'available',
+          reason: null,
+          cooldownEndsAt: null,
+        };
+      }
+      return {
+        normalizedUsername: candidate,
+        availability: 'taken',
+        reason: null,
+        cooldownEndsAt: null,
+      };
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.usernameChange' }));
+    const usernameInput = screen.getByLabelText('settings.fields.username');
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'taken_name');
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.usernameSuggestionsTitle')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'taken_name1' })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'taken_name1' }));
+    expect((usernameInput as HTMLInputElement).value).toBe('taken_name1');
+  });
+
+  it('shows a success toast after saving', async () => {
+    const user = userEvent.setup();
+    mocks.checkUsernameAvailability.mockResolvedValue({
+      normalizedUsername: 'traveler',
+      availability: 'unchanged',
+      reason: null,
+      cooldownEndsAt: null,
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('settings.title')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
+
+    await waitFor(() => {
+      expect(mocks.toastSuccess).toHaveBeenCalledWith('settings.messages.saved');
     });
   });
 });

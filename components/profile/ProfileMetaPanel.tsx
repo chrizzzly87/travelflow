@@ -2,9 +2,8 @@ import React from 'react';
 import { MapPin, Mountains } from '@phosphor-icons/react';
 import { FlagIcon } from '../flags/FlagIcon';
 import type { VisitedCountry } from './profileCountryUtils';
-import type { PassportStickerPosition, ProfileStampProgress } from './profileStamps';
+import type { ProfileStampProgress } from './profileStamps';
 import { ProfilePassportBook } from './ProfilePassportBook';
-import { ProfilePassportDialog } from './ProfilePassportDialog';
 
 interface ProfileMetaPanelLabels {
   bio: string;
@@ -16,8 +15,6 @@ interface ProfileMetaPanelLabels {
   stampsTitle: string;
   stampsDescription: string;
   stampsOpen: string;
-  stampsEmpty: string;
-  stampsUnlockedOn: string;
 }
 
 interface ProfileMetaPanelProps {
@@ -26,12 +23,7 @@ interface ProfileMetaPanelProps {
   distanceLabel: string;
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
-  allStamps?: ProfileStampProgress[];
   passportCountryCode?: string;
-  passportStickerPositions?: Record<string, PassportStickerPosition>;
-  allowStickerDrag?: boolean;
-  onStickerMoveEnd?: (positions: Record<string, PassportStickerPosition>, movedStampId: string) => void;
-  locale?: string;
   onOpenPassport?: () => void;
   labels: ProfileMetaPanelLabels;
 }
@@ -42,26 +34,13 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   distanceLabel,
   countries,
   stamps,
-  allStamps,
   passportCountryCode,
-  passportStickerPositions,
-  allowStickerDrag = false,
-  onStickerMoveEnd,
-  locale = 'en',
   onOpenPassport,
   labels,
 }) => {
-  const [passportOpen, setPassportOpen] = React.useState(false);
-
   const handleOpenPassport = React.useCallback(() => {
-    setPassportOpen(true);
     onOpenPassport?.();
   }, [onOpenPassport]);
-
-  const allPassportStamps = React.useMemo(
-    () => allStamps || stamps,
-    [allStamps, stamps]
-  );
 
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.62fr)]">
@@ -108,33 +87,21 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
         </section>
       </div>
 
-      <ProfilePassportBook
-        title={labels.stampsTitle}
-        description={labels.stampsDescription}
-        openLabel={labels.stampsOpen}
-        emptyLabel={labels.stampsEmpty}
-        stamps={stamps}
-        onOpen={handleOpenPassport}
-        countryCode={passportCountryCode}
-        stickerPositions={passportStickerPositions}
-        draggableStickers={allowStickerDrag}
-        onStickerMoveEnd={onStickerMoveEnd}
-      />
-
-      <ProfilePassportDialog
-        open={passportOpen}
-        onOpenChange={setPassportOpen}
-        title={labels.stampsTitle}
-        description={labels.stampsDescription}
-        openLabel={labels.stampsOpen}
-        emptyLabel={labels.stampsEmpty}
-        unlockedOnLabel={labels.stampsUnlockedOn}
-        stamps={allPassportStamps}
-        previewStamps={stamps}
-        countryCode={passportCountryCode}
-        stickerPositions={passportStickerPositions}
-        locale={locale}
-      />
+      <section className="space-y-2">
+        <header className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.stampsTitle}</p>
+          {labels.stampsDescription ? (
+            <p className="text-sm text-slate-600">{labels.stampsDescription}</p>
+          ) : null}
+        </header>
+        <ProfilePassportBook
+          title={labels.stampsTitle}
+          openLabel={labels.stampsOpen}
+          stamps={stamps}
+          onOpen={handleOpenPassport}
+          countryCode={passportCountryCode}
+        />
+      </section>
     </section>
   );
 };

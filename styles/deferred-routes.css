@@ -33,6 +33,7 @@
 @source "../pages/ProfilePage.tsx";
 @source "../pages/ProfileStampsPage.tsx";
 @source "../pages/PublicProfilePage.tsx";
+@source "../pages/PublicProfileStampsPage.tsx";
 @source "../pages/ProfileSettingsPage.tsx";
 @source "../pages/ProfileOnboardingPage.tsx";
 @source "../pages/AdminWorkspaceRouter.tsx";

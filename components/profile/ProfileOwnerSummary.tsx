@@ -3,7 +3,6 @@ import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-i
 import { ProfileMetaPanel } from './ProfileMetaPanel';
 import { ProfileAvatarOrbitText } from './ProfileAvatarOrbitText';
 import type { VisitedCountry } from './profileCountryUtils';
-import type { PassportStickerPosition } from './profileStamps';
 import { ProfileSummaryStat, ProfileSummaryStats } from './ProfileSummaryStats';
 import type { ProfileStatus } from './profileStatus';
 import type { ProfileStampProgress } from './profileStamps';
@@ -23,8 +22,6 @@ interface ProfileOwnerSummaryLabels {
   stampsTitle: string;
   stampsDescription: string;
   stampsOpen: string;
-  stampsEmpty: string;
-  stampsUnlockedOn: string;
 }
 
 interface ProfileOwnerSummaryProps {
@@ -38,16 +35,13 @@ interface ProfileOwnerSummaryProps {
   distanceLabel: string;
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
-  allStamps: ProfileStampProgress[];
   passportCountryCode?: string;
-  passportStickerPositions?: Record<string, PassportStickerPosition>;
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
   onEditProfile: () => void;
   onViewPublicProfile: () => void;
   onShareProfile: () => void;
   onOpenPassport?: () => void;
-  onPassportStickerMoveEnd?: (positions: Record<string, PassportStickerPosition>, movedStampId: string) => void;
   canViewPublicProfile: boolean;
   canShareProfile: boolean;
   locale?: string;
@@ -65,16 +59,13 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   distanceLabel,
   countries,
   stamps,
-  allStamps,
   passportCountryCode,
-  passportStickerPositions,
   stats,
   labels,
   onEditProfile,
   onViewPublicProfile,
   onShareProfile,
   onOpenPassport,
-  onPassportStickerMoveEnd,
   canViewPublicProfile,
   canShareProfile,
   locale = 'en',
@@ -125,7 +116,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             type="button"
             onClick={onShareProfile}
             disabled={!canShareProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.985] active:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <ShareNetwork size={15} weight="duotone" />
             {labels.shareProfile}
@@ -142,12 +133,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
             distanceLabel={distanceLabel}
             countries={countries}
             stamps={stamps}
-            allStamps={allStamps}
             passportCountryCode={passportCountryCode}
-            passportStickerPositions={passportStickerPositions}
-            allowStickerDrag
-            onStickerMoveEnd={onPassportStickerMoveEnd}
-            locale={locale}
             onOpenPassport={onOpenPassport}
             labels={{
               bio: labels.bio,
@@ -159,8 +145,6 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
               stampsTitle: labels.stampsTitle,
               stampsDescription: labels.stampsDescription,
               stampsOpen: labels.stampsOpen,
-              stampsEmpty: labels.stampsEmpty,
-              stampsUnlockedOn: labels.stampsUnlockedOn,
             }}
           />
         </div>

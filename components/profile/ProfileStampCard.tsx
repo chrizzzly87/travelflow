@@ -9,6 +9,7 @@ interface ProfileStampCardProps {
   onHover?: (stamp: ProfileStampProgress) => void;
   locale?: string;
   unlockedOnLabel?: string;
+  compact?: boolean;
 }
 
 type StampVisualState = {
@@ -36,6 +37,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
   onHover,
   locale = 'en',
   unlockedOnLabel = 'Unlocked',
+  compact = false,
 }) => {
   const [visualState, setVisualState] = React.useState<StampVisualState>(INITIAL_VISUAL_STATE);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -120,6 +122,8 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       className={[
         'profile-stamp-card group relative overflow-hidden rounded-xl border bg-white text-left',
         selected ? 'border-accent-300 shadow-md shadow-accent-100/60' : 'border-slate-200',
+        stamp.achieved ? '' : 'opacity-80',
+        compact ? 'rounded-lg' : '',
       ].join(' ')}
       style={{
         '--stamp-tilt-x': `${prefersReducedMotion ? 0 : visualState.tiltX}deg`,
@@ -130,7 +134,7 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
       } as React.CSSProperties}
       aria-pressed={selected}
     >
-      <div className={`relative aspect-square overflow-hidden ${stamp.achieved ? '' : 'grayscale opacity-70'}`}>
+      <div className={`relative ${compact ? 'aspect-[4/3]' : 'aspect-square'} overflow-hidden ${stamp.achieved ? '' : 'grayscale opacity-70'}`}>
         <img
           src={stamp.definition.assetPath}
           alt={stamp.definition.title}
@@ -140,29 +144,31 @@ export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
         <span className="pointer-events-none absolute inset-0 bg-slate-950/5" />
       </div>
 
-      <div className="space-y-1 border-t border-slate-100 px-3 py-2.5">
-        <p className="line-clamp-1 text-sm font-semibold text-slate-900">{stamp.definition.title}</p>
-        <p className="line-clamp-2 text-xs text-slate-500">{stamp.definition.subtitle}</p>
+      <div className={`space-y-1 border-t border-slate-100 ${compact ? 'px-2.5 py-2' : 'px-3 py-2.5'}`}>
+        <p className={`line-clamp-1 font-semibold text-slate-900 ${compact ? 'text-[13px]' : 'text-sm'}`}>{stamp.definition.title}</p>
       </div>
 
       <div
         className={[
-          'pointer-events-none absolute inset-x-0 bottom-0 border-t border-slate-200 bg-white/96 p-2.5 backdrop-blur-sm transition-all duration-200',
+          compact
+            ? 'pointer-events-none absolute inset-0 z-20 flex flex-col justify-end border-t border-slate-200/70 bg-slate-950/64 p-2.5 text-white backdrop-blur-[1px] transition-all duration-200'
+            : 'pointer-events-none absolute inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/96 p-2.5 backdrop-blur-sm transition-all duration-200',
           detailsVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
         ].join(' ')}
         aria-hidden={!detailsVisible}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600">
-            {stamp.achieved ? <SealCheck size={13} weight="duotone" className="text-emerald-600" /> : <LockSimple size={13} weight="duotone" />}
+        <p className={`line-clamp-2 text-[11px] ${compact ? 'text-slate-100' : 'text-slate-600'}`}>{stamp.definition.subtitle}</p>
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
+            {stamp.achieved ? <SealCheck size={13} weight="duotone" className={compact ? 'text-emerald-300' : 'text-emerald-600'} /> : <LockSimple size={13} weight="duotone" />}
             {stamp.achieved ? 'Unlocked' : `${Math.floor(stamp.currentValue)}/${stamp.targetValue}`}
           </span>
-          <span className="text-[11px] font-semibold text-slate-600">
+          <span className={`text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
             {stamp.definition.rarityPercent}% rarity
           </span>
         </div>
         {unlockedAtLabel && (
-          <p className="mt-1 text-[11px] font-medium text-slate-600">
+          <p className={`mt-1 text-[11px] font-medium ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
             {unlockedOnLabel}: {unlockedAtLabel}
           </p>
         )}

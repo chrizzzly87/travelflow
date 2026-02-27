@@ -10,6 +10,7 @@ import {
   Star,
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
+import { isTripExpiredByTimestamp } from '../../config/productLimits';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 import {
@@ -30,6 +31,8 @@ interface ProfileTripCardLabels {
   makePublic?: string;
   makePrivate?: string;
   pinnedTag: string;
+  expiredTag?: string;
+  expiredFallbackTitle?: string;
   mapUnavailable: string;
   mapLoading: string;
   creatorPrefix?: string;
@@ -64,6 +67,8 @@ const DEFAULT_LANE_COLORS = [
   '#6366f1',
   '#8b5cf6',
 ];
+
+const GENERATION_ERROR_ITEM_PREFIX = 'loading-error-';
 
 const buildLaneOutlineColor = (hexColor: string): string => {
   const sanitized = hexColor.replace('#', '');
@@ -133,6 +138,14 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   const durationDays = React.useMemo(() => getTripDurationDays(trip), [trip]);
   const hasCreatorAttribution = showCreatorAttribution && Boolean(creatorHandle) && Boolean(creatorProfilePath);
   const isPublic = trip.showOnPublicProfile !== false;
+  const isExpired = trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt);
+  const hasGenerationErrorItem = React.useMemo(
+    () => trip.items.some((item) => item.id.startsWith(GENERATION_ERROR_ITEM_PREFIX)),
+    [trip.items]
+  );
+  const displayTitle = isExpired && hasGenerationErrorItem
+    ? (labels.expiredFallbackTitle || 'Expired trip')
+    : trip.title;
 
   const cityLanes = React.useMemo(() => (
     cityItems.map((item, index) => ({
@@ -165,10 +178,13 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   return (
     <article
       ref={cardRef}
-      className="overflow-hidden rounded-xl border border-slate-200 bg-white transition-colors hover:border-slate-300"
+      className={[
+        'overflow-hidden rounded-xl border bg-white transition-colors hover:border-slate-300',
+        isExpired ? 'border-amber-200' : 'border-slate-200',
+      ].join(' ')}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
-      <div className="relative h-40 overflow-hidden bg-slate-100">
+      <div className={`relative h-40 overflow-hidden ${isExpired ? 'bg-amber-50' : 'bg-slate-100'}`}>
         {!isNearViewport ? (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
             {labels.mapLoading}
@@ -183,7 +199,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
             <img
               src={mapUrl}
               alt={`Map preview for ${trip.title}`}
-              className="h-full w-full object-cover"
+              className={`h-full w-full object-cover ${isExpired ? 'opacity-70 grayscale-[0.28]' : ''}`}
               loading="lazy"
               onLoad={() => setMapLoaded(true)}
               onError={() => setMapError(true)}
@@ -199,16 +215,23 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           <span className="rounded-full border border-slate-200 bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
             {sourceLabel}
           </span>
-          {trip.isPinned && (
-            <span className="rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
-              {labels.pinnedTag}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isExpired && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                {labels.expiredTag || 'Expired'}
+              </span>
+            )}
+            {trip.isPinned && (
+              <span className="rounded-full bg-accent-600 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                {labels.pinnedTag}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="space-y-3 p-4">
-        <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">{trip.title}</h3>
+        <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">{displayTitle}</h3>
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
           <span className="inline-flex items-center gap-1.5">
@@ -256,6 +279,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   <span
                     className="example-city-lane-hitbox block"
                     data-tooltip={cityLane.title}
+                    title={cityLane.title}
                     style={{ flexGrow: cityLane.nights, flexBasis: 0 }}
                   >
                     <span

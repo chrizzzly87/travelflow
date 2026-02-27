@@ -67,7 +67,7 @@ export interface PublicTripsPageResult {
     nextOffset: number;
 }
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
+const USERNAME_PATTERN = /^[a-z0-9_-]{3,30}$/;
 const USERNAME_RESERVED = new Set([
     'admin',
     'support',
@@ -89,8 +89,21 @@ const USERNAME_RESERVED = new Set([
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
-const PROFILE_SELECT_FULL = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
-const PROFILE_SELECT_LEGACY = 'id, email, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
+const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
+const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
+const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
+type ProfileSelectTier = 'full' | 'legacy' | 'minimal';
+let profileSelectTierHint: ProfileSelectTier = 'full';
+const PROFILE_SELECT_BY_TIER: Record<ProfileSelectTier, string> = {
+    full: PROFILE_SELECT_FULL,
+    legacy: PROFILE_SELECT_LEGACY,
+    minimal: PROFILE_SELECT_MINIMAL,
+};
+const PROFILE_SELECT_FALLBACK_ORDER: Record<ProfileSelectTier, ProfileSelectTier[]> = {
+    full: ['full', 'legacy', 'minimal'],
+    legacy: ['legacy', 'minimal'],
+    minimal: ['minimal'],
+};
 
 const normalizeLanguage = (value: unknown): AppLanguage => {
     return normalizeLocale(typeof value === 'string' ? value : null);
@@ -114,11 +127,46 @@ const toBooleanWithDefault = (value: unknown, fallback: boolean): boolean => (
 );
 
 const normalizeUsername = (value: unknown): string => (
-    typeof value === 'string' ? value.trim().toLowerCase() : ''
+    typeof value === 'string'
+        ? value.trim().toLowerCase().replace(/^@+/, '')
+        : ''
 );
 
 const isProfileColumnMissing = (message: string): boolean =>
     /column/i.test(message) && /(first_name|last_name|username|bio|gender|country|city|preferred_language|onboarding_completed_at|account_status|public_profile_enabled|default_public_trip_visibility|username_changed_at|passport_sticker_positions|passport_sticker_selection)/i.test(message);
+
+interface ProfileSelectResult {
+    data: unknown;
+    error: { message?: string } | null;
+}
+
+type ProfileSelectQuery = (selectColumns: string) => PromiseLike<ProfileSelectResult>;
+
+const runProfileSelectWithFallback = async (
+    queryFactory: ProfileSelectQuery
+): Promise<ProfileSelectResult> => {
+    const fallbackOrder = PROFILE_SELECT_FALLBACK_ORDER[profileSelectTierHint];
+    let latestColumnError: ProfileSelectResult | null = null;
+
+    for (const tier of fallbackOrder) {
+        const result = await queryFactory(PROFILE_SELECT_BY_TIER[tier]);
+        if (!result.error) {
+            profileSelectTierHint = tier;
+            return result;
+        }
+
+        const message = result.error.message || '';
+        if (!isProfileColumnMissing(message)) {
+            return result;
+        }
+        latestColumnError = result;
+    }
+
+    return latestColumnError || {
+        data: null,
+        error: null,
+    };
+};
 
 const toPassportStickerPosition = (value: unknown): PassportStickerPosition | null => {
     if (!value || typeof value !== 'object') return null;
@@ -255,21 +303,11 @@ const validateUsername = (candidate: string): UsernameAvailabilityResult | null 
 };
 
 const loadProfileByQuery = async (
-    queryFactory: () => any
+    queryFactory: ProfileSelectQuery
 ): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
 
-    let { data, error } = await queryFactory()
-        .select(PROFILE_SELECT_FULL)
-        .maybeSingle();
-
-    if (error && isProfileColumnMissing(error.message || '')) {
-        const fallback = await queryFactory()
-            .select(PROFILE_SELECT_LEGACY)
-            .maybeSingle();
-        data = fallback.data as typeof data;
-        error = fallback.error as typeof error;
-    }
+    const { data, error } = await runProfileSelectWithFallback(queryFactory);
 
     if (error) {
         if (/row-level security|permission denied/i.test(error.message || '')) return null;
@@ -283,6 +321,10 @@ const loadProfileByQuery = async (
 const isCurrentViewerAdmin = async (): Promise<boolean> => {
     if (!supabase) return false;
     try {
+        if (typeof supabase.auth?.getSession === 'function') {
+            const sessionAttempt = await supabase.auth.getSession();
+            if (!sessionAttempt.data.session) return false;
+        }
         const accessAttempt = await supabase.rpc('get_current_user_access');
         if (accessAttempt.error) return false;
         const row = parseRpcSingle<Record<string, unknown>>(accessAttempt.data);
@@ -299,21 +341,13 @@ export const getCurrentUserProfile = async (): Promise<UserProfileRecord | null>
     const userId = authData.user.id;
     const emailFallback = authData.user.email ?? null;
 
-    let { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection')
-        .eq('id', userId)
-        .maybeSingle();
-
-    if (error && isProfileColumnMissing(error.message || '')) {
-        const fallback = await supabase
+    const { data, error } = await runProfileSelectWithFallback((selectColumns) => (
+        supabase
             .from('profiles')
-            .select('id, display_name, first_name, last_name, username, gender, country, city, preferred_language, onboarding_completed_at, account_status')
+            .select(selectColumns)
             .eq('id', userId)
-            .maybeSingle();
-        data = fallback.data as typeof data;
-        error = fallback.error as typeof error;
-    }
+            .maybeSingle()
+    ));
 
     if (error) {
         throw new Error(error.message || 'Could not load profile.');
@@ -503,15 +537,23 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
         }
     }
 
-    const { data: takenRow, error: takenError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('username', normalizedUsername)
-        .maybeSingle();
+    const lookupTaken = async (candidate: string): Promise<Record<string, unknown> | null> => {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq('username', candidate)
+            .maybeSingle();
 
-    if (takenError && !/row-level security|permission denied/i.test(takenError.message || '')) {
-        throw new Error(takenError.message || 'Could not validate username availability.');
-    }
+        if (error && !/row-level security|permission denied/i.test(error.message || '')) {
+            throw new Error(error.message || 'Could not validate username availability.');
+        }
+
+        return data as Record<string, unknown> | null;
+    };
+
+    const canonicalTaken = await lookupTaken(normalizedUsername);
+    const legacyTaken = canonicalTaken ? null : await lookupTaken(`@${normalizedUsername}`);
+    const takenRow = canonicalTaken || legacyTaken;
 
     if (takenRow && typeof takenRow.id === 'string' && takenRow.id !== currentUserId) {
         return {
@@ -532,19 +574,35 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
 
 const findProfileByUsername = async (username: string): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
-    return loadProfileByQuery(() => (
+    const normalized = normalizeUsername(username);
+    if (!normalized) return null;
+
+    const canonicalProfile = await loadProfileByQuery((selectColumns) => (
         supabase
             .from('profiles')
-            .ilike('username', username)
+            .select(selectColumns)
+            .eq('username', normalized)
+            .maybeSingle()
+    ));
+    if (canonicalProfile) return canonicalProfile;
+
+    return loadProfileByQuery((selectColumns) => (
+        supabase
+            .from('profiles')
+            .select(selectColumns)
+            .eq('username', `@${normalized}`)
+            .maybeSingle()
     ));
 };
 
 const findProfileByUserId = async (userId: string): Promise<UserProfileRecord | null> => {
     if (!supabase) return null;
-    return loadProfileByQuery(() => (
+    return loadProfileByQuery((selectColumns) => (
         supabase
             .from('profiles')
+            .select(selectColumns)
             .eq('id', userId)
+            .maybeSingle()
     ));
 };
 
@@ -582,11 +640,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         if (row) {
             const status = typeof row.status === 'string' ? row.status : 'not_found';
             const canonicalUsername = normalizeUsername(row.canonical_username);
-            const hasSelectionField = Object.prototype.hasOwnProperty.call(row, 'passport_sticker_selection');
-            const baseProfile = mapProfileRow(row, null);
-            const profile = !hasSelectionField && baseProfile.username
-                ? (await findProfileByUsername(baseProfile.username) || baseProfile)
-                : baseProfile;
+            const profile = mapProfileRow(row, null);
 
             if (status === 'found') {
                 const canAccess = canViewerAccessProfile(profile);
@@ -609,17 +663,13 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
             }
 
             if (status === 'private') {
-                if (viewerIsAdmin) {
-                    const usernameToLoad = canonicalUsername || profile.username || normalized;
-                    const adminProfile = await findProfileByUsername(usernameToLoad);
-                    if (adminProfile) {
-                        return {
-                            status: 'found',
-                            profile: adminProfile,
-                            canonicalUsername: adminProfile.username || usernameToLoad,
-                            redirectFromUsername: null,
-                        };
-                    }
+                if (viewerIsAdmin && profile.id) {
+                    return {
+                        status: 'found',
+                        profile,
+                        canonicalUsername: canonicalUsername || profile.username || normalized,
+                        redirectFromUsername: null,
+                    };
                 }
                 return {
                     status: 'private',

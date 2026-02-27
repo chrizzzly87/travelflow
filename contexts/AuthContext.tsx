@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { useLocation } from 'react-router-dom';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
 import type { UserAccessContext } from '../types';
@@ -33,11 +34,12 @@ const loadSupabaseClient = async () => {
     return supabase;
 };
 
-const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
+export const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
     const normalizedPath = stripLocalePrefix(pathname || '/');
     if (normalizedPath === '/login') return true;
     if (normalizedPath.startsWith('/auth/')) return true;
     if (normalizedPath.startsWith('/profile')) return true;
+    if (normalizedPath.startsWith('/u/')) return true;
     if (normalizedPath.startsWith('/admin')) return true;
     if (normalizedPath.startsWith('/trip')) return true;
     if (normalizedPath.startsWith('/create-trip')) return true;
@@ -58,8 +60,13 @@ const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
 export const shouldEnableDevAdminBypass = (
     isDevRuntime = import.meta.env.DEV,
     bypassEnvValue = import.meta.env.VITE_DEV_ADMIN_BYPASS,
-    bypassDisabled = false
-): boolean => isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled;
+    bypassDisabled = false,
+    pathname = '/'
+): boolean => {
+    const normalizedPath = stripLocalePrefix(pathname || '/');
+    const isAdminRoute = normalizedPath.startsWith('/admin');
+    return isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled && isAdminRoute;
+};
 
 export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
     access: Pick<UserAccessContext, 'role' | 'isAnonymous'> | null,
@@ -100,13 +107,14 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const location = useLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
     const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isProfileLoading, setIsProfileLoading] = useState(false);
     const [isDevAdminBypassDisabled, setIsDevAdminBypassDisabled] = useState<boolean>(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return false;
+        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return false;
         if (typeof window === 'undefined') return false;
         try {
             return window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY) === '1';
@@ -125,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     useEffect(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return;
+        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return;
         if (typeof window === 'undefined') return;
         try {
             if (isDevAdminBypassDisabled) {
@@ -193,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
-        if (nextAccess?.userId) {
+        if (nextAccess?.userId && !nextAccess.isAnonymous) {
             await refreshProfile();
             return;
         }
@@ -459,18 +467,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.signOut();
         } finally {
-            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) {
+            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, location.pathname)) {
                 setIsDevAdminBypassDisabled(true);
             }
             setAccess(null);
             setSession(null);
             resetProfileState();
         }
-    }, [resetProfileState]);
+    }, [location.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
         // Development bypass for local admin testing.
-        if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, isDevAdminBypassDisabled)) {
+        if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, isDevAdminBypassDisabled, location.pathname)) {
             return {
                 session: {
                     access_token: 'dev-bypass-token',
@@ -548,6 +556,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isDevAdminBypassDisabled,
         isLoading,
         isProfileLoading,
+        location.pathname,
         loginWithOAuth,
         loginWithPassword,
         logout,

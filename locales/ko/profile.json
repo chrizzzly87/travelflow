@@ -38,7 +38,9 @@
       "copiedFromShared": "Copied from shared trip",
       "copiedFromYourTrip": "Copied from your trip",
       "startedFromExample": "Started from example"
-    }
+    },
+    "expiredTag": "만료됨",
+    "expiredFallbackTitle": "만료된 여행 초안"
   },
   "actions": {
     "title": "Quick actions",
@@ -68,7 +70,9 @@
     "stampsOpen": "Open stamp collection",
     "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
-    "message": "Message"
+    "message": "Message",
+    "shareCopied": "프로필 URL이 클립보드에 복사되었습니다.",
+    "shareOpened": "공개 프로필이 새 탭에서 열렸습니다."
   },
   "stats": {
     "totalTrips": "Total trips",
@@ -88,7 +92,12 @@
     "tripsTitle": "Public trips",
     "emptyTrips": "No public trips yet.",
     "followHint": "Follow and message actions are coming soon.",
-    "ctaRegisterFree": "무료로 가입하기"
+    "ctaRegisterFree": "무료로 가입하기",
+    "sourceCreatedByTraveler": "Created by traveler",
+    "notFoundFunTitle": "Seems like this user already found their next trip.",
+    "notFoundFunSubtitle": "Don't wait any longer",
+    "ctaPlanTrip": "Plan your trip",
+    "ctaGetInspired": "Get inspired"
   },
   "settings": {
     "title": "Profile settings",
@@ -106,7 +115,7 @@
       "city": "City *",
       "preferredLanguage": "Preferred language *"
     },
-    "usernameHelp": "Lowercase letters, numbers, and underscores only. 3-30 characters.",
+    "usernameHelp": "Use 3-30 letters, numbers, underscores, or hyphens. No spaces.",
     "usernameCooldownHint": "You can change your username again on {date}.",
     "bioHelp": "Share a short intro travelers can see on your public profile.",
     "publicProfileToggleTitle": "Enable public profile",
@@ -136,7 +145,7 @@
       "available": "Great, this username is available.",
       "taken": "This username is already taken.",
       "reserved": "This username is reserved.",
-      "invalid": "Use 3-30 lowercase letters, numbers, or underscores.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens.",
       "unchanged": "This is your current username.",
       "cooldown": "Username changes are currently on cooldown.",
       "cooldownDate": "Username changes are on cooldown until {date}.",
@@ -151,13 +160,15 @@
     "usernameRecoveryHint": {
       "taken": "Try adding a number or underscore.",
       "reserved": "Choose another handle that is not reserved.",
-      "invalid": "Use 3-30 lowercase letters, numbers, or underscores.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens with no spaces.",
       "cooldown": "Username edits are locked during the cooldown window."
     },
     "countryRegionSearchPlaceholder": "Search country or region",
     "countryRegionClear": "Clear country/region",
     "countryRegionEmpty": "No matching country or region found.",
-    "countryRegionToggle": "Toggle country/region options"
+    "countryRegionToggle": "Toggle country/region options",
+    "usernameChange": "Change username",
+    "usernameSuggestionsTitle": "Try one of these available options:"
   },
   "stamps": {
     "eyebrow": "Passport collection",
@@ -198,7 +209,12 @@
     "selectionEmpty": "Unlock stamps to choose what appears on your passport cover.",
     "selectionLimitNotice": "Choose up to {count} stamps for your cover.",
     "selectionSaveFailed": "Could not save your stamp cover selection.",
-    "selectionSaving": "Saving passport cover selection..."
+    "selectionSaving": "Saving passport cover selection...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "emptySlot": "Stamp slot",
+    "backToPublicProfile": "Back to public profile"
   },
   "likedPlaceholder": {
     "title": "Liked trips are coming soon",

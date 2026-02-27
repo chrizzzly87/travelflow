@@ -9,6 +9,7 @@ import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useAuth } from '../hooks/useAuth';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -53,6 +54,18 @@ type CountryCacheStore = Record<string, { countryCode: string; countryName: stri
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
+const MAX_GEOCODE_LOOKUPS_PER_PASS = 24;
+
+export const shouldAttemptTripManagerReverseGeocode = (
+  item: Pick<ITimelineItem, 'coordinates'>,
+  hasStoredOrParsedCountry: boolean,
+  remainingLookups: number
+): boolean => {
+  if (hasStoredOrParsedCountry) return false;
+  if (remainingLookups <= 0) return false;
+  if (!item.coordinates) return false;
+  return Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng);
+};
 
 export const readTripManagerCountryCache = (): CountryCacheStore => {
   const raw = readLocalStorageItem(COUNTRY_CACHE_KEY);
@@ -684,6 +697,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   appLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const { confirm } = useAppDialog();
+  const { isAuthenticated } = useAuth();
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [favoritesOpen, setFavoritesOpen] = React.useState(true);
@@ -787,7 +801,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, [getCountryCacheKey, persistCountryCache]);
 
   const refreshTrips = React.useCallback(async () => {
-    if (DB_ENABLED) {
+    if (DB_ENABLED && isAuthenticated) {
       await syncTripsFromDb();
     }
     const loadedTrips = getAllTrips();
@@ -795,7 +809,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       setTrips(loadedTrips);
     });
     return loadedTrips;
-  }, [startTransition]);
+  }, [isAuthenticated, startTransition]);
 
   const enrichTripsWithCountryData = React.useCallback(async (sourceTrips: ITrip[]) => {
     if (isEnrichingRef.current) return;
@@ -803,6 +817,8 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     try {
       let hasChanges = false;
+      let geocodeLookupsRemaining = MAX_GEOCODE_LOOKUPS_PER_PASS;
+      const geocodePassCache = new Map<string, CountryMatch | null>();
 
       for (const trip of sourceTrips) {
         let tripChanged = false;
@@ -814,12 +830,22 @@ export const TripManager: React.FC<TripManagerProps> = ({
             continue;
           }
 
-          const parsed = parseCountryFromText(item);
-          const geocoded = item.coordinates && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng)
-            ? await reverseGeocodeCountry(item.coordinates.lat, item.coordinates.lng)
-            : null;
           const stored = getCountryFromStoredFields(item);
-          const resolved = geocoded || parsed || stored;
+          const parsed = stored ? null : parseCountryFromText(item);
+          let geocoded: CountryMatch | null = null;
+
+          if (shouldAttemptTripManagerReverseGeocode(item, Boolean(stored || parsed), geocodeLookupsRemaining)) {
+            const geocodeCacheKey = `${item.coordinates.lat.toFixed(4)},${item.coordinates.lng.toFixed(4)}`;
+            if (geocodePassCache.has(geocodeCacheKey)) {
+              geocoded = geocodePassCache.get(geocodeCacheKey) ?? null;
+            } else {
+              geocodeLookupsRemaining -= 1;
+              geocoded = await reverseGeocodeCountry(item.coordinates.lat, item.coordinates.lng);
+              geocodePassCache.set(geocodeCacheKey, geocoded);
+            }
+          }
+
+          const resolved = stored || parsed || geocoded;
 
           if (!resolved) {
             nextItems.push(item);
@@ -844,7 +870,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
         const updatedTrip: ITrip = { ...trip, items: nextItems };
         saveTrip(updatedTrip, { preserveUpdatedAt: true });
-        if (DB_ENABLED) {
+        if (DB_ENABLED && isAuthenticated) {
           void dbUpsertTrip(updatedTrip);
         }
         if (onUpdateTrip && currentTripId === updatedTrip.id) {
@@ -861,7 +887,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     } finally {
       isEnrichingRef.current = false;
     }
-  }, [currentTripId, onUpdateTrip, reverseGeocodeCountry, startTransition]);
+  }, [currentTripId, isAuthenticated, onUpdateTrip, reverseGeocodeCountry, startTransition]);
 
   React.useEffect(() => {
     if (!isOpen) {
