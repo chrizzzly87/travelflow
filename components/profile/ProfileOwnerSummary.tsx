@@ -102,14 +102,14 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
 
         <div className="mt-4 space-y-3 text-left">
           <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
-          <div className="space-y-2">
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <div className="flex flex-col gap-2">
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
               <MapPin size={15} weight="duotone" className="text-accent-600" />
-              {location}
+              <span>{location}</span>
             </p>
-            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
               <Mountains size={15} weight="duotone" className="text-accent-600" />
-              {distanceLabel}
+              <span>{distanceLabel}</span>
             </p>
           </div>
         </div>

@@ -77,7 +77,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   compactCard = false,
 }) => {
   const profileIdentityCard = (
-    <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[360px]' : 'min-h-[480px]'}`}>
+    <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[320px]' : 'min-h-[480px]'}`}>
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
         <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
           <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
@@ -105,14 +105,16 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
       {showDetails ? (
         <div className="mt-4 space-y-3 text-left">
           <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <MapPin size={15} weight="duotone" className="text-accent-600" />
-            {location}
-          </p>
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <Mountains size={15} weight="duotone" className="text-accent-600" />
-            {distanceLabel}
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
+              <MapPin size={15} weight="duotone" className="text-accent-600" />
+              <span>{location}</span>
+            </p>
+            <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
+              <Mountains size={15} weight="duotone" className="text-accent-600" />
+              <span>{distanceLabel}</span>
+            </p>
+          </div>
         </div>
       ) : null}
 
@@ -163,7 +165,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
 
   if (hideRightPanel) {
     return (
-      <section className="w-full max-w-md">
+      <section className="mx-auto w-full max-w-md">
         {profileIdentityCard}
       </section>
     );
