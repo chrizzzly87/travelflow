@@ -8,11 +8,13 @@ import {
   MapPin,
   PushPin,
   Star,
+  Trash,
 } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { isTripExpiredByTimestamp } from '../../config/productLimits';
 import type { AppLanguage, ITrip } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
+import { Checkbox } from '../ui/checkbox';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -28,6 +30,8 @@ interface ProfileTripCardLabels {
   unfavorite: string;
   pin: string;
   unpin: string;
+  archive?: string;
+  selectTrip?: string;
   makePublic?: string;
   makePrivate?: string;
   pinnedTag: string;
@@ -47,13 +51,17 @@ interface ProfileTripCardProps {
   onToggleFavorite?: (trip: ITrip) => void;
   onTogglePin?: (trip: ITrip) => void;
   onToggleVisibility?: (trip: ITrip) => void;
-  analyticsAttrs?: (action: 'open' | 'favorite' | 'pin' | 'visibility' | 'creator') => Record<string, string>;
+  onArchive?: (trip: ITrip) => void;
+  onSelectionChange?: (trip: ITrip, selected: boolean) => void;
+  analyticsAttrs?: (action: 'open' | 'favorite' | 'pin' | 'visibility' | 'creator' | 'archive' | 'select') => Record<string, string>;
   creatorHandle?: string | null;
   creatorProfilePath?: string | null;
   showCreatorAttribution?: boolean;
   onCreatorClick?: () => void;
   showFavoriteAction?: boolean;
   showPinAction?: boolean;
+  isSelectable?: boolean;
+  isSelected?: boolean;
 }
 
 const DEFAULT_ROUTE_COLOR = '#64748b';
@@ -90,6 +98,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   onToggleFavorite,
   onTogglePin,
   onToggleVisibility,
+  onArchive,
+  onSelectionChange,
   analyticsAttrs,
   creatorHandle = null,
   creatorProfilePath = null,
@@ -97,6 +107,8 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
   onCreatorClick,
   showFavoriteAction = true,
   showPinAction = true,
+  isSelectable = false,
+  isSelected = false,
 }) => {
   const [mapLoaded, setMapLoaded] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
@@ -179,12 +191,27 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
     <article
       ref={cardRef}
       className={[
-        'overflow-hidden rounded-xl border bg-white transition-colors hover:border-slate-300',
+        'group relative overflow-hidden rounded-xl border bg-white transition-colors hover:border-slate-300',
         isExpired ? 'border-amber-200' : 'border-slate-200',
       ].join(' ')}
       style={{ contentVisibility: 'auto', containIntrinsicSize: '420px' }}
     >
       <div className={`relative h-40 overflow-hidden ${isExpired ? 'bg-amber-50' : 'bg-slate-100'}`}>
+        {isSelectable && onSelectionChange && (
+          <div
+            className="absolute end-3 top-3 z-20"
+            title={labels.selectTrip || 'Select trip'}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(value) => onSelectionChange(trip, value === true)}
+              aria-label={`${labels.selectTrip || 'Select trip'}: ${trip.title}`}
+              className="h-5 w-5 rounded-md border border-white/90 bg-white/95 shadow-sm"
+              {...(analyticsAttrs ? analyticsAttrs('select') : {})}
+            />
+          </div>
+        )}
+
         {!isNearViewport ? (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-xs font-medium text-slate-500">
             {labels.mapLoading}
@@ -211,7 +238,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           </div>
         )}
 
-        <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="absolute inset-x-3 top-3 flex flex-wrap items-center justify-between gap-2 pe-10">
           <span className="rounded-full border border-slate-200 bg-white/95 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
             {sourceLabel}
           </span>
@@ -229,6 +256,9 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
           </div>
         </div>
       </div>
+      {isSelectable && isSelected && (
+        <div className="pointer-events-none absolute inset-0 z-10 bg-accent-500/25" aria-hidden="true" />
+      )}
 
       <div className="space-y-3 p-4">
         <h3 className="line-clamp-2 text-2xl font-black leading-tight tracking-tight text-slate-900">{displayTitle}</h3>
@@ -342,6 +372,19 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
         </button>
 
         <div className="flex items-center gap-1.5">
+          {onArchive && (
+            <button
+              type="button"
+              onClick={() => onArchive(trip)}
+              aria-label={labels.archive || 'Archive'}
+              title={labels.archive || 'Archive'}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-700 transition-colors hover:bg-rose-100"
+              {...(analyticsAttrs ? analyticsAttrs('archive') : {})}
+            >
+              <Trash size={16} weight="duotone" />
+            </button>
+          )}
+
           {onToggleVisibility && (
             <button
               type="button"

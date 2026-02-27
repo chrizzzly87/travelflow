@@ -29,7 +29,10 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserProfile: vi.fn(),
   getAllTrips: vi.fn(),
   saveTrip: vi.fn(),
+  deleteTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
+  dbArchiveTrip: vi.fn(),
+  confirmDialog: vi.fn(),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -47,11 +50,19 @@ vi.mock('../../services/profileService', () => ({
 vi.mock('../../services/storageService', () => ({
   getAllTrips: mocks.getAllTrips,
   saveTrip: mocks.saveTrip,
+  deleteTrip: mocks.deleteTrip,
 }));
 
 vi.mock('../../services/dbService', () => ({
   DB_ENABLED: false,
   dbUpsertTrip: mocks.dbUpsertTrip,
+  dbArchiveTrip: mocks.dbArchiveTrip,
+}));
+
+vi.mock('../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+  }),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -97,6 +108,8 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     mocks.auth.isAuthenticated = true;
     mocks.auth.isAdmin = false;
     mocks.auth.isProfileLoading = false;
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.dbArchiveTrip.mockResolvedValue(true);
     mocks.auth.profile = {
       id: 'user-1',
       email: 'traveler@example.com',
@@ -243,5 +256,141 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
     });
     expect(screen.getByText('stamps.title')).toBeInTheDocument();
+  });
+
+  it('archives a single trip from profile cards after confirmation', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('does not archive a trip when single archive confirmation is canceled', async () => {
+    const user = userEvent.setup();
+    mocks.confirmDialog.mockResolvedValueOnce(false);
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  it('archives selected trips from selection mode via Delete hotkey', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('archives selected trips from selection mode via archive toolbar button', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.archiveSelected/i }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('archives selected trips from selection mode via Backspace hotkey', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('exits selection mode via Escape key', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /selection\.disable/i })).not.toBeInTheDocument();
+    });
+    expect(screen.queryAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })).toHaveLength(0);
+    expect(mocks.confirmDialog).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger delete hotkey archive while typing in input', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalledTimes(0);
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(0);
+    });
+    input.remove();
   });
 });

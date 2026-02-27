@@ -4,12 +4,13 @@ import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDay
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
-import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAuth } from '../hooks/useAuth';
+import { trackEvent } from '../services/analyticsService';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -966,10 +967,16 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
     if (!shouldDelete) return;
 
-    deleteTrip(id);
     if (DB_ENABLED) {
-      void dbDeleteTrip(id);
+      const archived = await dbArchiveTrip(id, {
+        source: 'my_trips',
+        metadata: { surface: 'trip_manager' },
+      });
+      if (!archived) return;
     }
+
+    deleteTrip(id);
+    trackEvent('my_trips__trip_archive--single', { trip_id: id });
     if (hoverAnchor?.tripId === id) hideHoverNow();
     void refreshTrips();
   };

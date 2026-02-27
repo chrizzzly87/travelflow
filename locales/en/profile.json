@@ -59,7 +59,9 @@
       "pin": "Pin",
       "unpin": "Unpin",
       "makePublic": "Public",
-      "makePrivate": "Private"
+      "makePrivate": "Private",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
     },
     "source": {
       "createdByYou": "Created by you",
@@ -264,5 +266,25 @@
   "fallback": {
     "displayName": "Traveler",
     "email": "No email available"
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode"
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips."
   }
 }
