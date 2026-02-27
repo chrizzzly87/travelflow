@@ -185,6 +185,16 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const mobileNavDebugAttributes = (target: string) =>
         getAnalyticsDebugAttributes(`mobile_nav__${target}`);
 
+    const legalNavItems = useMemo<Array<{ id: 'imprint' | 'privacy' | 'terms' | 'cookies'; label: string }>>(
+        () => [
+            { id: 'imprint', label: t('footer.imprint') },
+            { id: 'privacy', label: t('footer.privacy') },
+            { id: 'terms', label: t('footer.terms') },
+            { id: 'cookies', label: t('footer.cookies') },
+        ],
+        [t]
+    );
+
     const visibleItems = NAV_ITEMS;
     return (
         <>
@@ -371,6 +381,21 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 {t('nav.login')}
                             </NavLink>
                         )}
+                        <div className="pt-2">
+                            <div className="grid grid-cols-2 gap-2">
+                                {legalNavItems.map((item) => (
+                                    <NavLink
+                                        key={`mobile-legal-${item.id}`}
+                                        to={buildLocalizedMarketingPath(item.id, activeLocale)}
+                                        onClick={() => handleNavClick(item.id)}
+                                        className="block rounded-xl border border-slate-200 px-3 py-2 text-center text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                        {...mobileNavDebugAttributes(item.id)}
+                                    >
+                                        {item.label}
+                                    </NavLink>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -85,6 +85,7 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧾 Restored reliable city-lane hover tooltips on profile trip cards with a native-title fallback.
 - [x] [Improved] 🦶 Replaced the public-profile not-found footprint asset with the intended softer travel-footprint artwork.
 - [x] [Improved] 🧭 Added footer consistency across profile, settings, stamps, and public-profile surfaces (including unavailable/error states).
+- [x] [Improved] 📱 Added legal quick links (Imprint, Privacy, Terms, Cookies) to the mobile burger menu so legal routes stay reachable on views where footer placement is constrained.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.
