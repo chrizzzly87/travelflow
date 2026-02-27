@@ -277,7 +277,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
               return (
                 <React.Fragment key={cityLane.id}>
                   <span
-                    className="example-city-lane-hitbox block"
+                    className="example-city-lane-hitbox block cursor-pointer"
                     data-tooltip={cityLane.title}
                     title={cityLane.title}
                     style={{ flexGrow: cityLane.nights, flexBasis: 0 }}

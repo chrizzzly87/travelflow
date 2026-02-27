@@ -327,7 +327,7 @@ export const PublicProfilePage: React.FC = () => {
                     <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
                         <div className="mx-auto max-w-3xl space-y-4">
                             <img
-                                src="/images/feet.png"
+                                src="/images/feet.png?v=20260227"
                                 alt=""
                                 className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-90 [filter:saturate(0.75)_sepia(0.25)]"
                                 loading="lazy"
