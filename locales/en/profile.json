@@ -85,6 +85,8 @@
     "title": "Public profile",
     "privateTitle": "This profile is private",
     "privateDescription": "This traveler has hidden their public profile for now.",
+    "visibilityPrivate": "Private profile",
+    "visibilityPublic": "Public profile",
     "notFoundTitle": "Profile not found",
     "notFoundDescription": "We could not find a profile for this handle.",
     "ctaExploreInspirations": "Explore inspirations",
@@ -95,6 +97,7 @@
     "ctaRegisterFree": "Register for free",
     "sourceCreatedByTraveler": "Created by traveler",
     "notFoundFunTitle": "Seems like this user already found their next trip.",
+    "notFoundInvalidPassportTitle": "This passport is invalid",
     "notFoundFunSubtitle": "Don't wait any longer",
     "ctaPlanTrip": "Plan your trip",
     "ctaGetInspired": "Get inspired"
