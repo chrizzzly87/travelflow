@@ -220,6 +220,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.type(countrySearchInput, 'ger');
     await user.click(screen.getByRole('option', { name: 'Germany' }));
     expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'settings.countryRegionClear' })).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 

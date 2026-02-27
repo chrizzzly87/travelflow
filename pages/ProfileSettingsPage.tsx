@@ -596,10 +596,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.country')}</span>
                                         <ProfileCountryRegionSelect
                                             value={form.country}
+                                            locale={appLocale}
                                             disabled={isSaving}
                                             inputClassName="h-9 rounded-md text-xs"
                                             placeholder={t('settings.countryRegionSearchPlaceholder')}
-                                            clearLabel={t('settings.countryRegionClear')}
                                             emptyLabel={t('settings.countryRegionEmpty')}
                                             toggleLabel={t('settings.countryRegionToggle')}
                                             onValueChange={(nextCode) => {

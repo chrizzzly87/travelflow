@@ -76,6 +76,9 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   hideRightPanel = false,
   compactCard = false,
 }) => {
+  const resolvedBio = bio.trim();
+  const fallbackBio = labels.bioFallback.trim();
+
   const profileIdentityCard = (
     <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[320px]' : 'min-h-[480px]'}`}>
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
@@ -104,7 +107,9 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
 
       {showDetails ? (
         <div className="mt-4 space-y-3 text-left">
-          <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
+          {(resolvedBio || fallbackBio) ? (
+            <p className="text-sm leading-6 text-slate-700">{resolvedBio || fallbackBio}</p>
+          ) : null}
           <div className="flex flex-col gap-2">
             <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
               <MapPin size={15} weight="duotone" className="text-accent-600" />

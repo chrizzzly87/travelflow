@@ -142,6 +142,40 @@ describe('pages/PublicProfilePage', () => {
     expect(screen.getByText('Public Trip')).toBeInTheDocument();
   });
 
+  it('does not render owner bio-fallback helper text on public profile when bio is empty', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'DE',
+        city: 'Hamburg',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: '2026-01-01T00:00:00Z',
+        accountStatus: 'active',
+        publicProfileEnabled: true,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+      },
+    });
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('Traveler One')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('summary.bioFallback')).toBeNull();
+  });
+
   it('redirects from old handle to canonical handle', async () => {
     mocks.resolvePublicProfileByHandle.mockResolvedValue({
       status: 'redirect',

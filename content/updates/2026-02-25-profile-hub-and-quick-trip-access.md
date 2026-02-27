@@ -3,7 +3,7 @@ id: rel-2026-02-25-profile-hub-and-quick-trip-access
 version: v0.66.0
 title: "Profile hub with highlights and quick trip access"
 date: 2026-02-27
-published_at: 2026-02-27T07:49:15Z
+published_at: 2026-02-27T08:04:54Z
 status: published
 notify_in_app: false
 in_app_hours: 24
@@ -98,6 +98,10 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔗 Converted “Edit profile” and “View public profile” actions to true links so they can be opened in new tabs.
 - [x] [Improved] 📐 Refined private-profile layout to use a shorter profile card with side-by-side private-state messaging on larger screens and centered stacking on mobile.
 - [x] [Improved] 🧭 Simplified private-profile state to a centered identity card for cleaner focus and lower visual clutter.
+- [x] [Improved] 🧼 Removed the “add a short bio” helper fallback from public profiles when the traveler has no bio set.
+- [x] [Improved] 🌍 Updated the Country/Region picker in profile settings to show country names in the active app language.
+- [x] [Fixed] ✅ Country/Region selection now closes the dropdown immediately after choosing an item.
+- [x] [Improved] 🔒 Removed clear/remove from the mandatory Country/Region profile field to keep selection always required.
 - [x] [Improved] ✍️ Limited profile bios to 160 characters in settings with live length feedback.
 - [x] [Improved] 🌐 Localized greeting fun-fact copy keys across all active profile locales so hero context lines render consistently.
 - [x] [Improved] 🌐 Completed profile/public/settings UI localization for all active profile locales, including private/not-found state copy and action labels.
