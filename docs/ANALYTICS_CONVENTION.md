@@ -162,10 +162,14 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `profile__summary--view_public_profile_setup` | — | — | `ProfilePage.tsx` |
 | `profile__trip_visibility--public` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
 | `profile__trip_visibility--private` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
-| `profile__trip_select_mode--enabled` | — | `{ tab }` | `ProfilePage.tsx` |
-| `profile__trip_select_mode--disabled` | — | `{ tab }` | `ProfilePage.tsx` |
+| `profile__trip_visibility--batch_toggle` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_favorite--batch_toggle` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
 | `profile__trip_archive--single` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
 | `profile__trip_archive--batch` | — | `{ trip_id, tab }` | `ProfilePage.tsx` |
+| `profile__trip_select--visible` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--expired` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--examples` | — | `{ tab, selected_count }` | `ProfilePage.tsx` |
+| `profile__trip_select--end` | — | `{ tab }` | `ProfilePage.tsx` |
 | `my_trips__trip_archive--single` | — | `{ trip_id }` | `TripManager.tsx` |
 | `public_profile__view` | — | `{ username }` | `PublicProfilePage.tsx` |
 | `public_profile__trip--open` | — | `{ username, trip_id }` | `PublicProfilePage.tsx` |

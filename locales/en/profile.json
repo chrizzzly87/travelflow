@@ -39,6 +39,9 @@
     "liked": "Liked trips",
     "comingSoon": "Soon"
   },
+  "filters": {
+    "showOnlyPublic": "Show only public"
+  },
   "recentSort": {
     "created": "Created",
     "updated": "Updated"
@@ -65,10 +68,12 @@
     },
     "source": {
       "createdByYou": "Created by you",
-      "copiedFromShared": "Copied from shared trip",
+      "copiedFromTraveler": "Copied from another traveler",
       "copiedFromYourTrip": "Copied from your trip",
-      "startedFromExample": "Started from example"
+      "copiedFromExample": "Copied from example",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
     },
+    "hiddenTag": "Hidden",
     "expiredTag": "Expired",
     "expiredFallbackTitle": "Expired trip draft"
   },
@@ -101,7 +106,9 @@
     "stampsEmpty": "Create your first trip to unlock your first stamp.",
     "follow": "Follow",
     "message": "Message",
+    "shareCopiedTitle": "Profile link copied",
     "shareCopied": "Profile URL copied to clipboard.",
+    "shareOpenedTitle": "Profile opened",
     "shareOpened": "Public profile opened in a new tab."
   },
   "stats": {
@@ -268,11 +275,19 @@
     "email": "No email available"
   },
   "selection": {
-    "enable": "Select trips",
-    "disable": "Done selecting",
     "selectedCount": "{count}/{total} selected",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
     "archiveSelected": "Archive selected",
-    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode"
+    "end": "Clear selection",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc clears selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
   },
   "archive": {
     "confirmSingleTitle": "Archive trip?",
@@ -282,8 +297,14 @@
     "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
     "confirmBatchButton": "Archive {count} trips",
     "cancel": "Cancel",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
     "successSingle": "Trip archived.",
     "successBatch": "{count} trips archived.",
+    "errorTitle": "Archive failed",
     "errorSingle": "Could not archive this trip.",
     "errorBatch": "Could not archive selected trips."
   }

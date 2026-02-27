@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   updateCurrentUserProfile: vi.fn(),
   checkUsernameAvailability: vi.fn(),
   trackEvent: vi.fn(),
-  toastSuccess: vi.fn(),
+  showAppToast: vi.fn(),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -40,10 +40,8 @@ vi.mock('../../services/analyticsService', () => ({
   getAnalyticsDebugAttributes: () => ({}),
 }));
 
-vi.mock('sonner', () => ({
-  toast: {
-    success: mocks.toastSuccess,
-  },
+vi.mock('../../components/ui/appToast', () => ({
+  showAppToast: mocks.showAppToast,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -297,7 +295,10 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.toastSuccess).toHaveBeenCalledWith('settings.messages.saved');
+      expect(mocks.showAppToast).toHaveBeenCalledWith({
+        tone: 'success',
+        title: 'settings.messages.saved',
+      });
     });
   });
 });

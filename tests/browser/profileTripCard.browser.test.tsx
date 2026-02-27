@@ -19,6 +19,7 @@ const baseLabels = {
   mapUnavailable: 'Map preview unavailable',
   mapLoading: 'Loading preview...',
   creatorPrefix: 'By',
+  hiddenTag: 'Hidden',
 };
 
 describe('components/profile/ProfileTripCard', () => {
@@ -78,7 +79,9 @@ describe('components/profile/ProfileTripCard', () => {
       )
     );
 
-    expect(screen.getByRole('button', { name: 'Open' })).toBeInTheDocument();
+    const openLink = screen.getByRole('link', { name: 'Open' });
+    expect(openLink).toBeInTheDocument();
+    expect(openLink).toHaveAttribute('title', 'Open trip');
     expect(screen.queryByRole('button', { name: 'Favorite' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pin' })).not.toBeInTheDocument();
   });
@@ -119,5 +122,32 @@ describe('components/profile/ProfileTripCard', () => {
     expect(screen.getByText('Expired')).toBeInTheDocument();
     expect(screen.getByText('Expired trip draft')).toBeInTheDocument();
     expect(screen.queryByText('Trip generation failed. Please try again.')).toBeNull();
+  });
+
+  it('dims private trips and shows a hidden state badge', () => {
+    render(
+      React.createElement(
+        MemoryRouter,
+        null,
+        React.createElement(ProfileTripCard, {
+          trip: makeTrip({
+            id: 'card-trip-hidden',
+            title: 'Private trip',
+            showOnPublicProfile: false,
+            items: [makeCityItem({ id: 'city-hidden', title: 'Berlin', startDateOffset: 0, duration: 2 })],
+          }),
+          locale: 'en',
+          sourceLabel: 'Created by you',
+          labels: baseLabels,
+          onOpen: vi.fn(),
+          showFavoriteAction: false,
+          showPinAction: false,
+        })
+      )
+    );
+
+    expect(screen.getByText('Hidden')).toBeInTheDocument();
+    const card = screen.getByText('Private trip').closest('article');
+    expect(card?.className).toContain('opacity-[0.82]');
   });
 });

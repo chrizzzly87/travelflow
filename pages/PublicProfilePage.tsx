@@ -303,7 +303,6 @@ export const PublicProfilePage: React.FC = () => {
             username: state.profile?.username || username,
             trip_id: trip.id,
         });
-        navigate(buildPath('tripDetail', { tripId: trip.id }));
     };
 
     const resolveSourceLabel = useCallback((trip: ITrip): string => {

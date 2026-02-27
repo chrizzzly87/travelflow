@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
 import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { Switch } from '../components/ui/switch';
@@ -22,6 +21,7 @@ import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsSe
 import { FlagIcon } from '../components/flags/FlagIcon';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { buildPath } from '../config/routes';
+import { showAppToast } from '../components/ui/appToast';
 
 type Mode = 'settings' | 'onboarding';
 
@@ -410,11 +410,10 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             await refreshAccess();
 
             trackEvent(mode === 'onboarding' ? 'profile__onboarding--completed' : 'profile__settings--saved');
-            toast.success(
-                mode === 'onboarding'
-                    ? t('settings.messages.onboardingSaved')
-                    : t('settings.messages.saved')
-            );
+            showAppToast({
+                tone: 'success',
+                title: mode === 'onboarding' ? t('settings.messages.onboardingSaved') : t('settings.messages.saved'),
+            });
 
             if (mode === 'onboarding') {
                 navigate('/create-trip', { replace: true });

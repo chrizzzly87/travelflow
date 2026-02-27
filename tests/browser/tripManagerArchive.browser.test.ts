@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   syncTripsFromDb: vi.fn(),
   confirmDialog: vi.fn(),
   trackEvent: vi.fn(),
+  showAppToast: vi.fn(() => 'toast-id'),
 }));
 
 vi.mock('../../services/browserStorageService', () => ({
@@ -50,6 +51,10 @@ vi.mock('../../hooks/useFocusTrap', () => ({
 
 vi.mock('../../services/analyticsService', () => ({
   trackEvent: mocks.trackEvent,
+}));
+
+vi.mock('../../components/ui/appToast', () => ({
+  showAppToast: mocks.showAppToast,
 }));
 
 import { TripManager } from '../../components/TripManager';

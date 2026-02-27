@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, useTransition
 import { Navigate, NavLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
 import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileHero } from '../components/profile/ProfileHero';
@@ -12,9 +11,11 @@ import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
 import { ProfilePassportDialog } from '../components/profile/ProfilePassportDialog';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { Switch } from '../components/ui/switch';
 import {
     getPinnedTrips,
     getRecentTrips,
+    isExampleDerivedTrip,
     getTripSourceLabelKey,
     getTripsForProfileTab,
     normalizeProfileRecentSort,
@@ -43,6 +44,8 @@ import { buildLocalizedMarketingPath, buildPath } from '../config/routes';
 import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../utils';
 import type { ITrip } from '../types';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
+import { showAppToast } from '../components/ui/appToast';
+import { isTripExpiredByTimestamp } from '../config/productLimits';
 
 const PROFILE_TRIPS_PAGE_SIZE = 6;
 const PROFILE_PASSPORT_QUERY_KEY = 'passport';
@@ -123,8 +126,8 @@ export const ProfilePage: React.FC = () => {
 
     const [trips, setTrips] = useState<ITrip[]>(() => getAllTrips());
     const [pinNotice, setPinNotice] = useState<string | null>(null);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedTripIds, setSelectedTripIds] = useState<string[]>([]);
+    const [showOnlyPublicTrips, setShowOnlyPublicTrips] = useState(false);
     const [visibleTripCount, setVisibleTripCount] = useState(PROFILE_TRIPS_PAGE_SIZE);
     const [isTripPaginationPending, startTripPaginationTransition] = useTransition();
     const hasRequestedMissingProfileRef = useRef(false);
@@ -240,10 +243,23 @@ export const ProfilePage: React.FC = () => {
         }
     }, []);
 
-    const pinnedTrips = useMemo(() => getPinnedTrips(trips), [trips]);
+    const favoriteTripsCount = useMemo(
+        () => trips.filter((trip) => Boolean(trip.isFavorite)).length,
+        [trips]
+    );
+    const tripsForVisibilityPreview = useMemo(
+        () => (showOnlyPublicTrips
+            ? trips.filter((trip) => trip.showOnPublicProfile !== false)
+            : trips),
+        [showOnlyPublicTrips, trips]
+    );
+    const pinnedTrips = useMemo(
+        () => getPinnedTrips(tripsForVisibilityPreview),
+        [tripsForVisibilityPreview]
+    );
     const tripsForTab = useMemo(
-        () => getTripsForProfileTab(trips, tab, recentSort),
-        [trips, tab, recentSort]
+        () => getTripsForProfileTab(tripsForVisibilityPreview, tab, recentSort),
+        [tripsForVisibilityPreview, tab, recentSort]
     );
     const visibleTripsForTab = useMemo(
         () => tripsForTab.slice(0, visibleTripCount),
@@ -253,19 +269,19 @@ export const ProfilePage: React.FC = () => {
     const skeletonTripCount = Math.max(0, Math.min(PROFILE_TRIPS_PAGE_SIZE, tripsForTab.length - visibleTripCount));
 
     const tabCounts = useMemo(() => ({
-        recent: getRecentTrips(trips, recentSort).length,
-        favorites: trips.filter((trip) => Boolean(trip.isFavorite)).length,
-        all: trips.length,
+        recent: getRecentTrips(tripsForVisibilityPreview, recentSort).length,
+        favorites: tripsForVisibilityPreview.filter((trip) => Boolean(trip.isFavorite)).length,
+        all: tripsForVisibilityPreview.length,
         liked: 0,
-    }), [trips, recentSort]);
+    }), [tripsForVisibilityPreview, recentSort]);
     const selectedTripIdSet = useMemo(() => new Set(selectedTripIds), [selectedTripIds]);
     const selectedTripCount = selectedTripIds.length;
     const stampMetrics = useMemo(
         () => computeProfileStampMetrics(trips, {
-            likesGiven: tabCounts.favorites,
+            likesGiven: favoriteTripsCount,
             likesEarned: 0,
         }),
-        [tabCounts.favorites, trips]
+        [favoriteTripsCount, trips]
     );
     const stampProgress = useMemo(
         () => buildProfileStampProgress(stampMetrics),
@@ -334,28 +350,12 @@ export const ProfilePage: React.FC = () => {
 
     useEffect(() => {
         clearSelectedTrips();
-    }, [clearSelectedTrips, tab, recentSort]);
+    }, [clearSelectedTrips, tab, recentSort, showOnlyPublicTrips]);
 
     useEffect(() => {
-        if (!isSelectionMode) return;
-        const availableTripIds = new Set(trips.map((trip) => trip.id));
+        const availableTripIds = new Set(tripsForVisibilityPreview.map((trip) => trip.id));
         setSelectedTripIds((current) => current.filter((tripId) => availableTripIds.has(tripId)));
-    }, [isSelectionMode, trips]);
-
-    const disableSelectionMode = useCallback(() => {
-        clearSelectedTrips();
-        setIsSelectionMode(false);
-        trackEvent('profile__trip_select_mode--disabled', { tab });
-    }, [clearSelectedTrips, tab]);
-
-    const handleToggleSelectionMode = useCallback(() => {
-        if (isSelectionMode) {
-            disableSelectionMode();
-            return;
-        }
-        setIsSelectionMode(true);
-        trackEvent('profile__trip_select_mode--enabled', { tab });
-    }, [disableSelectionMode, isSelectionMode, tab]);
+    }, [tripsForVisibilityPreview]);
 
     const handleTripSelectionChange = useCallback((trip: ITrip, selected: boolean) => {
         setSelectedTripIds((current) => {
@@ -366,6 +366,48 @@ export const ProfilePage: React.FC = () => {
             return current.filter((tripId) => tripId !== trip.id);
         });
     }, []);
+
+    const replaceSelection = useCallback((
+        tripIds: string[],
+        eventName: 'profile__trip_select--visible' | 'profile__trip_select--expired' | 'profile__trip_select--examples'
+    ) => {
+        const nextIds = Array.from(new Set(tripIds));
+        setSelectedTripIds(nextIds);
+        trackEvent(eventName, {
+            tab,
+            selected_count: nextIds.length,
+        });
+    }, [tab]);
+
+    const handleSelectVisibleTrips = useCallback(() => {
+        replaceSelection(visibleTripsForTab.map((trip) => trip.id), 'profile__trip_select--visible');
+    }, [replaceSelection, visibleTripsForTab]);
+
+    const handleSelectExpiredTrips = useCallback(() => {
+        replaceSelection(
+            tripsForTab
+                .filter((trip) => trip.status === 'expired' || isTripExpiredByTimestamp(trip.tripExpiresAt))
+                .map((trip) => trip.id),
+            'profile__trip_select--expired'
+        );
+    }, [replaceSelection, tripsForTab]);
+
+    const handleSelectExampleTrips = useCallback(() => {
+        replaceSelection(
+            tripsForTab
+                .filter((trip) => isExampleDerivedTrip(trip))
+                .map((trip) => trip.id),
+            'profile__trip_select--examples'
+        );
+    }, [replaceSelection, tripsForTab]);
+
+    const handleEndSelection = useCallback(() => {
+        if (selectedTripIds.length === 0) return;
+        clearSelectedTrips();
+        trackEvent('profile__trip_select--end', {
+            tab,
+        });
+    }, [clearSelectedTrips, selectedTripIds.length, tab]);
 
     const archiveTripsByIds = useCallback(async (
         tripIds: string[],
@@ -415,13 +457,36 @@ export const ProfilePage: React.FC = () => {
         });
         if (!confirmed) return;
 
-        const archivedCount = await archiveTripsByIds([trip.id], 'profile_single');
+        const toastId = showAppToast({
+            tone: 'loading',
+            title: t('archive.inProgressSingleTitle'),
+            description: t('archive.inProgressSingleMessage', { title: trip.title }),
+            dismissible: false,
+        });
+
+        let archivedCount = 0;
+        try {
+            archivedCount = await archiveTripsByIds([trip.id], 'profile_single');
+        } catch {
+            archivedCount = 0;
+        }
+
         if (archivedCount === 0) {
-            toast.error(t('archive.errorSingle'));
+            showAppToast({
+                id: toastId,
+                tone: 'error',
+                title: t('archive.errorTitle'),
+                description: t('archive.errorSingle'),
+            });
             return;
         }
         clearSelectedTrips();
-        toast.success(t('archive.successSingle'));
+        showAppToast({
+            id: toastId,
+            tone: 'success',
+            title: t('archive.successTitle'),
+            description: t('archive.successSingle'),
+        });
     }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, t]);
 
     const handleArchiveSelectedTrips = useCallback(async () => {
@@ -435,17 +500,39 @@ export const ProfilePage: React.FC = () => {
         });
         if (!confirmed) return;
 
-        const archivedCount = await archiveTripsByIds(selectedTripIds, 'profile_batch');
+        const toastId = showAppToast({
+            tone: 'loading',
+            title: t('archive.inProgressBatchTitle'),
+            description: t('archive.inProgressBatchMessage', { count: selectedTripIds.length }),
+            dismissible: false,
+        });
+
+        let archivedCount = 0;
+        try {
+            archivedCount = await archiveTripsByIds(selectedTripIds, 'profile_batch');
+        } catch {
+            archivedCount = 0;
+        }
+
         if (archivedCount === 0) {
-            toast.error(t('archive.errorBatch'));
+            showAppToast({
+                id: toastId,
+                tone: 'error',
+                title: t('archive.errorTitle'),
+                description: t('archive.errorBatch'),
+            });
             return;
         }
         clearSelectedTrips();
-        toast.success(t('archive.successBatch', { count: archivedCount }));
+        showAppToast({
+            id: toastId,
+            tone: 'success',
+            title: t('archive.successTitle'),
+            description: t('archive.successBatch', { count: archivedCount }),
+        });
     }, [archiveTripsByIds, clearSelectedTrips, confirmDialog, selectedTripIds, t]);
 
     useEffect(() => {
-        if (!isSelectionMode) return;
         if (selectedTripIds.length === 0) return;
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Delete' && event.key !== 'Backspace') return;
@@ -455,24 +542,83 @@ export const ProfilePage: React.FC = () => {
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [handleArchiveSelectedTrips, isSelectionMode, selectedTripIds.length]);
+    }, [handleArchiveSelectedTrips, selectedTripIds.length]);
 
     useEffect(() => {
-        if (!isSelectionMode) return;
+        if (selectedTripIds.length === 0) return;
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             if (isEditableEventTarget(event.target)) return;
             event.preventDefault();
-            disableSelectionMode();
+            clearSelectedTrips();
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [disableSelectionMode, isSelectionMode]);
+    }, [clearSelectedTrips, selectedTripIds.length]);
+
+    const handleToggleFavoriteSelectedTrips = useCallback(() => {
+        if (selectedTripIds.length === 0) return;
+        const selectedSet = new Set(selectedTripIds);
+        const now = Date.now();
+        const selectedTrips = trips.filter((trip) => selectedSet.has(trip.id));
+        if (selectedTrips.length === 0) return;
+
+        const updatedTrips = selectedTrips.map((trip) => ({
+            ...trip,
+            isFavorite: !Boolean(trip.isFavorite),
+            updatedAt: now,
+        }));
+        const updatedById = new Map(updatedTrips.map((trip) => [trip.id, trip]));
+        setTrips((current) => current.map((trip) => updatedById.get(trip.id) ?? trip));
+        updatedTrips.forEach((trip) => persistTrip(trip));
+
+        trackEvent('profile__trip_favorite--batch_toggle', {
+            tab,
+            selected_count: updatedTrips.length,
+        });
+
+        showAppToast({
+            tone: 'update',
+            title: t('selection.favoriteBatchUpdatedTitle'),
+            description: t('selection.favoriteBatchUpdatedMessage', {
+                count: updatedTrips.length,
+            }),
+        });
+    }, [persistTrip, selectedTripIds, t, tab, trips]);
+
+    const handleToggleVisibilitySelectedTrips = useCallback(() => {
+        if (selectedTripIds.length === 0) return;
+        const selectedSet = new Set(selectedTripIds);
+        const now = Date.now();
+        const selectedTrips = trips.filter((trip) => selectedSet.has(trip.id));
+        if (selectedTrips.length === 0) return;
+
+        const updatedTrips = selectedTrips.map((trip) => ({
+            ...trip,
+            showOnPublicProfile: trip.showOnPublicProfile === false,
+            updatedAt: now,
+        }));
+        const updatedById = new Map(updatedTrips.map((trip) => [trip.id, trip]));
+        setTrips((current) => current.map((trip) => updatedById.get(trip.id) ?? trip));
+        updatedTrips.forEach((trip) => persistTrip(trip));
+
+        trackEvent('profile__trip_visibility--batch_toggle', {
+            tab,
+            selected_count: updatedTrips.length,
+        });
+
+        showAppToast({
+            tone: 'update',
+            title: t('selection.visibilityBatchUpdatedTitle'),
+            description: t('selection.visibilityBatchUpdatedMessage', {
+                count: updatedTrips.length,
+            }),
+        });
+    }, [persistTrip, selectedTripIds, t, tab, trips]);
 
     const handleOpenTrip = useCallback((trip: ITrip) => {
         trackEvent('profile__trip--open', { trip_id: trip.id, tab });
-        navigate(buildPath('tripDetail', { tripId: trip.id }));
-    }, [navigate, tab]);
+    }, [tab]);
 
     const handleToggleFavorite = useCallback((trip: ITrip) => {
         const now = Date.now();
@@ -611,7 +757,7 @@ export const ProfilePage: React.FC = () => {
                     passportCountryCode={profile?.country}
                     stats={[
                         { id: 'total_trips', label: t('stats.totalTrips'), value: trips.length },
-                        { id: 'likes_saved', label: t('stats.likesSaved'), value: tabCounts.favorites },
+                        { id: 'likes_saved', label: t('stats.likesSaved'), value: favoriteTripsCount },
                         { id: 'followers', label: t('stats.followers'), value: 0 },
                         { id: 'likes_earned', label: t('stats.likesEarned'), value: 0, accent: true },
                     ]}
@@ -646,15 +792,27 @@ export const ProfilePage: React.FC = () => {
                         if (navigator.clipboard?.writeText) {
                             void navigator.clipboard.writeText(publicProfileUrl)
                                 .then(() => {
-                                    toast.success(t('summary.shareCopied'));
+                                    showAppToast({
+                                        tone: 'success',
+                                        title: t('summary.shareCopiedTitle'),
+                                        description: t('summary.shareCopied'),
+                                    });
                                 })
                                 .catch(() => {
                                     window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
-                                    toast.info(t('summary.shareOpened'));
+                                    showAppToast({
+                                        tone: 'info',
+                                        title: t('summary.shareOpenedTitle'),
+                                        description: t('summary.shareOpened'),
+                                    });
                                 });
                         } else {
                             window.open(publicProfileUrl, '_blank', 'noopener,noreferrer');
-                            toast.info(t('summary.shareOpened'));
+                            showAppToast({
+                                tone: 'info',
+                                title: t('summary.shareOpenedTitle'),
+                                description: t('summary.shareOpened'),
+                            });
                         }
                     }}
                     onOpenPassport={(rect) => {
@@ -734,6 +892,7 @@ export const ProfilePage: React.FC = () => {
                                         mapUnavailable: t('cards.mapUnavailable'),
                                         mapLoading: t('cards.mapLoading'),
                                         creatorPrefix: t('cards.creatorPrefix'),
+                                        hiddenTag: t('cards.hiddenTag'),
                                     }}
                                     onOpen={handleOpenTrip}
                                     onToggleFavorite={handleToggleFavorite}
@@ -741,7 +900,7 @@ export const ProfilePage: React.FC = () => {
                                     onToggleVisibility={handleToggleVisibility}
                                     onArchive={handleArchiveTrip}
                                     onSelectionChange={handleTripSelectionChange}
-                                    isSelectable={isSelectionMode}
+                                    isSelectable
                                     isSelected={selectedTripIdSet.has(trip.id)}
                                     analyticsAttrs={(action) =>
                                         getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {
@@ -774,6 +933,17 @@ export const ProfilePage: React.FC = () => {
                                 getAnalyticsDebugAttributes(`profile__tab--${nextTab}`)}
                         />
 
+                        {tab !== 'liked' && (
+                            <label className="ms-auto inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">
+                                <span>{t('filters.showOnlyPublic')}</span>
+                                <Switch
+                                    checked={showOnlyPublicTrips}
+                                    onCheckedChange={(checked) => setShowOnlyPublicTrips(Boolean(checked))}
+                                    aria-label={t('filters.showOnlyPublic')}
+                                />
+                            </label>
+                        )}
+
                         {tab === 'recent' && (
                             <div className="inline-flex items-center rounded-xl border border-slate-200 bg-white p-1">
                                 <button
@@ -805,48 +975,80 @@ export const ProfilePage: React.FC = () => {
                             </div>
                         )}
 
-                        {tab !== 'liked' && (
+                        {tab !== 'liked' && selectedTripCount > 0 && (
                             <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                    {t('selection.selectedCount', {
+                                        count: selectedTripCount,
+                                        total: tabCounts[tab] ?? tripsForTab.length,
+                                    })}
+                                </span>
                                 <button
                                     type="button"
-                                    onClick={handleToggleSelectionMode}
-                                    className={[
-                                        'inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors',
-                                        isSelectionMode
-                                            ? 'border-accent-200 bg-accent-50 text-accent-800 hover:bg-accent-100'
-                                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-100',
-                                    ].join(' ')}
-                                    {...getAnalyticsDebugAttributes(
-                                        isSelectionMode ? 'profile__trip_select_mode--disabled' : 'profile__trip_select_mode--enabled',
-                                        { tab }
-                                    )}
+                                    onClick={handleSelectVisibleTrips}
+                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_select--visible', { tab })}
                                 >
-                                    {isSelectionMode ? t('selection.disable') : t('selection.enable')}
+                                    {t('selection.selectVisible')}
                                 </button>
-
-                                {isSelectionMode && (
-                                    <>
-                                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                                            {t('selection.selectedCount', {
-                                                count: selectedTripCount,
-                                                total: tabCounts[tab] ?? tripsForTab.length,
-                                            })}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => void handleArchiveSelectedTrips()}
-                                            disabled={selectedTripCount === 0}
-                                            className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                            {...getAnalyticsDebugAttributes('profile__trip_archive--batch', {
-                                                tab,
-                                                selected_count: selectedTripCount,
-                                            })}
-                                        >
-                                            {t('selection.archiveSelected')}
-                                        </button>
-                                        <span className="text-[11px] text-slate-500">{t('selection.hotkeyHint')}</span>
-                                    </>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleSelectExpiredTrips}
+                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_select--expired', { tab })}
+                                >
+                                    {t('selection.selectExpired')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSelectExampleTrips}
+                                    className="inline-flex items-center rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition-colors hover:bg-sky-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_select--examples', { tab })}
+                                >
+                                    {t('selection.selectExamples')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleToggleFavoriteSelectedTrips}
+                                    className="inline-flex items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_favorite--batch_toggle', {
+                                        tab,
+                                        selected_count: selectedTripCount,
+                                    })}
+                                >
+                                    {t('selection.toggleFavorites')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleToggleVisibilitySelectedTrips}
+                                    className="inline-flex items-center rounded-lg border border-slate-300 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-200"
+                                    {...getAnalyticsDebugAttributes('profile__trip_visibility--batch_toggle', {
+                                        tab,
+                                        selected_count: selectedTripCount,
+                                    })}
+                                >
+                                    {t('selection.toggleVisibility')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleArchiveSelectedTrips()}
+                                    className="inline-flex items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 transition-colors hover:bg-rose-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_archive--batch', {
+                                        tab,
+                                        selected_count: selectedTripCount,
+                                    })}
+                                >
+                                    {t('selection.archiveSelected')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleEndSelection}
+                                    className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                                    {...getAnalyticsDebugAttributes('profile__trip_select--end', { tab })}
+                                >
+                                    {t('selection.end')}
+                                </button>
+                                <span className="text-[11px] text-slate-500">{t('selection.hotkeyHint')}</span>
                             </div>
                         )}
                     </div>
@@ -886,6 +1088,7 @@ export const ProfilePage: React.FC = () => {
                                             mapUnavailable: t('cards.mapUnavailable'),
                                             mapLoading: t('cards.mapLoading'),
                                             creatorPrefix: t('cards.creatorPrefix'),
+                                            hiddenTag: t('cards.hiddenTag'),
                                         }}
                                         onOpen={handleOpenTrip}
                                         onToggleFavorite={handleToggleFavorite}
@@ -893,7 +1096,7 @@ export const ProfilePage: React.FC = () => {
                                         onToggleVisibility={handleToggleVisibility}
                                         onArchive={handleArchiveTrip}
                                         onSelectionChange={handleTripSelectionChange}
-                                        isSelectable={isSelectionMode}
+                                        isSelectable
                                         isSelected={selectedTripIdSet.has(trip.id)}
                                         analyticsAttrs={(action) =>
                                             getAnalyticsDebugAttributes(`profile__trip_card--${action}`, {

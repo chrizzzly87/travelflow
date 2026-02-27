@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   dbUpsertTrip: vi.fn(),
   dbArchiveTrip: vi.fn(),
   confirmDialog: vi.fn(),
+  showAppToast: vi.fn(() => 'toast-id'),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -63,6 +64,10 @@ vi.mock('../../components/AppDialogProvider', () => ({
   useAppDialog: () => ({
     confirm: mocks.confirmDialog,
   }),
+}));
+
+vi.mock('../../components/ui/appToast', () => ({
+  showAppToast: mocks.showAppToast,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -168,6 +173,31 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toContain('recentSort=updated');
+    });
+  });
+
+  it('filters private trips out when show-only-public preview is enabled', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-public', title: 'Trip Public', showOnPublicProfile: true, updatedAt: 300 }),
+      makeTrip({ id: 'trip-private', title: 'Trip Private', showOnPublicProfile: false, updatedAt: 200 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.getByText('Trip Private')).toBeInTheDocument();
+    });
+
+    const publicOnlyToggle = screen.getByRole('switch', { name: /filters\.showOnlyPublic/i });
+    expect(publicOnlyToggle).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(publicOnlyToggle);
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.queryByText('Trip Private')).not.toBeInTheDocument();
     });
   });
 
@@ -299,11 +329,6 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     const user = userEvent.setup();
     renderProfilePage('/profile?tab=all&recentSort=updated');
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
@@ -320,11 +345,6 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     const user = userEvent.setup();
     renderProfilePage('/profile?tab=all&recentSort=updated');
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
     const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
     await user.click(checkboxes[0]);
     await user.click(checkboxes[1]);
@@ -340,11 +360,6 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     const user = userEvent.setup();
     renderProfilePage('/profile?tab=all&recentSort=updated');
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
 
@@ -356,21 +371,18 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     });
   });
 
-  it('exits selection mode via Escape key', async () => {
+  it('clears selected trips via Escape key', async () => {
     const user = userEvent.setup();
     renderProfilePage('/profile?tab=all&recentSort=updated');
 
-    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /selection\.enable/i })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /selection\.disable/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /selection\.archiveSelected/i })).not.toBeInTheDocument();
     });
-    expect(screen.queryAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })).toHaveLength(0);
     expect(mocks.confirmDialog).not.toHaveBeenCalled();
   });
 
@@ -378,7 +390,6 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     const user = userEvent.setup();
     renderProfilePage('/profile?tab=all&recentSort=updated');
 
-    await user.click(screen.getByRole('button', { name: /selection\.enable/i }));
     const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
     await user.click(checkbox);
 
@@ -392,5 +403,52 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       expect(mocks.deleteTrip).toHaveBeenCalledTimes(0);
     });
     input.remove();
+  });
+
+  it('toggles favorite state for selected trips from the selection toolbar', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.toggleFavorites/i }));
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('toggles visibility state for selected trips from the selection toolbar', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.toggleVisibility/i }));
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('replaces the selection with expired trips from the quick action', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-a', title: 'Trip A', status: 'active', updatedAt: 100 }),
+      makeTrip({ id: 'trip-b', title: 'Trip B', status: 'expired', updatedAt: 500 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const tripACheckbox = await screen.findByRole('checkbox', { name: /Trip A/i });
+    await user.click(tripACheckbox);
+    await user.click(screen.getByRole('button', { name: /selection\.selectExpired/i }));
+
+    const tripAAfter = screen.getByRole('checkbox', { name: /Trip A/i });
+    const tripBAfter = screen.getByRole('checkbox', { name: /Trip B/i });
+    expect(tripAAfter).not.toBeChecked();
+    expect(tripBAfter).toBeChecked();
   });
 });

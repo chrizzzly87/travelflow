@@ -11,6 +11,7 @@ import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAuth } from '../hooks/useAuth';
 import { trackEvent } from '../services/analyticsService';
+import { showAppToast } from './ui/appToast';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -356,7 +357,7 @@ const FolderHeader: React.FC<FolderHeaderProps> = ({ label, count, isOpen, onTog
     <button
       type="button"
       onClick={onToggle}
-      className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
+      className="cursor-pointer p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
       aria-label={isOpen ? `Collapse ${label}` : `Expand ${label}`}
       title={isOpen ? `Collapse ${label}` : `Expand ${label}`}
     >
@@ -413,7 +414,7 @@ const TripRow: React.FC<TripRowProps> = ({
       <button
         type="button"
         onClick={() => onSelectTrip(trip)}
-        className="min-w-0 flex-1 text-left"
+        className="min-w-0 flex-1 cursor-pointer text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="inline-flex items-center gap-1.5">
@@ -448,7 +449,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -458,7 +459,7 @@ const TripRow: React.FC<TripRowProps> = ({
             e.stopPropagation();
             onToggleFavorite(trip);
           }}
-          className={`p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
+          className={`cursor-pointer p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
             showFavoriteByDefault ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -967,18 +968,39 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
     if (!shouldDelete) return;
 
+    const toastId = showAppToast({
+      tone: 'loading',
+      title: 'Archiving trip',
+      description: 'Saving your change and removing this trip from your list...',
+      dismissible: false,
+    });
+
     if (DB_ENABLED) {
       const archived = await dbArchiveTrip(id, {
         source: 'my_trips',
         metadata: { surface: 'trip_manager' },
       });
-      if (!archived) return;
+      if (!archived) {
+        showAppToast({
+          id: toastId,
+          tone: 'error',
+          title: 'Archive failed',
+          description: 'Could not archive this trip right now.',
+        });
+        return;
+      }
     }
 
     deleteTrip(id);
     trackEvent('my_trips__trip_archive--single', { trip_id: id });
     if (hoverAnchor?.tripId === id) hideHoverNow();
     void refreshTrips();
+    showAppToast({
+      id: toastId,
+      tone: 'success',
+      title: 'Trip archived',
+      description: 'The trip was archived and can be restored later.',
+    });
   };
 
   const handleToggleFavorite = (trip: ITrip) => {

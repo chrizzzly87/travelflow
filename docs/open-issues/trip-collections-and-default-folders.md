@@ -3,6 +3,8 @@
 ## Status
 Open issue (follow-up). Not in the current deletion/archive implementation scope.
 
+Related follow-up: `docs/open-issues/trip-source-attribution-system-owner.md`
+
 ## Objective
 Let users organize trips into collections/folders for easier retrieval and sharing context.
 

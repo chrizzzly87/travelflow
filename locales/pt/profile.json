@@ -39,6 +39,9 @@
     "liked": "Viagens curtidas",
     "comingSoon": "Em breve"
   },
+  "filters": {
+    "showOnlyPublic": "Mostrar apenas públicos"
+  },
   "recentSort": {
     "created": "Criadas",
     "updated": "Atualizadas"
@@ -67,10 +70,14 @@
       "createdByYou": "Criado por você",
       "copiedFromShared": "Copiado da viagem compartilhada",
       "copiedFromYourTrip": "Copiado da sua viagem",
-      "startedFromExample": "Começou a partir do exemplo"
+      "startedFromExample": "Começou a partir do exemplo",
+      "copiedFromTraveler": "Copiado da viagem compartilhada",
+      "copiedFromExample": "Começou a partir do exemplo",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
     },
     "expiredTag": "Expirado",
-    "expiredFallbackTitle": "Rascunho de viagem expirado"
+    "expiredFallbackTitle": "Rascunho de viagem expirado",
+    "hiddenTag": "Hidden"
   },
   "actions": {
     "title": "Ações rápidas",
@@ -102,7 +109,9 @@
     "follow": "Seguir",
     "message": "Mensagem",
     "shareCopied": "URL do perfil copiada para a área de transferência.",
-    "shareOpened": "Perfil público aberto em uma nova aba."
+    "shareOpened": "Perfil público aberto em uma nova aba.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
   },
   "stats": {
     "totalTrips": "Total de viagens",
@@ -272,7 +281,17 @@
     "disable": "Done selecting",
     "selectedCount": "{count}/{total} selected",
     "archiveSelected": "Archive selected",
-    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode"
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
   },
   "archive": {
     "confirmSingleTitle": "Archive trip?",
@@ -285,6 +304,12 @@
     "successSingle": "Trip archived.",
     "successBatch": "{count} trips archived.",
     "errorSingle": "Could not archive this trip.",
-    "errorBatch": "Could not archive selected trips."
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed"
   }
 }

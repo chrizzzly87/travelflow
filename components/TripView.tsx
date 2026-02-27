@@ -53,12 +53,7 @@ import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
-
-interface ToastState {
-    tone: ChangeTone;
-    title: string;
-    message: string;
-}
+import { showAppToast } from './ui/appToast';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -440,10 +435,6 @@ interface TripViewModalLayerProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
-    suppressToasts: boolean;
-    toastState: ToastState | null;
-    activeToastMeta: ReturnType<typeof getToneMeta> | null;
-    onDismissToast: () => void;
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -509,10 +500,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
-    suppressToasts,
-    toastState,
-    activeToastMeta,
-    onDismissToast,
 }) => (
     <>
         {isMobile && detailsPanelVisible && (
@@ -621,10 +608,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             loadingDestinationSummary={loadingDestinationSummary}
             tripDateRange={tripDateRange}
             tripTotalDaysLabel={tripTotalDaysLabel}
-            suppressToasts={suppressToasts}
-            toastState={toastState}
-            activeToastMeta={activeToastMeta}
-            onDismissToast={onDismissToast}
         />
     </>
 );
@@ -844,7 +827,6 @@ const useTripViewRender = ({
     );
     const { viewMode, setViewMode } = useTripViewModeState();
 
-    const [toastState, setToastState] = useState<ToastState | null>(null);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
@@ -866,7 +848,6 @@ const useTripViewRender = ({
         prewarmTripInfoModal,
     });
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
-    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
@@ -919,13 +900,12 @@ const useTripViewRender = ({
 
     const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
         if (suppressToasts) return;
-        setToastState({
+        showAppToast({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
-            message,
+            description: message,
+            duration: 2400,
         });
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
     }, [suppressToasts]);
 
     useTripCopyNoticeToast({
@@ -1468,8 +1448,6 @@ const useTripViewRender = ({
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
     });
 
-    const activeToastMeta = toastState ? getToneMeta(toastState.tone) : null;
-
     if (viewMode === 'print') {
         return (
             <GoogleMapsLoader language={appLanguage}>
@@ -1678,10 +1656,6 @@ const useTripViewRender = ({
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
                         tripTotalDaysLabel={tripMeta.totalDaysLabel}
-                        suppressToasts={suppressToasts}
-                        toastState={toastState}
-                        activeToastMeta={activeToastMeta}
-                        onDismissToast={() => setToastState(null)}
                     />
 
                 </main>

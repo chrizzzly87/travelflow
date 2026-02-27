@@ -135,6 +135,8 @@ export interface ITrip {
   tripExpiresAt?: string | null;
   sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
   sourceTemplateId?: string | null;
+  sourceOwnerType?: 'user' | 'system_catalog';
+  sourceOwnerHandle?: string | null;
   requiredTierKey?: TripAccessClassKey;
   isExample?: boolean;
   exampleTemplateId?: string;
