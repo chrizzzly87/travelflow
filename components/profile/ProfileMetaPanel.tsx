@@ -16,7 +16,7 @@ interface ProfileMetaPanelProps {
   countries: VisitedCountry[];
   stamps: ProfileStampProgress[];
   passportCountryCode?: string;
-  onOpenPassport?: () => void;
+  onOpenPassport?: (rect: DOMRect) => void;
   labels: ProfileMetaPanelLabels;
 }
 
@@ -27,8 +27,8 @@ export const ProfileMetaPanel: React.FC<ProfileMetaPanelProps> = ({
   onOpenPassport,
   labels,
 }) => {
-  const handleOpenPassport = React.useCallback(() => {
-    onOpenPassport?.();
+  const handleOpenPassport = React.useCallback((rect: DOMRect) => {
+    onOpenPassport?.(rect);
   }, [onOpenPassport]);
 
   return (

@@ -9,7 +9,7 @@ interface ProfilePassportBookProps {
   openLabel: string;
   stamps: ProfileStampProgress[];
   countryCode?: string | null;
-  onOpen?: () => void;
+  onOpen?: (rect: DOMRect) => void;
   testId?: string;
 }
 
@@ -60,15 +60,17 @@ export const ProfilePassportBook: React.FC<ProfilePassportBookProps> = ({
       <div className="profile-passport-stack">
         <div className="profile-passport-page-stack" aria-hidden="true">
           {Array.from({ length: 6 }).map((_, index) => {
-            // Lift only the two top pages on hover so the cover still stays dominant.
-            const hoverLift = index === 5 ? -20 : index === 4 ? -10 : 0;
+            // Fan out the top pages to the right on hover, without moving them up/down.
+            const hoverTranslateX = index === 5 ? 12 : index === 4 ? 6 : 0;
+            const hoverRotate = index === 5 ? -18 : index === 4 ? -8 : 0;
             return (
               <span
                 key={`passport-fake-page-${index}`}
                 className="profile-passport-fake-page"
                 style={{
                   '--passport-page-index': index,
-                  '--passport-page-hover-lift': `${hoverLift}px`,
+                  '--passport-page-hover-x': `${hoverTranslateX}px`,
+                  '--passport-page-hover-rotate': `${hoverRotate}deg`,
                 } as React.CSSProperties}
               />
             );
@@ -112,7 +114,17 @@ export const ProfilePassportBook: React.FC<ProfilePassportBookProps> = ({
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={(e) => {
+        const cover = e.currentTarget.querySelector('.profile-passport-cover');
+        const rect = cover ? cover.getBoundingClientRect() : e.currentTarget.getBoundingClientRect();
+        
+        // Push coordinates instantly to the DOM so animations never lag behind React state
+        document.documentElement.style.setProperty('--passport-origin-x', `${rect.left + rect.width / 2}px`);
+        document.documentElement.style.setProperty('--passport-origin-y', `${rect.top + rect.height / 2}px`);
+        document.documentElement.style.setProperty('--passport-origin-w', `${rect.width}px`);
+        
+        onOpen(rect);
+      }}
       className="block w-full text-left"
       aria-label={openLabel}
     >

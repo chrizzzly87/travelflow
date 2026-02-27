@@ -41,7 +41,7 @@ interface ProfileVisitorSummaryProps {
   stats: ProfileSummaryStat[];
   labels: ProfileVisitorSummaryLabels;
   locale?: string;
-  onOpenPassport?: () => void;
+  onOpenPassport?: (rect: DOMRect) => void;
   isOwnProfile?: boolean;
   onEditProfile?: () => void;
   editProfileHref?: string;

@@ -98,15 +98,16 @@ const buildSpreads = (
   return spreads;
 };
 
-const StampPlaceholder: React.FC<{ label: string; compact?: boolean }> = ({ label, compact = false }) => (
+const StampPlaceholder: React.FC<{ compact?: boolean }> = ({ compact = false }) => (
   <div
     className={[
-      'flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-3 text-slate-400',
-      compact ? 'min-h-[108px]' : 'min-h-[132px]',
+      'flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-slate-400',
+      compact ? 'p-3 gap-1.5' : '',
     ].join(' ')}
   >
-    <LockSimple size={14} weight="duotone" />
-    <span className="text-xs font-semibold">{label}</span>
+    <LockSimple size={24} weight="duotone" className="text-slate-300" />
+    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 opacity-80">Hidden</span>
+    <span className="text-[10px] leading-relaxed text-slate-400 opacity-60">Keep traveling to discover more</span>
   </div>
 );
 
@@ -115,11 +116,12 @@ const StampBookSideView: React.FC<{
   locale: string;
   emptySlotLabel: string;
   compact?: boolean;
-}> = ({ side, locale, emptySlotLabel, compact = false }) => (
-  <article className="stamp-book-page">
+  position?: 'left' | 'right';
+}> = ({ side, locale, emptySlotLabel, compact = false, position }) => (
+  <article className={`stamp-book-page ${position ? `stamp-book-page--${position}` : ''}`}>
     {side.groupLabel ? (
-      <header className="mb-2 border-b border-slate-200/80 pb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{side.groupLabel}</p>
+      <header className="mb-2 border-b border-slate-200/80 pb-1 pt-1 text-center">
+        <p className="text-xl font-bold tracking-tight text-slate-700">{side.groupLabel}</p>
       </header>
     ) : null}
     <div className="stamp-book-page-grid">
@@ -137,8 +139,7 @@ const StampBookSideView: React.FC<{
         }
         return (
           <StampPlaceholder
-            key={`${slotKey}-empty`}
-            label={emptySlotLabel}
+            key={`${slotKey}-placeholder`}
             compact={compact}
           />
         );
@@ -146,30 +147,6 @@ const StampBookSideView: React.FC<{
     </div>
   </article>
 );
-
-const StampBookSpread: React.FC<{
-  spread: StampBookSpreadPage;
-  locale: string;
-  emptySlotLabel: string;
-  compact?: boolean;
-}> = ({ spread, locale, emptySlotLabel, compact = false }) => {
-  return (
-    <section className="stamp-book-spread">
-      <StampBookSideView
-        side={spread.left}
-        locale={locale}
-        emptySlotLabel={emptySlotLabel}
-        compact={compact}
-      />
-      <StampBookSideView
-        side={spread.right}
-        locale={locale}
-        emptySlotLabel={emptySlotLabel}
-        compact={compact}
-      />
-    </section>
-  );
-};
 
 export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
   stamps,
@@ -271,48 +248,66 @@ export const ProfileStampBookViewer: React.FC<ProfileStampBookViewerProps> = ({
 
   return (
     <section className={compact ? 'stamp-book stamp-book--compact space-y-3' : 'stamp-book space-y-3'}>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{currentSpreadLabel}</p>
-        <p className="text-xs font-semibold text-slate-500 tabular-nums">{pageIndicator}</p>
-      </div>
-
       <div className="stamp-book-stage">
         <div className={`stamp-book-sheet ${bookOpened ? 'stamp-book-sheet--opened' : 'stamp-book-sheet--opening'}`}>
           {!turnState ? (
-            <StampBookSpread
-              spread={currentSpread}
-              locale={locale}
-              emptySlotLabel={labels.emptySlot}
-              compact={compact}
-            />
+            <div className="stamp-book-spread stamp-book-spread--base">
+              <StampBookSideView
+                position="left"
+                side={currentSpread.left}
+                locale={locale}
+                emptySlotLabel={labels.emptySlot}
+                compact={compact}
+              />
+              <StampBookSideView
+                position="right"
+                side={currentSpread.right}
+                locale={locale}
+                emptySlotLabel={labels.emptySlot}
+                compact={compact}
+              />
+            </div>
           ) : (
             <>
-              <div className="pointer-events-none invisible">
-                <StampBookSpread
-                  spread={spreads[turnState.from]}
+              {/* Base Layer: Static pages underneath */}
+              <div className="stamp-book-spread stamp-book-spread--base">
+                <StampBookSideView
+                  position="left"
+                  side={turnState.direction === 'next' ? spreads[turnState.from].left : spreads[turnState.to].left}
+                  locale={locale}
+                  emptySlotLabel={labels.emptySlot}
+                  compact={compact}
+                />
+                <StampBookSideView
+                  position="right"
+                  side={turnState.direction === 'next' ? spreads[turnState.to].right : spreads[turnState.from].right}
                   locale={locale}
                   emptySlotLabel={labels.emptySlot}
                   compact={compact}
                 />
               </div>
-              <div className={`stamp-book-turn-layer stamp-book-turn-layer--current stamp-book-turn-layer--${turnState.direction}-current`}>
-                <StampBookSpread
-                  spread={spreads[turnState.from]}
-                  locale={locale}
-                  emptySlotLabel={labels.emptySlot}
-                  compact={compact}
-                />
-              </div>
-              {pendingSpread ? (
-                <div className={`stamp-book-turn-layer stamp-book-turn-layer--next stamp-book-turn-layer--${turnState.direction}-next`}>
-                  <StampBookSpread
-                    spread={pendingSpread}
+
+              {/* Flipper: The turning page */}
+              <div className={`stamp-book-flipper stamp-book-flipper--${turnState.direction}`}>
+                <div className="stamp-book-flipper-face stamp-book-flipper-face--front">
+                  <StampBookSideView
+                    position={turnState.direction === 'next' ? "right" : "left"}
+                    side={turnState.direction === 'next' ? spreads[turnState.from].right : spreads[turnState.from].left}
                     locale={locale}
                     emptySlotLabel={labels.emptySlot}
                     compact={compact}
                   />
                 </div>
-              ) : null}
+                <div className="stamp-book-flipper-face stamp-book-flipper-face--back">
+                  <StampBookSideView
+                    position={turnState.direction === 'next' ? "left" : "right"}
+                    side={turnState.direction === 'next' ? spreads[turnState.to].left : spreads[turnState.to].right}
+                    locale={locale}
+                    emptySlotLabel={labels.emptySlot}
+                    compact={compact}
+                  />
+                </div>
+              </div>
             </>
           )}
         </div>

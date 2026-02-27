@@ -1,6 +1,6 @@
-import React from 'react';
-import { LockSimple, SealCheck } from '@phosphor-icons/react';
-import type { ProfileStampProgress } from './profileStamps';
+import React from "react";
+import { LockSimple, SealCheck } from "@phosphor-icons/react";
+import type { ProfileStampProgress } from "./profileStamps";
 
 interface ProfileStampCardProps {
   stamp: ProfileStampProgress;
@@ -12,166 +12,141 @@ interface ProfileStampCardProps {
   compact?: boolean;
 }
 
-type StampVisualState = {
-  tiltX: number;
-  tiltY: number;
-  shineX: number;
-  shineY: number;
-  shineOpacity: number;
+const getStableRandom = (seed: string) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (Math.imul(31, hash) + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) / 2147483647;
 };
-
-const INITIAL_VISUAL_STATE: StampVisualState = {
-  tiltX: 0,
-  tiltY: 0,
-  shineX: 50,
-  shineY: 50,
-  shineOpacity: 0.2,
-};
-
-const clamp = (value: number, min: number, max: number): number => Math.min(Math.max(value, min), max);
 
 export const ProfileStampCard: React.FC<ProfileStampCardProps> = ({
   stamp,
   selected = false,
   onSelect,
   onHover,
-  locale = 'en',
-  unlockedOnLabel = 'Unlocked',
+  locale = "en",
+  unlockedOnLabel = "Unlocked",
   compact = false,
 }) => {
-  const [visualState, setVisualState] = React.useState<StampVisualState>(INITIAL_VISUAL_STATE);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
   const [isHovered, setIsHovered] = React.useState(false);
-  const [isFocused, setIsFocused] = React.useState(false);
-  const [isTapExpanded, setIsTapExpanded] = React.useState(false);
+
+  const randomRotate = React.useMemo(
+    () => -3 + getStableRandom(stamp.definition.id + "r") * 6,
+    [stamp.definition.id],
+  );
+  const randomTranslateX = React.useMemo(
+    () => -2.5 + getStableRandom(stamp.definition.id + "x") * 5,
+    [stamp.definition.id],
+  );
+  const randomTranslateY = React.useMemo(
+    () => -2.5 + getStableRandom(stamp.definition.id + "y") * 5,
+    [stamp.definition.id],
+  );
 
   React.useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    )
+      return;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
     updatePreference();
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updatePreference);
-      return () => mediaQuery.removeEventListener('change', updatePreference);
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updatePreference);
+      return () => mediaQuery.removeEventListener("change", updatePreference);
     }
     mediaQuery.addListener(updatePreference);
     return () => mediaQuery.removeListener(updatePreference);
   }, []);
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (prefersReducedMotion) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    if (bounds.width <= 0 || bounds.height <= 0) return;
-
-    const relativeX = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
-    const relativeY = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
-    const tiltX = (0.5 - relativeY) * 10;
-    const tiltY = (relativeX - 0.5) * 12;
-
-    setVisualState({
-      tiltX,
-      tiltY,
-      shineX: Math.round(relativeX * 100),
-      shineY: Math.round(relativeY * 100),
-      shineOpacity: 0.65,
-    });
-  };
-
-  const resetVisualState = () => {
-    setVisualState(INITIAL_VISUAL_STATE);
-  };
-
-  const detailsVisible = selected || isHovered || isFocused || isTapExpanded;
-
-  const unlockedAtLabel = stamp.achievedAt
-    ? new Date(stamp.achievedAt).toLocaleDateString(locale, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-    : null;
-
   return (
     <button
       type="button"
-      onPointerMove={handlePointerMove}
       onPointerEnter={() => {
         setIsHovered(true);
         onHover?.(stamp);
       }}
       onPointerLeave={() => {
         setIsHovered(false);
-        resetVisualState();
-      }}
-      onBlur={resetVisualState}
-      onFocus={() => {
-        setIsFocused(true);
-        onHover?.(stamp);
-      }}
-      onBlurCapture={() => {
-        setIsFocused(false);
-        setIsTapExpanded(false);
       }}
       onClick={() => {
         if (onSelect) {
           onSelect(stamp);
-          return;
         }
-        setIsTapExpanded((current) => !current);
       }}
       className={[
-        'profile-stamp-card group relative overflow-hidden rounded-xl border bg-white text-left',
-        selected ? 'border-accent-300 shadow-md shadow-accent-100/60' : 'border-slate-200',
-        stamp.achieved ? '' : 'opacity-80',
-        compact ? 'rounded-lg' : '',
-      ].join(' ')}
-      style={{
-        '--stamp-tilt-x': `${prefersReducedMotion ? 0 : visualState.tiltX}deg`,
-        '--stamp-tilt-y': `${prefersReducedMotion ? 0 : visualState.tiltY}deg`,
-        '--stamp-shine-x': `${visualState.shineX}%`,
-        '--stamp-shine-y': `${visualState.shineY}%`,
-        '--stamp-shine-opacity': prefersReducedMotion ? 0.2 : visualState.shineOpacity,
-      } as React.CSSProperties}
+        "profile-stamp-card group relative flex aspect-square flex-col overflow-hidden rounded-xl border bg-white p-3 text-left shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md",
+        selected
+          ? "border-accent-300 shadow-md shadow-accent-100/60"
+          : "border-slate-200 hover:border-slate-300",
+        stamp.achieved
+          ? ""
+          : "opacity-85 saturate-50 hover:saturate-100 hover:opacity-100",
+      ].join(" ")}
+      style={
+        {
+          "--stamp-base-rotate": `${prefersReducedMotion ? 0 : randomRotate}deg`,
+          "--stamp-base-x": `${prefersReducedMotion ? 0 : randomTranslateX}px`,
+          "--stamp-base-y": `${prefersReducedMotion ? 0 : randomTranslateY}px`,
+        } as React.CSSProperties
+      }
       aria-pressed={selected}
     >
-      <div className={`relative ${compact ? 'aspect-[4/3]' : 'aspect-square'} overflow-hidden ${stamp.achieved ? '' : 'grayscale opacity-70'}`}>
-        <img
-          src={stamp.definition.assetPath}
-          alt={stamp.definition.title}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-        <span className="pointer-events-none absolute inset-0 bg-slate-950/5" />
+      <div
+        className={`relative flex-1 w-full flex items-center justify-center overflow-hidden rounded-lg bg-slate-50 transition-colors group-hover:bg-slate-100`}
+      >
+        <div className="relative h-4/5 w-4/5">
+          <img
+            src={stamp.definition.assetPath}
+            alt={stamp.definition.title}
+            className="h-full w-full object-contain drop-shadow-sm transition-transform duration-300 group-hover:scale-110"
+            loading="lazy"
+          />
+        </div>
       </div>
 
-      <div className={`space-y-1 border-t border-slate-100 ${compact ? 'px-2.5 py-2' : 'px-3 py-2.5'}`}>
-        <p className={`line-clamp-1 font-semibold text-slate-900 ${compact ? 'text-[13px]' : 'text-sm'}`}>{stamp.definition.title}</p>
+      <div className="mt-3 flex flex-col items-center text-center space-y-0.5">
+        <p className="line-clamp-1 text-xs font-bold text-slate-800">
+          {stamp.definition.title}
+        </p>
+        <span className="text-[10px] font-medium text-slate-500">
+          {stamp.definition.rarityPercent}% Rarity
+        </span>
       </div>
 
       <div
-        className={[
-          compact
-            ? 'pointer-events-none absolute inset-0 z-20 flex flex-col justify-end border-t border-slate-200/70 bg-slate-950/64 p-2.5 text-white backdrop-blur-[1px] transition-all duration-200'
-            : 'pointer-events-none absolute inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/96 p-2.5 backdrop-blur-sm transition-all duration-200',
-          detailsVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0',
-        ].join(' ')}
-        aria-hidden={!detailsVisible}
+        className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end bg-slate-900/90 p-4 text-white opacity-0 backdrop-blur-sm transition-all duration-200 group-hover:opacity-100"
+        aria-hidden="true"
       >
-        <p className={`line-clamp-2 text-[11px] ${compact ? 'text-slate-100' : 'text-slate-600'}`}>{stamp.definition.subtitle}</p>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
-            {stamp.achieved ? <SealCheck size={13} weight="duotone" className={compact ? 'text-emerald-300' : 'text-emerald-600'} /> : <LockSimple size={13} weight="duotone" />}
-            {stamp.achieved ? 'Unlocked' : `${Math.floor(stamp.currentValue)}/${stamp.targetValue}`}
-          </span>
-          <span className={`text-[11px] font-semibold ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
-            {stamp.definition.rarityPercent}% rarity
-          </span>
+        <p className="line-clamp-3 text-[11px] leading-relaxed text-slate-200">
+          {stamp.definition.subtitle}
+        </p>
+        <div className="mt-3 space-y-1">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-100">
+            <span className="flex items-center gap-1.5">
+              {stamp.achieved ? (
+                <SealCheck
+                  size={14}
+                  weight="duotone"
+                  className="text-emerald-400"
+                />
+              ) : (
+                <LockSimple
+                  size={14}
+                  weight="duotone"
+                  className="text-slate-400"
+                />
+              )}
+              {stamp.achieved ? "Unlocked" : "Locked"}
+            </span>
+            <span>
+              {Math.floor(stamp.currentValue)} / {stamp.targetValue}
+            </span>
+          </div>
         </div>
-        {unlockedAtLabel && (
-          <p className={`mt-1 text-[11px] font-medium ${compact ? 'text-slate-100' : 'text-slate-600'}`}>
-            {unlockedOnLabel}: {unlockedAtLabel}
-          </p>
-        )}
       </div>
     </button>
   );

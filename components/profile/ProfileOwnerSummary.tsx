@@ -47,10 +47,12 @@ interface ProfileOwnerSummaryProps {
   onEditProfileClick?: () => void;
   onViewPublicProfileClick?: () => void;
   onShareProfile: () => void;
-  onOpenPassport?: () => void;
+  onOpenPassport?: (rect: DOMRect) => void;
   canShareProfile: boolean;
   locale?: string;
   showAvatarOrbitText?: boolean;
+  className?: string;
+  isPassportOpen?: boolean;
 }
 
 export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
@@ -76,12 +78,14 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   canShareProfile,
   locale = 'en',
   showAvatarOrbitText = false,
+  className,
+  isPassportOpen = false,
 }) => {
   const resolvedBio = bio.trim();
   const fallbackBio = labels.bioFallback.trim();
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+    <section className={`grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] ${className}`} data-passport-open={isPassportOpen}>
       <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
           <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>

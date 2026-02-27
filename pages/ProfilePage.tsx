@@ -289,11 +289,13 @@ export const ProfilePage: React.FC = () => {
         }
         setSearchParams(next, { replace: !nextOpen });
     }, [searchParams, setSearchParams]);
+    const [passportTriggerRect, setPassportTriggerRect] = useState<DOMRect | null>(null);
 
-    const handleOpenPassportDialog = useCallback(() => {
+    const handleOpenPassportDialog = useCallback((rect?: DOMRect) => {
         trackEvent('profile__summary--open_stamps');
+        if (rect) setPassportTriggerRect(rect);
         handlePassportDialogOpenChange(true);
-    }, [handlePassportDialogOpenChange]);
+    }, [handlePassportDialogOpenChange, trackEvent]);
 
     useEffect(() => {
         setVisibleTripCount(PROFILE_TRIPS_PAGE_SIZE);
@@ -502,9 +504,10 @@ export const ProfilePage: React.FC = () => {
                             toast.info(t('summary.shareOpened'));
                         }
                     }}
-                    onOpenPassport={() => {
-                        handleOpenPassportDialog();
+                    onOpenPassport={(rect) => {
+                        handleOpenPassportDialog(rect);
                     }}
+                    isPassportOpen={searchParams.get(PROFILE_PASSPORT_QUERY_KEY) === PROFILE_PASSPORT_QUERY_VALUE}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}
                 />
@@ -523,9 +526,9 @@ export const ProfilePage: React.FC = () => {
                         </NavLink>
                         <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
                                 trackEvent('profile__shortcut--stamps');
-                                handleOpenPassportDialog();
+                                handleOpenPassportDialog(e.currentTarget.getBoundingClientRect());
                             }}
                             className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
                             {...getAnalyticsDebugAttributes('profile__shortcut--stamps')}
@@ -722,6 +725,8 @@ export const ProfilePage: React.FC = () => {
                     onPageChange={(page) => {
                         trackEvent('profile__stamps_page--change', { page });
                     }}
+                    countryCode={profile?.country}
+                    triggerRect={passportTriggerRect}
                 />
             </main>
             <SiteFooter />
