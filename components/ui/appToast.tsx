@@ -1,14 +1,14 @@
 import React from 'react';
 import {
-  CheckCircle,
-  CircleNotch,
-  FloppyDisk,
+  AlertCircle,
+  CheckCircle2,
   Info,
-  PencilSimple,
-  Trash,
-  WarningCircle,
+  LoaderCircle,
+  PencilLine,
+  Save,
+  Trash2,
   XCircle,
-} from '@phosphor-icons/react';
+} from 'lucide-react';
 import { toast, type ExternalToast } from 'sonner';
 
 export type AppToastTone =
@@ -46,7 +46,7 @@ interface AppToastToneMeta {
 
 const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
   success: {
-    Icon: CheckCircle,
+    Icon: CheckCircle2,
     borderClass: 'border-emerald-200',
     iconWrapClass: 'bg-emerald-100 text-emerald-700',
     titleClass: 'text-emerald-800',
@@ -64,37 +64,37 @@ const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
     titleClass: 'text-sky-800',
   },
   warning: {
-    Icon: WarningCircle,
+    Icon: AlertCircle,
     borderClass: 'border-amber-200',
     iconWrapClass: 'bg-amber-100 text-amber-700',
     titleClass: 'text-amber-800',
   },
   loading: {
-    Icon: CircleNotch,
+    Icon: LoaderCircle,
     borderClass: 'border-accent-200',
     iconWrapClass: 'bg-accent-100 text-accent-700',
     titleClass: 'text-accent-800',
   },
   add: {
-    Icon: CheckCircle,
+    Icon: CheckCircle2,
     borderClass: 'border-emerald-200',
     iconWrapClass: 'bg-emerald-100 text-emerald-700',
     titleClass: 'text-emerald-800',
   },
   remove: {
-    Icon: Trash,
+    Icon: Trash2,
     borderClass: 'border-rose-200',
     iconWrapClass: 'bg-rose-100 text-rose-700',
     titleClass: 'text-rose-800',
   },
   update: {
-    Icon: PencilSimple,
+    Icon: PencilLine,
     borderClass: 'border-accent-200',
     iconWrapClass: 'bg-accent-100 text-accent-700',
     titleClass: 'text-accent-800',
   },
   neutral: {
-    Icon: FloppyDisk,
+    Icon: Save,
     borderClass: 'border-slate-200',
     iconWrapClass: 'bg-slate-100 text-slate-700',
     titleClass: 'text-slate-800',

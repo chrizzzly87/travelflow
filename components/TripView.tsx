@@ -904,7 +904,7 @@ const useTripViewRender = ({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
             description: message,
-            duration: 2400,
+            duration: 3200,
         });
     }, [suppressToasts]);
 
@@ -943,7 +943,7 @@ const useTripViewRender = ({
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);
         const { label: actionLabel } = getToneMeta(tone);
-        showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
+        showToast(stripHistoryPrefix(label), { tone, title: actionLabel });
     }, [showToast]);
     const {
         showAllHistory,
@@ -1146,7 +1146,6 @@ const useTripViewRender = ({
     });
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
-        if (!onCommitState) return;
         if (!canEdit) return;
         if (isExamplePreview) return;
         if (suppressCommitRef.current) {
@@ -1166,13 +1165,17 @@ const useTripViewRender = ({
             const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
-            onCommitState(payload.trip, payload.view, {
-                replace: false,
-                label,
-                adminOverride: isAdminFallbackView && adminOverrideEnabled,
-            });
+            if (onCommitState) {
+                onCommitState(payload.trip, payload.view, {
+                    replace: false,
+                    label,
+                    adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                });
+            }
             pendingHistoryLabelRef.current = null;
-            refreshHistory();
+            if (onCommitState) {
+                refreshHistory();
+            }
             showSavedToastForLabel(label);
             if (typeof window !== 'undefined') {
                 (window as any).__tfLastCommit = { label, ts: Date.now() };

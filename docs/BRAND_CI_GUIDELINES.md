@@ -24,6 +24,18 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Banner cards: subtle border, soft blur background, clear visual hierarchy (eyebrow, headline, support text, CTA row).
 - In floating banners and cards with multiple CTAs, right-align actions (`justify-end`) unless a page pattern explicitly differs.
 
+## Toast Rules
+- All product toasts must route through `showAppToast(...)` in `components/ui/appToast.tsx`.
+- Do not import `sonner` directly outside `components/ui/appToast.tsx` and `components/ui/sonner.tsx`.
+- Toast containers stay subtle: white/glass surface, soft border, colored icon badge, no fully tinted card backgrounds.
+- Title must be short and action-oriented; description should contain concrete context (for example trip title/count).
+- For destructive flows (archive/remove), use tone `remove` and provide an inline undo action where restoration is possible.
+- Use Lucide icons in toast metadata for visual consistency with neutral stroke-based iconography.
+
+## CI Guardrail
+- Run `pnpm toasts:validate` (enforced in PR quality + build scripts).
+- The validator blocks direct `sonner` imports and direct `toast.success/error/...` calls outside the shared toast layer.
+
 ## Section Link Pattern
 - For content-section links (for example "Discover more inspirations"), use the shared inline-link visual pattern instead of outlined button styling:
   - `inline-flex items-center gap-1 text-sm font-semibold text-accent-600 transition-colors hover:text-accent-800`
