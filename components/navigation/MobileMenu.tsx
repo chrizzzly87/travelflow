@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { X, AirplaneTilt, SpinnerGap as Loader2 } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
     const navigate = useNavigate();
     const { isAuthenticated, isAdmin, logout, isLoading, profile } = useAuth();
     const { openLoginModal } = useLoginModal();
-    const [adminLinks, setAdminLinks] = useState<Array<{ id: string; label: string; path: string }>>([]);
     const panelRef = useRef<HTMLDivElement | null>(null);
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -83,31 +82,6 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
-
-    useEffect(() => {
-        if (!isOpen || !isAdmin) return;
-        let cancelled = false;
-
-        const loadAdminLinks = async () => {
-            const module = await import('../admin/adminNavConfig');
-            if (cancelled) return;
-            setAdminLinks(module.ADMIN_NAV_ITEMS.map((item) => ({
-                id: item.id,
-                label: item.label,
-                path: item.path,
-            })));
-        };
-
-        void loadAdminLinks();
-        return () => {
-            cancelled = true;
-        };
-    }, [isAdmin, isOpen]);
-
-    useEffect(() => {
-        if (isAdmin) return;
-        setAdminLinks([]);
-    }, [isAdmin]);
 
     const publicProfilePath = useMemo(() => {
         if (!isAuthenticated) return null;
@@ -195,7 +169,25 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
         [t]
     );
 
-    const visibleItems = NAV_ITEMS;
+    const visibleItems = isAuthenticated
+        ? NAV_ITEMS.filter((item) => item.id === 'inspirations' || item.id === 'blog')
+        : NAV_ITEMS;
+
+    const accountItems = useMemo<Array<{ id: string; path: string; label: string }>>(() => {
+        if (!isAuthenticated) return [];
+        return [
+            { id: 'profile', path: '/profile', label: 'Profile' },
+            { id: 'profile_recent', path: '/profile?tab=recent', label: 'Recent trips' },
+            { id: 'stamps', path: '/profile/stamps', label: 'Stamps' },
+            { id: 'settings', path: '/profile/settings', label: 'Settings' },
+            {
+                id: publicProfilePath ? 'public_profile' : 'public_profile_setup',
+                path: publicProfilePath || '/profile/settings',
+                label: 'View public profile',
+            },
+        ];
+    }, [isAuthenticated, publicProfilePath]);
+
     return (
         <>
             <div
@@ -250,23 +242,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                         />
                     </div>
 
-                    <nav className="flex-1 overflow-y-auto px-3 py-4">
-                        <div className="space-y-1">
-                            {visibleItems.map((item) => (
-                                <NavLink
-                                    key={item.id}
-                                    to={buildLocalizedMarketingPath(item.routeKey, activeLocale)}
-                                    className={navLinkClass}
-                                    onClick={() => handleNavClick(item.id)}
-                                    {...mobileNavDebugAttributes(item.id)}
-                                >
-                                    {t(item.labelKey)}
-                                </NavLink>
-                            ))}
-                        </div>
-                    </nav>
-
-                    <div className="border-t border-slate-100 p-4 space-y-2">
+                    <nav className="flex-1 overflow-y-auto border-t border-slate-100 px-4 py-4">
+                        <div className="space-y-2">
                         {onMyTripsClick && hasTrips ? (
                             <button
                                 onClick={() => {
@@ -291,75 +268,49 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 {t('nav.createTrip')}
                             </NavLink>
                         )}
+                        {accountItems.map((item) => (
+                            <NavLink
+                                key={item.id}
+                                to={item.path}
+                                onClick={() => handleNavClick(item.id)}
+                                className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                {...mobileNavDebugAttributes(item.id)}
+                            >
+                                {item.label}
+                            </NavLink>
+                        ))}
+                        {visibleItems.map((item) => (
+                            <NavLink
+                                key={item.id}
+                                to={buildLocalizedMarketingPath(item.routeKey, activeLocale)}
+                                className={navLinkClass}
+                                onClick={() => handleNavClick(item.id)}
+                                {...mobileNavDebugAttributes(item.id)}
+                            >
+                                {t(item.labelKey)}
+                            </NavLink>
+                        ))}
+                        {isAdmin && (
+                            <NavLink
+                                to="/admin"
+                                onClick={() => handleNavClick('admin_dashboard')}
+                                className="block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
+                                {...mobileNavDebugAttributes('admin_dashboard')}
+                            >
+                                Admin dashboard
+                            </NavLink>
+                        )}
                         {isAuthenticated ? (
-                            <>
-                                <NavLink
-                                    to="/profile?tab=recent"
-                                    onClick={() => handleNavClick('profile_recent')}
-                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...mobileNavDebugAttributes('profile_recent')}
-                                >
-                                    Recent trips
-                                </NavLink>
-                                <NavLink
-                                    to="/profile"
-                                    onClick={() => handleNavClick('profile')}
-                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...mobileNavDebugAttributes('profile')}
-                                >
-                                    Profile
-                                </NavLink>
-                                <NavLink
-                                    to="/profile/settings"
-                                    onClick={() => handleNavClick('settings')}
-                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...mobileNavDebugAttributes('settings')}
-                                >
-                                    Settings
-                                </NavLink>
-                                <NavLink
-                                    to="/profile/stamps"
-                                    onClick={() => handleNavClick('stamps')}
-                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...mobileNavDebugAttributes('stamps')}
-                                >
-                                    Stamps
-                                </NavLink>
-                                <NavLink
-                                    to={publicProfilePath || '/profile/settings'}
-                                    onClick={() => handleNavClick(publicProfilePath ? 'public_profile' : 'public_profile_setup')}
-                                    className="block w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-base font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    {...mobileNavDebugAttributes(publicProfilePath ? 'public_profile' : 'public_profile_setup')}
-                                >
-                                    View public profile
-                                </NavLink>
-                                {isAdmin && (
-                                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2">
-                                        <div className="px-2 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Admin pages</div>
-                                        {adminLinks.map((item) => (
-                                            <NavLink
-                                                key={`mobile-admin-${item.id}`}
-                                                to={item.path}
-                                                onClick={() => handleNavClick(`admin_${item.id}`)}
-                                                className="block rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                                {...mobileNavDebugAttributes(`admin_${item.id}`)}
-                                            >
-                                                {item.label}
-                                            </NavLink>
-                                        ))}
-                                    </div>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        void handleLogout();
-                                    }}
-                                    className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
-                                    {...mobileNavDebugAttributes('logout')}
-                                >
-                                    Logout
-                                </button>
-                            </>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleLogout();
+                                }}
+                                className="block w-full rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-base font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                                {...mobileNavDebugAttributes('logout')}
+                            >
+                                Logout
+                            </button>
                         ) : isLoading ? (
                             <button
                                 type="button"
@@ -396,7 +347,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, onMyTri
                                 ))}
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </nav>
                 </div>
             </div>
         </>

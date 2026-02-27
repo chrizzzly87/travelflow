@@ -72,4 +72,26 @@ describe('components/navigation/MobileMenu legal links', () => {
     expect(screen.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms');
     expect(screen.getByRole('link', { name: 'Cookies' })).toHaveAttribute('href', '/cookies');
   });
+
+  it('shows only the admin dashboard shortcut on mobile for admins', () => {
+    mocks.isAuthenticated = true;
+    mocks.isAdmin = true;
+    mocks.profile = { username: 'owner' };
+
+    render(
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ['/profile'] },
+        React.createElement(MobileMenu, {
+          isOpen: true,
+          onClose: vi.fn(),
+        })
+      )
+    );
+
+    expect(screen.getByRole('link', { name: 'Admin dashboard' })).toHaveAttribute('href', '/admin');
+    expect(screen.queryByRole('link', { name: 'Users' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Trips' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'AI Telemetry' })).toBeNull();
+  });
 });
