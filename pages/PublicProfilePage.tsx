@@ -379,7 +379,7 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'private' && (
-                    <section className="space-y-4">
+                    <section className="grid justify-items-center gap-6 text-center md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:items-center md:justify-items-start md:text-start">
                         <ProfileVisitorSummary
                             displayName={displayName}
                             username={state.profile?.username || ''}
@@ -409,13 +409,15 @@ export const PublicProfilePage: React.FC = () => {
                             visibilityBadgeLabel={visibilityBadgeLabel}
                             showDetails={false}
                             hideRightPanel
+                            compactCard
                             isOwnProfile={isOwnPublicProfile}
-                            onEditProfile={() => navigate(buildPath('profileSettings'))}
+                            editProfileHref={buildPath('profileSettings')}
+                            onEditProfile={() => trackEvent('public_profile__summary--edit_profile')}
                         />
-                        <div className="max-w-2xl space-y-2">
+                        <div className="w-full max-w-2xl space-y-2">
                             <h1 className="text-2xl font-black tracking-tight text-slate-900 md:text-3xl">{t('publicProfile.privateTitle')}</h1>
                             <p className="text-sm text-slate-600 md:text-base">{t('publicProfile.privateDescription')}</p>
-                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <div className="flex flex-wrap items-center justify-center gap-2 pt-1 md:justify-start">
                                 {!isAuthenticated ? (
                                     <NavLink
                                         to="/login"
@@ -505,7 +507,8 @@ export const PublicProfilePage: React.FC = () => {
                             }}
                             locale={appLocale}
                             isOwnProfile={isOwnPublicProfile}
-                            onEditProfile={() => navigate(buildPath('profileSettings'))}
+                            editProfileHref={buildPath('profileSettings')}
+                            onEditProfile={() => trackEvent('public_profile__summary--edit_profile')}
                             visibilityBadgeLabel={visibilityBadgeLabel}
                         />
 

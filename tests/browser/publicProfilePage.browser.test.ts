@@ -476,7 +476,7 @@ describe('pages/PublicProfilePage', () => {
     renderPublicProfilePage('/u/traveler');
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'summary.editProfile' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'summary.editProfile' })).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: 'summary.follow' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'summary.message' })).toBeNull();

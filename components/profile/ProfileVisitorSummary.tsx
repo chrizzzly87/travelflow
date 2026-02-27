@@ -44,10 +44,12 @@ interface ProfileVisitorSummaryProps {
   onOpenPassport?: () => void;
   isOwnProfile?: boolean;
   onEditProfile?: () => void;
+  editProfileHref?: string;
   visibilityBadgeLabel?: string | null;
   showAvatarOrbitText?: boolean;
   showDetails?: boolean;
   hideRightPanel?: boolean;
+  compactCard?: boolean;
 }
 
 export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
@@ -67,13 +69,15 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
   onOpenPassport,
   isOwnProfile = false,
   onEditProfile,
+  editProfileHref,
   visibilityBadgeLabel = null,
   showAvatarOrbitText = false,
   showDetails = true,
   hideRightPanel = false,
+  compactCard = false,
 }) => {
   const profileIdentityCard = (
-    <article className="relative flex h-full min-h-[480px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
+    <article className={`relative flex h-full flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm ${compactCard ? 'min-h-[360px]' : 'min-h-[480px]'}`}>
       <div className="absolute inset-x-0 top-0 -translate-y-1/2">
         <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
           <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
@@ -114,14 +118,25 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
 
       <div className="mt-auto grid gap-2 pt-4">
         {isOwnProfile && onEditProfile ? (
-          <button
-            type="button"
-            onClick={onEditProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-          >
-            <PencilSimpleLine size={15} weight="duotone" />
-            {labels.editProfile}
-          </button>
+          editProfileHref ? (
+            <a
+              href={editProfileHref}
+              onClick={onEditProfile}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            >
+              <PencilSimpleLine size={15} weight="duotone" />
+              {labels.editProfile}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={onEditProfile}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            >
+              <PencilSimpleLine size={15} weight="duotone" />
+              {labels.editProfile}
+            </button>
+          )
         ) : (
           <>
             <button
@@ -148,7 +163,7 @@ export const ProfileVisitorSummary: React.FC<ProfileVisitorSummaryProps> = ({
 
   if (hideRightPanel) {
     return (
-      <section className="max-w-md">
+      <section className="w-full max-w-md">
         {profileIdentityCard}
       </section>
     );

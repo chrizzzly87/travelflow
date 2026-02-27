@@ -474,13 +474,13 @@ export const ProfilePage: React.FC = () => {
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
                     }}
-                    onEditProfile={() => {
+                    editProfileHref={buildPath('profileSettings')}
+                    viewPublicProfileHref={publicProfilePath || buildPath('profileSettings')}
+                    onEditProfileClick={() => {
                         trackEvent('profile__summary--edit_profile');
-                        navigate(buildPath('profileSettings'));
                     }}
-                    onViewPublicProfile={() => {
+                    onViewPublicProfileClick={() => {
                         trackEvent(publicProfilePath ? 'profile__summary--view_public_profile' : 'profile__summary--view_public_profile_setup');
-                        navigate(publicProfilePath || buildPath('profileSettings'));
                     }}
                     onShareProfile={() => {
                         if (!publicProfileUrl) {
@@ -505,7 +505,6 @@ export const ProfilePage: React.FC = () => {
                     onOpenPassport={() => {
                         handleOpenPassportDialog();
                     }}
-                    canViewPublicProfile={Boolean(publicProfilePath)}
                     canShareProfile={Boolean(publicProfileUrl)}
                     locale={appLocale}
                 />

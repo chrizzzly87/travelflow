@@ -42,11 +42,12 @@ interface ProfileOwnerSummaryProps {
   passportCountryCode?: string;
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
-  onEditProfile: () => void;
-  onViewPublicProfile: () => void;
+  editProfileHref: string;
+  viewPublicProfileHref: string;
+  onEditProfileClick?: () => void;
+  onViewPublicProfileClick?: () => void;
   onShareProfile: () => void;
   onOpenPassport?: () => void;
-  canViewPublicProfile: boolean;
   canShareProfile: boolean;
   locale?: string;
   showAvatarOrbitText?: boolean;
@@ -66,11 +67,12 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   passportCountryCode,
   stats,
   labels,
-  onEditProfile,
-  onViewPublicProfile,
+  editProfileHref,
+  viewPublicProfileHref,
+  onEditProfileClick,
+  onViewPublicProfileClick,
   onShareProfile,
   onOpenPassport,
-  canViewPublicProfile,
   canShareProfile,
   locale = 'en',
   showAvatarOrbitText = false,
@@ -100,34 +102,35 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
 
         <div className="mt-4 space-y-3 text-left">
           <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <MapPin size={15} weight="duotone" className="text-accent-600" />
-            {location}
-          </p>
-          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
-            <Mountains size={15} weight="duotone" className="text-accent-600" />
-            {distanceLabel}
-          </p>
+          <div className="space-y-2">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <MapPin size={15} weight="duotone" className="text-accent-600" />
+              {location}
+            </p>
+            <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <Mountains size={15} weight="duotone" className="text-accent-600" />
+              {distanceLabel}
+            </p>
+          </div>
         </div>
 
         <div className="mt-auto grid gap-2 pt-4">
-          <button
-            type="button"
-            onClick={onEditProfile}
+          <a
+            href={editProfileHref}
+            onClick={onEditProfileClick}
             className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
           >
             <PencilSimpleLine size={15} weight="duotone" />
             {labels.editProfile}
-          </button>
-          <button
-            type="button"
-            onClick={onViewPublicProfile}
-            disabled={!canViewPublicProfile}
-            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          </a>
+          <a
+            href={viewPublicProfileHref}
+            onClick={onViewPublicProfileClick}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
           >
             <GlobeHemisphereWest size={15} weight="duotone" />
             {labels.viewPublicProfile}
-          </button>
+          </a>
           <button
             type="button"
             onClick={onShareProfile}

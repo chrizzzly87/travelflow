@@ -94,6 +94,8 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🔒 Added a privacy-aware public-profile view that shows masked identity details when a traveler disables public visibility, while still allowing admin moderation access with clear public/private status badges.
 - [x] [Improved] 🪪 Updated public-profile self-visits so profile owners now get an “Edit profile” action instead of follow/message controls.
 - [x] [Improved] 🧱 Moved bio, location, and total distance into the left profile identity card and pinned card actions to the bottom for cleaner hierarchy.
+- [x] [Improved] 🔗 Converted “Edit profile” and “View public profile” actions to true links so they can be opened in new tabs.
+- [x] [Improved] 📐 Refined private-profile layout to use a shorter profile card with side-by-side private-state messaging on larger screens and centered stacking on mobile.
 - [x] [Improved] ✍️ Limited profile bios to 160 characters in settings with live length feedback.
 - [x] [Improved] 🌐 Localized greeting fun-fact copy keys across all active profile locales so hero context lines render consistently.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
