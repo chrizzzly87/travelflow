@@ -113,6 +113,7 @@ export const resolvePageTitle = ({
     if (normalizedPath === '/profile') return titleWithAppName(labels.profile, appName);
     if (normalizedPath === '/profile/settings') return titleWithAppName(labels.profileSettings, appName);
     if (normalizedPath === '/profile/onboarding') return titleWithAppName(labels.profileOnboarding, appName);
+    if (normalizedPath.startsWith('/u/')) return titleWithAppName(labels.profile, appName);
 
     if (normalizedPath.startsWith('/admin')) {
         if (normalizedPath === '/admin/dashboard') return titleWithAppName(`${labels.admin} · Dashboard`, appName);

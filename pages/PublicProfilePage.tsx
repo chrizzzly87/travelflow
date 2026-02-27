@@ -28,6 +28,8 @@ import { DEFAULT_DISTANCE_UNIT, formatDistance, getTripDistanceKm } from '../uti
 import type { ITrip } from '../types';
 import { useInfiniteScrollSentinel } from '../hooks/useInfiniteScrollSentinel';
 import { useAuth } from '../hooks/useAuth';
+import { setCanonicalDocumentTitle } from '../services/tripGenerationTabFeedbackService';
+import { APP_NAME } from '../config/appGlobals';
 
 const PUBLIC_PROFILE_TRIPS_PAGE_SIZE = 9;
 const PUBLIC_PROFILE_PASSPORT_QUERY_KEY = 'passport';
@@ -57,12 +59,39 @@ const normalizeUsername = (value: unknown): string => (
     typeof value === 'string' ? value.trim().toLowerCase() : ''
 );
 
+const formatPrivateDisplayName = (profile: UserProfileRecord | null, fallback: string): string => {
+    const firstName = profile?.firstName?.trim() || '';
+    const lastInitial = profile?.lastName?.trim().charAt(0) || '';
+    if (firstName) return `${firstName}${lastInitial ? ` ${lastInitial}.` : ''}`;
+    return profile?.displayName || profile?.username || fallback;
+};
+
+const upsertPublicProfileRobotsMeta = (content: string | null): void => {
+    if (typeof document === 'undefined') return;
+    const selector = 'meta[name="robots"][data-managed-by="public-profile"]';
+    let meta = document.head.querySelector<HTMLMetaElement>(selector);
+
+    if (!content) {
+        if (meta) meta.remove();
+        return;
+    }
+
+    if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'robots');
+        meta.setAttribute('data-managed-by', 'public-profile');
+        document.head.appendChild(meta);
+    }
+
+    meta.setAttribute('content', content);
+};
+
 export const PublicProfilePage: React.FC = () => {
     const { username = '' } = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
-    const { isLoading: isAuthLoading, isAuthenticated, profile: viewerProfile } = useAuth();
+    const { isLoading: isAuthLoading, isAuthenticated, isAdmin, profile: viewerProfile } = useAuth();
 
     const [state, setState] = useState<ProfileState>({
         status: 'loading',
@@ -154,7 +183,7 @@ export const PublicProfilePage: React.FC = () => {
                         await loadFirstTripsPage(viewerProfile);
                         return;
                     }
-                    setState({ status: 'private', profile: null });
+                    setState({ status: 'private', profile: result.profile || null });
                     return;
                 }
 
@@ -179,7 +208,7 @@ export const PublicProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [isAuthLoading, isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfileId]);
+    }, [isAuthLoading, isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfile, viewerProfileId]);
 
     const loadMoreTrips = useCallback(() => {
         if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
@@ -209,10 +238,21 @@ export const PublicProfilePage: React.FC = () => {
         rootMargin: '640px 0px',
     });
 
-    const displayName = state.profile?.displayName
-        || [state.profile?.firstName || '', state.profile?.lastName || ''].filter(Boolean).join(' ')
-        || state.profile?.username
-        || t('fallback.displayName');
+    const isOwnPublicProfile = Boolean(
+        state.profile
+        && viewerProfileId
+        && state.profile.id === viewerProfileId
+    );
+    const isMaskedPrivateView = state.status === 'private' && !isAdmin;
+
+    const displayName = isMaskedPrivateView
+        ? formatPrivateDisplayName(state.profile, t('fallback.displayName'))
+        : (
+            state.profile?.displayName
+            || [state.profile?.firstName || '', state.profile?.lastName || ''].filter(Boolean).join(' ')
+            || state.profile?.username
+            || t('fallback.displayName')
+        );
 
     const profileCountryLabel = getProfileCountryDisplayName(state.profile?.country, appLocale);
     const locationLabel = [state.profile?.city || '', profileCountryLabel]
@@ -234,6 +274,16 @@ export const PublicProfilePage: React.FC = () => {
         () => resolveProfileStatusByTripCount(trips.length),
         [trips.length]
     );
+    const visibilityBadgeLabel = useMemo(() => {
+        if (!state.profile) return null;
+        if (isAdmin) {
+            return state.profile.publicProfileEnabled
+                ? t('publicProfile.visibilityPublic')
+                : t('publicProfile.visibilityPrivate');
+        }
+        if (state.status === 'private') return t('publicProfile.visibilityPrivate');
+        return null;
+    }, [isAdmin, state.profile, state.status, t]);
     const allStampProgress = useMemo(() => {
         const metrics = computeProfileStampMetrics(trips, {
             likesGiven: 0,
@@ -279,6 +329,34 @@ export const PublicProfilePage: React.FC = () => {
         handlePassportDialogOpenChange(true);
     }, [handlePassportDialogOpenChange]);
 
+    useEffect(() => {
+        const titleByState = (() => {
+            if (state.status === 'not_found') return `${t('publicProfile.notFoundTitle')} · ${APP_NAME}`;
+            if (state.status === 'private') return `${t('publicProfile.privateTitle')} · ${APP_NAME}`;
+            if (state.status === 'found') return `${displayName} · ${APP_NAME}`;
+            return `${t('publicProfile.title')} · ${APP_NAME}`;
+        })();
+
+        setCanonicalDocumentTitle(titleByState);
+        const isUnavailable = state.status === 'not_found' || state.status === 'private';
+        upsertPublicProfileRobotsMeta(isUnavailable ? 'noindex, nofollow' : null);
+
+        if (typeof document !== 'undefined') {
+            if (state.status === 'not_found') {
+                document.documentElement.setAttribute('data-public-profile-status', '404');
+            } else {
+                document.documentElement.removeAttribute('data-public-profile-status');
+            }
+        }
+
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.documentElement.removeAttribute('data-public-profile-status');
+            }
+            upsertPublicProfileRobotsMeta(null);
+        };
+    }, [displayName, state.status, t]);
+
     return (
         <div className="flex min-h-screen flex-col bg-slate-50">
             <SiteHeader />
@@ -301,25 +379,41 @@ export const PublicProfilePage: React.FC = () => {
                 )}
 
                 {state.status === 'private' && (
-                    <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
-                        <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{t('publicProfile.privateTitle')}</h1>
-                        <p className="mt-2 max-w-xl text-sm text-slate-600 md:text-base">{t('publicProfile.privateDescription')}</p>
-                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                            {!isAuthenticated ? (
-                                <NavLink
-                                    to="/login"
-                                    className="inline-flex items-center rounded-lg bg-accent-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-700 hover:shadow-md active:scale-[0.98]"
-                                >
-                                    {t('publicProfile.ctaRegisterFree')}
-                                </NavLink>
-                            ) : null}
-                            <NavLink
-                                to={buildPath('inspirations')}
-                                className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-                            >
-                                {t('publicProfile.ctaExploreInspirations')}
-                            </NavLink>
-                        </div>
+                    <section className="flex justify-center">
+                        <ProfileVisitorSummary
+                            displayName={displayName}
+                            username={state.profile?.username || ''}
+                            initials={initialsFromProfile(state.profile)}
+                            status={profileStatus}
+                            bio=""
+                            location=""
+                            distanceLabel=""
+                            countries={[]}
+                            stamps={[]}
+                            passportCountryCode={undefined}
+                            stats={[]}
+                            labels={{
+                                follow: t('summary.follow'),
+                                message: t('summary.message'),
+                                editProfile: t('summary.editProfile'),
+                                usernamePrefix: t('summary.usernamePrefix'),
+                                bio: t('summary.bioLabel'),
+                                bioFallback: t('summary.bioFallback'),
+                                countries: t('summary.countriesLabel'),
+                                countriesEmpty: t('summary.countriesEmpty'),
+                                stampsTitle: t('summary.stampsTitle'),
+                                stampsDescription: '',
+                                stampsOpen: t('summary.stampsOpen'),
+                            }}
+                            locale={appLocale}
+                            visibilityBadgeLabel={visibilityBadgeLabel}
+                            showDetails={false}
+                            hideRightPanel
+                            compactCard
+                            isOwnProfile={isOwnPublicProfile}
+                            editProfileHref={buildPath('profileSettings')}
+                            onEditProfile={() => trackEvent('public_profile__summary--edit_profile')}
+                        />
                     </section>
                 )}
 
@@ -327,13 +421,13 @@ export const PublicProfilePage: React.FC = () => {
                     <section className="flex min-h-[62vh] flex-col items-center justify-center py-4 text-center">
                         <div className="mx-auto max-w-3xl space-y-4">
                             <img
-                                src="/images/feet.png"
+                                src="/images/passport.png"
                                 alt=""
-                                className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-90 [filter:saturate(0.75)_sepia(0.25)]"
+                                className="mx-auto h-auto w-full max-w-[360px] object-contain opacity-95"
                                 loading="lazy"
                             />
                             <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-                                {t('publicProfile.notFoundFunTitle')}
+                                {t('publicProfile.notFoundInvalidPassportTitle')}
                             </h1>
                             <p className="text-sm font-medium text-slate-600 md:text-base">
                                 {t('publicProfile.notFoundFunSubtitle')}
@@ -378,12 +472,10 @@ export const PublicProfilePage: React.FC = () => {
                             labels={{
                                 follow: t('summary.follow'),
                                 message: t('summary.message'),
-                                comingSoon: t('publicProfile.followHint'),
+                                editProfile: t('summary.editProfile'),
                                 usernamePrefix: t('summary.usernamePrefix'),
                                 bio: t('summary.bioLabel'),
                                 bioFallback: t('summary.bioFallback'),
-                                location: t('summary.locationLabel'),
-                                distance: t('summary.distanceLabel'),
                                 countries: t('summary.countriesLabel'),
                                 countriesEmpty: t('summary.countriesEmpty'),
                                 stampsTitle: t('summary.stampsTitle'),
@@ -394,6 +486,10 @@ export const PublicProfilePage: React.FC = () => {
                                 handleOpenPassportDialog();
                             }}
                             locale={appLocale}
+                            isOwnProfile={isOwnPublicProfile}
+                            editProfileHref={buildPath('profileSettings')}
+                            onEditProfile={() => trackEvent('public_profile__summary--edit_profile')}
+                            visibilityBadgeLabel={visibilityBadgeLabel}
                         />
 
                         {errorMessage && (

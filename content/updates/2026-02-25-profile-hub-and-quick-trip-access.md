@@ -2,8 +2,8 @@
 id: rel-2026-02-25-profile-hub-and-quick-trip-access
 version: v0.66.0
 title: "Profile hub with highlights and quick trip access"
-date: 2026-02-26
-published_at: 2026-02-26T12:20:38Z
+date: 2026-02-27
+published_at: 2026-02-27T07:49:15Z
 status: published
 notify_in_app: false
 in_app_hours: 24
@@ -85,6 +85,22 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Improved] 🧾 Restored reliable city-lane hover tooltips on profile trip cards with a native-title fallback.
 - [x] [Improved] 🦶 Replaced the public-profile not-found footprint asset with the intended softer travel-footprint artwork.
 - [x] [Improved] 🧭 Added footer consistency across profile, settings, stamps, and public-profile surfaces (including unavailable/error states).
+- [x] [Improved] 📱 Added legal quick links (Imprint, Privacy, Terms, Cookies) to the mobile burger menu so legal routes stay reachable on views where footer placement is constrained.
+- [x] [Improved] 📱 Unified mobile navigation into one cleaner menu flow with signed-in account shortcuts and a single admin-dashboard shortcut on mobile.
+- [x] [Fixed] 🔐 Removed deferred first-interaction auth bootstrap so auth state now initializes on page load across routes.
+- [x] [Improved] 🎯 Aligned profile trip color-lane hover affordance with inspiration example cards for consistent interaction feedback.
+- [x] [Improved] 🧷 Added cache-busting for the public-profile not-found footprint artwork to avoid stale CDN/browser image mismatches.
+- [x] [Improved] 🛂 Reworked public-profile not-found messaging to a passport-focused state with “This passport is invalid” headline and updated visual.
+- [x] [Improved] 🔒 Added a privacy-aware public-profile view that shows masked identity details when a traveler disables public visibility, while still allowing admin moderation access with clear public/private status badges.
+- [x] [Improved] 🪪 Updated public-profile self-visits so profile owners now get an “Edit profile” action instead of follow/message controls.
+- [x] [Improved] 🧱 Moved bio, location, and total distance into the left profile identity card and pinned card actions to the bottom for cleaner hierarchy.
+- [x] [Improved] 📐 Enforced a strict vertical stack for location and total distance in profile identity cards so both values stay on separate lines.
+- [x] [Improved] 🔗 Converted “Edit profile” and “View public profile” actions to true links so they can be opened in new tabs.
+- [x] [Improved] 📐 Refined private-profile layout to use a shorter profile card with side-by-side private-state messaging on larger screens and centered stacking on mobile.
+- [x] [Improved] 🧭 Simplified private-profile state to a centered identity card for cleaner focus and lower visual clutter.
+- [x] [Improved] ✍️ Limited profile bios to 160 characters in settings with live length feedback.
+- [x] [Improved] 🌐 Localized greeting fun-fact copy keys across all active profile locales so hero context lines render consistently.
+- [x] [Improved] 🌐 Completed profile/public/settings UI localization for all active profile locales, including private/not-found state copy and action labels.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.

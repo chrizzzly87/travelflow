@@ -51,6 +51,7 @@ describe('services/pageTitleService', () => {
   it('resolves profile and admin routes with section context', () => {
     expect(resolvePageTitle({ pathname: '/profile', appName: APP_NAME, labels: LABELS })).toBe('Profile · TravelFlow');
     expect(resolvePageTitle({ pathname: '/profile/settings', appName: APP_NAME, labels: LABELS })).toBe('Profile settings · TravelFlow');
+    expect(resolvePageTitle({ pathname: '/u/traveler', appName: APP_NAME, labels: LABELS })).toBe('Profile · TravelFlow');
     expect(resolvePageTitle({ pathname: '/admin/users', appName: APP_NAME, labels: LABELS })).toBe('Admin · Users · TravelFlow');
   });
 

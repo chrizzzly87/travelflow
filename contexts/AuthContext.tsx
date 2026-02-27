@@ -264,13 +264,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { accessToken, refreshToken };
         };
 
-        const clearDeferredBootstrapTriggers = (): void => {
-            if (typeof window === 'undefined') return;
-            window.removeEventListener('pointerdown', triggerBootstrap, true);
-            window.removeEventListener('keydown', triggerBootstrap, true);
-            window.removeEventListener('touchstart', triggerBootstrap, true);
-        };
-
         const bootstrap = async () => {
             try {
                 const [authService, supabase] = await Promise.all([
@@ -382,7 +375,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (cancelled) return;
             if (hasBootstrappedRef.current || isBootstrappingRef.current) return;
             isBootstrappingRef.current = true;
-            clearDeferredBootstrapTriggers();
             setIsLoading(true);
             void bootstrap();
         };
@@ -401,18 +393,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const shouldBootstrapImmediately = hasAuthCallbackPayload() || isAuthBootstrapCriticalPath(window.location.pathname);
-        if (shouldBootstrapImmediately) {
-            triggerBootstrap();
-        } else {
-            setIsLoading(false);
-            window.addEventListener('pointerdown', triggerBootstrap, true);
-            window.addEventListener('keydown', triggerBootstrap, true);
-            window.addEventListener('touchstart', triggerBootstrap, true);
+        if (!shouldBootstrapImmediately) {
+            appendAuthTraceEntry({
+                ts: new Date().toISOString(),
+                flowId: 'auth-bootstrap',
+                attemptId: 'immediate-bootstrap',
+                step: 'bootstrap_non_critical_path',
+                result: 'success',
+                provider: 'supabase',
+                metadata: {
+                    pathname: window.location.pathname,
+                    reason: 'always_initialize_on_page_load',
+                },
+            });
         }
+        triggerBootstrap();
 
         return () => {
             cancelled = true;
-            clearDeferredBootstrapTriggers();
             // React Strict Mode re-runs effects in dev. If a bootstrap run was
             // cancelled during that cycle, allow the next effect pass to start it.
             if (!hasBootstrappedRef.current) {

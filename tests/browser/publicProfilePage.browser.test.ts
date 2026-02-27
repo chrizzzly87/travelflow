@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
   getPublicTripsPageByUserId: vi.fn(),
   trackEvent: vi.fn(),
   auth: {
+    isLoading: false,
     isAuthenticated: false,
+    isAdmin: false,
     profile: null as any,
   },
 }));
@@ -80,7 +82,9 @@ describe('pages/PublicProfilePage', () => {
   beforeEach(() => {
     cleanup();
     vi.clearAllMocks();
+    mocks.auth.isLoading = false;
     mocks.auth.isAuthenticated = false;
+    mocks.auth.isAdmin = false;
     mocks.auth.profile = null;
     mocks.getPublicTripsPageByUserId.mockResolvedValue({
       trips: [],
@@ -244,6 +248,13 @@ describe('pages/PublicProfilePage', () => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaPlanTrip' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
+    expect(screen.getByText('publicProfile.notFoundInvalidPassportTitle')).toBeInTheDocument();
+    expect(document.documentElement.getAttribute('data-public-profile-status')).toBe('404');
+    expect(
+      document.head
+        .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
+        ?.getAttribute('content')
+    ).toBe('noindex, nofollow');
   });
 
   it('shows the same public CTAs for authenticated users on not found state', async () => {
@@ -388,5 +399,87 @@ describe('pages/PublicProfilePage', () => {
       expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
     });
     expect(screen.getByText('stamps.title')).toBeInTheDocument();
+  });
+
+  it('renders centered masked private profile card without public trips', async () => {
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'private',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: {
+        id: 'user-1',
+        email: 'traveler@example.com',
+        displayName: 'Traveler One',
+        firstName: 'Traveler',
+        lastName: 'One',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: '',
+        city: '',
+        preferredLanguage: 'en',
+        onboardingCompletedAt: null,
+        accountStatus: 'active',
+        publicProfileEnabled: false,
+        defaultPublicTripVisibility: true,
+        usernameChangedAt: null,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+      },
+    });
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByText('publicProfile.visibilityPrivate')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('publicProfile.tripsTitle')).toBeNull();
+    expect(screen.queryByText('publicProfile.privateTitle')).toBeNull();
+    expect(screen.getByText('Traveler O.')).toBeInTheDocument();
+    expect(document.documentElement.getAttribute('data-public-profile-status')).toBeNull();
+    expect(
+      document.head
+        .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
+        ?.getAttribute('content')
+    ).toBe('noindex, nofollow');
+  });
+
+  it('shows edit profile action when visiting own public profile', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.profile = {
+      id: 'user-1',
+      email: 'traveler@example.com',
+      displayName: 'Traveler One',
+      firstName: 'Traveler',
+      lastName: 'One',
+      username: 'traveler',
+      bio: '',
+      gender: '',
+      country: 'DE',
+      city: 'Hamburg',
+      preferredLanguage: 'en',
+      onboardingCompletedAt: null,
+      accountStatus: 'active',
+      publicProfileEnabled: true,
+      defaultPublicTripVisibility: true,
+      usernameChangedAt: null,
+      passportStickerPositions: {},
+      passportStickerSelection: [],
+    };
+    mocks.resolvePublicProfileByHandle.mockResolvedValue({
+      status: 'found',
+      canonicalUsername: 'traveler',
+      redirectFromUsername: null,
+      profile: mocks.auth.profile,
+    });
+
+    renderPublicProfilePage('/u/traveler');
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'summary.editProfile' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'summary.follow' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'summary.message' })).toBeNull();
   });
 });

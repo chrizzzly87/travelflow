@@ -90,7 +90,7 @@ const USERNAME_RESERVED = new Set([
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
 const PROFILE_SELECT_FULL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at, passport_sticker_positions, passport_sticker_selection';
-const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, username_changed_at';
+const PROFILE_SELECT_LEGACY = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status, public_profile_enabled, default_public_trip_visibility, username_changed_at';
 const PROFILE_SELECT_MINIMAL = 'id, display_name, first_name, last_name, username, bio, gender, country, city, preferred_language, onboarding_completed_at, account_status';
 type ProfileSelectTier = 'full' | 'legacy' | 'minimal';
 let profileSelectTierHint: ProfileSelectTier = 'full';
@@ -122,9 +122,19 @@ const normalizeGender = (value: unknown): ProfileGender => {
 };
 
 const toSafeText = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
-const toBooleanWithDefault = (value: unknown, fallback: boolean): boolean => (
-    typeof value === 'boolean' ? value : fallback
-);
+const toBooleanWithDefault = (value: unknown, fallback: boolean): boolean => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === 't' || normalized === '1') return true;
+        if (normalized === 'false' || normalized === 'f' || normalized === '0') return false;
+    }
+    if (typeof value === 'number') {
+        if (value === 1) return true;
+        if (value === 0) return false;
+    }
+    return fallback;
+};
 
 const normalizeUsername = (value: unknown): string => (
     typeof value === 'string'
@@ -218,6 +228,27 @@ const mapProfileRow = (
     passportStickerPositions: normalizePassportStickerPositions(row?.passport_sticker_positions),
     passportStickerSelection: normalizePassportStickerSelection(row?.passport_sticker_selection),
 });
+
+const maskPrivateProfileForPublicPreview = (profile: UserProfileRecord): UserProfileRecord => {
+    const firstName = profile.firstName.trim();
+    const lastInitial = profile.lastName.trim().charAt(0);
+    const maskedDisplayName = firstName
+        ? `${firstName}${lastInitial ? ` ${lastInitial}.` : ''}`
+        : (profile.displayName || profile.username || 'Traveler');
+
+    return {
+        ...profile,
+        displayName: maskedDisplayName,
+        firstName,
+        lastName: lastInitial,
+        bio: '',
+        country: '',
+        city: '',
+        publicProfileEnabled: false,
+        passportStickerPositions: {},
+        passportStickerSelection: [],
+    };
+};
 
 const mapTripRow = (row: Record<string, unknown>): ITrip | null => {
     const rawTrip = row.data as ITrip | undefined;
@@ -646,7 +677,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
                 const canAccess = canViewerAccessProfile(profile);
                 return {
                     status: canAccess ? 'found' : 'private',
-                    profile: canAccess ? profile : null,
+                    profile: canAccess ? profile : maskPrivateProfileForPublicPreview(profile),
                     canonicalUsername: canonicalUsername || profile.username || null,
                     redirectFromUsername: null,
                 };
@@ -656,7 +687,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
                 const canAccess = canViewerAccessProfile(profile);
                 return {
                     status: canAccess ? 'redirect' : 'private',
-                    profile: canAccess ? profile : null,
+                    profile: canAccess ? profile : maskPrivateProfileForPublicPreview(profile),
                     canonicalUsername: canonicalUsername || profile.username || null,
                     redirectFromUsername: normalized,
                 };
@@ -673,8 +704,8 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
                 }
                 return {
                     status: 'private',
-                    profile: null,
-                    canonicalUsername: canonicalUsername || null,
+                    profile: profile.id ? maskPrivateProfileForPublicPreview(profile) : null,
+                    canonicalUsername: canonicalUsername || profile.username || null,
                     redirectFromUsername: null,
                 };
             }
@@ -686,7 +717,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
         if (!canViewerAccessProfile(directProfile)) {
             return {
                 status: 'private',
-                profile: null,
+                profile: maskPrivateProfileForPublicPreview(directProfile),
                 canonicalUsername: directProfile.username || normalized,
                 redirectFromUsername: null,
             };
@@ -719,7 +750,7 @@ export const resolvePublicProfileByHandle = async (handleRaw: string): Promise<P
                     if (!canViewerAccessProfile(targetProfile)) {
                         return {
                             status: 'private',
-                            profile: null,
+                            profile: maskPrivateProfileForPublicPreview(targetProfile),
                             canonicalUsername: targetProfile.username || null,
                             redirectFromUsername: normalized,
                         };

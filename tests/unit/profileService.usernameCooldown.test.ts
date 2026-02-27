@@ -89,6 +89,8 @@ describe('services/profileService username cooldown fallback', () => {
         preferred_language: 'en',
         onboarding_completed_at: '2026-01-01T00:00:00Z',
         account_status: 'active',
+        public_profile_enabled: false,
+        default_public_trip_visibility: false,
         username_changed_at: '2026-01-15T00:00:00Z',
       },
       error: null,
@@ -130,6 +132,35 @@ describe('services/profileService username cooldown fallback', () => {
   it('keeps username_changed_at when profile query falls back to legacy select', async () => {
     const profile = await getCurrentUserProfile();
     expect(profile?.usernameChangedAt).toBe('2026-01-15T00:00:00Z');
+    expect(profile?.publicProfileEnabled).toBe(false);
+    expect(profile?.defaultPublicTripVisibility).toBe(false);
+  });
+
+  it('normalizes legacy visibility values to booleans', async () => {
+    supabaseMocks.legacyMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        display_name: 'Chris',
+        first_name: 'Chris',
+        last_name: 'W',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'DE',
+        city: 'Hamburg',
+        preferred_language: 'en',
+        onboarding_completed_at: '2026-01-01T00:00:00Z',
+        account_status: 'active',
+        public_profile_enabled: 'false',
+        default_public_trip_visibility: 0,
+        username_changed_at: '2026-01-15T00:00:00Z',
+      },
+      error: null,
+    });
+
+    const profile = await getCurrentUserProfile();
+    expect(profile?.publicProfileEnabled).toBe(false);
+    expect(profile?.defaultPublicTripVisibility).toBe(false);
   });
 
   it('returns cooldown for @-prefixed candidate when changed recently', async () => {
