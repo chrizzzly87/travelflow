@@ -465,8 +465,6 @@ export const ProfilePage: React.FC = () => {
                         usernamePrefix: t('summary.usernamePrefix'),
                         bio: t('summary.bioLabel'),
                         bioFallback: t('summary.bioFallback'),
-                        location: t('summary.locationLabel'),
-                        distance: t('summary.distanceLabel'),
                         countries: t('summary.countriesLabel'),
                         countriesEmpty: t('summary.countriesEmpty'),
                         stampsTitle: t('summary.stampsTitle'),

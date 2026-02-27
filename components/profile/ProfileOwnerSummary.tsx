@@ -1,5 +1,11 @@
 import React from 'react';
-import { GlobeHemisphereWest, PencilSimpleLine, ShareNetwork } from '@phosphor-icons/react';
+import {
+  GlobeHemisphereWest,
+  MapPin,
+  Mountains,
+  PencilSimpleLine,
+  ShareNetwork,
+} from '@phosphor-icons/react';
 import { ProfileMetaPanel } from './ProfileMetaPanel';
 import { ProfileAvatarOrbitText } from './ProfileAvatarOrbitText';
 import type { VisitedCountry } from './profileCountryUtils';
@@ -15,8 +21,6 @@ interface ProfileOwnerSummaryLabels {
   usernamePrefix: string;
   bio: string;
   bioFallback: string;
-  location: string;
-  distance: string;
   countries: string;
   countriesEmpty: string;
   stampsTitle: string;
@@ -73,7 +77,7 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
 }) => {
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-      <article className="relative rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
+      <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
         <div className="absolute inset-x-0 top-0 -translate-y-1/2">
           <div className={`relative mx-auto h-24 w-24 ${status.ringClassName}`}>
             <span className="absolute inset-0 inline-flex items-center justify-center rounded-full border-4 border-white bg-accent-100 text-2xl font-black text-accent-800 shadow-md ring-2 ring-current">
@@ -94,7 +98,19 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
           {labels.memberSinceLabel}: <span className="font-semibold text-slate-700">{memberSince}</span>
         </p>
 
-        <div className="mt-4 grid gap-2">
+        <div className="mt-4 space-y-3 text-left">
+          <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <MapPin size={15} weight="duotone" className="text-accent-600" />
+            {location}
+          </p>
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-slate-800">
+            <Mountains size={15} weight="duotone" className="text-accent-600" />
+            {distanceLabel}
+          </p>
+        </div>
+
+        <div className="mt-auto grid gap-2 pt-4">
           <button
             type="button"
             onClick={onEditProfile}
@@ -128,18 +144,11 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
         <ProfileSummaryStats stats={stats} locale={locale} />
         <div className="mt-6">
           <ProfileMetaPanel
-            bio={bio}
-            location={location}
-            distanceLabel={distanceLabel}
             countries={countries}
             stamps={stamps}
             passportCountryCode={passportCountryCode}
             onOpenPassport={onOpenPassport}
             labels={{
-              bio: labels.bio,
-              bioFallback: labels.bioFallback,
-              location: labels.location,
-              distance: labels.distance,
               countries: labels.countries,
               countriesEmpty: labels.countriesEmpty,
               stampsTitle: labels.stampsTitle,

@@ -72,6 +72,7 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
 const USERNAME_COOLDOWN_DAYS = 90;
 const USERNAME_ALLOWED_PATTERN = /^[a-z0-9_-]{3,30}$/;
 const normalizeUsernameInput = (value: string): string => value.trim().toLowerCase().replace(/^@+/, '');
+const clampBio = (value: string): string => value.slice(0, 160);
 
 const hasMissingRequiredField = (form: ProfileFormState): boolean =>
     REQUIRED_FIELDS.some((key) => !String(form[key] || '').trim());
@@ -153,7 +154,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             firstName: cachedProfile.firstName || '',
             lastName: cachedProfile.lastName || '',
             username: cachedProfile.username || '',
-            bio: cachedProfile.bio || '',
+            bio: clampBio(cachedProfile.bio || ''),
             gender: cachedProfile.gender || '',
             country: cachedProfile.country || '',
             city: cachedProfile.city || '',
@@ -400,7 +401,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
             setForm((current) => ({
                 ...current,
                 username: updated.username || current.username,
-                bio: updated.bio || '',
+                bio: clampBio(updated.bio || ''),
                 publicProfileEnabled: updated.publicProfileEnabled !== false,
                 defaultPublicTripVisibility: updated.defaultPublicTripVisibility !== false,
             }));
@@ -582,12 +583,13 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t('settings.fields.bio')}</span>
                                     <textarea
                                         value={form.bio}
-                                        onChange={(event) => updateField('bio', event.target.value)}
+                                        onChange={(event) => updateField('bio', clampBio(event.target.value))}
                                         rows={3}
                                         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-accent-400 focus:ring-2 focus:ring-accent-200"
-                                        maxLength={300}
+                                        maxLength={160}
                                     />
                                     <p className="text-xs text-slate-500">{t('settings.bioHelp')}</p>
+                                    <p className="text-xs text-slate-400">{form.bio.length}/160</p>
                                 </label>
                                 <div className="grid gap-3 md:grid-cols-3">
                                     <label className="space-y-1">
