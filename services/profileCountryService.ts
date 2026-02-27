@@ -30,6 +30,22 @@ const COUNTRY_BY_CODE = new Map(
 
 export const getProfileCountryOptions = (): ProfileCountryOption[] => COUNTRY_OPTIONS;
 
+const getLocalizedCountryName = (code: string, locale?: string | AppLanguage): string => {
+    const normalizedCode = normalizeProfileCountryCode(code);
+    if (!normalizedCode) return '';
+
+    const normalizedLocale = normalizeLocale(locale || DEFAULT_LOCALE);
+    try {
+        const displayNames = new Intl.DisplayNames([normalizedLocale], { type: 'region' });
+        const localizedName = displayNames.of(normalizedCode);
+        if (localizedName) return localizedName;
+    } catch {
+        // Ignore and fall back to source country label.
+    }
+
+    return COUNTRY_BY_CODE.get(normalizedCode)?.name || normalizedCode;
+};
+
 export const isProfileCountryCode = (value: unknown): value is string => (
     typeof value === 'string'
     && /^[A-Z]{2}$/.test(value.trim().toUpperCase())
@@ -49,10 +65,18 @@ export const normalizeProfileCountryCode = (value: unknown): string => {
     return '';
 };
 
-export const getProfileCountryOptionByCode = (code?: string | null): ProfileCountryOption | null => {
+export const getProfileCountryOptionByCode = (
+    code?: string | null,
+    locale?: string | AppLanguage
+): ProfileCountryOption | null => {
     const normalizedCode = normalizeProfileCountryCode(code || '');
     if (!normalizedCode) return null;
-    return COUNTRY_BY_CODE.get(normalizedCode) || null;
+    const source = COUNTRY_BY_CODE.get(normalizedCode);
+    if (!source) return null;
+    return {
+        ...source,
+        name: getLocalizedCountryName(normalizedCode, locale),
+    };
 };
 
 export const getProfileCountryDisplayName = (
@@ -65,41 +89,47 @@ export const getProfileCountryDisplayName = (
     const normalizedCode = normalizeProfileCountryCode(raw);
     if (!normalizedCode) return raw;
 
-    const country = COUNTRY_BY_CODE.get(normalizedCode);
-    const normalizedLocale = normalizeLocale(locale || DEFAULT_LOCALE);
-    try {
-        const displayNames = new Intl.DisplayNames([normalizedLocale], { type: 'region' });
-        const localizedName = displayNames.of(normalizedCode);
-        if (localizedName) return localizedName;
-    } catch {
-        // Ignore and fall back to the country list label.
-    }
-
-    return country?.name || normalizedCode;
+    return getLocalizedCountryName(normalizedCode, locale);
 };
 
 const includesToken = (token: string, query: string): boolean => token.includes(query);
 const startsWithToken = (token: string, query: string): boolean => token.startsWith(query);
 
-export const searchProfileCountryOptions = (query: string, limit = 24): ProfileCountryOption[] => {
+export const searchProfileCountryOptions = (
+    query: string,
+    limit = 24,
+    locale?: string | AppLanguage
+): ProfileCountryOption[] => {
     const normalizedQuery = normalizeCountrySearchToken(query);
     const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 24;
+    const normalizedLocale = normalizeLocale(locale || DEFAULT_LOCALE);
+
+    const localizedOptions = COUNTRY_OPTIONS.map((country) => ({
+        ...country,
+        name: getLocalizedCountryName(country.code, normalizedLocale),
+    }));
 
     if (!normalizedQuery) {
-        return COUNTRY_OPTIONS.slice(0, normalizedLimit);
+        return localizedOptions.slice(0, normalizedLimit);
     }
 
-    const startsWithMatches = COUNTRY_OPTIONS.filter((country) => {
+    const startsWithMatches = localizedOptions.filter((country) => {
         const nameToken = normalizeCountrySearchToken(country.name);
+        const fallbackNameToken = normalizeCountrySearchToken(COUNTRY_BY_CODE.get(country.code)?.name || '');
         const codeToken = country.code.toLocaleLowerCase();
-        return startsWithToken(nameToken, normalizedQuery) || startsWithToken(codeToken, normalizedQuery);
+        return startsWithToken(nameToken, normalizedQuery)
+            || startsWithToken(fallbackNameToken, normalizedQuery)
+            || startsWithToken(codeToken, normalizedQuery);
     });
 
-    const includesMatches = COUNTRY_OPTIONS.filter((country) => {
+    const includesMatches = localizedOptions.filter((country) => {
         if (startsWithMatches.some((match) => match.code === country.code)) return false;
         const nameToken = normalizeCountrySearchToken(country.name);
+        const fallbackNameToken = normalizeCountrySearchToken(COUNTRY_BY_CODE.get(country.code)?.name || '');
         const codeToken = country.code.toLocaleLowerCase();
-        return includesToken(nameToken, normalizedQuery) || includesToken(codeToken, normalizedQuery);
+        return includesToken(nameToken, normalizedQuery)
+            || includesToken(fallbackNameToken, normalizedQuery)
+            || includesToken(codeToken, normalizedQuery);
     });
 
     return [...startsWithMatches, ...includesMatches].slice(0, normalizedLimit);

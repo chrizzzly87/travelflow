@@ -44,4 +44,13 @@ describe('services/profileCountryService', () => {
     const baliMatches = searchProfileCountryOptions('bali', 10);
     expect(baliMatches.some((entry) => entry.name.toLowerCase() === 'bali')).toBe(false);
   });
+
+  it('returns locale-aware option labels and supports localized search terms', () => {
+    const optionInGerman = getProfileCountryOptionByCode('DE', 'de');
+    expect(optionInGerman).toBeTruthy();
+    expect(optionInGerman?.name).toBe(getProfileCountryDisplayName('DE', 'de'));
+
+    const germanMatches = searchProfileCountryOptions('deut', 10, 'de');
+    expect(germanMatches.some((entry) => entry.code === 'DE')).toBe(true);
+  });
 });

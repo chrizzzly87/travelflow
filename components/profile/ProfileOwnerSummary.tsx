@@ -77,6 +77,9 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   locale = 'en',
   showAvatarOrbitText = false,
 }) => {
+  const resolvedBio = bio.trim();
+  const fallbackBio = labels.bioFallback.trim();
+
   return (
     <section className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
       <article className="relative flex h-full min-h-[540px] flex-col rounded-2xl border border-slate-200 bg-white px-6 pb-6 pt-16 text-center shadow-sm">
@@ -101,7 +104,9 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
         </p>
 
         <div className="mt-4 space-y-3 text-left">
-          <p className="text-sm leading-6 text-slate-700">{bio || labels.bioFallback}</p>
+          {(resolvedBio || fallbackBio) ? (
+            <p className="text-sm leading-6 text-slate-700">{resolvedBio || fallbackBio}</p>
+          ) : null}
           <div className="flex flex-col gap-2">
             <p className="flex w-full items-center gap-2 text-sm font-semibold text-slate-800">
               <MapPin size={15} weight="duotone" className="text-accent-600" />

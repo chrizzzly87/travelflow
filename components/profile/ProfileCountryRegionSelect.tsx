@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { CaretDown, Check, GlobeHemisphereWest, X } from '@phosphor-icons/react';
+import { CaretDown, Check, GlobeHemisphereWest } from '@phosphor-icons/react';
 import { FlagIcon } from '../flags/FlagIcon';
 import {
     getProfileCountryOptionByCode,
@@ -9,10 +9,10 @@ import {
 
 interface ProfileCountryRegionSelectProps {
     value: string;
+    locale?: string;
     disabled?: boolean;
     inputClassName?: string;
     placeholder?: string;
-    clearLabel?: string;
     emptyLabel?: string;
     toggleLabel?: string;
     onValueChange: (nextValue: string) => void;
@@ -27,10 +27,10 @@ const clampIndex = (index: number, max: number): number => {
 
 export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProps> = ({
     value,
+    locale,
     disabled = false,
     inputClassName = '',
     placeholder = 'Search country or region',
-    clearLabel = 'Clear selection',
     emptyLabel = 'No matches',
     toggleLabel = 'Toggle country options',
     onValueChange,
@@ -44,13 +44,13 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
     const [activeIndex, setActiveIndex] = useState(0);
 
     const selectedCountry = useMemo(
-        () => getProfileCountryOptionByCode(value),
-        [value]
+        () => getProfileCountryOptionByCode(value, locale),
+        [value, locale]
     );
 
     const options = useMemo(
-        () => searchProfileCountryOptions(search, 24),
-        [search]
+        () => searchProfileCountryOptions(search, 24, locale),
+        [search, locale]
     );
 
     useEffect(() => {
@@ -72,9 +72,11 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
 
     const selectCountry = (country: ProfileCountryOption) => {
         onValueChange(country.code);
-        setSearch('');
-        setIsOpen(false);
-        inputRef.current?.blur();
+        requestAnimationFrame(() => {
+            setSearch('');
+            setIsOpen(false);
+            inputRef.current?.blur();
+        });
     };
 
     const handleInputFocus = () => {
@@ -157,20 +159,6 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                     onKeyDown={handleKeyDown}
                 />
                 <div className="absolute inset-y-0 end-2 flex items-center gap-1">
-                    {selectedCountry && !disabled && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onValueChange('');
-                                setSearch('');
-                                setIsOpen(false);
-                            }}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                            aria-label={clearLabel}
-                        >
-                            <X size={14} weight="bold" />
-                        </button>
-                    )}
                     <button
                         type="button"
                         onClick={() => {
@@ -204,6 +192,7 @@ export const ProfileCountryRegionSelect: React.FC<ProfileCountryRegionSelectProp
                                     type="button"
                                     role="option"
                                     aria-selected={country.code === value}
+                                    onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => selectCountry(country)}
                                     className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition-colors ${
                                         index === activeIndex ? 'bg-accent-50 text-accent-900' : 'text-slate-700 hover:bg-slate-50'
