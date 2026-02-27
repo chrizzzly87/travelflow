@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isAuthBootstrapCriticalPath,
   shouldAutoClearSimulatedLoginOnRealAdminSession,
   shouldEnableDevAdminBypass,
 } from '../../contexts/AuthContext';
@@ -14,6 +15,13 @@ describe('contexts/AuthContext dev admin bypass', () => {
 
   it('disables bypass after explicit bypass logout', () => {
     expect(shouldEnableDevAdminBypass(true, 'true', true, '/admin/dashboard')).toBe(false);
+  });
+});
+
+describe('contexts/AuthContext auth bootstrap critical paths', () => {
+  it('treats public profile routes as critical bootstrap paths', () => {
+    expect(isAuthBootstrapCriticalPath('/u/traveler')).toBe(true);
+    expect(isAuthBootstrapCriticalPath('/de/u/traveler')).toBe(true);
   });
 });
 

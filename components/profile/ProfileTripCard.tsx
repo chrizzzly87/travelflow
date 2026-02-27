@@ -279,6 +279,7 @@ export const ProfileTripCard: React.FC<ProfileTripCardProps> = ({
                   <span
                     className="example-city-lane-hitbox block"
                     data-tooltip={cityLane.title}
+                    title={cityLane.title}
                     style={{ flexGrow: cityLane.nights, flexBasis: 0 }}
                   >
                     <span

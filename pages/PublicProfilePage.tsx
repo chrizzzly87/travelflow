@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileVisitorSummary } from '../components/profile/ProfileVisitorSummary';
 import { ProfileTripCard } from '../components/profile/ProfileTripCard';
 import { ProfileTripCardSkeleton } from '../components/profile/ProfileTripCardSkeleton';
@@ -61,7 +62,7 @@ export const PublicProfilePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const { t, i18n } = useTranslation('profile');
-    const { isAuthenticated, profile: viewerProfile } = useAuth();
+    const { isLoading: isAuthLoading, isAuthenticated, profile: viewerProfile } = useAuth();
 
     const [state, setState] = useState<ProfileState>({
         status: 'loading',
@@ -86,9 +87,12 @@ export const PublicProfilePage: React.FC = () => {
         () => normalizeUsername(viewerProfile?.username),
         [viewerProfile?.username]
     );
+    const viewerProfileId = viewerProfile?.id || null;
     const isPassportDialogOpen = searchParams.get(PUBLIC_PROFILE_PASSPORT_QUERY_KEY) === PUBLIC_PROFILE_PASSPORT_QUERY_VALUE;
 
     useEffect(() => {
+        if (isAuthLoading) return;
+
         const handle = (username || '').trim().toLowerCase();
         if (!handle) {
             setState({ status: 'not_found', profile: null });
@@ -146,7 +150,7 @@ export const PublicProfilePage: React.FC = () => {
                 }
 
                 if (result.status === 'private') {
-                    if (isAuthenticated && viewerProfile && viewerHandle === handle) {
+                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
                         await loadFirstTripsPage(viewerProfile);
                         return;
                     }
@@ -155,7 +159,7 @@ export const PublicProfilePage: React.FC = () => {
                 }
 
                 if (result.status === 'not_found' || !result.profile) {
-                    if (isAuthenticated && viewerProfile && viewerHandle === handle) {
+                    if (isAuthenticated && viewerProfileId && viewerProfile && viewerHandle === handle) {
                         await loadFirstTripsPage(viewerProfile);
                         return;
                     }
@@ -175,7 +179,7 @@ export const PublicProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfile]);
+    }, [isAuthLoading, isAuthenticated, navigate, profileLoadErrorLabel, username, viewerHandle, viewerProfileId]);
 
     const loadMoreTrips = useCallback(() => {
         if (state.status !== 'found' || !state.profile || !hasMoreTrips || isTripsLoading || isTripsLoadingMore) return;
@@ -276,9 +280,9 @@ export const PublicProfilePage: React.FC = () => {
     }, [handlePassportDialogOpenChange]);
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <SiteHeader />
-            <main className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
+            <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 {state.status === 'loading' && (
                     <>
                         <section className="rounded-2xl border border-slate-200 bg-white px-5 py-8">
@@ -522,6 +526,7 @@ export const PublicProfilePage: React.FC = () => {
                     />
                 )}
             </main>
+            <SiteFooter />
         </div>
     );
 };

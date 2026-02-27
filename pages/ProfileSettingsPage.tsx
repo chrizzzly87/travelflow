@@ -4,6 +4,7 @@ import { CaretRight, SpinnerGap } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { Switch } from '../components/ui/switch';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { PROFILE_GENDER_OPTIONS } from '../config/profileFields';
@@ -426,9 +427,9 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <main className="mx-auto w-full max-w-7xl space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+            <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
                 <section className="space-y-2">
                     <nav className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         <NavLink to={buildPath('profile')} className="transition-colors hover:text-accent-700">
@@ -712,6 +713,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                     )}
                 </section>
             </main>
+            <SiteFooter />
         </div>
     );
 };

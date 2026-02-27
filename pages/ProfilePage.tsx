@@ -4,6 +4,7 @@ import { IdentificationCard, SealCheck, ShieldCheck } from '@phosphor-icons/reac
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileHero } from '../components/profile/ProfileHero';
 import { ProfileOwnerSummary } from '../components/profile/ProfileOwnerSummary';
 import { ProfileTripTabs } from '../components/profile/ProfileTripTabs';
@@ -396,19 +397,20 @@ export const ProfilePage: React.FC = () => {
 
     if (isProfileLoading && !profile) {
         return (
-            <div className="min-h-screen bg-slate-50">
+            <div className="flex min-h-screen flex-col bg-slate-50">
                 <SiteHeader hideCreateTrip />
-                <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-12 md:px-8 md:pt-14">
+                <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
                 </main>
+                <SiteFooter />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="flex min-h-screen flex-col bg-slate-50">
             <SiteHeader hideCreateTrip />
-            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
+            <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
                     greeting={greeting.greeting}
                     name={greetingDisplayName}
@@ -722,6 +724,7 @@ export const ProfilePage: React.FC = () => {
                     }}
                 />
             </main>
+            <SiteFooter />
         </div>
     );
 };

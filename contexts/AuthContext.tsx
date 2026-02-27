@@ -34,11 +34,12 @@ const loadSupabaseClient = async () => {
     return supabase;
 };
 
-const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
+export const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
     const normalizedPath = stripLocalePrefix(pathname || '/');
     if (normalizedPath === '/login') return true;
     if (normalizedPath.startsWith('/auth/')) return true;
     if (normalizedPath.startsWith('/profile')) return true;
+    if (normalizedPath.startsWith('/u/')) return true;
     if (normalizedPath.startsWith('/admin')) return true;
     if (normalizedPath.startsWith('/trip')) return true;
     if (normalizedPath.startsWith('/create-trip')) return true;

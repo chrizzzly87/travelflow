@@ -3,6 +3,7 @@ import { Navigate, NavLink } from 'react-router-dom';
 import { CaretLeft, IdentificationCard } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { SiteHeader } from '../components/navigation/SiteHeader';
+import { SiteFooter } from '../components/marketing/SiteFooter';
 import { ProfileStampBookViewer } from '../components/profile/ProfileStampBookViewer';
 import { buildProfileStampProgress, computeProfileStampMetrics } from '../components/profile/profileStamps';
 import { useAuth } from '../hooks/useAuth';
@@ -74,19 +75,20 @@ export const ProfileStampsPage: React.FC = () => {
 
   if (isProfileLoading && !profile) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="flex min-h-screen flex-col bg-slate-50">
         <SiteHeader hideCreateTrip />
-        <main className="mx-auto w-full max-w-7xl px-5 pb-14 pt-8 md:px-8 md:pt-10">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-8 md:px-8 md:pt-10">
           <div className="h-20 animate-pulse rounded-lg bg-slate-100" aria-hidden="true" />
         </main>
+        <SiteFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <SiteHeader hideCreateTrip />
-      <main className="mx-auto w-full max-w-7xl space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-5 pb-14 pt-8 md:px-8 md:pt-10">
         <nav className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
           <CaretLeft size={14} weight="bold" className="text-slate-500" />
           <NavLink
@@ -126,6 +128,7 @@ export const ProfileStampsPage: React.FC = () => {
           />
         </section>
       </main>
+      <SiteFooter />
     </div>
   );
 };
