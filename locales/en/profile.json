@@ -2,7 +2,35 @@
   "hero": {
     "loading": "Loading profile...",
     "inspirationIntro": "Sounds good? Check our",
-    "inspirationCta": "Inspirations for {country}"
+    "inspirationCta": "Inspirations for {country}",
+    "greetingFacts": {
+      "haw-aloha": "Used in Hawaii for hello, goodbye, and warmth in everyday life.",
+      "kor-annyeong": "A polite Korean greeting used in most daily situations.",
+      "jpn-konnichiwa": "A standard daytime Japanese greeting with a friendly tone.",
+      "tha-sawasdee": "Thai greeting used throughout the day, often paired with a wai; speakers add polite endings by their own gender (khrap for men, kha for women).",
+      "hin-namaste": "A respectful greeting in India often used in formal and informal settings.",
+      "spa-hola": "A simple Spanish greeting used in almost any social context.",
+      "deu-guten-tag": "A formal German greeting used in daytime conversations.",
+      "fra-bonjour": "A common French daytime greeting used in both casual and formal settings.",
+      "ita-ciao": "Italian greeting used casually for hello and goodbye.",
+      "ara-marhaba": "A warm Arabic greeting broadly understood across regions.",
+      "deu-moin": "Classic in Northern Germany at any hour; locals joke that “Moin Moin” is mostly said by tourists.",
+      "gsw-gruezi": "A polite Swiss German hello often heard in shops, trains, and mountain towns.",
+      "eus-kaixo": "Basque greeting used in Euskadi; hearing it is a quick sign the region keeps its language alive.",
+      "gle-dia-dhuit": "Irish for “hello,” literally “God be with you,” and still common in Gaeltacht areas.",
+      "cym-shwmae": "Friendly Welsh hello that often appears on bilingual signs and local radio intros.",
+      "isl-godan-daginn": "Icelandic “good day”; locals often shorten it in casual speech, especially in Reykjavík cafés.",
+      "ces-ahoj": "Popular Czech hello among friends; it began as a sailors’ call and stuck in daily speech.",
+      "swe-hej": "Default Swedish hello for both friends and coworkers, often doubled in cheerful “hej hej.”",
+      "nld-hoi": "Casual Dutch greeting common in the Netherlands and Flanders, especially among younger speakers.",
+      "mri-kia-ora": "Māori greeting in New Zealand used for hello, thanks, and general positive energy.",
+      "khm-suostei": "Khmer greeting heard across Cambodia; respectful tone matters as much as the words.",
+      "lao-sabaidee": "Lao greeting also tied to well-being, reflecting a calm and friendly social style.",
+      "swa-jambo": "Widely recognized Swahili greeting in East Africa; many locals also use “Hujambo?” for “How are you?”",
+      "yue-nei-hou": "Cantonese greeting common in Hong Kong; tones matter, so pronunciation changes meaning fast.",
+      "zho-ni-hao": "Mandarin greeting used across China; in casual chats people may jump straight to daily-life questions.",
+      "fallback": "A universal greeting to kick off your next trip idea."
+    }
   },
   "tabs": {
     "recent": "Recent",

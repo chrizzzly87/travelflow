@@ -90,6 +90,12 @@ summary: "Profile now ships as a full hub with animated greeting hero, public ha
 - [x] [Fixed] 🔐 Removed deferred first-interaction auth bootstrap so auth state now initializes on page load across routes.
 - [x] [Improved] 🎯 Aligned profile trip color-lane hover affordance with inspiration example cards for consistent interaction feedback.
 - [x] [Improved] 🧷 Added cache-busting for the public-profile not-found footprint artwork to avoid stale CDN/browser image mismatches.
+- [x] [Improved] 🛂 Reworked public-profile not-found messaging to a passport-focused state with “This passport is invalid” headline and updated visual.
+- [x] [Improved] 🔒 Added a privacy-aware public-profile view that shows masked identity details when a traveler disables public visibility, while still allowing admin moderation access with clear public/private status badges.
+- [x] [Improved] 🪪 Updated public-profile self-visits so profile owners now get an “Edit profile” action instead of follow/message controls.
+- [x] [Improved] 🧱 Moved bio, location, and total distance into the left profile identity card and pinned card actions to the bottom for cleaner hierarchy.
+- [x] [Improved] ✍️ Limited profile bios to 160 characters in settings with live length feedback.
+- [x] [Improved] 🌐 Localized greeting fun-fact copy keys across all active profile locales so hero context lines render consistently.
 - [x] [Improved] 🧼 Removed the always-on soft marketing background gradient layer to prevent first-paint mismatch flashes.
 - [x] [Improved] ♿ Ensured profile/stamps motion effects respect reduced-motion preferences and removed loading-text flicker in profile settings.
 - [x] [Fixed] 🛠️ Fixed the profile settings crash caused by an invalid empty-value gender select option.

@@ -147,6 +147,9 @@ export const ProfilePage: React.FC = () => {
         greeting.nameOrder,
         { primaryNameOnly: true }
     );
+    const greetingContext = t(`hero.greetingFacts.${greeting.id}`, {
+        defaultValue: greeting.context,
+    });
 
     const profileCountryLabel = getProfileCountryDisplayName(profile?.country, appLocale);
     const locationLabel = [profile?.city || '', profileCountryLabel]
@@ -416,7 +419,7 @@ export const ProfilePage: React.FC = () => {
                     name={greetingDisplayName}
                     transliteration={greeting.transliteration}
                     ipa={greeting.ipa}
-                    context={greeting.context}
+                    context={greetingContext}
                     ctaIntroLabel={t('hero.inspirationIntro')}
                     ctaLinkLabel={t('hero.inspirationCta', {
                         country: greeting.inspirationCountry,

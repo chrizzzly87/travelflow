@@ -249,6 +249,12 @@ describe('pages/PublicProfilePage', () => {
       expect(screen.getByRole('link', { name: 'publicProfile.ctaGetInspired' })).toBeInTheDocument();
     });
     expect(screen.getByText('publicProfile.notFoundInvalidPassportTitle')).toBeInTheDocument();
+    expect(document.documentElement.getAttribute('data-public-profile-status')).toBe('404');
+    expect(
+      document.head
+        .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
+        ?.getAttribute('content')
+    ).toBe('noindex, nofollow');
   });
 
   it('shows the same public CTAs for authenticated users on not found state', async () => {
@@ -430,6 +436,12 @@ describe('pages/PublicProfilePage', () => {
 
     expect(screen.queryByText('publicProfile.tripsTitle')).toBeNull();
     expect(screen.getByText('Traveler O.')).toBeInTheDocument();
+    expect(document.documentElement.getAttribute('data-public-profile-status')).toBeNull();
+    expect(
+      document.head
+        .querySelector('meta[name="robots"][data-managed-by="public-profile"]')
+        ?.getAttribute('content')
+    ).toBe('noindex, nofollow');
   });
 
   it('shows edit profile action when visiting own public profile', async () => {
