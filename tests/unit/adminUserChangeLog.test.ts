@@ -153,7 +153,7 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
-  it('prefers timeline_diff_v1 over legacy timeline_diff when both are present', () => {
+  it('ignores legacy timeline_diff payload when timeline_diff_v1 is present', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',
       target_type: 'trip',
@@ -194,7 +194,7 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
-  it('falls back to legacy timeline_diff when v1 payload is absent', () => {
+  it('does not derive timeline entries from legacy timeline_diff when v1 is absent', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',
       target_type: 'trip',
@@ -214,13 +214,7 @@ describe('services/adminUserChangeLog', () => {
       },
     }));
 
-    expect(entries).toEqual([
-      {
-        key: 'transport_mode · Legacy Segment',
-        beforeValue: 'boat',
-        afterValue: 'plane',
-      },
-    ]);
+    expect(entries).toEqual([]);
   });
 
   it('derives visual-only diff entries from visual version labels when snapshots are unchanged', () => {

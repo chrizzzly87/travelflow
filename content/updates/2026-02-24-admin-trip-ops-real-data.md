@@ -51,6 +51,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 📐 Added a dedicated timeline diff event contract doc and regression tests that enforce v1-only writes with legacy-read fallback precedence.
 - [ ] [Internal] 🧭 Added typed secondary trip-update facets (`secondary_action_codes`) for transport/activity/segment operations and expanded timeline-control diff coverage (`Timeline mode`, `Timeline layout`, `Zoomed in`).
 - [ ] [Internal] 🏷️ Admin audit and user drawer now render typed secondary facet chips for `trip.updated` rows while keeping the primary action pill compact.
+- [ ] [Internal] 🧼 Retired legacy `timeline_diff` read fallback so admin/user timeline parsing now uses `timeline_diff_v1` exclusively.
 - [ ] [Internal] 🧬 Added per-operation correlation IDs to trip and failure event metadata for easier cross-table incident tracing.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.

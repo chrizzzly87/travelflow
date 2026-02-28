@@ -231,9 +231,8 @@ const normalizeTimelineEntityType = (value: string | null): string => {
 
 const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
     const timelineDiffV1 = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
-    const timelineDiffLegacy = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
-    const timelineDiff = Object.keys(timelineDiffV1).length > 0 ? timelineDiffV1 : timelineDiffLegacy;
-    if (Object.keys(timelineDiff).length === 0) return [];
+    if (Object.keys(timelineDiffV1).length === 0) return [];
+    const timelineDiff = timelineDiffV1;
 
     const entries: UserChangeDiffEntry[] = [];
     const transportModeChanges = normalizeTimelineDiffItems(timelineDiff.transport_mode_changes);

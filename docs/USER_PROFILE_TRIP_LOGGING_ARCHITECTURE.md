@@ -65,7 +65,7 @@ This document is the operational source of truth for:
   - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
   - `secondary_action_codes` (compact typed facets for filtering and future secondary pills)
-- Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
+- Legacy `timeline_diff` compatibility has been retired; admin rendering reads `timeline_diff_v1` only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 
@@ -149,7 +149,7 @@ This document is the operational source of truth for:
 ## Remaining Implementation Plan
 
 ### Phase 1 (remaining)
-- Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
+- [x] Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
 - Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
 - Add deterministic correlation IDs between upsert/version/archive operations.
 

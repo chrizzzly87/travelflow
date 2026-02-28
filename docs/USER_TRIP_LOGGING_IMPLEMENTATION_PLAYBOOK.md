@@ -7,7 +7,7 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 - `trip_versions.data` is the canonical **snapshot** history.
 - `trip_user_events` / `profile_user_events` are compact timeline events.
 - `timeline_diff_v1` is the active write format for trip update diffs.
-- Legacy `timeline_diff` is read-only compatibility and must not be written by new code.
+- Legacy `timeline_diff` is deprecated and must neither be written nor read by new code.
 
 ## Required write paths
 - Profile updates:
@@ -39,8 +39,7 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 - Keep primary action compact (`trip.updated`); use secondary facets for filter/detail UIs.
 
 ## Admin rendering requirements
-- User/admin timelines must read `timeline_diff_v1` first.
-- Legacy `timeline_diff` may be used only as fallback for old rows.
+- User/admin timelines must read `timeline_diff_v1` only.
 - “Show complete diff” must resolve snapshot compare from `trip_versions` when version IDs exist.
 
 ## Tests required for behavioral changes

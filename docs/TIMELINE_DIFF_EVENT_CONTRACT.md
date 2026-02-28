@@ -6,14 +6,14 @@
 
 ## Current rule (authoritative)
 - **Write format**: `metadata.timeline_diff_v1` only.
-- **Legacy read compatibility**: `metadata.timeline_diff` may still be read for old rows until legacy rows are fully retired.
-- **Do not add new `timeline_diff` writes.**
+- **Read format**: `metadata.timeline_diff_v1` only.
+- **Do not add new `timeline_diff` writes or reads.**
 
 ## Producer and consumer
 - Producer:
   - `services/dbService.ts` (`dbCreateTripVersion`) writes `timeline_diff_v1`.
 - Consumer:
-  - `services/adminUserChangeLog.ts` reads `timeline_diff_v1` first, then falls back to legacy `timeline_diff`.
+  - `services/adminUserChangeLog.ts` reads `timeline_diff_v1` only.
 
 ## `timeline_diff_v1` shape
 ```json
@@ -68,10 +68,8 @@
 - `tests/browser/dbArchiveTrip.browser.test.ts`
   - verifies archive and archive-failure metadata includes correlation IDs
 - `tests/unit/adminUserChangeLog.test.ts`
-  - verifies v1 parsing, legacy fallback parsing, and v1 precedence when both payloads exist
+  - verifies v1 parsing and that legacy-only payloads no longer render timeline entries
 
 ## Migration safety notes
-- Keep legacy read fallback until you confirm all active environments no longer contain legacy-only rows.
-- Remove fallback in one PR with:
-  - explicit doc update here and in `docs/USER_PROFILE_TRIP_LOGGING_ARCHITECTURE.md`
-  - regression tests updated to remove legacy path expectations.
+- Legacy fallback has been retired in this codebase.
+- If a legacy-only row appears in an environment, backfill or rewrite that row to `timeline_diff_v1` rather than reintroducing dual-read logic.
