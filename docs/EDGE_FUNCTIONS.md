@@ -10,6 +10,7 @@ Shared helpers live in `netlify/edge-lib/`.
 | `ai-generate.ts` | `/api/ai/generate` | Server-side AI itinerary generation endpoint (Gemini, OpenAI, Anthropic, OpenRouter allowlisted models) | API |
 | `ai-benchmark.ts` | `/api/internal/ai/benchmark`, `/api/internal/ai/benchmark/export`, `/api/internal/ai/benchmark/cleanup`, `/api/internal/ai/benchmark/rating`, `/api/internal/ai/benchmark/telemetry`, `/api/internal/ai/benchmark/preferences` | Internal benchmark API (session/run persistence, execution, export, cleanup, persisted run ratings/comments, telemetry summaries, and admin preference persistence for benchmark model targets/presets) with bearer-token admin role enforcement (`get_current_user_access`). Session export supports `includeLogs=1` to bundle prompt/scenario + run logs. | API |
 | `admin-iam.ts` | `/api/internal/admin/iam` | Internal admin identity API for invite/direct user provisioning and hard-delete actions via Supabase Auth admin endpoints. | API |
+| `admin-audit-export.ts` | `/api/internal/admin/audit/replay-export` | Internal admin audit replay export API that builds server-side forensic bundles and writes persisted `admin.audit.export` audit entries. | API |
 | `site-og-meta.ts` | Explicit static+localized allowlist in `netlify.toml` (home, marketing pages, legal pages, `/create-trip`, `/example/*`, localized variants) | Injects SEO & Open Graph meta tags with static-first OG image lookup and dynamic fallback | Middleware |
 | `site-og-image.tsx` | `/api/og/site` | Generates 1200x630 branded OG images for site pages | Image generator |
 | `trip-og-meta.ts` | `/s/*`, `/trip/*` | Injects OG meta tags for shared and private trip pages | Middleware |
@@ -145,8 +146,8 @@ The CI validator (`scripts/validate-edge-functions.mjs`) enforces this rule at b
 | `TF_ENABLE_ADMIN_KEY_FALLBACK` | `ai-benchmark.ts` | Enables optional `x-tf-admin-key` fallback auth path (disabled by default) |
 | `VITE_SUPABASE_URL` | `ai-benchmark.ts` | Supabase REST URL used for benchmark session/run/trip persistence |
 | `VITE_SUPABASE_ANON_KEY` | `ai-benchmark.ts` | Supabase REST anon key used with caller bearer token for owner-scoped RLS access |
-| `VITE_SUPABASE_URL` | `admin-iam.ts` | Supabase project URL used for Auth and REST calls |
-| `VITE_SUPABASE_ANON_KEY` | `admin-iam.ts` | Supabase anon key used with caller bearer token for admin-role verification RPC |
+| `VITE_SUPABASE_URL` | `admin-iam.ts`, `admin-audit-export.ts` | Supabase project URL used for Auth and REST calls |
+| `VITE_SUPABASE_ANON_KEY` | `admin-iam.ts`, `admin-audit-export.ts` | Supabase anon key used with caller bearer token for admin role + permission verification RPCs |
 | `OPENAI_API_KEY` | `ai-generate.ts` | Server-side key for OpenAI model execution in `/api/ai/generate` |
 | `ANTHROPIC_API_KEY` | `ai-generate.ts` | Server-side key for Anthropic model execution in `/api/ai/generate` |
 | `OPENROUTER_API_KEY` | `ai-generate.ts` | Server-side key for curated OpenRouter model execution in `/api/ai/generate` |

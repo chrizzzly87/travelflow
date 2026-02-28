@@ -71,7 +71,9 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
 import {
     buildUserChangeDiffEntries,
+    formatUserChangeDiffValue,
     resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
 
 type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
@@ -1228,11 +1230,13 @@ export const AdminUsersPage: React.FC = () => {
     const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
         const diffEntries = buildUserChangeDiffEntries(log);
         const actionPresentation = resolveUserChangeActionPresentation(log, diffEntries);
+        const secondaryFacets = resolveUserChangeSecondaryFacets(log);
         const visibleDiffEntries = diffEntries.slice(0, 4);
         const hiddenDiffCount = Math.max(0, diffEntries.length - visibleDiffEntries.length);
         return {
             log,
             actionPresentation,
+            secondaryFacets,
             visibleDiffEntries,
             hiddenDiffCount,
         };
@@ -3221,7 +3225,7 @@ export const AdminUsersPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
                                         <div className="space-y-2">
-                                            {selectedUserChangeEntries.map(({ log, actionPresentation, visibleDiffEntries, hiddenDiffCount }) => (
+                                            {selectedUserChangeEntries.map(({ log, actionPresentation, secondaryFacets, visibleDiffEntries, hiddenDiffCount }) => (
                                                 <article key={log.id} className="rounded-lg border border-slate-200 p-3">
                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                         <div className="text-[11px] font-semibold text-slate-500">
@@ -3231,6 +3235,19 @@ export const AdminUsersPage: React.FC = () => {
                                                             {actionPresentation.label}
                                                         </span>
                                                     </div>
+                                                    {secondaryFacets.length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                            {secondaryFacets.map((facet) => (
+                                                                <span
+                                                                    key={`${log.id}-${facet.code}`}
+                                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                                    title={facet.code}
+                                                                >
+                                                                    {facet.label}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                     <div className="mt-2 space-y-1 text-[11px] text-slate-600">
                                                         <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
                                                         {log.source && (
@@ -3253,11 +3270,11 @@ export const AdminUsersPage: React.FC = () => {
                                                                     <div className="mt-1 grid gap-1 lg:grid-cols-2">
                                                                         <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
                                                                             <span className="font-semibold">Before: </span>
-                                                                            <span className="break-all">{formatChangeValue(entry.beforeValue)}</span>
+                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.beforeValue)}</span>
                                                                         </div>
                                                                         <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
                                                                             <span className="font-semibold">After: </span>
-                                                                            <span className="break-all">{formatChangeValue(entry.afterValue)}</span>
+                                                                            <span className="break-all">{formatUserChangeDiffValue(entry, entry.afterValue)}</span>
                                                                         </div>
                                                                     </div>
                                                                 </article>

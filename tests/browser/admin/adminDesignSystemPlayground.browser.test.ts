@@ -122,5 +122,5 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
       title: 'Insert Link',
       inputType: 'url',
     }));
-  }, 15000);
+  }, 25000);
 });

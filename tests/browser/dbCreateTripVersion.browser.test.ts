@@ -140,7 +140,16 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
-        correlation_id: expect.any(String),
+        event_schema_version: 1,
+        event_kind: 'trip.updated',
+        correlation_id: 'trip-version-trip-1-version-1',
+        causation_id: 'trip-version-trip-1-version-1',
+        source_surface: 'created',
+        actor_user_id: 'user-1',
+        actor_type: 'user',
+        target_type: 'trip',
+        target_id: 'trip-1',
+        redaction_policy: 'none',
         trip_id: 'trip-1',
         version_id: 'version-1',
         previous_version_id: 'version-prev',
@@ -233,7 +242,11 @@ describe('services/dbService dbCreateTripVersion', () => {
 
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
-        correlation_id: expect.any(String),
+        correlation_id: 'trip-version-trip-transport-version-next',
+        secondary_action_codes: expect.arrayContaining([
+          'trip.transport.updated',
+          'trip.activity.deleted',
+        ]),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
@@ -247,6 +260,135 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     const insertedPayload = mocks.eventInsert.mock.calls[0]?.[0] as { metadata?: Record<string, unknown> } | undefined;
     expect(insertedPayload?.metadata?.timeline_diff).toBeUndefined();
+  });
+
+  it('maps deleted travel-empty segments to trip.segment.deleted metadata facets', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-segment',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-segment',
+          title: 'Segment Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'segment-1',
+              type: 'travel-empty',
+              title: 'Airport transfer',
+              startDateOffset: 0,
+              duration: 1,
+              color: '#000',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-segment-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-segment',
+      title: 'Segment Trip',
+      startDate: '2026-02-01',
+      items: [],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Data: Removed empty segment');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        secondary_action_codes: expect.arrayContaining([
+          'trip.segment.deleted',
+        ]),
+      }),
+    }));
+  });
+
+  it('maps city/activity/date updates into secondary action facets', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-facets',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-facets',
+          title: 'Facet Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'city-1',
+              type: 'city',
+              title: 'Bangkok',
+              startDateOffset: 0,
+              duration: 2,
+              color: '#111',
+            },
+            {
+              id: 'activity-1',
+              type: 'activity',
+              title: 'Old market walk',
+              startDateOffset: 1,
+              duration: 1,
+              color: '#222',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-facets-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-facets',
+      title: 'Facet Trip',
+      startDate: '2026-02-02',
+      items: [
+        {
+          id: 'city-1',
+          type: 'city',
+          title: 'Bangkok',
+          startDateOffset: 0,
+          duration: 3,
+          color: '#111',
+        },
+        {
+          id: 'activity-1',
+          type: 'activity',
+          title: 'New market walk',
+          startDateOffset: 1,
+          duration: 1,
+          color: '#222',
+        },
+      ],
+      createdAt: 80,
+      updatedAt: 240,
+      sourceKind: 'created',
+    }, undefined, 'Data: Updated city and activity');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        secondary_action_codes: expect.arrayContaining([
+          'trip.city.updated',
+          'trip.activity.updated',
+          'trip.trip_dates.updated',
+        ]),
+      }),
+    }));
   });
 
   it('captures visual-only version commits in typed timeline diff metadata', async () => {
@@ -280,27 +422,32 @@ describe('services/dbService dbCreateTripVersion', () => {
       createdAt: 80,
       updatedAt: 220,
       sourceKind: 'created',
-    }, undefined, 'Visual: Map view: minimal → clean · Timeline layout: vertical → horizontal');
+    }, undefined, 'Visual: Timeline mode: calendar → list · Timeline layout: vertical → horizontal · Zoomed in');
 
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
-        correlation_id: expect.any(String),
+        correlation_id: 'trip-version-trip-visual-version-visual-next',
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
           counts: expect.objectContaining({
-            visual_changes: 2,
+            visual_changes: 3,
           }),
           visual_changes: expect.arrayContaining([
             expect.objectContaining({
-              field: 'map_view',
-              before_value: 'minimal',
-              after_value: 'clean',
+              field: 'timeline_mode',
+              before_value: 'calendar',
+              after_value: 'list',
             }),
             expect.objectContaining({
               field: 'timeline_layout',
               before_value: 'vertical',
               after_value: 'horizontal',
+            }),
+            expect.objectContaining({
+              field: 'zoom_level',
+              before_value: null,
+              after_value: 'Zoomed in',
             }),
           ]),
         }),

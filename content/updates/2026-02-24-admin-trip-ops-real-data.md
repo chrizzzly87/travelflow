@@ -49,7 +49,16 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.
 - [ ] [Internal] 🧱 Introduced typed `timeline_diff_v1` metadata (with compatibility fallback) for trip update event rendering and future schema evolution.
 - [ ] [Internal] 📐 Added a dedicated timeline diff event contract doc and regression tests that enforce v1-only writes with legacy-read fallback precedence.
+- [ ] [Internal] 🧭 Added typed secondary trip-update facets (`secondary_action_codes`) for transport/activity/segment/city/date/visibility operations and expanded timeline-control diff coverage (`Timeline mode`, `Timeline layout`, `Zoomed in`).
+- [ ] [Internal] 🏷️ Admin audit and user drawer now render typed secondary facet chips for `trip.updated` rows while keeping the primary action pill compact.
+- [ ] [Internal] 🧼 Retired legacy `timeline_diff` read fallback so admin/user timeline parsing now uses `timeline_diff_v1` exclusively.
 - [ ] [Internal] 🧬 Added per-operation correlation IDs to trip and failure event metadata for easier cross-table incident tracing.
+- [ ] [Internal] 🔗 Correlation IDs now follow deterministic conventions for upsert/version events and archive flows now preserve caller-provided correlation IDs.
+- [ ] [Internal] 🧾 Client fallback event writers now add the full immutable event envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for parity with DB event writers.
+- [ ] [Internal] 🧷 Immutable fallback event envelopes now include actor/target IDs and a redaction policy field for complete Phase 3 metadata.
+- [ ] [Internal] 📦 Admin audit replay export now runs via a server endpoint and persists `admin.audit.export` entries, while still downloading `admin_forensics_replay_v1` bundles with correlation-group summaries and redaction-aware payload shaping.
+- [ ] [Internal] 🧩 User change-table diff rows now use typed structured-value formatters (instead of raw JSON blobs) across admin audit and user drawer surfaces.
+- [ ] [Internal] 🧪 Hardened long-running admin browser tests with explicit timeouts to stabilize `pnpm test:core` runs in CI-like load.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.
 - [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.

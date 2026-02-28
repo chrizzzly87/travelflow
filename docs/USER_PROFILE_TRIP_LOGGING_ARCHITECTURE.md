@@ -29,6 +29,7 @@ This document is the operational source of truth for:
 ## Logging Data Model
 - `public.admin_audit_logs`
   - immutable admin actor actions (admin-side operations).
+  - includes replay export actions (`admin.audit.export`) for forensic traceability.
 - `public.profile_user_events`
   - user profile-level actions (for example `profile.updated`, `trip.archive_failed`).
 - `public.trip_user_events`
@@ -42,7 +43,8 @@ This document is the operational source of truth for:
   - mixed timeline (admin + user actions),
   - page size 50 with offset paging,
   - actor filters (`admin`, `user`),
-  - target/action filters and date range filtering.
+  - target/action filters and date range filtering,
+  - replay export button for current filtered timeline (`admin_forensics_replay_v1` JSON bundle) backed by `/api/internal/admin/audit/replay-export`.
 
 ## Current User Action Taxonomy
 - Primary trip actions:
@@ -64,8 +66,9 @@ This document is the operational source of truth for:
   - `updated_items`
   - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
+  - `secondary_action_codes` (compact typed facets for filtering and future secondary pills)
+- Legacy `timeline_diff` compatibility has been retired; admin rendering reads `timeline_diff_v1` only.
 - Timeline controls on trip view (`calendar`/`timeline` mode switch, timeline direction, zoom, map/layout toggles) are logged as `trip.updated` events with `timeline_diff_v1.visual_changes` entries (for example `timeline_mode`, `timeline_layout`, `zoom_level`).
-- Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 
@@ -134,6 +137,8 @@ This document is the operational source of truth for:
 - User trip changes missing in admin:
   - check `trip_user_events` inserts for `trip.updated`/`trip.created`/`trip.archived`,
   - confirm `admin_list_user_change_logs` returns trip union rows.
+- Implementation checklist for future changes:
+  - see `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md`.
 
 ## Logging Roadmap Status (as of 2026-02-28)
 - [x] Ownership hardening shipped (authenticated profile views only DB-owned trips).
@@ -142,32 +147,33 @@ This document is the operational source of truth for:
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
-- [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
+- [x] Deterministic correlation identifiers are propagated across upsert/version/archive paths.
+- [x] Client fallback event writers now attach event envelope fields (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`).
 
 ## Remaining Implementation Plan
 
 ### Phase 1 (remaining)
-- Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
-- Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
-- Add deterministic correlation IDs between upsert/version/archive operations.
+- [x] Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
+- [x] Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
+- [x] Add deterministic correlation IDs between upsert/version/archive operations.
 
 ### Phase 2
 - Introduce secondary domain event writers per operation class:
-  - `trip.city.updated`,
-  - `trip.activity.updated`,
-  - `trip.activity.deleted`,
-  - `trip.transport.updated`,
-  - `trip.segment.deleted`,
-  - `trip.trip_dates.updated`,
-  - `trip.visibility.updated`.
+  - [x] `trip.city.updated`,
+  - [x] `trip.activity.updated`,
+  - [x] `trip.activity.deleted`,
+  - [x] `trip.transport.updated`,
+  - [x] `trip.segment.deleted`,
+  - [x] `trip.trip_dates.updated`,
+  - [x] `trip.visibility.updated`.
 - Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.
 
 ### Phase 3
 - Add immutable append-only event envelope with:
-  - schema version,
-  - actor/target IDs,
-  - causation ID,
-  - correlation ID,
-  - source surface,
-  - redaction policy for sensitive fields.
-- Add async replay/forensics export pipeline for support incidents.
+  - [x] schema version,
+  - [x] actor/target IDs,
+  - [x] causation ID,
+  - [x] correlation ID,
+  - [x] source surface,
+  - [x] redaction policy for sensitive fields.
+- [x] Add async replay/forensics export pipeline for support incidents.

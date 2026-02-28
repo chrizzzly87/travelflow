@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
   buildUserChangeDiffEntries,
+  formatUserChangeDiffValue,
   resolveUserChangeActionPresentation,
+  resolveUserChangeSecondaryFacets,
 } from '../../services/adminUserChangeLog';
 
 const makeRecord = (overrides: Partial<AdminUserChangeRecord> = {}): AdminUserChangeRecord => ({
@@ -152,7 +154,7 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
-  it('prefers timeline_diff_v1 over legacy timeline_diff when both are present', () => {
+  it('ignores legacy timeline_diff payload when timeline_diff_v1 is present', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',
       target_type: 'trip',
@@ -193,7 +195,7 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
-  it('falls back to legacy timeline_diff when v1 payload is absent', () => {
+  it('does not derive timeline entries from legacy timeline_diff when v1 is absent', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',
       target_type: 'trip',
@@ -213,13 +215,7 @@ describe('services/adminUserChangeLog', () => {
       },
     }));
 
-    expect(entries).toEqual([
-      {
-        key: 'transport_mode · Legacy Segment',
-        beforeValue: 'boat',
-        afterValue: 'plane',
-      },
-    ]);
+    expect(entries).toEqual([]);
   });
 
   it('derives visual-only diff entries from visual version labels when snapshots are unchanged', () => {
@@ -240,6 +236,36 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
+  it('normalizes deleted travel-empty timeline items into segment diff keys', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-segment',
+        timeline_diff_v1: {
+          schema: 'timeline_diff_v1',
+          version: 1,
+          deleted_items: [
+            {
+              item_id: 'segment-1',
+              before: { id: 'segment-1', type: 'travel-empty', title: 'Airport transfer' },
+              after: null,
+            },
+          ],
+        },
+      },
+    }));
+
+    expect(entries).toEqual([
+      {
+        key: 'deleted_segment · Airport transfer',
+        beforeValue: { id: 'segment-1', type: 'travel-empty', title: 'Airport transfer' },
+        afterValue: null,
+      },
+    ]);
+  });
+
   it('formats unknown actions into readable labels', () => {
     const record = makeRecord({
       action: 'trip.shared_link_rotated',
@@ -249,5 +275,43 @@ describe('services/adminUserChangeLog', () => {
     const presentation = resolveUserChangeActionPresentation(record, []);
 
     expect(presentation.label).toBe('Trip Shared Link Rotated');
+  });
+
+  it('returns mapped secondary facets for trip.updated metadata secondary_action_codes', () => {
+    const facets = resolveUserChangeSecondaryFacets(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        secondary_action_codes: [
+          'trip.transport.updated',
+          'trip.activity.deleted',
+          'trip.segment.deleted',
+        ],
+      },
+    }));
+
+    expect(facets).toEqual([
+      expect.objectContaining({ code: 'trip.transport.updated', label: 'Transport updated' }),
+      expect.objectContaining({ code: 'trip.activity.deleted', label: 'Activity deleted' }),
+      expect.objectContaining({ code: 'trip.segment.deleted', label: 'Segment deleted' }),
+    ]);
+  });
+
+  it('formats structured deleted-item values without raw JSON fallback', () => {
+    const entry = {
+      key: 'deleted_activity · Night market',
+      beforeValue: {
+        id: 'activity-1',
+        type: 'activity',
+        title: 'Night market',
+        start_date_offset: 2,
+        duration: 1,
+      },
+      afterValue: null,
+    };
+
+    expect(formatUserChangeDiffValue(entry, entry.beforeValue)).toBe('activity · Night market · Day +2 · 1d');
+    expect(formatUserChangeDiffValue(entry, entry.afterValue)).toBe('—');
   });
 });

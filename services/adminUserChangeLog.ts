@@ -11,6 +11,50 @@ interface UserChangeActionPresentation {
     className: string;
 }
 
+export interface UserChangeSecondaryFacet {
+    code: string;
+    label: string;
+    className: string;
+}
+
+const SECONDARY_FACET_MAP: Record<string, UserChangeSecondaryFacet> = {
+    'trip.transport.updated': {
+        code: 'trip.transport.updated',
+        label: 'Transport updated',
+        className: 'border-cyan-300 bg-cyan-50 text-cyan-800',
+    },
+    'trip.activity.updated': {
+        code: 'trip.activity.updated',
+        label: 'Activity updated',
+        className: 'border-amber-300 bg-amber-50 text-amber-800',
+    },
+    'trip.activity.deleted': {
+        code: 'trip.activity.deleted',
+        label: 'Activity deleted',
+        className: 'border-rose-300 bg-rose-50 text-rose-800',
+    },
+    'trip.segment.deleted': {
+        code: 'trip.segment.deleted',
+        label: 'Segment deleted',
+        className: 'border-orange-300 bg-orange-50 text-orange-800',
+    },
+    'trip.city.updated': {
+        code: 'trip.city.updated',
+        label: 'City updated',
+        className: 'border-blue-300 bg-blue-50 text-blue-800',
+    },
+    'trip.trip_dates.updated': {
+        code: 'trip.trip_dates.updated',
+        label: 'Trip dates updated',
+        className: 'border-indigo-300 bg-indigo-50 text-indigo-800',
+    },
+    'trip.visibility.updated': {
+        code: 'trip.visibility.updated',
+        label: 'Visibility updated',
+        className: 'border-violet-300 bg-violet-50 text-violet-800',
+    },
+};
+
 const NOISY_DIFF_KEYS = new Set([
     'updated_at',
     'created_at',
@@ -27,6 +71,58 @@ const hasOwn = (value: Record<string, unknown>, key: string): boolean => (
 );
 
 const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
+
+const formatDateLikeString = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '—';
+    const parsed = Date.parse(trimmed);
+    if (Number.isFinite(parsed) && /^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+        return new Date(parsed).toLocaleString();
+    }
+    return trimmed;
+};
+
+const summarizeStructuredValue = (value: unknown): string | null => {
+    if (!value || typeof value !== 'object') return null;
+    if (Array.isArray(value)) {
+        const itemCount = value.length;
+        return itemCount === 0
+            ? 'No items'
+            : `${itemCount} item${itemCount === 1 ? '' : 's'}`;
+    }
+
+    const record = value as Record<string, unknown>;
+    const type = asText(record.type);
+    const title = asText(record.title);
+    const id = asText(record.id);
+    const segments: string[] = [];
+
+    if (type) segments.push(type);
+    if (title) {
+        segments.push(title);
+    } else if (id) {
+        segments.push(id);
+    }
+
+    const dayOffset = typeof record.start_date_offset === 'number' ? record.start_date_offset : null;
+    if (dayOffset !== null && Number.isFinite(dayOffset)) {
+        segments.push(`Day +${dayOffset}`);
+    }
+    const duration = typeof record.duration === 'number' ? record.duration : null;
+    if (duration !== null && Number.isFinite(duration)) {
+        segments.push(`${duration}d`);
+    }
+    const transport = asText(record.transport_mode);
+    if (transport) {
+        segments.push(`Mode: ${transport}`);
+    }
+
+    if (segments.length > 0) return segments.join(' · ');
+
+    const keys = Object.keys(record).slice(0, 4);
+    if (keys.length === 0) return null;
+    return `Structured fields: ${keys.join(', ')}`;
+};
 
 const normalizeActionLabel = (action: string): string => {
     const cleaned = action.trim().replace(/[._]+/g, ' ');
@@ -177,11 +273,18 @@ const resolveTimelineItemType = (entry: Record<string, unknown>): string | null 
     return asText((entry.after as Record<string, unknown> | null | undefined)?.type);
 };
 
+const normalizeTimelineEntityType = (value: string | null): string => {
+    const normalized = (value || '').trim().toLowerCase();
+    if (!normalized) return 'item';
+    if (normalized === 'travel-empty') return 'segment';
+    if (normalized === 'travel') return 'transport';
+    return normalized.replace(/[^a-z0-9]+/g, '_');
+};
+
 const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
     const timelineDiffV1 = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
-    const timelineDiffLegacy = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
-    const timelineDiff = Object.keys(timelineDiffV1).length > 0 ? timelineDiffV1 : timelineDiffLegacy;
-    if (Object.keys(timelineDiff).length === 0) return [];
+    if (Object.keys(timelineDiffV1).length === 0) return [];
+    const timelineDiff = timelineDiffV1;
 
     const entries: UserChangeDiffEntry[] = [];
     const transportModeChanges = normalizeTimelineDiffItems(timelineDiff.transport_mode_changes);
@@ -198,7 +301,7 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
     deletedItems.forEach((entry) => {
         const label = resolveTimelineItemLabel(entry);
         const itemType = resolveTimelineItemType(entry);
-        const prefix = itemType ? `deleted_${itemType}` : 'deleted_item';
+        const prefix = `deleted_${normalizeTimelineEntityType(itemType)}`;
         entries.push({
             key: `${prefix} · ${label}`,
             beforeValue: entry.before ?? entry,
@@ -210,7 +313,7 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
     addedItems.forEach((entry) => {
         const label = resolveTimelineItemLabel(entry);
         const itemType = resolveTimelineItemType(entry);
-        const prefix = itemType ? `added_${itemType}` : 'added_item';
+        const prefix = `added_${normalizeTimelineEntityType(itemType)}`;
         entries.push({
             key: `${prefix} · ${label}`,
             beforeValue: null,
@@ -358,4 +461,48 @@ export const resolveUserChangeActionPresentation = (
         label: normalizeActionLabel(record.action),
         className: 'border-slate-300 bg-slate-100 text-slate-800',
     };
+};
+
+export const formatUserChangeDiffValue = (
+    entry: UserChangeDiffEntry,
+    value: unknown
+): string => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') return formatDateLikeString(value);
+
+    const key = entry.key.trim().toLowerCase();
+    if (
+        key.startsWith('deleted_')
+        || key.startsWith('added_')
+        || key.startsWith('updated_')
+    ) {
+        const summary = summarizeStructuredValue(value);
+        if (summary) return summary;
+        return 'Structured item';
+    }
+
+    const summary = summarizeStructuredValue(value);
+    if (summary) return summary;
+    return 'Structured value';
+};
+
+export const resolveUserChangeSecondaryFacets = (
+    record: AdminUserChangeRecord
+): UserChangeSecondaryFacet[] => {
+    if (record.action.trim().toLowerCase() !== 'trip.updated') return [];
+    const metadata = asRecord(record.metadata);
+    const codes = Array.isArray(metadata.secondary_action_codes)
+        ? metadata.secondary_action_codes
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+    if (codes.length === 0) return [];
+
+    const uniqueCodes = Array.from(new Set(codes));
+    return uniqueCodes
+        .map((code) => SECONDARY_FACET_MAP[code] ?? null)
+        .filter((facet): facet is UserChangeSecondaryFacet => Boolean(facet));
 };
