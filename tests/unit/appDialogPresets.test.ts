@@ -52,5 +52,16 @@ describe('services/appDialogPresets', () => {
     expect(options.validate?.('ftp://example.com')).toBe('URL must start with http:// or https://');
     expect(options.validate?.('not-a-url')).toBe('Please enter a valid URL.');
   });
-});
 
+  it('allows URL prompt validation messages to be overridden', () => {
+    const options = buildUrlPromptDialog({
+      validationRequired: 'URL missing',
+      validationProtocol: 'Need http(s)',
+      validationInvalid: 'Bad URL',
+    });
+
+    expect(options.validate?.('')).toBe('URL missing');
+    expect(options.validate?.('ftp://example.com')).toBe('Need http(s)');
+    expect(options.validate?.('not-a-url')).toBe('Bad URL');
+  });
+});

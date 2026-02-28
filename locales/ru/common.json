@@ -105,5 +105,40 @@
       "validationMessage": "Введите сообщение.",
       "validationMessageLength": "Сообщение слишком длинное. Максимум: {max} символов."
     }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "Архивировать поездку?",
+      "confirmLabel": "Архивировать поездку",
+      "cancelLabel": "Отмена",
+      "messageQuestion": "Вы уверены, что хотите архивировать <strong>\"{title}\"</strong>?",
+      "messageDetail": "Эта поездка будет удалена из вашего списка, и её можно будет восстановить позже."
+    },
+    "roundTripSync": {
+      "title": "Обновить конечный пункт кругового маршрута?",
+      "messageLead": "Похоже, это круговой маршрут.",
+      "messageQuestion": "Также изменить последний город на <strong>\"{title}\"</strong>?",
+      "confirmLabel": "Да, обновить последний город",
+      "cancelLabel": "Нет, оставить как есть"
+    },
+    "cityPaletteApply": {
+      "title": "Применить палитру к текущим городам?",
+      "messageAuto": "Выберите <strong>Применить автоматически</strong>, чтобы перекрасить все города сейчас.",
+      "messageManual": "Выберите <strong>Ручной выбор</strong>, чтобы сохранить текущие цвета и только переключить активную палитру.",
+      "confirmLabel": "Применить автоматически",
+      "cancelLabel": "Ручной выбор"
+    },
+    "markdownLink": {
+      "title": "Вставить ссылку",
+      "messageLine1": "Введите URL для выделенного текста или вставьте новую ссылку.",
+      "messageLine2": "Ссылка откроется в новой вкладке с безопасными настройками по умолчанию.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "Вставить ссылку",
+      "cancelLabel": "Отмена",
+      "validationRequired": "Пожалуйста, введите URL.",
+      "validationProtocol": "URL должен начинаться с http:// или https://",
+      "validationInvalid": "Пожалуйста, введите корректный URL."
+    }
   }
 }

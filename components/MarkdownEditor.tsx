@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useTranslation } from 'react-i18next';
 import { Bot, Sparkles, Bold, Italic, List, CheckSquare, Heading1, Heading2, Heading3, Link2 } from 'lucide-react';
 import { useAppDialog } from './AppDialogProvider';
 import { buildUrlPromptDialog } from '../services/appDialogPresets';
@@ -306,6 +307,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     className = ''
 }) => {
     const { prompt } = useAppDialog();
+    const { t } = useTranslation('common');
     const [isAiPopoverOpen, setIsAiPopoverOpen] = useState(false);
 
     const aiPopoverRef = useRef<HTMLDivElement>(null);
@@ -387,12 +389,20 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         const selectionRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
 
         const url = await prompt(buildUrlPromptDialog({
+            title: t('appDialog.markdownLink.title'),
             message: (
                 <div className="space-y-2">
-                    <p>Enter a URL for the selected text or insert a new link.</p>
-                    <p>The link opens in a new tab with secure defaults.</p>
+                    <p>{t('appDialog.markdownLink.messageLine1')}</p>
+                    <p>{t('appDialog.markdownLink.messageLine2')}</p>
                 </div>
             ),
+            label: t('appDialog.markdownLink.label'),
+            placeholder: t('appDialog.markdownLink.placeholder'),
+            confirmLabel: t('appDialog.markdownLink.confirmLabel'),
+            cancelLabel: t('appDialog.markdownLink.cancelLabel'),
+            validationRequired: t('appDialog.markdownLink.validationRequired'),
+            validationProtocol: t('appDialog.markdownLink.validationProtocol'),
+            validationInvalid: t('appDialog.markdownLink.validationInvalid'),
         }));
         if (!url) return;
 

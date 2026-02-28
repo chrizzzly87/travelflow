@@ -26,6 +26,9 @@ type UrlPromptInput = {
     defaultValue?: string;
     confirmLabel?: string;
     cancelLabel?: string;
+    validationRequired?: string;
+    validationProtocol?: string;
+    validationInvalid?: string;
 };
 
 const DEFAULT_CANCEL_LABEL = 'Cancel';
@@ -70,15 +73,15 @@ export const buildUrlPromptDialog = (
     cancelLabel: input.cancelLabel || DEFAULT_CANCEL_LABEL,
     inputType: 'url',
     validate: (value) => {
-        if (!value) return 'Please enter a URL.';
+        if (!value) return input.validationRequired || 'Please enter a URL.';
         try {
             const parsed = new URL(value);
             if (!parsed.protocol.startsWith('http')) {
-                return 'URL must start with http:// or https://';
+                return input.validationProtocol || 'URL must start with http:// or https://';
             }
             return null;
         } catch {
-            return 'Please enter a valid URL.';
+            return input.validationInvalid || 'Please enter a valid URL.';
         }
     },
 });
