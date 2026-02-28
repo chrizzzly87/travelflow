@@ -351,6 +351,7 @@ const AppContent: React.FC = () => {
                 mapStyle: settings.mapStyle,
                 routeMode: settings.routeMode,
                 layoutMode: settings.layoutMode,
+                timelineMode: settings.timelineMode,
                 timelineView: settings.timelineView,
                 showCityNames: settings.showCityNames,
                 zoomLevel: settings.zoomLevel,

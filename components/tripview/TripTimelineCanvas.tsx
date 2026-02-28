@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { ITrip, ITimelineItem, RouteStatus } from '../../types';
 import { Timeline } from '../Timeline';
 import { loadLazyComponentWithRecovery } from '../../services/lazyImportRecovery';
+import { TripTimelineListView } from './TripTimelineListView';
 
 const VerticalTimeline = lazy(() =>
     loadLazyComponentWithRecovery('VerticalTimeline', () =>
@@ -10,6 +11,7 @@ const VerticalTimeline = lazy(() =>
 );
 
 interface TripTimelineCanvasProps {
+    timelineMode: 'calendar' | 'timeline';
     timelineView: 'vertical' | 'horizontal';
     trip: ITrip;
     onUpdateItems: (items: ITimelineItem[], options?: { deferCommit?: boolean }) => void;
@@ -27,6 +29,7 @@ interface TripTimelineCanvasProps {
 }
 
 export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
+    timelineMode,
     timelineView,
     trip,
     onUpdateItems,
@@ -42,6 +45,16 @@ export const TripTimelineCanvas: React.FC<TripTimelineCanvasProps> = ({
     pixelsPerDay,
     enableExampleSharedTransition,
 }) => {
+    if (timelineMode === 'timeline') {
+        return (
+            <TripTimelineListView
+                trip={trip}
+                selectedItemId={selectedItemId}
+                onSelect={onSelect}
+            />
+        );
+    }
+
     if (timelineView === 'vertical') {
         return (
             <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Loading timeline...</div>}>

@@ -41,7 +41,7 @@
 ```
 
 ## Visual-only edits
-- Visual commits (for example map style/timeline layout changes) are represented in `visual_changes`.
+- Visual commits (for example map style, timeline mode switch, timeline layout, zoom, and route view changes) are represented in `visual_changes`.
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
 ## Secondary action facets
@@ -91,6 +91,7 @@
   - verifies lifecycle update metadata includes deterministic `secondary_actions` and `domain_events_v1`
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
   - verifies `timeline_diff_v1` writes
+  - verifies timeline control labels (`Timeline mode`, `Timeline layout`, `Zoomed in/out`) are emitted as structured `visual_changes`
   - verifies no regression to legacy write format
   - verifies event envelope fields (`event_schema_version`, event/correlation/causation IDs)
   - verifies deterministic `secondary_actions` writes

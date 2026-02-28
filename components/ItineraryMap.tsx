@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
-import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 
@@ -325,6 +326,7 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     
     const { isLoaded, loadError } = useGoogleMaps();
     const [mapInitialized, setMapInitialized] = useState(false);
+    const mapActionsDisabled = !mapInitialized || Boolean(loadError);
     
     // Internal state for menu, but style comes from props (or defaults to standard if not provided)
     const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
@@ -354,6 +356,11 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             console.error("Failed to init map", e);
         }
     }, [isLoaded]);
+
+    useEffect(() => {
+        if (!mapActionsDisabled) return;
+        setIsStyleMenuOpen(false);
+    }, [mapActionsDisabled]);
 
     // Handle Style Change
     useEffect(() => {
@@ -1120,47 +1127,38 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         };
     }, [focusLocationQuery, mapInitialized, cities.length]);
 
-    if (loadError) {
-        return (
-            <div
-                className="p-4 text-red-500"
-                style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
-            >
-                Error loading map: {loadError.message}
-            </div>
-        );
-    }
-    if (!isLoaded) {
-        return (
-            <div
-                className="w-full h-full bg-gray-100 flex items-center justify-center"
-                style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
-            >
-                Loading Map...
-            </div>
-        );
-    }
-
     return (
         <div
             className="relative w-full h-full group bg-gray-100"
             style={viewTransitionName ? ({ viewTransitionName } as React.CSSProperties) : undefined}
         >
             <div ref={mapRef} className="w-full h-full" />
+            {!mapInitialized && !loadError && (
+                <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500 bg-gray-100">
+                    Loading Map...
+                </div>
+            )}
+            {loadError && (
+                <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-red-500 bg-gray-100">
+                    Error loading map: {loadError.message}
+                </div>
+            )}
             
             {/* Controls */}
-            <div className="absolute top-4 right-4 z-[10] flex flex-col gap-2 pointer-events-none">
+            <div className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
                     {showLayoutControls && onLayoutChange && (
                         <>
                             <button
                                 onClick={() => onLayoutChange('vertical')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
-                            ><Rows size={18} /></button>
+                                {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
+                            ><ArrowUpDown size={18} /></button>
                             <button
                                 onClick={() => onLayoutChange('horizontal')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
-                            ><Columns size={18} /></button>
+                                {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
+                            ><ArrowLeftRight size={18} /></button>
                         </>
                     )}
 
@@ -1177,17 +1175,30 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                     
                     <button
                         onClick={handleFit}
-                        className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center" aria-label="Fit to itinerary"
+                        disabled={mapActionsDisabled}
+                        className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center disabled:text-gray-300 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-gray-300"
+                        aria-label="Fit to itinerary"
                     ><Focus size={18} /></button>
                     
                     {/* Style Switcher */}
                     {onStyleChange && (
                       <div className="relative">
                           <button
-                              onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)}
-                              className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${isStyleMenuOpen ? 'bg-accent-50 border-accent-300 text-accent-600' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Map style"
+                              onClick={() => {
+                                  if (mapActionsDisabled) return;
+                                  setIsStyleMenuOpen(!isStyleMenuOpen);
+                              }}
+                              disabled={mapActionsDisabled}
+                              className={`p-2 rounded-lg shadow-md border transition-colors flex items-center justify-center ${
+                                  mapActionsDisabled
+                                      ? 'bg-white border-gray-200 text-gray-300 cursor-not-allowed'
+                                      : isStyleMenuOpen
+                                          ? 'bg-accent-50 border-accent-300 text-accent-600'
+                                          : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'
+                              }`}
+                              aria-label="Map style"
                           ><Layers size={18} /></button>
-                          {isStyleMenuOpen && (
+                          {isStyleMenuOpen && !mapActionsDisabled && (
                               <div className="absolute top-0 right-full mr-2 bg-white rounded-lg shadow-xl border border-gray-100 w-36 overflow-hidden flex flex-col z-20">
                                   <button onClick={() => { onStyleChange('minimal'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'minimal' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Minimal</button>
                                   <button onClick={() => { onStyleChange('standard'); setIsStyleMenuOpen(false); }} className={`px-3 py-2 text-xs font-medium text-left hover:bg-gray-50 ${activeStyle === 'standard' ? 'text-accent-600 bg-accent-50' : 'text-gray-700'}`}>Standard</button>

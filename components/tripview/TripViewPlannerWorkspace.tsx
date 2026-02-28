@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
-import { Calendar, List, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, ZoomIn, ZoomOut } from 'lucide-react';
+import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
 
@@ -15,7 +16,9 @@ interface TripViewPlannerWorkspaceProps {
     onTimelineTouchEnd: (event: React.TouchEvent<HTMLDivElement>) => void;
     onZoomOut: () => void;
     onZoomIn: () => void;
-    onToggleTimelineView: () => void;
+    onTimelineModeChange: (mode: 'calendar' | 'timeline') => void;
+    onTimelineViewChange: (view: 'horizontal' | 'vertical') => void;
+    timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     mapViewportRef: React.RefObject<HTMLDivElement | null>;
     isMapBootstrapEnabled: boolean;
@@ -64,7 +67,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onTimelineTouchEnd,
     onZoomOut,
     onZoomIn,
-    onToggleTimelineView,
+    onTimelineModeChange,
+    onTimelineViewChange,
+    timelineMode,
     timelineView,
     mapViewportRef,
     isMapBootstrapEnabled,
@@ -101,21 +106,146 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onTimelineResizeKeyDown,
 }) => {
     const timelineControls = (
-        <div className="absolute top-4 right-4 z-40 flex gap-2">
-            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1">
-                <button onClick={onZoomOut} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom out timeline"><ZoomOut size={16} /></button>
-                <button onClick={onZoomIn} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Zoom in timeline"><ZoomIn size={16} /></button>
-            </div>
-            <div className="flex flex-row gap-1 bg-white/90 backdrop-blur border border-gray-200 rounded-lg shadow-sm p-1 h-fit my-auto">
-                <button onClick={onToggleTimelineView} className="p-1.5 hover:bg-gray-100 rounded text-gray-600" aria-label="Toggle timeline view">
-                    {timelineView === 'horizontal' ? <List size={16} /> : <Calendar size={16} />}
+        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
+            {timelineMode === 'calendar' && (
+                <>
+                    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                        <button
+                            type="button"
+                            onClick={() => onTimelineViewChange('horizontal')}
+                            className={`rounded-md p-1.5 transition-colors ${
+                                timelineView === 'horizontal'
+                                    ? 'bg-accent-600 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                            aria-label="Horizontal timeline direction"
+                            aria-pressed={timelineView === 'horizontal'}
+                            {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'timeline_controls' })}
+                        >
+                            <ArrowLeftRight size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onTimelineViewChange('vertical')}
+                            className={`rounded-md p-1.5 transition-colors ${
+                                timelineView === 'vertical'
+                                    ? 'bg-accent-600 text-white'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                            aria-label="Vertical timeline direction"
+                            aria-pressed={timelineView === 'vertical'}
+                            {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'timeline_controls' })}
+                        >
+                            <ArrowUpDown size={16} />
+                        </button>
+                    </div>
+                    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                        <button
+                            type="button"
+                            onClick={onZoomOut}
+                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            aria-label="Zoom out timeline"
+                            {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'out' })}
+                        >
+                            <ZoomOut size={16} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onZoomIn}
+                            className="rounded-md p-1.5 text-gray-600 transition-colors hover:bg-gray-100"
+                            aria-label="Zoom in timeline"
+                            {...getAnalyticsDebugAttributes('trip_view__zoom', { direction: 'in' })}
+                        >
+                            <ZoomIn size={16} />
+                        </button>
+                    </div>
+                </>
+            )}
+            <div className="ms-auto inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                <button
+                    type="button"
+                    onClick={() => onTimelineModeChange('calendar')}
+                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                        timelineMode === 'calendar'
+                            ? 'bg-accent-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    aria-label="Calendar view"
+                    aria-pressed={timelineMode === 'calendar'}
+                    {...getAnalyticsDebugAttributes('trip_view__mode--calendar', { surface: 'timeline_controls' })}
+                >
+                    <CalendarDays size={14} />
+                    <span className="sr-only">Calendar view</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onTimelineModeChange('timeline')}
+                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                        timelineMode === 'timeline'
+                            ? 'bg-accent-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    aria-label="Timeline list view"
+                    aria-pressed={timelineMode === 'timeline'}
+                    {...getAnalyticsDebugAttributes('trip_view__mode--timeline', { surface: 'timeline_controls' })}
+                >
+                    <List size={14} />
+                    <span className="sr-only">Timeline list view</span>
                 </button>
             </div>
         </div>
     );
 
     const renderMap = (mapLayoutMode: 'vertical' | 'horizontal', showLayoutControls = true) => {
-        if (!isMapBootstrapEnabled) return mapDeferredFallback;
+        if (!isMapBootstrapEnabled) {
+            return (
+                <div className="relative h-full w-full">
+                    {mapDeferredFallback}
+                    <div className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
+                        <div className="flex flex-col gap-2 pointer-events-auto">
+                            {showLayoutControls && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => onLayoutModeChange('vertical')}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
+                                        aria-label="Vertical layout"
+                                        {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
+                                    >
+                                        <ArrowUpDown size={18} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onLayoutModeChange('horizontal')}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
+                                        aria-label="Horizontal layout"
+                                        {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
+                                    >
+                                        <ArrowLeftRight size={18} />
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                type="button"
+                                disabled
+                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                aria-label="Fit to itinerary"
+                            >
+                                <Focus size={18} />
+                            </button>
+                            <button
+                                type="button"
+                                disabled
+                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                aria-label="Map style"
+                            >
+                                <Layers size={18} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <Suspense fallback={mapLoadingFallback}>
                 <ItineraryMapComponent
@@ -160,13 +290,13 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     <div className="w-full h-full flex flex-col">
                         <div
                             className="flex-1 min-h-0 w-full bg-white border-b border-gray-200 relative overflow-hidden"
-                            onTouchStart={onTimelineTouchStart}
-                            onTouchMove={onTimelineTouchMove}
-                            onTouchEnd={onTimelineTouchEnd}
-                            onTouchCancel={onTimelineTouchEnd}
+                            onTouchStart={timelineMode === 'calendar' ? onTimelineTouchStart : undefined}
+                            onTouchMove={timelineMode === 'calendar' ? onTimelineTouchMove : undefined}
+                            onTouchEnd={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
+                            onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                         >
                             {timelineCanvas}
-                            <div className="absolute top-3 right-3 z-40 flex gap-2">
+                            <div className="absolute top-3 end-3 z-[60] pointer-events-auto">
                                 {timelineControls}
                             </div>
                         </div>
@@ -185,7 +315,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                         <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
                                             {timelineCanvas}
-                                            {timelineControls}
+                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                {timelineControls}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -238,7 +370,9 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                         <div className="w-full h-full relative min-w-0">
                                             {timelineCanvas}
-                                            {timelineControls}
+                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
+                                                {timelineControls}
+                                            </div>
                                         </div>
                                     </div>
                                     {detailsPanelVisible && (

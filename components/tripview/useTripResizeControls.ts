@@ -4,6 +4,7 @@ import { writeLocalStorageItem } from '../../services/browserStorageService';
 
 interface UseTripResizeControlsOptions {
     layoutMode: 'vertical' | 'horizontal';
+    timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     horizontalTimelineDayCount: number;
     zoomLevel: number;
@@ -66,6 +67,7 @@ const resolveAutoFitZoom = (
 
 export const useTripResizeControls = ({
     layoutMode,
+    timelineMode,
     timelineView,
     horizontalTimelineDayCount,
     zoomLevel,
@@ -98,6 +100,7 @@ export const useTripResizeControls = ({
     const detailsResizeStartXRef = useRef(0);
     const detailsResizeStartWidthRef = useRef(detailsWidth);
     const previousLayoutModeRef = useRef(layoutMode);
+    const previousTimelineModeRef = useRef(timelineMode);
     const previousTimelineViewRef = useRef(timelineView);
     const hasAutoFitRunRef = useRef(false);
 
@@ -181,11 +184,15 @@ export const useTripResizeControls = ({
 
     useEffect(() => {
         const previousLayoutMode = previousLayoutModeRef.current;
+        const previousTimelineMode = previousTimelineModeRef.current;
         const previousTimelineView = previousTimelineViewRef.current;
         const isFirstRenderAutoFit = !hasAutoFitRunRef.current;
         const didLayoutModeChange = previousLayoutMode !== layoutMode;
+        const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
-        const shouldAttemptAutoFit = !isZoomDirty && (isFirstRenderAutoFit || didLayoutModeChange || didTimelineViewChange);
+        const shouldAttemptAutoFit = timelineMode === 'calendar'
+            && !isZoomDirty
+            && (isFirstRenderAutoFit || didLayoutModeChange || didTimelineModeChange || didTimelineViewChange);
 
         if (shouldAttemptAutoFit) {
             const fitMode: 'horizontal' | 'vertical' = timelineView === 'vertical' ? 'vertical' : 'horizontal';
@@ -200,9 +207,10 @@ export const useTripResizeControls = ({
         }
 
         previousLayoutModeRef.current = layoutMode;
+        previousTimelineModeRef.current = timelineMode;
         previousTimelineViewRef.current = timelineView;
         hasAutoFitRunRef.current = true;
-    }, [autoFitTimelineZoom, isZoomDirty, layoutMode, timelineView]);
+    }, [autoFitTimelineZoom, isZoomDirty, layoutMode, timelineMode, timelineView]);
 
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;
