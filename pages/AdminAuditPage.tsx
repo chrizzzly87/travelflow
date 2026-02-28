@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
+    adminGetTripVersionSnapshots,
     adminGetUserProfile,
     adminListAuditLogs,
     adminListUserChangeLogs,
@@ -20,6 +21,7 @@ import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
+import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
@@ -142,6 +144,8 @@ const asString = (value: unknown): string | null => {
     const trimmed = value.trim();
     return trimmed || null;
 };
+
+const hasSnapshotData = (value: Record<string, unknown> | null | undefined): boolean => Object.keys(asRecord(value)).length > 0;
 
 const isUserStatusValue = (value: unknown): value is 'active' | 'disabled' | 'deleted' => (
     value === 'active' || value === 'disabled' || value === 'deleted'
@@ -329,6 +333,15 @@ export const AdminAuditPage: React.FC = () => {
     const [userDrawerError, setUserDrawerError] = useState<string | null>(null);
     const [tripDrawerError, setTripDrawerError] = useState<string | null>(null);
     const [isRestoringUser, setIsRestoringUser] = useState(false);
+    const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
+    const [isDiffModalLoading, setIsDiffModalLoading] = useState(false);
+    const [diffModalError, setDiffModalError] = useState<string | null>(null);
+    const [diffModalTitle, setDiffModalTitle] = useState('Full change diff');
+    const [diffModalDescription, setDiffModalDescription] = useState<string | undefined>(undefined);
+    const [diffModalBeforeLabel, setDiffModalBeforeLabel] = useState('Before snapshot');
+    const [diffModalAfterLabel, setDiffModalAfterLabel] = useState('After snapshot');
+    const [diffModalBeforeValue, setDiffModalBeforeValue] = useState<unknown>({});
+    const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -521,6 +534,65 @@ export const AdminAuditPage: React.FC = () => {
             setUserDrawerError(error instanceof Error ? error.message : 'Could not restore user.');
         } finally {
             setIsRestoringUser(false);
+        }
+    };
+
+    const canOpenFullDiffModal = (entry: AuditTimelineEntry): boolean => {
+        const log = entry.kind === 'admin' ? entry.log : mapUserChangeLogToAuditRecord(entry.log);
+        if (hasSnapshotData(log.before_data) || hasSnapshotData(log.after_data)) return true;
+        if (log.target_type !== 'trip' || !log.target_id) return false;
+        const metadata = asRecord(log.metadata);
+        return Boolean(asString(metadata.version_id));
+    };
+
+    const openFullDiffModal = async (entry: AuditTimelineEntry) => {
+        const log = entry.kind === 'admin' ? entry.log : mapUserChangeLogToAuditRecord(entry.log);
+        const metadata = asRecord(log.metadata);
+        const actorEmail = getTimelineActorEmail(entry);
+        const targetLabel = getTargetLabel(log.target_type);
+        const versionId = asString(metadata.version_id);
+        const previousVersionId = asString(metadata.previous_version_id);
+
+        setDiffModalError(null);
+        setDiffModalTitle(`${log.action} · ${targetLabel}`);
+        setDiffModalDescription(
+            [
+                actorEmail ? `Actor: ${actorEmail}` : null,
+                log.target_id ? `${targetLabel} ID: ${log.target_id}` : null,
+                versionId ? `Version: ${versionId}` : null,
+            ].filter(Boolean).join(' • ')
+        );
+
+        setDiffModalBeforeLabel('Before snapshot');
+        setDiffModalAfterLabel('After snapshot');
+        setDiffModalBeforeValue(hasSnapshotData(log.before_data) ? asRecord(log.before_data) : {});
+        setDiffModalAfterValue(hasSnapshotData(log.after_data) ? asRecord(log.after_data) : {});
+        setIsDiffModalOpen(true);
+
+        if (log.target_type !== 'trip' || !log.target_id || !versionId) {
+            setIsDiffModalLoading(false);
+            return;
+        }
+
+        setIsDiffModalLoading(true);
+        try {
+            const versionSnapshots = await adminGetTripVersionSnapshots({
+                tripId: log.target_id,
+                afterVersionId: versionId,
+                beforeVersionId: previousVersionId,
+            });
+            if (!versionSnapshots) {
+                setDiffModalError('Trip snapshots were not found for this event. Showing event snapshots when available.');
+                return;
+            }
+            setDiffModalBeforeValue(asRecord(versionSnapshots.before_snapshot));
+            setDiffModalAfterValue(asRecord(versionSnapshots.after_snapshot));
+            setDiffModalBeforeLabel(versionSnapshots.before_label || 'Before version');
+            setDiffModalAfterLabel(versionSnapshots.after_label || 'After version');
+        } catch (error) {
+            setDiffModalError(error instanceof Error ? error.message : 'Could not load trip snapshots.');
+        } finally {
+            setIsDiffModalLoading(false);
         }
     };
 
@@ -803,6 +875,7 @@ export const AdminAuditPage: React.FC = () => {
                                 const actorEmail = getTimelineActorEmail(timelineEntry);
                                 const actorUserId = getTimelineActorUserId(timelineEntry);
                                 const eventTypeLabel = timelineEntry.kind === 'admin' ? 'Admin action' : 'User action';
+                                const canShowFullDiff = canOpenFullDiffModal(timelineEntry);
 
                                 return (
                                     <tr key={`${timelineEntry.kind}-${log.id}`} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
@@ -913,6 +986,15 @@ export const AdminAuditPage: React.FC = () => {
                                             ) : (
                                                 <p className="text-xs text-slate-500">No field diff recorded.</p>
                                             )}
+                                            {canShowFullDiff && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void openFullDiffModal(timelineEntry)}
+                                                    className="mt-2 inline-flex h-7 items-center rounded-md border border-slate-300 px-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50"
+                                                >
+                                                    Show complete diff
+                                                </button>
+                                            )}
                                             {timelineEntry.kind === 'admin' && log.action === 'admin.user.hard_delete' && ownedTripsBeforeDelete !== null && (
                                                 <p className="mt-2 text-[11px] font-semibold text-rose-700">
                                                     Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
@@ -977,6 +1059,23 @@ export const AdminAuditPage: React.FC = () => {
                     </div>
                 </div>
             </section>
+
+            <AdminJsonDiffModal
+                isOpen={isDiffModalOpen}
+                onClose={() => {
+                    setIsDiffModalOpen(false);
+                    setDiffModalError(null);
+                    setIsDiffModalLoading(false);
+                }}
+                title={diffModalTitle}
+                description={diffModalDescription}
+                beforeLabel={diffModalBeforeLabel}
+                afterLabel={diffModalAfterLabel}
+                beforeValue={diffModalBeforeValue}
+                afterValue={diffModalAfterValue}
+                isLoading={isDiffModalLoading}
+                errorMessage={diffModalError}
+            />
 
             <Drawer
                 open={isUserDrawerOpen}

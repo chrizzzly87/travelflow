@@ -138,14 +138,14 @@ describe('services/adminUserChangeLog', () => {
 
     expect(entries).toEqual([
       {
-        key: 'transport_mode_changes',
-        beforeValue: [{ item_id: 'travel-1', title: 'Bangkok to Chiang Mai', mode: 'bus' }],
-        afterValue: [{ item_id: 'travel-1', title: 'Bangkok to Chiang Mai', mode: 'train' }],
+        key: 'transport_mode · Bangkok to Chiang Mai',
+        beforeValue: 'bus',
+        afterValue: 'train',
       },
       {
-        key: 'deleted_items',
-        beforeValue: [{ id: 'activity-1', type: 'activity', title: 'Night market' }],
-        afterValue: [],
+        key: 'deleted_activity · Night market',
+        beforeValue: { id: 'activity-1', type: 'activity', title: 'Night market' },
+        afterValue: null,
       },
     ]);
   });

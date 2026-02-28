@@ -73,6 +73,18 @@ export interface AdminUserChangeRecord {
     created_at: string;
 }
 
+export interface AdminTripVersionSnapshotRecord {
+    trip_id: string;
+    before_version_id: string | null;
+    after_version_id: string | null;
+    before_snapshot: Record<string, unknown> | null;
+    after_snapshot: Record<string, unknown> | null;
+    before_label: string | null;
+    after_label: string | null;
+    before_created_at: string | null;
+    after_created_at: string | null;
+}
+
 export interface AdminTierReapplyPreview {
     affected_users: number;
     affected_trips: number;
@@ -458,6 +470,41 @@ export const adminListUserChangeLogs = async (
     });
     if (error) throw new Error(error.message || 'Could not load user change logs.');
     return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
+};
+
+export const adminGetTripVersionSnapshots = async (
+    payload: {
+        tripId: string;
+        afterVersionId?: string | null;
+        beforeVersionId?: string | null;
+    }
+): Promise<AdminTripVersionSnapshotRecord | null> => {
+    const tripId = payload.tripId.trim();
+    if (!tripId) return null;
+
+    if (shouldUseAdminMockData()) {
+        return {
+            trip_id: tripId,
+            before_version_id: payload.beforeVersionId ?? 'mock-before',
+            after_version_id: payload.afterVersionId ?? 'mock-after',
+            before_snapshot: { id: tripId, title: 'Before snapshot', items: [] },
+            after_snapshot: { id: tripId, title: 'After snapshot', items: [] },
+            before_label: 'Mock before',
+            after_label: 'Mock after',
+            before_created_at: new Date(Date.now() - 60_000).toISOString(),
+            after_created_at: new Date().toISOString(),
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_version_snapshots', {
+        p_trip_id: tripId,
+        p_after_version_id: payload.afterVersionId ?? null,
+        p_before_version_id: payload.beforeVersionId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load trip version snapshots.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminTripVersionSnapshotRecord) : null;
 };
 
 const callAdminIdentityApi = async (

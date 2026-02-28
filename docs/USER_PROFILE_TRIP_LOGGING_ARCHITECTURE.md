@@ -64,6 +64,59 @@ This document is the operational source of truth for:
   - `counts`
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 
+## Snapshot vs Diff Strategy
+- Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
+- Audit timelines store compact diff metadata (`timeline_diff`) for fast table rendering and filtering.
+- Full forensic compare should not duplicate large snapshots inside event rows.
+- Admin full-diff modal resolves snapshots on demand:
+  - reads `version_id` + `previous_version_id` from event metadata,
+  - fetches `before_snapshot` and `after_snapshot` from `trip_versions`,
+  - renders line-level JSON diff side-by-side (before on left, after on right).
+- This keeps event logs small while preserving exact snapshot compare fidelity.
+
+## Full Diff Modal Data Contract
+- New admin RPC: `admin_get_trip_version_snapshots(p_trip_id, p_after_version_id, p_before_version_id)`.
+- Output:
+  - `before_snapshot`, `after_snapshot`,
+  - `before_version_id`, `after_version_id`,
+  - `before_label`, `after_label`,
+  - version timestamps.
+- Fallback behavior:
+  - if no version IDs exist, admin UI compares event `before_data` vs `after_data`,
+  - if neither source exists, UI shows an explicit “snapshot unavailable” notice.
+
+## Auth Provider Crash Hardening
+- Problem:
+  - a rare route recovery/back-navigation sequence could render a consumer before provider context was mounted, throwing:
+    - `useAuthContext must be used within AuthProvider`.
+- Hardening:
+  - `useAuthContext` now returns an anonymous-safe fallback value when provider context is missing,
+  - logs a one-time console error for diagnostics.
+- Impact:
+  - prevents white-screen crash,
+  - keeps auth-gated UI stable while provider tree settles.
+- This was surfaced during auth/anonymous flow hardening but is primarily a React provider-tree timing safeguard.
+
+## Supabase Anonymous Session Setting
+- Recommended with current product flow: keep Supabase anonymous sign-in **enabled**.
+- Reason:
+  - guest journey + anonymous creation + claim-transfer to registered accounts depends on anonymous sessions.
+- Guardrails in code:
+  - anonymous sessions are not auto-created for read-only/profile settings sync paths,
+  - ownership claim-transfer + purge tooling cleans up anonymous identities,
+  - authenticated user surfaces are owner-filtered.
+- If anonymous sign-in is disabled, guest-to-account migration flows must be reworked first.
+
+## Admin Reset/Cleanup Controls
+- One-shot reset function for test environments:
+  - `public.admin_reset_anonymous_users_and_logs(...)`
+- It can:
+  - delete anonymous auth users,
+  - clear user/admin log tables,
+  - optionally clear trip version snapshots.
+- See runbook:
+  - `docs/ADMIN_LOG_AND_ANON_RESET_RUNBOOK.md`.
+
 ## Debugging Playbook
 - User sees foreign trips:
   - verify `dbListTrips` owner filter,

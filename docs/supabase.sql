@@ -2086,6 +2086,115 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_reset_anonymous_users_and_logs(boolean, boolean, boolean, boolean, boolean);
+create or replace function public.admin_reset_anonymous_users_and_logs(
+  p_delete_anonymous_users boolean default true,
+  p_delete_profile_user_events boolean default true,
+  p_delete_trip_user_events boolean default true,
+  p_delete_admin_audit_logs boolean default true,
+  p_delete_trip_versions boolean default false
+)
+returns table(
+  deleted_profile_user_events integer,
+  deleted_trip_user_events integer,
+  deleted_admin_audit_logs integer,
+  deleted_trip_versions integer,
+  deleted_anonymous_claims integer,
+  deleted_anonymous_users integer
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_deleted_profile_user_events integer := 0;
+  v_deleted_trip_user_events integer := 0;
+  v_deleted_admin_audit_logs integer := 0;
+  v_deleted_trip_versions integer := 0;
+  v_deleted_anonymous_claims integer := 0;
+  v_deleted_anonymous_users integer := 0;
+begin
+  if auth.uid() is not null then
+    if not public.has_admin_permission('users.hard_delete') then
+      raise exception 'Not allowed';
+    end if;
+    if not public.has_admin_permission('audit.write') then
+      raise exception 'Not allowed';
+    end if;
+  end if;
+
+  if p_delete_profile_user_events then
+    delete from public.profile_user_events;
+    get diagnostics v_deleted_profile_user_events = row_count;
+  end if;
+
+  if p_delete_trip_user_events then
+    delete from public.trip_user_events;
+    get diagnostics v_deleted_trip_user_events = row_count;
+  end if;
+
+  if p_delete_admin_audit_logs then
+    delete from public.admin_audit_logs;
+    get diagnostics v_deleted_admin_audit_logs = row_count;
+  end if;
+
+  if p_delete_trip_versions then
+    delete from public.trip_versions;
+    get diagnostics v_deleted_trip_versions = row_count;
+  end if;
+
+  if p_delete_anonymous_users then
+    with anonymous_users as (
+      select u.id
+        from auth.users u
+       where coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)
+          or coalesce((u.raw_app_meta_data -> 'providers') ? 'anonymous', false)
+          or coalesce((u.raw_user_meta_data ->> 'is_anonymous')::boolean, false)
+    ),
+    removed_claims as (
+      delete from public.anonymous_asset_claims c
+       where c.anon_user_id in (select id from anonymous_users)
+      returning c.id
+    ),
+    removed_users as (
+      delete from auth.users u
+       where u.id in (select id from anonymous_users)
+      returning u.id
+    )
+    select
+      (select count(*)::integer from removed_claims),
+      (select count(*)::integer from removed_users)
+      into v_deleted_anonymous_claims, v_deleted_anonymous_users;
+  else
+    with anonymous_claims as (
+      delete from public.anonymous_asset_claims c
+       where exists (
+        select 1
+          from auth.users u
+         where u.id = c.anon_user_id
+           and (
+             coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)
+             or coalesce((u.raw_app_meta_data -> 'providers') ? 'anonymous', false)
+             or coalesce((u.raw_user_meta_data ->> 'is_anonymous')::boolean, false)
+           )
+      )
+      returning c.id
+    )
+    select count(*)::integer into v_deleted_anonymous_claims from anonymous_claims;
+  end if;
+
+  return query
+  select
+    coalesce(v_deleted_profile_user_events, 0),
+    coalesce(v_deleted_trip_user_events, 0),
+    coalesce(v_deleted_admin_audit_logs, 0),
+    coalesce(v_deleted_trip_versions, 0),
+    coalesce(v_deleted_anonymous_claims, 0),
+    coalesce(v_deleted_anonymous_users, 0);
+end;
+$$;
+
 create or replace function public.expire_stale_trip_generation_requests()
 returns integer
 language plpgsql
@@ -2378,6 +2487,8 @@ grant execute on function public.expire_stale_trip_generation_requests() to anon
 grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
 grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
 grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
+grant execute on function public.purge_claimed_anonymous_users(integer, boolean) to authenticated;
+grant execute on function public.admin_reset_anonymous_users_and_logs(boolean, boolean, boolean, boolean, boolean) to authenticated;
 grant execute on function public.get_effective_entitlements(uuid) to anon, authenticated;
 
 -- =============================================================================
@@ -3709,6 +3820,106 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_get_trip_version_snapshots(text, uuid, uuid);
+create or replace function public.admin_get_trip_version_snapshots(
+  p_trip_id text,
+  p_after_version_id uuid default null,
+  p_before_version_id uuid default null
+)
+returns table(
+  trip_id text,
+  before_version_id uuid,
+  after_version_id uuid,
+  before_snapshot jsonb,
+  after_snapshot jsonb,
+  before_label text,
+  after_label text,
+  before_created_at timestamptz,
+  after_created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_trip_id text;
+  v_after public.trip_versions%rowtype;
+  v_before public.trip_versions%rowtype;
+begin
+  if not public.has_admin_permission('audit.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  v_trip_id := nullif(btrim(coalesce(p_trip_id, '')), '');
+  if v_trip_id is null then
+    raise exception 'Trip id is required';
+  end if;
+
+  if p_after_version_id is not null then
+    select tv.*
+      into v_after
+      from public.trip_versions tv
+     where tv.id = p_after_version_id
+       and tv.trip_id = v_trip_id
+     limit 1;
+  else
+    select tv.*
+      into v_after
+      from public.trip_versions tv
+     where tv.trip_id = v_trip_id
+     order by tv.created_at desc
+     limit 1;
+  end if;
+
+  if v_after.id is null then
+    return query
+    select
+      v_trip_id,
+      null::uuid,
+      null::uuid,
+      '{}'::jsonb,
+      '{}'::jsonb,
+      null::text,
+      null::text,
+      null::timestamptz,
+      null::timestamptz;
+    return;
+  end if;
+
+  if p_before_version_id is not null then
+    select tv.*
+      into v_before
+      from public.trip_versions tv
+     where tv.id = p_before_version_id
+       and tv.trip_id = v_trip_id
+     limit 1;
+  end if;
+
+  if v_before.id is null then
+    select tv.*
+      into v_before
+      from public.trip_versions tv
+     where tv.trip_id = v_trip_id
+       and tv.version_number < v_after.version_number
+     order by tv.version_number desc, tv.created_at desc
+     limit 1;
+  end if;
+
+  return query
+  select
+    v_trip_id,
+    v_before.id,
+    v_after.id,
+    coalesce(v_before.data, '{}'::jsonb),
+    coalesce(v_after.data, '{}'::jsonb),
+    v_before.label,
+    v_after.label,
+    v_before.created_at,
+    v_after.created_at;
+end;
+$$;
+
 create or replace function public.admin_reapply_tier_to_users(
   p_tier_key text,
   p_apply_expiration_backfill boolean default true
@@ -4010,6 +4221,7 @@ grant execute on function public.admin_update_trip(text, text, timestamptz, uuid
 grant execute on function public.admin_hard_delete_trip(text) to authenticated;
 grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
 grant execute on function public.admin_list_user_change_logs(integer, integer, text, uuid) to authenticated;
+grant execute on function public.admin_get_trip_version_snapshots(text, uuid, uuid) to authenticated;
 grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
 grant execute on function public.admin_preview_tier_reapply(text) to authenticated;
 
