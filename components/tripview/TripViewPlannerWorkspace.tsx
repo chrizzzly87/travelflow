@@ -106,7 +106,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onTimelineResizeKeyDown,
 }) => {
     const timelineControls = (
-        <div className="z-40 flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
             <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                 <button
                     type="button"
@@ -201,7 +201,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             return (
                 <div className="relative h-full w-full">
                     {mapDeferredFallback}
-                    <div className="absolute top-4 right-4 z-[10] flex flex-col gap-2 pointer-events-none">
+                    <div className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                         <div className="flex flex-col gap-2 pointer-events-auto">
                             {showLayoutControls && (
                                 <>
@@ -296,7 +296,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             onTouchCancel={timelineMode === 'calendar' ? onTimelineTouchEnd : undefined}
                         >
                             {timelineCanvas}
-                            <div className="absolute top-3 right-3 z-40">
+                            <div className="absolute top-3 end-3 z-[60] pointer-events-auto">
                                 {timelineControls}
                             </div>
                         </div>
@@ -315,7 +315,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
                                         <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
                                             {timelineCanvas}
-                                            <div className="absolute top-4 right-4">
+                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                 {timelineControls}
                                             </div>
                                         </div>
@@ -370,7 +370,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     <div ref={verticalLayoutTimelineRef} className="flex-1 h-full relative border-r border-gray-100 min-w-0">
                                         <div className="w-full h-full relative min-w-0">
                                             {timelineCanvas}
-                                            <div className="absolute top-4 right-4">
+                                            <div className="absolute top-4 end-4 z-[60] pointer-events-auto">
                                                 {timelineControls}
                                             </div>
                                         </div>
