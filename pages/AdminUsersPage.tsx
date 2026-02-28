@@ -1172,14 +1172,11 @@ export const AdminUsersPage: React.FC = () => {
     const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
         const diffEntries = buildUserChangeDiffEntries(log);
         const actionPresentation = resolveUserChangeActionPresentation(log, diffEntries);
-        const metadata = asRecord(log.metadata);
         const visibleDiffEntries = diffEntries.slice(0, 4);
         const hiddenDiffCount = Math.max(0, diffEntries.length - visibleDiffEntries.length);
         return {
             log,
-            diffEntries,
             actionPresentation,
-            metadata,
             visibleDiffEntries,
             hiddenDiffCount,
         };
@@ -3165,7 +3162,7 @@ export const AdminUsersPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
                                         <div className="space-y-2">
-                                            {selectedUserChangeEntries.map(({ log, actionPresentation, metadata, visibleDiffEntries, hiddenDiffCount }) => (
+                                            {selectedUserChangeEntries.map(({ log, actionPresentation, visibleDiffEntries, hiddenDiffCount }) => (
                                                 <article key={log.id} className="rounded-lg border border-slate-200 p-3">
                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                         <div className="text-[11px] font-semibold text-slate-500">
@@ -3223,16 +3220,6 @@ export const AdminUsersPage: React.FC = () => {
                                                         >
                                                             Show complete diff
                                                         </button>
-                                                    )}
-                                                    {Object.keys(metadata).length > 0 && (
-                                                        <details className="mt-2 rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-600">
-                                                            <summary className="cursor-pointer font-semibold text-slate-700">
-                                                                Metadata
-                                                            </summary>
-                                                            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
-                                                                {JSON.stringify(metadata, null, 2)}
-                                                            </pre>
-                                                        </details>
                                                     )}
                                                 </article>
                                             ))}

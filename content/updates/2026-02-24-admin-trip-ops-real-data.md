@@ -35,8 +35,12 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 🧭 User trip update logs now include timeline-level change details (added/deleted items, transport mode changes, and changed fields) for clearer audit forensics.
 - [ ] [Fixed] 🧩 User-change diff rendering now ignores misleading after-only metadata fields, so audit entries align with what was actually edited.
 - [ ] [Improved] 🔍 Admin audit and user-change entries now include a “Show complete diff” modal with side-by-side JSON snapshot compare and line-level highlights.
+- [ ] [Improved] 🎯 Diff modal now defaults to focused change context with collapsible unchanged blocks, plus expandable full before/after JSON panes with synced scrolling.
+- [ ] [Improved] 🎨 JSON diff rendering now uses clearer syntax highlighting for faster scan of key/value changes.
+- [ ] [Fixed] 🧾 Removed verbose metadata panels from admin audit/user-change rows to reduce noise and keep change timelines focused.
 - [ ] [Fixed] 🚫 Trip creation-limit checks no longer create anonymous DB accounts during read-only eligibility checks.
 - [ ] [Fixed] 🧯 Added a safe auth-context fallback so rare route recovery states no longer crash with “useAuthContext must be used within AuthProvider.”
+- [ ] [Improved] ➕ Profile owner summary now includes a prominent “Create Trip” action so planners are always one click away from `/profile`.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.

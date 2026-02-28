@@ -238,6 +238,14 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     expect(container.className).toContain('md:px-8');
   });
 
+  it('shows a clear create-trip shortcut on profile home', async () => {
+    renderProfilePage('/profile');
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('link', { name: /common:createTrip/i }).length).toBeGreaterThan(0);
+    });
+  });
+
   it('copies the public profile URL from the share action', async () => {
     const user = userEvent.setup();
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);

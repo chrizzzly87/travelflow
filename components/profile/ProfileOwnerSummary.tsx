@@ -4,6 +4,7 @@ import {
   MapPin,
   Mountains,
   PencilSimpleLine,
+  PlusCircle,
   ShareNetwork,
 } from '@phosphor-icons/react';
 import { ProfileMetaPanel } from './ProfileMetaPanel';
@@ -14,6 +15,7 @@ import type { ProfileStatus } from './profileStatus';
 import type { ProfileStampProgress } from './profileStamps';
 
 interface ProfileOwnerSummaryLabels {
+  createTrip: string;
   editProfile: string;
   viewPublicProfile: string;
   shareProfile: string;
@@ -42,7 +44,9 @@ interface ProfileOwnerSummaryProps {
   passportCountryCode?: string;
   stats: ProfileSummaryStat[];
   labels: ProfileOwnerSummaryLabels;
+  createTripHref: string;
   editProfileHref: string;
+  onCreateTripClick?: () => void;
   viewPublicProfileHref: string;
   onEditProfileClick?: () => void;
   onViewPublicProfileClick?: () => void;
@@ -69,7 +73,9 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
   passportCountryCode,
   stats,
   labels,
+  createTripHref,
   editProfileHref,
+  onCreateTripClick,
   viewPublicProfileHref,
   onEditProfileClick,
   onViewPublicProfileClick,
@@ -125,9 +131,17 @@ export const ProfileOwnerSummary: React.FC<ProfileOwnerSummaryProps> = ({
 
         <div className="mt-auto grid gap-2 pt-4">
           <a
+            href={createTripHref}
+            onClick={onCreateTripClick}
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-accent-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-500"
+          >
+            <PlusCircle size={15} weight="duotone" />
+            {labels.createTrip}
+          </a>
+          <a
             href={editProfileHref}
             onClick={onEditProfileClick}
-            className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
           >
             <PencilSimpleLine size={15} weight="duotone" />
             {labels.editProfile}

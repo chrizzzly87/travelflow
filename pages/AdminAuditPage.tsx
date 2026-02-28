@@ -1000,16 +1000,6 @@ export const AdminAuditPage: React.FC = () => {
                                                     Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
                                                 </p>
                                             )}
-                                            {log.metadata && Object.keys(log.metadata).length > 0 && (
-                                                <details className="mt-2 max-w-[420px] rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-600">
-                                                    <summary className="cursor-pointer font-semibold text-slate-700">
-                                                        Metadata
-                                                    </summary>
-                                                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
-                                                        {JSON.stringify(log.metadata, null, 2)}
-                                                    </pre>
-                                                </details>
-                                            )}
                                         </td>
                                     </tr>
                                 );

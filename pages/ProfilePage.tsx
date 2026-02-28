@@ -111,7 +111,7 @@ const isEditableEventTarget = (target: EventTarget | null): boolean => {
 export const ProfilePage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const { t, i18n } = useTranslation('profile');
+    const { t, i18n } = useTranslation(['profile', 'common']);
     const { confirm: confirmDialog } = useAppDialog();
     const {
         isLoading,
@@ -886,6 +886,7 @@ export const ProfilePage: React.FC = () => {
                         { id: 'likes_earned', label: t('stats.likesEarned'), value: 0, accent: true },
                     ]}
                     labels={{
+                        createTrip: t('common:createTrip'),
                         editProfile: t('summary.editProfile'),
                         viewPublicProfile: t('summary.viewPublicProfile'),
                         shareProfile: t('summary.shareProfile'),
@@ -899,7 +900,11 @@ export const ProfilePage: React.FC = () => {
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
                     }}
+                    createTripHref={buildPath('createTrip')}
                     editProfileHref={buildPath('profileSettings')}
+                    onCreateTripClick={() => {
+                        trackEvent('profile__summary--create_trip');
+                    }}
                     viewPublicProfileHref={publicProfilePath || buildPath('profileSettings')}
                     onEditProfileClick={() => {
                         trackEvent('profile__summary--edit_profile');
@@ -957,7 +962,7 @@ export const ProfilePage: React.FC = () => {
                             {...getAnalyticsDebugAttributes('profile__shortcut--planner')}
                         >
                             <IdentificationCard size={16} />
-                            {t('actions.planner')}
+                            {t('common:createTrip')}
                         </NavLink>
                         <button
                             type="button"
