@@ -295,6 +295,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (isSubmitting) return;
         if (isRestoreBlocked) return;
         if (!isOnline) {
             setErrorMessage(t('errors.offline'));
@@ -467,6 +468,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setIsSubmitting(false);
     };
 
+    const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+        if (event.key !== 'Enter') return;
+        if (event.nativeEvent.isComposing) return;
+        if (!(event.target instanceof HTMLInputElement)) return;
+        event.preventDefault();
+        event.currentTarget.requestSubmit();
+    };
+
     return (
         <div className="fixed inset-0 z-[21000] flex items-center justify-center p-4 sm:p-6">
             <button
@@ -554,7 +563,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                                 </button>
                             </div>
 
-                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit}>
+                            <form className="mt-5 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
                                 <div className="block">
                                     <label
                                         htmlFor={emailInputId}

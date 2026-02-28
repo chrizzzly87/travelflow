@@ -214,6 +214,7 @@ export const LoginPage: React.FC = () => {
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (isSubmitting || isQueueProcessing) return;
         if (!email.trim() || !password.trim()) {
             setErrorMessage(t('errors.default'));
             return;
@@ -297,6 +298,14 @@ export const LoginPage: React.FC = () => {
         setIsSubmitting(false);
     };
 
+    const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+        if (event.key !== 'Enter') return;
+        if (event.nativeEvent.isComposing) return;
+        if (!(event.target instanceof HTMLInputElement)) return;
+        event.preventDefault();
+        event.currentTarget.requestSubmit();
+    };
+
     return (
         <MarketingLayout>
             <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
@@ -333,7 +342,7 @@ export const LoginPage: React.FC = () => {
                         </button>
                     </div>
 
-                    <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit}>
+                    <form className="mt-6 space-y-4" onSubmit={handlePasswordSubmit} onKeyDown={handleFormKeyDown}>
                         <div className="block">
                             <label
                                 htmlFor={LOGIN_PAGE_EMAIL_INPUT_ID}
