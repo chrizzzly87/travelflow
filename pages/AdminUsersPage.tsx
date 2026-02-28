@@ -1606,7 +1606,13 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleHardDelete = async (user: AdminUserRecord) => {
         if (!isUserHardDeleteEligible(user)) {
-            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            const reason = 'Hard delete is unavailable for soft-deleted users.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
         const userName = getUserDisplayName(user);
@@ -1670,13 +1676,31 @@ export const AdminUsersPage: React.FC = () => {
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Soft-deleting users',
+            description: `Applying soft-delete to ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             await Promise.all(selectedVisibleUsers.map((user) => adminUpdateUserProfile(user.user_id, { accountStatus: 'deleted' })));
             setMessage(`${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} soft-deleted.`);
             setSelectedUserIds(new Set());
             await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'remove',
+                title: 'Users soft-deleted',
+                description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
+            });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not soft-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Soft delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1687,7 +1711,13 @@ export const AdminUsersPage: React.FC = () => {
         const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
         const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
         if (hardDeleteUsers.length === 0) {
-            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            const reason = 'No eligible users selected for hard delete. Soft-deleted users are skipped.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
         const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
@@ -1704,6 +1734,11 @@ export const AdminUsersPage: React.FC = () => {
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Hard-deleting users',
+            description: `Permanently deleting ${hardDeleteUsers.length} selected user${hardDeleteUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
             const failedIndexes: number[] = [];
@@ -1765,9 +1800,31 @@ export const AdminUsersPage: React.FC = () => {
             await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
             if (bulkErrorMessage) {
                 setErrorMessage(bulkErrorMessage);
+                showAppToast({
+                    id: loadingToastId,
+                    tone: deleted > 0 ? 'warning' : 'error',
+                    title: deleted > 0 ? 'Some users were not deleted' : 'Hard delete failed',
+                    description: deleted > 0
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} were deleted, but ${failed} failed. Check the inline details for affected accounts.`
+                        : bulkErrorMessage,
+                });
+            } else {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'remove',
+                    title: 'Users hard-deleted',
+                    description: `${deleted} user${deleted === 1 ? '' : 's'} were permanently deleted.`,
+                });
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Hard delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }

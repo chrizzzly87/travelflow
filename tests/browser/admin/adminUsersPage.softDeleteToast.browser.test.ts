@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -147,6 +147,7 @@ const normalizeMessageText = (value: string): string => (
 
 describe('pages/AdminUsersPage soft delete toasts', () => {
   beforeEach(() => {
+    cleanup();
     vi.clearAllMocks();
     mocks.adminListUsers.mockResolvedValue([USER_ROW]);
     mocks.adminGetUserProfile.mockResolvedValue(USER_ROW);
@@ -217,5 +218,22 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(hardDeleteMessageText).toMatch(/Are you sure you want to hard-delete\s*"Traveler One"\?/);
     expect(hardDeleteMessageText).toContain('Use soft delete instead if you may need to restore this user later.');
     expect(hardDeleteMessageText).toContain('This action cannot be undone.');
+  });
+
+  it('shows a hard-delete error toast for failed bulk hard-delete operations', async () => {
+    const user = userEvent.setup();
+    mocks.adminHardDeleteUser.mockRejectedValueOnce(new Error('Vite proxy failed'));
+
+    renderPage();
+
+    await screen.findAllByRole('button', { name: /Traveler One/i });
+    await user.click(screen.getByRole('checkbox', { name: /Select Traveler One/i }));
+    await user.click(screen.getByRole('button', { name: 'Hard delete selected' }));
+
+    await waitFor(() => {
+      expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Hard delete failed',
+      }));
+    });
   });
 });

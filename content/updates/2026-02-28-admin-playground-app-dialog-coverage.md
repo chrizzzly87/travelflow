@@ -23,5 +23,8 @@ summary: "Extended the admin design playground with real shared confirm/prompt d
 - [ ] [Internal] 🎛️ Upgraded `useAppDialog` confirm/prompt bodies from string-only text to rich content nodes (lists, emphasis, and structured note blocks).
 - [ ] [Internal] 📱 Updated shared confirm/prompt modal positioning to bottom-align on mobile for thumb-reach ergonomics while preserving centered desktop behavior.
 - [ ] [Internal] ♿ Added keyboard-accessible overlay close behavior for app dialogs to keep the modal backdrop interaction accessible.
+- [ ] [Internal] 🔧 Updated admin identity dev fallback guidance to `pnpm dev:netlify` / `pnpm dev` in Vite proxy and missing-route error hints.
+- [ ] [Internal] 🚨 Added missing admin users bulk delete/archive warning/error toasts so Netlify dev IAM failures are visible immediately.
+- [ ] [Internal] 🪪 Prevented dev-admin bypass from masking real authenticated admin sessions when a non-bypass Supabase session is present.
 - [ ] [Internal] 📚 Documented current app dialog variants and harmonization targets in the admin playground follow-up issue doc.
 - [ ] [Internal] 🧪 Added regression coverage for triggering shared confirm/prompt dialog samples in the playground.

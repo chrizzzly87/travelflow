@@ -3,6 +3,7 @@ import {
   isAuthBootstrapCriticalPath,
   shouldAutoClearSimulatedLoginOnRealAdminSession,
   shouldEnableDevAdminBypass,
+  shouldUseDevAdminBypassSession,
 } from '../../contexts/AuthContext';
 
 describe('contexts/AuthContext dev admin bypass', () => {
@@ -50,5 +51,18 @@ describe('contexts/AuthContext simulated-login cleanup', () => {
       { role: 'admin', isAnonymous: false },
       null,
     )).toBe(false);
+  });
+});
+
+describe('contexts/AuthContext dev bypass session precedence', () => {
+  it('uses bypass only when no real session user is present', () => {
+    expect(shouldUseDevAdminBypassSession(true, null)).toBe(true);
+    expect(shouldUseDevAdminBypassSession(true, undefined)).toBe(true);
+    expect(shouldUseDevAdminBypassSession(true, 'dev-admin-id')).toBe(true);
+  });
+
+  it('does not use bypass for real authenticated users', () => {
+    expect(shouldUseDevAdminBypassSession(true, 'real-admin-user-id')).toBe(false);
+    expect(shouldUseDevAdminBypassSession(false, null)).toBe(false);
   });
 });
