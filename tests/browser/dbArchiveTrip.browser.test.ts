@@ -153,6 +153,7 @@ describe('services/dbService dbArchiveTrip', () => {
   });
 
   it('returns false when fallback update affects no row', async () => {
+    const correlationId = 'corr-archive-noop-1';
     mocks.rpc.mockResolvedValueOnce({
       data: null,
       error: { message: 'function public.archive_trip_for_user(text,text,jsonb) does not exist' },
@@ -161,9 +162,19 @@ describe('services/dbService dbArchiveTrip', () => {
     mocks.updateMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const { dbArchiveTrip } = await import('../../services/dbService');
-    const archived = await dbArchiveTrip('trip-noop', { source: 'my_trips' });
+    const archived = await dbArchiveTrip('trip-noop', {
+      source: 'my_trips',
+      metadata: { correlation_id: correlationId },
+    });
 
     expect(archived).toBe(false);
+    expect(mocks.rpc).toHaveBeenNthCalledWith(1, 'archive_trip_for_user', {
+      p_trip_id: 'trip-noop',
+      p_source: 'my_trips',
+      p_metadata: expect.objectContaining({
+        correlation_id: correlationId,
+      }),
+    });
     expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'log_user_action_failure', {
       p_action: 'trip.archive_failed',
       p_target_type: 'trip',
@@ -174,8 +185,8 @@ describe('services/dbService dbArchiveTrip', () => {
       p_metadata: expect.objectContaining({
         trip_id: 'trip-noop',
         source: 'my_trips',
-        archive_metadata: {},
-        correlation_id: expect.any(String),
+        archive_metadata: { correlation_id: correlationId },
+        correlation_id: correlationId,
       }),
     });
   });

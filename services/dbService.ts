@@ -541,6 +541,28 @@ const createEventCorrelationId = (): string => {
     return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const normalizeCorrelationId = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.slice(0, 160);
+};
+
+const createDeterministicCorrelationId = (prefix: string, parts: Array<string | number | null | undefined>): string => {
+    const normalizedParts = parts
+        .map((part) => {
+            if (part === null || part === undefined) return '';
+            return String(part)
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        })
+        .filter(Boolean);
+    if (normalizedParts.length === 0) return createEventCorrelationId();
+    return `${prefix}-${normalizedParts.join('-')}`.slice(0, 180);
+};
+
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
     title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
     status: trip.status && ['active', 'archived', 'expired'].includes(trip.status)
@@ -1069,7 +1091,10 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         debugLog('dbUpsertTrip:empty', { tripId: trip.id });
     }
     const afterSnapshot = await readOwnedTripEventSnapshot(client, ownerId, normalizedTrip.id);
-    const correlationId = createEventCorrelationId();
+    const correlationId = createDeterministicCorrelationId('trip-upsert', [
+        normalizedTrip.id,
+        normalizedTrip.updatedAt,
+    ]);
     await writeTripLifecycleEventFallback(client, {
         ownerId,
         tripId: normalizedTrip.id,
@@ -1266,7 +1291,10 @@ export const dbCreateTripVersion = async (
             previousTrip: previousVersionSnapshot?.trip ?? null,
             nextTrip: normalizedTrip,
         });
-        const correlationId = createEventCorrelationId();
+        const correlationId = createDeterministicCorrelationId('trip-version', [
+            normalizedTrip.id,
+            versionId ?? normalizedTrip.updatedAt,
+        ]);
         await writeTripEventFallback(client, {
             ownerId,
             tripId: normalizedTrip.id,
@@ -1567,7 +1595,7 @@ export const dbArchiveTrip = async (
     const metadata = options?.metadata && typeof options.metadata === 'object'
         ? options.metadata
         : {};
-    const correlationId = createEventCorrelationId();
+    const correlationId = normalizeCorrelationId(metadata.correlation_id) || createEventCorrelationId();
     const metadataWithCorrelation: Record<string, unknown> = {
         ...metadata,
         correlation_id: correlationId,

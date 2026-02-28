@@ -15,6 +15,7 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 - Trip lifecycle updates:
   - `trip.created`, `trip.updated`, `trip.archived`, `trip.share_created` in `trip_user_events`.
   - Include `metadata.correlation_id` on every write.
+  - Use deterministic conventions where available (`trip-upsert-*`, `trip-version-*`) and preserve caller correlation IDs on archive flows.
 - Trip version commits (`dbCreateTripVersion`):
   - Write `trip.updated` with:
     - `timeline_diff_v1`

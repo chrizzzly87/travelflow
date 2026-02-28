@@ -57,6 +57,10 @@
 - `trip_user_events.metadata` must include `correlation_id`.
 - Archive failure metadata in `profile_user_events` (via `log_user_action_failure`) must also include `correlation_id`.
 - Correlation IDs connect related write attempts across event tables for incident tracing.
+- Current deterministic conventions:
+  - version commit events: `trip-version-<trip-id>-<version-id>`
+  - lifecycle upsert fallback events: `trip-upsert-<trip-id>-<updated-at>`
+  - archive flows preserve caller-provided `metadata.correlation_id` when present.
 
 ## Test coverage (must keep)
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
