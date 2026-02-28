@@ -4,12 +4,14 @@ import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDay
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
-import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { useAuth } from '../hooks/useAuth';
+import { trackEvent } from '../services/analyticsService';
+import { showAppToast } from './ui/appToast';
 import {
   buildMiniMapUrl,
   formatTripDateRange,
@@ -355,7 +357,7 @@ const FolderHeader: React.FC<FolderHeaderProps> = ({ label, count, isOpen, onTog
     <button
       type="button"
       onClick={onToggle}
-      className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
+      className="cursor-pointer p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
       aria-label={isOpen ? `Collapse ${label}` : `Expand ${label}`}
       title={isOpen ? `Collapse ${label}` : `Expand ${label}`}
     >
@@ -412,7 +414,7 @@ const TripRow: React.FC<TripRowProps> = ({
       <button
         type="button"
         onClick={() => onSelectTrip(trip)}
-        className="min-w-0 flex-1 text-left"
+        className="min-w-0 flex-1 cursor-pointer text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="inline-flex items-center gap-1.5">
@@ -447,7 +449,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -457,7 +459,7 @@ const TripRow: React.FC<TripRowProps> = ({
             e.stopPropagation();
             onToggleFavorite(trip);
           }}
-          className={`p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
+          className={`cursor-pointer p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
             showFavoriteByDefault ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -957,6 +959,9 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    const tripToArchive = trips.find((trip) => trip.id === id);
+    if (!tripToArchive) return;
+
     const shouldDelete = await confirm({
       title: 'Archive Trip?',
       message: 'This trip will be removed from your list and can be restored later.',
@@ -966,12 +971,70 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
     if (!shouldDelete) return;
 
-    deleteTrip(id);
+    const toastId = showAppToast({
+      tone: 'loading',
+      title: 'Archiving trip',
+      description: 'Saving your change and removing this trip from your list...',
+      dismissible: false,
+    });
+
     if (DB_ENABLED) {
-      void dbDeleteTrip(id);
+      const archived = await dbArchiveTrip(id, {
+        source: 'my_trips',
+        metadata: { surface: 'trip_manager' },
+      });
+      if (!archived) {
+        showAppToast({
+          id: toastId,
+          tone: 'error',
+          title: 'Archive failed',
+          description: 'Could not archive this trip right now.',
+        });
+        return;
+      }
     }
+
+    deleteTrip(id);
+    trackEvent('my_trips__trip_archive--single', { trip_id: id });
     if (hoverAnchor?.tripId === id) hideHoverNow();
     void refreshTrips();
+    showAppToast({
+      id: toastId,
+      tone: 'remove',
+      title: 'Trip archived',
+      description: `Your trip "${tripToArchive.title}" was archived successfully.`,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          void (async () => {
+            const restoredTrip: ITrip = {
+              ...tripToArchive,
+              status: 'active',
+              updatedAt: Date.now(),
+            };
+            saveTrip(restoredTrip, { preserveUpdatedAt: true });
+            if (DB_ENABLED) {
+              const upserted = await dbUpsertTrip(restoredTrip);
+              if (!upserted) {
+                showAppToast({
+                  tone: 'error',
+                  title: 'Undo failed',
+                  description: 'Could not restore this trip right now.',
+                });
+                return;
+              }
+            }
+            trackEvent('my_trips__trip_archive--undo', { trip_id: id });
+            void refreshTrips();
+            showAppToast({
+              tone: 'add',
+              title: 'Archive undone',
+              description: `“${tripToArchive.title}” restored to My Trips.`,
+            });
+          })();
+        },
+      },
+    });
   };
 
   const handleToggleFavorite = (trip: ITrip) => {

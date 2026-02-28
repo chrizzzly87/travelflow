@@ -34,6 +34,9 @@ jobs:
       - name: Validate storage registry
         run: pnpm storage:validate
 
+      - name: Validate toast usage conventions
+        run: pnpm toasts:validate
+
       - name: New module guard (services/config => tests checklist entry)
         env:
           BASE_REF: ${{ github.base_ref }}

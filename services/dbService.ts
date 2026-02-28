@@ -685,25 +685,102 @@ export const syncTripsFromDb = async () => {
     setAllTrips(trips);
 };
 
-export const dbDeleteTrip = async (tripId: string) => {
-    if (!DB_ENABLED) return;
+export interface DbArchiveTripOptions {
+    source?: string;
+    metadata?: Record<string, unknown>;
+}
+
+const normalizeArchiveSource = (source: string | undefined): string | null => {
+    if (typeof source !== 'string') return null;
+    const normalized = source.trim();
+    return normalized ? normalized.slice(0, 120) : null;
+};
+
+export const dbArchiveTrip = async (
+    tripId: string,
+    options?: DbArchiveTripOptions
+): Promise<boolean> => {
+    if (!DB_ENABLED) return true;
     const client = requireSupabase();
     await ensureDbSession();
-    let { error } = await client
-        .from('trips')
-        .update({
-            status: 'archived',
-            archived_at: new Date().toISOString(),
-        })
-        .eq('id', tripId);
-    if (error && /column/i.test(error.message || '') && /(status|archived_at)/i.test(error.message || '')) {
-        debugLog('dbDeleteTrip:fallbackHardDelete', { message: error.message });
-        const fallback = await client.from('trips').delete().eq('id', tripId);
-        error = fallback.error;
+    const source = normalizeArchiveSource(options?.source);
+    const metadata = options?.metadata && typeof options.metadata === 'object'
+        ? options.metadata
+        : {};
+
+    const rpcResult = await client.rpc('archive_trip_for_user', {
+        p_trip_id: tripId,
+        p_source: source,
+        p_metadata: metadata,
+    });
+    let error = rpcResult.error;
+    let archived = false;
+
+    if (!error) {
+        const row = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+        archived = Boolean(
+            row
+            && typeof row.trip_id === 'string'
+            && row.trip_id === tripId
+            && (typeof row.status !== 'string' || row.status === 'archived')
+        );
+        if (!archived) {
+            debugLog('dbArchiveTrip:rpcNoArchivedRow', { tripId, source });
+        }
     }
-    if (error) {
-        console.error('Failed to delete trip', error);
+
+    const isMissingArchiveFunction = Boolean(
+        error
+        && /function/i.test(error.message || '')
+        && /archive_trip_for_user/i.test(error.message || '')
+    );
+
+    if (!archived && (isMissingArchiveFunction || !error)) {
+        if (isMissingArchiveFunction) {
+            debugLog('dbArchiveTrip:fallbackUpdate', { message: error?.message, tripId, source });
+        } else {
+            debugLog('dbArchiveTrip:fallbackAfterEmptyRpcResult', { tripId, source });
+        }
+        const fallbackUpdate = await client
+            .from('trips')
+            .update({
+                status: 'archived',
+                archived_at: new Date().toISOString(),
+            })
+            .eq('id', tripId)
+            .select('id, status')
+            .maybeSingle();
+        error = fallbackUpdate.error;
+
+        if (!error) {
+            const row = fallbackUpdate.data as { id?: string; status?: string | null } | null;
+            archived = Boolean(
+                row
+                && typeof row.id === 'string'
+                && row.id === tripId
+                && (row.status === null || row.status === undefined || row.status === 'archived')
+            );
+            if (!archived) {
+                debugLog('dbArchiveTrip:fallbackNoArchivedRow', { tripId, source });
+            }
+        }
     }
+
+    if (error || !archived) {
+        console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
+        return false;
+    }
+    return true;
+};
+
+export const dbDeleteTrip = async (
+    tripId: string,
+    options?: DbArchiveTripOptions
+): Promise<boolean> => {
+    return dbArchiveTrip(tripId, {
+        source: options?.source || 'legacy_delete',
+        metadata: options?.metadata,
+    });
 };
 
 export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {

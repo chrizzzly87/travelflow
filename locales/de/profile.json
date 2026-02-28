@@ -39,6 +39,9 @@
     "liked": "Gelikte Reisen",
     "comingSoon": "Bald"
   },
+  "filters": {
+    "showOnlyPublic": "Nur öffentliche anzeigen"
+  },
   "recentSort": {
     "created": "Erstellt",
     "updated": "Aktualisiert"
@@ -59,16 +62,22 @@
       "pin": "Stift",
       "unpin": "Lösen",
       "makePublic": "Öffentlich",
-      "makePrivate": "Privat"
+      "makePrivate": "Privat",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
     },
     "source": {
       "createdByYou": "Von Ihnen erstellt",
       "copiedFromShared": "Von der gemeinsamen Reise kopiert",
       "copiedFromYourTrip": "Von Ihrer Reise kopiert",
-      "startedFromExample": "Ausgehend vom Beispiel"
+      "startedFromExample": "Ausgehend vom Beispiel",
+      "copiedFromTraveler": "Von der gemeinsamen Reise kopiert",
+      "copiedFromExample": "Ausgehend vom Beispiel",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
     },
     "expiredTag": "Abgelaufen",
-    "expiredFallbackTitle": "Abgelaufener Reiseentwurf"
+    "expiredFallbackTitle": "Abgelaufener Reiseentwurf",
+    "hiddenTag": "Hidden"
   },
   "actions": {
     "title": "Schnellaktionen",
@@ -100,7 +109,9 @@
     "follow": "Folgen",
     "message": "Nachricht",
     "shareCopied": "Profil-URL in die Zwischenablage kopiert.",
-    "shareOpened": "Öffentliches Profil in neuem Tab geöffnet."
+    "shareOpened": "Öffentliches Profil in neuem Tab geöffnet.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
   },
   "stats": {
     "totalTrips": "Gesamtreisen",
@@ -163,7 +174,9 @@
     },
     "messages": {
       "saved": "Profileinstellungen erfolgreich gespeichert.",
-      "onboardingSaved": "Profil erfolgreich abgeschlossen."
+      "onboardingSaved": "Profil erfolgreich abgeschlossen.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
     },
     "errors": {
       "required": "Bitte füllen Sie alle erforderlichen Felder aus.",
@@ -264,5 +277,49 @@
   "fallback": {
     "displayName": "Reisender",
     "email": "Keine E-Mail verfügbar"
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Deine Reise \"{title}\" wurde erfolgreich archiviert."
   }
 }

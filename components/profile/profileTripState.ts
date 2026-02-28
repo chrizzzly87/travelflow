@@ -9,9 +9,12 @@ export const MAX_PINNED_TRIPS = 3;
 
 export type TripSourceLabelKey =
   | 'createdByYou'
-  | 'copiedFromShared'
+  | 'copiedFromTraveler'
   | 'copiedFromYourTrip'
-  | 'startedFromExample';
+  | 'copiedFromExample'
+  | 'fromTravelflowCatalog';
+
+export const SYSTEM_CATALOG_SOURCE_HANDLE = 'travelflow_examples';
 
 const normalizeTimestamp = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
 
@@ -25,15 +28,30 @@ export const normalizeProfileRecentSort = (value: string | null | undefined): Pr
     ? value
     : 'created';
 
+export const isTripFromTravelflowCatalog = (trip: ITrip): boolean => (
+  trip.sourceOwnerType === 'system_catalog' ||
+  trip.sourceOwnerHandle === SYSTEM_CATALOG_SOURCE_HANDLE
+);
+
+export const isExampleDerivedTrip = (trip: ITrip): boolean => (
+  trip.sourceKind === 'example' ||
+  Boolean(trip.forkedFromExampleTemplateId) ||
+  Boolean(trip.isExample) ||
+  (trip.sourceKind === 'duplicate_trip' && Boolean(trip.sourceTemplateId))
+);
+
 export const getTripSourceLabelKey = (trip: ITrip): TripSourceLabelKey => {
+  if (isTripFromTravelflowCatalog(trip)) {
+    return 'fromTravelflowCatalog';
+  }
+  if (isExampleDerivedTrip(trip)) {
+    return 'copiedFromExample';
+  }
   if (trip.sourceKind === 'duplicate_shared' || trip.forkedFromShareToken) {
-    return 'copiedFromShared';
+    return 'copiedFromTraveler';
   }
   if (trip.sourceKind === 'duplicate_trip' || trip.forkedFromTripId) {
     return 'copiedFromYourTrip';
-  }
-  if (trip.sourceKind === 'example' || trip.forkedFromExampleTemplateId || trip.isExample) {
-    return 'startedFromExample';
   }
   return 'createdByYou';
 };

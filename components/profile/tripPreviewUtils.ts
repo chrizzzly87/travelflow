@@ -3,6 +3,7 @@ import {
   DEFAULT_DISTANCE_UNIT,
   formatDistance,
   getGoogleMapsApiKey,
+  getHexFromColorClass,
   getTripDistanceKm,
 } from '../../utils';
 
@@ -16,6 +17,12 @@ export interface TripCityStop {
   title: string;
   startDateOffset: number;
   duration: number;
+}
+
+type TripMapPreviewVariant = 'standard' | 'accent';
+
+interface MiniMapOptions {
+  variant?: TripMapPreviewVariant;
 }
 
 const TOOLTIP_CLEAN_STYLE = [
@@ -92,6 +99,24 @@ const resolveMapColors = () => {
     waypoint: fromVar('--tf-accent-500', fallback.waypoint),
     route: fromVar('--tf-accent-600', fallback.route),
   };
+};
+
+const STANDARD_MAP_COLORS = {
+  start: 'f97316',
+  end: 'ef4444',
+  waypoint: 'f97316',
+  route: 'f97316',
+};
+
+const resolveTripItemColorHex = (value?: string | null): string | null => {
+  const trimmed = typeof value === 'string' ? value.trim() : '';
+  if (!trimmed) return null;
+
+  const directHex = normalizeCssColorToHex(trimmed);
+  if (directHex) return directHex;
+
+  const resolvedHex = normalizeCssColorToHex(getHexFromColorClass(trimmed));
+  return resolvedHex;
 };
 
 const parseLocalDate = (dateStr: string): Date => {
@@ -198,14 +223,22 @@ export const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage = 'en'): 
   return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip, locale)} • ${cityCount} ${cityLabel}${distancePart}`;
 };
 
-export const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
+export const buildMiniMapUrl = (
+  trip: ITrip,
+  mapLanguage: AppLanguage,
+  options?: MiniMapOptions
+): string | null => {
   const apiKey = getGoogleMapsApiKey();
   if (!apiKey) return null;
+  const variant = options?.variant || 'standard';
 
   const coordinates = getTripCityItems(trip)
-    .map((item) => item.coordinates)
-    .filter((coord): coord is { lat: number; lng: number } =>
-      Boolean(coord && Number.isFinite(coord.lat) && Number.isFinite(coord.lng))
+    .map((item) => ({
+      coordinates: item.coordinates,
+      colorHex: variant === 'standard' ? resolveTripItemColorHex(item.color) : null,
+    }))
+    .filter((item): item is { coordinates: { lat: number; lng: number }; colorHex: string | null } =>
+      Boolean(item.coordinates && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng))
     );
 
   if (coordinates.length === 0) return null;
@@ -217,31 +250,46 @@ export const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string |
   const visibleParams: string[] = [];
   const start = routeCoordinates[0];
   const end = routeCoordinates[routeCoordinates.length - 1];
-  const mapColors = resolveMapColors();
+  const mapColors = variant === 'accent' ? resolveMapColors() : STANDARD_MAP_COLORS;
+  const startMarkerColor = start.colorHex || mapColors.start;
+  const endMarkerColor = end.colorHex || mapColors.end;
 
-  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.start}|label:S|${formatCoord(start)}`)}`);
+  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${startMarkerColor}|label:S|${formatCoord(start.coordinates)}`)}`);
   if (routeCoordinates.length > 1) {
-    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.end}|label:E|${formatCoord(end)}`)}`);
+    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${endMarkerColor}|label:E|${formatCoord(end.coordinates)}`)}`);
   }
 
   routeCoordinates.slice(1, -1).slice(0, 18).forEach((coord) => {
-    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x${mapColors.waypoint}|${formatCoord(coord)}`)}`);
+    const waypointColor = coord.colorHex || mapColors.waypoint;
+    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x${waypointColor}|${formatCoord(coord.coordinates)}`)}`);
   });
 
   routeCoordinates.forEach((coord) => {
-    visibleParams.push(`visible=${encodeURIComponent(formatCoord(coord))}`);
+    visibleParams.push(`visible=${encodeURIComponent(formatCoord(coord.coordinates))}`);
   });
 
   const pathParams: string[] = [];
   if (routeCoordinates.length > 1) {
-    pathParams.push(
-      `path=${encodeURIComponent(`color:0x${mapColors.route}|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
-    );
+    if (variant === 'standard') {
+      for (let index = 0; index < routeCoordinates.length - 1; index += 1) {
+        const from = routeCoordinates[index];
+        const to = routeCoordinates[index + 1];
+        const segmentColor = to.colorHex || mapColors.route;
+        pathParams.push(
+          `path=${encodeURIComponent(`color:0x${segmentColor}|weight:4|${formatCoord(from.coordinates)}|${formatCoord(to.coordinates)}`)}`
+        );
+      }
+    } else {
+      pathParams.push(
+        `path=${encodeURIComponent(`color:0x${mapColors.route}|weight:4|${routeCoordinates.map((coord) => formatCoord(coord.coordinates)).join('|')}`)}`
+      );
+    }
   }
 
   const markerQuery = markerParams.join('&');
   const visibleQuery = visibleParams.join('&');
   const pathQuery = pathParams.length > 0 ? `&${pathParams.join('&')}` : '';
+  const mapStyleQuery = variant === 'accent' ? `&${TOOLTIP_CLEAN_STYLE}` : '';
 
-  return `https://maps.googleapis.com/maps/api/staticmap?size=480x640&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
+  return `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=roadmap${mapStyleQuery}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
 };

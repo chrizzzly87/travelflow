@@ -36,6 +36,16 @@ create table if not exists public.trip_versions (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.trip_user_events (
+  id uuid primary key default gen_random_uuid(),
+  trip_id text not null references public.trips(id) on delete cascade,
+  owner_id uuid not null references auth.users on delete cascade,
+  action text not null,
+  source text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.trip_shares (
   id uuid primary key default gen_random_uuid(),
   trip_id text not null references public.trips(id) on delete cascade,
@@ -223,6 +233,8 @@ create index if not exists trips_owner_status_idx on public.trips(owner_id, stat
 create index if not exists trips_trip_expires_at_idx on public.trips(trip_expires_at);
 create index if not exists trip_versions_trip_id_idx on public.trip_versions(trip_id);
 create index if not exists trip_versions_created_at_idx on public.trip_versions(created_at desc);
+create index if not exists trip_user_events_owner_created_idx on public.trip_user_events(owner_id, created_at desc);
+create index if not exists trip_user_events_trip_created_idx on public.trip_user_events(trip_id, created_at desc);
 create index if not exists trip_shares_trip_id_idx on public.trip_shares(trip_id);
 create index if not exists trip_collaborators_user_id_idx on public.trip_collaborators(user_id);
 create index if not exists ai_benchmark_sessions_owner_created_idx on public.ai_benchmark_sessions(owner_id, created_at desc);
@@ -532,6 +544,7 @@ for each row execute function public.set_trip_version_number();
 -- RLS
 alter table public.trips enable row level security;
 alter table public.trip_versions enable row level security;
+alter table public.trip_user_events enable row level security;
 alter table public.trip_shares enable row level security;
 alter table public.trip_collaborators enable row level security;
 alter table public.profiles enable row level security;
@@ -612,6 +625,19 @@ with check (
       )
   )
 );
+
+drop policy if exists "Trip user events owner read" on public.trip_user_events;
+drop policy if exists "Trip user events owner insert" on public.trip_user_events;
+create policy "Trip user events owner read"
+on public.trip_user_events for select
+using (
+  owner_id = auth.uid()
+  or public.is_admin(auth.uid())
+);
+
+create policy "Trip user events owner insert"
+on public.trip_user_events for insert
+with check (owner_id = auth.uid());
 
 -- Trip shares policies (owner only)
 drop policy if exists "Trip shares owner read" on public.trip_shares;
@@ -3912,6 +3938,87 @@ begin
 end;
 $$;
 
+create or replace function public.archive_trip_for_user(
+  p_trip_id text,
+  p_source text default null,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns table(
+  trip_id text,
+  status text,
+  archived_at timestamptz,
+  event_id uuid
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_owner uuid;
+  v_trip_row public.trips%rowtype;
+  v_event_id uuid;
+  v_label text;
+  v_status_before text;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  select t.*
+    into v_trip_row
+    from public.trips t
+   where t.id = p_trip_id
+     and t.owner_id = v_owner
+   limit 1;
+
+  if v_trip_row.id is null then
+    raise exception 'Trip not found or not owned by current user';
+  end if;
+
+  v_status_before := coalesce(v_trip_row.status, 'active');
+
+  update public.trips t
+     set status = 'archived',
+         archived_at = coalesce(t.archived_at, now()),
+         updated_at = now()
+   where t.id = p_trip_id
+   returning t.* into v_trip_row;
+
+  v_label := 'Archived by user';
+  if nullif(btrim(coalesce(p_source, '')), '') is not null then
+    v_label := format('Archived by user (%s)', btrim(p_source));
+  end if;
+
+  insert into public.trip_versions (trip_id, data, view_settings, label, created_by)
+  values (v_trip_row.id, v_trip_row.data, v_trip_row.view_settings, v_label, v_owner);
+
+  insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
+  values (
+    v_trip_row.id,
+    v_owner,
+    'trip.archived',
+    nullif(btrim(coalesce(p_source, '')), ''),
+    coalesce(p_metadata, '{}'::jsonb)
+      || jsonb_build_object(
+        'trip_id', v_trip_row.id,
+        'status_before', v_status_before,
+        'status_after', 'archived'
+      )
+  )
+  returning id into v_event_id;
+
+  return query
+  select
+    v_trip_row.id,
+    'archived'::text,
+    v_trip_row.archived_at,
+    v_event_id;
+end;
+$$;
+
 grant execute on function public.profile_check_username_availability(text) to anon, authenticated;
 grant execute on function public.profile_resolve_public_handle(text) to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
+grant execute on function public.archive_trip_for_user(text, text, jsonb) to authenticated;

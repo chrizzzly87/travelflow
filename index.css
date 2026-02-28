@@ -1323,3 +1323,15 @@ h6,
   0% { transform: rotateY(0deg); }
   100% { transform: rotateY(180deg); }
 }
+
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  inline-size: 2rem !important;
+  block-size: 2rem !important;
+  margin-inline-end: 0.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] > * {
+  inline-size: 100% !important;
+  block-size: 100% !important;
+}

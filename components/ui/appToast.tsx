@@ -1,0 +1,162 @@
+import React from 'react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  LoaderCircle,
+  PencilLine,
+  Redo2,
+  Save,
+  Trash2,
+  Undo2,
+  XCircle,
+} from 'lucide-react';
+import { toast, type ExternalToast } from 'sonner';
+
+export type AppToastTone =
+  | 'success'
+  | 'error'
+  | 'info'
+  | 'warning'
+  | 'loading'
+  | 'add'
+  | 'remove'
+  | 'update'
+  | 'neutral';
+
+interface AppToastAction {
+  label: string;
+  onClick: () => void;
+}
+
+interface AppToastOptions {
+  id?: string | number;
+  tone?: AppToastTone;
+  title: string;
+  description?: React.ReactNode;
+  duration?: number;
+  dismissible?: boolean;
+  action?: AppToastAction;
+  iconVariant?: 'undo' | 'redo';
+}
+
+interface AppToastToneMeta {
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  borderClass: string;
+  iconWrapClass: string;
+  titleClass: string;
+}
+
+const QUOTED_SEGMENT_REGEX = /(".*?"|“.*?”)/g;
+
+const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
+  success: {
+    Icon: CheckCircle2,
+    borderClass: 'border-emerald-200',
+    iconWrapClass: 'bg-emerald-100 text-emerald-700',
+    titleClass: 'text-emerald-800',
+  },
+  error: {
+    Icon: XCircle,
+    borderClass: 'border-rose-200',
+    iconWrapClass: 'bg-rose-100 text-rose-700',
+    titleClass: 'text-rose-800',
+  },
+  info: {
+    Icon: Info,
+    borderClass: 'border-sky-200',
+    iconWrapClass: 'bg-sky-100 text-sky-700',
+    titleClass: 'text-sky-800',
+  },
+  warning: {
+    Icon: AlertCircle,
+    borderClass: 'border-amber-200',
+    iconWrapClass: 'bg-amber-100 text-amber-700',
+    titleClass: 'text-amber-800',
+  },
+  loading: {
+    Icon: LoaderCircle,
+    borderClass: 'border-accent-200',
+    iconWrapClass: 'bg-accent-100 text-accent-700',
+    titleClass: 'text-accent-800',
+  },
+  add: {
+    Icon: CheckCircle2,
+    borderClass: 'border-emerald-200',
+    iconWrapClass: 'bg-emerald-100 text-emerald-700',
+    titleClass: 'text-emerald-800',
+  },
+  remove: {
+    Icon: Trash2,
+    borderClass: 'border-rose-200',
+    iconWrapClass: 'bg-rose-100 text-rose-700',
+    titleClass: 'text-rose-800',
+  },
+  update: {
+    Icon: PencilLine,
+    borderClass: 'border-accent-200',
+    iconWrapClass: 'bg-accent-100 text-accent-700',
+    titleClass: 'text-accent-800',
+  },
+  neutral: {
+    Icon: Save,
+    borderClass: 'border-slate-200',
+    iconWrapClass: 'bg-slate-100 text-slate-700',
+    titleClass: 'text-slate-800',
+  },
+};
+
+export const showAppToast = ({
+  id,
+  tone = 'info',
+  title,
+  description,
+  duration,
+  dismissible = true,
+  action,
+  iconVariant,
+}: AppToastOptions): string | number => {
+  const normalizedTitle = title.trim().replace(/\.+$/u, '') || title;
+  const meta = TONE_META[tone];
+  const resolvedDuration = duration ?? (tone === 'loading' ? Infinity : 3200);
+  const ToneIcon = meta.Icon;
+  const Icon = iconVariant === 'undo' ? Undo2 : iconVariant === 'redo' ? Redo2 : ToneIcon;
+  const titleNode = <span className={`font-semibold ${meta.titleClass}`}>{normalizedTitle}</span>;
+  const resolvedDescription = typeof description === 'string'
+    ? (() => {
+      const seenKeys = new Map<string, number>();
+      return description.split(QUOTED_SEGMENT_REGEX).map((segment) => {
+        if (!segment) return null;
+        const normalizedKey = segment.startsWith('"') || segment.startsWith('“')
+          ? `quoted:${segment}`
+          : `text:${segment}`;
+        const nextCount = (seenKeys.get(normalizedKey) || 0) + 1;
+        seenKeys.set(normalizedKey, nextCount);
+        const key = `${normalizedKey}:${nextCount}`;
+
+        if (segment.startsWith('"') || segment.startsWith('“')) {
+          return <span key={key} className="font-semibold">{segment}</span>;
+        }
+        return <React.Fragment key={key}>{segment}</React.Fragment>;
+      });
+    })()
+    : description;
+  const options: ExternalToast = {
+    id,
+    description: resolvedDescription,
+    duration: resolvedDuration,
+    dismissible,
+    action,
+    position: 'bottom-right',
+    className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
+    icon: (
+      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
+        <Icon size={20} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />
+      </span>
+    ),
+  };
+
+  return toast(titleNode, options);
+};
+
+export const dismissAppToast = (id?: string | number): string | number => toast.dismiss(id);

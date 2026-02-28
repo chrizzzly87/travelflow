@@ -31,6 +31,7 @@ import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
@@ -45,6 +46,7 @@ import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
 import {
     ChangeTone,
     getToneMeta,
+    resolveChangeTone,
     stripHistoryPrefix,
     useTripHistoryPresentation,
 } from './tripview/useTripHistoryPresentation';
@@ -53,12 +55,7 @@ import { TripViewHeader } from './tripview/TripViewHeader';
 import { TripViewHudOverlays } from './tripview/TripViewHudOverlays';
 import { TripViewPlannerWorkspace } from './tripview/TripViewPlannerWorkspace';
 import { TripViewStatusBanners } from './tripview/TripViewStatusBanners';
-
-interface ToastState {
-    tone: ChangeTone;
-    title: string;
-    message: string;
-}
+import { showAppToast } from './ui/appToast';
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
     moduleKey: string,
@@ -440,10 +437,6 @@ interface TripViewModalLayerProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
-    suppressToasts: boolean;
-    toastState: ToastState | null;
-    activeToastMeta: ReturnType<typeof getToneMeta> | null;
-    onDismissToast: () => void;
 }
 
 const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
@@ -509,10 +502,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
-    suppressToasts,
-    toastState,
-    activeToastMeta,
-    onDismissToast,
 }) => (
     <>
         {isMobile && detailsPanelVisible && (
@@ -621,10 +610,6 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
             loadingDestinationSummary={loadingDestinationSummary}
             tripDateRange={tripDateRange}
             tripTotalDaysLabel={tripTotalDaysLabel}
-            suppressToasts={suppressToasts}
-            toastState={toastState}
-            activeToastMeta={activeToastMeta}
-            onDismissToast={onDismissToast}
         />
     </>
 );
@@ -844,7 +829,6 @@ const useTripViewRender = ({
     );
     const { viewMode, setViewMode } = useTripViewModeState();
 
-    const [toastState, setToastState] = useState<ToastState | null>(null);
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
         if (typeof window === 'undefined') return false;
         return window.innerWidth <= MOBILE_VIEWPORT_MAX_WIDTH;
@@ -866,11 +850,11 @@ const useTripViewRender = ({
         prewarmTripInfoModal,
     });
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
-    const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingHistoryLabelRef = useRef<string | null>(null);
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
     const suppressCommitRef = useRef(false);
+    const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
@@ -917,15 +901,27 @@ const useTripViewRender = ({
         setZoomLevel,
     });
 
-    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
+    const showToast = useCallback((message: string, options?: {
+        tone?: ChangeTone;
+        title?: string;
+        iconVariant?: 'undo' | 'redo';
+        action?: { label: string; onClick: () => void };
+        disableDefaultUndo?: boolean;
+    }) => {
         if (suppressToasts) return;
-        setToastState({
+        const action = resolveTripToastUndoAction({
+            action: options?.action,
+            disableDefaultUndo: options?.disableDefaultUndo,
+            onUndo: () => navigateHistoryRef.current?.('undo') ?? false,
+        });
+        showAppToast({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
-            message,
+            description: message,
+            duration: 3200,
+            iconVariant: options?.iconVariant,
+            action,
         });
-        if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-        toastTimerRef.current = setTimeout(() => setToastState(null), 2200);
     }, [suppressToasts]);
 
     useTripCopyNoticeToast({
@@ -963,7 +959,7 @@ const useTripViewRender = ({
     const showSavedToastForLabel = useCallback((label: string) => {
         const tone = resolveChangeTone(label);
         const { label: actionLabel } = getToneMeta(tone);
-        showToast(stripHistoryPrefix(label), { tone, title: `Saved · ${actionLabel}` });
+        showToast(stripHistoryPrefix(label), { tone, title: actionLabel });
     }, [showToast]);
     const {
         showAllHistory,
@@ -983,6 +979,7 @@ const useTripViewRender = ({
         stripHistoryPrefix,
         showToast,
     });
+    navigateHistoryRef.current = navigateHistory;
 
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
@@ -1166,7 +1163,6 @@ const useTripViewRender = ({
     });
 
     const scheduleCommit = useCallback((nextTrip?: ITrip, nextView?: IViewSettings) => {
-        if (!onCommitState) return;
         if (!canEdit) return;
         if (isExamplePreview) return;
         if (suppressCommitRef.current) {
@@ -1181,18 +1177,22 @@ const useTripViewRender = ({
 
         if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
         const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
-        const commitDelay = /^Data:\s+(Added|Removed)\b/i.test(pendingLabel) ? 150 : 700;
+        const commitDelay = /^Data:\s+/i.test(pendingLabel) ? 150 : 700;
         commitTimerRef.current = setTimeout(() => {
             const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
             debugHistory('Committing', { label });
-            onCommitState(payload.trip, payload.view, {
-                replace: false,
-                label,
-                adminOverride: isAdminFallbackView && adminOverrideEnabled,
-            });
+            if (onCommitState) {
+                onCommitState(payload.trip, payload.view, {
+                    replace: false,
+                    label,
+                    adminOverride: isAdminFallbackView && adminOverrideEnabled,
+                });
+            }
             pendingHistoryLabelRef.current = null;
-            refreshHistory();
+            if (onCommitState) {
+                refreshHistory();
+            }
             showSavedToastForLabel(label);
             if (typeof window !== 'undefined') {
                 (window as any).__tfLastCommit = { label, ts: Date.now() };
@@ -1349,6 +1349,42 @@ const useTripViewRender = ({
         handleUpdateItems,
         showToast,
         pendingHistoryLabelRef,
+        onUndoDelete: (deletedItem, context) => {
+            const deletedEntityLabel = deletedItem.type === 'city'
+                ? `city "${deletedItem.title}"`
+                : deletedItem.type === 'activity'
+                    ? `activity "${deletedItem.title}"`
+                    : `transport "${deletedItem.title}"`;
+            const didUndoImmediately = navigateHistory('undo', { silent: true });
+            if (didUndoImmediately) {
+                showToast(`Undid removal of ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                });
+                return;
+            }
+
+            window.setTimeout(() => {
+                const didUndoAfterCommit = navigateHistory('undo', { silent: true });
+                if (didUndoAfterCommit) {
+                    showToast(`Undid removal of ${deletedEntityLabel}`, {
+                        tone: 'add',
+                        title: 'Undo',
+                        iconVariant: 'undo',
+                    });
+                    return;
+                }
+
+                setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
+                handleUpdateItems(context.previousItems);
+                showToast(`Restored ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                });
+            }, 200);
+        },
         onResetSuppressedCommit: () => {
             suppressCommitRef.current = false;
         },
@@ -1467,8 +1503,6 @@ const useTripViewRender = ({
         cityColorPaletteId,
         onCityColorPaletteChange: canEdit ? handleCityColorPaletteChange : undefined,
     });
-
-    const activeToastMeta = toastState ? getToneMeta(toastState.tone) : null;
 
     if (viewMode === 'print') {
         return (
@@ -1678,10 +1712,6 @@ const useTripViewRender = ({
                         loadingDestinationSummary={loadingDestinationSummary}
                         tripDateRange={tripMeta.dateRange}
                         tripTotalDaysLabel={tripMeta.totalDaysLabel}
-                        suppressToasts={suppressToasts}
-                        toastState={toastState}
-                        activeToastMeta={activeToastMeta}
-                        onDismissToast={() => setToastState(null)}
                     />
 
                 </main>

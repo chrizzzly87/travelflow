@@ -10,6 +10,7 @@
     "flags:sync": "tsx scripts/sync-flagpack-assets.ts",
     "i18n:validate": "node scripts/validate-i18n.mjs",
     "updates:validate": "node scripts/validate-updates.mjs",
+    "toasts:validate": "node scripts/validate-toast-usage.mjs",
     "storage:validate": "tsx scripts/validate-storage-registry.ts",
     "plans:validate-sync": "tsx scripts/validate-plan-sync.mjs",
     "plans:generate-seed": "tsx scripts/generate-plan-seed.mjs",
@@ -34,8 +35,8 @@
     "test:core": "vitest run --coverage --reporter=default",
     "test:e2e": "playwright test",
     "release:prepare": "pnpm build:blog-images && pnpm build",
-    "build": "pnpm test:core && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
-    "build:netlify": "pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
+    "build": "pnpm test:core && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
+    "build:netlify": "pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "preview": "vite preview",
     "maps:generate": "tsx scripts/generate-trip-maps.ts"
   },

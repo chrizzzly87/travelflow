@@ -80,6 +80,12 @@ export const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsert
     return db.dbUpsertTrip(...args);
 };
 
+export const dbArchiveTrip = async (...args: Parameters<DbServiceModule['dbArchiveTrip']>) => {
+    if (!DB_ENABLED) return true;
+    const db = await loadDbService();
+    return db.dbArchiveTrip(...args);
+};
+
 export const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
     if (!DB_ENABLED) return;
     const db = await loadDbService();

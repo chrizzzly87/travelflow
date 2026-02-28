@@ -29,7 +29,11 @@ const mocks = vi.hoisted(() => ({
   getCurrentUserProfile: vi.fn(),
   getAllTrips: vi.fn(),
   saveTrip: vi.fn(),
+  deleteTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
+  dbArchiveTrip: vi.fn(),
+  confirmDialog: vi.fn(),
+  showAppToast: vi.fn(() => 'toast-id'),
 }));
 
 vi.mock('../../components/navigation/SiteHeader', () => ({
@@ -47,11 +51,23 @@ vi.mock('../../services/profileService', () => ({
 vi.mock('../../services/storageService', () => ({
   getAllTrips: mocks.getAllTrips,
   saveTrip: mocks.saveTrip,
+  deleteTrip: mocks.deleteTrip,
 }));
 
 vi.mock('../../services/dbService', () => ({
   DB_ENABLED: false,
   dbUpsertTrip: mocks.dbUpsertTrip,
+  dbArchiveTrip: mocks.dbArchiveTrip,
+}));
+
+vi.mock('../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+  }),
+}));
+
+vi.mock('../../components/ui/appToast', () => ({
+  showAppToast: mocks.showAppToast,
 }));
 
 vi.mock('react-i18next', () => ({
@@ -97,6 +113,8 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
     mocks.auth.isAuthenticated = true;
     mocks.auth.isAdmin = false;
     mocks.auth.isProfileLoading = false;
+    mocks.confirmDialog.mockResolvedValue(true);
+    mocks.dbArchiveTrip.mockResolvedValue(true);
     mocks.auth.profile = {
       id: 'user-1',
       email: 'traveler@example.com',
@@ -155,6 +173,53 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location-probe').textContent).toContain('recentSort=updated');
+    });
+  });
+
+  it('filters private trips out when show-only-public preview is enabled', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-public', title: 'Trip Public', showOnPublicProfile: true, updatedAt: 300 }),
+      makeTrip({ id: 'trip-private', title: 'Trip Private', showOnPublicProfile: false, updatedAt: 200 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.getByText('Trip Private')).toBeInTheDocument();
+    });
+
+    const publicOnlyToggle = screen.getByRole('switch', { name: /filters\.showOnlyPublic/i });
+    expect(publicOnlyToggle).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(publicOnlyToggle);
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.queryByText('Trip Private')).not.toBeInTheDocument();
+    });
+  });
+
+  it('matches public-profile visibility by hiding trips without explicit public=true', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-public', title: 'Trip Public', showOnPublicProfile: true, updatedAt: 300 }),
+      makeTrip({ id: 'trip-legacy', title: 'Trip Legacy', showOnPublicProfile: undefined, updatedAt: 200 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.getByText('Trip Legacy')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('switch', { name: /filters\.showOnlyPublic/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip Public')).toBeInTheDocument();
+      expect(screen.queryByText('Trip Legacy')).not.toBeInTheDocument();
     });
   });
 
@@ -243,5 +308,203 @@ describe('pages/ProfilePage query-driven tabs and sort', () => {
       expect(screen.getByTestId('location-probe').textContent).toContain('passport=open');
     });
     expect(screen.getByText('stamps.title')).toBeInTheDocument();
+  });
+
+  it('archives a single trip from profile cards after confirmation', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('offers undo after single archive and restores the trip when undo is clicked', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+
+    const toastPayloads = mocks.showAppToast.mock.calls.map((call) => call[0] as Record<string, unknown>);
+    const archiveToast = toastPayloads.find((payload) => payload.tone === 'remove' && typeof payload.action === 'object') as {
+      action?: { onClick?: () => void };
+    } | undefined;
+    expect(archiveToast).toBeDefined();
+    expect(archiveToast?.action?.onClick).toBeTypeOf('function');
+
+    archiveToast?.action?.onClick?.();
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
+      expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
+        tone: 'add',
+        title: 'archive.undoSuccessTitle',
+      }));
+    });
+  });
+
+  it('does not archive a trip when single archive confirmation is canceled', async () => {
+    const user = userEvent.setup();
+    mocks.confirmDialog.mockResolvedValueOnce(false);
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    await waitFor(() => {
+      expect(screen.getByText('Trip A')).toBeInTheDocument();
+      expect(screen.getByText('Trip B')).toBeInTheDocument();
+    });
+
+    const archiveButtons = screen.getAllByRole('button', { name: /cards\.actions\.archive/i });
+    await user.click(archiveButtons[0]);
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalledTimes(1);
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(0);
+    });
+  });
+
+  it('archives selected trips from selection mode via Delete hotkey', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('archives selected trips from selection mode via archive toolbar button', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.archiveSelected/i }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('archives selected trips from selection mode via Backspace hotkey', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalled();
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('clears selected trips via Escape key', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /selection\.archiveSelected/i })).not.toBeInTheDocument();
+    });
+    expect(mocks.confirmDialog).not.toHaveBeenCalled();
+  });
+
+  it('does not trigger delete hotkey archive while typing in input', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkbox = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i })[0];
+    await user.click(checkbox);
+
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+
+    await waitFor(() => {
+      expect(mocks.confirmDialog).toHaveBeenCalledTimes(0);
+      expect(mocks.deleteTrip).toHaveBeenCalledTimes(0);
+    });
+    input.remove();
+  });
+
+  it('toggles favorite state for selected trips from the selection toolbar', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.toggleFavorites/i }));
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('toggles visibility state for selected trips from the selection toolbar', async () => {
+    const user = userEvent.setup();
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /cards\.actions\.selectTrip/i });
+    await user.click(checkboxes[0]);
+    await user.click(checkboxes[1]);
+    await user.click(screen.getByRole('button', { name: /selection\.toggleVisibility/i }));
+
+    await waitFor(() => {
+      expect(mocks.saveTrip).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('replaces the selection with expired trips from the quick action', async () => {
+    const user = userEvent.setup();
+    mocks.getAllTrips.mockReturnValue([
+      makeTrip({ id: 'trip-a', title: 'Trip A', status: 'active', updatedAt: 100 }),
+      makeTrip({ id: 'trip-b', title: 'Trip B', status: 'expired', updatedAt: 500 }),
+    ]);
+
+    renderProfilePage('/profile?tab=all&recentSort=updated');
+
+    const tripACheckbox = await screen.findByRole('checkbox', { name: /Trip A/i });
+    await user.click(tripACheckbox);
+    await user.click(screen.getByRole('button', { name: /selection\.selectExpired/i }));
+
+    const tripAAfter = screen.getByRole('checkbox', { name: /Trip A/i });
+    const tripBAfter = screen.getByRole('checkbox', { name: /Trip B/i });
+    expect(tripAAfter).not.toBeChecked();
+    expect(tripBAfter).toBeChecked();
   });
 });

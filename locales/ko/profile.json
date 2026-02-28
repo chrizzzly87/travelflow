@@ -39,6 +39,9 @@
     "liked": "좋아요한 여행",
     "comingSoon": "곧 제공"
   },
+  "filters": {
+    "showOnlyPublic": "공개만 보기"
+  },
   "recentSort": {
     "created": "생성순",
     "updated": "업데이트순"
@@ -59,16 +62,22 @@
       "pin": "핀",
       "unpin": "고정 해제",
       "makePublic": "공공의",
-      "makePrivate": "사적인"
+      "makePrivate": "사적인",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
     },
     "source": {
       "createdByYou": "당신이 만든",
       "copiedFromShared": "공유 여행에서 복사됨",
       "copiedFromYourTrip": "여행에서 복사됨",
-      "startedFromExample": "예제에서 시작됨"
+      "startedFromExample": "예제에서 시작됨",
+      "copiedFromTraveler": "공유 여행에서 복사됨",
+      "copiedFromExample": "예제에서 시작됨",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
     },
     "expiredTag": "만료됨",
-    "expiredFallbackTitle": "만료된 여행 초안"
+    "expiredFallbackTitle": "만료된 여행 초안",
+    "hiddenTag": "Hidden"
   },
   "actions": {
     "title": "빠른 작업",
@@ -100,7 +109,9 @@
     "follow": "팔로우",
     "message": "메시지",
     "shareCopied": "프로필 URL이 클립보드에 복사되었습니다.",
-    "shareOpened": "공개 프로필이 새 탭에서 열렸습니다."
+    "shareOpened": "공개 프로필이 새 탭에서 열렸습니다.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
   },
   "stats": {
     "totalTrips": "총 여행 수",
@@ -163,7 +174,9 @@
     },
     "messages": {
       "saved": "프로필 설정이 성공적으로 저장되었습니다.",
-      "onboardingSaved": "프로필이 성공적으로 완료되었습니다."
+      "onboardingSaved": "프로필이 성공적으로 완료되었습니다.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
     },
     "errors": {
       "required": "필수 입력란을 모두 작성해 주세요.",
@@ -264,5 +277,49 @@
   "fallback": {
     "displayName": "여행자",
     "email": "사용할 수 있는 이메일이 없습니다."
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "여행 \"{title}\"이(가) 성공적으로 보관 처리되었습니다."
   }
 }

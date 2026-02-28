@@ -3,6 +3,7 @@ import { makeTrip } from '../helpers/tripFixtures';
 import {
   getRecentTrips,
   getTripSourceLabelKey,
+  isExampleDerivedTrip,
   getTripsForProfileTab,
   toggleTripPinned,
   toggleTripFavorite,
@@ -11,12 +12,29 @@ import {
 describe('components/profile/profileTripState', () => {
   it('maps trip source labels from source metadata', () => {
     expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'created' }))).toBe('createdByYou');
-    expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'duplicate_shared' }))).toBe('copiedFromShared');
+    expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'duplicate_shared' }))).toBe('copiedFromTraveler');
     expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'duplicate_trip' }))).toBe('copiedFromYourTrip');
-    expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'example' }))).toBe('startedFromExample');
-    expect(getTripSourceLabelKey(makeTrip({ forkedFromShareToken: 'share-token' }))).toBe('copiedFromShared');
+    expect(getTripSourceLabelKey(makeTrip({ sourceKind: 'example' }))).toBe('copiedFromExample');
+    expect(getTripSourceLabelKey(makeTrip({ forkedFromShareToken: 'share-token' }))).toBe('copiedFromTraveler');
     expect(getTripSourceLabelKey(makeTrip({ forkedFromTripId: 'trip-id' }))).toBe('copiedFromYourTrip');
-    expect(getTripSourceLabelKey(makeTrip({ forkedFromExampleTemplateId: 'template-id' }))).toBe('startedFromExample');
+    expect(getTripSourceLabelKey(makeTrip({ forkedFromExampleTemplateId: 'template-id' }))).toBe('copiedFromExample');
+    expect(getTripSourceLabelKey(makeTrip({
+      sourceKind: 'duplicate_trip',
+      forkedFromExampleTemplateId: 'template-id',
+      sourceTemplateId: 'template-id',
+    }))).toBe('copiedFromExample');
+    expect(getTripSourceLabelKey(makeTrip({
+      sourceKind: 'duplicate_trip',
+      sourceOwnerType: 'system_catalog',
+      sourceOwnerHandle: 'travelflow_examples',
+    }))).toBe('fromTravelflowCatalog');
+  });
+
+  it('detects example-derived copies from template metadata', () => {
+    expect(isExampleDerivedTrip(makeTrip({ sourceKind: 'example' }))).toBe(true);
+    expect(isExampleDerivedTrip(makeTrip({ forkedFromExampleTemplateId: 'japan-spring' }))).toBe(true);
+    expect(isExampleDerivedTrip(makeTrip({ sourceKind: 'duplicate_trip', sourceTemplateId: 'japan-spring' }))).toBe(true);
+    expect(isExampleDerivedTrip(makeTrip({ sourceKind: 'duplicate_trip', forkedFromTripId: 'trip-1' }))).toBe(false);
   });
 
   it('sorts recent trips by created or updated date', () => {
