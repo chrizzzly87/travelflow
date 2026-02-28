@@ -468,7 +468,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     return (
-        <div className={`border border-gray-200 rounded-lg overflow-hidden bg-white ${className}`}>
+        <div className={`border border-gray-200 rounded-lg overflow-visible bg-white ${className}`}>
             <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
                 <div className="text-[11px] font-semibold tracking-wide uppercase text-gray-500">Rich Notes</div>
 
