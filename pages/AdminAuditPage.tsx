@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowSquareOut, CopySimple, Crosshair, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
+import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
@@ -23,6 +23,11 @@ import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
+import {
+    buildAdminForensicsReplayBundle,
+    downloadAdminForensicsReplayBundle,
+    type AdminForensicsEventInput,
+} from '../services/adminForensicsService';
 import {
     buildUserChangeDiffEntries,
     formatUserChangeDiffValue,
@@ -311,6 +316,43 @@ const getTimelineActionLabel = (entry: AuditTimelineEntry): string => {
     return resolveUserChangeActionPresentation(entry.log, diffEntries).label;
 };
 
+const toForensicsEventInput = (entry: AuditTimelineEntry): AdminForensicsEventInput => {
+    if (entry.kind === 'admin') {
+        return {
+            source: 'admin',
+            id: entry.log.id,
+            created_at: entry.log.created_at,
+            action: entry.log.action,
+            target_type: entry.log.target_type,
+            target_id: entry.log.target_id,
+            actor_user_id: entry.log.actor_user_id,
+            actor_email: entry.log.actor_email,
+            metadata: entry.log.metadata,
+            before_data: entry.log.before_data,
+            after_data: entry.log.after_data,
+        };
+    }
+
+    return {
+        source: 'user',
+        id: entry.log.id,
+        created_at: entry.log.created_at,
+        action: entry.log.action,
+        target_type: entry.log.target_type,
+        target_id: entry.log.target_id,
+        actor_user_id: entry.log.owner_user_id,
+        actor_email: entry.log.owner_email,
+        metadata: entry.log.metadata,
+        before_data: entry.log.before_data,
+        after_data: entry.log.after_data,
+    };
+};
+
+const toForensicsReplayFileName = (generatedAtIso: string): string => {
+    const safeTimestamp = generatedAtIso.replace(/[:]/g, '-').replace(/\.\d+Z$/, 'Z');
+    return `admin-audit-replay-${safeTimestamp}.json`;
+};
+
 export const AdminAuditPage: React.FC = () => {
     const { confirm: confirmDialog } = useAppDialog();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -357,6 +399,7 @@ export const AdminAuditPage: React.FC = () => {
     const [diffModalAfterLabel, setDiffModalAfterLabel] = useState('After snapshot');
     const [diffModalBeforeValue, setDiffModalBeforeValue] = useState<unknown>({});
     const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
+    const [isExportingReplay, setIsExportingReplay] = useState(false);
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -760,6 +803,48 @@ export const AdminAuditPage: React.FC = () => {
         }
     };
 
+    const exportReplayBundle = () => {
+        if (visibleLogs.length === 0) {
+            setErrorMessage('No audit entries match the current filters.');
+            return;
+        }
+
+        setIsExportingReplay(true);
+        setMessage(null);
+        setErrorMessage(null);
+        try {
+            const generatedAtIso = new Date().toISOString();
+            const bundle = buildAdminForensicsReplayBundle(
+                visibleLogs.map(toForensicsEventInput),
+                {
+                    generatedAtIso,
+                    filters: {
+                        search: searchValue.trim() || null,
+                        date_range: dateRange,
+                        action_filters: actionFilters,
+                        target_filters: targetFilters,
+                        actor_filters: actorFilters,
+                        offset,
+                        page_size: AUDIT_PAGE_SIZE,
+                        matching_entries: visibleLogs.length,
+                    },
+                }
+            );
+            const downloaded = downloadAdminForensicsReplayBundle(bundle, toForensicsReplayFileName(generatedAtIso));
+            if (!downloaded) {
+                throw new Error('Replay export is only available in browser context.');
+            }
+            setMessage(
+                `Exported ${bundle.totals.event_count} event${bundle.totals.event_count === 1 ? '' : 's'} `
+                + `across ${bundle.totals.correlation_count} correlation trace${bundle.totals.correlation_count === 1 ? '' : 's'}.`
+            );
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not export replay bundle.');
+        } finally {
+            setIsExportingReplay(false);
+        }
+    };
+
     const userIdentity = useMemo(() => {
         const name = [
             asString(selectedUserSnapshot.first_name),
@@ -803,11 +888,25 @@ export const AdminAuditPage: React.FC = () => {
             dateRange={dateRange}
             onDateRangeChange={handleDateRangeChange}
             actions={(
-                <AdminReloadButton
-                    onClick={() => void loadLogs()}
-                    isLoading={isLoading}
-                    label="Reload"
-                />
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={exportReplayBundle}
+                        disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        title="Download current filtered timeline for incident replay"
+                    >
+                        {isExportingReplay
+                            ? <SpinnerGap size={14} className="animate-spin" />
+                            : <DownloadSimple size={14} />}
+                        Export replay
+                    </button>
+                    <AdminReloadButton
+                        onClick={() => void loadLogs()}
+                        isLoading={isLoading}
+                        label="Reload"
+                    />
+                </div>
             )}
         >
             {errorMessage && (

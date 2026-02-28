@@ -42,7 +42,8 @@ This document is the operational source of truth for:
   - mixed timeline (admin + user actions),
   - page size 50 with offset paging,
   - actor filters (`admin`, `user`),
-  - target/action filters and date range filtering.
+  - target/action filters and date range filtering,
+  - replay export button for current filtered timeline (`admin_forensics_replay_v1` JSON bundle).
 
 ## Current User Action Taxonomy
 - Primary trip actions:
@@ -174,4 +175,4 @@ This document is the operational source of truth for:
   - [x] correlation ID,
   - [x] source surface,
   - [x] redaction policy for sensitive fields.
-- Add async replay/forensics export pipeline for support incidents.
+- [x] Add async replay/forensics export pipeline for support incidents.

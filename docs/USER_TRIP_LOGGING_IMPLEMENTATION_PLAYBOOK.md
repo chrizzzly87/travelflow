@@ -49,6 +49,7 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 - User/admin timelines must read `timeline_diff_v1` only.
 - “Show complete diff” must resolve snapshot compare from `trip_versions` when version IDs exist.
 - Table-level diff rows should use typed value formatters for structured timeline items (no raw JSON blobs in primary list rows).
+- Admin audit must support replay export (`admin_forensics_replay_v1`) using the currently filtered timeline rows, preserving event envelope metadata and correlation groups.
 
 ## Tests required for behavioral changes
 - Add/adjust browser tests for event writer payloads in:
@@ -56,6 +57,8 @@ Use this as the mandatory implementation checklist whenever code changes user, p
   - `tests/browser/dbArchiveTrip.browser.test.ts`
 - Add/adjust unit tests for admin diff/action mapping in:
   - `tests/unit/adminUserChangeLog.test.ts`
+- Add/adjust unit tests for replay export builders in:
+  - `tests/unit/adminForensicsService.test.ts`
 - Run `pnpm test:core` before merge.
 
 ## Related source-of-truth docs
