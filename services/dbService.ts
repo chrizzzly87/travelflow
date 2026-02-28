@@ -1172,7 +1172,6 @@ export const dbCreateTripVersion = async (
                 source_kind_after: normalizedTrip.sourceKind ?? null,
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
-                timeline_diff: timelineDiff,
                 timeline_diff_v1: timelineDiffV1,
             },
             dedupeWindowMs: 0,
@@ -1415,12 +1414,21 @@ const logUserActionFailure = async (
         targetType: string;
         targetId: string | null;
         source: string | null;
+        correlationId?: string | null;
         errorCode?: string | null;
         errorMessage?: string | null;
         metadata?: Record<string, unknown>;
     }
 ) => {
     try {
+        const metadataWithCorrelation: Record<string, unknown> = {
+            ...(payload.metadata ?? {}),
+        };
+        const existingCorrelationId = typeof metadataWithCorrelation.correlation_id === 'string'
+            ? metadataWithCorrelation.correlation_id.trim()
+            : '';
+        metadataWithCorrelation.correlation_id = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+
         await client.rpc('log_user_action_failure', {
             p_action: payload.action,
             p_target_type: payload.targetType,
@@ -1428,7 +1436,7 @@ const logUserActionFailure = async (
             p_source: payload.source,
             p_error_code: normalizeFailureText(payload.errorCode),
             p_error_message: normalizeFailureText(payload.errorMessage),
-            p_metadata: payload.metadata ?? {},
+            p_metadata: metadataWithCorrelation,
         });
     } catch {
         // best effort failure logging only
@@ -1448,11 +1456,16 @@ export const dbArchiveTrip = async (
     const metadata = options?.metadata && typeof options.metadata === 'object'
         ? options.metadata
         : {};
+    const correlationId = createEventCorrelationId();
+    const metadataWithCorrelation: Record<string, unknown> = {
+        ...metadata,
+        correlation_id: correlationId,
+    };
 
     const rpcResult = await client.rpc('archive_trip_for_user', {
         p_trip_id: tripId,
         p_source: source,
-        p_metadata: metadata,
+        p_metadata: metadataWithCorrelation,
     });
     let error = rpcResult.error;
     let archived = false;
@@ -1524,9 +1537,11 @@ export const dbArchiveTrip = async (
                 targetType: 'trip',
                 targetId: tripId,
                 source,
+                correlationId,
                 errorCode: normalizeFailureText((error as DbErrorLike | null)?.code ?? null),
                 errorMessage: normalizeFailureText((error as DbErrorLike | null)?.message ?? 'Archive did not update any row'),
                 metadata: {
+                    correlation_id: correlationId,
                     trip_id: tripId,
                     source,
                     archive_metadata: metadata,
@@ -1536,7 +1551,6 @@ export const dbArchiveTrip = async (
         console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }
-    const correlationId = createEventCorrelationId();
     await writeTripEventFallback(client, {
         ownerId,
         tripId,

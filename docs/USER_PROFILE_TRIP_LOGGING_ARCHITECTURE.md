@@ -57,18 +57,19 @@ This document is the operational source of truth for:
 
 ## Trip Update Diff Semantics
 - Lifecycle-style trip updates use before/after metadata pairs (status/title/public visibility/source kind/expiry).
-- Version-commit trip updates (itinerary edits) attach timeline-level metadata under `timeline_diff` and `timeline_diff_v1`:
+- Version-commit trip updates (itinerary edits) write typed timeline metadata under `timeline_diff_v1`:
   - `transport_mode_changes`
   - `deleted_items`
   - `added_items`
   - `updated_items`
   - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
+- Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 
 ## Snapshot vs Diff Strategy
 - Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
-- Audit timelines store compact diff metadata (`timeline_diff`) for fast table rendering and filtering.
+- Audit timelines store compact typed diff metadata (`timeline_diff_v1`) for fast table rendering and filtering.
 - Full forensic compare should not duplicate large snapshots inside event rows.
 - Admin full-diff modal resolves snapshots on demand:
   - reads `version_id` + `previous_version_id` from event metadata,
@@ -138,12 +139,13 @@ This document is the operational source of truth for:
 - [x] Failure logging shipped (`trip.archive_failed`) and visible in admin user drawer + global audit.
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
+- [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
 - [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
 
 ## Remaining Implementation Plan
 
 ### Phase 1 (remaining)
-- Enforce `timeline_diff_v1` as the sole write target after DB backfill window; keep `timeline_diff` compatibility reads until migration completes.
+- Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
 - Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
 - Add deterministic correlation IDs between upsert/version/archive operations.
 

@@ -128,7 +128,10 @@ describe('services/dbService dbArchiveTrip', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('archive_trip_for_user', {
       p_trip_id: 'trip-1',
       p_source: 'profile_single',
-      p_metadata: { tab: 'all' },
+      p_metadata: expect.objectContaining({
+        tab: 'all',
+        correlation_id: expect.any(String),
+      }),
     });
   });
 
@@ -168,11 +171,12 @@ describe('services/dbService dbArchiveTrip', () => {
       p_source: 'my_trips',
       p_error_code: null,
       p_error_message: 'Archive did not update any row',
-      p_metadata: {
+      p_metadata: expect.objectContaining({
         trip_id: 'trip-noop',
         source: 'my_trips',
         archive_metadata: {},
-      },
+        correlation_id: expect.any(String),
+      }),
     });
   });
 
@@ -195,11 +199,12 @@ describe('services/dbService dbArchiveTrip', () => {
       p_source: 'profile_batch',
       p_error_code: null,
       p_error_message: 'update failed',
-      p_metadata: {
+      p_metadata: expect.objectContaining({
         trip_id: 'trip-3',
         source: 'profile_batch',
         archive_metadata: {},
-      },
+        correlation_id: expect.any(String),
+      }),
     });
   });
 
@@ -220,7 +225,9 @@ describe('services/dbService dbArchiveTrip', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('archive_trip_for_user', {
       p_trip_id: 'trip-ownership-fail',
       p_source: 'profile_single',
-      p_metadata: {},
+      p_metadata: expect.objectContaining({
+        correlation_id: expect.any(String),
+      }),
     });
   });
 });
