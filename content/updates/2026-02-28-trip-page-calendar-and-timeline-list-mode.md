@@ -19,6 +19,7 @@ summary: "Trip planning now supports a modern timeline list mode with today-focu
 - [x] [Improved] 🧷 Timeline list sticky behavior now keeps only the city heading pinned while long section content scrolls naturally.
 - [x] [Improved] 🌍 Multi-country trips now show a country rooftitle above each city heading for faster orientation while reading.
 - [x] [Improved] 🖱️ Activity titles in timeline list mode now use clearer hover affordances with subtle directional motion to signal clickability.
+- [x] [Improved] 🔲 Timeline transfer pills now show a clear selected outline state to match calendar-style selection feedback.
 - [x] [Improved] 🟢 "Today" is highlighted with a badge and the timeline list auto-scrolls to today when opened.
 - [x] [Improved] 🎛️ Calendar/list mode switching now uses icon-only controls with accessible labels, with the mode toggle pinned to the far right.
 - [x] [Improved] 🗺️ Map controls now stay visible even when the map is unavailable, while map-only actions stay safely disabled until map load succeeds.

@@ -186,6 +186,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                             {model.sections.map((section, index) => {
                                 if (index === 0 || !section.incomingTransfer) return null;
                                 const transfer = section.incomingTransfer;
+                                const transferSelected = Boolean(transfer.itemId) && selectedItemId === transfer.itemId;
                                 const transferDuration = formatTransferDuration(transfer.durationHours ?? null);
                                 const transferTop = transferMidpoints[section.city.id];
                                 if (!Number.isFinite(transferTop)) return null;
@@ -214,7 +215,9 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             aria-label={`Open ${transfer.modeLabel} transfer details`}
                                             className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
                                                 transfer.itemId
-                                                    ? 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
+                                                    ? transferSelected
+                                                        ? 'border-accent-500 text-accent-700 ring-2 ring-accent-200'
+                                                        : 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
                                                     : 'border-slate-200 text-slate-400'
                                             }`}
                                             {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {

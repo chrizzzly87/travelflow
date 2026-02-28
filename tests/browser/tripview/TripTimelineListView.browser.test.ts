@@ -53,7 +53,7 @@ describe('components/tripview/TripTimelineListView', () => {
 
     const onSelect = vi.fn();
 
-    render(
+    const { rerender } = render(
       React.createElement(TripTimelineListView, {
         trip,
         selectedItemId: null,
@@ -73,6 +73,16 @@ describe('components/tripview/TripTimelineListView', () => {
       city_id: 'city-b',
       mode: 'train',
     });
+
+    rerender(
+      React.createElement(TripTimelineListView, {
+        trip,
+        selectedItemId: 'travel-a-b',
+        onSelect,
+      }),
+    );
+    expect(screen.getByLabelText('Open Train transfer details')).toHaveClass('ring-2');
+    expect(screen.getByLabelText('Open Train transfer details')).toHaveClass('border-accent-500');
 
     const cityButton = screen.getByRole('heading', { name: 'Herat' }).closest('button');
     if (!cityButton) {
