@@ -321,6 +321,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'admin.user_changes.cache.v1',
+      purpose: 'Caches admin user change log data to reduce repeat fetches.',
+      duration: 'Persistent (refreshable cache)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'admin.tiers.counts.v1',
       purpose: 'Caches admin tier count summaries.',
       duration: 'Persistent (refreshable cache)',
