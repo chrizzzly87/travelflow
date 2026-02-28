@@ -445,6 +445,9 @@ const buildSingleHardDeleteMessage = (
     ownedTripCount: number
 ): React.ReactNode => {
     const tripSuffix = ownedTripCount > 0 ? ` (${ownedTripCount})` : '';
+    const tripLine = ownedTripCount > 0
+        ? `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'} will be permanently deleted.`
+        : 'No owned trips were found for this user.';
     return (
         <div className="space-y-3">
             <p>
@@ -453,6 +456,11 @@ const buildSingleHardDeleteMessage = (
             <p>
                 Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
             </p>
+            <ul className="list-disc space-y-1 pl-5">
+                <li>Auth account and profile data are permanently removed.</li>
+                <li>{tripLine}</li>
+                <li>Use soft delete instead if you may need to restore this user later.</li>
+            </ul>
             <p>
                 Use soft delete instead if you may need to restore this user later.
             </p>
@@ -478,7 +486,7 @@ const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
             <p>
                 Soft delete keeps the account and related data in the database so this user can be restored later.
             </p>
-            <ul>
+            <ul className="list-disc space-y-1 pl-5">
                 <li>The user cannot sign in while the account is soft-deleted.</li>
                 <li>An admin can restore the user later.</li>
             </ul>
@@ -492,20 +500,55 @@ const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
 const buildBulkHardDeleteMessage = (
     selectedUsers: number,
     selectedTrips: number
-): string => {
-    return [
-        `Selected users: ${selectedUsers}`,
-        '',
-        `Hard delete permanently removes auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}.`,
-        `It also permanently removes ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total.`,
-        'Use soft delete instead if these users might need to be restored later.',
-        '',
-        selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
-        selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
-        '',
-        'This action cannot be undone.',
-    ].join('\n');
+): React.ReactNode => {
+    return (
+        <div className="space-y-3">
+            <p>
+                Selected users: <strong>{selectedUsers}</strong>
+            </p>
+            <p>
+                Hard delete permanently removes auth accounts and profile data for <strong>{selectedUsers}</strong> user{selectedUsers === 1 ? '' : 's'}.
+            </p>
+            <p>
+                It also permanently removes <strong>{selectedTrips}</strong> owned trip{selectedTrips === 1 ? '' : 's'} in total.
+            </p>
+            <ul className="list-disc space-y-1 pl-5">
+                <li>Use soft delete if these users might need to be restored later.</li>
+                {selectedTrips > 0 ? (
+                    <li>Cancel and transfer trips from each user drawer if you need to preserve trip data.</li>
+                ) : null}
+                {selectedTrips > 0 ? (
+                    <li>Continue hard delete to permanently remove selected users and owned trips.</li>
+                ) : null}
+            </ul>
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                <span><strong>This action cannot be undone.</strong></span>
+            </div>
+        </div>
+    );
 };
+
+const buildTransferAndHardDeleteMessage = (
+    sourceUser: string,
+    targetUser: string,
+    transferCount: number
+): React.ReactNode => (
+    <div className="space-y-3">
+        <p>
+            Transfer <strong>{transferCount}</strong> trip{transferCount === 1 ? '' : 's'} from <strong>{sourceUser}</strong> to <strong>{targetUser}</strong>?
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+            <li>Step 1: Transfer all owned trips to the target account.</li>
+            <li>Step 2: Hard-delete the source user (auth + profile only).</li>
+            <li>Result: trips remain accessible under the new owner.</li>
+        </ul>
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+            <WarningCircle size={16} className="mt-0.5 shrink-0" />
+            <span><strong>Transfer first if you want to preserve trips before hard delete.</strong></span>
+        </div>
+    </div>
+);
 
 const formatOverrideDraft = (value: Record<string, unknown> | null | undefined): string => {
     if (!value || Object.keys(value).length === 0) return '';
@@ -1907,14 +1950,11 @@ export const AdminUsersPage: React.FC = () => {
 
             const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Confirm transfer and hard delete',
-                message: [
-                    `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
-                    '',
-                    'Step 1: Transfer all owned trips to the target account.',
-                    'Step 2: Hard-delete the source user (auth + profile only).',
-                    '',
-                    'Result: trips remain accessible under the new owner.',
-                ].join('\n'),
+                message: buildTransferAndHardDeleteMessage(
+                    getUserReferenceText(user),
+                    getUserReferenceText(targetUser),
+                    sourceTrips.length
+                ),
                 confirmLabel: 'Transfer + hard delete',
             }));
             if (!confirmed) return;
