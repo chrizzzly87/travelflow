@@ -72,8 +72,12 @@ describe('timelineListViewModel', () => {
 
     expect(model.sections).toHaveLength(2);
     expect(model.sections[0].arrivalTitle).toBe('Trip start');
+    expect(model.sections[0].incomingTransfer).toBeNull();
     expect(model.sections[1].arrivalTitle).toContain('From Lisbon');
     expect(model.sections[1].arrivalTitle).toContain('Train');
+    expect(model.sections[1].incomingTransfer?.itemId).toBe('travel-a-b');
+    expect(model.sections[1].incomingTransfer?.modeLabel).toBe('Train');
+    expect(model.sections[1].incomingTransfer?.durationHours).toBe(4.8);
 
     const secondSectionActivityIds = model.sections[1].activities.map((entry) => entry.item.id);
     expect(secondSectionActivityIds).toEqual(['activity-b-1', 'activity-b-2']);
@@ -101,6 +105,7 @@ describe('timelineListViewModel', () => {
 
     expect(model.sections).toHaveLength(1);
     expect(model.sections[0].hasToday).toBe(true);
+    expect(model.sections[0].incomingTransfer).toBeNull();
     expect(model.todayMarkerId).toBe('city-city-only');
   });
 });

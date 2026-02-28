@@ -13,7 +13,10 @@ summary: "Trip planning now supports a modern timeline list mode with today-focu
 ## Changes
 - [x] [New feature] 🗓️ The trip page now has a clear mode switch between calendar and timeline list views.
 - [x] [Improved] 🧭 Timeline list mode now groups plans by city with sticky city headers, connected dots, and activities ordered by schedule.
+- [x] [Improved] ✨ Timeline list mode now uses a cleaner editorial layout with a continuous vertical spine and simplified typography-first activity rows.
+- [x] [Improved] 🚆 City-to-city transfer pills are now shown on the timeline spine and can be clicked to open transfer details directly.
 - [x] [Improved] 🟢 "Today" is highlighted with a badge and the timeline list auto-scrolls to today when opened.
+- [x] [Improved] 🎛️ Calendar/list mode switching now uses icon-only controls with accessible labels, with the mode toggle pinned to the far right.
 - [x] [Improved] 🗺️ Map controls now stay visible even when the map is unavailable, while map-only actions stay safely disabled until map load succeeds.
 - [ ] [Internal] 💾 Active view mode is now saved with each trip view state so reloads restore the selected mode.
 - [ ] [Internal] ♻️ Undo and redo history now includes view-mode changes together with other planner view updates.

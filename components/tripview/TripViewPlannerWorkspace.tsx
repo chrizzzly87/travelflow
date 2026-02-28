@@ -107,38 +107,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 }) => {
     const timelineControls = (
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
-            <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
-                <button
-                    type="button"
-                    onClick={() => onTimelineModeChange('calendar')}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                        timelineMode === 'calendar'
-                            ? 'bg-accent-600 text-white'
-                            : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                    aria-label="Calendar view"
-                    aria-pressed={timelineMode === 'calendar'}
-                    {...getAnalyticsDebugAttributes('trip_view__mode--calendar', { surface: 'timeline_controls' })}
-                >
-                    <CalendarDays size={14} />
-                    Calendar
-                </button>
-                <button
-                    type="button"
-                    onClick={() => onTimelineModeChange('timeline')}
-                    className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
-                        timelineMode === 'timeline'
-                            ? 'bg-accent-600 text-white'
-                            : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                    aria-label="Timeline list view"
-                    aria-pressed={timelineMode === 'timeline'}
-                    {...getAnalyticsDebugAttributes('trip_view__mode--timeline', { surface: 'timeline_controls' })}
-                >
-                    <List size={14} />
-                    Timeline
-                </button>
-            </div>
             {timelineMode === 'calendar' && (
                 <>
                     <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
@@ -193,6 +161,38 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
+            <div className="ms-auto inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                <button
+                    type="button"
+                    onClick={() => onTimelineModeChange('calendar')}
+                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                        timelineMode === 'calendar'
+                            ? 'bg-accent-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    aria-label="Calendar view"
+                    aria-pressed={timelineMode === 'calendar'}
+                    {...getAnalyticsDebugAttributes('trip_view__mode--calendar', { surface: 'timeline_controls' })}
+                >
+                    <CalendarDays size={14} />
+                    <span className="sr-only">Calendar view</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => onTimelineModeChange('timeline')}
+                    className={`inline-flex items-center rounded-md p-1.5 text-xs font-semibold transition-colors ${
+                        timelineMode === 'timeline'
+                            ? 'bg-accent-600 text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    aria-label="Timeline list view"
+                    aria-pressed={timelineMode === 'timeline'}
+                    {...getAnalyticsDebugAttributes('trip_view__mode--timeline', { surface: 'timeline_controls' })}
+                >
+                    <List size={14} />
+                    <span className="sr-only">Timeline list view</span>
+                </button>
+            </div>
         </div>
     );
 

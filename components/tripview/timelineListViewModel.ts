@@ -23,11 +23,21 @@ export interface TimelineListActivity {
     isToday: boolean;
 }
 
+export interface TimelineListTransfer {
+    itemId: string | null;
+    mode: string;
+    modeLabel: string;
+    durationHours: number | null;
+    title: string;
+    description?: string;
+}
+
 export interface TimelineListSection {
     city: ITimelineItem;
     colorHex: string;
     arrivalTitle: string;
     arrivalDescription?: string;
+    incomingTransfer: TimelineListTransfer | null;
     activities: TimelineListActivity[];
     hasToday: boolean;
     todayMarkerId: string | null;
@@ -53,10 +63,33 @@ const getDayDiff = (startDate: string, now: Date): number | null => {
     return Math.round((nowAtNoon.getTime() - startAtNoon.getTime()) / DAY_MS);
 };
 
+const buildIncomingTransfer = (
+    previousCity: ITimelineItem | null,
+    travelItem: ITimelineItem | null,
+): TimelineListTransfer | null => {
+    if (!previousCity) return null;
+
+    const normalizedMode = normalizeTransportMode(travelItem?.transportMode);
+    const modeLabel = TRANSPORT_MODE_LABEL[normalizedMode] || TRANSPORT_MODE_LABEL.na;
+    const durationHours = travelItem
+        ? Math.round(Math.max(0, travelItem.duration) * 24 * 10) / 10
+        : null;
+
+    return {
+        itemId: travelItem?.id ?? null,
+        mode: normalizedMode,
+        modeLabel,
+        durationHours: durationHours && Number.isFinite(durationHours) ? durationHours : null,
+        title: travelItem?.title?.trim() || `${modeLabel} transfer`,
+        description: travelItem?.description?.trim() || undefined,
+    };
+};
+
 const buildArrivalContext = (
     city: ITimelineItem,
     previousCity: ITimelineItem | null,
-    travelItem: ITimelineItem | null,
+    transfer: TimelineListTransfer | null,
+    departureTime?: string,
 ): { title: string; description?: string } => {
     if (!previousCity) {
         return {
@@ -65,14 +98,13 @@ const buildArrivalContext = (
         };
     }
 
-    const normalizedMode = normalizeTransportMode(travelItem?.transportMode);
-    const modeLabel = TRANSPORT_MODE_LABEL[normalizedMode] || TRANSPORT_MODE_LABEL.na;
+    const modeLabel = transfer?.modeLabel || TRANSPORT_MODE_LABEL.na;
     const titleParts = [`From ${previousCity.title || previousCity.location || 'previous stop'}`, `via ${modeLabel}`];
-    if (travelItem?.departureTime) {
-        titleParts.push(`around ${travelItem.departureTime}`);
+    if (departureTime) {
+        titleParts.push(`around ${departureTime}`);
     }
 
-    const descriptionParts = [travelItem?.title?.trim(), travelItem?.description?.trim()]
+    const descriptionParts = [transfer?.title?.trim(), transfer?.description?.trim()]
         .filter((value): value is string => Boolean(value));
 
     return {
@@ -99,6 +131,7 @@ export const buildTimelineListModel = (
     const sections: TimelineListSection[] = cities.map((city, index) => {
         const previousCity = index > 0 ? cities[index - 1] : null;
         const travelItem = previousCity ? findTravelBetweenCities(trip.items, previousCity, city) : null;
+        const incomingTransfer = buildIncomingTransfer(previousCity, travelItem);
         const cityStart = city.startDateOffset;
         const cityEnd = city.startDateOffset + Math.max(0, city.duration);
         const cityStartDay = toDayOffset(cityStart);
@@ -129,12 +162,13 @@ export const buildTimelineListModel = (
             firstTodayMarkerId = todayMarkerId;
         }
 
-        const arrivalContext = buildArrivalContext(city, previousCity, travelItem);
+        const arrivalContext = buildArrivalContext(city, previousCity, incomingTransfer, travelItem?.departureTime);
         return {
             city,
             colorHex: getHexFromColorClass(city.color || ''),
             arrivalTitle: arrivalContext.title,
             arrivalDescription: arrivalContext.description,
+            incomingTransfer,
             activities: sectionActivities,
             hasToday,
             todayMarkerId,
@@ -146,4 +180,3 @@ export const buildTimelineListModel = (
         todayMarkerId: firstTodayMarkerId,
     };
 };
-

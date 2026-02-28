@@ -66,12 +66,18 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
   it('renders calendar controls in calendar mode', () => {
     render(React.createElement(TripViewPlannerWorkspace, baseProps()));
 
-    expect(screen.getByLabelText('Calendar view')).toBeInTheDocument();
-    expect(screen.getByLabelText('Timeline list view')).toBeInTheDocument();
+    const calendarModeButton = screen.getByLabelText('Calendar view');
+    const listModeButton = screen.getByLabelText('Timeline list view');
+    expect(calendarModeButton).toBeInTheDocument();
+    expect(listModeButton).toBeInTheDocument();
     expect(screen.getByLabelText('Horizontal timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Vertical timeline direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom out timeline')).toBeInTheDocument();
     expect(screen.getByLabelText('Zoom in timeline')).toBeInTheDocument();
+
+    const modeGroup = calendarModeButton.parentElement;
+    const controlsRoot = modeGroup?.parentElement;
+    expect(controlsRoot?.lastElementChild).toBe(modeGroup);
   });
 
   it('hides calendar-only controls in timeline list mode', () => {
