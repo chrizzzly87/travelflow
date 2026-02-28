@@ -56,6 +56,7 @@ This is the guardrail doc for any future mutation work. If a change touches user
   - `trip.activity.added|updated|deleted`
   - `trip.transport.added|updated|deleted`
   - `trip.city.added|updated|deleted`
+  - `trip.segment.deleted`
   - `trip.item.added|updated|deleted`
   - `trip.settings.updated`
   - `trip.visibility.updated`

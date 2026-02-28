@@ -279,6 +279,27 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
+  it('derives deleted segment secondary labels from legacy diff keys', () => {
+    const record = makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+    });
+    const diffEntries = [
+      { key: 'deleted_travel-empty · Empty segment', beforeValue: { id: 'segment-1' }, afterValue: null },
+    ];
+
+    const secondaryActions = resolveUserChangeSecondaryActions(record, diffEntries);
+
+    expect(secondaryActions).toEqual([
+      {
+        key: 'deleted_segment',
+        label: 'Deleted segment',
+        className: 'border-rose-200 bg-rose-50 text-rose-800',
+      },
+    ]);
+  });
+
   it('does not create secondary labels for non trip-update actions', () => {
     const record = makeRecord({
       action: 'profile.updated',
@@ -300,6 +321,7 @@ describe('services/adminUserChangeLog', () => {
       metadata: {
         secondary_actions: [
           'trip.visibility.updated',
+          'trip.segment.deleted',
           'trip.transport.updated',
           'trip.trip_dates.updated',
           'trip.view.updated',
@@ -327,9 +349,9 @@ describe('services/adminUserChangeLog', () => {
         className: 'border-sky-200 bg-sky-50 text-sky-800',
       },
       {
-        key: 'trip_view',
-        label: 'Updated trip view',
-        className: 'border-sky-200 bg-sky-50 text-sky-800',
+        key: 'deleted_segment',
+        label: 'Deleted segment',
+        className: 'border-rose-200 bg-rose-50 text-rose-800',
       },
     ]));
     expect(secondaryActions).toHaveLength(4);

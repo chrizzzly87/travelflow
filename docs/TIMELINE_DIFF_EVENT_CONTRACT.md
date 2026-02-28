@@ -45,14 +45,14 @@
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
 ## Secondary action facets
-- Trip update events may include `metadata.secondary_actions` with compact codes (for example `trip.transport.updated`, `trip.activity.deleted`, `trip.view.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`).
+- Trip update events may include `metadata.secondary_actions` with compact codes (for example `trip.transport.updated`, `trip.activity.deleted`, `trip.segment.deleted`, `trip.view.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`).
 - These are derived at write-time from timeline diff payloads and used for deterministic admin facet pills.
 - Lifecycle updates from `dbUpsertTrip` also write `trip.settings.updated` when title/status/source-kind changes.
 - Consumer fallback remains available by deriving facets from diff keys when older rows do not have `secondary_actions`.
 
 ## Domain sub-events (structured)
 - Trip update events may include `metadata.domain_events_v1` with explicit structured sub-events for querying/export.
-- Version commits use itinerary-level actions (`trip.transport.updated`, `trip.activity.deleted`, etc.).
+- Version commits use itinerary-level actions (`trip.transport.updated`, `trip.activity.deleted`, `trip.segment.deleted`, etc.).
 - Lifecycle updates use field-level actions (`trip.settings.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`).
 - Current shape:
 ```json

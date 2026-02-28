@@ -445,6 +445,7 @@ type TripSecondaryActionCode =
     | 'trip.city.added'
     | 'trip.city.updated'
     | 'trip.city.deleted'
+    | 'trip.segment.deleted'
     | 'trip.item.added'
     | 'trip.item.updated'
     | 'trip.item.deleted'
@@ -903,6 +904,12 @@ const mapTimelineEntryTypeToDomain = (itemType: string | null): 'activity' | 'tr
     return 'item';
 };
 
+const resolveDeletedTimelineDomainAction = (itemType: string | null): 'trip.segment.deleted' | `trip.${ReturnType<typeof mapTimelineEntryTypeToDomain>}.deleted` => {
+    if (itemType === 'travel-empty') return 'trip.segment.deleted';
+    const domain = mapTimelineEntryTypeToDomain(itemType);
+    return `trip.${domain}.deleted`;
+};
+
 const readTimelineEntryText = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
@@ -962,9 +969,8 @@ const buildTripDomainEventsV1 = (
     });
 
     timelineDiff?.deleted_items.forEach((entry) => {
-        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry));
         pushEvent({
-            action: `trip.${domain}.deleted`,
+            action: resolveDeletedTimelineDomainAction(normalizeTimelineEntryType(entry)),
             item_id: resolveTimelineDomainEventItemId(entry),
             title: resolveTimelineDomainEventTitle(entry),
             before_value: entry.before ?? null,
@@ -1041,8 +1047,8 @@ const buildTripSecondaryActionCodes = (
         pushUnique(`trip.${domain}.added` as TripSecondaryActionCode);
     });
     timelineDiff.deleted_items.forEach((entry) => {
-        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry));
-        pushUnique(`trip.${domain}.deleted` as TripSecondaryActionCode);
+        const actionCode = resolveDeletedTimelineDomainAction(normalizeTimelineEntryType(entry));
+        pushUnique(actionCode as TripSecondaryActionCode);
     });
     timelineDiff.updated_items.forEach((entry) => {
         const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));

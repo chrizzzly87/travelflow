@@ -169,7 +169,7 @@ This document is the operational source of truth for:
   - `trip.activity.updated`,
   - `trip.activity.deleted`,
   - `trip.transport.updated`,
-  - `trip.segment.deleted`,
+  - `trip.segment.deleted` [x],
   - `trip.trip_dates.updated` [x],
   - `trip.visibility.updated` [x],
   - `trip.settings.updated` [x].

@@ -296,6 +296,7 @@ const TRIP_DATE_KEYS = new Set([
 const normalizeEntityLabel = (rawEntity: string): string => {
     const normalized = rawEntity.trim().toLowerCase();
     if (!normalized || normalized === 'item') return 'itinerary item';
+    if (normalized === 'travel-empty' || normalized === 'segment') return 'segment';
     if (normalized === 'travel') return 'transport';
     return normalized.replace(/_/g, ' ');
 };
@@ -324,6 +325,7 @@ const SECONDARY_ACTION_CODE_PRESENTATION: Record<string, UserChangeSecondaryActi
     'trip.city.added': makeSecondaryAction('added_city', 'Added city', 'added'),
     'trip.city.updated': makeSecondaryAction('updated_city', 'Updated city', 'updated'),
     'trip.city.deleted': makeSecondaryAction('deleted_city', 'Deleted city', 'deleted'),
+    'trip.segment.deleted': makeSecondaryAction('deleted_segment', 'Deleted segment', 'deleted'),
     'trip.item.added': makeSecondaryAction('added_item', 'Added itinerary item', 'added'),
     'trip.item.updated': makeSecondaryAction('updated_item', 'Updated itinerary item', 'updated'),
     'trip.item.deleted': makeSecondaryAction('deleted_item', 'Deleted itinerary item', 'deleted'),
@@ -354,7 +356,7 @@ const resolveSecondaryActionFromDiffKey = (diffKey: string): UserChangeSecondary
     }
 
     const head = normalized.split('·')[0]?.trim() ?? normalized;
-    const changedEntityMatch = head.match(/^(added|deleted|updated)_([a-z0-9_]+)$/);
+    const changedEntityMatch = head.match(/^(added|deleted|updated)_([a-z0-9_-]+)$/);
     if (changedEntityMatch) {
         const operation = changedEntityMatch[1] as 'added' | 'deleted' | 'updated';
         const entity = changedEntityMatch[2];
