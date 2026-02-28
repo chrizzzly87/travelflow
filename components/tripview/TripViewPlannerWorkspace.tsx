@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { ArrowLeftRight, ArrowUpDown, CalendarDays, List, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, CalendarDays, Focus, Layers, List, ZoomIn, ZoomOut } from 'lucide-react';
 import { getAnalyticsDebugAttributes } from '../../services/analyticsService';
 
 import type { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../../types';
@@ -197,7 +197,55 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     );
 
     const renderMap = (mapLayoutMode: 'vertical' | 'horizontal', showLayoutControls = true) => {
-        if (!isMapBootstrapEnabled) return mapDeferredFallback;
+        if (!isMapBootstrapEnabled) {
+            return (
+                <div className="relative h-full w-full">
+                    {mapDeferredFallback}
+                    <div className="absolute top-4 right-4 z-[10] flex flex-col gap-2 pointer-events-none">
+                        <div className="flex flex-col gap-2 pointer-events-auto">
+                            {showLayoutControls && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={() => onLayoutModeChange('vertical')}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
+                                        aria-label="Vertical layout"
+                                        {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
+                                    >
+                                        <ArrowUpDown size={18} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onLayoutModeChange('horizontal')}
+                                        className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`}
+                                        aria-label="Horizontal layout"
+                                        {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
+                                    >
+                                        <ArrowLeftRight size={18} />
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                type="button"
+                                disabled
+                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                aria-label="Fit to itinerary"
+                            >
+                                <Focus size={18} />
+                            </button>
+                            <button
+                                type="button"
+                                disabled
+                                className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-300 cursor-not-allowed flex items-center justify-center"
+                                aria-label="Map style"
+                            >
+                                <Layers size={18} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <Suspense fallback={mapLoadingFallback}>
                 <ItineraryMapComponent
