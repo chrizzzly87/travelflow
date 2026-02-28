@@ -223,6 +223,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isAnonymousSession = (value: Session | null): boolean => {
             const user = value?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
             if (!user) return false;
+            const email = typeof user.email === 'string' ? user.email.trim() : '';
+            const phone = typeof user.phone === 'string' ? user.phone.trim() : '';
+            if (email || phone) return false;
             if (user.is_anonymous === true) return true;
             const metadata = user.app_metadata as Record<string, unknown> | undefined;
             const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';

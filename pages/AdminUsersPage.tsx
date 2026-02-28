@@ -32,11 +32,13 @@ import {
     adminCreateUserInvite,
     adminGetUserProfile,
     adminHardDeleteUser,
+    adminListUserChangeLogs,
     adminListUserTrips,
     adminListUsers,
     adminUpdateTrip,
     adminUpdateUserOverrides,
     adminUpdateUserProfile,
+    type AdminUserChangeRecord,
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
@@ -65,6 +67,10 @@ import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountry
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
 import { showAppToast } from '../components/ui/appToast';
+import {
+    buildUserChangeDiffEntries,
+    resolveUserChangeActionPresentation,
+} from '../services/adminUserChangeLog';
 
 type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
 type SortDirection = 'asc' | 'desc';
@@ -76,6 +82,7 @@ type SocialProviderFilter = 'google' | 'facebook' | 'kakao' | 'apple' | 'github'
 type LoginPillKey = 'password' | SocialProviderFilter | 'anonymous' | 'unknown';
 
 const PAGE_SIZE = 25;
+const USER_CHANGE_LOG_DRAWER_LIMIT = 20;
 const GENDER_UNSET_VALUE = '__gender_unset__';
 const USERS_CACHE_KEY = 'admin.users.cache.v1';
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
@@ -255,6 +262,33 @@ const formatTimestamp = (value: string | null | undefined): string => {
     const parsed = Date.parse(value);
     if (!Number.isFinite(parsed)) return 'No visit yet';
     return new Date(parsed).toLocaleString();
+};
+
+const formatFieldLabel = (value: string): string => (
+    value
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+);
+
+const formatChangeValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return '—';
+        const parsedDate = Date.parse(trimmed);
+        if (Number.isFinite(parsedDate) && /^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+            return new Date(parsedDate).toLocaleString();
+        }
+        return trimmed;
+    }
+    return JSON.stringify(value);
+};
+
+const asRecord = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return value;
 };
 
 const getUserDisplayName = (user: AdminUserRecord): string => {
@@ -992,6 +1026,9 @@ export const AdminUsersPage: React.FC = () => {
     });
     const [userTrips, setUserTrips] = useState<AdminTripRecord[]>([]);
     const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+    const [userChangeLogs, setUserChangeLogs] = useState<AdminUserChangeRecord[]>([]);
+    const [isLoadingUserChangeLogs, setIsLoadingUserChangeLogs] = useState(false);
+    const [userChangeLogsError, setUserChangeLogsError] = useState<string | null>(null);
     const handledDeepLinkUserIdRef = useRef<string | null>(null);
     const deepLinkedUserId = useMemo(() => {
         const drawer = searchParams.get('drawer');
@@ -1113,6 +1150,21 @@ export const AdminUsersPage: React.FC = () => {
         if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) return null;
         return buildPath('publicProfile', { username: normalizedUsername });
     }, [selectedUser?.username]);
+    const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
+        const diffEntries = buildUserChangeDiffEntries(log);
+        const actionPresentation = resolveUserChangeActionPresentation(log, diffEntries);
+        const metadata = asRecord(log.metadata);
+        const visibleDiffEntries = diffEntries.slice(0, 4);
+        const hiddenDiffCount = Math.max(0, diffEntries.length - visibleDiffEntries.length);
+        return {
+            log,
+            diffEntries,
+            actionPresentation,
+            metadata,
+            visibleDiffEntries,
+            hiddenDiffCount,
+        };
+    }), [userChangeLogs]);
 
     const loadUsers = async (options: { preserveErrorMessage?: boolean } = {}) => {
         setIsLoadingUsers(true);
@@ -1187,10 +1239,36 @@ export const AdminUsersPage: React.FC = () => {
 
         setUserTrips([]);
         setIsLoadingTrips(true);
+        setUserChangeLogs([]);
+        setIsLoadingUserChangeLogs(true);
+        setUserChangeLogsError(null);
         void adminListUserTrips(selectedUser.user_id)
-            .then((rows) => setUserTrips(rows))
-            .catch((error) => setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.'))
-            .finally(() => setIsLoadingTrips(false));
+            .then((rows) => {
+                if (!active) return;
+                setUserTrips(rows);
+            })
+            .catch((error) => {
+                if (!active) return;
+                setErrorMessage(error instanceof Error ? error.message : 'Could not load user trips.');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsLoadingTrips(false);
+            });
+
+        void adminListUserChangeLogs({ ownerUserId: selectedUser.user_id, limit: USER_CHANGE_LOG_DRAWER_LIMIT })
+            .then((rows) => {
+                if (!active) return;
+                setUserChangeLogs(rows);
+            })
+            .catch((error) => {
+                if (!active) return;
+                setUserChangeLogsError(error instanceof Error ? error.message : 'Could not load user change logs.');
+            })
+            .finally(() => {
+                if (!active) return;
+                setIsLoadingUserChangeLogs(false);
+            });
 
         return () => {
             active = false;
@@ -2973,6 +3051,95 @@ export const AdminUsersPage: React.FC = () => {
                                         ))}
                                     </div>
                                 )}
+                                </section>
+
+                                <section className="mt-4 space-y-3 rounded-xl border border-slate-200 p-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">User change log</h3>
+                                        <a
+                                            href={`/admin/audit?q=${encodeURIComponent(selectedUser.user_id)}`}
+                                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Open global audit
+                                            <ArrowSquareOut size={12} />
+                                        </a>
+                                    </div>
+                                    <p className="text-xs text-slate-500">Showing the latest {USER_CHANGE_LOG_DRAWER_LIMIT} entries for this user.</p>
+                                    {userChangeLogsError && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                            {userChangeLogsError}
+                                        </div>
+                                    )}
+                                    {isLoadingUserChangeLogs ? (
+                                        <div className="text-sm text-slate-500">Loading user change log...</div>
+                                    ) : selectedUserChangeEntries.length === 0 ? (
+                                        <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {selectedUserChangeEntries.map(({ log, actionPresentation, metadata, visibleDiffEntries, hiddenDiffCount }) => (
+                                                <article key={log.id} className="rounded-lg border border-slate-200 p-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <div className="text-[11px] font-semibold text-slate-500">
+                                                            {new Date(log.created_at).toLocaleString()}
+                                                        </div>
+                                                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}>
+                                                            {actionPresentation.label}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-2 space-y-1 text-[11px] text-slate-600">
+                                                        <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
+                                                        {log.source && (
+                                                            <div><span className="font-semibold text-slate-700">Source:</span> {log.source}</div>
+                                                        )}
+                                                        {log.target_type === 'trip' && log.target_id && (
+                                                            <div className="break-all">
+                                                                <span className="font-semibold text-slate-700">Trip:</span>{' '}
+                                                                <CopyableUuid value={log.target_id} textClassName="break-all text-[11px]" hintClassName="text-[9px]" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {visibleDiffEntries.length > 0 ? (
+                                                        <div className="mt-2 space-y-2">
+                                                            {visibleDiffEntries.map((entry) => (
+                                                                <article key={`${log.id}-${entry.key}`} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
+                                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                                                                        {formatFieldLabel(entry.key)}
+                                                                    </p>
+                                                                    <div className="mt-1 grid gap-1 lg:grid-cols-2">
+                                                                        <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
+                                                                            <span className="font-semibold">Before: </span>
+                                                                            <span className="break-all">{formatChangeValue(entry.beforeValue)}</span>
+                                                                        </div>
+                                                                        <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
+                                                                            <span className="font-semibold">After: </span>
+                                                                            <span className="break-all">{formatChangeValue(entry.afterValue)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </article>
+                                                            ))}
+                                                            {hiddenDiffCount > 0 && (
+                                                                <p className="text-[11px] font-semibold text-slate-500">
+                                                                    +{hiddenDiffCount} more changed field{hiddenDiffCount === 1 ? '' : 's'}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="mt-2 text-xs text-slate-500">No field diff recorded.</p>
+                                                    )}
+                                                    {Object.keys(metadata).length > 0 && (
+                                                        <details className="mt-2 rounded border border-slate-200 bg-white p-2 text-[11px] text-slate-600">
+                                                            <summary className="cursor-pointer font-semibold text-slate-700">
+                                                                Metadata
+                                                            </summary>
+                                                            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-800 p-3 font-mono text-[10px] sm:text-xs text-slate-100 shadow-inner">
+                                                                {JSON.stringify(metadata, null, 2)}
+                                                            </pre>
+                                                        </details>
+                                                    )}
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
                                 </section>
 
                                 <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">

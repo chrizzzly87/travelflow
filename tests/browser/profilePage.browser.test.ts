@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   deleteTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
   dbArchiveTrip: vi.fn(),
+  syncTripsFromDb: vi.fn(),
   confirmDialog: vi.fn(),
   showAppToast: vi.fn(() => 'toast-id'),
 }));
@@ -58,6 +59,7 @@ vi.mock('../../services/dbService', () => ({
   DB_ENABLED: false,
   dbUpsertTrip: mocks.dbUpsertTrip,
   dbArchiveTrip: mocks.dbArchiveTrip,
+  syncTripsFromDb: mocks.syncTripsFromDb,
 }));
 
 vi.mock('../../components/AppDialogProvider', () => ({

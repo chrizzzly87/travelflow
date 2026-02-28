@@ -59,6 +59,20 @@ export interface AdminAuditRecord {
     created_at: string;
 }
 
+export interface AdminUserChangeRecord {
+    id: string;
+    owner_user_id: string;
+    owner_email: string | null;
+    action: string;
+    source: string | null;
+    target_type: string;
+    target_id: string | null;
+    before_data: Record<string, unknown> | null;
+    after_data: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
 export interface AdminTierReapplyPreview {
     affected_users: number;
     affected_trips: number;
@@ -425,6 +439,25 @@ export const adminListAuditLogs = async (
     });
     if (error) throw new Error(error.message || 'Could not load audit logs.');
     return (Array.isArray(data) ? data : []) as AdminAuditRecord[];
+};
+
+export const adminListUserChangeLogs = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        ownerUserId?: string;
+    } = {}
+): Promise<AdminUserChangeRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_user_change_logs', {
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_action: options.action ?? null,
+        p_owner_user_id: options.ownerUserId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change logs.');
+    return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
 };
 
 const callAdminIdentityApi = async (

@@ -16,6 +16,9 @@ interface AccountMenuProps {
     showLabel?: boolean;
     fullWidth?: boolean;
     menuPlacement?: 'bottom-end' | 'right-end';
+    labelMode?: 'route' | 'identity';
+    showRecentTripsSection?: boolean;
+    showCurrentPageSummary?: boolean;
     className?: string;
 }
 
@@ -36,6 +39,30 @@ const computeInitial = (email: string | null, userId?: string | null): string =>
         return 'U';
     }
     return normalized.charAt(0).toUpperCase();
+};
+
+const buildAccountDisplayName = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const firstName = typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+    const lastName = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    if (fullName) return fullName;
+
+    const displayName = typeof profile?.displayName === 'string' ? profile.displayName.trim() : '';
+    if (displayName) return displayName;
+
+    const username = typeof profile?.username === 'string' ? profile.username.trim() : '';
+    if (username) return username.startsWith('@') ? username : `@${username}`;
+
+    const normalizedEmail = (email || '').trim();
+    if (normalizedEmail) return normalizedEmail;
+
+    const fallbackUserId = (userId || '').trim();
+    if (fallbackUserId) return `User ${fallbackUserId.slice(0, 8)}`;
+    return 'Signed-in account';
 };
 
 const labelFromPath = (pathname: string): string => {
@@ -59,16 +86,28 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     showLabel,
     fullWidth = false,
     menuPlacement = 'bottom-end',
+    labelMode = 'route',
+    showRecentTripsSection = true,
+    showCurrentPageSummary = true,
     className,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { logout, profile } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
-    const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => sortByCreatedDesc(getAllTrips()).slice(0, 5));
+    const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => (
+        showRecentTripsSection
+            ? sortByCreatedDesc(getAllTrips()).slice(0, 5)
+            : []
+    ));
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
+    const accountDisplayName = useMemo(
+        () => buildAccountDisplayName(profile, email, userId),
+        [email, profile, userId]
+    );
+    const triggerLabel = labelMode === 'identity' ? accountDisplayName : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
 
     useEffect(() => {
@@ -91,6 +130,10 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     }, [isOpen]);
 
     useEffect(() => {
+        if (!showRecentTripsSection) {
+            setRecentTrips([]);
+            return;
+        }
         if (typeof window === 'undefined') return;
         const refreshRecentTrips = () => {
             setRecentTrips(sortByCreatedDesc(getAllTrips()).slice(0, 5));
@@ -103,7 +146,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
             window.removeEventListener('storage', refreshRecentTrips);
             window.removeEventListener('tf:trips-updated', refreshRecentTrips);
         };
-    }, []);
+    }, [showRecentTripsSection]);
 
     const publicProfilePath = useMemo(() => {
         const normalizedUsername = profile?.username?.trim().toLowerCase();
@@ -143,8 +186,8 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         const normalizedEmail = (email || '').trim();
         if (normalizedEmail) return normalizedEmail;
         const normalizedUserId = (userId || '').trim();
-        if (normalizedUserId) return `User ${normalizedUserId.slice(0, 8)}`;
-        return 'Signed-in account';
+        if (normalizedUserId) return `User ID ${normalizedUserId.slice(0, 8)}`;
+        return null;
     }, [email, userId]);
 
     return (
@@ -169,7 +212,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
                     {computeInitial(email, userId)}
                 </span>
-                {shouldShowLabel && <span className="truncate">{accountLabel}</span>}
+                {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
                 <CaretDown size={14} />
             </button>
 
@@ -185,41 +228,48 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     ].join(' ')}
                 >
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="truncate text-sm font-semibold text-slate-800">{accountIdentityLabel}</div>
-                        <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
+                        <div className="truncate text-sm font-semibold text-slate-800">{accountDisplayName}</div>
+                        {accountIdentityLabel && (
+                            <div className="truncate text-xs text-slate-500">{accountIdentityLabel}</div>
+                        )}
+                        {showCurrentPageSummary && (
+                            <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
+                        )}
                     </div>
 
-                    <div className="mt-1.5 space-y-1 border-t border-slate-200 pt-1.5">
-                        <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                            Recent trips
+                    {showRecentTripsSection && (
+                        <div className="mt-1.5 space-y-1 border-t border-slate-200 pt-1.5">
+                            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Recent trips
+                            </div>
+                            {recentTrips.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-slate-500">No recent trips yet.</div>
+                            ) : (
+                                recentTrips.map((trip) => (
+                                    <button
+                                        key={`account-recent-${trip.id}`}
+                                        type="button"
+                                        onClick={() => navigateToRecentTrip(trip)}
+                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                        {...getAnalyticsDebugAttributes('navigation__account_menu--recent_trip', { trip_id: trip.id })}
+                                    >
+                                        <span className="truncate">{trip.title}</span>
+                                        <span className="text-[11px] text-slate-400">
+                                            {new Date(trip.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => navigateTo('/profile?tab=recent', 'navigation__account_menu--recent_view_all')}
+                                className="mt-0.5 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                {...getAnalyticsDebugAttributes('navigation__account_menu--recent_view_all')}
+                            >
+                                View all trips
+                            </button>
                         </div>
-                        {recentTrips.length === 0 ? (
-                            <div className="px-3 py-2 text-xs text-slate-500">No recent trips yet.</div>
-                        ) : (
-                            recentTrips.map((trip) => (
-                                <button
-                                    key={`account-recent-${trip.id}`}
-                                    type="button"
-                                    onClick={() => navigateToRecentTrip(trip)}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                                    {...getAnalyticsDebugAttributes('navigation__account_menu--recent_trip', { trip_id: trip.id })}
-                                >
-                                    <span className="truncate">{trip.title}</span>
-                                    <span className="text-[11px] text-slate-400">
-                                        {new Date(trip.createdAt).toLocaleDateString()}
-                                    </span>
-                                </button>
-                            ))
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => navigateTo('/profile?tab=recent', 'navigation__account_menu--recent_view_all')}
-                            className="mt-0.5 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
-                            {...getAnalyticsDebugAttributes('navigation__account_menu--recent_view_all')}
-                        >
-                            View all trips
-                        </button>
-                    </div>
+                    )}
 
                     <div className="mt-1.5 space-y-0.5">
                         <button

@@ -14,6 +14,16 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Fixed] 🧭 Admin overview and trip controls now stay connected to live backend records on production runtime.
 - [ ] [Improved] 🛠️ Added per-trip admin actions in the trips table: preview, duplicate, transfer owner, JSON export, soft delete, and hard delete.
 - [ ] [Improved] 🗂️ Added matching trip action workflows in the side panel, including owner transfer controls near owner context.
+- [ ] [Improved] 🧾 Added a user change-log section in the admin user details drawer with timestamped actions and before/after field diffs.
+- [ ] [Improved] 🛰️ Expanded the admin audit timeline to include user-originated profile edits and trip archive actions.
+- [ ] [Improved] 📄 Added admin log table caps and paging controls (latest 20 in user drawer, 50 per page in global audit) plus actor filters for admin-vs-user activity.
 - [ ] [Improved] 🚨 Added admin workspace data-source banners that explain active debug/mock mode and cached fallback reasons.
+- [ ] [Fixed] 🧑‍💼 Admin workspace now prefers your real signed-in session over dev-bypass identity when one is available.
+- [ ] [Improved] 🪪 Admin sidebar account button now uses the signed-in user identity label and hides recent-trip shortcuts in admin-only dropdowns.
+- [ ] [Fixed] 🧹 Profile trip list now re-syncs from owned DB trips on load and after archive failures to avoid stale non-owned trip actions.
+- [ ] [Fixed] 🧷 Simulated-login trip sync now treats mixed-provider sessions (email + anonymous identities) as real accounts, preventing local foreign trip bleed-through.
+- [ ] [Fixed] 🛡️ Trip pages no longer store read-only/public/admin-fallback trips in personal local trip storage, preventing cross-user trip bleed into profile.
+- [ ] [Improved] 🔎 Trip info now shows owner context so read-only/public/admin-fallback views clearly indicate who owns the trip.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
+- [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.

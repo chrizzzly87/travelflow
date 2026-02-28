@@ -59,6 +59,8 @@ export interface TripInfoModalProps {
     formatHistoryTime: (timestamp: number) => string;
     countryInfo?: Partial<ICountryInfo> | ICountryInfo;
     isPaywallLocked: boolean;
+    ownerSummary?: string | null;
+    ownerHint?: string | null;
 }
 
 export const TripInfoModal: React.FC<TripInfoModalProps> = ({
@@ -90,6 +92,8 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
+    ownerSummary,
+    ownerHint,
 }) => {
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -184,7 +188,16 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <dt className="text-gray-500">Total distance</dt>
                         <dd className="mt-1 font-semibold text-gray-900">{tripMeta.distanceLabel || '—'}</dd>
                     </div>
+                    {ownerSummary && (
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2 col-span-2">
+                            <dt className="text-gray-500">Owner</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{ownerSummary}</dd>
+                        </div>
+                    )}
                 </dl>
+                {ownerHint && (
+                    <p className="mt-2 text-[11px] text-gray-600">{ownerHint}</p>
+                )}
             </section>
 
             {aiMeta && (

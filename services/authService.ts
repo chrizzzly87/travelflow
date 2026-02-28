@@ -213,6 +213,9 @@ const hasNonAnonymousIdentity = (session: Session | null): boolean => {
 const getAnonymousFlag = (session: Session | null): boolean => {
     const user = session?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
     if (!user) return false;
+    const email = typeof user.email === 'string' ? user.email.trim() : '';
+    const phone = typeof user.phone === 'string' ? user.phone.trim() : '';
+    if (email || phone) return false;
     if (user.is_anonymous === true) return true;
 
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;

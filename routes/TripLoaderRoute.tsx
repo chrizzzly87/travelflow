@@ -139,7 +139,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
-                    saveTrip(dbTrip.trip);
+                    if (dbTrip.access.source === 'owner') {
+                        saveTrip(dbTrip.trip);
+                    }
                     const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
                     setTripAccess(dbTrip.access);
                     setViewSettings(resolvedView);
@@ -222,6 +224,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             readOnly={Boolean(isPublicReadView)}
             canShare={!adminFallbackAccess && !isPublicReadView}
             adminAccess={adminFallbackAccess}
+            tripAccess={tripAccess || undefined}
         />
     );
 };

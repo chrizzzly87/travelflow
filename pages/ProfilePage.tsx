@@ -33,7 +33,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { getProfileCountryDisplayName } from '../services/profileCountryService';
 import { deleteTrip, getAllTrips, saveTrip } from '../services/storageService';
-import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip } from '../services/dbService';
+import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
     formatDisplayNameForGreeting,
@@ -216,6 +216,25 @@ export const ProfilePage: React.FC = () => {
             window.removeEventListener('tf:trips-updated', refreshFromStorage);
         };
     }, [refreshTrips]);
+
+    useEffect(() => {
+        if (!DB_ENABLED) return;
+        if (!isAuthenticated) return;
+        const currentUserId = (access?.userId || '').trim();
+        if (!currentUserId) return;
+        let active = true;
+        void syncTripsFromDb()
+            .then(() => {
+                if (!active) return;
+                setTrips(getAllTrips());
+            })
+            .catch(() => {
+                // Keep existing local snapshot when DB sync fails.
+            });
+        return () => {
+            active = false;
+        };
+    }, [access?.userId, isAuthenticated]);
 
     useEffect(() => {
         const next = new URLSearchParams(searchParams);
@@ -431,6 +450,10 @@ export const ProfilePage: React.FC = () => {
                 }),
             })));
             archivedIds = results.filter((result) => result.archived).map((result) => result.tripId);
+            if (archivedIds.length === 0) {
+                await syncTripsFromDb();
+                setTrips(getAllTrips());
+            }
         }
 
         if (archivedIds.length === 0) return [];

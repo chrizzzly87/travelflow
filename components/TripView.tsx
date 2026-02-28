@@ -300,6 +300,7 @@ interface TripViewProps {
     suppressToasts?: boolean;
     suppressReleaseNotice?: boolean;
     adminAccess?: DbTripAccessMetadata;
+    tripAccess?: DbTripAccessMetadata;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -417,6 +418,8 @@ interface TripViewModalLayerProps {
     onToggleFavorite: () => void;
     isExamplePreview: boolean;
     tripMeta: any;
+    ownerSummary: string | null;
+    ownerHint: string | null;
     aiMeta: ITrip['aiMeta'];
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
@@ -486,6 +489,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     onToggleFavorite,
     isExamplePreview,
     tripMeta,
+    ownerSummary,
+    ownerHint,
     aiMeta,
     forkMeta,
     isTripInfoHistoryExpanded,
@@ -567,6 +572,8 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     onToggleFavorite={onToggleFavorite}
                     isExamplePreview={isExamplePreview}
                     tripMeta={tripMeta}
+                    ownerSummary={ownerSummary}
+                    ownerHint={ownerHint}
                     aiMeta={aiMeta}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
@@ -737,12 +744,13 @@ const useTripViewRender = ({
     suppressToasts = false,
     suppressReleaseNotice = false,
     adminAccess,
+    tripAccess,
     exampleTripBanner,
 }: TripViewProps): React.ReactElement => {
     const navigate = useNavigate();
     const location = useLocation();
     const { openLoginModal } = useLoginModal();
-    const { isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
+    const { access, profile, isAuthenticated, isAnonymous, isAdmin, logout } = useAuth();
     const isTripDetailRoute = location.pathname.startsWith('/trip/');
     const locationState = location.state as ExampleTransitionLocationState | null;
     const useExampleSharedTransition = trip.isExample && (locationState?.useExampleSharedTransition ?? true);
@@ -1468,6 +1476,50 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const ownerSummary = useMemo(() => {
+        const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
+        const ownerEmail = tripAccess?.ownerEmail?.trim() || null;
+        const ownerId = tripAccess?.ownerId?.trim() || null;
+        const currentUserId = access?.userId?.trim() || null;
+        const currentUsername = profile?.username?.trim() || null;
+        const isOwner = Boolean(
+            tripAccess?.source === 'owner'
+            || (ownerId && currentUserId && ownerId === currentUserId)
+        );
+
+        if (ownerUsername) {
+            const normalizedHandle = ownerUsername.startsWith('@') ? ownerUsername : `@${ownerUsername}`;
+            return `${normalizedHandle}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerEmail) {
+            return `${ownerEmail}${isOwner ? ' (you)' : ''}`;
+        }
+        if (ownerId) {
+            return `${ownerId}${isOwner ? ' (you)' : ''}`;
+        }
+        if (isOwner && currentUsername) {
+            const normalizedHandle = currentUsername.startsWith('@') ? currentUsername : `@${currentUsername}`;
+            return `${normalizedHandle} (you)`;
+        }
+        if (isOwner) return 'You';
+        return null;
+    }, [
+        access?.userId,
+        profile?.username,
+        tripAccess?.ownerEmail,
+        tripAccess?.ownerId,
+        tripAccess?.ownerUsername,
+        tripAccess?.source,
+    ]);
+    const ownerHint = useMemo(() => {
+        if (tripAccess?.source === 'public_read') {
+            return 'You are viewing a public trip owned by another account. Archive and edit actions are disabled.';
+        }
+        if (tripAccess?.source === 'admin_fallback' && !adminOverrideEnabled) {
+            return 'This is an admin fallback view. Enable admin override above to edit as an admin.';
+        }
+        return null;
+    }, [adminOverrideEnabled, tripAccess?.source]);
 
     const timelineCanvas = (
         <TripTimelineCanvas
@@ -1702,6 +1754,8 @@ const useTripViewRender = ({
                         onToggleFavorite={handleToggleFavorite}
                         isExamplePreview={isExamplePreview}
                         tripMeta={tripMeta}
+                        ownerSummary={ownerSummary}
+                        ownerHint={ownerHint}
                         aiMeta={displayTrip.aiMeta}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}

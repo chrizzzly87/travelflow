@@ -133,4 +133,24 @@ describe('components/navigation/AccountMenu recent trips', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/profile/stamps');
     expect(mocks.trackEvent).toHaveBeenCalledWith('navigation__account_menu--stamps');
   });
+
+  it('supports admin identity label mode without recent trips section', async () => {
+    const user = userEvent.setup();
+    render(React.createElement(AccountMenu, {
+      email: 'traveler@example.com',
+      userId: 'user-1',
+      isAdmin: true,
+      labelMode: 'identity',
+      showRecentTripsSection: false,
+      showCurrentPageSummary: false,
+    }));
+
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('@traveler').length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText('Recent trips')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Current page:/i)).not.toBeInTheDocument();
+  });
 });

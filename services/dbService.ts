@@ -18,6 +18,7 @@ export interface DbTripAccessMetadata {
     source: DbTripAccessSource;
     ownerId: string | null;
     ownerEmail: string | null;
+    ownerUsername: string | null;
     canAdminWrite: boolean;
     updatedAtIso: string | null;
 }
@@ -81,6 +82,46 @@ const requireSupabase = () => {
         throw new Error('Supabase client not configured');
     }
     return supabase;
+};
+
+const normalizeUsernameHandle = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.replace(/^@+/, '');
+};
+
+type SessionUserLike = {
+    email?: string | null;
+    phone?: string | null;
+    is_anonymous?: boolean;
+    app_metadata?: Record<string, unknown>;
+    identities?: Array<{ provider?: string | null }>;
+};
+
+const isAnonymousSessionUser = (user: SessionUserLike | null | undefined): boolean => {
+    if (!user) return true;
+    if ((typeof user.email === 'string' && user.email.trim()) || (typeof user.phone === 'string' && user.phone.trim())) {
+        return false;
+    }
+    const metadata = user.app_metadata;
+    const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
+    const providersFromMetadata = Array.isArray(metadata?.providers)
+        ? metadata.providers
+            .filter((entry): entry is string => typeof entry === 'string')
+            .map((entry) => entry.trim().toLowerCase())
+        : [];
+    const providersFromIdentities = Array.isArray(user.identities)
+        ? user.identities
+            .map((identity) => (typeof identity?.provider === 'string' ? identity.provider.trim().toLowerCase() : ''))
+            .filter(Boolean)
+        : [];
+    const providers = Array.from(new Set([provider, ...providersFromMetadata, ...providersFromIdentities].filter(Boolean)));
+    const hasNonAnonymousProvider = providers.some((entry) => entry !== 'anonymous');
+    if (hasNonAnonymousProvider) return false;
+    if (user.is_anonymous === true) return true;
+    if (metadata?.is_anonymous === true) return true;
+    return providers.includes('anonymous');
 };
 
 export const ensureDbSession = async (): Promise<string | null> => {
@@ -431,6 +472,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
     let loadedViaAdminBypass = false;
     let ownerId: string | null = null;
     let ownerEmail: string | null = null;
+    let ownerUsername: string | null = null;
     let canAdminWrite = false;
     let updatedAtIso: string | null = null;
 
@@ -503,6 +545,16 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             ? (data as { updated_at: string }).updated_at
             : null;
     }
+    if (ownerId) {
+        const { data: ownerProfile, error: ownerProfileError } = await client
+            .from('profiles')
+            .select('username')
+            .eq('id', ownerId)
+            .maybeSingle();
+        if (!ownerProfileError) {
+            ownerUsername = normalizeUsernameHandle((ownerProfile as { username?: unknown } | null)?.username ?? null);
+        }
+    }
     const isPublicRead = !loadedViaAdminBypass
         && Boolean(ownerId)
         && (!currentUserId || ownerId !== currentUserId)
@@ -514,6 +566,7 @@ export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> =>
             source: loadedViaAdminBypass ? 'admin_fallback' : (isPublicRead ? 'public_read' : 'owner'),
             ownerId,
             ownerEmail,
+            ownerUsername,
             canAdminWrite: loadedViaAdminBypass ? canAdminWrite : false,
             updatedAtIso,
         },
@@ -674,6 +727,23 @@ export const syncTripsFromDb = async () => {
     if (!DB_ENABLED) return;
     const trips = await dbListTrips();
     if (isSimulatedLoggedIn()) {
+        let shouldMergeLocalTrips = true;
+        try {
+            const client = requireSupabase();
+            const { data: sessionData, error } = await client.auth.getSession();
+            if (!error) {
+                const sessionUser = sessionData?.session?.user as SessionUserLike | undefined;
+                shouldMergeLocalTrips = isAnonymousSessionUser(sessionUser ?? null);
+            }
+        } catch {
+            shouldMergeLocalTrips = true;
+        }
+
+        if (!shouldMergeLocalTrips) {
+            setAllTrips(trips);
+            return;
+        }
+
         const localTrips = getAllTrips().filter((trip) => (trip.status || 'active') !== 'archived');
         const dbIds = new Set(trips.map((trip) => trip.id));
         const localOnlyTrips = localTrips.filter((trip) => !dbIds.has(trip.id));
