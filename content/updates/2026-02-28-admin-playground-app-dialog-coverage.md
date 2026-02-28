@@ -17,5 +17,8 @@ summary: "Extended the admin design playground with real shared confirm/prompt d
 - [ ] [Internal] 🧱 Added shared dialog preset builders so admin flows reuse the same confirm/prompt configuration patterns.
 - [ ] [Internal] 🛡️ Migrated admin users/trips/audit/benchmark dialog calls to shared presets and standardized destructive actions on danger tone.
 - [ ] [Internal] ✅ Added missing single-user soft-delete confirmation in admin users before executing the destructive status change.
+- [ ] [Internal] 🔔 Switched single-user admin soft-delete and hard-delete success flows from inline notes to shared Sonner toasts, including loading/error feedback.
+- [ ] [Internal] ↩️ Added Undo from the single-user soft-delete success toast to restore account status directly from the toast action.
+- [ ] [Internal] ✍️ Rewrote single-user soft-delete/hard-delete confirm copy to quote the selected user name and explain reversible soft delete vs permanent hard delete.
 - [ ] [Internal] 📚 Documented current app dialog variants and harmonization targets in the admin playground follow-up issue doc.
 - [ ] [Internal] 🧪 Added regression coverage for triggering shared confirm/prompt dialog samples in the playground.
