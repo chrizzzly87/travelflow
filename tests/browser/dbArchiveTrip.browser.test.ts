@@ -176,6 +176,11 @@ describe('services/dbService dbArchiveTrip', () => {
         source: 'my_trips',
         archive_metadata: {},
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.archive_failed',
+        event_schema_version: 1,
+        source_surface: 'my_trips',
       }),
     });
   });
@@ -204,6 +209,11 @@ describe('services/dbService dbArchiveTrip', () => {
         source: 'profile_batch',
         archive_metadata: {},
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.archive_failed',
+        event_schema_version: 1,
+        source_surface: 'profile_batch',
       }),
     });
   });

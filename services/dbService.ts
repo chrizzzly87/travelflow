@@ -398,6 +398,7 @@ interface TripEventSnapshot {
     title: string;
     status: 'active' | 'archived' | 'expired';
     showOnPublicProfile: boolean;
+    startDate: string | null;
     tripExpiresAt: string | null;
     sourceKind: string | null;
 }
@@ -410,6 +411,7 @@ type TripVersionSnapshot = {
 
 const MAX_TIMELINE_DIFF_ITEMS = 8;
 const VISUAL_LABEL_PREFIX = /^\s*visual\s*:\s*/i;
+const TRIP_EVENT_SCHEMA_VERSION = 1;
 
 interface TripTimelineDiffSummary {
     counts: {
@@ -433,6 +435,25 @@ interface TripTimelineVisualChange {
     summary: string;
 }
 
+type TripSecondaryActionCode =
+    | 'trip.activity.added'
+    | 'trip.activity.updated'
+    | 'trip.activity.deleted'
+    | 'trip.transport.added'
+    | 'trip.transport.updated'
+    | 'trip.transport.deleted'
+    | 'trip.city.added'
+    | 'trip.city.updated'
+    | 'trip.city.deleted'
+    | 'trip.segment.deleted'
+    | 'trip.item.added'
+    | 'trip.item.updated'
+    | 'trip.item.deleted'
+    | 'trip.settings.updated'
+    | 'trip.visibility.updated'
+    | 'trip.trip_dates.updated'
+    | 'trip.view.updated';
+
 const createEventCorrelationId = (): string => {
     try {
         if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -444,12 +465,61 @@ const createEventCorrelationId = (): string => {
     return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const normalizeEventToken = (value: unknown, maxLength = 120): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.slice(0, maxLength);
+};
+
+const withTripEventEnvelope = (
+    metadata: Record<string, unknown> | undefined,
+    options: {
+        action: string;
+        source: string | null | undefined;
+        correlationId?: string | null;
+        causationId?: string | null;
+    }
+): Record<string, unknown> => {
+    const next: Record<string, unknown> = {
+        ...(metadata ?? {}),
+    };
+    const correlationId = normalizeEventToken(next.correlation_id)
+        || normalizeEventToken(options.correlationId)
+        || createEventCorrelationId();
+    const causationFromMetadata = normalizeEventToken(next.causation_id)
+        || normalizeEventToken(next.version_id)
+        || normalizeEventToken(next.previous_version_id);
+    const causationId = causationFromMetadata
+        || normalizeEventToken(options.causationId)
+        || correlationId;
+    const eventId = normalizeEventToken(next.event_id) || createEventCorrelationId();
+    const eventKind = normalizeEventToken(next.event_kind) || normalizeEventToken(options.action) || 'unknown';
+    const sourceSurface = normalizeEventToken(next.source_surface) || normalizeEventToken(options.source);
+    const schemaVersion = typeof next.event_schema_version === 'number' && Number.isFinite(next.event_schema_version)
+        ? next.event_schema_version
+        : TRIP_EVENT_SCHEMA_VERSION;
+
+    next.correlation_id = correlationId;
+    next.causation_id = causationId;
+    next.event_id = eventId;
+    next.event_kind = eventKind;
+    next.event_schema_version = schemaVersion;
+    if (sourceSurface) {
+        next.source_surface = sourceSurface;
+    }
+    return next;
+};
+
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
     title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
     status: trip.status && ['active', 'archived', 'expired'].includes(trip.status)
         ? trip.status
         : 'active',
     showOnPublicProfile: trip.showOnPublicProfile !== false,
+    startDate: typeof trip.startDate === 'string' && trip.startDate.trim()
+        ? trip.startDate.trim().split('T')[0]
+        : null,
     tripExpiresAt: typeof trip.tripExpiresAt === 'string' ? trip.tripExpiresAt : null,
     sourceKind: typeof trip.sourceKind === 'string' && trip.sourceKind.trim()
         ? trip.sourceKind.trim()
@@ -469,7 +539,7 @@ const readOwnedTripEventSnapshot = async (
 ): Promise<TripEventSnapshot | null> => {
     const { data, error } = await client
         .from('trips')
-        .select('title, status, show_on_public_profile, trip_expires_at, source_kind')
+        .select('title, status, show_on_public_profile, start_date, trip_expires_at, source_kind')
         .eq('id', tripId)
         .eq('owner_id', ownerId)
         .maybeSingle();
@@ -482,8 +552,107 @@ const readOwnedTripEventSnapshot = async (
         title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : 'Untitled trip',
         status,
         showOnPublicProfile: data.show_on_public_profile !== false,
+        startDate: typeof data.start_date === 'string' && data.start_date.trim()
+            ? data.start_date.trim().split('T')[0]
+            : null,
         tripExpiresAt: typeof data.trip_expires_at === 'string' ? data.trip_expires_at : null,
         sourceKind: typeof data.source_kind === 'string' && data.source_kind.trim() ? data.source_kind.trim() : null,
+    };
+};
+
+const buildTripLifecycleSecondaryActions = (
+    before: TripEventSnapshot,
+    after: TripEventSnapshot
+): TripSecondaryActionCode[] => {
+    const codes: TripSecondaryActionCode[] = [];
+    const pushUnique = (code: TripSecondaryActionCode) => {
+        if (codes.includes(code)) return;
+        codes.push(code);
+    };
+
+    if (
+        before.title !== after.title
+        || before.status !== after.status
+        || before.sourceKind !== after.sourceKind
+    ) {
+        pushUnique('trip.settings.updated');
+    }
+    if (before.showOnPublicProfile !== after.showOnPublicProfile) {
+        pushUnique('trip.visibility.updated');
+    }
+    if (
+        before.startDate !== after.startDate
+        || before.tripExpiresAt !== after.tripExpiresAt
+    ) {
+        pushUnique('trip.trip_dates.updated');
+    }
+
+    return codes;
+};
+
+const buildTripLifecycleDomainEventsV1 = (
+    before: TripEventSnapshot,
+    after: TripEventSnapshot
+): Record<string, unknown> | null => {
+    const events: Array<Record<string, unknown>> = [];
+    const pushIfChanged = (payload: {
+        action: string;
+        field: string;
+        beforeValue: unknown;
+        afterValue: unknown;
+    }) => {
+        if (toComparableValue(payload.beforeValue) === toComparableValue(payload.afterValue)) return;
+        events.push({
+            action: payload.action,
+            field: payload.field,
+            before_value: payload.beforeValue ?? null,
+            after_value: payload.afterValue ?? null,
+        });
+    };
+
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'status',
+        beforeValue: before.status,
+        afterValue: after.status,
+    });
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'title',
+        beforeValue: before.title,
+        afterValue: after.title,
+    });
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'source_kind',
+        beforeValue: before.sourceKind,
+        afterValue: after.sourceKind,
+    });
+    pushIfChanged({
+        action: 'trip.visibility.updated',
+        field: 'show_on_public_profile',
+        beforeValue: before.showOnPublicProfile,
+        afterValue: after.showOnPublicProfile,
+    });
+    pushIfChanged({
+        action: 'trip.trip_dates.updated',
+        field: 'start_date',
+        beforeValue: before.startDate,
+        afterValue: after.startDate,
+    });
+    pushIfChanged({
+        action: 'trip.trip_dates.updated',
+        field: 'trip_expires_at',
+        beforeValue: before.tripExpiresAt,
+        afterValue: after.tripExpiresAt,
+    });
+
+    if (events.length === 0) return null;
+    return {
+        schema: 'trip_domain_events_v1',
+        version: 1,
+        events,
+        truncated: false,
     };
 };
 
@@ -502,6 +671,8 @@ const toTimelineDiffItemSnapshot = (item: ITimelineItem): Record<string, unknown
 const arraysEqual = (left: string[], right: string[]): boolean => (
     left.length === right.length && left.every((value, index) => value === right[index])
 );
+
+const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
 
 const buildTripTimelineDiffSummary = (
     previousTrip: ITrip | null,
@@ -705,6 +876,188 @@ const buildTripTimelineDiffV1 = (
     };
 };
 
+const normalizeTimelineEntryType = (
+    entry: Record<string, unknown>,
+    options?: { fallbackToAfter?: boolean }
+): string | null => {
+    const itemType = typeof entry.item_type === 'string' ? entry.item_type.trim().toLowerCase() : '';
+    if (itemType) return itemType;
+
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const beforeType = typeof before?.type === 'string' ? before.type.trim().toLowerCase() : '';
+    if (beforeType) return beforeType;
+
+    if (options?.fallbackToAfter) {
+        const after = entry.after as Record<string, unknown> | null | undefined;
+        const afterType = typeof after?.type === 'string' ? after.type.trim().toLowerCase() : '';
+        if (afterType) return afterType;
+    }
+
+    return null;
+};
+
+const mapTimelineEntryTypeToDomain = (itemType: string | null): 'activity' | 'transport' | 'city' | 'item' => {
+    if (!itemType) return 'item';
+    if (itemType === 'activity') return 'activity';
+    if (itemType === 'travel' || itemType === 'transport') return 'transport';
+    if (itemType === 'city') return 'city';
+    return 'item';
+};
+
+const resolveDeletedTimelineDomainAction = (itemType: string | null): 'trip.segment.deleted' | `trip.${ReturnType<typeof mapTimelineEntryTypeToDomain>}.deleted` => {
+    if (itemType === 'travel-empty') return 'trip.segment.deleted';
+    const domain = mapTimelineEntryTypeToDomain(itemType);
+    return `trip.${domain}.deleted`;
+};
+
+const readTimelineEntryText = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed || null;
+};
+
+const resolveTimelineDomainEventItemId = (entry: Record<string, unknown>): string | null => {
+    const raw = readTimelineEntryText(entry.item_id);
+    if (raw) return raw;
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const after = entry.after as Record<string, unknown> | null | undefined;
+    return readTimelineEntryText(before?.id) || readTimelineEntryText(after?.id);
+};
+
+const resolveTimelineDomainEventTitle = (entry: Record<string, unknown>): string | null => {
+    const raw = readTimelineEntryText(entry.title);
+    if (raw) return raw;
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const after = entry.after as Record<string, unknown> | null | undefined;
+    return readTimelineEntryText(before?.title) || readTimelineEntryText(after?.title);
+};
+
+const MAX_DOMAIN_EVENTS = 24;
+
+const buildTripDomainEventsV1 = (
+    timelineDiff: TripTimelineDiffSummary | null,
+    visualChanges: TripTimelineVisualChange[]
+): Record<string, unknown> | null => {
+    if (!timelineDiff && visualChanges.length === 0) return null;
+    const events: Array<Record<string, unknown>> = [];
+
+    const pushEvent = (event: Record<string, unknown>) => {
+        if (events.length >= MAX_DOMAIN_EVENTS) return;
+        events.push(event);
+    };
+
+    timelineDiff?.transport_mode_changes.forEach((entry) => {
+        pushEvent({
+            action: 'trip.transport.updated',
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            field: 'transport_mode',
+            before_value: entry.before_mode ?? null,
+            after_value: entry.after_mode ?? null,
+        });
+    });
+
+    timelineDiff?.added_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushEvent({
+            action: `trip.${domain}.added`,
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            before_value: null,
+            after_value: entry.after ?? null,
+        });
+    });
+
+    timelineDiff?.deleted_items.forEach((entry) => {
+        pushEvent({
+            action: resolveDeletedTimelineDomainAction(normalizeTimelineEntryType(entry)),
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            before_value: entry.before ?? null,
+            after_value: null,
+        });
+    });
+
+    timelineDiff?.updated_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        const changedFields = Array.isArray(entry.changed_fields)
+            ? entry.changed_fields
+                .filter((value): value is string => typeof value === 'string')
+                .map((value) => value.trim())
+                .filter(Boolean)
+            : [];
+
+        pushEvent({
+            action: `trip.${domain}.updated`,
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            changed_fields: changedFields,
+            before_value: entry.before ?? null,
+            after_value: entry.after ?? null,
+        });
+    });
+
+    visualChanges.forEach((entry) => {
+        pushEvent({
+            action: 'trip.view.updated',
+            field: entry.field,
+            label: entry.label,
+            before_value: entry.before_value,
+            after_value: entry.after_value,
+        });
+    });
+
+    const totalEventCount = (
+        (timelineDiff?.transport_mode_changes.length ?? 0)
+        + (timelineDiff?.added_items.length ?? 0)
+        + (timelineDiff?.deleted_items.length ?? 0)
+        + (timelineDiff?.updated_items.length ?? 0)
+        + visualChanges.length
+    );
+
+    return {
+        schema: 'trip_domain_events_v1',
+        version: 1,
+        events,
+        truncated: totalEventCount > MAX_DOMAIN_EVENTS,
+    };
+};
+
+const buildTripSecondaryActionCodes = (
+    timelineDiff: TripTimelineDiffSummary | null,
+    visualChanges: TripTimelineVisualChange[]
+): TripSecondaryActionCode[] => {
+    const codes: TripSecondaryActionCode[] = [];
+    const pushUnique = (code: TripSecondaryActionCode) => {
+        if (codes.includes(code)) return;
+        codes.push(code);
+    };
+
+    if (visualChanges.length > 0) {
+        pushUnique('trip.view.updated');
+    }
+    if (!timelineDiff) return codes;
+
+    timelineDiff.transport_mode_changes.forEach(() => {
+        pushUnique('trip.transport.updated');
+    });
+
+    timelineDiff.added_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushUnique(`trip.${domain}.added` as TripSecondaryActionCode);
+    });
+    timelineDiff.deleted_items.forEach((entry) => {
+        const actionCode = resolveDeletedTimelineDomainAction(normalizeTimelineEntryType(entry));
+        pushUnique(actionCode as TripSecondaryActionCode);
+    });
+    timelineDiff.updated_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushUnique(`trip.${domain}.updated` as TripSecondaryActionCode);
+    });
+
+    return codes.slice(0, 8);
+};
+
 const readLatestTripVersionSnapshot = async (
     client: ReturnType<typeof requireSupabase>,
     tripId: string
@@ -755,6 +1108,7 @@ const writeTripEventFallback = async (
         source: string;
         metadata: Record<string, unknown>;
         correlationId?: string;
+        causationId?: string;
         dedupeWindowMs?: number;
     }
 ): Promise<void> => {
@@ -767,20 +1121,19 @@ const writeTripEventFallback = async (
             if (alreadyLogged) return;
         }
 
-        const existingCorrelationId = typeof payload.metadata.correlation_id === 'string'
-            ? payload.metadata.correlation_id.trim()
-            : '';
-        const metadataWithCorrelation: Record<string, unknown> = {
-            ...payload.metadata,
-            correlation_id: existingCorrelationId || payload.correlationId || createEventCorrelationId(),
-        };
+        const metadataWithEnvelope = withTripEventEnvelope(payload.metadata, {
+            action: payload.action,
+            source: payload.source,
+            correlationId: payload.correlationId,
+            causationId: payload.causationId,
+        });
 
         await client.from('trip_user_events').insert({
             trip_id: payload.tripId,
             owner_id: payload.ownerId,
             action: payload.action,
             source: payload.source,
-            metadata: metadataWithCorrelation,
+            metadata: metadataWithEnvelope,
         });
     } catch {
         // best effort fallback logging only
@@ -811,6 +1164,7 @@ const writeTripLifecycleEventFallback = async (
                 status_after: after.status,
                 title_after: after.title,
                 show_on_public_profile_after: after.showOnPublicProfile,
+                start_date_after: after.startDate,
                 trip_expires_at_after: after.tripExpiresAt,
                 source_kind_after: after.sourceKind,
             },
@@ -822,10 +1176,14 @@ const writeTripLifecycleEventFallback = async (
         before.status !== after.status
         || before.title !== after.title
         || before.showOnPublicProfile !== after.showOnPublicProfile
+        || before.startDate !== after.startDate
         || before.tripExpiresAt !== after.tripExpiresAt
         || before.sourceKind !== after.sourceKind
     );
     if (!hasDiff) return;
+
+    const secondaryActions = buildTripLifecycleSecondaryActions(before, after);
+    const domainEventsV1 = buildTripLifecycleDomainEventsV1(before, after);
 
     await writeTripEventFallback(client, {
         ownerId: payload.ownerId,
@@ -841,10 +1199,14 @@ const writeTripLifecycleEventFallback = async (
             title_after: after.title,
             show_on_public_profile_before: before.showOnPublicProfile,
             show_on_public_profile_after: after.showOnPublicProfile,
+            start_date_before: before.startDate,
+            start_date_after: after.startDate,
             trip_expires_at_before: before.tripExpiresAt,
             trip_expires_at_after: after.tripExpiresAt,
             source_kind_before: before.sourceKind,
             source_kind_after: after.sourceKind,
+            secondary_actions: secondaryActions,
+            ...(domainEventsV1 ? { domain_events_v1: domainEventsV1 } : {}),
         },
     });
 };
@@ -1160,6 +1522,8 @@ export const dbCreateTripVersion = async (
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         const visualChanges = parseVisualChangesFromLabel(label ?? null);
         const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
+        const domainEventsV1 = buildTripDomainEventsV1(timelineDiff, visualChanges);
+        const secondaryActions = buildTripSecondaryActionCodes(timelineDiff, visualChanges);
         const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
             ownerId,
@@ -1177,6 +1541,8 @@ export const dbCreateTripVersion = async (
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
                 timeline_diff_v1: timelineDiffV1,
+                domain_events_v1: domainEventsV1,
+                secondary_actions: secondaryActions,
             },
             dedupeWindowMs: 0,
         });
@@ -1425,13 +1791,11 @@ const logUserActionFailure = async (
     }
 ) => {
     try {
-        const metadataWithCorrelation: Record<string, unknown> = {
-            ...(payload.metadata ?? {}),
-        };
-        const existingCorrelationId = typeof metadataWithCorrelation.correlation_id === 'string'
-            ? metadataWithCorrelation.correlation_id.trim()
-            : '';
-        metadataWithCorrelation.correlation_id = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+        const metadataWithEnvelope = withTripEventEnvelope(payload.metadata, {
+            action: payload.action,
+            source: payload.source,
+            correlationId: payload.correlationId,
+        });
 
         await client.rpc('log_user_action_failure', {
             p_action: payload.action,
@@ -1440,7 +1804,7 @@ const logUserActionFailure = async (
             p_source: payload.source,
             p_error_code: normalizeFailureText(payload.errorCode),
             p_error_message: normalizeFailureText(payload.errorMessage),
-            p_metadata: metadataWithCorrelation,
+            p_metadata: metadataWithEnvelope,
         });
     } catch {
         // best effort failure logging only

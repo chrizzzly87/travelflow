@@ -141,6 +141,11 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
         trip_id: 'trip-1',
         version_id: 'version-1',
         previous_version_id: 'version-prev',
@@ -234,6 +239,27 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
+        secondary_actions: expect.arrayContaining([
+          'trip.transport.updated',
+          'trip.activity.deleted',
+        ]),
+        domain_events_v1: expect.objectContaining({
+          schema: 'trip_domain_events_v1',
+          version: 1,
+          events: expect.arrayContaining([
+            expect.objectContaining({
+              action: 'trip.transport.updated',
+            }),
+            expect.objectContaining({
+              action: 'trip.activity.deleted',
+            }),
+          ]),
+        }),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
@@ -247,6 +273,67 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     const insertedPayload = mocks.eventInsert.mock.calls[0]?.[0] as { metadata?: Record<string, unknown> } | undefined;
     expect(insertedPayload?.metadata?.timeline_diff).toBeUndefined();
+  });
+
+  it('maps deleted travel-empty segments to trip.segment.deleted metadata facets', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-segment',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-segment',
+          title: 'Segment Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'segment-1',
+              type: 'travel-empty',
+              title: 'Empty segment',
+              startDateOffset: 1,
+              duration: 1,
+              color: '#222',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-segment-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-segment',
+      title: 'Segment Trip',
+      startDate: '2026-02-01',
+      items: [],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Data: Removed empty segment');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        secondary_actions: expect.arrayContaining([
+          'trip.segment.deleted',
+        ]),
+        domain_events_v1: expect.objectContaining({
+          schema: 'trip_domain_events_v1',
+          version: 1,
+          events: expect.arrayContaining([
+            expect.objectContaining({
+              action: 'trip.segment.deleted',
+              item_id: 'segment-1',
+            }),
+          ]),
+        }),
+      }),
+    }));
   });
 
   it('captures visual-only version commits in typed timeline diff metadata', async () => {
@@ -285,6 +372,28 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
+        secondary_actions: expect.arrayContaining([
+          'trip.view.updated',
+        ]),
+        domain_events_v1: expect.objectContaining({
+          schema: 'trip_domain_events_v1',
+          version: 1,
+          events: expect.arrayContaining([
+            expect.objectContaining({
+              action: 'trip.view.updated',
+              field: 'map_view',
+            }),
+            expect.objectContaining({
+              action: 'trip.view.updated',
+              field: 'timeline_layout',
+            }),
+          ]),
+        }),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,

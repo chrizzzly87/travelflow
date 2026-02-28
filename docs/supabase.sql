@@ -2283,6 +2283,8 @@ declare
   v_status_after text;
   v_title_before text;
   v_title_after text;
+  v_start_date_before date;
+  v_start_date_after date;
   v_trip_expires_before timestamptz;
   v_trip_expires_after timestamptz;
   v_source_kind_before text;
@@ -2308,9 +2310,10 @@ begin
     select
       t.status,
       t.title,
+      t.start_date,
       t.trip_expires_at,
       t.source_kind
-      into v_status_before, v_title_before, v_trip_expires_before, v_source_kind_before
+      into v_status_before, v_title_before, v_start_date_before, v_trip_expires_before, v_source_kind_before
       from public.trips t
      where t.id = p_id
        and t.owner_id = v_owner
@@ -2330,15 +2333,17 @@ begin
            source_template_id = coalesce(p_source_template_id, source_template_id),
            updated_at = now()
      where id = p_id
-     returning
-       status,
-       title,
-       trip_expires_at,
-       source_kind
-      into v_status_after, v_title_after, v_trip_expires_after, v_source_kind_after;
+    returning
+      status,
+      title,
+      start_date,
+      trip_expires_at,
+      source_kind
+      into v_status_after, v_title_after, v_start_date_after, v_trip_expires_after, v_source_kind_after;
 
     if v_status_before is distinct from v_status_after
       or v_title_before is distinct from v_title_after
+      or v_start_date_before is distinct from v_start_date_after
       or v_trip_expires_before is distinct from v_trip_expires_after
       or v_source_kind_before is distinct from v_source_kind_after then
       insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
@@ -2353,10 +2358,81 @@ begin
           'status_after', v_status_after,
           'title_before', v_title_before,
           'title_after', v_title_after,
+          'start_date_before', v_start_date_before,
+          'start_date_after', v_start_date_after,
           'trip_expires_at_before', v_trip_expires_before,
           'trip_expires_at_after', v_trip_expires_after,
           'source_kind_before', v_source_kind_before,
-          'source_kind_after', v_source_kind_after
+          'source_kind_after', v_source_kind_after,
+          'secondary_actions', to_jsonb(array_remove(array[
+            case
+              when v_status_before is distinct from v_status_after
+                or v_title_before is distinct from v_title_after
+                or v_source_kind_before is distinct from v_source_kind_after
+              then 'trip.settings.updated'
+              else null
+            end,
+            case
+              when v_start_date_before is distinct from v_start_date_after
+                or v_trip_expires_before is distinct from v_trip_expires_after
+              then 'trip.trip_dates.updated'
+              else null
+            end
+          ]::text[], null)),
+          'domain_events_v1', jsonb_build_object(
+            'schema', 'trip_domain_events_v1',
+            'version', 1,
+            'events', coalesce((
+              select jsonb_agg(event_row) from (
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'status',
+                  'before_value', v_status_before,
+                  'after_value', v_status_after
+                ) as event_row
+                where v_status_before is distinct from v_status_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'title',
+                  'before_value', v_title_before,
+                  'after_value', v_title_after
+                ) as event_row
+                where v_title_before is distinct from v_title_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'source_kind',
+                  'before_value', v_source_kind_before,
+                  'after_value', v_source_kind_after
+                ) as event_row
+                where v_source_kind_before is distinct from v_source_kind_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.trip_dates.updated',
+                  'field', 'start_date',
+                  'before_value', v_start_date_before,
+                  'after_value', v_start_date_after
+                ) as event_row
+                where v_start_date_before is distinct from v_start_date_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.trip_dates.updated',
+                  'field', 'trip_expires_at',
+                  'before_value', v_trip_expires_before,
+                  'after_value', v_trip_expires_after
+                ) as event_row
+                where v_trip_expires_before is distinct from v_trip_expires_after
+              ) lifecycle_events
+            ), '[]'::jsonb),
+            'truncated', false
+          ),
+          'event_schema_version', 1,
+          'event_id', gen_random_uuid()::text,
+          'event_kind', 'trip.updated',
+          'correlation_id', concat('tx-', txid_current()::text),
+          'causation_id', concat('tx-', txid_current()::text),
+          'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
         )
       );
     end if;
@@ -2410,9 +2486,10 @@ begin
     returning
       status,
       title,
+      start_date,
       trip_expires_at,
       source_kind
-      into v_status_after, v_title_after, v_trip_expires_after, v_source_kind_after;
+      into v_status_after, v_title_after, v_start_date_after, v_trip_expires_after, v_source_kind_after;
 
     insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
     values (
@@ -2424,8 +2501,15 @@ begin
         'trip_id', p_id,
         'status_after', v_status_after,
         'title_after', v_title_after,
+        'start_date_after', v_start_date_after,
         'trip_expires_at_after', v_trip_expires_after,
-        'source_kind_after', v_source_kind_after
+        'source_kind_after', v_source_kind_after,
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'trip.created',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
       )
     );
   end if;
@@ -4508,6 +4592,14 @@ begin
     v_before,
     v_after,
     jsonb_build_object('changed_fields', v_changed_fields)
+      || jsonb_build_object(
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'profile.updated',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, 'profile.settings')
+      )
   );
 
   return new;
@@ -4736,6 +4828,8 @@ declare
   v_title_after text;
   v_visibility_before boolean;
   v_visibility_after boolean;
+  v_start_date_before date;
+  v_start_date_after date;
   v_trip_expires_before timestamptz;
   v_trip_expires_after timestamptz;
   v_source_kind_before text;
@@ -4762,9 +4856,10 @@ begin
       t.status,
       t.title,
       t.show_on_public_profile,
+      t.start_date,
       t.trip_expires_at,
       t.source_kind
-      into v_status_before, v_title_before, v_visibility_before, v_trip_expires_before, v_source_kind_before
+      into v_status_before, v_title_before, v_visibility_before, v_start_date_before, v_trip_expires_before, v_source_kind_before
       from public.trips t
      where t.id = p_id
        and t.owner_id = v_owner
@@ -4785,17 +4880,19 @@ begin
            source_template_id = coalesce(p_source_template_id, source_template_id),
            updated_at = now()
      where id = p_id
-     returning
-       status,
-       title,
-       show_on_public_profile,
-       trip_expires_at,
-       source_kind
-      into v_status_after, v_title_after, v_visibility_after, v_trip_expires_after, v_source_kind_after;
+    returning
+      status,
+      title,
+      show_on_public_profile,
+      start_date,
+      trip_expires_at,
+      source_kind
+      into v_status_after, v_title_after, v_visibility_after, v_start_date_after, v_trip_expires_after, v_source_kind_after;
 
     if v_status_before is distinct from v_status_after
       or v_title_before is distinct from v_title_after
       or v_visibility_before is distinct from v_visibility_after
+      or v_start_date_before is distinct from v_start_date_after
       or v_trip_expires_before is distinct from v_trip_expires_after
       or v_source_kind_before is distinct from v_source_kind_after then
       insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
@@ -4812,10 +4909,94 @@ begin
           'title_after', v_title_after,
           'show_on_public_profile_before', v_visibility_before,
           'show_on_public_profile_after', v_visibility_after,
+          'start_date_before', v_start_date_before,
+          'start_date_after', v_start_date_after,
           'trip_expires_at_before', v_trip_expires_before,
           'trip_expires_at_after', v_trip_expires_after,
           'source_kind_before', v_source_kind_before,
-          'source_kind_after', v_source_kind_after
+          'source_kind_after', v_source_kind_after,
+          'secondary_actions', to_jsonb(array_remove(array[
+            case
+              when v_status_before is distinct from v_status_after
+                or v_title_before is distinct from v_title_after
+                or v_source_kind_before is distinct from v_source_kind_after
+              then 'trip.settings.updated'
+              else null
+            end,
+            case
+              when v_visibility_before is distinct from v_visibility_after
+              then 'trip.visibility.updated'
+              else null
+            end,
+            case
+              when v_start_date_before is distinct from v_start_date_after
+                or v_trip_expires_before is distinct from v_trip_expires_after
+              then 'trip.trip_dates.updated'
+              else null
+            end
+          ]::text[], null)),
+          'domain_events_v1', jsonb_build_object(
+            'schema', 'trip_domain_events_v1',
+            'version', 1,
+            'events', coalesce((
+              select jsonb_agg(event_row) from (
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'status',
+                  'before_value', v_status_before,
+                  'after_value', v_status_after
+                ) as event_row
+                where v_status_before is distinct from v_status_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'title',
+                  'before_value', v_title_before,
+                  'after_value', v_title_after
+                ) as event_row
+                where v_title_before is distinct from v_title_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.settings.updated',
+                  'field', 'source_kind',
+                  'before_value', v_source_kind_before,
+                  'after_value', v_source_kind_after
+                ) as event_row
+                where v_source_kind_before is distinct from v_source_kind_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.visibility.updated',
+                  'field', 'show_on_public_profile',
+                  'before_value', v_visibility_before,
+                  'after_value', v_visibility_after
+                ) as event_row
+                where v_visibility_before is distinct from v_visibility_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.trip_dates.updated',
+                  'field', 'start_date',
+                  'before_value', v_start_date_before,
+                  'after_value', v_start_date_after
+                ) as event_row
+                where v_start_date_before is distinct from v_start_date_after
+                union all
+                select jsonb_build_object(
+                  'action', 'trip.trip_dates.updated',
+                  'field', 'trip_expires_at',
+                  'before_value', v_trip_expires_before,
+                  'after_value', v_trip_expires_after
+                ) as event_row
+                where v_trip_expires_before is distinct from v_trip_expires_after
+              ) lifecycle_events
+            ), '[]'::jsonb),
+            'truncated', false
+          ),
+          'event_schema_version', 1,
+          'event_id', gen_random_uuid()::text,
+          'event_kind', 'trip.updated',
+          'correlation_id', concat('tx-', txid_current()::text),
+          'causation_id', concat('tx-', txid_current()::text),
+          'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
         )
       );
     end if;
@@ -4872,9 +5053,10 @@ begin
       status,
       title,
       show_on_public_profile,
+      start_date,
       trip_expires_at,
       source_kind
-      into v_status_after, v_title_after, v_visibility_after, v_trip_expires_after, v_source_kind_after;
+      into v_status_after, v_title_after, v_visibility_after, v_start_date_after, v_trip_expires_after, v_source_kind_after;
 
     insert into public.trip_user_events (trip_id, owner_id, action, source, metadata)
     values (
@@ -4887,8 +5069,15 @@ begin
         'status_after', v_status_after,
         'title_after', v_title_after,
         'show_on_public_profile_after', v_visibility_after,
+        'start_date_after', v_start_date_after,
         'trip_expires_at_after', v_trip_expires_after,
-        'source_kind_after', v_source_kind_after
+        'source_kind_after', v_source_kind_after,
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'trip.created',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
       )
     );
   end if;
@@ -4950,7 +5139,23 @@ begin
       coalesce(p_metadata, '{}'::jsonb)
         || jsonb_build_object(
           'trip_id', p_trip_id,
-          'reason', 'not_owned_or_missing'
+          'reason', 'not_owned_or_missing',
+          'event_schema_version', 1,
+          'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+          'event_kind', 'trip.archive_failed',
+          'correlation_id', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+            concat('tx-', txid_current()::text)
+          ),
+          'causation_id', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+            concat('tx-', txid_current()::text)
+          ),
+          'source_surface', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+            nullif(btrim(coalesce(p_source, '')), '')
+          )
         )
     );
     raise exception 'Trip not found or not owned by current user';
@@ -4983,7 +5188,23 @@ begin
       || jsonb_build_object(
         'trip_id', v_trip_row.id,
         'status_before', v_status_before,
-        'status_after', 'archived'
+        'status_after', 'archived',
+        'event_schema_version', 1,
+        'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+        'event_kind', 'trip.archived',
+        'correlation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'causation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'source_surface', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+          nullif(btrim(coalesce(p_source, '')), '')
+        )
       )
   )
   returning id into v_event_id;
@@ -5040,7 +5261,23 @@ begin
         'target_type', coalesce(nullif(btrim(coalesce(p_target_type, '')), ''), 'unknown'),
         'target_id', nullif(btrim(coalesce(p_target_id, '')), ''),
         'error_code', nullif(btrim(coalesce(p_error_code, '')), ''),
-        'error_message', nullif(btrim(coalesce(p_error_message, '')), '')
+        'error_message', nullif(btrim(coalesce(p_error_message, '')), ''),
+        'event_schema_version', 1,
+        'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+        'event_kind', coalesce(nullif(btrim(coalesce(p_action, '')), ''), 'user.action_failed'),
+        'correlation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'causation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'source_surface', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+          nullif(btrim(coalesce(p_source, '')), '')
+        )
       )
   )
   returning id into v_event_id;

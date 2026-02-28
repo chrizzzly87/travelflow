@@ -11,6 +11,17 @@ interface UserChangeActionPresentation {
     className: string;
 }
 
+export interface UserChangeSecondaryActionPresentation {
+    key: string;
+    label: string;
+    className: string;
+}
+
+export interface TimelineDiffCoverageSummary {
+    v1Rows: number;
+    legacyOnlyRows: number;
+}
+
 const NOISY_DIFF_KEYS = new Set([
     'updated_at',
     'created_at',
@@ -49,6 +60,7 @@ const buildTripMetadataDiffEntries = (
     }> = [
         { key: 'status', beforeKey: 'status_before', afterKey: 'status_after' },
         { key: 'title', beforeKey: 'title_before', afterKey: 'title_after' },
+        { key: 'start_date', beforeKey: 'start_date_before', afterKey: 'start_date_after' },
         {
             key: 'show_on_public_profile',
             beforeKey: 'show_on_public_profile_before',
@@ -264,6 +276,178 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
     });
 
     return entries;
+};
+
+const TRIP_SETTINGS_KEYS = new Set([
+    'status',
+    'title',
+    'source_kind',
+]);
+
+const TRIP_VISIBILITY_KEYS = new Set([
+    'show_on_public_profile',
+]);
+
+const TRIP_DATE_KEYS = new Set([
+    'start_date',
+    'trip_expires_at',
+]);
+
+const normalizeEntityLabel = (rawEntity: string): string => {
+    const normalized = rawEntity.trim().toLowerCase();
+    if (!normalized || normalized === 'item') return 'itinerary item';
+    if (normalized === 'travel-empty' || normalized === 'segment') return 'segment';
+    if (normalized === 'travel') return 'transport';
+    return normalized.replace(/_/g, ' ');
+};
+
+const makeSecondaryAction = (
+    key: string,
+    label: string,
+    operation: 'updated' | 'added' | 'deleted'
+): UserChangeSecondaryActionPresentation => {
+    const className = operation === 'added'
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+        : operation === 'deleted'
+            ? 'border-rose-200 bg-rose-50 text-rose-800'
+            : 'border-sky-200 bg-sky-50 text-sky-800';
+
+    return { key, label, className };
+};
+
+const SECONDARY_ACTION_CODE_PRESENTATION: Record<string, UserChangeSecondaryActionPresentation> = {
+    'trip.activity.added': makeSecondaryAction('added_activity', 'Added activity', 'added'),
+    'trip.activity.updated': makeSecondaryAction('updated_activity', 'Updated activity', 'updated'),
+    'trip.activity.deleted': makeSecondaryAction('deleted_activity', 'Deleted activity', 'deleted'),
+    'trip.transport.added': makeSecondaryAction('added_transport', 'Added transport', 'added'),
+    'trip.transport.updated': makeSecondaryAction('transport_updated', 'Updated transport', 'updated'),
+    'trip.transport.deleted': makeSecondaryAction('deleted_transport', 'Deleted transport', 'deleted'),
+    'trip.city.added': makeSecondaryAction('added_city', 'Added city', 'added'),
+    'trip.city.updated': makeSecondaryAction('updated_city', 'Updated city', 'updated'),
+    'trip.city.deleted': makeSecondaryAction('deleted_city', 'Deleted city', 'deleted'),
+    'trip.segment.deleted': makeSecondaryAction('deleted_segment', 'Deleted segment', 'deleted'),
+    'trip.item.added': makeSecondaryAction('added_item', 'Added itinerary item', 'added'),
+    'trip.item.updated': makeSecondaryAction('updated_item', 'Updated itinerary item', 'updated'),
+    'trip.item.deleted': makeSecondaryAction('deleted_item', 'Deleted itinerary item', 'deleted'),
+    'trip.settings.updated': makeSecondaryAction('trip_settings_updated', 'Updated trip settings', 'updated'),
+    'trip.visibility.updated': makeSecondaryAction('trip_visibility_updated', 'Updated visibility', 'updated'),
+    'trip.trip_dates.updated': makeSecondaryAction('trip_dates_updated', 'Updated trip dates', 'updated'),
+    'trip.view.updated': makeSecondaryAction('trip_view', 'Updated trip view', 'updated'),
+};
+
+const resolveSecondaryActionFromDiffKey = (diffKey: string): UserChangeSecondaryActionPresentation | null => {
+    const normalized = diffKey.trim().toLowerCase();
+    if (!normalized) return null;
+
+    if (normalized.startsWith('visual_')) {
+        return makeSecondaryAction('trip_view', 'Updated trip view', 'updated');
+    }
+    if (normalized.startsWith('transport_mode')) {
+        return makeSecondaryAction('transport_updated', 'Updated transport', 'updated');
+    }
+    if (TRIP_VISIBILITY_KEYS.has(normalized)) {
+        return makeSecondaryAction('trip_visibility_updated', 'Updated visibility', 'updated');
+    }
+    if (TRIP_DATE_KEYS.has(normalized)) {
+        return makeSecondaryAction('trip_dates_updated', 'Updated trip dates', 'updated');
+    }
+    if (TRIP_SETTINGS_KEYS.has(normalized)) {
+        return makeSecondaryAction('trip_settings_updated', 'Updated trip settings', 'updated');
+    }
+
+    const head = normalized.split('·')[0]?.trim() ?? normalized;
+    const changedEntityMatch = head.match(/^(added|deleted|updated)_([a-z0-9_-]+)$/);
+    if (changedEntityMatch) {
+        const operation = changedEntityMatch[1] as 'added' | 'deleted' | 'updated';
+        const entity = changedEntityMatch[2];
+        const normalizedEntity = normalizeEntityLabel(entity);
+
+        if (operation === 'updated' && TRIP_SETTINGS_KEYS.has(entity)) {
+            return makeSecondaryAction('trip_settings_updated', 'Updated trip settings', 'updated');
+        }
+        if (operation === 'updated' && entity.includes('transport')) {
+            return makeSecondaryAction('transport_updated', 'Updated transport', 'updated');
+        }
+        if (operation === 'updated' && entity.includes('date')) {
+            return makeSecondaryAction('trip_dates_updated', 'Updated trip dates', 'updated');
+        }
+
+        return makeSecondaryAction(
+            `${operation}_${normalizedEntity.replace(/\s+/g, '_')}`,
+            `${operation.charAt(0).toUpperCase()}${operation.slice(1)} ${normalizedEntity}`,
+            operation
+        );
+    }
+
+    return null;
+};
+
+export const resolveUserChangeSecondaryActions = (
+    record: AdminUserChangeRecord,
+    diffEntries: UserChangeDiffEntry[]
+): UserChangeSecondaryActionPresentation[] => {
+    const normalizedAction = record.action.trim().toLowerCase();
+    if (normalizedAction !== 'trip.updated' && normalizedAction !== 'trip.update') return [];
+
+    const byKey = new Map<string, UserChangeSecondaryActionPresentation>();
+    const metadata = asRecord(record.metadata);
+    const secondaryActionCodes = Array.isArray(metadata.secondary_actions)
+        ? metadata.secondary_actions
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+
+    secondaryActionCodes.forEach((actionCode) => {
+        const presentation = SECONDARY_ACTION_CODE_PRESENTATION[actionCode];
+        if (!presentation || byKey.has(presentation.key)) return;
+        byKey.set(presentation.key, presentation);
+    });
+    if (byKey.size > 0) {
+        return Array.from(byKey.values()).slice(0, 4);
+    }
+    if (diffEntries.length === 0) return [];
+
+    diffEntries.forEach((entry) => {
+        const secondaryAction = resolveSecondaryActionFromDiffKey(entry.key);
+        if (!secondaryAction || byKey.has(secondaryAction.key)) return;
+        byKey.set(secondaryAction.key, secondaryAction);
+    });
+
+    return Array.from(byKey.values()).slice(0, 4);
+};
+
+export const listUserChangeSecondaryActions = (
+    record: AdminUserChangeRecord
+): UserChangeSecondaryActionPresentation[] => {
+    const diffEntries = buildUserChangeDiffEntries(record);
+    return resolveUserChangeSecondaryActions(record, diffEntries);
+};
+
+export const summarizeTimelineDiffCoverage = (
+    records: AdminUserChangeRecord[]
+): TimelineDiffCoverageSummary => {
+    let v1Rows = 0;
+    let legacyOnlyRows = 0;
+
+    records.forEach((record) => {
+        const normalizedAction = record.action.trim().toLowerCase();
+        if (normalizedAction !== 'trip.updated' && normalizedAction !== 'trip.update') return;
+        const metadata = asRecord(record.metadata);
+        const v1Diff = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
+        const legacyDiff = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
+        const hasV1 = Object.keys(v1Diff).length > 0;
+        const hasLegacy = Object.keys(legacyDiff).length > 0;
+        if (hasV1) {
+            v1Rows += 1;
+            return;
+        }
+        if (hasLegacy) {
+            legacyOnlyRows += 1;
+        }
+    });
+
+    return { v1Rows, legacyOnlyRows };
 };
 
 export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserChangeDiffEntry[] => {

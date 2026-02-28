@@ -67,7 +67,14 @@ This document is the operational source of truth for:
 - Timeline controls on trip view (`calendar`/`timeline` mode switch, timeline direction, zoom, map/layout toggles) are logged as `trip.updated` events with `timeline_diff_v1.visual_changes` entries (for example `timeline_mode`, `timeline_layout`, `zoom_level`).
 - Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
+- Admin logs now derive secondary update facets from diff keys (for example `Updated transport`, `Deleted activity`, `Updated trip view`) while keeping the primary `trip.updated` pill compact.
+- New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
+- New trip update rows also persist `metadata.domain_events_v1` for explicit sub-event semantics suitable for export/query without adding extra timeline rows.
+- Lifecycle trip updates now persist `start_date_before|after` and typed lifecycle facets/sub-events (`trip.settings.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`) in `secondary_actions` + `domain_events_v1`.
+- Trip/failure event writes now include a stable envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for traceability.
+- Server-side SQL event writers in `docs/supabase.sql` now apply the same envelope defaults for profile/trip/failure log rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
+- See `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md` for mutation logging checklists and PR acceptance criteria.
 
 ## Snapshot vs Diff Strategy
 - Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
@@ -142,7 +149,11 @@ This document is the operational source of truth for:
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
-- [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
+- [x] Admin logs now render compact secondary trip-update facets from typed diff keys.
+- [x] Trip update writers now persist deterministic `secondary_actions` facet codes with diff-key fallback for legacy rows.
+- [x] Trip and failure event writer paths now include deterministic event envelope fields (including causation/correlation IDs).
+- [x] Trip update writers now persist structured `domain_events_v1` payloads for explicit sub-event semantics.
+- [x] Lifecycle `trip.updated` rows now include typed date/visibility/settings secondary actions and domain sub-events.
 
 ## Remaining Implementation Plan
 
@@ -152,14 +163,16 @@ This document is the operational source of truth for:
 - Add deterministic correlation IDs between upsert/version/archive operations.
 
 ### Phase 2
-- Introduce secondary domain event writers per operation class:
+- [x] Render secondary trip-update facets from typed diff metadata in admin timelines.
+- Introduce remaining secondary domain event writers per operation class:
   - `trip.city.updated`,
   - `trip.activity.updated`,
   - `trip.activity.deleted`,
   - `trip.transport.updated`,
-  - `trip.segment.deleted`,
-  - `trip.trip_dates.updated`,
-  - `trip.visibility.updated`.
+  - `trip.segment.deleted` [x],
+  - `trip.trip_dates.updated` [x],
+  - `trip.visibility.updated` [x],
+  - `trip.settings.updated` [x].
 - Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.
 
 ### Phase 3

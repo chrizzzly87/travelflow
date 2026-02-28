@@ -25,7 +25,10 @@ import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
+    listUserChangeSecondaryActions,
     resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryActions,
+    summarizeTimelineDiffCoverage,
 } from '../services/adminUserChangeLog';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
@@ -324,6 +327,9 @@ export const AdminAuditPage: React.FC = () => {
         return '30d';
     });
     const [actionFilters, setActionFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('action')));
+    const [secondaryActionFilters, setSecondaryActionFilters] = useState<string[]>(
+        () => parseQueryMultiValue(searchParams.get('secondary'))
+    );
     const [targetFilters, setTargetFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('target')));
     const [actorFilters, setActorFilters] = useState<AuditActorFilter[]>(
         () => parseQueryMultiValue(searchParams.get('actor')).filter(
@@ -362,12 +368,23 @@ export const AdminAuditPage: React.FC = () => {
         if (trimmedSearch) next.set('q', trimmedSearch);
         if (dateRange !== '30d') next.set('range', dateRange);
         if (actionFilters.length > 0) next.set('action', actionFilters.join(','));
+        if (secondaryActionFilters.length > 0) next.set('secondary', secondaryActionFilters.join(','));
         if (targetFilters.length > 0) next.set('target', targetFilters.join(','));
         if (actorFilters.length > 0) next.set('actor', actorFilters.join(','));
         if (offset > 0) next.set('offset', String(offset));
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [actionFilters, actorFilters, dateRange, offset, searchParams, searchValue, setSearchParams, targetFilters]);
+    }, [
+        actionFilters,
+        actorFilters,
+        dateRange,
+        offset,
+        searchParams,
+        searchValue,
+        secondaryActionFilters,
+        setSearchParams,
+        targetFilters,
+    ]);
 
     const loadLogs = async () => {
         setIsLoading(true);
@@ -638,15 +655,27 @@ export const AdminAuditPage: React.FC = () => {
             const actorEmail = getTimelineActorEmail(entry);
             const actorUserId = getTimelineActorUserId(entry);
             const actorType = entry.kind;
+            const secondaryActions = entry.kind === 'user'
+                ? listUserChangeSecondaryActions(entry.log)
+                : [];
+            const secondaryActionKeys = secondaryActions.map((secondaryAction) => secondaryAction.key);
+            const secondaryActionLabels = secondaryActions.map((secondaryAction) => secondaryAction.label.toLowerCase()).join(' ');
 
             if (!isIsoDateInRange(createdAt, dateRange)) return false;
             if (actionFilters.length > 0 && !actionFilters.includes(action)) return false;
+            if (
+                secondaryActionFilters.length > 0
+                && !secondaryActionFilters.some((secondaryActionFilter) => secondaryActionKeys.includes(secondaryActionFilter))
+            ) {
+                return false;
+            }
             if (targetFilters.length > 0 && !targetFilters.includes(targetType)) return false;
             if (actorFilters.length > 0 && !actorFilters.includes(actorType)) return false;
             if (!token) return true;
             return (
                 action.toLowerCase().includes(token)
                 || getTimelineActionLabel(entry).toLowerCase().includes(token)
+                || secondaryActionLabels.includes(token)
                 || targetType.toLowerCase().includes(token)
                 || getTargetLabel(targetType).toLowerCase().includes(token)
                 || (targetId || '').toLowerCase().includes(token)
@@ -654,11 +683,15 @@ export const AdminAuditPage: React.FC = () => {
                 || (actorUserId || '').toLowerCase().includes(token)
             );
         });
-    }, [actionFilters, actorFilters, dateRange, searchValue, targetFilters, timelineEntries]);
+    }, [actionFilters, actorFilters, dateRange, searchValue, secondaryActionFilters, targetFilters, timelineEntries]);
 
     const logsInDateRange = useMemo(
         () => timelineEntries.filter((entry) => isIsoDateInRange(getTimelineCreatedAt(entry), dateRange)),
         [dateRange, timelineEntries]
+    );
+    const timelineDiffCoverage = useMemo(
+        () => summarizeTimelineDiffCoverage(userChangeLogs),
+        [userChangeLogs]
     );
     const pagedLogs = useMemo(
         () => visibleLogs.slice(offset, offset + AUDIT_PAGE_SIZE),
@@ -709,6 +742,28 @@ export const AdminAuditPage: React.FC = () => {
             .map(([value, count]) => ({ value, label: getTargetLabel(value), count }));
     }, [logsInDateRange]);
 
+    const secondaryActionFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
+        const counts = new Map<string, number>();
+        const labels = new Map<string, string>();
+        logsInDateRange.forEach((entry) => {
+            if (entry.kind !== 'user') return;
+            const secondaryActions = listUserChangeSecondaryActions(entry.log);
+            secondaryActions.forEach((secondaryAction) => {
+                counts.set(secondaryAction.key, (counts.get(secondaryAction.key) || 0) + 1);
+                if (!labels.has(secondaryAction.key)) {
+                    labels.set(secondaryAction.key, secondaryAction.label);
+                }
+            });
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({
+                value,
+                label: labels.get(value) || value,
+                count,
+            }));
+    }, [logsInDateRange]);
+
     const actorFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const adminCount = logsInDateRange.filter((entry) => entry.kind === 'admin').length;
         const userCount = logsInDateRange.filter((entry) => entry.kind === 'user').length;
@@ -735,6 +790,11 @@ export const AdminAuditPage: React.FC = () => {
 
     const handleTargetFiltersChange = (values: string[]) => {
         setTargetFilters(values);
+        setOffset(0);
+    };
+
+    const handleSecondaryActionFiltersChange = (values: string[]) => {
+        setSecondaryActionFilters(values);
         setOffset(0);
     };
 
@@ -823,6 +883,15 @@ export const AdminAuditPage: React.FC = () => {
                     {message}
                 </section>
             )}
+            <section className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+                Timeline diff readiness: {timelineDiffCoverage.v1Rows} v1 row{timelineDiffCoverage.v1Rows === 1 ? '' : 's'}
+                {', '}
+                {timelineDiffCoverage.legacyOnlyRows} legacy-only row{timelineDiffCoverage.legacyOnlyRows === 1 ? '' : 's'}
+                {' '}in loaded window.
+                {timelineDiffCoverage.legacyOnlyRows === 0
+                    ? ' Fallback removal is safe for this window.'
+                    : ' Keep legacy fallback until this reaches zero across environments.'}
+            </section>
 
             <section className="mb-3 flex flex-wrap items-center gap-2">
                 <AdminFilterMenu
@@ -840,6 +909,13 @@ export const AdminAuditPage: React.FC = () => {
                     onSelectedValuesChange={handleTargetFiltersChange}
                 />
                 <AdminFilterMenu
+                    label="Update Facet"
+                    icon={<Info size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
+                    options={secondaryActionFilterOptions}
+                    selectedValues={secondaryActionFilters}
+                    onSelectedValuesChange={handleSecondaryActionFiltersChange}
+                />
+                <AdminFilterMenu
                     label="Actor"
                     icon={<User size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
                     options={actorFilterOptions}
@@ -850,6 +926,7 @@ export const AdminAuditPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                         setActionFilters([]);
+                        setSecondaryActionFilters([]);
                         setTargetFilters([]);
                         setActorFilters([]);
                         setOffset(0);
@@ -884,6 +961,9 @@ export const AdminAuditPage: React.FC = () => {
                                 const actionPresentation = timelineEntry.kind === 'admin'
                                     ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
                                     : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
+                                const secondaryActions = timelineEntry.kind === 'user'
+                                    ? resolveUserChangeSecondaryActions(timelineEntry.log, diffEntries)
+                                    : [];
                                 const targetLabel = getTargetLabel(log.target_type);
                                 const visibleDiffEntries = diffEntries.slice(0, 5);
                                 const hiddenDiffCount = Math.max(diffEntries.length - visibleDiffEntries.length, 0);
@@ -913,6 +993,19 @@ export const AdminAuditPage: React.FC = () => {
                                             >
                                                 {actionPresentation.label}
                                             </span>
+                                            {secondaryActions.length > 0 && (
+                                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                    {secondaryActions.map((secondaryAction) => (
+                                                        <span
+                                                            key={`${timelineEntry.kind}-${log.id}-${secondaryAction.key}`}
+                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${secondaryAction.className}`}
+                                                            title="Secondary trip update action"
+                                                        >
+                                                            {secondaryAction.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                                                 <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
                                                     {eventTypeLabel}
