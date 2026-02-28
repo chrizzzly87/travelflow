@@ -11,6 +11,50 @@ interface UserChangeActionPresentation {
     className: string;
 }
 
+export interface UserChangeSecondaryFacet {
+    code: string;
+    label: string;
+    className: string;
+}
+
+const SECONDARY_FACET_MAP: Record<string, UserChangeSecondaryFacet> = {
+    'trip.transport.updated': {
+        code: 'trip.transport.updated',
+        label: 'Transport updated',
+        className: 'border-cyan-300 bg-cyan-50 text-cyan-800',
+    },
+    'trip.activity.updated': {
+        code: 'trip.activity.updated',
+        label: 'Activity updated',
+        className: 'border-amber-300 bg-amber-50 text-amber-800',
+    },
+    'trip.activity.deleted': {
+        code: 'trip.activity.deleted',
+        label: 'Activity deleted',
+        className: 'border-rose-300 bg-rose-50 text-rose-800',
+    },
+    'trip.segment.deleted': {
+        code: 'trip.segment.deleted',
+        label: 'Segment deleted',
+        className: 'border-orange-300 bg-orange-50 text-orange-800',
+    },
+    'trip.city.updated': {
+        code: 'trip.city.updated',
+        label: 'City updated',
+        className: 'border-blue-300 bg-blue-50 text-blue-800',
+    },
+    'trip.trip_dates.updated': {
+        code: 'trip.trip_dates.updated',
+        label: 'Trip dates updated',
+        className: 'border-indigo-300 bg-indigo-50 text-indigo-800',
+    },
+    'trip.visibility.updated': {
+        code: 'trip.visibility.updated',
+        label: 'Visibility updated',
+        className: 'border-violet-300 bg-violet-50 text-violet-800',
+    },
+};
+
 const NOISY_DIFF_KEYS = new Set([
     'updated_at',
     'created_at',
@@ -366,4 +410,23 @@ export const resolveUserChangeActionPresentation = (
         label: normalizeActionLabel(record.action),
         className: 'border-slate-300 bg-slate-100 text-slate-800',
     };
+};
+
+export const resolveUserChangeSecondaryFacets = (
+    record: AdminUserChangeRecord
+): UserChangeSecondaryFacet[] => {
+    if (record.action.trim().toLowerCase() !== 'trip.updated') return [];
+    const metadata = asRecord(record.metadata);
+    const codes = Array.isArray(metadata.secondary_action_codes)
+        ? metadata.secondary_action_codes
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+    if (codes.length === 0) return [];
+
+    const uniqueCodes = Array.from(new Set(codes));
+    return uniqueCodes
+        .map((code) => SECONDARY_FACET_MAP[code] ?? null)
+        .filter((facet): facet is UserChangeSecondaryFacet => Boolean(facet));
 };

@@ -26,6 +26,7 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
     resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
@@ -884,6 +885,9 @@ export const AdminAuditPage: React.FC = () => {
                                 const actionPresentation = timelineEntry.kind === 'admin'
                                     ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
                                     : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
+                                const secondaryFacets = timelineEntry.kind === 'user'
+                                    ? resolveUserChangeSecondaryFacets(timelineEntry.log)
+                                    : [];
                                 const targetLabel = getTargetLabel(log.target_type);
                                 const visibleDiffEntries = diffEntries.slice(0, 5);
                                 const hiddenDiffCount = Math.max(diffEntries.length - visibleDiffEntries.length, 0);
@@ -931,6 +935,19 @@ export const AdminAuditPage: React.FC = () => {
                                                 </button>
                                                 {copiedToken === `action-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700">Copied</span>}
                                             </div>
+                                            {secondaryFacets.length > 0 && (
+                                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                    {secondaryFacets.map((facet) => (
+                                                        <span
+                                                            key={`${timelineEntry.kind}-${log.id}-${facet.code}`}
+                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${facet.className}`}
+                                                            title={facet.code}
+                                                        >
+                                                            {facet.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-3 py-2 text-xs text-slate-600">
                                             <div className="inline-flex items-center gap-1.5">

@@ -3,6 +3,7 @@ import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
   buildUserChangeDiffEntries,
   resolveUserChangeActionPresentation,
+  resolveUserChangeSecondaryFacets,
 } from '../../services/adminUserChangeLog';
 
 const makeRecord = (overrides: Partial<AdminUserChangeRecord> = {}): AdminUserChangeRecord => ({
@@ -279,5 +280,26 @@ describe('services/adminUserChangeLog', () => {
     const presentation = resolveUserChangeActionPresentation(record, []);
 
     expect(presentation.label).toBe('Trip Shared Link Rotated');
+  });
+
+  it('returns mapped secondary facets for trip.updated metadata secondary_action_codes', () => {
+    const facets = resolveUserChangeSecondaryFacets(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        secondary_action_codes: [
+          'trip.transport.updated',
+          'trip.activity.deleted',
+          'trip.segment.deleted',
+        ],
+      },
+    }));
+
+    expect(facets).toEqual([
+      expect.objectContaining({ code: 'trip.transport.updated', label: 'Transport updated' }),
+      expect.objectContaining({ code: 'trip.activity.deleted', label: 'Activity deleted' }),
+      expect.objectContaining({ code: 'trip.segment.deleted', label: 'Segment deleted' }),
+    ]);
   });
 });
