@@ -429,6 +429,21 @@ interface TripTimelineVisualChange {
     summary: string;
 }
 
+type TripSecondaryActionCode =
+    | 'trip.activity.added'
+    | 'trip.activity.updated'
+    | 'trip.activity.deleted'
+    | 'trip.transport.added'
+    | 'trip.transport.updated'
+    | 'trip.transport.deleted'
+    | 'trip.city.added'
+    | 'trip.city.updated'
+    | 'trip.city.deleted'
+    | 'trip.item.added'
+    | 'trip.item.updated'
+    | 'trip.item.deleted'
+    | 'trip.view.updated';
+
 const createEventCorrelationId = (): string => {
     try {
         if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -699,6 +714,69 @@ const buildTripTimelineDiffV1 = (
         visual_changes: visualChanges,
         truncated: timelineDiff?.truncated ?? false,
     };
+};
+
+const normalizeTimelineEntryType = (
+    entry: Record<string, unknown>,
+    options?: { fallbackToAfter?: boolean }
+): string | null => {
+    const itemType = typeof entry.item_type === 'string' ? entry.item_type.trim().toLowerCase() : '';
+    if (itemType) return itemType;
+
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const beforeType = typeof before?.type === 'string' ? before.type.trim().toLowerCase() : '';
+    if (beforeType) return beforeType;
+
+    if (options?.fallbackToAfter) {
+        const after = entry.after as Record<string, unknown> | null | undefined;
+        const afterType = typeof after?.type === 'string' ? after.type.trim().toLowerCase() : '';
+        if (afterType) return afterType;
+    }
+
+    return null;
+};
+
+const mapTimelineEntryTypeToDomain = (itemType: string | null): 'activity' | 'transport' | 'city' | 'item' => {
+    if (!itemType) return 'item';
+    if (itemType === 'activity') return 'activity';
+    if (itemType === 'travel' || itemType === 'transport') return 'transport';
+    if (itemType === 'city') return 'city';
+    return 'item';
+};
+
+const buildTripSecondaryActionCodes = (
+    timelineDiff: TripTimelineDiffSummary | null,
+    visualChanges: TripTimelineVisualChange[]
+): TripSecondaryActionCode[] => {
+    const codes: TripSecondaryActionCode[] = [];
+    const pushUnique = (code: TripSecondaryActionCode) => {
+        if (codes.includes(code)) return;
+        codes.push(code);
+    };
+
+    if (visualChanges.length > 0) {
+        pushUnique('trip.view.updated');
+    }
+    if (!timelineDiff) return codes;
+
+    timelineDiff.transport_mode_changes.forEach(() => {
+        pushUnique('trip.transport.updated');
+    });
+
+    timelineDiff.added_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushUnique(`trip.${domain}.added` as TripSecondaryActionCode);
+    });
+    timelineDiff.deleted_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry));
+        pushUnique(`trip.${domain}.deleted` as TripSecondaryActionCode);
+    });
+    timelineDiff.updated_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushUnique(`trip.${domain}.updated` as TripSecondaryActionCode);
+    });
+
+    return codes.slice(0, 8);
 };
 
 const readLatestTripVersionSnapshot = async (
@@ -1156,6 +1234,7 @@ export const dbCreateTripVersion = async (
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         const visualChanges = parseVisualChangesFromLabel(label ?? null);
         const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
+        const secondaryActions = buildTripSecondaryActionCodes(timelineDiff, visualChanges);
         const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
             ownerId,
@@ -1173,6 +1252,7 @@ export const dbCreateTripVersion = async (
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
                 timeline_diff_v1: timelineDiffV1,
+                secondary_actions: secondaryActions,
             },
             dedupeWindowMs: 0,
         });

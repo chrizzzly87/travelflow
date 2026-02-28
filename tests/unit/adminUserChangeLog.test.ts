@@ -287,6 +287,36 @@ describe('services/adminUserChangeLog', () => {
     expect(secondaryActions).toEqual([]);
   });
 
+  it('prefers metadata secondary_actions when present', () => {
+    const record = makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        secondary_actions: [
+          'trip.transport.updated',
+          'trip.view.updated',
+          'trip.transport.updated',
+        ],
+      },
+    });
+
+    const secondaryActions = resolveUserChangeSecondaryActions(record, []);
+
+    expect(secondaryActions).toEqual([
+      {
+        key: 'transport_updated',
+        label: 'Updated transport',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+      {
+        key: 'trip_view',
+        label: 'Updated trip view',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+    ]);
+  });
+
   it('formats unknown actions into readable labels', () => {
     const record = makeRecord({
       action: 'trip.shared_link_rotated',

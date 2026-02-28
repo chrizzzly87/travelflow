@@ -301,6 +301,22 @@ const makeSecondaryAction = (
     return { key, label, className };
 };
 
+const SECONDARY_ACTION_CODE_PRESENTATION: Record<string, UserChangeSecondaryActionPresentation> = {
+    'trip.activity.added': makeSecondaryAction('added_activity', 'Added activity', 'added'),
+    'trip.activity.updated': makeSecondaryAction('updated_activity', 'Updated activity', 'updated'),
+    'trip.activity.deleted': makeSecondaryAction('deleted_activity', 'Deleted activity', 'deleted'),
+    'trip.transport.added': makeSecondaryAction('added_transport', 'Added transport', 'added'),
+    'trip.transport.updated': makeSecondaryAction('transport_updated', 'Updated transport', 'updated'),
+    'trip.transport.deleted': makeSecondaryAction('deleted_transport', 'Deleted transport', 'deleted'),
+    'trip.city.added': makeSecondaryAction('added_city', 'Added city', 'added'),
+    'trip.city.updated': makeSecondaryAction('updated_city', 'Updated city', 'updated'),
+    'trip.city.deleted': makeSecondaryAction('deleted_city', 'Deleted city', 'deleted'),
+    'trip.item.added': makeSecondaryAction('added_item', 'Added itinerary item', 'added'),
+    'trip.item.updated': makeSecondaryAction('updated_item', 'Updated itinerary item', 'updated'),
+    'trip.item.deleted': makeSecondaryAction('deleted_item', 'Deleted itinerary item', 'deleted'),
+    'trip.view.updated': makeSecondaryAction('trip_view', 'Updated trip view', 'updated'),
+};
+
 const resolveSecondaryActionFromDiffKey = (diffKey: string): UserChangeSecondaryActionPresentation | null => {
     const normalized = diffKey.trim().toLowerCase();
     if (!normalized) return null;
@@ -348,9 +364,26 @@ export const resolveUserChangeSecondaryActions = (
 ): UserChangeSecondaryActionPresentation[] => {
     const normalizedAction = record.action.trim().toLowerCase();
     if (normalizedAction !== 'trip.updated' && normalizedAction !== 'trip.update') return [];
-    if (diffEntries.length === 0) return [];
 
     const byKey = new Map<string, UserChangeSecondaryActionPresentation>();
+    const metadata = asRecord(record.metadata);
+    const secondaryActionCodes = Array.isArray(metadata.secondary_actions)
+        ? metadata.secondary_actions
+            .filter((value): value is string => typeof value === 'string')
+            .map((value) => value.trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+
+    secondaryActionCodes.forEach((actionCode) => {
+        const presentation = SECONDARY_ACTION_CODE_PRESENTATION[actionCode];
+        if (!presentation || byKey.has(presentation.key)) return;
+        byKey.set(presentation.key, presentation);
+    });
+    if (byKey.size > 0) {
+        return Array.from(byKey.values()).slice(0, 4);
+    }
+    if (diffEntries.length === 0) return [];
+
     diffEntries.forEach((entry) => {
         const secondaryAction = resolveSecondaryActionFromDiffKey(entry.key);
         if (!secondaryAction || byKey.has(secondaryAction.key)) return;

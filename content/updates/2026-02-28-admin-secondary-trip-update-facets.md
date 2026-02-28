@@ -13,4 +13,5 @@ summary: "Admin timelines now surface compact secondary trip-update facets while
 ## Changes
 - [ ] [Improved] 🧩 Admin audit and user change timelines now show compact secondary trip-update facets (for example transport/activity/view updates) under the primary `trip.updated` pill.
 - [ ] [Internal] 📐 Added deterministic secondary-facet derivation logic and regression tests for typed diff keys.
+- [ ] [Internal] 🧾 Trip update event writers now persist `secondary_actions` codes so facet rendering is deterministic for new rows and only falls back to key parsing for legacy data.
 - [ ] [Internal] 📚 Expanded logging architecture docs with Phase 2 facet-rendering rules and roadmap status updates.

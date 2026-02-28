@@ -67,6 +67,7 @@ This document is the operational source of truth for:
 - Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - Admin logs now derive secondary update facets from diff keys (for example `Updated transport`, `Deleted activity`, `Updated trip view`) while keeping the primary `trip.updated` pill compact.
+- New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 
 ## Snapshot vs Diff Strategy
@@ -143,6 +144,7 @@ This document is the operational source of truth for:
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
 - [x] Admin logs now render compact secondary trip-update facets from typed diff keys.
+- [x] Trip update writers now persist deterministic `secondary_actions` facet codes with diff-key fallback for legacy rows.
 - [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
 
 ## Remaining Implementation Plan

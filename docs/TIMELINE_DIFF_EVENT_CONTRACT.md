@@ -14,7 +14,7 @@
   - `services/dbService.ts` (`dbCreateTripVersion`) writes `timeline_diff_v1`.
 - Consumer:
   - `services/adminUserChangeLog.ts` reads `timeline_diff_v1` first, then falls back to legacy `timeline_diff`.
-  - `resolveUserChangeSecondaryActions(...)` derives compact secondary labels (for example `Updated transport`, `Deleted activity`, `Updated trip view`) from diff keys.
+  - `resolveUserChangeSecondaryActions(...)` reads `metadata.secondary_actions` first, then falls back to diff-key derivation for legacy rows.
 
 ## `timeline_diff_v1` shape
 ```json
@@ -41,6 +41,11 @@
 - Visual commits (for example map style/timeline layout changes) are represented in `visual_changes`.
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
+## Secondary action facets
+- Trip update events may include `metadata.secondary_actions` with compact codes (for example `trip.transport.updated`, `trip.activity.deleted`, `trip.view.updated`).
+- These are derived at write-time from timeline diff payloads and used for deterministic admin facet pills.
+- Consumer fallback remains available by deriving facets from diff keys when older rows do not have `secondary_actions`.
+
 ## Correlation tracing
 - `trip_user_events.metadata` must include `correlation_id`.
 - Archive failure metadata in `profile_user_events` (via `log_user_action_failure`) must also include `correlation_id`.
@@ -51,6 +56,7 @@
   - verifies `timeline_diff_v1` writes
   - verifies no regression to legacy write format
   - verifies correlation ID presence
+  - verifies deterministic `secondary_actions` writes
 - `tests/browser/dbArchiveTrip.browser.test.ts`
   - verifies archive and archive-failure metadata includes correlation IDs
 - `tests/unit/adminUserChangeLog.test.ts`

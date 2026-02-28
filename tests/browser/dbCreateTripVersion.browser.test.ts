@@ -234,6 +234,10 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        secondary_actions: expect.arrayContaining([
+          'trip.transport.updated',
+          'trip.activity.deleted',
+        ]),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
@@ -285,6 +289,9 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        secondary_actions: expect.arrayContaining([
+          'trip.view.updated',
+        ]),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
