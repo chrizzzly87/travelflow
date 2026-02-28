@@ -103,5 +103,40 @@
       "validationMessage": "Wpisz wiadomość.",
       "validationMessageLength": "Twoja wiadomość jest za długa. Maksymalnie {max} znaków."
     }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "Zarchiwizować podróż?",
+      "confirmLabel": "Zarchiwizuj podróż",
+      "cancelLabel": "Anuluj",
+      "messageQuestion": "Czy na pewno chcesz zarchiwizować <strong>\"{title}\"</strong>?",
+      "messageDetail": "Ta podróż zostanie usunięta z Twojej listy i będzie można ją później przywrócić."
+    },
+    "roundTripSync": {
+      "title": "Zaktualizować końcowe miasto podróży w obie strony?",
+      "messageLead": "Ta podróż wygląda na podróż w obie strony.",
+      "messageQuestion": "Czy zmienić również ostatnie miasto na <strong>\"{title}\"</strong>?",
+      "confirmLabel": "Tak, zaktualizuj ostatnie miasto",
+      "cancelLabel": "Nie, pozostaw bez zmian"
+    },
+    "cityPaletteApply": {
+      "title": "Zastosować paletę do bieżących miast?",
+      "messageAuto": "Wybierz <strong>Zastosuj automatycznie</strong>, aby od razu zmienić kolory wszystkich miast.",
+      "messageManual": "Wybierz <strong>Wybór ręczny</strong>, aby zachować obecne kolory miast i zmienić tylko aktywną paletę.",
+      "confirmLabel": "Zastosuj automatycznie",
+      "cancelLabel": "Wybór ręczny"
+    },
+    "markdownLink": {
+      "title": "Wstaw link",
+      "messageLine1": "Wpisz URL dla zaznaczonego tekstu albo dodaj nowy link.",
+      "messageLine2": "Link otworzy się w nowej karcie z bezpiecznymi ustawieniami domyślnymi.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "Wstaw link",
+      "cancelLabel": "Anuluj",
+      "validationRequired": "Wpisz URL.",
+      "validationProtocol": "URL musi zaczynać się od http:// lub https://",
+      "validationInvalid": "Wpisz poprawny URL."
+    }
   }
 }

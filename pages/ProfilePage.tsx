@@ -489,7 +489,9 @@ export const ProfilePage: React.FC = () => {
     const handleArchiveTrip = useCallback(async (trip: ITrip) => {
         const confirmed = await confirmDialog({
             title: t('archive.confirmSingleTitle'),
-            message: t('archive.confirmSingleMessage', { title: trip.title }),
+            message: (
+                <p>{t('archive.confirmSingleMessage', { title: trip.title })}</p>
+            ),
             confirmLabel: t('archive.confirmSingleButton'),
             cancelLabel: t('archive.cancel'),
             tone: 'danger',
@@ -560,7 +562,9 @@ export const ProfilePage: React.FC = () => {
         if (selectedTripIds.length === 0) return;
         const confirmed = await confirmDialog({
             title: t('archive.confirmBatchTitle'),
-            message: t('archive.confirmBatchMessage', { count: selectedTripIds.length }),
+            message: (
+                <p>{t('archive.confirmBatchMessage', { count: selectedTripIds.length })}</p>
+            ),
             confirmLabel: t('archive.confirmBatchButton', { count: selectedTripIds.length }),
             cancelLabel: t('archive.cancel'),
             tone: 'danger',

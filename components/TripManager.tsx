@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
@@ -699,6 +700,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   appLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const { confirm } = useAppDialog();
+  const { t } = useTranslation('common');
   const { isAuthenticated } = useAuth();
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -963,10 +965,20 @@ export const TripManager: React.FC<TripManagerProps> = ({
     if (!tripToArchive) return;
 
     const shouldDelete = await confirm({
-      title: 'Archive Trip?',
-      message: 'This trip will be removed from your list and can be restored later.',
-      confirmLabel: 'Archive Trip',
-      cancelLabel: 'Cancel',
+      title: t('appDialog.tripArchive.title'),
+      message: (
+        <div className="space-y-2">
+          <p><Trans
+            ns="common"
+            i18nKey="appDialog.tripArchive.messageQuestion"
+            values={{ title: tripToArchive.title }}
+            components={{ strong: <strong /> }}
+          /></p>
+          <p>{t('appDialog.tripArchive.messageDetail')}</p>
+        </div>
+      ),
+      confirmLabel: t('appDialog.tripArchive.confirmLabel'),
+      cancelLabel: t('appDialog.tripArchive.cancelLabel'),
       tone: 'danger',
     });
     if (!shouldDelete) return;
