@@ -7,6 +7,8 @@ import userEvent from '@testing-library/user-event';
 const mocks = vi.hoisted(() => ({
   trackEvent: vi.fn(),
   showAppToast: vi.fn(() => 'toast-id'),
+  confirmDialog: vi.fn(async () => true),
+  promptDialog: vi.fn(async () => 'https://example.com'),
 }));
 
 vi.mock('../../../components/admin/AdminShell', () => ({
@@ -28,6 +30,13 @@ vi.mock('../../../services/analyticsService', () => ({
 
 vi.mock('../../../components/ui/appToast', () => ({
   showAppToast: mocks.showAppToast,
+}));
+
+vi.mock('../../../components/AppDialogProvider', () => ({
+  useAppDialog: () => ({
+    confirm: mocks.confirmDialog,
+    prompt: mocks.promptDialog,
+  }),
 }));
 
 import { AdminDesignSystemPlaygroundPage } from '../../../pages/AdminDesignSystemPlaygroundPage';
@@ -89,6 +98,27 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
     expect(mocks.showAppToast).toHaveBeenCalledWith(expect.objectContaining({
       tone: 'error',
       title: 'Action failed',
+    }));
+  });
+
+  it('triggers shared app confirm/prompt dialog samples', async () => {
+    const user = userEvent.setup();
+
+    render(React.createElement(AdminDesignSystemPlaygroundPage));
+
+    const dialogTabs = screen.getAllByRole('tab', { name: 'Dialogs + Drawers + Modals' });
+    await user.click(dialogTabs[0]);
+
+    await user.click(screen.getByRole('button', { name: 'Open Confirm Dialog (Danger)' }));
+    expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Hard delete trip',
+      tone: 'danger',
+    }));
+
+    await user.click(screen.getByRole('button', { name: 'Open Prompt Dialog (URL + Validate)' }));
+    expect(mocks.promptDialog).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'Insert Link',
+      inputType: 'url',
     }));
   });
 });

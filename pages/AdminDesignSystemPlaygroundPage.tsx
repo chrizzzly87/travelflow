@@ -3,6 +3,7 @@ import { Bell, Eye, PaintBrush, SlidersHorizontal } from '@phosphor-icons/react'
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { useAppDialog } from '../components/AppDialogProvider';
 import { CountrySelect } from '../components/CountrySelect';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
@@ -115,7 +116,7 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         title: 'Dialogs + Drawers + Modals',
         description: 'Overlay primitives for confirmations, detail sheets, and structured modal content.',
         sourcePath: 'components/ui/dialog.tsx',
-        usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/DeleteCityModal.tsx'],
+        usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/AppDialogProvider.tsx'],
     },
     {
         id: 'cards',
@@ -218,6 +219,7 @@ const GroupHeader: React.FC<{ definition: ComponentGroupDefinition }> = ({ defin
 export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [activeGroup, setActiveGroup] = useState<ComponentGroupId>('buttons');
     const [notificationScenarioId, setNotificationScenarioId] = useState<ToastScenarioId>('trip_archived');
+    const [appDialogResult, setAppDialogResult] = useState('No confirm/prompt result yet.');
 
     const [sampleSelectValue, setSampleSelectValue] = useState('updated');
     const [sampleFilterValues, setSampleFilterValues] = useState<string[]>(['active']);
@@ -233,6 +235,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { confirm: confirmDialog, prompt: promptDialog } = useAppDialog();
 
     const trackedGroupRef = useRef<ComponentGroupId | null>(null);
     const loadingToastTimerRef = useRef<number | null>(null);
@@ -246,6 +249,107 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
         () => TOAST_SCENARIOS.find((scenario) => scenario.id === notificationScenarioId) ?? TOAST_SCENARIOS[0],
         [notificationScenarioId]
     );
+
+    const handleConfirmDefaultSample = useCallback(async () => {
+        const confirmed = await confirmDialog({
+            title: 'Update Roundtrip Endpoint?',
+            message: 'This trip looks like a roundtrip. Also change the final city to "Kyoto"?',
+            confirmLabel: 'Yes, Update Last City',
+            cancelLabel: 'No, Keep As Is',
+        });
+        setAppDialogResult(
+            confirmed
+                ? 'Default confirm accepted: roundtrip endpoint sync enabled.'
+                : 'Default confirm cancelled: roundtrip endpoint remains unchanged.'
+        );
+    }, [confirmDialog]);
+
+    const handleConfirmDangerSample = useCallback(async () => {
+        const confirmed = await confirmDialog({
+            title: 'Hard delete trip',
+            message: 'Hard-delete "Kyoto Rail Plan"? This cannot be undone.',
+            confirmLabel: 'Hard delete',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+        });
+        setAppDialogResult(
+            confirmed
+                ? 'Danger confirm accepted: destructive action confirmed.'
+                : 'Danger confirm cancelled: destructive action aborted.'
+        );
+    }, [confirmDialog]);
+
+    const handlePromptDangerSample = useCallback(async () => {
+        const value = await promptDialog({
+            title: 'Transfer trip owner',
+            message: 'Enter the target user email or UUID for this trip.',
+            label: 'Target owner (email or UUID)',
+            placeholder: 'name@example.com or user UUID',
+            confirmLabel: 'Continue',
+            cancelLabel: 'Cancel',
+            tone: 'danger',
+            inputType: 'text',
+        });
+        if (value === null) {
+            setAppDialogResult('Danger prompt cancelled: no transfer target provided.');
+            return;
+        }
+        setAppDialogResult(`Danger prompt value captured: "${value}".`);
+    }, [promptDialog]);
+
+    const handlePromptOptionalSample = useCallback(async () => {
+        const value = await promptDialog({
+            title: 'Duplicate trip',
+            message: 'Optionally enter a target user email or UUID for the duplicated trip.',
+            label: 'Target owner (optional)',
+            placeholder: 'name@example.com or user UUID',
+            defaultValue: '',
+            confirmLabel: 'Duplicate',
+            cancelLabel: 'Cancel',
+            tone: 'default',
+            inputType: 'text',
+        });
+        if (value === null) {
+            setAppDialogResult('Optional prompt cancelled: duplicate flow aborted.');
+            return;
+        }
+        const trimmed = value.trim();
+        setAppDialogResult(
+            trimmed.length > 0
+                ? `Optional prompt value captured: "${trimmed}".`
+                : 'Optional prompt submitted with empty value (keep existing owner).'
+        );
+    }, [promptDialog]);
+
+    const handlePromptUrlSample = useCallback(async () => {
+        const value = await promptDialog({
+            title: 'Insert Link',
+            message: 'Enter a URL for the selected text or insert a new link.',
+            label: 'URL',
+            placeholder: 'https://example.com',
+            defaultValue: 'https://',
+            confirmLabel: 'Insert Link',
+            cancelLabel: 'Cancel',
+            inputType: 'url',
+            validate: (nextValue) => {
+                if (!nextValue) return 'Please enter a URL.';
+                try {
+                    const parsed = new URL(nextValue);
+                    if (!parsed.protocol.startsWith('http')) {
+                        return 'URL must start with http:// or https://';
+                    }
+                    return null;
+                } catch {
+                    return 'Please enter a valid URL.';
+                }
+            },
+        });
+        if (value === null) {
+            setAppDialogResult('URL prompt cancelled: no link inserted.');
+            return;
+        }
+        setAppDialogResult(`URL prompt accepted with value "${value}".`);
+    }, [promptDialog]);
 
     useEffect(() => {
         trackEvent('admin__design_playground--open');
@@ -618,6 +722,60 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         >
                             Open App Modal
                         </button>
+                    </div>
+
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                        <p className={subtleHeadingClassName}>Shared App Dialog Provider (confirm + prompt)</p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleConfirmDefaultSample();
+                                }}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Open Confirm Dialog (Default)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleConfirmDangerSample();
+                                }}
+                                className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+                            >
+                                Open Confirm Dialog (Danger)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handlePromptDangerSample();
+                                }}
+                                className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Open Prompt Dialog (Danger Text)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handlePromptOptionalSample();
+                                }}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Open Prompt Dialog (Optional Text)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handlePromptUrlSample();
+                                }}
+                                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 md:col-span-2"
+                            >
+                                Open Prompt Dialog (URL + Validate)
+                            </button>
+                        </div>
+                        <p className="text-xs text-slate-600">
+                            {appDialogResult}
+                        </p>
                     </div>
 
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

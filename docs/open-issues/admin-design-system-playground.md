@@ -44,6 +44,19 @@ Add a dedicated admin workspace page to inspect all shared UI components and int
 7. Generic warning and generic error
 8. Loading/in-progress sample
 
+## App Dialog Coverage (Follow-up)
+Observed shared `useAppDialog` patterns currently used in product/admin surfaces:
+1. `confirm` default tone for non-destructive branching decisions (for example roundtrip sync or palette apply scope).
+2. `confirm` danger tone for destructive operations (archive/hard delete/cleanup).
+3. `prompt` text (danger) for transfer target input before destructive owner/user operations.
+4. `prompt` text (default) with optional empty value for non-destructive duplication flows.
+5. `prompt` URL with validation for rich-text link insertion.
+
+Harmonization target:
+- Keep these flows on `useAppDialog` only (no native browser prompts).
+- Standardize title/message grammar and confirm labels across admin flows.
+- Reserve danger tone strictly for destructive/irreversible actions.
+
 ## Technical Notes
 1. Reuse existing components from `components/ui/*` and product wrappers.
 2. Reuse `showAppToast(...)` only; no direct `sonner` usage in playground examples.
