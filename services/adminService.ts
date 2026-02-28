@@ -469,14 +469,14 @@ const callAdminIdentityApi = async (
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? 'Admin identity route is unavailable in Vite-only dev. Run `npm run dev:netlify` (or run it in a second terminal while `npm run dev` is active) to test admin delete/invite/create actions.'
+            ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `npm run dev:netlify` before testing delete/invite/create.'
+            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
             : null;
         const reason = payloadError
             || devNotFoundMessage

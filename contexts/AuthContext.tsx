@@ -78,6 +78,14 @@ export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
     && sessionUserId !== DEV_ADMIN_BYPASS_USER_ID
 );
 
+export const shouldUseDevAdminBypassSession = (
+    bypassEnabled: boolean,
+    sessionUserId: string | null | undefined
+): boolean => (
+    bypassEnabled
+    && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
+);
+
 interface AuthContextValue {
     session: Session | null;
     access: UserAccessContext | null;
@@ -475,8 +483,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [location.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
+        const bypassEnabled = shouldEnableDevAdminBypass(
+            import.meta.env.DEV,
+            import.meta.env.VITE_DEV_ADMIN_BYPASS,
+            isDevAdminBypassDisabled,
+            location.pathname
+        );
+        const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
-        if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, isDevAdminBypassDisabled, location.pathname)) {
+        if (useDevAdminBypass) {
             return {
                 session: {
                     access_token: 'dev-bypass-token',

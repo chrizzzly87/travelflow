@@ -12,6 +12,7 @@ import {
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import { buildDecisionConfirmDialog } from '../services/appDialogPresets';
 import { AdminReloadButton } from '../components/admin/AdminReloadButton';
 import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin/AdminFilterMenu';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
@@ -406,13 +407,11 @@ export const AdminAuditPage: React.FC = () => {
             setUserDrawerError('Cannot restore: no user id available.');
             return;
         }
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDecisionConfirmDialog({
             title: 'Restore user account',
             message: 'Restore this user by setting account status back to active?',
             confirmLabel: 'Restore user',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsRestoringUser(true);
         setMessage(null);

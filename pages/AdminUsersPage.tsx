@@ -19,6 +19,7 @@ import {
     Trash,
     X,
     UserPlus,
+    WarningCircle,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -39,6 +40,10 @@ import {
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import {
+    buildDangerConfirmDialog,
+    buildTransferTargetPromptDialog,
+} from '../services/appDialogPresets';
 import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
@@ -59,6 +64,7 @@ import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { useAppDialog } from '../components/AppDialogProvider';
+import { showAppToast } from '../components/ui/appToast';
 
 type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
 type SortDirection = 'asc' | 'desc';
@@ -435,25 +441,52 @@ const summarizeBulkDeleteFailures = (details: string[]): string => {
 };
 
 const buildSingleHardDeleteMessage = (
-    userRef: string,
+    userName: string,
     ownedTripCount: number
-): string => {
-    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
-    return [
-        `Account: ${userRef}`,
-        '',
-        'Permanent delete impact',
-        '• Auth account',
-        '• Profile record',
-        `• ${tripLabel}`,
-        '• All related versions, share links, and collaborators for those trips',
-        '',
-        ownedTripCount > 0 ? 'Trip ownership choices before confirm' : '',
-        ownedTripCount > 0 ? '• Cancel and use "Transfer trips + hard delete" to preserve trip ownership' : '',
-        ownedTripCount > 0 ? '• Continue hard delete to permanently remove those trips' : '',
-        '',
-        'This cannot be undone.',
-    ].join('\n');
+): React.ReactNode => {
+    const tripSuffix = ownedTripCount > 0 ? ` (${ownedTripCount})` : '';
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to hard-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
+            </p>
+            <p>
+                Use soft delete instead if you may need to restore this user later.
+            </p>
+            {ownedTripCount > 0 ? (
+                <p>
+                    To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
+                </p>
+            ) : null}
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                <span><strong>This action cannot be undone.</strong></span>
+            </div>
+        </div>
+    );
+};
+
+const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to soft-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Soft delete keeps the account and related data in the database so this user can be restored later.
+            </p>
+            <ul>
+                <li>The user cannot sign in while the account is soft-deleted.</li>
+                <li>An admin can restore the user later.</li>
+            </ul>
+            <p>
+                Use hard delete only for permanent removal.
+            </p>
+        </div>
+    );
 };
 
 const buildBulkHardDeleteMessage = (
@@ -463,16 +496,14 @@ const buildBulkHardDeleteMessage = (
     return [
         `Selected users: ${selectedUsers}`,
         '',
-        'Permanent delete impact',
-        `• Auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}`,
-        `• ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total`,
-        '• All related versions, share links, and collaborators for those trips',
+        `Hard delete permanently removes auth accounts + profiles for ${selectedUsers} user${selectedUsers === 1 ? '' : 's'}.`,
+        `It also permanently removes ${selectedTrips} owned trip${selectedTrips === 1 ? '' : 's'} in total.`,
+        'Use soft delete instead if these users might need to be restored later.',
         '',
-        selectedTrips > 0 ? 'Trip ownership choices before confirm' : '',
         selectedTrips > 0 ? '• Cancel and transfer trips from each user drawer if you need to preserve data' : '',
         selectedTrips > 0 ? '• Continue hard delete to permanently remove selected users and owned trips' : '',
         '',
-        'This cannot be undone.',
+        'This action cannot be undone.',
     ].join('\n');
 };
 
@@ -1485,15 +1516,89 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleSoftDelete = async (user: AdminUserRecord) => {
         const nextStatus = (user.account_status || 'active') === 'deleted' ? 'active' : 'deleted';
+        const userName = getUserDisplayName(user);
+        const quotedUserName = `"${userName}"`;
+        if (nextStatus === 'deleted') {
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
+                title: 'Soft delete user',
+                message: buildSingleSoftDeleteMessage(userName),
+                confirmLabel: 'Soft delete',
+            }));
+            if (!confirmed) return;
+        }
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: nextStatus === 'deleted' ? 'Soft-deleting user' : 'Restoring user',
+            description: nextStatus === 'deleted'
+                ? `Applying soft-delete to ${quotedUserName}.`
+                : `Restoring ${quotedUserName}.`,
+        });
         try {
             await adminUpdateUserProfile(user.user_id, { accountStatus: nextStatus });
-            setMessage(nextStatus === 'deleted' ? 'User soft-deleted.' : 'User restored.');
             await loadUsers();
+            if (nextStatus === 'deleted') {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'remove',
+                    title: 'User soft-deleted',
+                    description: `${quotedUserName} was soft-deleted. The user can be restored and cannot sign in while deleted.`,
+                    action: {
+                        label: 'Undo',
+                        onClick: () => {
+                            void (async () => {
+                                const undoLoadingToastId = showAppToast({
+                                    tone: 'loading',
+                                    title: 'Undo soft-delete',
+                                    description: `Restoring ${quotedUserName}.`,
+                                });
+                                setIsSaving(true);
+                                setErrorMessage(null);
+                                setMessage(null);
+                                try {
+                                    await adminUpdateUserProfile(user.user_id, { accountStatus: 'active' });
+                                    await loadUsers();
+                                    showAppToast({
+                                        id: undoLoadingToastId,
+                                        tone: 'success',
+                                        title: 'Soft-delete undone',
+                                        description: `${quotedUserName} was restored and can sign in again.`,
+                                    });
+                                } catch (undoError) {
+                                    const reason = undoError instanceof Error ? undoError.message : 'Could not restore user.';
+                                    showAppToast({
+                                        id: undoLoadingToastId,
+                                        tone: 'error',
+                                        title: 'Undo failed',
+                                        description: reason,
+                                    });
+                                    setErrorMessage(reason);
+                                } finally {
+                                    setIsSaving(false);
+                                }
+                            })();
+                        },
+                    },
+                });
+            } else {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'success',
+                    title: 'User restored',
+                    description: `${quotedUserName} was restored and can sign in again.`,
+                });
+            }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not update user status.');
+            const reason = error instanceof Error ? error.message : 'Could not update user status.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Update failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1501,35 +1606,56 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleHardDelete = async (user: AdminUserRecord) => {
         if (!isUserHardDeleteEligible(user)) {
-            setErrorMessage('Hard delete is unavailable for soft-deleted users.');
+            const reason = 'Hard delete is unavailable for soft-deleted users.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
+        const userName = getUserDisplayName(user);
+        const quotedUserName = `"${userName}"`;
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete user',
-            message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
+            message: buildSingleHardDeleteMessage(userName, sourceTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Hard-deleting user',
+            description: `Permanently deleting ${quotedUserName}.`,
+        });
         try {
             await adminHardDeleteUser(user.user_id);
-            setMessage(
-                sourceTripCount > 0
-                    ? `User permanently deleted. ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were removed with this hard delete.`
-                    : 'User permanently deleted.'
-            );
             setIsDetailOpen(false);
             setSelectedUserId(null);
             await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'remove',
+                title: 'User hard-deleted',
+                description: sourceTripCount > 0
+                    ? `${quotedUserName} and ${sourceTripCount} owned trip${sourceTripCount === 1 ? '' : 's'} were permanently deleted.`
+                    : `${quotedUserName} was permanently deleted.`,
+            });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete user.');
+            const reason = error instanceof Error ? error.message : 'Could not hard-delete user.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Hard delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1537,24 +1663,44 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkSoftDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
-        const confirmed = await confirmDialog({
+        const isSingleSelection = selectedVisibleUsers.length === 1;
+        const selectedSingleUser = isSingleSelection ? selectedVisibleUsers[0] : null;
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Soft delete selected users',
-            message: `Soft-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
+            message: selectedSingleUser
+                ? buildSingleSoftDeleteMessage(getUserDisplayName(selectedSingleUser))
+                : `Soft-delete ${selectedVisibleUsers.length} selected users?\n\nSoft delete can be reverted later and prevents sign-in while deleted.`,
             confirmLabel: 'Soft delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Soft-deleting users',
+            description: `Applying soft-delete to ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             await Promise.all(selectedVisibleUsers.map((user) => adminUpdateUserProfile(user.user_id, { accountStatus: 'deleted' })));
             setMessage(`${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} soft-deleted.`);
             setSelectedUserIds(new Set());
             await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'remove',
+                title: 'Users soft-deleted',
+                description: `${selectedVisibleUsers.length} user${selectedVisibleUsers.length === 1 ? '' : 's'} were soft-deleted successfully.`,
+            });
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not soft-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not soft-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Soft delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1565,21 +1711,34 @@ export const AdminUsersPage: React.FC = () => {
         const hardDeleteUsers = selectedVisibleUsers.filter((user) => isUserHardDeleteEligible(user));
         const skippedUsers = selectedVisibleUsers.length - hardDeleteUsers.length;
         if (hardDeleteUsers.length === 0) {
-            setErrorMessage('No eligible users selected for hard delete. Soft-deleted users are skipped.');
+            const reason = 'No eligible users selected for hard delete. Soft-deleted users are skipped.';
+            setErrorMessage(reason);
+            showAppToast({
+                tone: 'warning',
+                title: 'Hard delete unavailable',
+                description: reason,
+            });
             return;
         }
         const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
-        const confirmed = await confirmDialog({
+        const isSingleSelection = hardDeleteUsers.length === 1;
+        const selectedSingleUser = isSingleSelection ? hardDeleteUsers[0] : null;
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete selected users',
-            message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
+            message: selectedSingleUser
+                ? buildSingleHardDeleteMessage(getUserDisplayName(selectedSingleUser), selectedTripCount)
+                : buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Hard-deleting users',
+            description: `Permanently deleting ${hardDeleteUsers.length} selected user${hardDeleteUsers.length === 1 ? '' : 's'}.`,
+        });
         try {
             const results = await Promise.allSettled(hardDeleteUsers.map((user) => adminHardDeleteUser(user.user_id)));
             const failedIndexes: number[] = [];
@@ -1641,9 +1800,31 @@ export const AdminUsersPage: React.FC = () => {
             await loadUsers({ preserveErrorMessage: Boolean(bulkErrorMessage) });
             if (bulkErrorMessage) {
                 setErrorMessage(bulkErrorMessage);
+                showAppToast({
+                    id: loadingToastId,
+                    tone: deleted > 0 ? 'warning' : 'error',
+                    title: deleted > 0 ? 'Some users were not deleted' : 'Hard delete failed',
+                    description: deleted > 0
+                        ? `${deleted} user${deleted === 1 ? '' : 's'} were deleted, but ${failed} failed. Check the inline details for affected accounts.`
+                        : bulkErrorMessage,
+                });
+            } else {
+                showAppToast({
+                    id: loadingToastId,
+                    tone: 'remove',
+                    title: 'Users hard-deleted',
+                    description: `${deleted} user${deleted === 1 ? '' : 's'} were permanently deleted.`,
+                });
             }
         } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Could not hard-delete selected users.');
+            const reason = error instanceof Error ? error.message : 'Could not hard-delete selected users.';
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Hard delete failed',
+                description: reason,
+            });
+            setErrorMessage(reason);
         } finally {
             setIsSaving(false);
         }
@@ -1698,16 +1879,11 @@ export const AdminUsersPage: React.FC = () => {
             return;
         }
 
-        const transferTargetInput = await promptDialog({
+        const transferTargetInput = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Transfer trips before hard delete',
             message: 'Enter the target user email or UUID. All owned trips will move to this account before hard delete.',
-            label: 'Target user (email or UUID)',
-            placeholder: 'name@example.com or user UUID',
             confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-            inputType: 'text',
-        });
+        }));
         if (transferTargetInput === null) return;
 
         setIsSaving(true);
@@ -1729,7 +1905,7 @@ export const AdminUsersPage: React.FC = () => {
                 throw new Error('No owned trips found to transfer. Reload and try again.');
             }
 
-            const confirmed = await confirmDialog({
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Confirm transfer and hard delete',
                 message: [
                     `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
@@ -1740,9 +1916,7 @@ export const AdminUsersPage: React.FC = () => {
                     'Result: trips remain accessible under the new owner.',
                 ].join('\n'),
                 confirmLabel: 'Transfer + hard delete',
-                cancelLabel: 'Cancel',
-                tone: 'danger',
-            });
+            }));
             if (!confirmed) return;
 
             const transferResults = await Promise.allSettled(
