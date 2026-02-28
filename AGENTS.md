@@ -3,11 +3,6 @@
 This repository uses markdown release files as the source of truth for product updates.
 
 ## Agent requirements
-- Before any implementation work, run and report: `pwd && git rev-parse --abbrev-ref HEAD && git status --short`.
-- For this active feature thread, the expected workspace is:
-  - worktree: `/Users/chrizzzly/.codex/worktrees/ff8f/travelflow-codex`
-  - branch: `codex/profile-nav-create-trip-cta`
-- If the reported worktree/branch does not match the expected thread context, stop and ask the user before making changes.
 - Follow `docs/UPDATE_FORMAT.md` for all release entries.
 - Follow `docs/UX_COPY_GUIDELINES.md` for any user-facing text changes (marketing pages, CTA copy, planner microcopy).
 - Follow `docs/I18N_PAGE_WORKFLOW.md` for locale/translation/namespace changes.
