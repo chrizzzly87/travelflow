@@ -1,4 +1,4 @@
-import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, IViewSettings, IUserSettings, ShareMode } from '../types';
+import { ISharedTripResult, ISharedTripVersionResult, ITrip, ITripShareRecord, ITimelineItem, IViewSettings, IUserSettings, ShareMode } from '../types';
 import { isUuid } from '../utils';
 import { supabase, isSupabaseEnabled } from './supabaseClient';
 import {
@@ -398,6 +398,14 @@ interface TripEventSnapshot {
     sourceKind: string | null;
 }
 
+type TripVersionSnapshot = {
+    versionId: string | null;
+    label: string | null;
+    trip: ITrip | null;
+};
+
+const MAX_TIMELINE_DIFF_ITEMS = 8;
+
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
     title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
     status: trip.status && ['active', 'archived', 'expired'].includes(trip.status)
@@ -441,6 +449,144 @@ const readOwnedTripEventSnapshot = async (
     };
 };
 
+const toTimelineDiffItemSnapshot = (item: ITimelineItem): Record<string, unknown> => ({
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    start_date_offset: item.startDateOffset,
+    duration: item.duration,
+    location: item.location ?? null,
+    description: item.description ?? null,
+    transport_mode: item.transportMode ?? null,
+    activity_type: Array.isArray(item.activityType) ? item.activityType : [],
+});
+
+const arraysEqual = (left: string[], right: string[]): boolean => (
+    left.length === right.length && left.every((value, index) => value === right[index])
+);
+
+const buildTripTimelineDiffSummary = (
+    previousTrip: ITrip | null,
+    nextTrip: ITrip
+): Record<string, unknown> | null => {
+    if (!previousTrip) return null;
+    const previousItems = Array.isArray(previousTrip.items) ? previousTrip.items : [];
+    const nextItems = Array.isArray(nextTrip.items) ? nextTrip.items : [];
+    const previousById = new Map(previousItems.map((item) => [item.id, item]));
+    const nextById = new Map(nextItems.map((item) => [item.id, item]));
+
+    const deletedItems: Array<Record<string, unknown>> = [];
+    const addedItems: Array<Record<string, unknown>> = [];
+    const transportModeChanges: Array<Record<string, unknown>> = [];
+    const updatedItems: Array<Record<string, unknown>> = [];
+
+    previousItems.forEach((beforeItem) => {
+        const afterItem = nextById.get(beforeItem.id);
+        if (!afterItem) {
+            deletedItems.push({
+                item_id: beforeItem.id,
+                item_type: beforeItem.type,
+                before: toTimelineDiffItemSnapshot(beforeItem),
+                after: null,
+            });
+            return;
+        }
+
+        const beforeActivities = Array.isArray(beforeItem.activityType) ? beforeItem.activityType : [];
+        const afterActivities = Array.isArray(afterItem.activityType) ? afterItem.activityType : [];
+        const changedFields: string[] = [];
+
+        if (beforeItem.title !== afterItem.title) changedFields.push('title');
+        if (beforeItem.startDateOffset !== afterItem.startDateOffset) changedFields.push('start_date_offset');
+        if (beforeItem.duration !== afterItem.duration) changedFields.push('duration');
+        if ((beforeItem.location ?? null) !== (afterItem.location ?? null)) changedFields.push('location');
+        if ((beforeItem.description ?? null) !== (afterItem.description ?? null)) changedFields.push('description');
+        if (!arraysEqual(beforeActivities, afterActivities)) changedFields.push('activity_type');
+
+        const transportChanged = (beforeItem.transportMode ?? null) !== (afterItem.transportMode ?? null);
+        if (transportChanged) {
+            transportModeChanges.push({
+                item_id: afterItem.id,
+                item_type: afterItem.type,
+                title: afterItem.title || beforeItem.title || 'Untitled segment',
+                before_mode: beforeItem.transportMode ?? null,
+                after_mode: afterItem.transportMode ?? null,
+            });
+            changedFields.push('transport_mode');
+        }
+
+        if (changedFields.length > 0) {
+            updatedItems.push({
+                item_id: afterItem.id,
+                item_type: afterItem.type,
+                changed_fields: changedFields,
+                before: toTimelineDiffItemSnapshot(beforeItem),
+                after: toTimelineDiffItemSnapshot(afterItem),
+            });
+        }
+    });
+
+    nextItems.forEach((afterItem) => {
+        if (previousById.has(afterItem.id)) return;
+        addedItems.push({
+            item_id: afterItem.id,
+            item_type: afterItem.type,
+            before: null,
+            after: toTimelineDiffItemSnapshot(afterItem),
+        });
+    });
+
+    if (
+        deletedItems.length === 0
+        && addedItems.length === 0
+        && transportModeChanges.length === 0
+        && updatedItems.length === 0
+    ) {
+        return null;
+    }
+
+    return {
+        counts: {
+            deleted_items: deletedItems.length,
+            added_items: addedItems.length,
+            transport_mode_changes: transportModeChanges.length,
+            updated_items: updatedItems.length,
+        },
+        deleted_items: deletedItems.slice(0, MAX_TIMELINE_DIFF_ITEMS),
+        added_items: addedItems.slice(0, MAX_TIMELINE_DIFF_ITEMS),
+        transport_mode_changes: transportModeChanges.slice(0, MAX_TIMELINE_DIFF_ITEMS),
+        updated_items: updatedItems.slice(0, MAX_TIMELINE_DIFF_ITEMS),
+        truncated: (
+            deletedItems.length > MAX_TIMELINE_DIFF_ITEMS
+            || addedItems.length > MAX_TIMELINE_DIFF_ITEMS
+            || transportModeChanges.length > MAX_TIMELINE_DIFF_ITEMS
+            || updatedItems.length > MAX_TIMELINE_DIFF_ITEMS
+        ),
+    };
+};
+
+const readLatestTripVersionSnapshot = async (
+    client: ReturnType<typeof requireSupabase>,
+    tripId: string
+): Promise<TripVersionSnapshot | null> => {
+    const { data, error } = await client
+        .from('trip_versions')
+        .select('id, data, label')
+        .eq('trip_id', tripId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error || !data) return null;
+    const rawTrip = data.data as ITrip | null;
+    const trip = rawTrip && rawTrip.id !== tripId ? { ...rawTrip, id: tripId } : rawTrip;
+    return {
+        versionId: typeof data.id === 'string' ? data.id : null,
+        label: typeof data.label === 'string' ? data.label : null,
+        trip,
+    };
+};
+
 const hasRecentTripEvent = async (
     client: ReturnType<typeof requireSupabase>,
     tripId: string,
@@ -468,11 +614,17 @@ const writeTripEventFallback = async (
         action: 'trip.created' | 'trip.updated' | 'trip.archived' | 'trip.share_created';
         source: string;
         metadata: Record<string, unknown>;
+        dedupeWindowMs?: number;
     }
 ): Promise<void> => {
     try {
-        const alreadyLogged = await hasRecentTripEvent(client, payload.tripId, payload.action);
-        if (alreadyLogged) return;
+        const dedupeWindowMs = typeof payload.dedupeWindowMs === 'number'
+            ? payload.dedupeWindowMs
+            : 15000;
+        if (dedupeWindowMs > 0) {
+            const alreadyLogged = await hasRecentTripEvent(client, payload.tripId, payload.action, dedupeWindowMs);
+            if (alreadyLogged) return;
+        }
 
         await client.from('trip_user_events').insert({
             trip_id: payload.tripId,
@@ -662,12 +814,13 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     if (!row) {
         debugLog('dbUpsertTrip:empty', { tripId: trip.id });
     }
+    const afterSnapshot = await readOwnedTripEventSnapshot(client, ownerId, normalizedTrip.id);
     await writeTripLifecycleEventFallback(client, {
         ownerId,
         tripId: normalizedTrip.id,
         source: toTripEventSource(normalizedTrip.sourceKind ?? null),
         before: beforeSnapshot,
-        after: toTripEventSnapshotFromTrip(normalizedTrip),
+        after: afterSnapshot ?? toTripEventSnapshotFromTrip(normalizedTrip),
     });
     return (row?.trip_id ?? row?.id) ?? null;
 };
@@ -820,6 +973,7 @@ export const dbCreateTripVersion = async (
     if (!ownerId) return null;
 
     const normalizedTrip = normalizeTripForStorage(trip);
+    const previousVersionSnapshot = await readLatestTripVersionSnapshot(client, normalizedTrip.id);
     const normalizedView = normalizeViewSettingsPayload(view ?? null);
     const payload = {
         p_trip_id: normalizedTrip.id,
@@ -849,6 +1003,7 @@ export const dbCreateTripVersion = async (
         && !/(^|[\s:])(created|copied|archived)([\s:]|$)/i.test(normalizedLabel);
 
     if (shouldLogVersionUpdate) {
+        const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         await writeTripEventFallback(client, {
             ownerId,
             tripId: normalizedTrip.id,
@@ -857,11 +1012,15 @@ export const dbCreateTripVersion = async (
             metadata: {
                 trip_id: normalizedTrip.id,
                 version_id: versionId,
+                previous_version_id: previousVersionSnapshot?.versionId ?? null,
+                previous_version_label: previousVersionSnapshot?.label ?? null,
                 version_label: label ?? null,
                 source_kind_after: normalizedTrip.sourceKind ?? null,
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
+                timeline_diff: timelineDiff,
             },
+            dedupeWindowMs: 0,
         });
     }
 

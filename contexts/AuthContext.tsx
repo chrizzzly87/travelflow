@@ -113,6 +113,41 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+let hasWarnedMissingAuthProvider = false;
+
+const buildMissingAuthProviderResult = <T,>(): T => ({
+    data: null,
+    error: new Error('Auth provider unavailable.'),
+} as unknown as T);
+
+const MISSING_AUTH_PROVIDER_FALLBACK: AuthContextValue = {
+    session: null,
+    access: null,
+    profile: null,
+    isLoading: false,
+    isProfileLoading: false,
+    isAuthenticated: false,
+    isAnonymous: false,
+    isAdmin: false,
+    refreshAccess: async () => undefined,
+    refreshProfile: async () => undefined,
+    loginWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>(),
+    registerWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>>>(),
+    loginWithOAuth: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>>(),
+    sendPasswordResetEmail: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['requestPasswordResetEmail']>>>(),
+    updatePassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['updateCurrentUserPassword']>>>(),
+    logout: async () => undefined,
+};
+
+export const resolveAuthContextValue = (context: AuthContextValue | null): AuthContextValue => {
+    if (context) return context;
+    if (!hasWarnedMissingAuthProvider) {
+        hasWarnedMissingAuthProvider = true;
+        console.error('useAuthContext was used without an AuthProvider. Falling back to anonymous-safe auth context.');
+    }
+    return MISSING_AUTH_PROVIDER_FALLBACK;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
     const [session, setSession] = useState<Session | null>(null);
@@ -591,9 +626,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuthContext = (): AuthContextValue => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuthContext must be used within AuthProvider.');
-    }
-    return context;
+    return resolveAuthContextValue(useContext(AuthContext));
 };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isAuthBootstrapCriticalPath,
+  resolveAuthContextValue,
   shouldAutoClearSimulatedLoginOnRealSession,
   shouldEnableDevAdminBypass,
   shouldUseDevAdminBypassSession,
@@ -64,5 +65,18 @@ describe('contexts/AuthContext dev bypass session precedence', () => {
   it('does not use bypass for real authenticated users', () => {
     expect(shouldUseDevAdminBypassSession(true, 'real-admin-user-id')).toBe(false);
     expect(shouldUseDevAdminBypassSession(false, null)).toBe(false);
+  });
+});
+
+describe('contexts/AuthContext fallback resolution', () => {
+  it('returns an anonymous-safe fallback instead of throwing when provider is missing', async () => {
+    const fallback = resolveAuthContextValue(null);
+
+    expect(fallback.isAuthenticated).toBe(false);
+    expect(fallback.isAdmin).toBe(false);
+    expect(fallback.access).toBeNull();
+
+    const loginResult = await fallback.loginWithPassword('user@example.com', 'secret');
+    expect(loginResult.error).toBeInstanceOf(Error);
   });
 });

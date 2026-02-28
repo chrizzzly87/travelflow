@@ -32,7 +32,11 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 🔎 Trip info now shows owner context so read-only/public/admin-fallback views clearly indicate who owns the trip.
 - [ ] [Improved] 🪪 Trip info modal now includes an admin-only debug block with owner username/email/UUID and access source for incident tracing.
 - [ ] [Improved] 🧾 Trip version commits now emit user change events so itinerary edits show up in admin user logs and the global audit timeline.
+- [ ] [Improved] 🧭 User trip update logs now include timeline-level change details (added/deleted items, transport mode changes, and changed fields) for clearer audit forensics.
+- [ ] [Fixed] 🧩 User-change diff rendering now ignores misleading after-only metadata fields, so audit entries align with what was actually edited.
 - [ ] [Fixed] 🚫 Trip creation-limit checks no longer create anonymous DB accounts during read-only eligibility checks.
+- [ ] [Fixed] 🧯 Added a safe auth-context fallback so rare route recovery states no longer crash with “useAuthContext must be used within AuthProvider.”
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.
+- [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.

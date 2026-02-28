@@ -22,6 +22,10 @@ const asRecord = (value: Record<string, unknown> | null | undefined): Record<str
     return value;
 };
 
+const hasOwn = (value: Record<string, unknown>, key: string): boolean => (
+    Object.prototype.hasOwnProperty.call(value, key)
+);
+
 const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
 
 const normalizeActionLabel = (action: string): string => {
@@ -33,7 +37,11 @@ const normalizeActionLabel = (action: string): string => {
         .join(' ');
 };
 
-const buildTripMetadataDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
+const buildTripMetadataDiffEntries = (
+    metadata: Record<string, unknown>,
+    options?: { requireBefore?: boolean }
+): UserChangeDiffEntry[] => {
+    const requireBefore = options?.requireBefore === true;
     const tripFieldPairs: Array<{
         key: string;
         beforeKey: string;
@@ -51,12 +59,88 @@ const buildTripMetadataDiffEntries = (metadata: Record<string, unknown>): UserCh
     ];
 
     return tripFieldPairs
-        .map(({ key, beforeKey, afterKey }) => ({
-            key,
-            beforeValue: metadata[beforeKey] ?? null,
-            afterValue: metadata[afterKey] ?? null,
-        }))
+        .map(({ key, beforeKey, afterKey }) => {
+            const hasBefore = hasOwn(metadata, beforeKey);
+            const hasAfter = hasOwn(metadata, afterKey);
+            if (!hasAfter) return null;
+            if (requireBefore && !hasBefore) return null;
+            return {
+                key,
+                beforeValue: hasBefore ? metadata[beforeKey] : null,
+                afterValue: metadata[afterKey],
+            };
+        })
+        .filter((entry): entry is UserChangeDiffEntry => Boolean(entry))
         .filter((entry) => toComparableValue(entry.beforeValue) !== toComparableValue(entry.afterValue));
+};
+
+const normalizeTimelineDiffItems = (
+    value: unknown
+): Array<Record<string, unknown>> => (
+    Array.isArray(value)
+        ? value
+            .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry))
+        : []
+);
+
+const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
+    const timelineDiff = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
+    if (Object.keys(timelineDiff).length === 0) return [];
+
+    const entries: UserChangeDiffEntry[] = [];
+    const transportModeChanges = normalizeTimelineDiffItems(timelineDiff.transport_mode_changes);
+    if (transportModeChanges.length > 0) {
+        entries.push({
+            key: 'transport_mode_changes',
+            beforeValue: transportModeChanges.map((entry) => ({
+                item_id: entry.item_id ?? null,
+                title: entry.title ?? null,
+                mode: entry.before_mode ?? null,
+            })),
+            afterValue: transportModeChanges.map((entry) => ({
+                item_id: entry.item_id ?? null,
+                title: entry.title ?? null,
+                mode: entry.after_mode ?? null,
+            })),
+        });
+    }
+
+    const deletedItems = normalizeTimelineDiffItems(timelineDiff.deleted_items);
+    if (deletedItems.length > 0) {
+        entries.push({
+            key: 'deleted_items',
+            beforeValue: deletedItems.map((entry) => entry.before ?? entry),
+            afterValue: [],
+        });
+    }
+
+    const addedItems = normalizeTimelineDiffItems(timelineDiff.added_items);
+    if (addedItems.length > 0) {
+        entries.push({
+            key: 'added_items',
+            beforeValue: [],
+            afterValue: addedItems.map((entry) => entry.after ?? entry),
+        });
+    }
+
+    const updatedItems = normalizeTimelineDiffItems(timelineDiff.updated_items);
+    if (updatedItems.length > 0) {
+        entries.push({
+            key: 'updated_items',
+            beforeValue: updatedItems.map((entry) => ({
+                item_id: entry.item_id ?? null,
+                changed_fields: entry.changed_fields ?? [],
+                before: entry.before ?? null,
+            })),
+            afterValue: updatedItems.map((entry) => ({
+                item_id: entry.item_id ?? null,
+                changed_fields: entry.changed_fields ?? [],
+                after: entry.after ?? null,
+            })),
+        });
+    }
+
+    return entries;
 };
 
 export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserChangeDiffEntry[] => {
@@ -91,7 +175,17 @@ export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserC
 
     if (record.action === 'trip.updated' || record.action === 'trip.created') {
         const metadata = asRecord(record.metadata);
-        const entries = buildTripMetadataDiffEntries(metadata);
+        if (record.action === 'trip.updated') {
+            const timelineEntries = buildTripTimelineDiffEntries(metadata);
+            const lifecycleEntries = buildTripMetadataDiffEntries(metadata, { requireBefore: true });
+            const combined = [...timelineEntries, ...lifecycleEntries];
+            if (combined.length > 0) {
+                return combined;
+            }
+            return [];
+        }
+
+        const entries = buildTripMetadataDiffEntries(metadata, { requireBefore: false });
         if (entries.length > 0) {
             return entries;
         }

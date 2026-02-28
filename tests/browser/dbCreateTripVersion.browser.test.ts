@@ -2,6 +2,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
+  const versionMaybeSingle = vi.fn();
+  const versionLimit = vi.fn(() => ({ maybeSingle: versionMaybeSingle }));
+  const versionOrder = vi.fn(() => ({ limit: versionLimit }));
+  const versionEqTrip = vi.fn(() => ({ order: versionOrder }));
+  const versionSelect = vi.fn(() => ({ eq: versionEqTrip }));
+
   const eventRecentLimit = vi.fn();
   const eventRecentOrder = vi.fn(() => ({ limit: eventRecentLimit }));
   const eventRecentGte = vi.fn(() => ({ order: eventRecentOrder }));
@@ -13,6 +19,11 @@ const mocks = vi.hoisted(() => {
   return {
     rpc: vi.fn(),
     from: vi.fn((table: string) => {
+      if (table === 'trip_versions') {
+        return {
+          select: versionSelect,
+        };
+      }
       if (table === 'trip_user_events') {
         return {
           select: eventRecentSelect,
@@ -31,6 +42,11 @@ const mocks = vi.hoisted(() => {
     eventRecentOrder,
     eventRecentLimit,
     eventInsert,
+    versionSelect,
+    versionEqTrip,
+    versionOrder,
+    versionLimit,
+    versionMaybeSingle,
     getSession: vi.fn(),
     signInAnonymously: vi.fn(),
     setSession: vi.fn(),
@@ -80,9 +96,26 @@ describe('services/dbService dbCreateTripVersion', () => {
     });
     mocks.eventRecentLimit.mockResolvedValue({ data: [], error: null });
     mocks.eventInsert.mockResolvedValue({ data: null, error: null });
+    mocks.versionMaybeSingle.mockResolvedValue({ data: null, error: null });
   });
 
   it('writes fallback trip.updated event for version commits', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-1',
+          title: 'Trip One',
+          startDate: '2026-02-01',
+          items: [],
+          createdAt: 90,
+          updatedAt: 150,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
     mocks.rpc.mockResolvedValueOnce({
       data: [{ version_id: 'version-1' }],
       error: null,
@@ -109,6 +142,7 @@ describe('services/dbService dbCreateTripVersion', () => {
       metadata: expect.objectContaining({
         trip_id: 'trip-1',
         version_id: 'version-1',
+        previous_version_id: 'version-prev',
         version_label: 'Data: Updated trip',
       }),
     }));
@@ -133,5 +167,78 @@ describe('services/dbService dbCreateTripVersion', () => {
 
     expect(result).toBe('version-created');
     expect(mocks.eventInsert).not.toHaveBeenCalled();
+  });
+
+  it('includes timeline diff details for transport changes and deleted activities', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-transport',
+          title: 'Transport Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'travel-1',
+              type: 'travel',
+              title: 'Segment',
+              startDateOffset: 0,
+              duration: 1,
+              color: '#000',
+              transportMode: 'bus',
+            },
+            {
+              id: 'activity-1',
+              type: 'activity',
+              title: 'Street market',
+              startDateOffset: 1,
+              duration: 1,
+              color: '#111',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-transport',
+      title: 'Transport Trip',
+      startDate: '2026-02-01',
+      items: [
+        {
+          id: 'travel-1',
+          type: 'travel',
+          title: 'Segment',
+          startDateOffset: 0,
+          duration: 1,
+          color: '#000',
+          transportMode: 'train',
+        },
+      ],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Data: Changed transport type');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        timeline_diff: expect.objectContaining({
+          counts: expect.objectContaining({
+            deleted_items: 1,
+            transport_mode_changes: 1,
+          }),
+        }),
+      }),
+    }));
   });
 });

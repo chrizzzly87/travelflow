@@ -106,6 +106,50 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
+  it('prefers timeline diff details for version-based trip updates and skips after-only noise fields', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-1',
+        version_label: 'Data: Changed transport type',
+        status_after: 'active',
+        source_kind_after: 'ai_benchmark',
+        timeline_diff: {
+          transport_mode_changes: [
+            {
+              item_id: 'travel-1',
+              title: 'Bangkok to Chiang Mai',
+              before_mode: 'bus',
+              after_mode: 'train',
+            },
+          ],
+          deleted_items: [
+            {
+              item_id: 'activity-1',
+              before: { id: 'activity-1', type: 'activity', title: 'Night market' },
+              after: null,
+            },
+          ],
+        },
+      },
+    }));
+
+    expect(entries).toEqual([
+      {
+        key: 'transport_mode_changes',
+        beforeValue: [{ item_id: 'travel-1', title: 'Bangkok to Chiang Mai', mode: 'bus' }],
+        afterValue: [{ item_id: 'travel-1', title: 'Bangkok to Chiang Mai', mode: 'train' }],
+      },
+      {
+        key: 'deleted_items',
+        beforeValue: [{ id: 'activity-1', type: 'activity', title: 'Night market' }],
+        afterValue: [],
+      },
+    ]);
+  });
+
   it('formats unknown actions into readable labels', () => {
     const record = makeRecord({
       action: 'trip.shared_link_rotated',
