@@ -59,6 +59,11 @@
     "cta": "Reportar un error de traducción",
     "ctaShort": "Avisar"
   },
+  "networkStatus": {
+    "offlineTitle": "No tienes conexion.",
+    "offlineDescription": "El inicio de sesion y la sincronizacion en la nube no estan disponibles ahora. Seguiremos comprobando y nos reconectaremos automaticamente.",
+    "offlineChecking": "Comprobando la conexion..."
+  },
   "contact": {
     "title": "Contacto",
     "description": "Escríbenos sobre producto, errores, colaboraciones o feedback de traducción.",

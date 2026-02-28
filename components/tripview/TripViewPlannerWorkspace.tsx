@@ -183,7 +183,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <>
                                 <div style={{ width: sidebarWidth }} className="h-full flex flex-col items-center bg-white border-r border-gray-200 z-20 shrink-0 relative">
                                     <div className="w-full flex-1 overflow-hidden relative flex flex-col min-w-0">
-                                        <div className="flex-1 w-full overflow-hidden relative min-w-0">
+                                        <div ref={verticalLayoutTimelineRef} className="flex-1 w-full overflow-hidden relative min-w-0">
                                             {timelineCanvas}
                                             {timelineControls}
                                         </div>

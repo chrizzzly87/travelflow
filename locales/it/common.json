@@ -59,6 +59,11 @@
     "cta": "Segnala un errore di traduzione",
     "ctaShort": "Segnala"
   },
+  "networkStatus": {
+    "offlineTitle": "Sei offline.",
+    "offlineDescription": "Accesso e sincronizzazione cloud non sono disponibili al momento. Continueremo a verificare la rete e ci ricollegheremo automaticamente.",
+    "offlineChecking": "Verifica della connessione..."
+  },
   "contact": {
     "title": "Contatti",
     "description": "Scrivici per domande sul prodotto, bug, partnership o feedback sulle traduzioni.",

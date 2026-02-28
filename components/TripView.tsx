@@ -129,6 +129,27 @@ const RESIZER_WIDTH = 4;
 const MIN_ZOOM_LEVEL = 0.2;
 const MAX_ZOOM_LEVEL = 3;
 const HORIZONTAL_TIMELINE_AUTO_FIT_PADDING = 72;
+const VERTICAL_TIMELINE_AUTO_FIT_PADDING = 56;
+const TIMELINE_ZOOM_LEVEL_PRESETS = [
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.75,
+    0.9,
+    1,
+    1.1,
+    1.25,
+    1.5,
+    1.75,
+    2,
+    2.25,
+    2.5,
+    2.75,
+    3,
+];
 const NEGATIVE_OFFSET_EPSILON = 0.001;
 const MOBILE_VIEWPORT_MAX_WIDTH = 767;
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
@@ -897,6 +918,13 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
+    const [isZoomDirty, setIsZoomDirty] = useState(false);
+    const markZoomDirty = useCallback(() => {
+        setIsZoomDirty(true);
+    }, []);
+    useEffect(() => {
+        setIsZoomDirty(false);
+    }, [trip.id]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -915,6 +943,7 @@ const useTripViewRender = ({
         zoomLevel,
         clampZoomLevel,
         setZoomLevel,
+        onUserZoomChange: markZoomDirty,
     });
 
     const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string }) => {
@@ -1364,6 +1393,8 @@ const useTripViewRender = ({
         layoutMode,
         timelineView,
         horizontalTimelineDayCount,
+        zoomLevel,
+        isZoomDirty,
         clampZoomLevel,
         setZoomLevel,
         sidebarWidth,
@@ -1383,6 +1414,8 @@ const useTripViewRender = ({
         resizerWidth: RESIZER_WIDTH,
         resizeKeyboardStep: RESIZE_KEYBOARD_STEP,
         horizontalTimelineAutoFitPadding: HORIZONTAL_TIMELINE_AUTO_FIT_PADDING,
+        verticalTimelineAutoFitPadding: VERTICAL_TIMELINE_AUTO_FIT_PADDING,
+        zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
         basePixelsPerDay: BASE_PIXELS_PER_DAY,
     });
 
@@ -1565,8 +1598,14 @@ const useTripViewRender = ({
                         onTimelineTouchStart={handleTimelineTouchStart}
                         onTimelineTouchMove={handleTimelineTouchMove}
                         onTimelineTouchEnd={handleTimelineTouchEnd}
-                        onZoomOut={() => setZoomLevel((value) => clampZoomLevel(value - 0.1))}
-                        onZoomIn={() => setZoomLevel((value) => clampZoomLevel(value + 0.1))}
+                        onZoomOut={() => {
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value - 0.1));
+                        }}
+                        onZoomIn={() => {
+                            markZoomDirty();
+                            setZoomLevel((value) => clampZoomLevel(value + 0.1));
+                        }}
                         onToggleTimelineView={() => setTimelineView((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
                         timelineView={timelineView}
                         mapViewportRef={mapViewportRef}

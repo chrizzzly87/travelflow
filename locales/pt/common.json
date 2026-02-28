@@ -59,6 +59,11 @@
     "cta": "Reportar erro de tradução",
     "ctaShort": "Reportar"
   },
+  "networkStatus": {
+    "offlineTitle": "Voce esta offline.",
+    "offlineDescription": "O login e a sincronizacao na nuvem nao estao disponiveis agora. Vamos continuar verificando e reconectar automaticamente.",
+    "offlineChecking": "Verificando a conexao..."
+  },
   "contact": {
     "title": "Contacto",
     "description": "Fale connosco sobre produto, bugs, parcerias ou feedback de tradução.",

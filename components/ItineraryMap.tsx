@@ -184,31 +184,6 @@ export const getRouteOuterOutlineColor = (_style: MapStyle = 'standard'): string
     return ROUTE_OUTER_OUTLINE_COLOR;
 };
 
-const buildOutlineIconSequences = (
-    icons: google.maps.IconSequence[],
-    outlineColor: string,
-    scaleBoost: number,
-    opacityFloor: number,
-): google.maps.IconSequence[] => {
-    return icons.map((sequence) => {
-        const icon = sequence.icon;
-        const baseScale = typeof icon.scale === 'number' ? icon.scale : 2.5;
-        const strokeOpacity = Math.max(icon.strokeOpacity ?? 0.9, opacityFloor);
-        const fillOpacity = Math.max(icon.fillOpacity ?? 0, opacityFloor - 0.1);
-        return {
-            ...sequence,
-            icon: {
-                ...icon,
-                strokeColor: outlineColor,
-                fillColor: outlineColor,
-                strokeOpacity,
-                fillOpacity,
-                scale: baseScale + scaleBoost,
-            },
-        };
-    });
-};
-
 export const buildRoutePolylinePairOptions = (
     options: google.maps.PolylineOptions,
     style: MapStyle = 'standard',
@@ -220,9 +195,6 @@ export const buildRoutePolylinePairOptions = (
     const baseWeight = options.strokeWeight ?? 3;
     const baseOpacity = options.strokeOpacity ?? 0.7;
     const baseZIndex = options.zIndex ?? 30;
-    const iconSequences = options.icons ?? [];
-    const hasIconSequences = iconSequences.length > 0;
-    const visibleStroke = baseOpacity > 0.05;
     const mainStrokeWeight = baseWeight + 1;
     const innerOutlineColor = getRouteOutlineColor(style);
     const outerOutlineColor = getRouteOuterOutlineColor(style);
@@ -230,18 +202,18 @@ export const buildRoutePolylinePairOptions = (
     const outerOutlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: outerOutlineColor,
-        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.15, 0.65)) : 0,
-        strokeWeight: mainStrokeWeight + 5,
-        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, outerOutlineColor, 1.8, 0.85) : undefined,
+        strokeOpacity: 0,
+        strokeWeight: mainStrokeWeight,
+        icons: undefined,
         zIndex: baseZIndex - 2,
     };
 
     const outlineOptions: google.maps.PolylineOptions = {
         ...options,
         strokeColor: innerOutlineColor,
-        strokeOpacity: visibleStroke ? Math.min(1, Math.max(baseOpacity + 0.08, 0.55)) : 0,
-        strokeWeight: mainStrokeWeight + 2,
-        icons: hasIconSequences ? buildOutlineIconSequences(iconSequences, innerOutlineColor, 1.1, 0.92) : undefined,
+        strokeOpacity: 0,
+        strokeWeight: mainStrokeWeight,
+        icons: undefined,
         zIndex: baseZIndex - 1,
     };
 
@@ -569,19 +541,29 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
         const createRoutePolylinePair = (options: google.maps.PolylineOptions) => {
             if (!googleMapRef.current || !window.google?.maps?.Polyline) return null;
             const { outerOutlineOptions, outlineOptions, mainOptions } = buildRoutePolylinePairOptions(options, activeStyle);
-            const outerOutline = new window.google.maps.Polyline({
-                ...outerOutlineOptions,
-                map: googleMapRef.current,
-            });
-            const outline = new window.google.maps.Polyline({
-                ...outlineOptions,
-                map: googleMapRef.current,
-            });
+            const shouldRenderOuterOutline = (outerOutlineOptions.strokeOpacity ?? 0) > 0 || ((outerOutlineOptions.icons?.length ?? 0) > 0);
+            const shouldRenderInnerOutline = (outlineOptions.strokeOpacity ?? 0) > 0 || ((outlineOptions.icons?.length ?? 0) > 0);
+            let outerOutline: google.maps.Polyline | null = null;
+            let outline: google.maps.Polyline | null = null;
+            if (shouldRenderOuterOutline) {
+                outerOutline = new window.google.maps.Polyline({
+                    ...outerOutlineOptions,
+                    map: googleMapRef.current,
+                });
+                routesRef.current.push(outerOutline);
+            }
+            if (shouldRenderInnerOutline) {
+                outline = new window.google.maps.Polyline({
+                    ...outlineOptions,
+                    map: googleMapRef.current,
+                });
+                routesRef.current.push(outline);
+            }
             const main = new window.google.maps.Polyline({
                 ...mainOptions,
                 map: googleMapRef.current,
             });
-            routesRef.current.push(outerOutline, outline, main);
+            routesRef.current.push(main);
             return { outerOutline, outline, main };
         };
 

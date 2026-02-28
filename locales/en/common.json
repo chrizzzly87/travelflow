@@ -59,6 +59,11 @@
     "cta": "Report a translation issue",
     "ctaShort": "Report"
   },
+  "networkStatus": {
+    "offlineTitle": "You are offline.",
+    "offlineDescription": "Login and cloud sync are unavailable right now. We'll keep checking and reconnect automatically.",
+    "offlineChecking": "Checking connection again..."
+  },
   "contact": {
     "title": "Contact",
     "description": "Reach out with product questions, bugs, partnerships, or translation feedback.",
