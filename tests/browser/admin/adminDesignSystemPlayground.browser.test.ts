@@ -54,6 +54,14 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
         group_id: 'inputs',
       });
     });
+
+    await user.click(screen.getByRole('tab', { name: 'Country Select + Calendar' }));
+
+    await waitFor(() => {
+      expect(mocks.trackEvent).toHaveBeenCalledWith('admin__design_playground_component_group--view', {
+        group_id: 'travel_inputs',
+      });
+    });
   });
 
   it('triggers the selected notification scenario through showAppToast', async () => {

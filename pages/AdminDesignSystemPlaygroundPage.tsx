@@ -3,6 +3,9 @@ import { Bell, Eye, PaintBrush, SlidersHorizontal } from '@phosphor-icons/react'
 import { AdminShell } from '../components/admin/AdminShell';
 import { AdminFilterMenu } from '../components/admin/AdminFilterMenu';
 import { AdminSurfaceCard } from '../components/admin/AdminSurfaceCard';
+import { CountrySelect } from '../components/CountrySelect';
+import { DateRangePicker } from '../components/DateRangePicker';
+import { ProfileCountryRegionSelect } from '../components/profile/ProfileCountryRegionSelect';
 import { AppModal } from '../components/ui/app-modal';
 import { showAppToast } from '../components/ui/appToast';
 import { Checkbox } from '../components/ui/checkbox';
@@ -31,6 +34,7 @@ type ComponentGroupId =
     | 'buttons'
     | 'inputs'
     | 'selects'
+    | 'travel_inputs'
     | 'switches'
     | 'tabs'
     | 'dialogs'
@@ -86,6 +90,13 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         usagePaths: ['components/admin/AdminShell.tsx', 'pages/ProfileSettingsPage.tsx', 'components/admin/AdminFilterMenu.tsx'],
     },
     {
+        id: 'travel_inputs',
+        title: 'Country Select + Calendar',
+        description: 'Create-trip destination selector variants and date-range calendar controls.',
+        sourcePath: 'components/CountrySelect.tsx',
+        usagePaths: ['pages/CreateTripV1Page.tsx', 'pages/CreateTripV3Page.tsx', 'components/DateRangePicker.tsx'],
+    },
+    {
         id: 'switches',
         title: 'Switches + Checkboxes',
         description: 'Boolean controls used for visibility toggles and batch-selection flows.',
@@ -104,7 +115,7 @@ const COMPONENT_GROUPS: ComponentGroupDefinition[] = [
         title: 'Dialogs + Drawers + Modals',
         description: 'Overlay primitives for confirmations, detail sheets, and structured modal content.',
         sourcePath: 'components/ui/dialog.tsx',
-        usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/AppDialogProvider.tsx'],
+        usagePaths: ['components/ui/drawer.tsx', 'components/ui/app-modal.tsx', 'components/DeleteCityModal.tsx'],
     },
     {
         id: 'cards',
@@ -213,9 +224,14 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const [sampleSwitchEnabled, setSampleSwitchEnabled] = useState(true);
     const [sampleCheckboxEnabled, setSampleCheckboxEnabled] = useState(true);
     const [sampleInnerTab, setSampleInnerTab] = useState<'overview' | 'details' | 'activity'>('overview');
+    const [sampleDestinationValue, setSampleDestinationValue] = useState('Japan, Thailand');
+    const [sampleCountryCode, setSampleCountryCode] = useState('DE');
+    const [sampleStartDate, setSampleStartDate] = useState('2026-04-07');
+    const [sampleEndDate, setSampleEndDate] = useState('2026-04-21');
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const trackedGroupRef = useRef<ComponentGroupId | null>(null);
@@ -379,22 +395,57 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     const renderActiveGroupPreview = (): React.ReactNode => {
         if (activeGroup === 'buttons') {
             return (
-                <div className={previewPanelClassName}>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <button type="button" className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-accent-700">
+                <div className={`${previewPanelClassName} space-y-4`}>
+                    <div className="space-y-2">
+                        <p className={subtleHeadingClassName}>Product buttons (app surfaces)</p>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <button type="button" className="rounded-lg bg-accent-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-accent-700">
+                                Primary
+                            </button>
+                            <button type="button" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                                Secondary
+                            </button>
+                            <button type="button" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition hover:bg-rose-100">
+                                Destructive
+                            </button>
+                            <button type="button" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" aria-label="Open quick action" title="Open quick action">
+                                <Bell size={16} />
+                            </button>
+                            <button type="button" disabled className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-400">
+                                Disabled
+                            </button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <p className={subtleHeadingClassName}>Marketing + 404 + inspirations buttons</p>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            <button
+                                type="button"
+                                className="rounded-2xl bg-accent-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-accent-200 transition-all hover:bg-accent-700 hover:shadow-xl hover:shadow-accent-300 hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                Hero / 404 primary CTA
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-2xl border border-slate-300 bg-white px-7 py-3 text-base font-bold text-slate-700 transition-all hover:border-slate-400 hover:text-slate-900 hover:shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                            >
+                                Hero secondary action
+                            </button>
+                            <button
+                                type="button"
+                                className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 shadow-sm transition-all hover:border-accent-300 hover:text-accent-700 hover:shadow-md"
+                            >
+                                Inspirations section action
+                            </button>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <p className={subtleHeadingClassName}>Feature-page highlight CTA</p>
+                        <button
+                            type="button"
+                            className="rounded-2xl bg-white px-8 py-3.5 text-base font-bold text-accent-700 shadow-lg transition-all hover:bg-accent-50 hover:scale-[1.03] hover:shadow-xl active:scale-[0.98]"
+                        >
                             Primary
-                        </button>
-                        <button type="button" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
-                            Secondary
-                        </button>
-                        <button type="button" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-800 transition hover:bg-rose-100">
-                            Destructive
-                        </button>
-                        <button type="button" className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" aria-label="Open quick action" title="Open quick action">
-                            <Bell size={16} />
-                        </button>
-                        <button type="button" disabled className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-400">
-                            Disabled
                         </button>
                     </div>
                 </div>
@@ -465,17 +516,49 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
             );
         }
 
+        if (activeGroup === 'travel_inputs') {
+            return (
+                <div className={`${previewPanelClassName} grid gap-4 lg:grid-cols-2`}>
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                        <div className={subtleHeadingClassName}>Create-trip destination select</div>
+                        <CountrySelect value={sampleDestinationValue} onChange={setSampleDestinationValue} />
+                    </div>
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                        <div className={subtleHeadingClassName}>Profile/admin country-region select</div>
+                        <ProfileCountryRegionSelect
+                            value={sampleCountryCode}
+                            placeholder="Search country or region"
+                            emptyLabel="No countries found"
+                            toggleLabel="Toggle country options"
+                            onValueChange={setSampleCountryCode}
+                        />
+                    </div>
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 lg:col-span-2">
+                        <div className={subtleHeadingClassName}>Create-trip date range calendar</div>
+                        <DateRangePicker
+                            startDate={sampleStartDate}
+                            endDate={sampleEndDate}
+                            onChange={(start, end) => {
+                                setSampleStartDate(start);
+                                setSampleEndDate(end);
+                            }}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
         if (activeGroup === 'switches') {
             return (
                 <div className={`${previewPanelClassName} grid gap-4 md:grid-cols-2`}>
-                    <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
                         <span className="text-sm font-medium text-slate-700">Show only public trips</span>
                         <Switch checked={sampleSwitchEnabled} onCheckedChange={setSampleSwitchEnabled} />
-                    </label>
-                    <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                    </div>
+                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
                         <Checkbox checked={sampleCheckboxEnabled} onCheckedChange={(value) => setSampleCheckboxEnabled(Boolean(value))} />
                         <span className="text-sm font-medium text-slate-700">Select trip for batch actions</span>
-                    </label>
+                    </div>
                 </div>
             );
         }
@@ -523,6 +606,13 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </button>
                         <button
                             type="button"
+                            onClick={() => setIsSidePanelOpen(true)}
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                            Open Sidepanel
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => setIsModalOpen(true)}
                             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                         >
@@ -566,11 +656,40 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         </DrawerContent>
                     </Drawer>
 
+                    <Drawer open={isSidePanelOpen} onOpenChange={setIsSidePanelOpen} direction="right">
+                        <DrawerContent
+                            side="right"
+                            className="w-[min(96vw,680px)] p-0"
+                            accessibleTitle="Admin sidepanel sample"
+                            accessibleDescription="Right-side panel used in admin detail workflows."
+                        >
+                            <div className="flex h-full flex-col">
+                                <DrawerHeader className="border-b border-slate-200">
+                                    <DrawerTitle>Admin sidepanel sample</DrawerTitle>
+                                    <DrawerDescription>Same right-side drawer pattern used by admin user and trip detail panes.</DrawerDescription>
+                                </DrawerHeader>
+                                <div className="flex-1 overflow-y-auto p-4 text-sm text-slate-700">
+                                    This sample mirrors the admin right-side detail panel behavior.
+                                </div>
+                                <DrawerFooter className="border-t border-slate-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsSidePanelOpen(false)}
+                                        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700"
+                                    >
+                                        Close
+                                    </button>
+                                </DrawerFooter>
+                            </div>
+                        </DrawerContent>
+                    </Drawer>
+
                     <AppModal
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
                         title="App modal sample"
                         description="Modal shell wrapper with consistent desktop/mobile sizing behavior."
+                        mobileSheet={false}
                     >
                         <p className="text-sm text-slate-700">This modal preview is read-only and does not persist data.</p>
                     </AppModal>
@@ -753,6 +872,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
                         <li className="flex items-start gap-2"><PaintBrush size={16} className="mt-0.5 shrink-0 text-slate-500" /> Mirrors existing shared component patterns before larger design-system consolidation.</li>
                         <li className="flex items-start gap-2"><SlidersHorizontal size={16} className="mt-0.5 shrink-0 text-slate-500" /> Keeps interactions local only; no backend writes, no profile/trip persistence side effects.</li>
                         <li className="flex items-start gap-2"><Bell size={16} className="mt-0.5 shrink-0 text-slate-500" /> Notification lab fires only through `showAppToast(...)` for consistent UX + QA parity.</li>
+                        <li className="flex items-start gap-2"><Eye size={16} className="mt-0.5 shrink-0 text-slate-500" /> New shared components should be introduced in this playground before broad rollout and listed here when added.</li>
                     </ul>
                 </AdminSurfaceCard>
             </section>

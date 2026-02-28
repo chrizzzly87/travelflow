@@ -23,6 +23,8 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Button radius: `rounded-md` for CTA controls unless an existing component already defines another radius.
 - Banner cards: subtle border, soft blur background, clear visual hierarchy (eyebrow, headline, support text, CTA row).
 - In floating banners and cards with multiple CTAs, right-align actions (`justify-end`) unless a page pattern explicitly differs.
+- Admin UI component inventory source of truth is `/admin/design-system-playground`; when introducing a new shared component or major variant, add it to the playground in the same PR.
+- Prefer reusing component patterns already represented in the playground instead of introducing parallel one-off variants.
 
 ## Toast Rules
 - All product toasts must route through `showAppToast(...)` in `components/ui/appToast.tsx`.
