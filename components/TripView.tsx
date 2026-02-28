@@ -45,6 +45,7 @@ import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
 import {
     ChangeTone,
     getToneMeta,
+    resolveChangeTone,
     stripHistoryPrefix,
     useTripHistoryPresentation,
 } from './tripview/useTripHistoryPresentation';

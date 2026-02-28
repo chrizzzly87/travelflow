@@ -708,26 +708,66 @@ export const dbArchiveTrip = async (
         ? options.metadata
         : {};
 
-    let { error } = await client.rpc('archive_trip_for_user', {
+    const rpcResult = await client.rpc('archive_trip_for_user', {
         p_trip_id: tripId,
         p_source: source,
         p_metadata: metadata,
     });
+    let error = rpcResult.error;
+    let archived = false;
 
-    if (error && /function/i.test(error.message || '') && /archive_trip_for_user/i.test(error.message || '')) {
-        debugLog('dbArchiveTrip:fallbackUpdate', { message: error.message });
+    if (!error) {
+        const row = Array.isArray(rpcResult.data) ? rpcResult.data[0] : rpcResult.data;
+        archived = Boolean(
+            row
+            && typeof row.trip_id === 'string'
+            && row.trip_id === tripId
+            && (typeof row.status !== 'string' || row.status === 'archived')
+        );
+        if (!archived) {
+            debugLog('dbArchiveTrip:rpcNoArchivedRow', { tripId, source });
+        }
+    }
+
+    const isMissingArchiveFunction = Boolean(
+        error
+        && /function/i.test(error.message || '')
+        && /archive_trip_for_user/i.test(error.message || '')
+    );
+
+    if (!archived && (isMissingArchiveFunction || !error)) {
+        if (isMissingArchiveFunction) {
+            debugLog('dbArchiveTrip:fallbackUpdate', { message: error?.message, tripId, source });
+        } else {
+            debugLog('dbArchiveTrip:fallbackAfterEmptyRpcResult', { tripId, source });
+        }
         const fallbackUpdate = await client
             .from('trips')
             .update({
                 status: 'archived',
                 archived_at: new Date().toISOString(),
             })
-            .eq('id', tripId);
+            .eq('id', tripId)
+            .select('id, status')
+            .maybeSingle();
         error = fallbackUpdate.error;
+
+        if (!error) {
+            const row = fallbackUpdate.data as { id?: string; status?: string | null } | null;
+            archived = Boolean(
+                row
+                && typeof row.id === 'string'
+                && row.id === tripId
+                && (row.status === null || row.status === undefined || row.status === 'archived')
+            );
+            if (!archived) {
+                debugLog('dbArchiveTrip:fallbackNoArchivedRow', { tripId, source });
+            }
+        }
     }
 
-    if (error) {
-        console.error('Failed to archive trip', error);
+    if (error || !archived) {
+        console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }
     return true;

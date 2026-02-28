@@ -2,13 +2,17 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
-  const updateEq = vi.fn();
+  const updateMaybeSingle = vi.fn();
+  const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
+  const updateEq = vi.fn(() => ({ select: updateSelect }));
   const update = vi.fn(() => ({ eq: updateEq }));
   return {
     rpc: vi.fn(),
     from: vi.fn(() => ({ update })),
     update,
     updateEq,
+    updateSelect,
+    updateMaybeSingle,
     getSession: vi.fn(),
     signInAnonymously: vi.fn(),
     setSession: vi.fn(),
@@ -47,7 +51,7 @@ describe('services/dbService dbArchiveTrip', () => {
     });
     mocks.signInAnonymously.mockResolvedValue({ data: null, error: null });
     mocks.setSession.mockResolvedValue({ error: null });
-    mocks.updateEq.mockResolvedValue({ error: null });
+    mocks.updateMaybeSingle.mockResolvedValue({ data: { id: 'trip-2', status: 'archived' }, error: null });
   });
 
   afterAll(() => {
@@ -84,6 +88,21 @@ describe('services/dbService dbArchiveTrip', () => {
     expect(mocks.from).toHaveBeenCalledWith('trips');
     expect(mocks.update).toHaveBeenCalled();
     expect(mocks.updateEq).toHaveBeenCalledWith('id', 'trip-2');
+    expect(mocks.updateSelect).toHaveBeenCalledWith('id, status');
+    expect(mocks.updateMaybeSingle).toHaveBeenCalled();
+  });
+
+  it('returns false when fallback update affects no row', async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'function public.archive_trip_for_user(text,text,jsonb) does not exist' },
+    });
+    mocks.updateMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+
+    const { dbArchiveTrip } = await import('../../services/dbService');
+    const archived = await dbArchiveTrip('trip-noop', { source: 'my_trips' });
+
+    expect(archived).toBe(false);
   });
 
   it('returns false when archive fails', async () => {
@@ -91,7 +110,7 @@ describe('services/dbService dbArchiveTrip', () => {
       data: null,
       error: { message: 'function public.archive_trip_for_user(text,text,jsonb) does not exist' },
     });
-    mocks.updateEq.mockResolvedValueOnce({ error: { message: 'update failed' } });
+    mocks.updateMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'update failed' } });
 
     const { dbArchiveTrip } = await import('../../services/dbService');
     const archived = await dbArchiveTrip('trip-3', { source: 'profile_batch' });
