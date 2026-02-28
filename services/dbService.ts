@@ -978,20 +978,32 @@ export const dbArchiveTrip = async (
         }
     }
 
+    const normalizedErrorMessage = normalizeFailureText((error as DbErrorLike | null)?.message ?? null)?.toLowerCase() ?? '';
+    const isServerLoggedOwnershipFailure = Boolean(
+        error
+        && !isMissingArchiveFunction
+        && (
+            (error as DbErrorLike).code === 'P0001'
+            || normalizedErrorMessage.includes('not found or not owned')
+        )
+    );
+
     if (error || !archived) {
-        await logUserActionFailure(client, {
-            action: 'trip.archive_failed',
-            targetType: 'trip',
-            targetId: tripId,
-            source,
-            errorCode: normalizeFailureText((error as DbErrorLike | null)?.code ?? null),
-            errorMessage: normalizeFailureText((error as DbErrorLike | null)?.message ?? 'Archive did not update any row'),
-            metadata: {
-                trip_id: tripId,
+        if (!isServerLoggedOwnershipFailure) {
+            await logUserActionFailure(client, {
+                action: 'trip.archive_failed',
+                targetType: 'trip',
+                targetId: tripId,
                 source,
-                archive_metadata: metadata,
-            },
-        });
+                errorCode: normalizeFailureText((error as DbErrorLike | null)?.code ?? null),
+                errorMessage: normalizeFailureText((error as DbErrorLike | null)?.message ?? 'Archive did not update any row'),
+                metadata: {
+                    trip_id: tripId,
+                    source,
+                    archive_metadata: metadata,
+                },
+            });
+        }
         console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }

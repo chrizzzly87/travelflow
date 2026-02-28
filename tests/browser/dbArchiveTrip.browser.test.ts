@@ -145,4 +145,25 @@ describe('services/dbService dbArchiveTrip', () => {
       },
     });
   });
+
+  it('does not write duplicate failure events when archive_trip_for_user already logged ownership failure', async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: {
+        code: 'P0001',
+        message: 'Trip not found or not owned by current user',
+      },
+    });
+
+    const { dbArchiveTrip } = await import('../../services/dbService');
+    const archived = await dbArchiveTrip('trip-ownership-fail', { source: 'profile_single' });
+
+    expect(archived).toBe(false);
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.rpc).toHaveBeenCalledWith('archive_trip_for_user', {
+      p_trip_id: 'trip-ownership-fail',
+      p_source: 'profile_single',
+      p_metadata: {},
+    });
+  });
 });
