@@ -7,6 +7,7 @@ import {
     removeLocalStorageItem,
     removeSessionStorageItem,
 } from './browserStorageService';
+import { dbCreateAnonymousAssetClaim } from './dbApi';
 import { supabase } from './supabaseClient';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
@@ -184,6 +185,17 @@ const buildAuthFlow = (): AuthFlowContext => ({
     flowId: buildFlowId(),
     attemptId: buildFlowId(),
 });
+
+const appendQueryParamToUrl = (urlValue: string, key: string, value: string): string => {
+    try {
+        const base = typeof window !== 'undefined' ? window.location.origin : 'https://travelflow.app';
+        const nextUrl = new URL(urlValue, base);
+        nextUrl.searchParams.set(key, value);
+        return nextUrl.toString();
+    } catch {
+        return urlValue;
+    }
+};
 
 const getMetadataProviders = (session: Session | null): string[] => {
     const metadata = session?.user?.app_metadata as Record<string, unknown> | undefined;
@@ -520,9 +532,23 @@ export const signInWithOAuth = async (
     const flow = buildAuthFlow();
     await logAuthFlow({ ...flow, step: 'oauth_start', result: 'start', provider });
 
+    let redirectTo = options?.redirectTo;
+    try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const isAnonymousSession = getAnonymousFlag(sessionData?.session ?? null);
+        if (isAnonymousSession) {
+            const claim = await dbCreateAnonymousAssetClaim(60);
+            if (claim?.claimId && redirectTo) {
+                redirectTo = appendQueryParamToUrl(redirectTo, 'asset_claim', claim.claimId);
+            }
+        }
+    } catch {
+        // Continue OAuth even if claim creation fails.
+    }
+
     const startStandardOAuth = () => supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: options?.redirectTo },
+        options: { redirectTo },
     });
 
     // NOTE: OAuth identity-linking from anonymous sessions has produced

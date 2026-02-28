@@ -1141,16 +1141,41 @@ create table if not exists public.trip_generation_requests (
   completed_at timestamptz
 );
 
+create table if not exists public.anonymous_asset_claims (
+  id uuid primary key default gen_random_uuid(),
+  anon_user_id uuid not null references auth.users on delete cascade,
+  target_user_id uuid references auth.users on delete set null,
+  status text not null default 'pending'
+    check (status in ('pending', 'claimed', 'expired', 'failed', 'revoked')),
+  metadata jsonb not null default '{}'::jsonb,
+  result jsonb not null default '{}'::jsonb,
+  expires_at timestamptz not null,
+  claimed_at timestamptz,
+  failed_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists auth_flow_logs_created_at_idx on public.auth_flow_logs(created_at desc);
 create index if not exists auth_flow_logs_flow_attempt_idx on public.auth_flow_logs(flow_id, attempt_id);
 create index if not exists trip_generation_requests_status_idx on public.trip_generation_requests(status);
 create index if not exists trip_generation_requests_expires_idx on public.trip_generation_requests(expires_at);
 create index if not exists trip_generation_requests_owner_idx on public.trip_generation_requests(owner_user_id, created_at desc);
 create index if not exists trip_generation_requests_anon_idx on public.trip_generation_requests(requested_by_anon_id, created_at desc);
+create index if not exists anonymous_asset_claims_anon_idx on public.anonymous_asset_claims(anon_user_id, created_at desc);
+create index if not exists anonymous_asset_claims_target_idx on public.anonymous_asset_claims(target_user_id, created_at desc);
+create index if not exists anonymous_asset_claims_status_idx on public.anonymous_asset_claims(status, created_at desc);
+create index if not exists anonymous_asset_claims_expires_idx on public.anonymous_asset_claims(expires_at);
 
 drop trigger if exists set_trip_generation_requests_updated_at on public.trip_generation_requests;
 create trigger set_trip_generation_requests_updated_at
 before update on public.trip_generation_requests
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_anonymous_asset_claims_updated_at on public.anonymous_asset_claims;
+create trigger set_anonymous_asset_claims_updated_at
+before update on public.anonymous_asset_claims
 for each row execute function public.set_updated_at();
 
 insert into public.plans (key, name, max_trips, price_cents, entitlements, sort_order, is_active)
@@ -1732,6 +1757,334 @@ begin
 end;
 $$;
 
+create or replace function public.create_anonymous_asset_claim(
+  p_expires_minutes integer default 60
+)
+returns table(
+  claim_id uuid,
+  status text,
+  expires_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_is_anonymous boolean;
+  v_existing public.anonymous_asset_claims%rowtype;
+  v_expires_at timestamptz;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or coalesce((auth.jwt() -> 'app_metadata' ->> 'provider') = 'anonymous', false);
+  if not v_is_anonymous then
+    raise exception 'Only anonymous sessions can create asset claims';
+  end if;
+
+  update public.anonymous_asset_claims c
+     set status = 'expired',
+         failed_at = coalesce(c.failed_at, now()),
+         updated_at = now()
+   where c.anon_user_id = v_uid
+     and c.status = 'pending'
+     and c.expires_at <= now();
+
+  select c.*
+    into v_existing
+    from public.anonymous_asset_claims c
+   where c.anon_user_id = v_uid
+     and c.status = 'pending'
+     and c.expires_at > now()
+   order by c.created_at desc
+   limit 1;
+
+  if v_existing.id is not null then
+    return query select v_existing.id, v_existing.status, v_existing.expires_at;
+    return;
+  end if;
+
+  v_expires_at := now() + make_interval(mins => greatest(coalesce(p_expires_minutes, 60), 5));
+
+  insert into public.anonymous_asset_claims (
+    anon_user_id,
+    status,
+    expires_at
+  )
+  values (
+    v_uid,
+    'pending',
+    v_expires_at
+  )
+  returning id into claim_id;
+
+  return query select claim_id, 'pending'::text, v_expires_at;
+end;
+$$;
+
+create or replace function public.claim_anonymous_assets(
+  p_claim_id uuid
+)
+returns table(
+  claim_id uuid,
+  status text,
+  target_user_id uuid,
+  anon_user_id uuid,
+  transferred_trips integer,
+  transferred_trip_events integer,
+  transferred_profile_events integer,
+  transferred_trip_versions integer,
+  transferred_trip_shares integer,
+  transferred_collaborators integer,
+  deduplicated_collaborators integer
+)
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_uid uuid;
+  v_is_anonymous boolean;
+  v_claim public.anonymous_asset_claims%rowtype;
+  v_transferred_trips integer := 0;
+  v_transferred_trip_events integer := 0;
+  v_transferred_profile_events integer := 0;
+  v_transferred_trip_versions integer := 0;
+  v_transferred_trip_shares integer := 0;
+  v_transferred_collaborators integer := 0;
+  v_deduplicated_collaborators integer := 0;
+  v_result jsonb := '{}'::jsonb;
+begin
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  v_is_anonymous := coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)
+    or coalesce((auth.jwt() -> 'app_metadata' ->> 'provider') = 'anonymous', false);
+  if v_is_anonymous then
+    raise exception 'Anonymous sessions cannot claim assets';
+  end if;
+
+  select c.*
+    into v_claim
+    from public.anonymous_asset_claims c
+   where c.id = p_claim_id
+   for update;
+
+  if v_claim.id is null then
+    raise exception 'Anonymous asset claim not found';
+  end if;
+
+  if v_claim.status = 'claimed' then
+    if v_claim.target_user_id = v_uid then
+      return query select
+        v_claim.id,
+        v_claim.status,
+        v_claim.target_user_id,
+        v_claim.anon_user_id,
+        coalesce((v_claim.result ->> 'transferred_trips')::integer, 0),
+        coalesce((v_claim.result ->> 'transferred_trip_events')::integer, 0),
+        coalesce((v_claim.result ->> 'transferred_profile_events')::integer, 0),
+        coalesce((v_claim.result ->> 'transferred_trip_versions')::integer, 0),
+        coalesce((v_claim.result ->> 'transferred_trip_shares')::integer, 0),
+        coalesce((v_claim.result ->> 'transferred_collaborators')::integer, 0),
+        coalesce((v_claim.result ->> 'deduplicated_collaborators')::integer, 0);
+      return;
+    end if;
+    raise exception 'Anonymous asset claim already processed';
+  end if;
+
+  if v_claim.status in ('revoked', 'failed', 'expired') then
+    raise exception 'Anonymous asset claim is no longer active';
+  end if;
+
+  if v_claim.expires_at <= now() then
+    update public.anonymous_asset_claims c
+       set status = 'expired',
+           failed_at = coalesce(c.failed_at, now()),
+           updated_at = now()
+     where c.id = v_claim.id;
+    raise exception 'Anonymous asset claim expired';
+  end if;
+
+  if v_claim.anon_user_id = v_uid then
+    raise exception 'Invalid claim target';
+  end if;
+
+  update public.trips t
+     set owner_id = v_uid,
+         updated_at = now()
+   where t.owner_id = v_claim.anon_user_id;
+  get diagnostics v_transferred_trips = row_count;
+
+  update public.trip_user_events e
+     set owner_id = v_uid
+   where e.owner_id = v_claim.anon_user_id;
+  get diagnostics v_transferred_trip_events = row_count;
+
+  update public.profile_user_events e
+     set owner_id = v_uid
+   where e.owner_id = v_claim.anon_user_id;
+  get diagnostics v_transferred_profile_events = row_count;
+
+  update public.trip_versions v
+     set created_by = v_uid
+   where v.created_by = v_claim.anon_user_id;
+  get diagnostics v_transferred_trip_versions = row_count;
+
+  update public.trip_shares s
+     set created_by = v_uid
+   where s.created_by = v_claim.anon_user_id;
+  get diagnostics v_transferred_trip_shares = row_count;
+
+  delete from public.trip_collaborators tc
+   where tc.user_id = v_claim.anon_user_id
+     and exists (
+      select 1
+        from public.trip_collaborators existing
+       where existing.trip_id = tc.trip_id
+         and existing.user_id = v_uid
+    );
+  get diagnostics v_deduplicated_collaborators = row_count;
+
+  update public.trip_collaborators tc
+     set user_id = v_uid
+   where tc.user_id = v_claim.anon_user_id;
+  get diagnostics v_transferred_collaborators = row_count;
+
+  v_result := jsonb_build_object(
+    'transferred_trips', v_transferred_trips,
+    'transferred_trip_events', v_transferred_trip_events,
+    'transferred_profile_events', v_transferred_profile_events,
+    'transferred_trip_versions', v_transferred_trip_versions,
+    'transferred_trip_shares', v_transferred_trip_shares,
+    'transferred_collaborators', v_transferred_collaborators,
+    'deduplicated_collaborators', v_deduplicated_collaborators
+  );
+
+  update public.anonymous_asset_claims c
+     set status = 'claimed',
+         target_user_id = v_uid,
+         claimed_at = now(),
+         failed_at = null,
+         result = v_result,
+         updated_at = now()
+   where c.id = v_claim.id;
+
+  return query select
+    v_claim.id,
+    'claimed'::text,
+    v_uid,
+    v_claim.anon_user_id,
+    v_transferred_trips,
+    v_transferred_trip_events,
+    v_transferred_profile_events,
+    v_transferred_trip_versions,
+    v_transferred_trip_shares,
+    v_transferred_collaborators,
+    v_deduplicated_collaborators;
+end;
+$$;
+
+create or replace function public.expire_stale_anonymous_asset_claims()
+returns integer
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_count integer;
+begin
+  update public.anonymous_asset_claims c
+     set status = 'expired',
+         failed_at = coalesce(c.failed_at, now()),
+         updated_at = now()
+   where c.status = 'pending'
+     and c.expires_at <= now();
+
+  get diagnostics v_count = row_count;
+  return coalesce(v_count, 0);
+end;
+$$;
+
+create or replace function public.purge_claimed_anonymous_users(
+  p_limit integer default 100,
+  p_remove_all boolean default true
+)
+returns table(
+  deleted_users integer,
+  deleted_claim_rows integer,
+  skipped_users integer
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+declare
+  v_deleted_users integer := 0;
+  v_deleted_claim_rows integer := 0;
+  v_skipped_users integer := 0;
+begin
+  if not public.has_admin_permission('users.hard_delete') then
+    raise exception 'Not allowed';
+  end if;
+
+  with anonymous_users as (
+    select u.id
+      from auth.users u
+     where coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)
+        or coalesce((u.raw_app_meta_data -> 'providers') ? 'anonymous', false)
+  ),
+  candidates as (
+    select au.id
+      from anonymous_users au
+     where (
+      p_remove_all
+      or (
+        not exists (select 1 from public.trips t where t.owner_id = au.id)
+        and not exists (
+          select 1
+            from public.anonymous_asset_claims c
+           where c.anon_user_id = au.id
+             and c.status = 'pending'
+             and c.expires_at > now()
+        )
+      )
+    )
+    limit greatest(coalesce(p_limit, 100), 1)
+  ),
+  removed_claims as (
+    delete from public.anonymous_asset_claims c
+     where c.anon_user_id in (select id from candidates)
+    returning c.id
+  ),
+  removed_users as (
+    delete from auth.users u
+     where u.id in (select id from candidates)
+    returning u.id
+  )
+  select
+    (select count(*)::integer from removed_users),
+    (select count(*)::integer from removed_claims),
+    greatest(
+      (select count(*)::integer from anonymous_users) - (select count(*)::integer from candidates),
+      0
+    )
+    into v_deleted_users, v_deleted_claim_rows, v_skipped_users;
+
+  return query select v_deleted_users, v_deleted_claim_rows, v_skipped_users;
+end;
+$$;
+
 create or replace function public.expire_stale_trip_generation_requests()
 returns integer
 language plpgsql
@@ -1973,6 +2326,7 @@ $$;
 
 alter table public.auth_flow_logs enable row level security;
 alter table public.trip_generation_requests enable row level security;
+alter table public.anonymous_asset_claims enable row level security;
 alter table public.admin_allowlist enable row level security;
 
 drop policy if exists "Auth flow logs admin read" on public.auth_flow_logs;
@@ -1996,6 +2350,15 @@ on public.trip_generation_requests for update
 using (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid())
 with check (requested_by_anon_id = auth.uid() or owner_user_id = auth.uid());
 
+drop policy if exists "Anonymous asset claims owner read" on public.anonymous_asset_claims;
+create policy "Anonymous asset claims owner read"
+on public.anonymous_asset_claims for select
+using (
+  anon_user_id = auth.uid()
+  or target_user_id = auth.uid()
+  or public.is_admin(auth.uid())
+);
+
 drop policy if exists "Admin allowlist admin manage" on public.admin_allowlist;
 create policy "Admin allowlist admin manage"
 on public.admin_allowlist for all
@@ -2011,6 +2374,9 @@ grant execute on function public.log_auth_flow(text, text, text, text, text, tex
 grant execute on function public.create_trip_generation_request(text, jsonb, integer) to anon, authenticated;
 grant execute on function public.claim_trip_generation_request(uuid) to authenticated;
 grant execute on function public.expire_stale_trip_generation_requests() to anon, authenticated;
+grant execute on function public.create_anonymous_asset_claim(integer) to authenticated;
+grant execute on function public.claim_anonymous_assets(uuid) to authenticated;
+grant execute on function public.expire_stale_anonymous_asset_claims() to anon, authenticated;
 grant execute on function public.get_effective_entitlements(uuid) to anon, authenticated;
 
 -- =============================================================================
@@ -4348,6 +4714,26 @@ begin
    limit 1;
 
   if v_trip_row.id is null then
+    insert into public.profile_user_events (
+      owner_id,
+      action,
+      source,
+      before_data,
+      after_data,
+      metadata
+    )
+    values (
+      v_owner,
+      'trip.archive_failed',
+      nullif(btrim(coalesce(p_source, '')), ''),
+      '{}'::jsonb,
+      '{}'::jsonb,
+      coalesce(p_metadata, '{}'::jsonb)
+        || jsonb_build_object(
+          'trip_id', p_trip_id,
+          'reason', 'not_owned_or_missing'
+        )
+    );
     raise exception 'Trip not found or not owned by current user';
   end if;
 
@@ -4392,7 +4778,60 @@ begin
 end;
 $$;
 
+create or replace function public.log_user_action_failure(
+  p_action text,
+  p_target_type text default 'unknown',
+  p_target_id text default null,
+  p_source text default null,
+  p_error_code text default null,
+  p_error_message text default null,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
+declare
+  v_owner uuid;
+  v_event_id uuid;
+begin
+  v_owner := auth.uid();
+  if v_owner is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  insert into public.profile_user_events (
+    owner_id,
+    action,
+    source,
+    before_data,
+    after_data,
+    metadata
+  )
+  values (
+    v_owner,
+    coalesce(nullif(btrim(coalesce(p_action, '')), ''), 'user.action_failed'),
+    nullif(btrim(coalesce(p_source, '')), ''),
+    '{}'::jsonb,
+    '{}'::jsonb,
+    coalesce(p_metadata, '{}'::jsonb)
+      || jsonb_build_object(
+        'target_type', coalesce(nullif(btrim(coalesce(p_target_type, '')), ''), 'unknown'),
+        'target_id', nullif(btrim(coalesce(p_target_id, '')), ''),
+        'error_code', nullif(btrim(coalesce(p_error_code, '')), ''),
+        'error_message', nullif(btrim(coalesce(p_error_message, '')), '')
+      )
+  )
+  returning id into v_event_id;
+
+  return v_event_id;
+end;
+$$;
+
 grant execute on function public.profile_check_username_availability(text) to anon, authenticated;
 grant execute on function public.profile_resolve_public_handle(text) to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.archive_trip_for_user(text, text, jsonb) to authenticated;
+grant execute on function public.log_user_action_failure(text, text, text, text, text, text, jsonb) to authenticated;

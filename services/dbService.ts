@@ -35,6 +35,26 @@ export interface DbAdminOverrideCommitResult {
     updatedAtIso: string | null;
 }
 
+export interface DbAnonymousAssetClaimResult {
+    claimId: string;
+    status: 'pending' | 'claimed' | 'expired' | 'failed' | 'revoked';
+    expiresAtIso: string;
+}
+
+export interface DbClaimAnonymousAssetsResult {
+    claimId: string;
+    status: string;
+    targetUserId: string | null;
+    anonUserId: string | null;
+    transferredTrips: number;
+    transferredTripEvents: number;
+    transferredProfileEvents: number;
+    transferredTripVersions: number;
+    transferredTripShares: number;
+    transferredCollaborators: number;
+    deduplicatedCollaborators: number;
+}
+
 let cachedUserId: string | null = null;
 let sessionPromise: Promise<string | null> | null = null;
 let lastAuthAttemptAt = 0;
@@ -726,7 +746,8 @@ export const uploadLocalTripsToDb = async () => {
 export const syncTripsFromDb = async () => {
     if (!DB_ENABLED) return;
     const trips = await dbListTrips();
-    if (isSimulatedLoggedIn()) {
+    const shouldUseSimulatedMerge = import.meta.env.DEV && isSimulatedLoggedIn();
+    if (shouldUseSimulatedMerge) {
         let shouldMergeLocalTrips = true;
         try {
             const client = requireSupabase();
@@ -755,6 +776,94 @@ export const syncTripsFromDb = async () => {
     setAllTrips(trips);
 };
 
+const normalizeClaimStatus = (value: unknown): DbAnonymousAssetClaimResult['status'] => {
+    if (value === 'claimed' || value === 'expired' || value === 'failed' || value === 'revoked') return value;
+    return 'pending';
+};
+
+export const dbCreateAnonymousAssetClaim = async (
+    expiresMinutes = 60
+): Promise<DbAnonymousAssetClaimResult | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+    const { data, error } = await client.rpc('create_anonymous_asset_claim', {
+        p_expires_minutes: Math.max(5, Math.floor(expiresMinutes)),
+    });
+
+    if (error) {
+        console.error('Failed to create anonymous asset claim', error);
+        return null;
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    const claimId = typeof row?.claim_id === 'string' ? row.claim_id : null;
+    const expiresAtIso = typeof row?.expires_at === 'string' ? row.expires_at : null;
+    if (!claimId || !expiresAtIso) return null;
+
+    return {
+        claimId,
+        status: normalizeClaimStatus(row?.status),
+        expiresAtIso,
+    };
+};
+
+const asFiniteCount = (value: unknown): number => (
+    typeof value === 'number' && Number.isFinite(value)
+        ? value
+        : (typeof value === 'string' && Number.isFinite(Number(value)) ? Number(value) : 0)
+);
+
+export const dbClaimAnonymousAssets = async (
+    claimId: string
+): Promise<DbClaimAnonymousAssetsResult | null> => {
+    if (!DB_ENABLED) return null;
+    if (!isUuid(claimId)) return null;
+    const client = requireSupabase();
+    await ensureDbSession();
+    const { data, error } = await client.rpc('claim_anonymous_assets', {
+        p_claim_id: claimId,
+    });
+
+    if (error) {
+        throw new Error(error.message || 'Could not claim anonymous assets.');
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row || typeof row.claim_id !== 'string') return null;
+
+    return {
+        claimId: row.claim_id,
+        status: typeof row.status === 'string' ? row.status : 'claimed',
+        targetUserId: typeof row.target_user_id === 'string' ? row.target_user_id : null,
+        anonUserId: typeof row.anon_user_id === 'string' ? row.anon_user_id : null,
+        transferredTrips: asFiniteCount(row.transferred_trips),
+        transferredTripEvents: asFiniteCount(row.transferred_trip_events),
+        transferredProfileEvents: asFiniteCount(row.transferred_profile_events),
+        transferredTripVersions: asFiniteCount(row.transferred_trip_versions),
+        transferredTripShares: asFiniteCount(row.transferred_trip_shares),
+        transferredCollaborators: asFiniteCount(row.transferred_collaborators),
+        deduplicatedCollaborators: asFiniteCount(row.deduplicated_collaborators),
+    };
+};
+
+export const dbExpireStaleAnonymousAssetClaims = async (): Promise<number> => {
+    if (!DB_ENABLED) return 0;
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('expire_stale_anonymous_asset_claims');
+    if (error) {
+        console.error('Failed to expire stale anonymous asset claims', error);
+        return 0;
+    }
+    if (typeof data === 'number' && Number.isFinite(data)) return data;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (typeof row === 'number' && Number.isFinite(row)) return row;
+    if (row && typeof row.expire_stale_anonymous_asset_claims === 'number') {
+        return row.expire_stale_anonymous_asset_claims;
+    }
+    return 0;
+};
+
 export interface DbArchiveTripOptions {
     source?: string;
     metadata?: Record<string, unknown>;
@@ -764,6 +873,39 @@ const normalizeArchiveSource = (source: string | undefined): string | null => {
     if (typeof source !== 'string') return null;
     const normalized = source.trim();
     return normalized ? normalized.slice(0, 120) : null;
+};
+
+const normalizeFailureText = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed ? trimmed.slice(0, 400) : null;
+};
+
+const logUserActionFailure = async (
+    client: ReturnType<typeof requireSupabase>,
+    payload: {
+        action: string;
+        targetType: string;
+        targetId: string | null;
+        source: string | null;
+        errorCode?: string | null;
+        errorMessage?: string | null;
+        metadata?: Record<string, unknown>;
+    }
+) => {
+    try {
+        await client.rpc('log_user_action_failure', {
+            p_action: payload.action,
+            p_target_type: payload.targetType,
+            p_target_id: payload.targetId,
+            p_source: payload.source,
+            p_error_code: normalizeFailureText(payload.errorCode),
+            p_error_message: normalizeFailureText(payload.errorMessage),
+            p_metadata: payload.metadata ?? {},
+        });
+    } catch {
+        // best effort failure logging only
+    }
 };
 
 export const dbArchiveTrip = async (
@@ -837,6 +979,19 @@ export const dbArchiveTrip = async (
     }
 
     if (error || !archived) {
+        await logUserActionFailure(client, {
+            action: 'trip.archive_failed',
+            targetType: 'trip',
+            targetId: tripId,
+            source,
+            errorCode: normalizeFailureText((error as DbErrorLike | null)?.code ?? null),
+            errorMessage: normalizeFailureText((error as DbErrorLike | null)?.message ?? 'Archive did not update any row'),
+            metadata: {
+                trip_id: tripId,
+                source,
+                archive_metadata: metadata,
+            },
+        });
         console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }

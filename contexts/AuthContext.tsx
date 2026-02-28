@@ -68,12 +68,11 @@ export const shouldEnableDevAdminBypass = (
     return isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled && isAdminRoute;
 };
 
-export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
+export const shouldAutoClearSimulatedLoginOnRealSession = (
     access: Pick<UserAccessContext, 'role' | 'isAnonymous'> | null,
     sessionUserId: string | null | undefined
 ): boolean => (
     Boolean(sessionUserId)
-    && access?.role === 'admin'
     && access?.isAnonymous !== true
     && sessionUserId !== DEV_ADMIN_BYPASS_USER_ID
 );
@@ -156,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const sessionUserId = session?.user?.id;
-        if (!shouldAutoClearSimulatedLoginOnRealAdminSession(access, sessionUserId)) return;
+        if (!shouldAutoClearSimulatedLoginOnRealSession(access, sessionUserId)) return;
         if (!isSimulatedLoggedIn()) return;
         setSimulatedLoggedIn(false);
     }, [access, session?.user?.id]);

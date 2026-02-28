@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isAuthBootstrapCriticalPath,
-  shouldAutoClearSimulatedLoginOnRealAdminSession,
+  shouldAutoClearSimulatedLoginOnRealSession,
   shouldEnableDevAdminBypass,
   shouldUseDevAdminBypassSession,
 } from '../../contexts/AuthContext';
@@ -27,27 +27,27 @@ describe('contexts/AuthContext auth bootstrap critical paths', () => {
 });
 
 describe('contexts/AuthContext simulated-login cleanup', () => {
-  it('clears simulated-login for real admin sessions', () => {
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+  it('clears simulated-login for real non-anonymous sessions', () => {
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       'real-admin-user-id',
     )).toBe(true);
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
+      { role: 'user', isAnonymous: false },
+      'real-user-id',
+    )).toBe(true);
   });
 
-  it('does not clear for non-admin, anonymous, or dev-bypass sessions', () => {
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
-      { role: 'user', isAnonymous: false },
-      'user-id',
-    )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+  it('does not clear for anonymous, dev-bypass, or missing session users', () => {
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: true },
       'admin-id',
     )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       'dev-admin-id',
     )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       null,
     )).toBe(false);

@@ -77,11 +77,13 @@ describe('services/adminUserChangeLog', () => {
     const created = resolveUserChangeActionPresentation(makeRecord({ action: 'trip.created' }), []);
     const updated = resolveUserChangeActionPresentation(makeRecord({ action: 'trip.updated' }), []);
     const deleted = resolveUserChangeActionPresentation(makeRecord({ action: 'trip.deleted' }), []);
+    const archiveFailed = resolveUserChangeActionPresentation(makeRecord({ action: 'trip.archive_failed' }), []);
     const shared = resolveUserChangeActionPresentation(makeRecord({ action: 'trip.share_created' }), []);
 
     expect(created.label).toBe('Created trip');
     expect(updated.label).toBe('Updated trip');
     expect(deleted.label).toBe('Deleted trip');
+    expect(archiveFailed.label).toBe('Archive failed');
     expect(shared.label).toBe('Shared trip');
   });
 

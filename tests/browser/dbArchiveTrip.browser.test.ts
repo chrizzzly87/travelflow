@@ -97,12 +97,26 @@ describe('services/dbService dbArchiveTrip', () => {
       data: null,
       error: { message: 'function public.archive_trip_for_user(text,text,jsonb) does not exist' },
     });
+    mocks.rpc.mockResolvedValueOnce({ data: 'event-1', error: null });
     mocks.updateMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     const { dbArchiveTrip } = await import('../../services/dbService');
     const archived = await dbArchiveTrip('trip-noop', { source: 'my_trips' });
 
     expect(archived).toBe(false);
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'log_user_action_failure', {
+      p_action: 'trip.archive_failed',
+      p_target_type: 'trip',
+      p_target_id: 'trip-noop',
+      p_source: 'my_trips',
+      p_error_code: null,
+      p_error_message: 'Archive did not update any row',
+      p_metadata: {
+        trip_id: 'trip-noop',
+        source: 'my_trips',
+        archive_metadata: {},
+      },
+    });
   });
 
   it('returns false when archive fails', async () => {
@@ -110,11 +124,25 @@ describe('services/dbService dbArchiveTrip', () => {
       data: null,
       error: { message: 'function public.archive_trip_for_user(text,text,jsonb) does not exist' },
     });
+    mocks.rpc.mockResolvedValueOnce({ data: 'event-2', error: null });
     mocks.updateMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'update failed' } });
 
     const { dbArchiveTrip } = await import('../../services/dbService');
     const archived = await dbArchiveTrip('trip-3', { source: 'profile_batch' });
 
     expect(archived).toBe(false);
+    expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'log_user_action_failure', {
+      p_action: 'trip.archive_failed',
+      p_target_type: 'trip',
+      p_target_id: 'trip-3',
+      p_source: 'profile_batch',
+      p_error_code: null,
+      p_error_message: 'update failed',
+      p_metadata: {
+        trip_id: 'trip-3',
+        source: 'profile_batch',
+        archive_metadata: {},
+      },
+    });
   });
 });

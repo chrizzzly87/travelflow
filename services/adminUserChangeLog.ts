@@ -110,6 +110,10 @@ export const resolveUserChangeActionPresentation = (
         return { label: 'Archived trip', className: 'border-amber-300 bg-amber-50 text-amber-800' };
     }
 
+    if (normalizedAction === 'trip.archive_failed') {
+        return { label: 'Archive failed', className: 'border-rose-300 bg-rose-50 text-rose-800' };
+    }
+
     if (normalizedAction === 'trip.created' || normalizedAction === 'trip.create') {
         return { label: 'Created trip', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
     }
