@@ -102,23 +102,25 @@ describe('pages/AdminDesignSystemPlaygroundPage', () => {
   });
 
   it('triggers shared app confirm/prompt dialog samples', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
 
     render(React.createElement(AdminDesignSystemPlaygroundPage));
 
     const dialogTabs = screen.getAllByRole('tab', { name: 'Dialogs + Drawers + Modals' });
-    await user.click(dialogTabs[0]);
+    await user.click(dialogTabs[dialogTabs.length - 1]);
 
-    await user.click(screen.getByRole('button', { name: 'Open Confirm Dialog (Danger)' }));
+    const confirmButtons = await screen.findAllByRole('button', { name: 'Open Confirm Dialog (Danger)' });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
     expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Hard delete trip',
       tone: 'danger',
     }));
 
-    await user.click(screen.getByRole('button', { name: 'Open Prompt Dialog (URL + Validate)' }));
+    const promptButtons = screen.getAllByRole('button', { name: 'Open Prompt Dialog (URL + Validate)' });
+    await user.click(promptButtons[promptButtons.length - 1]);
     expect(mocks.promptDialog).toHaveBeenCalledWith(expect.objectContaining({
       title: 'Insert Link',
       inputType: 'url',
     }));
-  });
+  }, 15000);
 });

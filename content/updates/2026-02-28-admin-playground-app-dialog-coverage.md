@@ -14,5 +14,8 @@ summary: "Extended the admin design playground with real shared confirm/prompt d
 - [ ] [Internal] 🧩 Added real `useAppDialog` confirm and prompt samples to the admin design playground dialog section.
 - [ ] [Internal] ⚠️ Added destructive and non-destructive confirm variants to mirror existing archive/hard-delete and decision flows.
 - [ ] [Internal] 📝 Added text and URL prompt variants, including optional input and URL validation patterns from current product usage.
+- [ ] [Internal] 🧱 Added shared dialog preset builders so admin flows reuse the same confirm/prompt configuration patterns.
+- [ ] [Internal] 🛡️ Migrated admin users/trips/audit/benchmark dialog calls to shared presets and standardized destructive actions on danger tone.
+- [ ] [Internal] ✅ Added missing single-user soft-delete confirmation in admin users before executing the destructive status change.
 - [ ] [Internal] 📚 Documented current app dialog variants and harmonization targets in the admin playground follow-up issue doc.
 - [ ] [Internal] 🧪 Added regression coverage for triggering shared confirm/prompt dialog samples in the playground.

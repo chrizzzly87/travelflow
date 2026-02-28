@@ -28,6 +28,7 @@ import {
 } from '../config/aiModelCatalog';
 import { getAiProviderMetadata, getAiProviderSortOrder } from '../config/aiProviderCatalog';
 import { buildClassicItineraryPrompt, GenerateOptions } from '../services/aiService';
+import { buildDangerConfirmDialog } from '../services/appDialogPresets';
 import {
     BENCHMARK_DEFAULT_MODEL_IDS,
     createSystemBenchmarkPresets,
@@ -1592,13 +1593,11 @@ export const AdminAiBenchmarkPage: React.FC = () => {
             return;
         }
 
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Delete benchmark session data',
             message: 'Delete benchmark trips and benchmark rows for this session? This cannot be undone.',
             confirmLabel: 'Delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
 
         setLoading(true);

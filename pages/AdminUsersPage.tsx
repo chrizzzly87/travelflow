@@ -39,6 +39,10 @@ import {
     type AdminTripRecord,
     type AdminUserRecord,
 } from '../services/adminService';
+import {
+    buildDangerConfirmDialog,
+    buildTransferTargetPromptDialog,
+} from '../services/appDialogPresets';
 import type { PlanTierKey } from '../types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
@@ -1485,6 +1489,14 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleSoftDelete = async (user: AdminUserRecord) => {
         const nextStatus = (user.account_status || 'active') === 'deleted' ? 'active' : 'deleted';
+        if (nextStatus === 'deleted') {
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
+                title: 'Soft delete user',
+                message: `Soft-delete ${getUserReferenceText(user)}?`,
+                confirmLabel: 'Soft delete',
+            }));
+            if (!confirmed) return;
+        }
         setIsSaving(true);
         setErrorMessage(null);
         setMessage(null);
@@ -1507,13 +1519,11 @@ export const AdminUsersPage: React.FC = () => {
         const sourceTripCount = selectedUser?.user_id === user.user_id
             ? selectedUserTripStats.total
             : getUserTotalTrips(user);
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete user',
             message: buildSingleHardDeleteMessage(getUserReferenceText(user), sourceTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
@@ -1537,13 +1547,11 @@ export const AdminUsersPage: React.FC = () => {
 
     const handleBulkSoftDeleteUsers = async () => {
         if (selectedVisibleUsers.length === 0) return;
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Soft delete selected users',
             message: `Soft-delete ${selectedVisibleUsers.length} selected user${selectedVisibleUsers.length === 1 ? '' : 's'}?`,
             confirmLabel: 'Soft delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
@@ -1569,13 +1577,11 @@ export const AdminUsersPage: React.FC = () => {
             return;
         }
         const selectedTripCount = hardDeleteUsers.reduce((sum, user) => sum + getUserTotalTrips(user), 0);
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete selected users',
             message: buildBulkHardDeleteMessage(hardDeleteUsers.length, selectedTripCount),
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         if (!confirmed) return;
         setIsSaving(true);
         setErrorMessage(null);
@@ -1698,16 +1704,11 @@ export const AdminUsersPage: React.FC = () => {
             return;
         }
 
-        const transferTargetInput = await promptDialog({
+        const transferTargetInput = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Transfer trips before hard delete',
             message: 'Enter the target user email or UUID. All owned trips will move to this account before hard delete.',
-            label: 'Target user (email or UUID)',
-            placeholder: 'name@example.com or user UUID',
             confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-            inputType: 'text',
-        });
+        }));
         if (transferTargetInput === null) return;
 
         setIsSaving(true);
@@ -1729,7 +1730,7 @@ export const AdminUsersPage: React.FC = () => {
                 throw new Error('No owned trips found to transfer. Reload and try again.');
             }
 
-            const confirmed = await confirmDialog({
+            const confirmed = await confirmDialog(buildDangerConfirmDialog({
                 title: 'Confirm transfer and hard delete',
                 message: [
                     `Transfer ${sourceTrips.length} trip${sourceTrips.length === 1 ? '' : 's'} from ${getUserReferenceText(user)} to ${getUserReferenceText(targetUser)}?`,
@@ -1740,9 +1741,7 @@ export const AdminUsersPage: React.FC = () => {
                     'Result: trips remain accessible under the new owner.',
                 ].join('\n'),
                 confirmLabel: 'Transfer + hard delete',
-                cancelLabel: 'Cancel',
-                tone: 'danger',
-            });
+            }));
             if (!confirmed) return;
 
             const transferResults = await Promise.allSettled(

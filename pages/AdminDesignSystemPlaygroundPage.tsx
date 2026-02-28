@@ -30,6 +30,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    buildDangerConfirmDialog,
+    buildDecisionConfirmDialog,
+    buildTransferTargetPromptDialog,
+    buildUrlPromptDialog,
+} from '../services/appDialogPresets';
 
 type ComponentGroupId =
     | 'buttons'
@@ -251,12 +257,12 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     );
 
     const handleConfirmDefaultSample = useCallback(async () => {
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDecisionConfirmDialog({
             title: 'Update Roundtrip Endpoint?',
             message: 'This trip looks like a roundtrip. Also change the final city to "Kyoto"?',
             confirmLabel: 'Yes, Update Last City',
             cancelLabel: 'No, Keep As Is',
-        });
+        }));
         setAppDialogResult(
             confirmed
                 ? 'Default confirm accepted: roundtrip endpoint sync enabled.'
@@ -265,13 +271,11 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     }, [confirmDialog]);
 
     const handleConfirmDangerSample = useCallback(async () => {
-        const confirmed = await confirmDialog({
+        const confirmed = await confirmDialog(buildDangerConfirmDialog({
             title: 'Hard delete trip',
             message: 'Hard-delete "Kyoto Rail Plan"? This cannot be undone.',
             confirmLabel: 'Hard delete',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-        });
+        }));
         setAppDialogResult(
             confirmed
                 ? 'Danger confirm accepted: destructive action confirmed.'
@@ -280,16 +284,12 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     }, [confirmDialog]);
 
     const handlePromptDangerSample = useCallback(async () => {
-        const value = await promptDialog({
+        const value = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Transfer trip owner',
             message: 'Enter the target user email or UUID for this trip.',
             label: 'Target owner (email or UUID)',
-            placeholder: 'name@example.com or user UUID',
             confirmLabel: 'Continue',
-            cancelLabel: 'Cancel',
-            tone: 'danger',
-            inputType: 'text',
-        });
+        }));
         if (value === null) {
             setAppDialogResult('Danger prompt cancelled: no transfer target provided.');
             return;
@@ -298,17 +298,14 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     }, [promptDialog]);
 
     const handlePromptOptionalSample = useCallback(async () => {
-        const value = await promptDialog({
+        const value = await promptDialog(buildTransferTargetPromptDialog({
             title: 'Duplicate trip',
             message: 'Optionally enter a target user email or UUID for the duplicated trip.',
             label: 'Target owner (optional)',
-            placeholder: 'name@example.com or user UUID',
             defaultValue: '',
             confirmLabel: 'Duplicate',
-            cancelLabel: 'Cancel',
             tone: 'default',
-            inputType: 'text',
-        });
+        }));
         if (value === null) {
             setAppDialogResult('Optional prompt cancelled: duplicate flow aborted.');
             return;
@@ -322,28 +319,7 @@ export const AdminDesignSystemPlaygroundPage: React.FC = () => {
     }, [promptDialog]);
 
     const handlePromptUrlSample = useCallback(async () => {
-        const value = await promptDialog({
-            title: 'Insert Link',
-            message: 'Enter a URL for the selected text or insert a new link.',
-            label: 'URL',
-            placeholder: 'https://example.com',
-            defaultValue: 'https://',
-            confirmLabel: 'Insert Link',
-            cancelLabel: 'Cancel',
-            inputType: 'url',
-            validate: (nextValue) => {
-                if (!nextValue) return 'Please enter a URL.';
-                try {
-                    const parsed = new URL(nextValue);
-                    if (!parsed.protocol.startsWith('http')) {
-                        return 'URL must start with http:// or https://';
-                    }
-                    return null;
-                } catch {
-                    return 'Please enter a valid URL.';
-                }
-            },
-        });
+        const value = await promptDialog(buildUrlPromptDialog());
         if (value === null) {
             setAppDialogResult('URL prompt cancelled: no link inserted.');
             return;
