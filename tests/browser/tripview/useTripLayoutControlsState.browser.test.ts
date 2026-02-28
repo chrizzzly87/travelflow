@@ -13,6 +13,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     window.localStorage.setItem('tf_route_mode', 'realistic');
     window.localStorage.setItem('tf_city_names', 'false');
     window.localStorage.setItem('tf_layout_mode', 'vertical');
+    window.localStorage.setItem('tf_timeline_mode', 'timeline');
     window.localStorage.setItem('tf_timeline_view', 'vertical');
     window.localStorage.setItem('tf_sidebar_width', '620');
     window.localStorage.setItem('tf_timeline_height', '460');
@@ -29,6 +30,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     expect(result.current.routeMode).toBe('realistic');
     expect(result.current.showCityNames).toBe(false);
     expect(result.current.layoutMode).toBe('vertical');
+    expect(result.current.timelineMode).toBe('timeline');
     expect(result.current.timelineView).toBe('vertical');
     expect(result.current.sidebarWidth).toBe(620);
     expect(result.current.timelineHeight).toBe(460);
@@ -41,6 +43,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     window.localStorage.setItem('tf_route_mode', 'realistic');
     window.localStorage.setItem('tf_city_names', 'false');
     window.localStorage.setItem('tf_layout_mode', 'vertical');
+    window.localStorage.setItem('tf_timeline_mode', 'timeline');
     window.localStorage.setItem('tf_timeline_view', 'vertical');
     window.localStorage.setItem('tf_sidebar_width', '620');
     window.localStorage.setItem('tf_timeline_height', '460');
@@ -54,6 +57,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
           routeMode: 'simple',
           showCityNames: true,
           layoutMode: 'horizontal',
+          timelineMode: 'calendar',
           timelineView: 'horizontal',
           zoomLevel: 1.5,
           sidebarWidth: 580,
@@ -66,6 +70,7 @@ describe('components/tripview/useTripLayoutControlsState', () => {
     expect(result.current.routeMode).toBe('simple');
     expect(result.current.showCityNames).toBe(true);
     expect(result.current.layoutMode).toBe('horizontal');
+    expect(result.current.timelineMode).toBe('calendar');
     expect(result.current.timelineView).toBe('horizontal');
     expect(result.current.sidebarWidth).toBe(580);
     expect(result.current.timelineHeight).toBe(410);

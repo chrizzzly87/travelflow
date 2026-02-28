@@ -898,6 +898,8 @@ const useTripViewRender = ({
     const {
         layoutMode,
         setLayoutMode,
+        timelineMode,
+        setTimelineMode,
         timelineView,
         setTimelineView,
         mapStyle,
@@ -1071,6 +1073,7 @@ const useTripViewRender = ({
 
     const currentViewSettings: IViewSettings = useMemo(() => ({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1078,10 +1081,11 @@ const useTripViewRender = ({
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
+        timelineMode,
         timelineView,
         mapStyle,
         routeMode,
@@ -1096,6 +1100,7 @@ const useTripViewRender = ({
         setMapStyle,
         setRouteMode,
         setLayoutMode,
+        setTimelineMode,
         setTimelineView,
         setZoomLevel,
         setSidebarWidth,
@@ -1275,6 +1280,7 @@ const useTripViewRender = ({
         if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
         if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
         if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
+        if ((prev.timelineMode || 'calendar') !== timelineMode) changes.push(`Timeline mode: ${prev.timelineMode || 'calendar'} → ${timelineMode}`);
         if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
         if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
 
@@ -1287,7 +1293,7 @@ const useTripViewRender = ({
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineMode, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,
@@ -1443,6 +1449,7 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        timelineMode,
         timelineView,
         horizontalTimelineDayCount,
         zoomLevel,
@@ -1547,6 +1554,7 @@ const useTripViewRender = ({
 
     const timelineCanvas = (
         <TripTimelineCanvas
+            timelineMode={timelineMode}
             timelineView={timelineView}
             trip={displayTrip}
             onUpdateItems={handleUpdateItems}
@@ -1709,14 +1717,41 @@ const useTripViewRender = ({
                         onTimelineTouchMove={handleTimelineTouchMove}
                         onTimelineTouchEnd={handleTimelineTouchEnd}
                         onZoomOut={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'out',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
                             markZoomDirty();
                             setZoomLevel((value) => clampZoomLevel(value - 0.1));
                         }}
                         onZoomIn={() => {
+                            trackEvent('trip_view__zoom', {
+                                direction: 'in',
+                                trip_id: trip.id,
+                                timeline_mode: timelineMode,
+                            });
                             markZoomDirty();
                             setZoomLevel((value) => clampZoomLevel(value + 0.1));
                         }}
-                        onToggleTimelineView={() => setTimelineView((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
+                        onTimelineModeChange={(mode) => {
+                            if (mode === timelineMode) return;
+                            trackEvent(mode === 'calendar' ? 'trip_view__mode--calendar' : 'trip_view__mode--timeline', {
+                                trip_id: trip.id,
+                            });
+                            setTimelineMode(mode);
+                        }}
+                        onTimelineViewChange={(view) => {
+                            if (view === timelineView) return;
+                            trackEvent(
+                                view === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'timeline' }
+                            );
+                            setTimelineView(view);
+                        }}
+                        timelineMode={timelineMode}
                         timelineView={timelineView}
                         mapViewportRef={mapViewportRef}
                         isMapBootstrapEnabled={isMapBootstrapEnabled}
@@ -1727,7 +1762,16 @@ const useTripViewRender = ({
                         selectedItemId={selectedItemId}
                         layoutMode={layoutMode}
                         effectiveLayoutMode={effectiveLayoutMode}
-                        onLayoutModeChange={setLayoutMode}
+                        onLayoutModeChange={(mode) => {
+                            if (mode === layoutMode) return;
+                            trackEvent(
+                                mode === 'horizontal'
+                                    ? 'trip_view__layout_direction--horizontal'
+                                    : 'trip_view__layout_direction--vertical',
+                                { trip_id: trip.id, target: 'map' }
+                            );
+                            setLayoutMode(mode);
+                        }}
                         mapStyle={mapStyle}
                         onMapStyleChange={setMapStyle}
                         routeMode={routeMode}

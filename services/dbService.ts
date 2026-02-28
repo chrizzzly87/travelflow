@@ -334,6 +334,9 @@ const getAuthenticatedNonAnonymousUserId = async (): Promise<string | null> => {
 const isLayoutModeValue = (value: unknown): value is IViewSettings['layoutMode'] =>
     value === 'vertical' || value === 'horizontal';
 
+const isTimelineModeValue = (value: unknown): value is NonNullable<IViewSettings['timelineMode']> =>
+    value === 'calendar' || value === 'timeline';
+
 const isTimelineViewValue = (value: unknown): value is IViewSettings['timelineView'] =>
     value === 'vertical' || value === 'horizontal';
 
@@ -351,6 +354,7 @@ const normalizeViewSettingsPayload = (value: unknown): IViewSettings | null => {
     const view = value as Partial<IViewSettings>;
     return {
         layoutMode: isLayoutModeValue(view.layoutMode) ? view.layoutMode : 'horizontal',
+        timelineMode: isTimelineModeValue(view.timelineMode) ? view.timelineMode : 'calendar',
         timelineView: isTimelineViewValue(view.timelineView) ? view.timelineView : 'horizontal',
         mapStyle: isMapStyleValue(view.mapStyle) ? view.mapStyle : 'standard',
         zoomLevel: normalizeFiniteNumber(view.zoomLevel) ?? 1,
@@ -1600,6 +1604,7 @@ export const dbGetUserSettings = async (): Promise<IUserSettings | null> => {
         mapStyle: data.map_style ?? undefined,
         routeMode: data.route_mode ?? undefined,
         layoutMode: data.layout_mode ?? undefined,
+        timelineMode: data.timeline_mode ?? undefined,
         timelineView: data.timeline_view ?? undefined,
         showCityNames: data.show_city_names ?? undefined,
         zoomLevel: typeof data.zoom_level === 'number' ? data.zoom_level : undefined,
@@ -1929,6 +1934,7 @@ export const applyUserSettingsToLocalStorage = (settings: IUserSettings | null) 
     if (settings.mapStyle) writeLocalStorageItem('tf_map_style', settings.mapStyle);
     if (settings.routeMode) writeLocalStorageItem('tf_route_mode', settings.routeMode);
     if (settings.layoutMode) writeLocalStorageItem('tf_layout_mode', settings.layoutMode);
+    if (settings.timelineMode) writeLocalStorageItem('tf_timeline_mode', settings.timelineMode);
     if (settings.timelineView) writeLocalStorageItem('tf_timeline_view', settings.timelineView);
     if (typeof settings.showCityNames === 'boolean') writeLocalStorageItem('tf_city_names', String(settings.showCityNames));
     if (typeof settings.zoomLevel === 'number') writeLocalStorageItem('tf_zoom_level', settings.zoomLevel.toFixed(2));

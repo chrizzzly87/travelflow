@@ -64,6 +64,7 @@ This document is the operational source of truth for:
   - `updated_items`
   - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
+- Timeline controls on trip view (`calendar`/`timeline` mode switch, timeline direction, zoom, map/layout toggles) are logged as `trip.updated` events with `timeline_diff_v1.visual_changes` entries (for example `timeline_mode`, `timeline_layout`, `zoom_level`).
 - Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
