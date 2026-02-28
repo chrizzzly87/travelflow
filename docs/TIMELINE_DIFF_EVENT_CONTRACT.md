@@ -36,8 +36,21 @@
 }
 ```
 
+## Secondary action facets
+- Producer also writes `metadata.secondary_action_codes` for `trip.updated` version commits.
+- This is a compact, typed list for fast filtering/faceting (while `timeline_diff_v1` remains the detailed diff payload).
+- Current emitted values include:
+  - `trip.transport.updated`
+  - `trip.activity.updated`
+  - `trip.activity.deleted`
+  - `trip.segment.deleted`
+  - `trip.city.updated`
+  - `trip.trip_dates.updated`
+  - `trip.visibility.updated` (lifecycle visibility toggles)
+
 ## Visual-only edits
 - Visual commits (for example map style/timeline layout changes) are represented in `visual_changes`.
+- Timeline control commits are part of this set (for example `Timeline mode`, `Timeline layout`, `Zoomed in/out`).
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
 ## Correlation tracing
@@ -50,6 +63,8 @@
   - verifies `timeline_diff_v1` writes
   - verifies no regression to legacy write format
   - verifies correlation ID presence
+  - verifies timeline controls map into `visual_changes`
+  - verifies secondary action facets for transport/activity/segment updates
 - `tests/browser/dbArchiveTrip.browser.test.ts`
   - verifies archive and archive-failure metadata includes correlation IDs
 - `tests/unit/adminUserChangeLog.test.ts`

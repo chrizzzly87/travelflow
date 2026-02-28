@@ -64,6 +64,7 @@ This document is the operational source of truth for:
   - `updated_items`
   - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
+  - `secondary_action_codes` (compact typed facets for filtering and future secondary pills)
 - Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
@@ -133,6 +134,8 @@ This document is the operational source of truth for:
 - User trip changes missing in admin:
   - check `trip_user_events` inserts for `trip.updated`/`trip.created`/`trip.archived`,
   - confirm `admin_list_user_change_logs` returns trip union rows.
+- Implementation checklist for future changes:
+  - see `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md`.
 
 ## Logging Roadmap Status (as of 2026-02-28)
 - [x] Ownership hardening shipped (authenticated profile views only DB-owned trips).
@@ -152,11 +155,11 @@ This document is the operational source of truth for:
 
 ### Phase 2
 - Introduce secondary domain event writers per operation class:
-  - `trip.city.updated`,
-  - `trip.activity.updated`,
-  - `trip.activity.deleted`,
-  - `trip.transport.updated`,
-  - `trip.segment.deleted`,
+  - [x] `trip.activity.deleted`,
+  - [x] `trip.transport.updated`,
+  - [x] `trip.segment.deleted`,
+  - [ ] `trip.city.updated`,
+  - [ ] `trip.activity.updated`,
   - `trip.trip_dates.updated`,
   - `trip.visibility.updated`.
 - Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.

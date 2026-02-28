@@ -240,6 +240,36 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
+  it('normalizes deleted travel-empty timeline items into segment diff keys', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-segment',
+        timeline_diff_v1: {
+          schema: 'timeline_diff_v1',
+          version: 1,
+          deleted_items: [
+            {
+              item_id: 'segment-1',
+              before: { id: 'segment-1', type: 'travel-empty', title: 'Airport transfer' },
+              after: null,
+            },
+          ],
+        },
+      },
+    }));
+
+    expect(entries).toEqual([
+      {
+        key: 'deleted_segment · Airport transfer',
+        beforeValue: { id: 'segment-1', type: 'travel-empty', title: 'Airport transfer' },
+        afterValue: null,
+      },
+    ]);
+  });
+
   it('formats unknown actions into readable labels', () => {
     const record = makeRecord({
       action: 'trip.shared_link_rotated',

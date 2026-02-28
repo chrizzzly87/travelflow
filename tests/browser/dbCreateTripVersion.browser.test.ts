@@ -234,6 +234,10 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        secondary_action_codes: expect.arrayContaining([
+          'trip.transport.updated',
+          'trip.activity.deleted',
+        ]),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
@@ -247,6 +251,57 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     const insertedPayload = mocks.eventInsert.mock.calls[0]?.[0] as { metadata?: Record<string, unknown> } | undefined;
     expect(insertedPayload?.metadata?.timeline_diff).toBeUndefined();
+  });
+
+  it('maps deleted travel-empty segments to trip.segment.deleted metadata facets', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-segment',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-segment',
+          title: 'Segment Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'segment-1',
+              type: 'travel-empty',
+              title: 'Airport transfer',
+              startDateOffset: 0,
+              duration: 1,
+              color: '#000',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-segment-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-segment',
+      title: 'Segment Trip',
+      startDate: '2026-02-01',
+      items: [],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Data: Removed empty segment');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        secondary_action_codes: expect.arrayContaining([
+          'trip.segment.deleted',
+        ]),
+      }),
+    }));
   });
 
   it('captures visual-only version commits in typed timeline diff metadata', async () => {
@@ -280,7 +335,7 @@ describe('services/dbService dbCreateTripVersion', () => {
       createdAt: 80,
       updatedAt: 220,
       sourceKind: 'created',
-    }, undefined, 'Visual: Map view: minimal → clean · Timeline layout: vertical → horizontal');
+    }, undefined, 'Visual: Timeline mode: calendar → list · Timeline layout: vertical → horizontal · Zoomed in');
 
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
@@ -289,18 +344,23 @@ describe('services/dbService dbCreateTripVersion', () => {
           schema: 'timeline_diff_v1',
           version: 1,
           counts: expect.objectContaining({
-            visual_changes: 2,
+            visual_changes: 3,
           }),
           visual_changes: expect.arrayContaining([
             expect.objectContaining({
-              field: 'map_view',
-              before_value: 'minimal',
-              after_value: 'clean',
+              field: 'timeline_mode',
+              before_value: 'calendar',
+              after_value: 'list',
             }),
             expect.objectContaining({
               field: 'timeline_layout',
               before_value: 'vertical',
               after_value: 'horizontal',
+            }),
+            expect.objectContaining({
+              field: 'zoom_level',
+              before_value: null,
+              after_value: 'Zoomed in',
             }),
           ]),
         }),

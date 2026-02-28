@@ -429,6 +429,107 @@ interface TripTimelineVisualChange {
     summary: string;
 }
 
+type TripSecondaryActionCode =
+    | 'trip.city.updated'
+    | 'trip.activity.updated'
+    | 'trip.activity.deleted'
+    | 'trip.transport.updated'
+    | 'trip.segment.deleted'
+    | 'trip.trip_dates.updated'
+    | 'trip.visibility.updated';
+
+const asTimelineDiffItems = (value: unknown): Array<Record<string, unknown>> => (
+    Array.isArray(value)
+        ? value.filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry))
+        : []
+);
+
+const readTimelineEntryItemType = (entry: Record<string, unknown>): string | null => {
+    const direct = typeof entry.item_type === 'string' ? entry.item_type.trim().toLowerCase() : '';
+    if (direct) return direct;
+    const before = entry.before;
+    if (before && typeof before === 'object' && !Array.isArray(before)) {
+        const beforeType = typeof (before as Record<string, unknown>).type === 'string'
+            ? (before as Record<string, unknown>).type.trim().toLowerCase()
+            : '';
+        if (beforeType) return beforeType;
+    }
+    const after = entry.after;
+    if (after && typeof after === 'object' && !Array.isArray(after)) {
+        const afterType = typeof (after as Record<string, unknown>).type === 'string'
+            ? (after as Record<string, unknown>).type.trim().toLowerCase()
+            : '';
+        if (afterType) return afterType;
+    }
+    return null;
+};
+
+const hasTimelineDateFieldChange = (entry: Record<string, unknown>): boolean => {
+    const changedFields = Array.isArray(entry.changed_fields)
+        ? entry.changed_fields.filter((field): field is string => typeof field === 'string')
+        : [];
+    return changedFields.some((field) => (
+        field === 'start_date_offset'
+        || field === 'duration'
+    ));
+};
+
+const buildTripSecondaryActionCodes = (
+    timelineDiffV1: Record<string, unknown> | null,
+    options?: {
+        previousTrip?: ITrip | null;
+        nextTrip?: ITrip | null;
+        visibilityChanged?: boolean;
+    }
+): TripSecondaryActionCode[] => {
+    const codes = new Set<TripSecondaryActionCode>();
+
+    if (timelineDiffV1) {
+        const transportModeChanges = asTimelineDiffItems(timelineDiffV1.transport_mode_changes);
+        if (transportModeChanges.length > 0) {
+            codes.add('trip.transport.updated');
+        }
+
+        const deletedItems = asTimelineDiffItems(timelineDiffV1.deleted_items);
+        deletedItems.forEach((entry) => {
+            const itemType = readTimelineEntryItemType(entry);
+            if (itemType === 'activity') {
+                codes.add('trip.activity.deleted');
+            }
+            if (itemType === 'travel-empty' || itemType === 'travel') {
+                codes.add('trip.segment.deleted');
+            }
+        });
+
+        const updatedItems = asTimelineDiffItems(timelineDiffV1.updated_items);
+        updatedItems.forEach((entry) => {
+            const itemType = readTimelineEntryItemType(entry);
+            if (itemType === 'activity') {
+                codes.add('trip.activity.updated');
+            }
+            if (itemType === 'city') {
+                codes.add('trip.city.updated');
+            }
+            if (itemType === 'travel' && hasTimelineDateFieldChange(entry)) {
+                codes.add('trip.trip_dates.updated');
+            }
+            if (itemType === 'city' && hasTimelineDateFieldChange(entry)) {
+                codes.add('trip.trip_dates.updated');
+            }
+        });
+    }
+
+    if (options?.previousTrip && options.nextTrip && options.previousTrip.startDate !== options.nextTrip.startDate) {
+        codes.add('trip.trip_dates.updated');
+    }
+
+    if (options?.visibilityChanged) {
+        codes.add('trip.visibility.updated');
+    }
+
+    return Array.from(codes).sort();
+};
+
 const createEventCorrelationId = (): string => {
     try {
         if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -823,6 +924,10 @@ const writeTripLifecycleEventFallback = async (
     );
     if (!hasDiff) return;
 
+    const secondaryActionCodes = buildTripSecondaryActionCodes(null, {
+        visibilityChanged: before.showOnPublicProfile !== after.showOnPublicProfile,
+    });
+
     await writeTripEventFallback(client, {
         ownerId: payload.ownerId,
         tripId: payload.tripId,
@@ -841,6 +946,7 @@ const writeTripLifecycleEventFallback = async (
             trip_expires_at_after: after.tripExpiresAt,
             source_kind_before: before.sourceKind,
             source_kind_after: after.sourceKind,
+            secondary_action_codes: secondaryActionCodes,
         },
     });
 };
@@ -1156,6 +1262,10 @@ export const dbCreateTripVersion = async (
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         const visualChanges = parseVisualChangesFromLabel(label ?? null);
         const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
+        const secondaryActionCodes = buildTripSecondaryActionCodes(timelineDiffV1, {
+            previousTrip: previousVersionSnapshot?.trip ?? null,
+            nextTrip: normalizedTrip,
+        });
         const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
             ownerId,
@@ -1173,6 +1283,7 @@ export const dbCreateTripVersion = async (
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
                 timeline_diff_v1: timelineDiffV1,
+                secondary_action_codes: secondaryActionCodes,
             },
             dedupeWindowMs: 0,
         });

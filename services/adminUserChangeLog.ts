@@ -177,6 +177,14 @@ const resolveTimelineItemType = (entry: Record<string, unknown>): string | null 
     return asText((entry.after as Record<string, unknown> | null | undefined)?.type);
 };
 
+const normalizeTimelineEntityType = (value: string | null): string => {
+    const normalized = (value || '').trim().toLowerCase();
+    if (!normalized) return 'item';
+    if (normalized === 'travel-empty') return 'segment';
+    if (normalized === 'travel') return 'transport';
+    return normalized.replace(/[^a-z0-9]+/g, '_');
+};
+
 const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
     const timelineDiffV1 = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
     const timelineDiffLegacy = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
@@ -198,7 +206,7 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
     deletedItems.forEach((entry) => {
         const label = resolveTimelineItemLabel(entry);
         const itemType = resolveTimelineItemType(entry);
-        const prefix = itemType ? `deleted_${itemType}` : 'deleted_item';
+        const prefix = `deleted_${normalizeTimelineEntityType(itemType)}`;
         entries.push({
             key: `${prefix} · ${label}`,
             beforeValue: entry.before ?? entry,
@@ -210,7 +218,7 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
     addedItems.forEach((entry) => {
         const label = resolveTimelineItemLabel(entry);
         const itemType = resolveTimelineItemType(entry);
-        const prefix = itemType ? `added_${itemType}` : 'added_item';
+        const prefix = `added_${normalizeTimelineEntityType(itemType)}`;
         entries.push({
             key: `${prefix} · ${label}`,
             beforeValue: null,
