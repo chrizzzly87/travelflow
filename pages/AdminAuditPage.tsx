@@ -25,6 +25,7 @@ import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
+    listUserChangeSecondaryActions,
     resolveUserChangeActionPresentation,
     resolveUserChangeSecondaryActions,
 } from '../services/adminUserChangeLog';
@@ -325,6 +326,9 @@ export const AdminAuditPage: React.FC = () => {
         return '30d';
     });
     const [actionFilters, setActionFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('action')));
+    const [secondaryActionFilters, setSecondaryActionFilters] = useState<string[]>(
+        () => parseQueryMultiValue(searchParams.get('secondary'))
+    );
     const [targetFilters, setTargetFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('target')));
     const [actorFilters, setActorFilters] = useState<AuditActorFilter[]>(
         () => parseQueryMultiValue(searchParams.get('actor')).filter(
@@ -363,12 +367,23 @@ export const AdminAuditPage: React.FC = () => {
         if (trimmedSearch) next.set('q', trimmedSearch);
         if (dateRange !== '30d') next.set('range', dateRange);
         if (actionFilters.length > 0) next.set('action', actionFilters.join(','));
+        if (secondaryActionFilters.length > 0) next.set('secondary', secondaryActionFilters.join(','));
         if (targetFilters.length > 0) next.set('target', targetFilters.join(','));
         if (actorFilters.length > 0) next.set('actor', actorFilters.join(','));
         if (offset > 0) next.set('offset', String(offset));
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [actionFilters, actorFilters, dateRange, offset, searchParams, searchValue, setSearchParams, targetFilters]);
+    }, [
+        actionFilters,
+        actorFilters,
+        dateRange,
+        offset,
+        searchParams,
+        searchValue,
+        secondaryActionFilters,
+        setSearchParams,
+        targetFilters,
+    ]);
 
     const loadLogs = async () => {
         setIsLoading(true);
@@ -639,15 +654,27 @@ export const AdminAuditPage: React.FC = () => {
             const actorEmail = getTimelineActorEmail(entry);
             const actorUserId = getTimelineActorUserId(entry);
             const actorType = entry.kind;
+            const secondaryActions = entry.kind === 'user'
+                ? listUserChangeSecondaryActions(entry.log)
+                : [];
+            const secondaryActionKeys = secondaryActions.map((secondaryAction) => secondaryAction.key);
+            const secondaryActionLabels = secondaryActions.map((secondaryAction) => secondaryAction.label.toLowerCase()).join(' ');
 
             if (!isIsoDateInRange(createdAt, dateRange)) return false;
             if (actionFilters.length > 0 && !actionFilters.includes(action)) return false;
+            if (
+                secondaryActionFilters.length > 0
+                && !secondaryActionFilters.some((secondaryActionFilter) => secondaryActionKeys.includes(secondaryActionFilter))
+            ) {
+                return false;
+            }
             if (targetFilters.length > 0 && !targetFilters.includes(targetType)) return false;
             if (actorFilters.length > 0 && !actorFilters.includes(actorType)) return false;
             if (!token) return true;
             return (
                 action.toLowerCase().includes(token)
                 || getTimelineActionLabel(entry).toLowerCase().includes(token)
+                || secondaryActionLabels.includes(token)
                 || targetType.toLowerCase().includes(token)
                 || getTargetLabel(targetType).toLowerCase().includes(token)
                 || (targetId || '').toLowerCase().includes(token)
@@ -655,7 +682,7 @@ export const AdminAuditPage: React.FC = () => {
                 || (actorUserId || '').toLowerCase().includes(token)
             );
         });
-    }, [actionFilters, actorFilters, dateRange, searchValue, targetFilters, timelineEntries]);
+    }, [actionFilters, actorFilters, dateRange, searchValue, secondaryActionFilters, targetFilters, timelineEntries]);
 
     const logsInDateRange = useMemo(
         () => timelineEntries.filter((entry) => isIsoDateInRange(getTimelineCreatedAt(entry), dateRange)),
@@ -710,6 +737,28 @@ export const AdminAuditPage: React.FC = () => {
             .map(([value, count]) => ({ value, label: getTargetLabel(value), count }));
     }, [logsInDateRange]);
 
+    const secondaryActionFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
+        const counts = new Map<string, number>();
+        const labels = new Map<string, string>();
+        logsInDateRange.forEach((entry) => {
+            if (entry.kind !== 'user') return;
+            const secondaryActions = listUserChangeSecondaryActions(entry.log);
+            secondaryActions.forEach((secondaryAction) => {
+                counts.set(secondaryAction.key, (counts.get(secondaryAction.key) || 0) + 1);
+                if (!labels.has(secondaryAction.key)) {
+                    labels.set(secondaryAction.key, secondaryAction.label);
+                }
+            });
+        });
+        return Array.from(counts.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([value, count]) => ({
+                value,
+                label: labels.get(value) || value,
+                count,
+            }));
+    }, [logsInDateRange]);
+
     const actorFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const adminCount = logsInDateRange.filter((entry) => entry.kind === 'admin').length;
         const userCount = logsInDateRange.filter((entry) => entry.kind === 'user').length;
@@ -736,6 +785,11 @@ export const AdminAuditPage: React.FC = () => {
 
     const handleTargetFiltersChange = (values: string[]) => {
         setTargetFilters(values);
+        setOffset(0);
+    };
+
+    const handleSecondaryActionFiltersChange = (values: string[]) => {
+        setSecondaryActionFilters(values);
         setOffset(0);
     };
 
@@ -841,6 +895,13 @@ export const AdminAuditPage: React.FC = () => {
                     onSelectedValuesChange={handleTargetFiltersChange}
                 />
                 <AdminFilterMenu
+                    label="Update Facet"
+                    icon={<Info size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
+                    options={secondaryActionFilterOptions}
+                    selectedValues={secondaryActionFilters}
+                    onSelectedValuesChange={handleSecondaryActionFiltersChange}
+                />
+                <AdminFilterMenu
                     label="Actor"
                     icon={<User size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
                     options={actorFilterOptions}
@@ -851,6 +912,7 @@ export const AdminAuditPage: React.FC = () => {
                     type="button"
                     onClick={() => {
                         setActionFilters([]);
+                        setSecondaryActionFilters([]);
                         setTargetFilters([]);
                         setActorFilters([]);
                         setOffset(0);

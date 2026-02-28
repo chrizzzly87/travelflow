@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
   buildUserChangeDiffEntries,
+  listUserChangeSecondaryActions,
   resolveUserChangeActionPresentation,
   resolveUserChangeSecondaryActions,
 } from '../../services/adminUserChangeLog';
@@ -308,6 +309,50 @@ describe('services/adminUserChangeLog', () => {
         key: 'transport_updated',
         label: 'Updated transport',
         className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+      {
+        key: 'trip_view',
+        label: 'Updated trip view',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+    ]);
+  });
+
+  it('lists secondary actions directly from a user-change record', () => {
+    const record = makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-1',
+        timeline_diff_v1: {
+          schema: 'timeline_diff_v1',
+          version: 1,
+          deleted_items: [
+            {
+              item_id: 'activity-1',
+              before: { id: 'activity-1', type: 'activity', title: 'Night market' },
+              after: null,
+            },
+          ],
+          visual_changes: [
+            {
+              field: 'map_view',
+              before_value: 'minimal',
+              after_value: 'clean',
+            },
+          ],
+        },
+      },
+    });
+
+    const actions = listUserChangeSecondaryActions(record);
+
+    expect(actions).toEqual([
+      {
+        key: 'deleted_activity',
+        label: 'Deleted activity',
+        className: 'border-rose-200 bg-rose-50 text-rose-800',
       },
       {
         key: 'trip_view',

@@ -393,6 +393,13 @@ export const resolveUserChangeSecondaryActions = (
     return Array.from(byKey.values()).slice(0, 4);
 };
 
+export const listUserChangeSecondaryActions = (
+    record: AdminUserChangeRecord
+): UserChangeSecondaryActionPresentation[] => {
+    const diffEntries = buildUserChangeDiffEntries(record);
+    return resolveUserChangeSecondaryActions(record, diffEntries);
+};
+
 export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserChangeDiffEntry[] => {
     const before = asRecord(record.before_data);
     const after = asRecord(record.after_data);

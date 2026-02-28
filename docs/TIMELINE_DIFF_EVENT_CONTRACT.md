@@ -3,6 +3,7 @@
 ## Why this exists
 - We need compact, structured trip-edit audit metadata that is stable for UI rendering and future migrations.
 - Raw trip snapshots remain canonical in `trip_versions.data`; event metadata should summarize intent and key changes.
+- For implementation guardrails and required mutation logging DoD, see `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md`.
 
 ## Current rule (authoritative)
 - **Write format**: `metadata.timeline_diff_v1` only.

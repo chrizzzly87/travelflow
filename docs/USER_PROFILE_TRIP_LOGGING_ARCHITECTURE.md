@@ -69,6 +69,7 @@ This document is the operational source of truth for:
 - Admin logs now derive secondary update facets from diff keys (for example `Updated transport`, `Deleted activity`, `Updated trip view`) while keeping the primary `trip.updated` pill compact.
 - New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
+- See `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md` for mutation logging checklists and PR acceptance criteria.
 
 ## Snapshot vs Diff Strategy
 - Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
