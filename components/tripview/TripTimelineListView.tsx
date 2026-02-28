@@ -94,6 +94,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     }, [model.sections]);
 
     const updateTransferMidpoints = useCallback(() => {
+        const sectionContainer = sectionContainerRef.current;
+        if (!sectionContainer) return;
+
+        const containerRect = sectionContainer.getBoundingClientRect();
         const nextMidpoints: Record<string, number> = {};
 
         model.sections.forEach((section, index) => {
@@ -103,8 +107,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
             const currentDot = markerRefs.current[`city-${section.city.id}`];
             if (!previousDot || !currentDot) return;
 
-            const previousCenter = previousDot.offsetTop + (previousDot.offsetHeight / 2);
-            const currentCenter = currentDot.offsetTop + (currentDot.offsetHeight / 2);
+            const previousRect = previousDot.getBoundingClientRect();
+            const currentRect = currentDot.getBoundingClientRect();
+            const previousCenter = previousRect.top - containerRect.top + (previousRect.height / 2);
+            const currentCenter = currentRect.top - containerRect.top + (currentRect.height / 2);
             nextMidpoints[section.city.id] = (previousCenter + currentCenter) / 2;
         });
 
