@@ -37,7 +37,7 @@
 ```
 
 ## Visual-only edits
-- Visual commits (for example map style/timeline layout changes) are represented in `visual_changes`.
+- Visual commits (for example map style, timeline mode switch, timeline layout, zoom, and route view changes) are represented in `visual_changes`.
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
 ## Correlation tracing
@@ -48,6 +48,7 @@
 ## Test coverage (must keep)
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
   - verifies `timeline_diff_v1` writes
+  - verifies timeline control labels (`Timeline mode`, `Timeline layout`, `Zoomed in/out`) are emitted as structured `visual_changes`
   - verifies no regression to legacy write format
   - verifies correlation ID presence
 - `tests/browser/dbArchiveTrip.browser.test.ts`

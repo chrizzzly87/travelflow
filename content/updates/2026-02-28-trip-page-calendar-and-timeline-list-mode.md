@@ -26,3 +26,4 @@ summary: "Trip planning now supports a modern timeline list mode with today-focu
 - [ ] [Internal] 💾 Active view mode is now saved with each trip view state so reloads restore the selected mode.
 - [ ] [Internal] ♻️ Undo and redo history now includes view-mode changes together with other planner view updates.
 - [ ] [Internal] 📊 Timeline list interactions now emit dedicated trip-view analytics events for city, activity, and transfer detail opens.
+- [ ] [Internal] 🧾 Timeline control commits now record structured trip update events with visual-change details for admin audit timelines.
