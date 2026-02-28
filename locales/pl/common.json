@@ -57,6 +57,11 @@
     "cta": "Zgłoś błąd tłumaczenia",
     "ctaShort": "Zgłoś"
   },
+  "networkStatus": {
+    "offlineTitle": "Jestes offline.",
+    "offlineDescription": "Logowanie i synchronizacja w chmurze sa teraz niedostepne. Bedziemy dalej sprawdzac polaczenie i polaczymy sie ponownie automatycznie.",
+    "offlineChecking": "Sprawdzanie polaczenia..."
+  },
   "contact": {
     "title": "Kontakt",
     "description": "Skontaktuj się z nami w sprawie produktu, błędów, partnerstw lub tłumaczeń.",

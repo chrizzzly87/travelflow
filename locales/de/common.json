@@ -59,6 +59,11 @@
     "cta": "Übersetzungsfehler melden",
     "ctaShort": "Melden"
   },
+  "networkStatus": {
+    "offlineTitle": "Du bist offline.",
+    "offlineDescription": "Anmeldung und Cloud-Synchronisierung sind derzeit nicht verfugbar. Wir prufen weiter und verbinden automatisch wieder.",
+    "offlineChecking": "Verbindung wird erneut gepruft..."
+  },
   "contact": {
     "title": "Kontakt",
     "description": "Melde dich bei Produktfragen, Bugs, Partnerschaften oder Übersetzungsfeedback.",

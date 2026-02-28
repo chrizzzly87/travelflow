@@ -58,7 +58,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
             closeLabel="Close change history dialog"
             size="sm"
             mobileSheet={false}
-            bodyClassName="flex-1 overflow-hidden p-0"
+            bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
             contentClassName="sm:w-[min(92vw,560px)]"
         >
             {isExamplePreview ? (
@@ -90,7 +90,7 @@ export const TripHistoryModal: React.FC<TripHistoryModalProps> = ({
                             {showAllHistory ? 'Show Recent' : 'Show All'}
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
                         {items.length === 0 ? (
                             <div className="p-6 text-sm text-gray-500">No history entries yet.</div>
                         ) : (

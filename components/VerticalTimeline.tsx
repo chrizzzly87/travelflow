@@ -800,7 +800,7 @@ export const VerticalTimeline: React.FC<VerticalTimelineProps> = ({
                                      <button
                                          onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                          className={`absolute z-10 left-1/2 -translate-x-1/2 px-4 rounded-xl border text-[11px] font-semibold flex items-center justify-between gap-2 shadow-sm transition-colors pointer-events-auto
-                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
+                                             ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 ring-2 ring-blue-600 ring-offset-1' : (isUnsetTransport ? 'bg-slate-50/70 border-slate-200 border-dashed text-slate-400' : 'bg-white border-gray-200 text-gray-600')}
                                              ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                          `}
                                          style={{ top: chipTop, height: chipHeight, width: chipWidth }}

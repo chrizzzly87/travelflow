@@ -59,6 +59,11 @@
     "cta": "Signaler une erreur de traduction",
     "ctaShort": "Signaler"
   },
+  "networkStatus": {
+    "offlineTitle": "Vous etes hors ligne.",
+    "offlineDescription": "La connexion et la synchronisation cloud sont indisponibles pour le moment. Nous continuons a verifier et nous nous reconnecterons automatiquement.",
+    "offlineChecking": "Verification de la connexion..."
+  },
   "contact": {
     "title": "Contact",
     "description": "Contactez-nous pour des questions produit, des bugs, des partenariats ou des retours de traduction.",

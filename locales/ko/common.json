@@ -59,6 +59,11 @@
     "cta": "번역 오류 제보하기",
     "ctaShort": "제보"
   },
+  "networkStatus": {
+    "offlineTitle": "오프라인 상태입니다.",
+    "offlineDescription": "지금은 로그인과 클라우드 동기화를 사용할 수 없습니다. 연결을 계속 확인하고 자동으로 다시 연결합니다.",
+    "offlineChecking": "연결 상태를 다시 확인하는 중..."
+  },
   "contact": {
     "title": "문의",
     "description": "제품 문의, 버그 제보, 파트너십, 번역 피드백을 보내주세요.",

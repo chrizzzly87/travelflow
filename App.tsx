@@ -20,6 +20,7 @@ import {
 } from './config/routes';
 import { APP_NAME } from './config/appGlobals';
 import { useAuth } from './hooks/useAuth';
+import { useNetworkStatus } from './hooks/useNetworkStatus';
 import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
@@ -39,6 +40,7 @@ import { useWarmupGate } from './app/bootstrap/useWarmupGate';
 import { AppProviderShell } from './app/bootstrap/AppProviderShell';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
+import { NetworkStatusBanner } from './components/NetworkStatusBanner';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -204,6 +206,7 @@ const createLocalHistoryEntry = (
 const AppContent: React.FC = () => {
     const { i18n, t } = useTranslation(['common', 'pages', 'auth', 'wip']);
     const { access, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
+    const { isOnline, isProbePending } = useNetworkStatus();
     const [trip, setTrip] = useState<ITrip | null>(null);
     const [isManagerOpen, setIsManagerOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -495,6 +498,7 @@ const AppContent: React.FC = () => {
 
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
+            <NetworkStatusBanner isOnline={isOnline} isProbePending={isProbePending} />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>
