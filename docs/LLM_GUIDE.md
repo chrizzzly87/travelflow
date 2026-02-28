@@ -9,6 +9,7 @@ This doc is a compact, structured overview of the app to help future agents make
 - UX writing and CTA/planner copy rules: `docs/UX_COPY_GUIDELINES.md`.
 - Analytics naming and instrumentation format: `docs/ANALYTICS_CONVENTION.md`.
 - Netlify PR preview and feature-branch deploy workflow: `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`.
+- Timeline/audit event diff contract: `docs/TIMELINE_DIFF_EVENT_CONTRACT.md`.
 - For manual Netlify CLI draft deploys, follow `docs/NETLIFY_FEATURE_BRANCH_DEPLOY.md`: build with `dotenv-cli`, then deploy with `netlify deploy --no-build --dir=dist`.
 - Browser storage disclosures and policy source: `lib/legal/cookies.config.ts` (cookies/localStorage/sessionStorage registry).
 - Storage Phase 2 migration tracker: `docs/STORAGE_POLICY_MIGRATION_CHECKLIST.md`.

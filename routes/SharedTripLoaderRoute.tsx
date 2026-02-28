@@ -14,7 +14,6 @@ import {
     dbGetTripVersion,
     dbUpdateSharedTrip,
     dbUpsertTrip,
-    ensureDbSession,
 } from '../services/dbApi';
 import { appendHistoryEntry, findHistoryEntryByUrl } from '../services/historyService';
 import { saveTrip } from '../services/storageService';
@@ -127,7 +126,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             }
 
             resetRouteState();
-            await ensureDbSession();
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
                 navigate('/share-unavailable', { replace: true });
@@ -225,8 +223,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         createLocalHistoryEntry(navigate, updatedTrip, view, label, options, commitTs, buildShareUrl(token));
 
         const commit = async () => {
-            const sessionId = await ensureDbSession();
-            if (!sessionId) return;
             const version = await dbUpdateSharedTrip(token, updatedTrip, view, label);
             if (!version) return;
         };

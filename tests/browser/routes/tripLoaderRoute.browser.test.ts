@@ -195,6 +195,7 @@ describe('routes/TripLoaderRoute', () => {
         source: 'public_read',
         ownerId: 'owner-1',
         ownerEmail: null,
+        ownerUsername: null,
         canAdminWrite: false,
         updatedAtIso: null,
       },
@@ -211,5 +212,41 @@ describe('routes/TripLoaderRoute', () => {
     });
 
     expect(mocks.renderedTripViewProps?.canShare).toBe(false);
+    expect(mocks.saveTrip).not.toHaveBeenCalled();
+  });
+
+  it('persists owner-access trips to local storage', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-owned';
+    mocks.route.pathname = '/trip/trip-owned';
+
+    const dbTrip = makeTrip({
+      id: 'trip-owned',
+      title: 'Owned trip',
+      items: [],
+    });
+
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: null,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'user@example.com',
+        ownerUsername: 'user',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mocks.saveTrip).toHaveBeenCalledTimes(1);
+    expect(mocks.saveTrip).toHaveBeenCalledWith(dbTrip);
   });
 });

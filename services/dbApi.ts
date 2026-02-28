@@ -86,6 +86,24 @@ export const dbArchiveTrip = async (...args: Parameters<DbServiceModule['dbArchi
     return db.dbArchiveTrip(...args);
 };
 
+export const dbCreateAnonymousAssetClaim = async (...args: Parameters<DbServiceModule['dbCreateAnonymousAssetClaim']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbCreateAnonymousAssetClaim(...args);
+};
+
+export const dbClaimAnonymousAssets = async (...args: Parameters<DbServiceModule['dbClaimAnonymousAssets']>) => {
+    if (!DB_ENABLED) return null;
+    const db = await loadDbService();
+    return db.dbClaimAnonymousAssets(...args);
+};
+
+export const dbExpireStaleAnonymousAssetClaims = async (...args: Parameters<DbServiceModule['dbExpireStaleAnonymousAssetClaims']>) => {
+    if (!DB_ENABLED) return 0;
+    const db = await loadDbService();
+    return db.dbExpireStaleAnonymousAssetClaims(...args);
+};
+
 export const dbUpsertUserSettings = async (...args: Parameters<DbServiceModule['dbUpsertUserSettings']>) => {
     if (!DB_ENABLED) return;
     const db = await loadDbService();

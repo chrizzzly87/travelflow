@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   adminListUsers: vi.fn(),
   adminGetUserProfile: vi.fn(),
   adminListUserTrips: vi.fn(),
+  adminListUserChangeLogs: vi.fn(),
   adminUpdateUserProfile: vi.fn(),
   adminHardDeleteUser: vi.fn(),
   confirmDialog: vi.fn(async () => true),
@@ -81,6 +82,7 @@ vi.mock('../../../services/adminService', () => ({
   adminCreateUserInvite: vi.fn(),
   adminGetUserProfile: mocks.adminGetUserProfile,
   adminHardDeleteUser: mocks.adminHardDeleteUser,
+  adminListUserChangeLogs: mocks.adminListUserChangeLogs,
   adminListUserTrips: mocks.adminListUserTrips,
   adminListUsers: mocks.adminListUsers,
   adminUpdateTrip: vi.fn(),
@@ -164,6 +166,7 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     mocks.adminListUsers.mockResolvedValue([USER_ROW]);
     mocks.adminGetUserProfile.mockResolvedValue(USER_ROW);
     mocks.adminListUserTrips.mockResolvedValue([]);
+    mocks.adminListUserChangeLogs.mockResolvedValue([]);
     mocks.adminUpdateUserProfile.mockResolvedValue(undefined);
     mocks.adminHardDeleteUser.mockResolvedValue(undefined);
     mocks.confirmDialog.mockResolvedValue(true);

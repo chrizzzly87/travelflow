@@ -114,5 +114,48 @@ describe('services/authService getCurrentAccessContext', () => {
     expect(access.isAnonymous).toBe(false);
     expect(access.tierKey).toBe('tier_mid');
   });
-});
 
+  it('treats sessions with an email as authenticated even when anonymous metadata is still present', async () => {
+    const upgradedUser = {
+      id: 'user-1',
+      email: 'user@example.com',
+      phone: null,
+      is_anonymous: true,
+      app_metadata: {
+        provider: 'anonymous',
+        providers: ['anonymous'],
+        is_anonymous: true,
+      },
+      identities: [{ provider: 'anonymous' }],
+      user_metadata: {},
+    };
+
+    supabaseMocks.authGetSession.mockResolvedValue({
+      data: { session: { user: upgradedUser } },
+      error: null,
+    });
+    supabaseMocks.authGetUser.mockResolvedValue({
+      data: { user: upgradedUser },
+      error: null,
+    });
+    supabaseMocks.rpc.mockResolvedValue({
+      data: [{
+        user_id: 'user-1',
+        email: 'user@example.com',
+        is_anonymous: false,
+        system_role: 'user',
+        tier_key: 'tier_free',
+        entitlements: {},
+        onboarding_completed: true,
+        account_status: 'active',
+      }],
+      error: null,
+    });
+
+    const access = await getCurrentAccessContext();
+
+    expect(supabaseMocks.rpc).toHaveBeenCalledWith('get_current_user_access');
+    expect(access.userId).toBe('user-1');
+    expect(access.isAnonymous).toBe(false);
+  });
+});

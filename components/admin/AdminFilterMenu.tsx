@@ -14,6 +14,7 @@ interface AdminFilterMenuProps {
     options: AdminFilterMenuOption[];
     selectedValues: string[];
     onSelectedValuesChange: (nextValues: string[]) => void;
+    icon?: React.ReactNode;
     allowMultiple?: boolean;
     className?: string;
 }
@@ -23,6 +24,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
     options,
     selectedValues,
     onSelectedValuesChange,
+    icon,
     allowMultiple = true,
     className,
 }) => {
@@ -128,7 +130,7 @@ export const AdminFilterMenu: React.FC<AdminFilterMenuProps> = ({
                 aria-label={`Filter by ${label.toLowerCase()}`}
                 aria-expanded={isOpen}
             >
-                <PlusCircle size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />
+                {icon || <PlusCircle size={14} className="mr-2 text-slate-500 shrink-0" weight="duotone" />}
                 <span>{label}</span>
                 
                 {(selectedCount > 0 || (selectedCount === 0 && !allowMultiple)) && (
