@@ -31,14 +31,45 @@ const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
         return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);
     });
 
-const computeInitial = (email: string | null, userId?: string | null): string => {
-    const normalized = (email || '').trim();
-    if (!normalized) {
-        const fallback = (userId || '').trim();
-        if (fallback) return fallback.charAt(0).toUpperCase();
-        return 'U';
+const computeInitial = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const firstName = typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+    const lastName = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+    if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     }
-    return normalized.charAt(0).toUpperCase();
+    if (firstName) {
+        return firstName.slice(0, 2).toUpperCase();
+    }
+    if (lastName) {
+        return lastName.slice(0, 2).toUpperCase();
+    }
+
+    const displayName = typeof profile?.displayName === 'string' ? profile.displayName.trim() : '';
+    if (displayName) {
+        const words = displayName.split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase();
+        }
+        return words[0].slice(0, 2).toUpperCase();
+    }
+
+    const username = typeof profile?.username === 'string' ? profile.username.trim().replace(/^@+/, '') : '';
+    if (username) {
+        return username.slice(0, 2).toUpperCase();
+    }
+
+    const normalized = (email || '').trim();
+    if (normalized) {
+        return normalized.charAt(0).toUpperCase();
+    }
+
+    const fallback = (userId || '').trim();
+    if (fallback) return fallback.charAt(0).toUpperCase();
+    return 'U';
 };
 
 const buildAccountDisplayName = (
@@ -65,6 +96,16 @@ const buildAccountDisplayName = (
     return 'Signed-in account';
 };
 
+const buildAccountTriggerName = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const username = typeof profile?.username === 'string' ? profile.username.trim() : '';
+    if (username) return username.startsWith('@') ? username : `@${username}`;
+    return buildAccountDisplayName(profile, email, userId);
+};
+
 const labelFromPath = (pathname: string): string => {
     if (pathname.startsWith('/admin/dashboard')) return 'Overview';
     if (pathname.startsWith('/admin/users')) return 'Users';
@@ -86,7 +127,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     showLabel,
     fullWidth = false,
     menuPlacement = 'bottom-end',
-    labelMode = 'route',
+    labelMode = 'identity',
     showRecentTripsSection = true,
     showCurrentPageSummary = true,
     className,
@@ -107,7 +148,11 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         () => buildAccountDisplayName(profile, email, userId),
         [email, profile, userId]
     );
-    const triggerLabel = labelMode === 'identity' ? accountDisplayName : accountLabel;
+    const accountTriggerName = useMemo(
+        () => buildAccountTriggerName(profile, email, userId),
+        [email, profile, userId]
+    );
+    const triggerLabel = labelMode === 'identity' ? accountTriggerName : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
 
     useEffect(() => {
@@ -210,7 +255,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
             >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
-                    {computeInitial(email, userId)}
+                    {computeInitial(profile, email, userId)}
                 </span>
                 {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
                 <CaretDown size={14} />

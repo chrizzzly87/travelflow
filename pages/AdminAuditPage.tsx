@@ -147,6 +147,19 @@ const asString = (value: unknown): string | null => {
 
 const hasSnapshotData = (value: Record<string, unknown> | null | undefined): boolean => Object.keys(asRecord(value)).length > 0;
 
+const mergeTripSnapshotWithViewSettings = (
+    snapshot: Record<string, unknown> | null | undefined,
+    viewSettings: Record<string, unknown> | null | undefined
+): Record<string, unknown> => {
+    const normalizedSnapshot = asRecord(snapshot);
+    const normalizedViewSettings = asRecord(viewSettings);
+    if (Object.keys(normalizedViewSettings).length === 0) return normalizedSnapshot;
+    return {
+        ...normalizedSnapshot,
+        view_settings: normalizedViewSettings,
+    };
+};
+
 const isUserStatusValue = (value: unknown): value is 'active' | 'disabled' | 'deleted' => (
     value === 'active' || value === 'disabled' || value === 'deleted'
 );
@@ -585,8 +598,14 @@ export const AdminAuditPage: React.FC = () => {
                 setDiffModalError('Trip snapshots were not found for this event. Showing event snapshots when available.');
                 return;
             }
-            setDiffModalBeforeValue(asRecord(versionSnapshots.before_snapshot));
-            setDiffModalAfterValue(asRecord(versionSnapshots.after_snapshot));
+            setDiffModalBeforeValue(mergeTripSnapshotWithViewSettings(
+                versionSnapshots.before_snapshot,
+                versionSnapshots.before_view_settings
+            ));
+            setDiffModalAfterValue(mergeTripSnapshotWithViewSettings(
+                versionSnapshots.after_snapshot,
+                versionSnapshots.after_view_settings
+            ));
             setDiffModalBeforeLabel(versionSnapshots.before_label || 'Before version');
             setDiffModalAfterLabel(versionSnapshots.after_label || 'After version');
         } catch (error) {

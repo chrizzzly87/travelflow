@@ -405,6 +405,29 @@ type TripVersionSnapshot = {
 };
 
 const MAX_TIMELINE_DIFF_ITEMS = 8;
+const VISUAL_LABEL_PREFIX = /^\s*visual\s*:\s*/i;
+
+interface TripTimelineDiffSummary {
+    counts: {
+        deleted_items: number;
+        added_items: number;
+        transport_mode_changes: number;
+        updated_items: number;
+    };
+    deleted_items: Array<Record<string, unknown>>;
+    added_items: Array<Record<string, unknown>>;
+    transport_mode_changes: Array<Record<string, unknown>>;
+    updated_items: Array<Record<string, unknown>>;
+    truncated: boolean;
+}
+
+interface TripTimelineVisualChange {
+    field: string;
+    label: string;
+    before_value: string | null;
+    after_value: string | null;
+    summary: string;
+}
 
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
     title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
@@ -468,7 +491,7 @@ const arraysEqual = (left: string[], right: string[]): boolean => (
 const buildTripTimelineDiffSummary = (
     previousTrip: ITrip | null,
     nextTrip: ITrip
-): Record<string, unknown> | null => {
+): TripTimelineDiffSummary | null => {
     if (!previousTrip) return null;
     const previousItems = Array.isArray(previousTrip.items) ? previousTrip.items : [];
     const nextItems = Array.isArray(nextTrip.items) ? nextTrip.items : [];
@@ -562,6 +585,108 @@ const buildTripTimelineDiffSummary = (
             || transportModeChanges.length > MAX_TIMELINE_DIFF_ITEMS
             || updatedItems.length > MAX_TIMELINE_DIFF_ITEMS
         ),
+    };
+};
+
+const VISUAL_FIELD_KEY_MAP: Record<string, string> = {
+    'map view': 'map_view',
+    'route view': 'route_view',
+    'city names': 'city_names',
+    'map layout': 'map_layout',
+    'timeline layout': 'timeline_layout',
+    zoom: 'zoom_level',
+    'zoom level': 'zoom_level',
+};
+
+const normalizeVisualFieldKey = (value: string): string => {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!normalized) return 'change';
+    if (VISUAL_FIELD_KEY_MAP[normalized]) return VISUAL_FIELD_KEY_MAP[normalized];
+    return normalized
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        || 'change';
+};
+
+const normalizeVisualValue = (value: string): string | null => {
+    const normalized = value.trim();
+    if (!normalized || normalized === '—') return null;
+    return normalized;
+};
+
+const parseVisualChangesFromLabel = (label: string | null | undefined): TripTimelineVisualChange[] => {
+    const normalizedLabel = typeof label === 'string' ? label.trim() : '';
+    if (!normalizedLabel || !VISUAL_LABEL_PREFIX.test(normalizedLabel)) return [];
+
+    const body = normalizedLabel.replace(VISUAL_LABEL_PREFIX, '').trim();
+    if (!body) return [];
+
+    return body
+        .split('·')
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .map((segment) => {
+            const directionalMatch = segment.match(/^([^:]+):\s*(.*?)\s*→\s*(.*)$/);
+            if (directionalMatch) {
+                const labelName = directionalMatch[1].trim() || 'Visual change';
+                const beforeValue = normalizeVisualValue(directionalMatch[2] ?? '');
+                const afterValue = normalizeVisualValue(directionalMatch[3] ?? '');
+                return {
+                    field: normalizeVisualFieldKey(labelName),
+                    label: labelName,
+                    before_value: beforeValue,
+                    after_value: afterValue,
+                    summary: segment,
+                };
+            }
+
+            const colonMatch = segment.match(/^([^:]+):\s*(.*)$/);
+            if (colonMatch) {
+                const labelName = colonMatch[1].trim() || 'Visual change';
+                const afterValue = normalizeVisualValue(colonMatch[2] ?? '');
+                return {
+                    field: normalizeVisualFieldKey(labelName),
+                    label: labelName,
+                    before_value: null,
+                    after_value: afterValue ?? segment,
+                    summary: segment,
+                };
+            }
+
+            const lowerSegment = segment.toLowerCase();
+            const isZoom = lowerSegment === 'zoomed in' || lowerSegment === 'zoomed out';
+            return {
+                field: isZoom ? 'zoom_level' : normalizeVisualFieldKey(segment),
+                label: isZoom ? 'Zoom level' : 'Visual change',
+                before_value: null,
+                after_value: segment,
+                summary: segment,
+            };
+        });
+};
+
+const buildTripTimelineDiffV1 = (
+    timelineDiff: TripTimelineDiffSummary | null,
+    visualChanges: TripTimelineVisualChange[]
+): Record<string, unknown> | null => {
+    if (!timelineDiff && visualChanges.length === 0) return null;
+
+    return {
+        schema: 'timeline_diff_v1',
+        version: 1,
+        counts: {
+            deleted_items: timelineDiff?.counts.deleted_items ?? 0,
+            added_items: timelineDiff?.counts.added_items ?? 0,
+            transport_mode_changes: timelineDiff?.counts.transport_mode_changes ?? 0,
+            updated_items: timelineDiff?.counts.updated_items ?? 0,
+            visual_changes: visualChanges.length,
+        },
+        deleted_items: timelineDiff?.deleted_items ?? [],
+        added_items: timelineDiff?.added_items ?? [],
+        transport_mode_changes: timelineDiff?.transport_mode_changes ?? [],
+        updated_items: timelineDiff?.updated_items ?? [],
+        visual_changes: visualChanges,
+        truncated: timelineDiff?.truncated ?? false,
     };
 };
 
@@ -1004,6 +1129,8 @@ export const dbCreateTripVersion = async (
 
     if (shouldLogVersionUpdate) {
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
+        const visualChanges = parseVisualChangesFromLabel(label ?? null);
+        const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
         await writeTripEventFallback(client, {
             ownerId,
             tripId: normalizedTrip.id,
@@ -1019,6 +1146,7 @@ export const dbCreateTripVersion = async (
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
                 timeline_diff: timelineDiff,
+                timeline_diff_v1: timelineDiffV1,
             },
             dedupeWindowMs: 0,
         });

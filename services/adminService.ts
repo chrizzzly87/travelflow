@@ -79,6 +79,8 @@ export interface AdminTripVersionSnapshotRecord {
     after_version_id: string | null;
     before_snapshot: Record<string, unknown> | null;
     after_snapshot: Record<string, unknown> | null;
+    before_view_settings: Record<string, unknown> | null;
+    after_view_settings: Record<string, unknown> | null;
     before_label: string | null;
     after_label: string | null;
     before_created_at: string | null;
@@ -489,6 +491,8 @@ export const adminGetTripVersionSnapshots = async (
             after_version_id: payload.afterVersionId ?? 'mock-after',
             before_snapshot: { id: tripId, title: 'Before snapshot', items: [] },
             after_snapshot: { id: tripId, title: 'After snapshot', items: [] },
+            before_view_settings: { mapStyle: 'minimal', timelineView: 'vertical' },
+            after_view_settings: { mapStyle: 'clean', timelineView: 'horizontal' },
             before_label: 'Mock before',
             after_label: 'Mock after',
             before_created_at: new Date(Date.now() - 60_000).toISOString(),

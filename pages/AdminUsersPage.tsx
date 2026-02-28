@@ -301,6 +301,19 @@ const asString = (value: unknown): string | null => {
 
 const hasSnapshotData = (value: Record<string, unknown> | null | undefined): boolean => Object.keys(asRecord(value)).length > 0;
 
+const mergeTripSnapshotWithViewSettings = (
+    snapshot: Record<string, unknown> | null | undefined,
+    viewSettings: Record<string, unknown> | null | undefined
+): Record<string, unknown> => {
+    const normalizedSnapshot = asRecord(snapshot);
+    const normalizedViewSettings = asRecord(viewSettings);
+    if (Object.keys(normalizedViewSettings).length === 0) return normalizedSnapshot;
+    return {
+        ...normalizedSnapshot,
+        view_settings: normalizedViewSettings,
+    };
+};
+
 const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
@@ -1224,8 +1237,14 @@ export const AdminUsersPage: React.FC = () => {
                 setDiffModalError('Trip snapshots were not found for this event. Showing event snapshots when available.');
                 return;
             }
-            setDiffModalBeforeValue(asRecord(snapshots.before_snapshot));
-            setDiffModalAfterValue(asRecord(snapshots.after_snapshot));
+            setDiffModalBeforeValue(mergeTripSnapshotWithViewSettings(
+                snapshots.before_snapshot,
+                snapshots.before_view_settings
+            ));
+            setDiffModalAfterValue(mergeTripSnapshotWithViewSettings(
+                snapshots.after_snapshot,
+                snapshots.after_view_settings
+            ));
             setDiffModalBeforeLabel(snapshots.before_label || 'Before version');
             setDiffModalAfterLabel(snapshots.after_label || 'After version');
         } catch (error) {

@@ -238,6 +238,74 @@ describe('services/dbService dbCreateTripVersion', () => {
             transport_mode_changes: 1,
           }),
         }),
+        timeline_diff_v1: expect.objectContaining({
+          schema: 'timeline_diff_v1',
+          version: 1,
+          counts: expect.objectContaining({
+            deleted_items: 1,
+            transport_mode_changes: 1,
+            visual_changes: 0,
+          }),
+        }),
+      }),
+    }));
+  });
+
+  it('captures visual-only version commits in typed timeline diff metadata', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-visual',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-visual',
+          title: 'Visual Trip',
+          startDate: '2026-02-01',
+          items: [],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-visual-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-visual',
+      title: 'Visual Trip',
+      startDate: '2026-02-01',
+      items: [],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Visual: Map view: minimal → clean · Timeline layout: vertical → horizontal');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        timeline_diff: null,
+        timeline_diff_v1: expect.objectContaining({
+          schema: 'timeline_diff_v1',
+          version: 1,
+          counts: expect.objectContaining({
+            visual_changes: 2,
+          }),
+          visual_changes: expect.arrayContaining([
+            expect.objectContaining({
+              field: 'map_view',
+              before_value: 'minimal',
+              after_value: 'clean',
+            }),
+            expect.objectContaining({
+              field: 'timeline_layout',
+              before_value: 'vertical',
+              after_value: 'horizontal',
+            }),
+          ]),
+        }),
       }),
     }));
   });

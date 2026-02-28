@@ -106,7 +106,7 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
-  it('prefers timeline diff details for version-based trip updates and skips after-only noise fields', () => {
+  it('prefers typed timeline diff details for version-based trip updates and skips after-only noise fields', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',
       target_type: 'trip',
@@ -116,7 +116,9 @@ describe('services/adminUserChangeLog', () => {
         version_label: 'Data: Changed transport type',
         status_after: 'active',
         source_kind_after: 'ai_benchmark',
-        timeline_diff: {
+        timeline_diff_v1: {
+          schema: 'timeline_diff_v1',
+          version: 1,
           transport_mode_changes: [
             {
               item_id: 'travel-1',
@@ -147,6 +149,24 @@ describe('services/adminUserChangeLog', () => {
         beforeValue: { id: 'activity-1', type: 'activity', title: 'Night market' },
         afterValue: null,
       },
+    ]);
+  });
+
+  it('derives visual-only diff entries from visual version labels when snapshots are unchanged', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-visual-1',
+        version_label: 'Visual: Map view: minimal → clean · Timeline layout: vertical → horizontal',
+        status_after: 'active',
+      },
+    }));
+
+    expect(entries).toEqual([
+      { key: 'visual_map_view', beforeValue: 'minimal', afterValue: 'clean' },
+      { key: 'visual_timeline_layout', beforeValue: 'vertical', afterValue: 'horizontal' },
     ]);
   });
 

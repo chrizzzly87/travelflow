@@ -56,11 +56,12 @@ This document is the operational source of truth for:
 
 ## Trip Update Diff Semantics
 - Lifecycle-style trip updates use before/after metadata pairs (status/title/public visibility/source kind/expiry).
-- Version-commit trip updates (itinerary edits) attach timeline-level metadata under `timeline_diff`:
+- Version-commit trip updates (itinerary edits) attach timeline-level metadata under `timeline_diff` and `timeline_diff_v1`:
   - `transport_mode_changes`
   - `deleted_items`
   - `added_items`
   - `updated_items`
+  - `visual_changes` (map/timeline/route and other view-level commits)
   - `counts`
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 
@@ -78,6 +79,7 @@ This document is the operational source of truth for:
 - New admin RPC: `admin_get_trip_version_snapshots(p_trip_id, p_after_version_id, p_before_version_id)`.
 - Output:
   - `before_snapshot`, `after_snapshot`,
+  - `before_view_settings`, `after_view_settings`,
   - `before_version_id`, `after_version_id`,
   - `before_label`, `after_label`,
   - version timestamps.
@@ -134,14 +136,14 @@ This document is the operational source of truth for:
 - [x] Anonymous-to-registered claim transfer shipped (including OAuth callback claim handoff).
 - [x] Failure logging shipped (`trip.archive_failed`) and visible in admin user drawer + global audit.
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
-- [ ] Stable typed diff envelope (`timeline_diff_v1`) is not finalized yet.
+- [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
 
 ## Remaining Implementation Plan
 
 ### Phase 1 (remaining)
-- Finalize and enforce stable typed timeline diff schema version (`timeline_diff_v1`) for all trip-update writers.
-- Replace any residual raw JSON fallback rendering paths with typed field renderers only.
+- Enforce `timeline_diff_v1` as the sole write target after DB backfill window; keep `timeline_diff` compatibility reads until migration completes.
+- Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
 - Add deterministic correlation IDs between upsert/version/archive operations.
 
 ### Phase 2

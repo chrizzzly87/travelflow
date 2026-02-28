@@ -13,8 +13,10 @@ const mocks = vi.hoisted(() => ({
     hash: '',
   },
   profile: {
+    firstName: 'Traveler',
+    lastName: 'User',
     username: 'traveler',
-  } as { username?: string | null } | null,
+  } as { firstName?: string; lastName?: string; username?: string | null } | null,
   logout: vi.fn().mockResolvedValue(undefined),
   getAllTrips: vi.fn(),
   trackEvent: vi.fn(),
@@ -48,6 +50,8 @@ describe('components/navigation/AccountMenu recent trips', () => {
     cleanup();
     vi.clearAllMocks();
     mocks.profile = {
+      firstName: 'Traveler',
+      lastName: 'User',
       username: 'traveler',
     };
 
@@ -69,7 +73,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
       isAdmin: false,
     }));
 
-    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Recent trips')).toBeInTheDocument();
@@ -92,7 +96,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
       isAdmin: false,
     }));
 
-    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
     await user.click(screen.getByRole('button', { name: 'View all trips' }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/profile?tab=recent');
@@ -107,7 +111,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
       isAdmin: false,
     }));
 
-    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'View public profile' })).toBeInTheDocument();
@@ -127,7 +131,7 @@ describe('components/navigation/AccountMenu recent trips', () => {
       isAdmin: false,
     }));
 
-    await user.click(screen.getAllByRole('button', { name: /Account/i })[0]);
+    await user.click(screen.getAllByRole('button', { name: /traveler/i })[0]);
     await user.click(screen.getByRole('button', { name: 'Stamps' }));
 
     expect(mocks.navigate).toHaveBeenCalledWith('/profile/stamps');
@@ -152,5 +156,21 @@ describe('components/navigation/AccountMenu recent trips', () => {
     });
     expect(screen.queryByText('Recent trips')).not.toBeInTheDocument();
     expect(screen.queryByText(/Current page:/i)).not.toBeInTheDocument();
+  });
+
+  it('uses profile first/last-name initials for avatar when available', () => {
+    mocks.profile = {
+      firstName: 'Chris',
+      lastName: 'Zimmer',
+      username: 'traveler',
+    };
+
+    render(React.createElement(AccountMenu, {
+      email: 'traveler@example.com',
+      userId: 'user-1',
+      isAdmin: false,
+    }));
+
+    expect(screen.getByText('CZ')).toBeInTheDocument();
   });
 });

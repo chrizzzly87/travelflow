@@ -20,6 +20,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 🚨 Added admin workspace data-source banners that explain active debug/mock mode and cached fallback reasons.
 - [ ] [Fixed] 🧑‍💼 Admin workspace now prefers your real signed-in session over dev-bypass identity when one is available.
 - [ ] [Improved] 🪪 Admin sidebar account button now uses the signed-in user identity label and hides recent-trip shortcuts in admin-only dropdowns.
+- [ ] [Improved] 👤 Account dropdown buttons now consistently prioritize username handles, and avatar chips now use profile name initials when available.
 - [ ] [Fixed] 🧹 Profile trip list now re-syncs from owned DB trips on load and after archive failures to avoid stale non-owned trip actions.
 - [ ] [Fixed] 🧷 Simulated-login trip sync now treats mixed-provider sessions (email + anonymous identities) as real accounts, preventing local foreign trip bleed-through.
 - [ ] [Fixed] 🧼 Simulated-login debug mode now auto-disables when a real signed-in session is detected, preventing foreign local-trip merges.
@@ -33,8 +34,10 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 🪪 Trip info modal now includes an admin-only debug block with owner username/email/UUID and access source for incident tracing.
 - [ ] [Improved] 🧾 Trip version commits now emit user change events so itinerary edits show up in admin user logs and the global audit timeline.
 - [ ] [Improved] 🧭 User trip update logs now include timeline-level change details (added/deleted items, transport mode changes, and changed fields) for clearer audit forensics.
+- [ ] [Improved] 🗺️ Visual-only trip edits (for example map view/timeline layout changes) now appear as concrete before/after diffs in user logs instead of “No field diff recorded.”
 - [ ] [Fixed] 🧩 User-change diff rendering now ignores misleading after-only metadata fields, so audit entries align with what was actually edited.
 - [ ] [Improved] 🔍 Admin audit and user-change entries now include a “Show complete diff” modal with side-by-side JSON snapshot compare and line-level highlights.
+- [ ] [Improved] 🧩 Full diff modals now include saved view-settings snapshots alongside trip data so visual-setting updates are visible in complete diffs.
 - [ ] [Improved] 🎯 Diff modal now defaults to focused change context with collapsible unchanged blocks, plus expandable full before/after JSON panes with synced scrolling.
 - [ ] [Improved] 🎨 JSON diff rendering now uses clearer syntax highlighting for faster scan of key/value changes.
 - [ ] [Fixed] 🧾 Removed verbose metadata panels from admin audit/user-change rows to reduce noise and keep change timelines focused.
@@ -44,6 +47,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.
+- [ ] [Internal] 🧱 Introduced typed `timeline_diff_v1` metadata (with compatibility fallback) for trip update event rendering and future schema evolution.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.
 - [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.

@@ -83,6 +83,80 @@ const normalizeTimelineDiffItems = (
         : []
 );
 
+const VISUAL_LABEL_PREFIX = /^\s*visual\s*:\s*/i;
+
+const VISUAL_FIELD_KEY_MAP: Record<string, string> = {
+    'map view': 'map_view',
+    'route view': 'route_view',
+    'city names': 'city_names',
+    'map layout': 'map_layout',
+    'timeline layout': 'timeline_layout',
+    zoom: 'zoom_level',
+    'zoom level': 'zoom_level',
+};
+
+const normalizeVisualFieldKey = (value: string): string => {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!normalized) return 'change';
+    if (VISUAL_FIELD_KEY_MAP[normalized]) return VISUAL_FIELD_KEY_MAP[normalized];
+    return normalized
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        || 'change';
+};
+
+const normalizeVisualValue = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim();
+    if (!normalized || normalized === '—') return null;
+    return normalized;
+};
+
+const resolveVisualChangesFromVersionLabel = (value: unknown): UserChangeDiffEntry[] => {
+    if (typeof value !== 'string') return [];
+    const normalizedLabel = value.trim();
+    if (!normalizedLabel || !VISUAL_LABEL_PREFIX.test(normalizedLabel)) return [];
+
+    const body = normalizedLabel.replace(VISUAL_LABEL_PREFIX, '').trim();
+    if (!body) return [];
+
+    return body
+        .split('·')
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .map((segment) => {
+            const directionalMatch = segment.match(/^([^:]+):\s*(.*?)\s*→\s*(.*)$/);
+            if (directionalMatch) {
+                const labelName = directionalMatch[1].trim() || 'visual';
+                return {
+                    key: `visual_${normalizeVisualFieldKey(labelName)}`,
+                    beforeValue: normalizeVisualValue(directionalMatch[2]),
+                    afterValue: normalizeVisualValue(directionalMatch[3]),
+                } satisfies UserChangeDiffEntry;
+            }
+
+            const colonMatch = segment.match(/^([^:]+):\s*(.*)$/);
+            if (colonMatch) {
+                const labelName = colonMatch[1].trim() || 'visual';
+                return {
+                    key: `visual_${normalizeVisualFieldKey(labelName)}`,
+                    beforeValue: null,
+                    afterValue: normalizeVisualValue(colonMatch[2]) ?? segment,
+                } satisfies UserChangeDiffEntry;
+            }
+
+            const lowerSegment = segment.toLowerCase();
+            const field = lowerSegment === 'zoomed in' || lowerSegment === 'zoomed out'
+                ? 'zoom_level'
+                : normalizeVisualFieldKey(segment);
+            return {
+                key: `visual_${field}`,
+                beforeValue: null,
+                afterValue: segment,
+            } satisfies UserChangeDiffEntry;
+        });
+};
+
 const asText = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
@@ -104,7 +178,9 @@ const resolveTimelineItemType = (entry: Record<string, unknown>): string | null 
 };
 
 const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserChangeDiffEntry[] => {
-    const timelineDiff = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
+    const timelineDiffV1 = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
+    const timelineDiffLegacy = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
+    const timelineDiff = Object.keys(timelineDiffV1).length > 0 ? timelineDiffV1 : timelineDiffLegacy;
     if (Object.keys(timelineDiff).length === 0) return [];
 
     const entries: UserChangeDiffEntry[] = [];
@@ -169,6 +245,24 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
         });
     });
 
+    const visualChanges = normalizeTimelineDiffItems(timelineDiff.visual_changes);
+    visualChanges.forEach((entry) => {
+        const rawField = asText(entry.field) || asText(entry.label) || 'change';
+        const normalizedField = normalizeVisualFieldKey(rawField);
+        const beforeValue = hasOwn(entry, 'before_value')
+            ? entry.before_value
+            : (hasOwn(entry, 'before') ? entry.before : null);
+        const afterValue = hasOwn(entry, 'after_value')
+            ? entry.after_value
+            : (hasOwn(entry, 'after') ? entry.after : null);
+        if (toComparableValue(beforeValue) === toComparableValue(afterValue)) return;
+        entries.push({
+            key: `visual_${normalizedField}`,
+            beforeValue,
+            afterValue,
+        });
+    });
+
     return entries;
 };
 
@@ -207,7 +301,10 @@ export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserC
         if (record.action === 'trip.updated') {
             const timelineEntries = buildTripTimelineDiffEntries(metadata);
             const lifecycleEntries = buildTripMetadataDiffEntries(metadata, { requireBefore: true });
-            const combined = [...timelineEntries, ...lifecycleEntries];
+            const visualFallbackEntries = timelineEntries.length > 0
+                ? []
+                : resolveVisualChangesFromVersionLabel(metadata.version_label);
+            const combined = [...timelineEntries, ...visualFallbackEntries, ...lifecycleEntries];
             if (combined.length > 0) {
                 return combined;
             }
