@@ -6,6 +6,7 @@ import { applyViewSettingsToSearchParams } from '../../utils';
 
 interface UseTripViewSettingsSyncOptions {
     layoutMode: 'vertical' | 'horizontal';
+    timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     mapStyle: MapStyle;
     routeMode: RouteMode;
@@ -20,6 +21,7 @@ interface UseTripViewSettingsSyncOptions {
     setMapStyle: Dispatch<SetStateAction<MapStyle>>;
     setRouteMode: Dispatch<SetStateAction<RouteMode>>;
     setLayoutMode: Dispatch<SetStateAction<'vertical' | 'horizontal'>>;
+    setTimelineMode: Dispatch<SetStateAction<'calendar' | 'timeline'>>;
     setTimelineView: Dispatch<SetStateAction<'horizontal' | 'vertical'>>;
     setZoomLevel: Dispatch<SetStateAction<number>>;
     setSidebarWidth: Dispatch<SetStateAction<number>>;
@@ -33,6 +35,7 @@ interface UseTripViewSettingsSyncOptions {
 
 export const useTripViewSettingsSync = ({
     layoutMode,
+    timelineMode,
     timelineView,
     mapStyle,
     routeMode,
@@ -47,6 +50,7 @@ export const useTripViewSettingsSync = ({
     setMapStyle,
     setRouteMode,
     setLayoutMode,
+    setTimelineMode,
     setTimelineView,
     setZoomLevel,
     setSidebarWidth,
@@ -70,6 +74,10 @@ export const useTripViewSettingsSync = ({
     }, [layoutMode]);
 
     useEffect(() => {
+        writeLocalStorageItem('tf_timeline_mode', timelineMode);
+    }, [timelineMode]);
+
+    useEffect(() => {
         writeLocalStorageItem('tf_timeline_view', timelineView);
     }, [timelineView]);
 
@@ -85,6 +93,7 @@ export const useTripViewSettingsSync = ({
         const timeoutId = window.setTimeout(() => {
             const settings: IViewSettings = {
                 layoutMode,
+                timelineMode,
                 timelineView,
                 mapStyle,
                 routeMode,
@@ -110,6 +119,7 @@ export const useTripViewSettingsSync = ({
         return () => window.clearTimeout(timeoutId);
     }, [
         layoutMode,
+        timelineMode,
         zoomLevel,
         viewMode,
         mapStyle,
@@ -139,6 +149,7 @@ export const useTripViewSettingsSync = ({
         if (initialViewSettings.mapStyle) setMapStyle(initialViewSettings.mapStyle);
         if (initialViewSettings.routeMode) setRouteMode(initialViewSettings.routeMode);
         if (initialViewSettings.layoutMode) setLayoutMode(initialViewSettings.layoutMode);
+        if (initialViewSettings.timelineMode) setTimelineMode(initialViewSettings.timelineMode);
         if (initialViewSettings.timelineView) setTimelineView(initialViewSettings.timelineView);
         if (typeof initialViewSettings.zoomLevel === 'number') setZoomLevel(initialViewSettings.zoomLevel);
         if (typeof initialViewSettings.sidebarWidth === 'number') setSidebarWidth(initialViewSettings.sidebarWidth);
@@ -152,6 +163,7 @@ export const useTripViewSettingsSync = ({
         setMapStyle,
         setRouteMode,
         setLayoutMode,
+        setTimelineMode,
         setTimelineView,
         setZoomLevel,
         setSidebarWidth,

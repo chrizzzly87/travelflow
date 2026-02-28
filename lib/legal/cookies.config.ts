@@ -187,6 +187,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_timeline_mode',
+      purpose: 'Persists selected timeline mode (calendar or timeline list).',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_city_names',
       purpose: 'Persists map label visibility preference for city names.',
       duration: 'Persistent',

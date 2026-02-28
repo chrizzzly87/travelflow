@@ -7,6 +7,7 @@ import { useTripViewSettingsSync } from '../../../components/tripview/useTripVie
 
 const BASE_VIEW_SETTINGS: IViewSettings = {
   layoutMode: 'horizontal',
+  timelineMode: 'calendar',
   timelineView: 'horizontal',
   mapStyle: 'standard',
   routeMode: 'simple',
@@ -18,6 +19,7 @@ const BASE_VIEW_SETTINGS: IViewSettings = {
 
 const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   layoutMode: 'horizontal',
+  timelineMode: 'calendar',
   timelineView: 'horizontal',
   mapStyle: 'standard',
   routeMode: 'simple',
@@ -32,6 +34,7 @@ const makeHookProps = (): Parameters<typeof useTripViewSettingsSync>[0] => ({
   setMapStyle: vi.fn(),
   setRouteMode: vi.fn(),
   setLayoutMode: vi.fn(),
+  setTimelineMode: vi.fn(),
   setTimelineView: vi.fn(),
   setZoomLevel: vi.fn(),
   setSidebarWidth: vi.fn(),
@@ -56,6 +59,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(window.localStorage.getItem('tf_map_style')).toBe('standard');
     expect(window.localStorage.getItem('tf_route_mode')).toBe('simple');
     expect(window.localStorage.getItem('tf_layout_mode')).toBe('horizontal');
+    expect(window.localStorage.getItem('tf_timeline_mode')).toBe('calendar');
     expect(window.localStorage.getItem('tf_timeline_view')).toBe('horizontal');
     expect(window.localStorage.getItem('tf_city_names')).toBe('true');
     expect(window.localStorage.getItem('tf_zoom_level')).toBe('1.25');
@@ -66,6 +70,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     const params = new URLSearchParams(window.location.search);
     expect(params.get('layout')).toBe('horizontal');
+    expect(params.get('timelineMode')).toBe('calendar');
     expect(params.get('timelineView')).toBe('horizontal');
     expect(params.get('mapStyle')).toBe('standard');
     expect(params.get('routeMode')).toBe('simple');
@@ -96,6 +101,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
 
     expect(onViewSettingsChange).toHaveBeenCalledWith({
       layoutMode: 'horizontal',
+      timelineMode: 'calendar',
       timelineView: 'horizontal',
       mapStyle: 'standard',
       routeMode: 'simple',
@@ -114,6 +120,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     const props = makeHookProps();
     props.initialViewSettings = {
       layoutMode: 'vertical',
+      timelineMode: 'timeline',
       timelineView: 'vertical',
       mapStyle: 'dark',
       routeMode: 'realistic',
@@ -135,6 +142,7 @@ describe('components/tripview/useTripViewSettingsSync', () => {
     expect(props.setMapStyle).toHaveBeenCalledWith('dark');
     expect(props.setRouteMode).toHaveBeenCalledWith('realistic');
     expect(props.setLayoutMode).toHaveBeenCalledWith('vertical');
+    expect(props.setTimelineMode).toHaveBeenCalledWith('timeline');
     expect(props.setTimelineView).toHaveBeenCalledWith('vertical');
     expect(props.setZoomLevel).toHaveBeenCalledWith(2.5);
     expect(props.setSidebarWidth).toHaveBeenCalledWith(640);

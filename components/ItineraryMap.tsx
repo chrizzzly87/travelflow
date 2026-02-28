@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { ITimelineItem, MapColorMode, MapStyle, RouteMode, RouteStatus } from '../types';
-import { Focus, Columns, Rows, Layers, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeftRight, ArrowUpDown, Focus, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { buildRouteCacheKey, DEFAULT_MAP_COLOR_MODE, findTravelBetweenCities, getContrastTextColor, getHexFromColorClass, getNormalizedCityName } from '../utils';
+import { getAnalyticsDebugAttributes } from '../services/analyticsService';
 import { useGoogleMaps } from './GoogleMapsLoader';
 import { normalizeTransportMode } from '../shared/transportModes';
 
@@ -1156,11 +1157,13 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
                             <button
                                 onClick={() => onLayoutChange('vertical')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'vertical' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Vertical layout"
-                            ><Rows size={18} /></button>
+                                {...getAnalyticsDebugAttributes('trip_view__layout_direction--vertical', { surface: 'map_controls' })}
+                            ><ArrowUpDown size={18} /></button>
                             <button
                                 onClick={() => onLayoutChange('horizontal')}
                                 className={`p-2 rounded-lg shadow-md border transition-colors ${layoutMode === 'horizontal' ? 'bg-accent-600 text-white border-accent-700' : 'bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50'}`} aria-label="Horizontal layout"
-                            ><Columns size={18} /></button>
+                                {...getAnalyticsDebugAttributes('trip_view__layout_direction--horizontal', { surface: 'map_controls' })}
+                            ><ArrowLeftRight size={18} /></button>
                         </>
                     )}
 
