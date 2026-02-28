@@ -47,7 +47,10 @@ export const useDbSync = (onLanguageLoaded?: (lang: AppLanguage) => void) => {
             syncInFlightPromise = (async () => {
                 try {
                     const db = await loadDbService();
-                    await db.ensureDbSession();
+                    const sessionUserId = await db.ensureExistingDbSession();
+                    if (!sessionUserId) {
+                        return false;
+                    }
                     await db.uploadLocalTripsToDb();
                     await db.syncTripsFromDb();
                     const settings = await db.dbGetUserSettings();

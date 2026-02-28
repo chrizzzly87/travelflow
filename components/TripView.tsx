@@ -420,6 +420,12 @@ interface TripViewModalLayerProps {
     tripMeta: any;
     ownerSummary: string | null;
     ownerHint: string | null;
+    adminMeta: {
+        ownerUserId: string | null;
+        ownerUsername: string | null;
+        ownerEmail: string | null;
+        accessSource: string | null;
+    } | null;
     aiMeta: ITrip['aiMeta'];
     forkMeta: { label: string; url: string | null } | null;
     isTripInfoHistoryExpanded: boolean;
@@ -491,6 +497,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
     tripMeta,
     ownerSummary,
     ownerHint,
+    adminMeta,
     aiMeta,
     forkMeta,
     isTripInfoHistoryExpanded,
@@ -574,6 +581,7 @@ const TripViewModalLayer: React.FC<TripViewModalLayerProps> = ({
                     tripMeta={tripMeta}
                     ownerSummary={ownerSummary}
                     ownerHint={ownerHint}
+                    adminMeta={adminMeta}
                     aiMeta={aiMeta}
                     forkMeta={forkMeta}
                     isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}
@@ -1476,6 +1484,7 @@ const useTripViewRender = ({
         isMobileMapExpanded,
     });
     const canManageTripMetadata = canEdit && !shareStatus && !isExamplePreview;
+    const isAdminSession = access?.role === 'admin';
     const ownerSummary = useMemo(() => {
         const ownerUsername = tripAccess?.ownerUsername?.trim() || null;
         const ownerEmail = tripAccess?.ownerEmail?.trim() || null;
@@ -1494,7 +1503,7 @@ const useTripViewRender = ({
         if (ownerEmail) {
             return `${ownerEmail}${isOwner ? ' (you)' : ''}`;
         }
-        if (ownerId) {
+        if (ownerId && isAdminSession) {
             return `${ownerId}${isOwner ? ' (you)' : ''}`;
         }
         if (isOwner && currentUsername) {
@@ -1502,8 +1511,10 @@ const useTripViewRender = ({
             return `${normalizedHandle} (you)`;
         }
         if (isOwner) return 'You';
+        if (ownerId) return 'Traveler';
         return null;
     }, [
+        isAdminSession,
         access?.userId,
         profile?.username,
         tripAccess?.ownerEmail,
@@ -1511,6 +1522,19 @@ const useTripViewRender = ({
         tripAccess?.ownerUsername,
         tripAccess?.source,
     ]);
+    const tripOwnerAdminMeta = useMemo(() => {
+        if (!isAdminSession) return null;
+        const ownerUserId = (tripAccess?.ownerId?.trim() || access?.userId?.trim() || null);
+        const ownerUsername = (tripAccess?.ownerUsername?.trim() || profile?.username?.trim() || null);
+        const ownerEmail = (tripAccess?.ownerEmail?.trim() || access?.email?.trim() || null);
+        const accessSource = tripAccess?.source || (ownerUserId ? 'owner' : null);
+        return {
+            ownerUserId,
+            ownerUsername,
+            ownerEmail,
+            accessSource,
+        };
+    }, [isAdminSession, tripAccess?.ownerId, tripAccess?.ownerUsername, tripAccess?.ownerEmail, tripAccess?.source, access?.userId, access?.email, profile?.username]);
     const ownerHint = useMemo(() => {
         if (tripAccess?.source === 'public_read') {
             return 'You are viewing a public trip owned by another account. Archive and edit actions are disabled.';
@@ -1756,6 +1780,7 @@ const useTripViewRender = ({
                         tripMeta={tripMeta}
                         ownerSummary={ownerSummary}
                         ownerHint={ownerHint}
+                        adminMeta={tripOwnerAdminMeta}
                         aiMeta={displayTrip.aiMeta}
                         forkMeta={forkMeta}
                         isTripInfoHistoryExpanded={isTripInfoHistoryExpanded}

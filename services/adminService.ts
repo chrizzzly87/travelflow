@@ -1,5 +1,5 @@
 import type { PlanTierKey } from '../types';
-import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
@@ -463,7 +463,7 @@ export const adminListUserChangeLogs = async (
 const callAdminIdentityApi = async (
     body: Record<string, unknown>
 ): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
-    await ensureDbSession();
+    await ensureExistingDbSession();
     const token = await dbGetAccessToken();
     if (!token) {
         throw new Error('No active access token found for admin operation.');

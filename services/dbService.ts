@@ -144,6 +144,48 @@ const isAnonymousSessionUser = (user: SessionUserLike | null | undefined): boole
     return providers.includes('anonymous');
 };
 
+const maybeDisableSimulatedLoginForRealSession = (sessionUser: SessionUserLike | null | undefined): void => {
+    if (!import.meta.env.DEV) return;
+    if (!isSimulatedLoggedIn()) return;
+    if (isAnonymousSessionUser(sessionUser ?? null)) return;
+    setSimulatedLoggedIn(false);
+    debugLog('simulatedLogin:autoDisabledForRealSession');
+};
+
+const pollForSessionUserId = async (
+    client: ReturnType<typeof requireSupabase>
+): Promise<string | null> => {
+    for (let i = 0; i < SESSION_POLL_ATTEMPTS; i += 1) {
+        const { data: sessionData, error: sessionError } = await client.auth.getSession();
+        if (sessionError) {
+            console.warn('Supabase session error', sessionError);
+        }
+        const sessionUserId = sessionData?.session?.user?.id ?? null;
+        if (sessionUserId) {
+            maybeDisableSimulatedLoginForRealSession(sessionData?.session?.user as SessionUserLike | undefined);
+            debugLog('ensureDbSession:session', { userId: sessionUserId, expiresAt: sessionData?.session?.expires_at });
+            return sessionUserId;
+        }
+        if (i < SESSION_POLL_ATTEMPTS - 1) {
+            await new Promise(resolve => setTimeout(resolve, SESSION_POLL_MS));
+        }
+    }
+    return null;
+};
+
+export const ensureExistingDbSession = async (): Promise<string | null> => {
+    if (!DB_ENABLED) return null;
+    const client = requireSupabase();
+    const sessionUserId = await pollForSessionUserId(client);
+    if (sessionUserId) {
+        cachedUserId = sessionUserId;
+        await maybeLogAuthContext();
+        return cachedUserId;
+    }
+    cachedUserId = null;
+    return null;
+};
+
 export const ensureDbSession = async (): Promise<string | null> => {
     if (!DB_ENABLED) return null;
     if (sessionPromise) return sessionPromise;
@@ -151,25 +193,7 @@ export const ensureDbSession = async (): Promise<string | null> => {
     sessionPromise = (async () => {
         try {
             debugLog('ensureDbSession:start');
-            const pollForSession = async () => {
-                for (let i = 0; i < SESSION_POLL_ATTEMPTS; i += 1) {
-                    const { data: sessionData, error: sessionError } = await client.auth.getSession();
-                    if (sessionError) {
-                        console.warn('Supabase session error', sessionError);
-                    }
-                    const sessionUserId = sessionData?.session?.user?.id ?? null;
-                    if (sessionUserId) {
-                        debugLog('ensureDbSession:session', { userId: sessionUserId, expiresAt: sessionData?.session?.expires_at });
-                        return sessionUserId;
-                    }
-                    if (i < SESSION_POLL_ATTEMPTS - 1) {
-                        await new Promise(resolve => setTimeout(resolve, SESSION_POLL_MS));
-                    }
-                }
-                return null;
-            };
-
-            const existingSessionUserId = await pollForSession();
+            const existingSessionUserId = await pollForSessionUserId(client);
             if (existingSessionUserId) {
                 cachedUserId = existingSessionUserId;
                 await maybeLogAuthContext();
@@ -211,7 +235,7 @@ export const ensureDbSession = async (): Promise<string | null> => {
                     return cachedUserId;
                 }
             }
-            const sessionAfterSignIn = await pollForSession();
+            const sessionAfterSignIn = await pollForSessionUserId(client);
             if (sessionAfterSignIn) {
                 cachedUserId = sessionAfterSignIn;
                 await maybeLogAuthContext();
@@ -229,7 +253,7 @@ export const ensureDbSession = async (): Promise<string | null> => {
 export const dbGetAccessToken = async (): Promise<string | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    await ensureExistingDbSession();
     const { data, error } = await client.auth.getSession();
     if (error) {
         console.error('Failed to read Supabase access token', error);
@@ -366,6 +390,161 @@ const normalizeTripPayload = (trip: ITrip, view?: IViewSettings | null) => {
     };
 };
 
+interface TripEventSnapshot {
+    title: string;
+    status: 'active' | 'archived' | 'expired';
+    showOnPublicProfile: boolean;
+    tripExpiresAt: string | null;
+    sourceKind: string | null;
+}
+
+const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
+    title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
+    status: trip.status && ['active', 'archived', 'expired'].includes(trip.status)
+        ? trip.status
+        : 'active',
+    showOnPublicProfile: trip.showOnPublicProfile !== false,
+    tripExpiresAt: typeof trip.tripExpiresAt === 'string' ? trip.tripExpiresAt : null,
+    sourceKind: typeof trip.sourceKind === 'string' && trip.sourceKind.trim()
+        ? trip.sourceKind.trim()
+        : null,
+});
+
+const toTripEventSource = (value: string | null | undefined): string => {
+    const normalized = typeof value === 'string' ? value.trim() : '';
+    if (!normalized) return 'trip.editor';
+    return normalized.slice(0, 120);
+};
+
+const readOwnedTripEventSnapshot = async (
+    client: ReturnType<typeof requireSupabase>,
+    ownerId: string,
+    tripId: string
+): Promise<TripEventSnapshot | null> => {
+    const { data, error } = await client
+        .from('trips')
+        .select('title, status, show_on_public_profile, trip_expires_at, source_kind')
+        .eq('id', tripId)
+        .eq('owner_id', ownerId)
+        .maybeSingle();
+    if (error) return null;
+    if (!data) return null;
+    const status = typeof data.status === 'string' && ['active', 'archived', 'expired'].includes(data.status)
+        ? data.status as TripEventSnapshot['status']
+        : 'active';
+    return {
+        title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : 'Untitled trip',
+        status,
+        showOnPublicProfile: data.show_on_public_profile !== false,
+        tripExpiresAt: typeof data.trip_expires_at === 'string' ? data.trip_expires_at : null,
+        sourceKind: typeof data.source_kind === 'string' && data.source_kind.trim() ? data.source_kind.trim() : null,
+    };
+};
+
+const hasRecentTripEvent = async (
+    client: ReturnType<typeof requireSupabase>,
+    tripId: string,
+    action: string,
+    withinMs = 15000
+): Promise<boolean> => {
+    const cutoffIso = new Date(Date.now() - withinMs).toISOString();
+    const { data, error } = await client
+        .from('trip_user_events')
+        .select('id')
+        .eq('trip_id', tripId)
+        .eq('action', action)
+        .gte('created_at', cutoffIso)
+        .order('created_at', { ascending: false })
+        .limit(1);
+    if (error) return false;
+    return Array.isArray(data) && data.length > 0;
+};
+
+const writeTripEventFallback = async (
+    client: ReturnType<typeof requireSupabase>,
+    payload: {
+        ownerId: string;
+        tripId: string;
+        action: 'trip.created' | 'trip.updated' | 'trip.archived' | 'trip.share_created';
+        source: string;
+        metadata: Record<string, unknown>;
+    }
+): Promise<void> => {
+    try {
+        const alreadyLogged = await hasRecentTripEvent(client, payload.tripId, payload.action);
+        if (alreadyLogged) return;
+
+        await client.from('trip_user_events').insert({
+            trip_id: payload.tripId,
+            owner_id: payload.ownerId,
+            action: payload.action,
+            source: payload.source,
+            metadata: payload.metadata,
+        });
+    } catch {
+        // best effort fallback logging only
+    }
+};
+
+const writeTripLifecycleEventFallback = async (
+    client: ReturnType<typeof requireSupabase>,
+    payload: {
+        ownerId: string;
+        tripId: string;
+        source: string;
+        before: TripEventSnapshot | null;
+        after: TripEventSnapshot;
+    }
+): Promise<void> => {
+    const { before, after } = payload;
+    if (!before) {
+        await writeTripEventFallback(client, {
+            ownerId: payload.ownerId,
+            tripId: payload.tripId,
+            action: 'trip.created',
+            source: payload.source,
+            metadata: {
+                trip_id: payload.tripId,
+                status_after: after.status,
+                title_after: after.title,
+                show_on_public_profile_after: after.showOnPublicProfile,
+                trip_expires_at_after: after.tripExpiresAt,
+                source_kind_after: after.sourceKind,
+            },
+        });
+        return;
+    }
+
+    const hasDiff = (
+        before.status !== after.status
+        || before.title !== after.title
+        || before.showOnPublicProfile !== after.showOnPublicProfile
+        || before.tripExpiresAt !== after.tripExpiresAt
+        || before.sourceKind !== after.sourceKind
+    );
+    if (!hasDiff) return;
+
+    await writeTripEventFallback(client, {
+        ownerId: payload.ownerId,
+        tripId: payload.tripId,
+        action: 'trip.updated',
+        source: payload.source,
+        metadata: {
+            trip_id: payload.tripId,
+            status_before: before.status,
+            status_after: after.status,
+            title_before: before.title,
+            title_after: after.title,
+            show_on_public_profile_before: before.showOnPublicProfile,
+            show_on_public_profile_after: after.showOnPublicProfile,
+            trip_expires_at_before: before.tripExpiresAt,
+            trip_expires_at_after: after.tripExpiresAt,
+            source_kind_before: before.sourceKind,
+            source_kind_after: after.sourceKind,
+        },
+    });
+};
+
 const resolveTripStatus = (status: unknown, tripExpiresAt: string | null): ITrip['status'] => {
     if (status === 'archived') return 'archived';
     if (status === 'expired') return 'expired';
@@ -408,6 +587,7 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     debugLog('dbUpsertTrip:start', { tripId: trip.id, ownerId });
 
     const normalizedTrip = normalizeTripForStorage(trip);
+    const beforeSnapshot = await readOwnedTripEventSnapshot(client, ownerId, normalizedTrip.id);
     const normalizedView = normalizeViewSettingsPayload(view ?? null);
     const startDate = normalizedTrip.startDate ? normalizedTrip.startDate.split('T')[0] : null;
     const status = normalizedTrip.status && ['active', 'archived', 'expired'].includes(normalizedTrip.status)
@@ -482,13 +662,20 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     if (!row) {
         debugLog('dbUpsertTrip:empty', { tripId: trip.id });
     }
+    await writeTripLifecycleEventFallback(client, {
+        ownerId,
+        tripId: normalizedTrip.id,
+        source: toTripEventSource(normalizedTrip.sourceKind ?? null),
+        before: beforeSnapshot,
+        after: toTripEventSnapshotFromTrip(normalizedTrip),
+    });
     return (row?.trip_id ?? row?.id) ?? null;
 };
 
 export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    const currentUserId = await ensureDbSession();
+    const currentUserId = await ensureExistingDbSession();
     let loadedViaAdminBypass = false;
     let ownerId: string | null = null;
     let ownerEmail: string | null = null;
@@ -597,7 +784,7 @@ export const dbGetTripVersion = async (tripId: string, versionId: string) => {
     if (!isUuid(versionId)) return null;
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    await ensureExistingDbSession();
 
     const { data, error } = await client
         .from('trip_versions')
@@ -629,7 +816,8 @@ export const dbCreateTripVersion = async (
 ) => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    const ownerId = await ensureDbSession();
+    if (!ownerId) return null;
 
     const normalizedTrip = normalizeTripForStorage(trip);
     const normalizedView = normalizeViewSettingsPayload(view ?? null);
@@ -655,7 +843,29 @@ export const dbCreateTripVersion = async (
     }
 
     const row = Array.isArray(data) ? data[0] : data;
-    return (row?.trip_id ?? row?.id) ?? null;
+    const versionId = (row?.version_id ?? row?.id) as string | null;
+    const normalizedLabel = (label || '').trim().toLowerCase();
+    const shouldLogVersionUpdate = normalizedLabel.length > 0
+        && !/(^|[\s:])(created|copied|archived)([\s:]|$)/i.test(normalizedLabel);
+
+    if (shouldLogVersionUpdate) {
+        await writeTripEventFallback(client, {
+            ownerId,
+            tripId: normalizedTrip.id,
+            action: 'trip.updated',
+            source: toTripEventSource(normalizedTrip.sourceKind ?? null),
+            metadata: {
+                trip_id: normalizedTrip.id,
+                version_id: versionId,
+                version_label: label ?? null,
+                source_kind_after: normalizedTrip.sourceKind ?? null,
+                status_after: normalizedTrip.status ?? 'active',
+                updated_at_after: normalizedTrip.updatedAt,
+            },
+        });
+    }
+
+    return versionId;
 };
 
 export const dbAdminOverrideTripCommit = async (
@@ -698,11 +908,13 @@ export const dbAdminOverrideTripCommit = async (
 export const dbListTrips = async (): Promise<ITrip[]> => {
     if (!DB_ENABLED) return [];
     const client = requireSupabase();
-    await ensureDbSession();
+    const currentUserId = await ensureExistingDbSession();
+    if (!currentUserId) return [];
 
     let { data, error } = await client
         .from('trips')
         .select('id, data, status, trip_expires_at, source_kind, source_template_id, show_on_public_profile')
+        .eq('owner_id', currentUserId)
         .neq('status', 'archived')
         .order('updated_at', { ascending: false });
 
@@ -711,6 +923,7 @@ export const dbListTrips = async (): Promise<ITrip[]> => {
         const fallback = await client
             .from('trips')
             .select('data')
+            .eq('owner_id', currentUserId)
             .order('updated_at', { ascending: false });
         data = fallback.data as typeof data;
         error = fallback.error as typeof error;
@@ -748,7 +961,7 @@ export const syncTripsFromDb = async () => {
     const trips = await dbListTrips();
     const shouldUseSimulatedMerge = import.meta.env.DEV && isSimulatedLoggedIn();
     if (shouldUseSimulatedMerge) {
-        let shouldMergeLocalTrips = true;
+        let shouldMergeLocalTrips = false;
         try {
             const client = requireSupabase();
             const { data: sessionData, error } = await client.auth.getSession();
@@ -757,7 +970,7 @@ export const syncTripsFromDb = async () => {
                 shouldMergeLocalTrips = isAnonymousSessionUser(sessionUser ?? null);
             }
         } catch {
-            shouldMergeLocalTrips = true;
+            shouldMergeLocalTrips = false;
         }
 
         if (!shouldMergeLocalTrips) {
@@ -914,7 +1127,9 @@ export const dbArchiveTrip = async (
 ): Promise<boolean> => {
     if (!DB_ENABLED) return true;
     const client = requireSupabase();
-    await ensureDbSession();
+    const ownerId = await ensureExistingDbSession();
+    if (!ownerId) return false;
+    const beforeSnapshot = await readOwnedTripEventSnapshot(client, ownerId, tripId);
     const source = normalizeArchiveSource(options?.source);
     const metadata = options?.metadata && typeof options.metadata === 'object'
         ? options.metadata
@@ -1007,6 +1222,17 @@ export const dbArchiveTrip = async (
         console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }
+    await writeTripEventFallback(client, {
+        ownerId,
+        tripId,
+        action: 'trip.archived',
+        source: source || 'trip.archive',
+        metadata: {
+            trip_id: tripId,
+            status_before: beforeSnapshot?.status || 'active',
+            status_after: 'archived',
+        },
+    });
     return true;
 };
 
@@ -1102,9 +1328,9 @@ export const dbUpsertUserSettings = async (settings: IUserSettings) => {
 export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promise<{ token?: string; error?: string }> => {
     if (!DB_ENABLED) return { error: 'Database disabled' };
     const client = requireSupabase();
-    const sessionId = await ensureDbSession();
+    const sessionId = await ensureExistingDbSession();
     if (!sessionId) {
-        return { error: 'Anonymous auth is disabled or failed to start' };
+        return { error: 'No authenticated session available' };
     }
 
     const { data, error } = await client
@@ -1122,13 +1348,27 @@ export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promis
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return { error: 'No share token returned' };
     const token = row.token as string | undefined;
+    if (token) {
+        await writeTripEventFallback(client, {
+            ownerId: sessionId,
+            tripId,
+            action: 'trip.share_created',
+            source: 'trip.share_modal',
+            metadata: {
+                trip_id: tripId,
+                token,
+                mode,
+                allow_copy: true,
+            },
+        });
+    }
     return token ? { token } : { error: 'Invalid share token' };
 };
 
 export const dbGetSharedTrip = async (token: string): Promise<ISharedTripResult | null> => {
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    await ensureExistingDbSession();
 
     const { data, error } = await client.rpc('get_shared_trip', { p_token: token });
     if (error) {
@@ -1159,7 +1399,7 @@ export const dbGetSharedTripVersion = async (
     if (!isUuid(versionId)) return null;
     if (!DB_ENABLED) return null;
     const client = requireSupabase();
-    await ensureDbSession();
+    await ensureExistingDbSession();
 
     const { data, error } = await client.rpc('get_shared_trip_version', {
         p_token: token,
@@ -1221,7 +1461,8 @@ export const dbUpdateSharedTrip = async (
 export const dbListTripShares = async (tripId?: string): Promise<ITripShareRecord[]> => {
     if (!DB_ENABLED) return [];
     const client = requireSupabase();
-    await ensureDbSession();
+    const sessionId = await ensureExistingDbSession();
+    if (!sessionId) return [];
 
     let query = client
         .from('trip_shares')
@@ -1263,7 +1504,8 @@ export const dbListTripShares = async (tripId?: string): Promise<ITripShareRecor
 export const dbSetTripSharingEnabled = async (tripId: string, enabled: boolean): Promise<boolean> => {
     if (!DB_ENABLED) return false;
     const client = requireSupabase();
-    await ensureDbSession();
+    const sessionId = await ensureExistingDbSession();
+    if (!sessionId) return false;
 
     const { error } = await client
         .from('trips')
@@ -1285,7 +1527,8 @@ export const dbSetTripSharingEnabled = async (tripId: string, enabled: boolean):
 export const dbRevokeTripShares = async (tripId: string): Promise<number> => {
     if (!DB_ENABLED) return 0;
     const client = requireSupabase();
-    await ensureDbSession();
+    const sessionId = await ensureExistingDbSession();
+    if (!sessionId) return 0;
 
     const { data, error } = await client
         .from('trip_shares')
@@ -1327,7 +1570,7 @@ export const dbCanCreateTrip = async (): Promise<{
     }
 
     const client = requireSupabase();
-    await ensureDbSession();
+    await ensureExistingDbSession();
 
     const { data, error } = await client.rpc('can_create_trip');
     if (error) {

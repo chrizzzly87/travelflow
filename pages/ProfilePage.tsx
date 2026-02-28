@@ -220,8 +220,6 @@ export const ProfilePage: React.FC = () => {
     useEffect(() => {
         if (!DB_ENABLED) return;
         if (!isAuthenticated) return;
-        const currentUserId = (access?.userId || '').trim();
-        if (!currentUserId) return;
         let active = true;
         void syncTripsFromDb()
             .then(() => {
@@ -234,7 +232,7 @@ export const ProfilePage: React.FC = () => {
         return () => {
             active = false;
         };
-    }, [access?.userId, isAuthenticated]);
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const next = new URLSearchParams(searchParams);

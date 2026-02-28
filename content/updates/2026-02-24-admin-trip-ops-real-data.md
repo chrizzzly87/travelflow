@@ -22,12 +22,17 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] 🪪 Admin sidebar account button now uses the signed-in user identity label and hides recent-trip shortcuts in admin-only dropdowns.
 - [ ] [Fixed] 🧹 Profile trip list now re-syncs from owned DB trips on load and after archive failures to avoid stale non-owned trip actions.
 - [ ] [Fixed] 🧷 Simulated-login trip sync now treats mixed-provider sessions (email + anonymous identities) as real accounts, preventing local foreign trip bleed-through.
+- [ ] [Fixed] 🧼 Simulated-login debug mode now auto-disables when a real signed-in session is detected, preventing foreign local-trip merges.
 - [ ] [Fixed] 🛡️ Trip pages no longer store read-only/public/admin-fallback trips in personal local trip storage, preventing cross-user trip bleed into profile.
+- [ ] [Fixed] 🔒 Authenticated profile sync now always replaces local trip cache from owned DB trips, even when access identity hydration is temporarily incomplete.
 - [ ] [Improved] 🔐 Anonymous-to-registered sign-ins now use one-time ownership claims that transfer trips and user event history to the signed-in account.
 - [ ] [Improved] 🧾 Added anonymous-claim lifecycle storage and maintenance jobs so stale claims expire and claimed anonymous sessions can be purged safely.
 - [ ] [Improved] 🚫 Failed user archive attempts are now persisted as user-change events and shown in admin audit timelines with failure details.
 - [ ] [Fixed] 🔄 Login callback processing now resolves anonymous ownership claims before queued trip generation claims.
 - [ ] [Improved] 🔎 Trip info now shows owner context so read-only/public/admin-fallback views clearly indicate who owns the trip.
+- [ ] [Improved] 🪪 Trip info modal now includes an admin-only debug block with owner username/email/UUID and access source for incident tracing.
+- [ ] [Improved] 🧾 Trip version commits now emit user change events so itinerary edits show up in admin user logs and the global audit timeline.
+- [ ] [Fixed] 🚫 Trip creation-limit checks no longer create anonymous DB accounts during read-only eligibility checks.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
 - [ ] [Internal] 🗃️ Added DB-backed profile user-event capture and a unified admin query path for user change logs.

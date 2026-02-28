@@ -142,4 +142,30 @@ describe('pages/ProfilePage DB ownership sync', () => {
     expect(screen.queryByText('Stale Trip')).not.toBeInTheDocument();
     expect(mocks.syncTripsFromDb).toHaveBeenCalledTimes(1);
   });
+
+  it('still replaces local trips when authenticated access userId is temporarily missing', async () => {
+    const staleTrip = makeTrip({ id: 'trip-stale-missing-id', title: 'Wrong Local Trip', updatedAt: 90 });
+    const ownedTrip = makeTrip({ id: 'trip-owned-missing-id', title: 'Owned DB Trip', updatedAt: 210 });
+    let currentTrips = [staleTrip];
+
+    mocks.getAllTrips.mockImplementation(() => currentTrips);
+    mocks.syncTripsFromDb.mockImplementation(async () => {
+      currentTrips = [ownedTrip];
+    });
+
+    const originalAccess = mocks.auth.access;
+    mocks.auth.access = { ...mocks.auth.access, userId: '' };
+
+    try {
+      renderProfilePage('/profile?tab=all&recentSort=updated');
+
+      await waitFor(() => {
+        expect(screen.getByText('Owned DB Trip')).toBeInTheDocument();
+      });
+      expect(screen.queryByText('Wrong Local Trip')).not.toBeInTheDocument();
+      expect(mocks.syncTripsFromDb).toHaveBeenCalledTimes(1);
+    } finally {
+      mocks.auth.access = originalAccess;
+    }
+  });
 });

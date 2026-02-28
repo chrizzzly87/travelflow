@@ -7,7 +7,6 @@ import { DB_ENABLED } from '../config/db';
 import {
     dbGetTrip,
     dbGetTripVersion,
-    ensureDbSession,
     type DbTripAccess,
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
@@ -116,7 +115,6 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             }
 
             if (DB_ENABLED) {
-                await ensureDbSession();
                 if (versionId && isUuid(versionId)) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {

@@ -2043,6 +2043,7 @@ begin
       from auth.users u
      where coalesce((u.raw_app_meta_data ->> 'provider') = 'anonymous', false)
         or coalesce((u.raw_app_meta_data -> 'providers') ? 'anonymous', false)
+        or coalesce((u.raw_user_meta_data ->> 'is_anonymous')::boolean, false)
   ),
   candidates as (
     select au.id

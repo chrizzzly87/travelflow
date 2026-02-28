@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
+    ensureExistingDbSession: vi.fn(),
     ensureDbSession: vi.fn(),
     uploadLocalTripsToDb: vi.fn(),
     syncTripsFromDb: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock('../../config/db', () => ({
 }));
 
 vi.mock('../../services/dbService', () => ({
+    ensureExistingDbSession: mocks.ensureExistingDbSession,
     ensureDbSession: mocks.ensureDbSession,
     uploadLocalTripsToDb: mocks.uploadLocalTripsToDb,
     syncTripsFromDb: mocks.syncTripsFromDb,
@@ -43,7 +45,7 @@ describe('hooks/useDbSync', () => {
         __resetUseDbSyncStateForTests();
         setNavigatorOnlineState(true);
 
-        mocks.ensureDbSession.mockResolvedValue('session-id');
+        mocks.ensureExistingDbSession.mockResolvedValue('session-id');
         mocks.uploadLocalTripsToDb.mockResolvedValue(undefined);
         mocks.syncTripsFromDb.mockResolvedValue(undefined);
         mocks.dbGetUserSettings.mockResolvedValue({ language: 'de' });
@@ -66,7 +68,7 @@ describe('hooks/useDbSync', () => {
         renderHook(() => useDbSync(onLanguageLoaded));
 
         await waitFor(() => {
-            expect(mocks.ensureDbSession).toHaveBeenCalledTimes(1);
+            expect(mocks.ensureExistingDbSession).toHaveBeenCalledTimes(1);
             expect(mocks.uploadLocalTripsToDb).toHaveBeenCalledTimes(1);
             expect(mocks.syncTripsFromDb).toHaveBeenCalledTimes(1);
             expect(mocks.dbGetUserSettings).toHaveBeenCalledTimes(1);
@@ -85,7 +87,7 @@ describe('hooks/useDbSync', () => {
             await Promise.resolve();
         });
 
-        expect(mocks.ensureDbSession).not.toHaveBeenCalled();
+        expect(mocks.ensureExistingDbSession).not.toHaveBeenCalled();
 
         setNavigatorOnlineState(true);
 
@@ -95,7 +97,7 @@ describe('hooks/useDbSync', () => {
             await Promise.resolve();
         });
 
-        expect(mocks.ensureDbSession).toHaveBeenCalledTimes(1);
+        expect(mocks.ensureExistingDbSession).toHaveBeenCalledTimes(1);
         expect(mocks.syncTripsFromDb).toHaveBeenCalledTimes(1);
     });
 });

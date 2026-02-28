@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const order = vi.fn();
+  const eq = vi.fn(() => ({ neq }));
   const neq = vi.fn(() => ({ order }));
-  const select = vi.fn(() => ({ neq }));
+  const select = vi.fn(() => ({ eq }));
   return {
     from: vi.fn(() => ({ select })),
+    eq,
     order,
     getSession: vi.fn(),
     signInAnonymously: vi.fn(),
@@ -63,6 +65,7 @@ describe('services/dbService syncTripsFromDb', () => {
     vi.resetModules();
     vi.clearAllMocks();
     mocks.order.mockResolvedValue({ data: [DB_ROW], error: null });
+    mocks.eq.mockClear();
     mocks.signInAnonymously.mockResolvedValue({ data: null, error: null });
     mocks.setSession.mockResolvedValue({ error: null });
     mocks.getAllTrips.mockReturnValue([
@@ -95,6 +98,7 @@ describe('services/dbService syncTripsFromDb', () => {
     await syncTripsFromDb();
 
     expect(mocks.setAllTrips).toHaveBeenCalledTimes(1);
+    expect(mocks.eq).toHaveBeenCalledWith('owner_id', 'real-user-id');
     const [tripsArg] = mocks.setAllTrips.mock.calls[0];
     expect(tripsArg.map((trip: { id: string }) => trip.id)).toEqual(['trip-db-1']);
   });
@@ -142,6 +146,7 @@ describe('services/dbService syncTripsFromDb', () => {
     expect(mocks.setAllTrips).toHaveBeenCalledTimes(1);
     const [tripsArg] = mocks.setAllTrips.mock.calls[0];
     expect(tripsArg.map((trip: { id: string }) => trip.id)).toEqual(['trip-db-1']);
+    expect(mocks.setSimulatedLoggedIn).toHaveBeenCalledWith(false);
   });
 
   it('treats upgraded sessions with both email and anonymous providers as real-user sessions', async () => {
@@ -193,5 +198,20 @@ describe('services/dbService syncTripsFromDb', () => {
     expect(mocks.setAllTrips).toHaveBeenCalledTimes(1);
     const [tripsArg] = mocks.setAllTrips.mock.calls[0];
     expect(tripsArg.map((trip: { id: string }) => trip.id)).toEqual(['trip-db-1']);
+  });
+
+  it('does not merge local trips when simulated login is active but session lookup errors', async () => {
+    mocks.isSimulatedLoggedIn.mockReturnValue(true);
+    mocks.getSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'session unavailable' },
+    });
+
+    const { syncTripsFromDb } = await import('../../services/dbService');
+    await syncTripsFromDb();
+
+    expect(mocks.setAllTrips).toHaveBeenCalledTimes(1);
+    const [tripsArg] = mocks.setAllTrips.mock.calls[0];
+    expect(tripsArg.map((trip: { id: string }) => trip.id)).toEqual([]);
   });
 });

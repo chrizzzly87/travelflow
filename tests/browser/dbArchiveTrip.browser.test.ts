@@ -2,17 +2,62 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
+  const tripSnapshotMaybeSingle = vi.fn();
+  const tripSnapshotEqOwner = vi.fn(() => ({ maybeSingle: tripSnapshotMaybeSingle }));
+  const tripSnapshotEqId = vi.fn(() => ({ eq: tripSnapshotEqOwner }));
+  const tripSnapshotSelect = vi.fn(() => ({ eq: tripSnapshotEqId }));
+
   const updateMaybeSingle = vi.fn();
   const updateSelect = vi.fn(() => ({ maybeSingle: updateMaybeSingle }));
   const updateEq = vi.fn(() => ({ select: updateSelect }));
   const update = vi.fn(() => ({ eq: updateEq }));
+
+  const eventRecentLimit = vi.fn();
+  const eventRecentOrder = vi.fn(() => ({ limit: eventRecentLimit }));
+  const eventRecentGte = vi.fn(() => ({ order: eventRecentOrder }));
+  const eventRecentEqAction = vi.fn(() => ({ gte: eventRecentGte }));
+  const eventRecentEqTrip = vi.fn(() => ({ eq: eventRecentEqAction }));
+  const eventRecentSelect = vi.fn(() => ({ eq: eventRecentEqTrip }));
+  const eventInsert = vi.fn();
+
+  const from = vi.fn((table: string) => {
+    if (table === 'trip_user_events') {
+      return {
+        select: eventRecentSelect,
+        insert: eventInsert,
+      };
+    }
+    if (table === 'trips') {
+      return {
+        select: tripSnapshotSelect,
+        update,
+      };
+    }
+    return {
+      select: tripSnapshotSelect,
+      update,
+      insert: eventInsert,
+    };
+  });
+
   return {
     rpc: vi.fn(),
-    from: vi.fn(() => ({ update })),
+    from,
+    tripSnapshotMaybeSingle,
+    tripSnapshotEqOwner,
+    tripSnapshotEqId,
+    tripSnapshotSelect,
     update,
     updateEq,
     updateSelect,
     updateMaybeSingle,
+    eventRecentLimit,
+    eventRecentOrder,
+    eventRecentGte,
+    eventRecentEqAction,
+    eventRecentEqTrip,
+    eventRecentSelect,
+    eventInsert,
     getSession: vi.fn(),
     signInAnonymously: vi.fn(),
     setSession: vi.fn(),
@@ -51,7 +96,19 @@ describe('services/dbService dbArchiveTrip', () => {
     });
     mocks.signInAnonymously.mockResolvedValue({ data: null, error: null });
     mocks.setSession.mockResolvedValue({ error: null });
+    mocks.tripSnapshotMaybeSingle.mockResolvedValue({
+      data: {
+        title: 'Trip title',
+        status: 'active',
+        show_on_public_profile: true,
+        trip_expires_at: null,
+        source_kind: 'trip.editor',
+      },
+      error: null,
+    });
     mocks.updateMaybeSingle.mockResolvedValue({ data: { id: 'trip-2', status: 'archived' }, error: null });
+    mocks.eventRecentLimit.mockResolvedValue({ data: [], error: null });
+    mocks.eventInsert.mockResolvedValue({ data: null, error: null });
   });
 
   afterAll(() => {

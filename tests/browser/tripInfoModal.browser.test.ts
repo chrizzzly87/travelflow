@@ -42,11 +42,18 @@ describe('components/TripInfoModal ownership context', () => {
       isPaywallLocked: false,
       ownerSummary: '@owner_user',
       ownerHint: 'You are viewing a public trip owned by another account.',
+      adminMeta: {
+        ownerUserId: '3fa19134-cf6d-48a9-8099-fdb68d817cdc',
+        ownerUsername: '@owner_user',
+        ownerEmail: 'owner@example.com',
+        accessSource: 'public_read',
+      },
     }));
 
     expect(screen.getByText('Owner')).toBeInTheDocument();
-    expect(screen.getByText('@owner_user')).toBeInTheDocument();
+    expect(screen.getAllByText('@owner_user').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('You are viewing a public trip owned by another account.')).toBeInTheDocument();
+    expect(screen.getByText('Admin debug')).toBeInTheDocument();
+    expect(screen.getByText('3fa19134-cf6d-48a9-8099-fdb68d817cdc')).toBeInTheDocument();
   });
 });
-
