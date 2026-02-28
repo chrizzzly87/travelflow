@@ -429,6 +429,17 @@ interface TripTimelineVisualChange {
     summary: string;
 }
 
+const createEventCorrelationId = (): string => {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch {
+        // fallback below
+    }
+    return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
     title: (trip.title || 'Untitled trip').trim() || 'Untitled trip',
     status: trip.status && ['active', 'archived', 'expired'].includes(trip.status)
@@ -739,6 +750,7 @@ const writeTripEventFallback = async (
         action: 'trip.created' | 'trip.updated' | 'trip.archived' | 'trip.share_created';
         source: string;
         metadata: Record<string, unknown>;
+        correlationId?: string;
         dedupeWindowMs?: number;
     }
 ): Promise<void> => {
@@ -751,12 +763,20 @@ const writeTripEventFallback = async (
             if (alreadyLogged) return;
         }
 
+        const existingCorrelationId = typeof payload.metadata.correlation_id === 'string'
+            ? payload.metadata.correlation_id.trim()
+            : '';
+        const metadataWithCorrelation: Record<string, unknown> = {
+            ...payload.metadata,
+            correlation_id: existingCorrelationId || payload.correlationId || createEventCorrelationId(),
+        };
+
         await client.from('trip_user_events').insert({
             trip_id: payload.tripId,
             owner_id: payload.ownerId,
             action: payload.action,
             source: payload.source,
-            metadata: payload.metadata,
+            metadata: metadataWithCorrelation,
         });
     } catch {
         // best effort fallback logging only
@@ -771,6 +791,7 @@ const writeTripLifecycleEventFallback = async (
         source: string;
         before: TripEventSnapshot | null;
         after: TripEventSnapshot;
+        correlationId?: string;
     }
 ): Promise<void> => {
     const { before, after } = payload;
@@ -780,6 +801,7 @@ const writeTripLifecycleEventFallback = async (
             tripId: payload.tripId,
             action: 'trip.created',
             source: payload.source,
+            correlationId: payload.correlationId,
             metadata: {
                 trip_id: payload.tripId,
                 status_after: after.status,
@@ -806,6 +828,7 @@ const writeTripLifecycleEventFallback = async (
         tripId: payload.tripId,
         action: 'trip.updated',
         source: payload.source,
+        correlationId: payload.correlationId,
         metadata: {
             trip_id: payload.tripId,
             status_before: before.status,
@@ -940,12 +963,14 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         debugLog('dbUpsertTrip:empty', { tripId: trip.id });
     }
     const afterSnapshot = await readOwnedTripEventSnapshot(client, ownerId, normalizedTrip.id);
+    const correlationId = createEventCorrelationId();
     await writeTripLifecycleEventFallback(client, {
         ownerId,
         tripId: normalizedTrip.id,
         source: toTripEventSource(normalizedTrip.sourceKind ?? null),
         before: beforeSnapshot,
         after: afterSnapshot ?? toTripEventSnapshotFromTrip(normalizedTrip),
+        correlationId,
     });
     return (row?.trip_id ?? row?.id) ?? null;
 };
@@ -1131,11 +1156,13 @@ export const dbCreateTripVersion = async (
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         const visualChanges = parseVisualChangesFromLabel(label ?? null);
         const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
+        const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
             ownerId,
             tripId: normalizedTrip.id,
             action: 'trip.updated',
             source: toTripEventSource(normalizedTrip.sourceKind ?? null),
+            correlationId,
             metadata: {
                 trip_id: normalizedTrip.id,
                 version_id: versionId,
@@ -1509,11 +1536,13 @@ export const dbArchiveTrip = async (
         console.error('Failed to archive trip', error ?? { message: 'Archive did not update any row', tripId, source });
         return false;
     }
+    const correlationId = createEventCorrelationId();
     await writeTripEventFallback(client, {
         ownerId,
         tripId,
         action: 'trip.archived',
         source: source || 'trip.archive',
+        correlationId,
         metadata: {
             trip_id: tripId,
             status_before: beforeSnapshot?.status || 'active',
@@ -1636,11 +1665,13 @@ export const dbCreateShareLink = async (tripId: string, mode: ShareMode): Promis
     if (!row) return { error: 'No share token returned' };
     const token = row.token as string | undefined;
     if (token) {
+        const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
             ownerId: sessionId,
             tripId,
             action: 'trip.share_created',
             source: 'trip.share_modal',
+            correlationId,
             metadata: {
                 trip_id: tripId,
                 token,

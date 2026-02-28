@@ -140,6 +140,7 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
+        correlation_id: expect.any(String),
         trip_id: 'trip-1',
         version_id: 'version-1',
         previous_version_id: 'version-prev',
@@ -232,6 +233,7 @@ describe('services/dbService dbCreateTripVersion', () => {
 
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
+        correlation_id: expect.any(String),
         timeline_diff: expect.objectContaining({
           counts: expect.objectContaining({
             deleted_items: 1,
@@ -286,6 +288,7 @@ describe('services/dbService dbCreateTripVersion', () => {
 
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
+        correlation_id: expect.any(String),
         timeline_diff: null,
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',

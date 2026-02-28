@@ -33,6 +33,7 @@ This document is the operational source of truth for:
   - user profile-level actions (for example `profile.updated`, `trip.archive_failed`).
 - `public.trip_user_events`
   - user trip-level lifecycle/actions (for example `trip.created`, `trip.updated`, `trip.archived`, `trip.share_created`).
+  - includes per-operation `metadata.correlation_id` for event tracing across audit surfaces.
 
 ## Admin Surfaces and Limits
 - Admin Users drawer (`/admin/users`):
