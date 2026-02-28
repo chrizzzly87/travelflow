@@ -141,6 +141,11 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
         trip_id: 'trip-1',
         version_id: 'version-1',
         previous_version_id: 'version-prev',
@@ -234,6 +239,11 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
         secondary_actions: expect.arrayContaining([
           'trip.transport.updated',
           'trip.activity.deleted',
@@ -289,6 +299,11 @@ describe('services/dbService dbCreateTripVersion', () => {
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
         correlation_id: expect.any(String),
+        causation_id: expect.any(String),
+        event_id: expect.any(String),
+        event_kind: 'trip.updated',
+        event_schema_version: 1,
+        source_surface: expect.any(String),
         secondary_actions: expect.arrayContaining([
           'trip.view.updated',
         ]),

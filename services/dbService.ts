@@ -406,6 +406,7 @@ type TripVersionSnapshot = {
 
 const MAX_TIMELINE_DIFF_ITEMS = 8;
 const VISUAL_LABEL_PREFIX = /^\s*visual\s*:\s*/i;
+const TRIP_EVENT_SCHEMA_VERSION = 1;
 
 interface TripTimelineDiffSummary {
     counts: {
@@ -453,6 +454,52 @@ const createEventCorrelationId = (): string => {
         // fallback below
     }
     return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const normalizeEventToken = (value: unknown, maxLength = 120): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    return trimmed.slice(0, maxLength);
+};
+
+const withTripEventEnvelope = (
+    metadata: Record<string, unknown> | undefined,
+    options: {
+        action: string;
+        source: string | null | undefined;
+        correlationId?: string | null;
+        causationId?: string | null;
+    }
+): Record<string, unknown> => {
+    const next: Record<string, unknown> = {
+        ...(metadata ?? {}),
+    };
+    const correlationId = normalizeEventToken(next.correlation_id)
+        || normalizeEventToken(options.correlationId)
+        || createEventCorrelationId();
+    const causationFromMetadata = normalizeEventToken(next.causation_id)
+        || normalizeEventToken(next.version_id)
+        || normalizeEventToken(next.previous_version_id);
+    const causationId = causationFromMetadata
+        || normalizeEventToken(options.causationId)
+        || correlationId;
+    const eventId = normalizeEventToken(next.event_id) || createEventCorrelationId();
+    const eventKind = normalizeEventToken(next.event_kind) || normalizeEventToken(options.action) || 'unknown';
+    const sourceSurface = normalizeEventToken(next.source_surface) || normalizeEventToken(options.source);
+    const schemaVersion = typeof next.event_schema_version === 'number' && Number.isFinite(next.event_schema_version)
+        ? next.event_schema_version
+        : TRIP_EVENT_SCHEMA_VERSION;
+
+    next.correlation_id = correlationId;
+    next.causation_id = causationId;
+    next.event_id = eventId;
+    next.event_kind = eventKind;
+    next.event_schema_version = schemaVersion;
+    if (sourceSurface) {
+        next.source_surface = sourceSurface;
+    }
+    return next;
 };
 
 const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
@@ -829,6 +876,7 @@ const writeTripEventFallback = async (
         source: string;
         metadata: Record<string, unknown>;
         correlationId?: string;
+        causationId?: string;
         dedupeWindowMs?: number;
     }
 ): Promise<void> => {
@@ -841,20 +889,19 @@ const writeTripEventFallback = async (
             if (alreadyLogged) return;
         }
 
-        const existingCorrelationId = typeof payload.metadata.correlation_id === 'string'
-            ? payload.metadata.correlation_id.trim()
-            : '';
-        const metadataWithCorrelation: Record<string, unknown> = {
-            ...payload.metadata,
-            correlation_id: existingCorrelationId || payload.correlationId || createEventCorrelationId(),
-        };
+        const metadataWithEnvelope = withTripEventEnvelope(payload.metadata, {
+            action: payload.action,
+            source: payload.source,
+            correlationId: payload.correlationId,
+            causationId: payload.causationId,
+        });
 
         await client.from('trip_user_events').insert({
             trip_id: payload.tripId,
             owner_id: payload.ownerId,
             action: payload.action,
             source: payload.source,
-            metadata: metadataWithCorrelation,
+            metadata: metadataWithEnvelope,
         });
     } catch {
         // best effort fallback logging only
@@ -1501,13 +1548,11 @@ const logUserActionFailure = async (
     }
 ) => {
     try {
-        const metadataWithCorrelation: Record<string, unknown> = {
-            ...(payload.metadata ?? {}),
-        };
-        const existingCorrelationId = typeof metadataWithCorrelation.correlation_id === 'string'
-            ? metadataWithCorrelation.correlation_id.trim()
-            : '';
-        metadataWithCorrelation.correlation_id = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+        const metadataWithEnvelope = withTripEventEnvelope(payload.metadata, {
+            action: payload.action,
+            source: payload.source,
+            correlationId: payload.correlationId,
+        });
 
         await client.rpc('log_user_action_failure', {
             p_action: payload.action,
@@ -1516,7 +1561,7 @@ const logUserActionFailure = async (
             p_source: payload.source,
             p_error_code: normalizeFailureText(payload.errorCode),
             p_error_message: normalizeFailureText(payload.errorMessage),
-            p_metadata: metadataWithCorrelation,
+            p_metadata: metadataWithEnvelope,
         });
     } catch {
         // best effort failure logging only

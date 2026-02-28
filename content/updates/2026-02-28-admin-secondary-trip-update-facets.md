@@ -15,5 +15,6 @@ summary: "Admin timelines now surface compact secondary trip-update facets while
 - [ ] [Improved] 🔎 Admin audit now supports filtering the timeline by trip update facet (for example transport/activity/view changes).
 - [ ] [Internal] 📐 Added deterministic secondary-facet derivation logic and regression tests for typed diff keys.
 - [ ] [Internal] 🧾 Trip update event writers now persist `secondary_actions` codes so facet rendering is deterministic for new rows and only falls back to key parsing for legacy data.
+- [ ] [Internal] 🧬 Added a stable event envelope for trip/failure logs (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) to improve tracing and future schema evolution.
 - [ ] [Internal] 📚 Expanded logging architecture docs with Phase 2 facet-rendering rules and roadmap status updates.
 - [ ] [Internal] ✅ Added a dedicated user/trip logging implementation playbook with required metadata, tests, and DoD checklist to prevent missed audit events.

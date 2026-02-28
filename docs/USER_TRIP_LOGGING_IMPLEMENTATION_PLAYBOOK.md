@@ -32,6 +32,13 @@ This is the guardrail doc for any future mutation work. If a change touches user
 - Full snapshot compare is reconstructed on-demand in admin diff modal via version snapshot lookup.
 
 ## Required Metadata Keys
+- Event envelope for trip/profile mutation logs:
+  - `event_schema_version`
+  - `event_id`
+  - `event_kind`
+  - `correlation_id`
+  - `causation_id`
+  - `source_surface`
 - Trip update (`trip.updated`):
   - `trip_id`, `version_id`, `previous_version_id`, `version_label`
   - `source_kind_after`, `status_after`, `updated_at_after`

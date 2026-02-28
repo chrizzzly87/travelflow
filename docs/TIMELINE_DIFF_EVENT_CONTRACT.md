@@ -9,6 +9,7 @@
 - **Write format**: `metadata.timeline_diff_v1` only.
 - **Legacy read compatibility**: `metadata.timeline_diff` may still be read for old rows until legacy rows are fully retired.
 - **Do not add new `timeline_diff` writes.**
+- **Event envelope**: trip events should include `event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, and `source_surface`.
 
 ## Producer and consumer
 - Producer:
@@ -56,7 +57,7 @@
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
   - verifies `timeline_diff_v1` writes
   - verifies no regression to legacy write format
-  - verifies correlation ID presence
+  - verifies event envelope fields (`event_schema_version`, event/correlation/causation IDs)
   - verifies deterministic `secondary_actions` writes
 - `tests/browser/dbArchiveTrip.browser.test.ts`
   - verifies archive and archive-failure metadata includes correlation IDs
