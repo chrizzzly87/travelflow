@@ -191,6 +191,11 @@ describe('services/dbService dbArchiveTrip', () => {
         correlation_id: correlationId,
         causation_id: correlationId,
         source_surface: 'my_trips',
+        actor_user_id: 'user-1',
+        actor_type: 'user',
+        target_type: 'trip',
+        target_id: 'trip-noop',
+        redaction_policy: 'error_safe_v1',
       }),
     });
   });

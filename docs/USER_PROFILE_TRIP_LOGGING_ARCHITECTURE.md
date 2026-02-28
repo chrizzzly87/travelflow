@@ -167,10 +167,10 @@ This document is the operational source of truth for:
 
 ### Phase 3
 - Add immutable append-only event envelope with:
-  - schema version,
-  - actor/target IDs,
-  - causation ID,
-  - correlation ID,
-  - source surface,
-  - redaction policy for sensitive fields.
+  - [x] schema version,
+  - [x] actor/target IDs,
+  - [x] causation ID,
+  - [x] correlation ID,
+  - [x] source surface,
+  - [x] redaction policy for sensitive fields.
 - Add async replay/forensics export pipeline for support incidents.

@@ -924,6 +924,11 @@ const writeTripEventFallback = async (
             correlation_id: correlationId,
             causation_id: existingCausationId || correlationId,
             source_surface: existingSourceSurface || payload.source,
+            actor_user_id: payload.ownerId,
+            actor_type: 'user',
+            target_type: 'trip',
+            target_id: payload.tripId,
+            redaction_policy: 'none',
         };
 
         await client.from('trip_user_events').insert({
@@ -1584,6 +1589,7 @@ const logUserActionFailure = async (
         action: string;
         targetType: string;
         targetId: string | null;
+        actorUserId?: string | null;
         source: string | null;
         correlationId?: string | null;
         errorCode?: string | null;
@@ -1623,6 +1629,11 @@ const logUserActionFailure = async (
         metadataWithCorrelation.correlation_id = correlationId;
         metadataWithCorrelation.causation_id = existingCausationId || correlationId;
         metadataWithCorrelation.source_surface = existingSourceSurface || payload.source;
+        metadataWithCorrelation.actor_user_id = payload.actorUserId ?? null;
+        metadataWithCorrelation.actor_type = 'user';
+        metadataWithCorrelation.target_type = payload.targetType;
+        metadataWithCorrelation.target_id = payload.targetId;
+        metadataWithCorrelation.redaction_policy = 'error_safe_v1';
 
         await client.rpc('log_user_action_failure', {
             p_action: payload.action,
@@ -1731,6 +1742,7 @@ export const dbArchiveTrip = async (
                 action: 'trip.archive_failed',
                 targetType: 'trip',
                 targetId: tripId,
+                actorUserId: ownerId,
                 source,
                 correlationId,
                 errorCode: normalizeFailureText((error as DbErrorLike | null)?.code ?? null),

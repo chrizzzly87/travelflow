@@ -57,6 +57,11 @@
 - `trip_user_events.metadata` must include `correlation_id`.
 - Archive failure metadata in `profile_user_events` (via `log_user_action_failure`) must also include `correlation_id`.
 - Correlation IDs connect related write attempts across event tables for incident tracing.
+- Fallback event inserts now also include immutable envelope fields:
+  - `event_schema_version`, `event_id`, `event_kind`
+  - `correlation_id`, `causation_id`
+  - `source_surface`, `actor_user_id`, `actor_type`, `target_type`, `target_id`
+  - `redaction_policy`
 - Current deterministic conventions:
   - version commit events: `trip-version-<trip-id>-<version-id>`
   - lifecycle upsert fallback events: `trip-upsert-<trip-id>-<updated-at>`
