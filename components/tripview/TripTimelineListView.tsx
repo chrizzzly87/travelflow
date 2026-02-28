@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { TransportModeIcon } from '../TransportModeIcon';
 import type { ITrip } from '../../types';
@@ -29,6 +31,23 @@ const formatTransferDuration = (durationHours: number | null): string | null => 
     return Number.isInteger(durationHours)
         ? `${durationHours.toFixed(0)}h`
         : `${durationHours.toFixed(1)}h`;
+};
+
+const MARKDOWN_COMPONENTS = {
+    a: ({ node, ...props }: any) => (
+        <a
+            {...props}
+            className="text-accent-700 underline decoration-accent-300 underline-offset-2 hover:text-accent-800"
+            target="_blank"
+            rel="noopener noreferrer"
+        />
+    ),
+    p: ({ node, ...props }: any) => <p {...props} className="my-0 leading-6" />,
+    ul: ({ node, ...props }: any) => <ul {...props} className="my-2 list-disc ps-5 space-y-1" />,
+    ol: ({ node, ...props }: any) => <ol {...props} className="my-2 list-decimal ps-5 space-y-1" />,
+    li: ({ node, ...props }: any) => <li {...props} className="leading-6" />,
+    code: ({ node, ...props }: any) => <code {...props} className="rounded bg-slate-100 px-1 py-0.5 text-[12px] text-slate-700" />,
+    pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
 };
 
 export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
@@ -84,7 +103,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                             return (
                                 <React.Fragment key={section.city.id}>
                                     {index > 0 && transfer && (
-                                        <div className="relative min-h-20 ps-14">
+                                        <div className="relative h-24 ps-14">
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -93,13 +112,13 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 }}
                                                 disabled={!transfer.itemId}
                                                 aria-label={`Open ${transfer.modeLabel} transfer details`}
-                                                className={`absolute top-1/2 start-8 -translate-x-1/2 -translate-y-1/2 -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
+                                                className={`absolute top-1/2 start-8 -translate-x-1/2 -translate-y-1/2 origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
                                                     transfer.itemId
                                                         ? 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
                                                         : 'border-slate-200 text-slate-400'
                                                 }`}
                                             >
-                                                <span className="inline-flex rotate-90 items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap">
                                                     <TransportModeIcon mode={transfer.mode} size={12} />
                                                     <span>{transfer.modeLabel}</span>
                                                     {transferDuration && (
@@ -124,7 +143,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                         <header className="sticky top-0 z-20 bg-white/95 pb-3 pt-2 backdrop-blur-sm">
                                             <button
                                                 type="button"
-                                                className="w-full text-left"
+                                                className="group w-full cursor-pointer text-left"
                                                 onClick={() => onSelect(section.city.id, { isCity: true })}
                                                 onKeyDown={(event) => {
                                                     if (event.key === 'Enter' || event.key === ' ') {
@@ -134,7 +153,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                 }}
                                             >
                                                 <div className="flex flex-wrap items-end justify-between gap-3">
-                                                    <h3 className={`text-2xl font-semibold tracking-tight ${citySelected ? 'text-accent-700' : 'text-slate-900'}`}>
+                                                    <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-all group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-slate-900 decoration-slate-400'}`}>
                                                         {cityTitle}
                                                     </h3>
                                                     <div className="flex flex-wrap items-center gap-2">
@@ -148,11 +167,14 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                         )}
                                                     </div>
                                                 </div>
-                                                <p className="mt-2 text-sm leading-6 text-slate-700">{section.arrivalTitle}</p>
-                                                {section.arrivalDescription && (
-                                                    <p className="mt-1 text-sm leading-6 text-slate-500">{section.arrivalDescription}</p>
-                                                )}
                                             </button>
+                                            {(section.city.description || section.arrivalDescription) && (
+                                                <div className="mt-3 text-sm text-slate-600">
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                        {section.city.description?.trim() || section.arrivalDescription || ''}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            )}
                                         </header>
 
                                         <div className="pt-1">
@@ -191,9 +213,11 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                         {activity.item.title}
                                                                     </p>
                                                                     {activity.item.description && (
-                                                                        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                                                                            {activity.item.description}
-                                                                        </p>
+                                                                        <div className="mt-2 max-w-3xl text-sm text-slate-600">
+                                                                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                                                {activity.item.description}
+                                                                            </ReactMarkdown>
+                                                                        </div>
                                                                     )}
                                                                 </button>
                                                             </li>
