@@ -33,7 +33,7 @@ interface AppToastOptions {
   id?: string | number;
   tone?: AppToastTone;
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   duration?: number;
   dismissible?: boolean;
   action?: AppToastAction;
@@ -46,6 +46,8 @@ interface AppToastToneMeta {
   iconWrapClass: string;
   titleClass: string;
 }
+
+const QUOTED_SEGMENT_REGEX = /(".*?"|“.*?”)/g;
 
 const TONE_META: Record<AppToastTone, AppToastToneMeta> = {
   success: {
@@ -120,17 +122,36 @@ export const showAppToast = ({
   const ToneIcon = meta.Icon;
   const Icon = iconVariant === 'undo' ? Undo2 : iconVariant === 'redo' ? Redo2 : ToneIcon;
   const titleNode = <span className={`font-semibold ${meta.titleClass}`}>{normalizedTitle}</span>;
+  const resolvedDescription = typeof description === 'string'
+    ? (() => {
+      const seenKeys = new Map<string, number>();
+      return description.split(QUOTED_SEGMENT_REGEX).map((segment) => {
+        if (!segment) return null;
+        const normalizedKey = segment.startsWith('"') || segment.startsWith('“')
+          ? `quoted:${segment}`
+          : `text:${segment}`;
+        const nextCount = (seenKeys.get(normalizedKey) || 0) + 1;
+        seenKeys.set(normalizedKey, nextCount);
+        const key = `${normalizedKey}:${nextCount}`;
+
+        if (segment.startsWith('"') || segment.startsWith('“')) {
+          return <span key={key} className="font-semibold">{segment}</span>;
+        }
+        return <React.Fragment key={key}>{segment}</React.Fragment>;
+      });
+    })()
+    : description;
   const options: ExternalToast = {
     id,
-    description,
+    description: resolvedDescription,
     duration: resolvedDuration,
     dismissible,
     action,
     position: 'bottom-right',
     className: `border bg-white/95 text-slate-900 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/90 ${meta.borderClass}`,
     icon: (
-      <span className={`mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
-        <Icon size={16} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />
+      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-full ${meta.iconWrapClass}`}>
+        <Icon size={20} className={tone === 'loading' && !iconVariant ? 'animate-spin' : undefined} />
       </span>
     ),
   };

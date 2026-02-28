@@ -54,18 +54,18 @@ export const useTripItemUpdateHandlers = ({
             if (item.type === 'city') {
                 if (updates.duration !== undefined || updates.startDateOffset !== undefined) {
                     if (updates.duration !== undefined) {
-                        setPendingLabel(`Data: Changed city duration in ${item.title}`);
+                        setPendingLabel(`Data: Changed city duration in "${item.title}"`);
                     } else {
-                        setPendingLabel(`Data: Rescheduled city ${item.title}`);
+                        setPendingLabel(`Data: Rescheduled city "${item.title}"`);
                     }
                 } else if (updates.hotels !== undefined) {
-                    setPendingLabel(`Data: Updated accommodation in ${item.title}`);
+                    setPendingLabel(`Data: Updated accommodation in "${item.title}"`);
                 } else if (updates.description !== undefined) {
-                    setPendingLabel(`Data: Updated notes for ${item.title}`);
+                    setPendingLabel(`Data: Updated notes for "${item.title}"`);
                 } else if (updates.title !== undefined) {
-                    setPendingLabel(`Data: Renamed city ${item.title}`);
+                    setPendingLabel(`Data: Renamed city "${item.title}"`);
                 } else if (updates.location !== undefined || updates.coordinates !== undefined) {
-                    setPendingLabel(`Data: Changed city in ${item.title}`);
+                    setPendingLabel(`Data: Changed city in "${item.title}"`);
                 }
             } else if (item.type === 'travel' || item.type === 'travel-empty') {
                 if (updates.transportMode !== undefined) {
@@ -75,11 +75,11 @@ export const useTripItemUpdateHandlers = ({
                 }
             } else if (item.type === 'activity') {
                 if (updates.title !== undefined || updates.description !== undefined) {
-                    setPendingLabel(`Data: Updated activity ${item.title}`);
+                    setPendingLabel(`Data: Updated activity "${item.title}"`);
                 } else if (updates.activityType !== undefined) {
-                    setPendingLabel(`Data: Updated activity types for ${item.title}`);
+                    setPendingLabel(`Data: Updated activity types for "${item.title}"`);
                 } else if (updates.startDateOffset !== undefined || updates.duration !== undefined) {
-                    setPendingLabel(`Data: Rescheduled activity ${item.title}`);
+                    setPendingLabel(`Data: Rescheduled activity "${item.title}"`);
                 }
             }
         }

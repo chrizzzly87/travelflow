@@ -46,4 +46,67 @@ describe('components/tripview/useTripHistoryController', () => {
     expect(navigate).not.toHaveBeenCalled();
     expect(showToast).not.toHaveBeenCalled();
   });
+
+  it('returns false without toast in silent mode when no undo target exists', () => {
+    const navigate = vi.fn();
+    const showToast = vi.fn();
+    const suppressCommitRef = { current: false };
+
+    const { result } = renderHook(() => useTripHistoryController({
+      tripId: 'trip-1',
+      tripUpdatedAt: Date.now(),
+      locationPathname: '/trip/trip-1',
+      currentUrl: '/trip/trip-1',
+      isExamplePreview: false,
+      navigate,
+      suppressCommitRef,
+      stripHistoryPrefix: (label) => label,
+      showToast,
+    }));
+
+    let didNavigate = false;
+    act(() => {
+      didNavigate = result.current.navigateHistory('undo', { silent: true });
+    });
+
+    expect(didNavigate).toBe(false);
+    expect(navigate).not.toHaveBeenCalled();
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it('navigates and suppresses toast when silent undo target exists', () => {
+    const navigate = vi.fn();
+    const showToast = vi.fn();
+    const suppressCommitRef = { current: false };
+    historyServiceMocks.getHistoryEntries.mockReturnValue([
+      {
+        id: 'history-1',
+        tripId: 'trip-1',
+        url: '/trip/trip-1?version=v1',
+        label: 'Data: Changed city duration in "Tirana"',
+        ts: Date.now() - 1_000,
+      },
+    ]);
+
+    const { result } = renderHook(() => useTripHistoryController({
+      tripId: 'trip-1',
+      tripUpdatedAt: Date.now(),
+      locationPathname: '/trip/trip-1',
+      currentUrl: '/trip/trip-1',
+      isExamplePreview: false,
+      navigate,
+      suppressCommitRef,
+      stripHistoryPrefix: (label) => label.replace(/^Data:\s*/i, ''),
+      showToast,
+    }));
+
+    let didNavigate = false;
+    act(() => {
+      didNavigate = result.current.navigateHistory('undo', { silent: true });
+    });
+
+    expect(didNavigate).toBe(true);
+    expect(navigate).toHaveBeenCalledWith('/trip/trip-1?version=v1', { replace: true });
+    expect(showToast).not.toHaveBeenCalled();
+  });
 });

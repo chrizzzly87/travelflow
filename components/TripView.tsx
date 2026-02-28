@@ -898,7 +898,12 @@ const useTripViewRender = ({
         setZoomLevel,
     });
 
-    const showToast = useCallback((message: string, options?: { tone?: ChangeTone; title?: string; iconVariant?: 'undo' | 'redo' }) => {
+    const showToast = useCallback((message: string, options?: {
+        tone?: ChangeTone;
+        title?: string;
+        iconVariant?: 'undo' | 'redo';
+        action?: { label: string; onClick: () => void };
+    }) => {
         if (suppressToasts) return;
         showAppToast({
             tone: options?.tone || 'info',
@@ -906,6 +911,7 @@ const useTripViewRender = ({
             description: message,
             duration: 3200,
             iconVariant: options?.iconVariant,
+            action: options?.action,
         });
     }, [suppressToasts]);
 
@@ -1161,7 +1167,7 @@ const useTripViewRender = ({
 
         if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
         const pendingLabel = pendingHistoryLabelRef.current || 'Data: Updated trip';
-        const commitDelay = /^Data:\s+(Added|Removed)\b/i.test(pendingLabel) ? 150 : 700;
+        const commitDelay = /^Data:\s+/i.test(pendingLabel) ? 150 : 700;
         commitTimerRef.current = setTimeout(() => {
             const payload = pendingCommitRef.current || { trip: tripToCommit, view: viewToCommit };
             const label = pendingHistoryLabelRef.current || 'Data: Updated trip';
@@ -1333,6 +1339,42 @@ const useTripViewRender = ({
         handleUpdateItems,
         showToast,
         pendingHistoryLabelRef,
+        onUndoDelete: (deletedItem, context) => {
+            const deletedEntityLabel = deletedItem.type === 'city'
+                ? `city "${deletedItem.title}"`
+                : deletedItem.type === 'activity'
+                    ? `activity "${deletedItem.title}"`
+                    : `transport "${deletedItem.title}"`;
+            const didUndoImmediately = navigateHistory('undo', { silent: true });
+            if (didUndoImmediately) {
+                showToast(`Undid removal of ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                });
+                return;
+            }
+
+            window.setTimeout(() => {
+                const didUndoAfterCommit = navigateHistory('undo', { silent: true });
+                if (didUndoAfterCommit) {
+                    showToast(`Undid removal of ${deletedEntityLabel}`, {
+                        tone: 'add',
+                        title: 'Undo',
+                        iconVariant: 'undo',
+                    });
+                    return;
+                }
+
+                setPendingLabel(`Data: Restored ${deletedEntityLabel}`);
+                handleUpdateItems(context.previousItems);
+                showToast(`Restored ${deletedEntityLabel}`, {
+                    tone: 'add',
+                    title: 'Undo',
+                    iconVariant: 'undo',
+                });
+            }, 200);
+        },
         onResetSuppressedCommit: () => {
             suppressCommitRef.current = false;
         },

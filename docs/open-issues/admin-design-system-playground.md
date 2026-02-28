@@ -2,6 +2,7 @@
 
 ## Status
 Open issue (follow-up). Not in current profile/trip archive scope.
+GitHub issue: https://github.com/chrizzzly87/travelflow/issues/196
 
 ## Objective
 Add a dedicated admin workspace page to inspect all shared UI components and interaction states in one place, including a toast/notification trigger lab.

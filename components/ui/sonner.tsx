@@ -8,6 +8,9 @@ export const Toaster: React.FC<ToasterProps> = (props) => {
       closeButton={false}
       toastOptions={{
         className: 'border border-slate-200 bg-white/95 text-slate-900 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-white/90',
+        classNames: {
+          icon: '!h-8 !w-8 !me-3 !shrink-0',
+        },
         actionButtonStyle: {
           background: '#f8fafc',
           color: '#0f172a',

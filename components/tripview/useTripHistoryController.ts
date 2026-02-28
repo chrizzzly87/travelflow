@@ -37,7 +37,7 @@ interface UseTripHistoryControllerResult {
     showAllHistory: boolean;
     setShowAllHistory: Dispatch<SetStateAction<boolean>>;
     refreshHistory: () => void;
-    navigateHistory: (action: HistoryAction) => void;
+    navigateHistory: (action: HistoryAction, options?: { silent?: boolean }) => boolean;
     formatHistoryTime: (timestamp: number) => string;
     displayHistoryEntries: HistoryEntry[];
 }
@@ -102,24 +102,29 @@ export const useTripHistoryController = ({
         return resolvedHistoryEntries[nextIndex];
     }, [getHistoryIndex, resolvedHistoryEntries]);
 
-    const navigateHistory = useCallback((action: HistoryAction) => {
+    const navigateHistory = useCallback((action: HistoryAction, options?: { silent?: boolean }) => {
         const target = getHistoryEntryForAction(action);
         if (!target) {
-            showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
-                tone: 'neutral',
-                title: action === 'undo' ? 'Undo' : 'Redo',
-                iconVariant: action,
-            });
-            return;
+            if (!options?.silent) {
+                showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
+                    tone: 'neutral',
+                    title: action === 'undo' ? 'Undo' : 'Redo',
+                    iconVariant: action,
+                });
+            }
+            return false;
         }
 
         suppressCommitRef.current = true;
         navigate(target.url, { replace: true });
-        showToast(stripHistoryPrefix(target.label), {
-            tone: 'neutral',
-            title: action === 'undo' ? 'Undo' : 'Redo',
-            iconVariant: action,
-        });
+        if (!options?.silent) {
+            showToast(stripHistoryPrefix(target.label), {
+                tone: 'neutral',
+                title: action === 'undo' ? 'Undo' : 'Redo',
+                iconVariant: action,
+            });
+        }
+        return true;
     }, [getHistoryEntryForAction, navigate, showToast, stripHistoryPrefix, suppressCommitRef]);
 
     const formatHistoryTime = useCallback((timestamp: number) => {

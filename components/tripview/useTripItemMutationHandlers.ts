@@ -13,6 +13,8 @@ interface AddActivityState {
 interface ToastOptions {
     tone?: 'add' | 'remove' | 'neutral' | 'info';
     title?: string;
+    iconVariant?: 'undo' | 'redo';
+    action?: { label: string; onClick: () => void };
 }
 
 interface UseTripItemMutationHandlersOptions {
@@ -32,6 +34,7 @@ interface UseTripItemMutationHandlersOptions {
     showToast: (message: string, options?: ToastOptions) => void;
     pendingHistoryLabelRef: React.MutableRefObject<string | null>;
     onResetSuppressedCommit?: () => void;
+    onUndoDelete?: (item: ITimelineItem, context: { previousItems: ITimelineItem[] }) => void;
 }
 
 export const useTripItemMutationHandlers = ({
@@ -51,6 +54,7 @@ export const useTripItemMutationHandlers = ({
     showToast,
     pendingHistoryLabelRef,
     onResetSuppressedCommit,
+    onUndoDelete,
 }: UseTripItemMutationHandlersOptions) => {
     const handleDeleteItem = useCallback((id: string, _strategy: 'item-only' | 'shift-gap' | 'pull-back' = 'item-only') => {
         markUserEdit();
@@ -58,20 +62,33 @@ export const useTripItemMutationHandlers = ({
 
         if (item) {
             if (item.type === 'city') {
-                pendingHistoryLabelRef.current = `Data: Removed city ${item.title}`;
+                pendingHistoryLabelRef.current = `Data: Removed city "${item.title}"`;
             } else if (item.type === 'activity') {
-                pendingHistoryLabelRef.current = `Data: Removed activity ${item.title}`;
+                pendingHistoryLabelRef.current = `Data: Removed activity "${item.title}"`;
             } else {
-                pendingHistoryLabelRef.current = `Data: Removed transport ${item.title}`;
+                pendingHistoryLabelRef.current = `Data: Removed transport "${item.title}"`;
             }
         }
 
-        const nextItems = trip.items.filter((candidate) => candidate.id !== id);
+        const previousItems = trip.items;
+        const nextItems = previousItems.filter((candidate) => candidate.id !== id);
         handleUpdateItems(nextItems);
 
         if (item) {
-            const label = stripHistoryPrefix(pendingHistoryLabelRef.current || 'Removed item');
-            showToast(label, { tone: 'remove', title: 'Removed' });
+            const entityLabel = item.type === 'city'
+                ? `city "${item.title}"`
+                : item.type === 'activity'
+                    ? `activity "${item.title}"`
+                    : `transport "${item.title}"`;
+            const label = stripHistoryPrefix(pendingHistoryLabelRef.current || `Removed ${entityLabel}`);
+            showToast(label, {
+                tone: 'remove',
+                title: 'Removed',
+                action: onUndoDelete ? {
+                    label: 'Undo',
+                    onClick: () => onUndoDelete(item, { previousItems }),
+                } : undefined,
+            });
         }
 
         setSelectedItemId(null);
@@ -83,6 +100,7 @@ export const useTripItemMutationHandlers = ({
         setSelectedCityIds,
         setSelectedItemId,
         showToast,
+        onUndoDelete,
         trip.items,
     ]);
 
@@ -160,7 +178,7 @@ export const useTripItemMutationHandlers = ({
         } as ITimelineItem;
 
         onResetSuppressedCommit?.();
-        setPendingLabel(`Data: Added activity ${newItem.title}`);
+        setPendingLabel(`Data: Added activity "${newItem.title}"`);
         handleUpdateItems([...trip.items, newItem]);
         showToast(`Activity "${newItem.title}" added`, { tone: 'add', title: 'Added' });
     }, [
@@ -195,7 +213,7 @@ export const useTripItemMutationHandlers = ({
         } as ITimelineItem;
 
         onResetSuppressedCommit?.();
-        setPendingLabel(`Data: Added city ${newItem.title}`);
+        setPendingLabel(`Data: Added city "${newItem.title}"`);
         handleUpdateItems([...trip.items, newItem]);
         setSelectedItemId(newItem.id);
         setSelectedCityIds([newItem.id]);
