@@ -1499,7 +1499,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
         trackEvent('create_trip__notifications--prompt');
         const shouldEnable = await confirmDialog({
             title: t('notifications.prompt.title'),
-            message: t('notifications.prompt.message'),
+            message: (
+                <p>{t('notifications.prompt.message')}</p>
+            ),
             confirmLabel: t('notifications.prompt.enable'),
             cancelLabel: t('notifications.prompt.notNow'),
         });

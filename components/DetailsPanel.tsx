@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import { ITimelineItem, TransportMode, ActivityType, IHotel, RouteMode, ICoordinates } from '../types';
 import { X, MapPin, Clock, Trash2, Hotel, Search, AlertTriangle, ExternalLink, Sparkles, RefreshCw, Maximize, Minimize, Minus, Plus, Palette, Pencil } from 'lucide-react';
 import type { CityNotesEnhancementMode } from '../services/aiService';
@@ -189,6 +190,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
   const { isLoaded } = useGoogleMaps();
   const { confirm: confirmDialog } = useAppDialog();
+  const { t } = useTranslation('common');
   const mapLanguage = getStoredAppLanguage();
 
   const applyItemChanges = (
@@ -743,10 +745,20 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       const roundTripContext = cityRoundTripContextRef.current;
       if (roundTripContext?.isRoundTrip && roundTripContext.isFirstCity && roundTripContext.lastCityId && !isUnchanged) {
           const shouldSyncLastCity = await confirmDialog({
-              title: 'Update Roundtrip Endpoint?',
-              message: `This trip looks like a roundtrip. Also change the final city to "${nextDraft.title}"?`,
-              confirmLabel: 'Yes, Update Last City',
-              cancelLabel: 'No, Keep As Is',
+              title: t('appDialog.roundTripSync.title'),
+              message: (
+                  <div className="space-y-2">
+                      <p>{t('appDialog.roundTripSync.messageLead')}</p>
+                      <p><Trans
+                          ns="common"
+                          i18nKey="appDialog.roundTripSync.messageQuestion"
+                          values={{ title: nextDraft.title }}
+                          components={{ strong: <strong /> }}
+                      /></p>
+                  </div>
+              ),
+              confirmLabel: t('appDialog.roundTripSync.confirmLabel'),
+              cancelLabel: t('appDialog.roundTripSync.cancelLabel'),
           });
           if (shouldSyncLastCity) {
               const roundTripLastCity = tripItems.find(entry => entry.id === roundTripContext.lastCityId && entry.type === 'city') || null;
@@ -980,10 +992,23 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (paletteId === cityColorPaletteId) return;
 
       const applyToCities = await confirmDialog({
-          title: 'Apply palette to current cities?',
-          message: 'Choose “Apply automatically” to recolor all cities now. Choose “Manual selection” to keep existing city colors and only switch the active palette.',
-          confirmLabel: 'Apply automatically',
-          cancelLabel: 'Manual selection',
+          title: t('appDialog.cityPaletteApply.title'),
+          message: (
+              <div className="space-y-2">
+                  <p><Trans
+                      ns="common"
+                      i18nKey="appDialog.cityPaletteApply.messageAuto"
+                      components={{ strong: <strong /> }}
+                  /></p>
+                  <p><Trans
+                      ns="common"
+                      i18nKey="appDialog.cityPaletteApply.messageManual"
+                      components={{ strong: <strong /> }}
+                  /></p>
+              </div>
+          ),
+          confirmLabel: t('appDialog.cityPaletteApply.confirmLabel'),
+          cancelLabel: t('appDialog.cityPaletteApply.cancelLabel'),
       });
 
       onCityColorPaletteChange(paletteId, { applyToCities });

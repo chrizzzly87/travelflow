@@ -105,5 +105,40 @@
       "validationMessage": "Please enter a message.",
       "validationMessageLength": "Your message is too long. Maximum is {max} characters."
     }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "Archive trip?",
+      "confirmLabel": "Archive trip",
+      "cancelLabel": "Cancel",
+      "messageQuestion": "Are you sure you want to archive <strong>\"{title}\"</strong>?",
+      "messageDetail": "This trip will be removed from your list and can be restored later."
+    },
+    "roundTripSync": {
+      "title": "Update roundtrip endpoint?",
+      "messageLead": "This trip looks like a roundtrip.",
+      "messageQuestion": "Also change the final city to <strong>\"{title}\"</strong>?",
+      "confirmLabel": "Yes, update last city",
+      "cancelLabel": "No, keep as is"
+    },
+    "cityPaletteApply": {
+      "title": "Apply palette to current cities?",
+      "messageAuto": "Choose <strong>Apply automatically</strong> to recolor all cities now.",
+      "messageManual": "Choose <strong>Manual selection</strong> to keep existing city colors and only switch the active palette.",
+      "confirmLabel": "Apply automatically",
+      "cancelLabel": "Manual selection"
+    },
+    "markdownLink": {
+      "title": "Insert link",
+      "messageLine1": "Enter a URL for the selected text or insert a new link.",
+      "messageLine2": "The link opens in a new tab with secure defaults.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "Insert link",
+      "cancelLabel": "Cancel",
+      "validationRequired": "Please enter a URL.",
+      "validationProtocol": "URL must start with http:// or https://",
+      "validationInvalid": "Please enter a valid URL."
+    }
   }
 }

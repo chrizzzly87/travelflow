@@ -119,6 +119,18 @@ const USER_ROW = {
   entitlements_override: {},
 } as const;
 
+const USER_ROW_2 = {
+  ...USER_ROW,
+  user_id: 'user-2',
+  email: 'traveler2@example.com',
+  first_name: 'Traveler',
+  last_name: 'Two',
+  display_name: 'Traveler Two',
+  username: 'traveler_two',
+  total_trips: 3,
+  active_trips: 3,
+} as const;
+
 const renderPage = () => render(
   React.createElement(
     MemoryRouter,
@@ -238,5 +250,30 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
         title: 'Hard delete failed',
       }));
     });
+  });
+
+  it('uses rich bulk hard-delete copy with transfer hints and irreversible warning', async () => {
+    const user = userEvent.setup();
+    mocks.adminListUsers.mockResolvedValue([USER_ROW, USER_ROW_2]);
+
+    renderPage();
+
+    await screen.findAllByRole('checkbox', { name: /Select Traveler/i });
+    const travelerOneCheckboxes = screen.getAllByRole('checkbox', { name: /Select Traveler One/i });
+    const travelerTwoCheckboxes = screen.getAllByRole('checkbox', { name: /Select Traveler Two/i });
+    await user.click(travelerOneCheckboxes[0]);
+    await user.click(travelerTwoCheckboxes[0]);
+    await user.click(screen.getByRole('button', { name: 'Hard delete selected' }));
+
+    const bulkDialogCall = mocks.confirmDialog.mock.calls
+      .map((entry) => entry[0])
+      .find((payload) => payload?.title === 'Hard delete selected users');
+
+    expect(bulkDialogCall).toBeTruthy();
+    expect(typeof bulkDialogCall?.message).not.toBe('string');
+    const bulkMessageText = normalizeMessageText(extractNodeText(bulkDialogCall?.message));
+    expect(bulkMessageText).toContain('Selected users: 2');
+    expect(bulkMessageText).toContain('Cancel and transfer trips from each user drawer if you need to preserve trip data.');
+    expect(bulkMessageText).toContain('This action cannot be undone.');
   });
 });

@@ -105,5 +105,40 @@
       "validationMessage": "메시지를 입력해 주세요.",
       "validationMessageLength": "메시지가 너무 깁니다. 최대 {max}자까지 가능합니다."
     }
+  },
+  "appDialog": {
+    "tripArchive": {
+      "title": "여행을 보관할까요?",
+      "confirmLabel": "여행 보관",
+      "cancelLabel": "취소",
+      "messageQuestion": "<strong>\"{title}\"</strong> 여행을 정말 보관하시겠어요?",
+      "messageDetail": "이 여행은 목록에서 숨겨지며 나중에 다시 복원할 수 있습니다."
+    },
+    "roundTripSync": {
+      "title": "왕복 여행의 마지막 도시를 업데이트할까요?",
+      "messageLead": "이 여행은 왕복 여행으로 보입니다.",
+      "messageQuestion": "마지막 도시도 <strong>\"{title}\"</strong>(으)로 변경할까요?",
+      "confirmLabel": "네, 마지막 도시 업데이트",
+      "cancelLabel": "아니요, 그대로 둘게요"
+    },
+    "cityPaletteApply": {
+      "title": "현재 도시에 팔레트를 적용할까요?",
+      "messageAuto": "<strong>자동 적용</strong>을 선택하면 지금 모든 도시 색상을 다시 칠합니다.",
+      "messageManual": "<strong>수동 선택</strong>을 선택하면 현재 도시 색상을 유지하고 활성 팔레트만 변경합니다.",
+      "confirmLabel": "자동 적용",
+      "cancelLabel": "수동 선택"
+    },
+    "markdownLink": {
+      "title": "링크 삽입",
+      "messageLine1": "선택한 텍스트에 사용할 URL을 입력하거나 새 링크를 삽입하세요.",
+      "messageLine2": "링크는 보안 기본 설정으로 새 탭에서 열립니다.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "링크 삽입",
+      "cancelLabel": "취소",
+      "validationRequired": "URL을 입력해 주세요.",
+      "validationProtocol": "URL은 http:// 또는 https://로 시작해야 합니다",
+      "validationInvalid": "유효한 URL을 입력해 주세요."
+    }
   }
 }
