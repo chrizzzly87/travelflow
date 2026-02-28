@@ -155,13 +155,13 @@ This document is the operational source of truth for:
 
 ### Phase 2
 - Introduce secondary domain event writers per operation class:
+  - [x] `trip.city.updated`,
+  - [x] `trip.activity.updated`,
   - [x] `trip.activity.deleted`,
   - [x] `trip.transport.updated`,
   - [x] `trip.segment.deleted`,
-  - [ ] `trip.city.updated`,
-  - [ ] `trip.activity.updated`,
-  - `trip.trip_dates.updated`,
-  - `trip.visibility.updated`.
+  - [x] `trip.trip_dates.updated`,
+  - [x] `trip.visibility.updated`.
 - Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.
 
 ### Phase 3

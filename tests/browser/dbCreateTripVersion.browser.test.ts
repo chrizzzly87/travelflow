@@ -304,6 +304,84 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
   });
 
+  it('maps city/activity/date updates into secondary action facets', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-facets',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-facets',
+          title: 'Facet Trip',
+          startDate: '2026-02-01',
+          items: [
+            {
+              id: 'city-1',
+              type: 'city',
+              title: 'Bangkok',
+              startDateOffset: 0,
+              duration: 2,
+              color: '#111',
+            },
+            {
+              id: 'activity-1',
+              type: 'activity',
+              title: 'Old market walk',
+              startDateOffset: 1,
+              duration: 1,
+              color: '#222',
+            },
+          ],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-facets-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-facets',
+      title: 'Facet Trip',
+      startDate: '2026-02-02',
+      items: [
+        {
+          id: 'city-1',
+          type: 'city',
+          title: 'Bangkok',
+          startDateOffset: 0,
+          duration: 3,
+          color: '#111',
+        },
+        {
+          id: 'activity-1',
+          type: 'activity',
+          title: 'New market walk',
+          startDateOffset: 1,
+          duration: 1,
+          color: '#222',
+        },
+      ],
+      createdAt: 80,
+      updatedAt: 240,
+      sourceKind: 'created',
+    }, undefined, 'Data: Updated city and activity');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      metadata: expect.objectContaining({
+        secondary_action_codes: expect.arrayContaining([
+          'trip.city.updated',
+          'trip.activity.updated',
+          'trip.trip_dates.updated',
+        ]),
+      }),
+    }));
+  });
+
   it('captures visual-only version commits in typed timeline diff metadata', async () => {
     mocks.versionMaybeSingle.mockResolvedValueOnce({
       data: {
