@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
 import { isIsoDateInRange } from '../components/admin/adminDateRange';
 import {
+    adminExportAuditReplay,
     adminGetTripVersionSnapshots,
     adminGetUserProfile,
     adminListAuditLogs,
@@ -24,9 +25,7 @@ import { Drawer, DrawerContent } from '../components/ui/drawer';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
-    buildAdminForensicsReplayBundle,
     downloadAdminForensicsReplayBundle,
-    type AdminForensicsEventInput,
 } from '../services/adminForensicsService';
 import {
     buildUserChangeDiffEntries,
@@ -314,38 +313,6 @@ const getTimelineActionLabel = (entry: AuditTimelineEntry): string => {
     if (entry.kind === 'admin') return getActionFilterLabel(entry.log.action);
     const diffEntries = buildUserChangeDiffEntries(entry.log);
     return resolveUserChangeActionPresentation(entry.log, diffEntries).label;
-};
-
-const toForensicsEventInput = (entry: AuditTimelineEntry): AdminForensicsEventInput => {
-    if (entry.kind === 'admin') {
-        return {
-            source: 'admin',
-            id: entry.log.id,
-            created_at: entry.log.created_at,
-            action: entry.log.action,
-            target_type: entry.log.target_type,
-            target_id: entry.log.target_id,
-            actor_user_id: entry.log.actor_user_id,
-            actor_email: entry.log.actor_email,
-            metadata: entry.log.metadata,
-            before_data: entry.log.before_data,
-            after_data: entry.log.after_data,
-        };
-    }
-
-    return {
-        source: 'user',
-        id: entry.log.id,
-        created_at: entry.log.created_at,
-        action: entry.log.action,
-        target_type: entry.log.target_type,
-        target_id: entry.log.target_id,
-        actor_user_id: entry.log.owner_user_id,
-        actor_email: entry.log.owner_email,
-        metadata: entry.log.metadata,
-        before_data: entry.log.before_data,
-        after_data: entry.log.after_data,
-    };
 };
 
 const toForensicsReplayFileName = (generatedAtIso: string): string => {
@@ -803,7 +770,7 @@ export const AdminAuditPage: React.FC = () => {
         }
     };
 
-    const exportReplayBundle = () => {
+    const exportReplayBundle = async () => {
         if (visibleLogs.length === 0) {
             setErrorMessage('No audit entries match the current filters.');
             return;
@@ -813,30 +780,22 @@ export const AdminAuditPage: React.FC = () => {
         setMessage(null);
         setErrorMessage(null);
         try {
-            const generatedAtIso = new Date().toISOString();
-            const bundle = buildAdminForensicsReplayBundle(
-                visibleLogs.map(toForensicsEventInput),
-                {
-                    generatedAtIso,
-                    filters: {
-                        search: searchValue.trim() || null,
-                        date_range: dateRange,
-                        action_filters: actionFilters,
-                        target_filters: targetFilters,
-                        actor_filters: actorFilters,
-                        offset,
-                        page_size: AUDIT_PAGE_SIZE,
-                        matching_entries: visibleLogs.length,
-                    },
-                }
-            );
-            const downloaded = downloadAdminForensicsReplayBundle(bundle, toForensicsReplayFileName(generatedAtIso));
+            const { bundle, exportAuditId } = await adminExportAuditReplay({
+                search: searchValue.trim() || null,
+                dateRange: dateRange,
+                actionFilters,
+                targetFilters,
+                actorFilters,
+                sourceLimit: AUDIT_SOURCE_MAX_ROWS,
+            });
+            const downloaded = downloadAdminForensicsReplayBundle(bundle, toForensicsReplayFileName(bundle.generated_at));
             if (!downloaded) {
                 throw new Error('Replay export is only available in browser context.');
             }
             setMessage(
                 `Exported ${bundle.totals.event_count} event${bundle.totals.event_count === 1 ? '' : 's'} `
-                + `across ${bundle.totals.correlation_count} correlation trace${bundle.totals.correlation_count === 1 ? '' : 's'}.`
+                + `across ${bundle.totals.correlation_count} correlation trace${bundle.totals.correlation_count === 1 ? '' : 's'}`
+                + `${exportAuditId ? ` (audit id ${exportAuditId}).` : '.'}`
             );
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not export replay bundle.');
@@ -891,7 +850,7 @@ export const AdminAuditPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-2">
                     <button
                         type="button"
-                        onClick={exportReplayBundle}
+                        onClick={() => void exportReplayBundle()}
                         disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                         title="Download current filtered timeline for incident replay"

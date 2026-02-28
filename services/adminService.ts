@@ -1,4 +1,5 @@
 import type { PlanTierKey } from '../types';
+import type { AdminForensicsReplayBundle } from './adminForensicsService';
 import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
@@ -85,6 +86,20 @@ export interface AdminTripVersionSnapshotRecord {
     after_label: string | null;
     before_created_at: string | null;
     after_created_at: string | null;
+}
+
+export interface AdminAuditReplayExportRequest {
+    search?: string | null;
+    dateRange?: '7d' | '30d' | '90d' | 'all' | null;
+    actionFilters?: string[] | null;
+    targetFilters?: string[] | null;
+    actorFilters?: Array<'admin' | 'user'> | null;
+    sourceLimit?: number | null;
+}
+
+export interface AdminAuditReplayExportResponse {
+    exportAuditId: string | null;
+    bundle: AdminForensicsReplayBundle;
 }
 
 export interface AdminTierReapplyPreview {
@@ -511,16 +526,17 @@ export const adminGetTripVersionSnapshots = async (
     return row ? (row as AdminTripVersionSnapshotRecord) : null;
 };
 
-const callAdminIdentityApi = async (
+const callAdminInternalApi = async <T extends Record<string, unknown>>(
+    path: string,
     body: Record<string, unknown>
-): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
+): Promise<T> => {
     await ensureExistingDbSession();
     const token = await dbGetAccessToken();
     if (!token) {
         throw new Error('No active access token found for admin operation.');
     }
 
-    const response = await fetch('/api/internal/admin/iam', {
+    const response = await fetch(path, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -552,26 +568,35 @@ const callAdminIdentityApi = async (
                         : null;
         const fallbackText = responseText.trim();
         const normalizedFallback = fallbackText && fallbackText.length <= 280 ? fallbackText : null;
+        const isIdentityPath = path === '/api/internal/admin/iam';
         const devNotFoundMessage = looksLikeViteNotFoundPage && import.meta.env.DEV
-            ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
+            ? (
+                isIdentityPath
+                    ? 'Admin identity route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test admin delete/invite/create actions.'
+                    : 'Admin audit export route is unavailable in Vite-only dev. Run `pnpm dev:netlify` (or run it in a second terminal while `pnpm dev` is active) to test replay exports.'
+            )
             : null;
         const looksLikeViteProxyFailure = import.meta.env.DEV
             && response.status === 500
             && !payloadError
             && (!normalizedFallback || normalizedFallback === 'Internal Server Error');
         const devProxyFailureMessage = looksLikeViteProxyFailure
-            ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
+            ? (
+                isIdentityPath
+                    ? 'Vite could not reach Netlify dev for admin identity actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing delete/invite/create.'
+                    : 'Vite could not reach Netlify dev for admin audit export actions (connection refused on localhost:8888). Start `pnpm dev:netlify` before testing replay export.'
+            )
             : null;
         const reason = payloadError
             || devNotFoundMessage
             || devProxyFailureMessage
             || normalizedFallback
             || response.statusText
-            || 'Admin identity API request failed.';
-        const errorMessage = `Admin identity API request failed (${response.status}): ${reason}`;
+            || 'Admin internal API request failed.';
+        const errorMessage = `Admin internal API request failed (${response.status}): ${reason}`;
         throw new Error(errorMessage);
     }
-    return payload as { ok: boolean; error?: string; data?: Record<string, unknown> };
+    return payload as T;
 };
 
 export const adminCreateUserInvite = async (payload: {
@@ -585,7 +610,7 @@ export const adminCreateUserInvite = async (payload: {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'invite',
         email: payload.email,
         firstName: payload.firstName ?? null,
@@ -606,7 +631,7 @@ export const adminCreateUserDirect = async (payload: {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'create',
         email: payload.email,
         password: payload.password,
@@ -621,8 +646,62 @@ export const adminHardDeleteUser = async (userId: string): Promise<void> => {
         await new Promise((resolve) => setTimeout(resolve, 500));
         return;
     }
-    await callAdminIdentityApi({
+    await callAdminInternalApi<{ ok: boolean }>('/api/internal/admin/iam', {
         action: 'delete',
         userId,
     });
+};
+
+export const adminExportAuditReplay = async (
+    payload: AdminAuditReplayExportRequest
+): Promise<AdminAuditReplayExportResponse> => {
+    if (shouldUseAdminMockData()) {
+        const generatedAt = new Date().toISOString();
+        return {
+            exportAuditId: null,
+            bundle: {
+                schema: 'admin_forensics_replay_v1',
+                generated_at: generatedAt,
+                filters: {
+                    search: payload.search ?? null,
+                    date_range: payload.dateRange ?? '30d',
+                    action_filters: payload.actionFilters ?? [],
+                    target_filters: payload.targetFilters ?? [],
+                    actor_filters: payload.actorFilters ?? [],
+                    source_limit: payload.sourceLimit ?? 500,
+                },
+                totals: {
+                    event_count: 0,
+                    correlation_count: 0,
+                },
+                events: [],
+                correlations: [],
+            },
+        };
+    }
+
+    const response = await callAdminInternalApi<{
+        ok: boolean;
+        data?: {
+            exportAuditId?: string | null;
+            bundle?: AdminForensicsReplayBundle;
+        };
+    }>('/api/internal/admin/audit/replay-export', {
+        search: payload.search ?? null,
+        dateRange: payload.dateRange ?? '30d',
+        actionFilters: payload.actionFilters ?? [],
+        targetFilters: payload.targetFilters ?? [],
+        actorFilters: payload.actorFilters ?? [],
+        sourceLimit: payload.sourceLimit ?? 500,
+    });
+
+    const bundle = response?.data?.bundle;
+    if (!bundle || bundle.schema !== 'admin_forensics_replay_v1') {
+        throw new Error('Admin replay export returned an invalid bundle.');
+    }
+
+    return {
+        exportAuditId: response?.data?.exportAuditId ?? null,
+        bundle,
+    };
 };

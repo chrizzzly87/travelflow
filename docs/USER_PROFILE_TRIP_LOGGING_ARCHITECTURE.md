@@ -29,6 +29,7 @@ This document is the operational source of truth for:
 ## Logging Data Model
 - `public.admin_audit_logs`
   - immutable admin actor actions (admin-side operations).
+  - includes replay export actions (`admin.audit.export`) for forensic traceability.
 - `public.profile_user_events`
   - user profile-level actions (for example `profile.updated`, `trip.archive_failed`).
 - `public.trip_user_events`
@@ -43,7 +44,7 @@ This document is the operational source of truth for:
   - page size 50 with offset paging,
   - actor filters (`admin`, `user`),
   - target/action filters and date range filtering,
-  - replay export button for current filtered timeline (`admin_forensics_replay_v1` JSON bundle).
+  - replay export button for current filtered timeline (`admin_forensics_replay_v1` JSON bundle) backed by `/api/internal/admin/audit/replay-export`.
 
 ## Current User Action Taxonomy
 - Primary trip actions:
