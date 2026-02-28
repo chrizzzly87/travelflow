@@ -2034,7 +2034,7 @@ declare
   v_deleted_claim_rows integer := 0;
   v_skipped_users integer := 0;
 begin
-  if not public.has_admin_permission('users.hard_delete') then
+  if auth.uid() is not null and not public.has_admin_permission('users.hard_delete') then
     raise exception 'Not allowed';
   end if;
 
