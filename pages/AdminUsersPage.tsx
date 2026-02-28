@@ -19,6 +19,7 @@ import {
     Trash,
     X,
     UserPlus,
+    WarningCircle,
 } from '@phosphor-icons/react';
 import { createPortal } from 'react-dom';
 import { PLAN_CATALOG, PLAN_ORDER } from '../config/planCatalog';
@@ -442,28 +443,50 @@ const summarizeBulkDeleteFailures = (details: string[]): string => {
 const buildSingleHardDeleteMessage = (
     userName: string,
     ownedTripCount: number
-): string => {
-    const tripLabel = `${ownedTripCount} owned trip${ownedTripCount === 1 ? '' : 's'}`;
-    return [
-        `Are you sure you want to hard-delete "${userName}"?`,
-        '',
-        `Hard delete permanently removes the auth account, profile data, and ${tripLabel}.`,
-        'Use soft delete instead if you may need to restore this user later.',
-        '',
-        ownedTripCount > 0 ? 'To keep trips, cancel and use "Transfer trips + hard delete" first.' : '',
-        '',
-        'This action cannot be undone.',
-    ].join('\n');
+): React.ReactNode => {
+    const tripSuffix = ownedTripCount > 0 ? ` (${ownedTripCount})` : '';
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to hard-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Hard delete permanently removes the <strong>auth account</strong>, <strong>profile data</strong>, and <strong>all owned trips{tripSuffix}</strong>.
+            </p>
+            <p>
+                Use soft delete instead if you may need to restore this user later.
+            </p>
+            {ownedTripCount > 0 ? (
+                <p>
+                    To keep trips, cancel and use <strong>Transfer trips + hard delete</strong> first.
+                </p>
+            ) : null}
+            <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                <span><strong>This action cannot be undone.</strong></span>
+            </div>
+        </div>
+    );
 };
 
-const buildSingleSoftDeleteMessage = (userName: string): string => {
-    return [
-        `Are you sure you want to soft-delete "${userName}"?`,
-        '',
-        'Soft delete keeps the account and related data in the database so this user can be restored later.',
-        'The user will not be able to sign in while the account is soft-deleted.',
-        'Use hard delete only for permanent removal.',
-    ].join('\n');
+const buildSingleSoftDeleteMessage = (userName: string): React.ReactNode => {
+    return (
+        <div className="space-y-3">
+            <p>
+                Are you sure you want to soft-delete <strong>"{userName}"</strong>?
+            </p>
+            <p>
+                Soft delete keeps the account and related data in the database so this user can be restored later.
+            </p>
+            <ul>
+                <li>The user cannot sign in while the account is soft-deleted.</li>
+                <li>An admin can restore the user later.</li>
+            </ul>
+            <p>
+                Use hard delete only for permanent removal.
+            </p>
+        </div>
+    );
 };
 
 const buildBulkHardDeleteMessage = (

@@ -125,6 +125,26 @@ const renderPage = () => render(
   ),
 );
 
+const extractNodeText = (value: React.ReactNode): string => {
+  if (value === null || value === undefined || typeof value === 'boolean') return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map((entry) => extractNodeText(entry)).join(' ');
+  if (React.isValidElement(value)) {
+    const element = value as React.ReactElement<{ children?: React.ReactNode }>;
+    return extractNodeText(element.props.children);
+  }
+  return '';
+};
+
+const normalizeMessageText = (value: string): string => (
+  value
+    .replace(/\s+/g, ' ')
+    .replace(/\s+"/g, '"')
+    .replace(/"\s+/g, '"')
+    .replace(/\s+\?/g, '?')
+    .trim()
+);
+
 describe('pages/AdminUsersPage soft delete toasts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -148,10 +168,13 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     await user.click(openDetailButtons[0]);
     await user.click(await screen.findByRole('button', { name: 'Soft-delete user' }));
 
-    expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Soft delete user',
-      message: expect.stringContaining('Are you sure you want to soft-delete "Traveler One"?'),
-    }));
+    const softDeleteDialogCall = mocks.confirmDialog.mock.calls
+      .map((entry) => entry[0])
+      .find((payload) => payload?.title === 'Soft delete user');
+
+    expect(softDeleteDialogCall).toBeTruthy();
+    const softDeleteText = normalizeMessageText(extractNodeText(softDeleteDialogCall?.message));
+    expect(softDeleteText).toMatch(/Are you sure you want to soft-delete\s*"Traveler One"\?/);
 
     await waitFor(() => {
       expect(mocks.adminUpdateUserProfile).toHaveBeenCalledWith('user-1', { accountStatus: 'deleted' });
@@ -185,12 +208,14 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     await user.click(openDetailButtons[0]);
     await user.click(await screen.findByRole('button', { name: 'Hard delete' }));
 
-    expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
-      title: 'Hard delete user',
-      message: expect.stringContaining('Are you sure you want to hard-delete "Traveler One"?'),
-    }));
-    expect(mocks.confirmDialog).toHaveBeenCalledWith(expect.objectContaining({
-      message: expect.stringContaining('Use soft delete instead if you may need to restore this user later.'),
-    }));
+    const hardDeleteDialogCall = mocks.confirmDialog.mock.calls
+      .map((entry) => entry[0])
+      .find((payload) => payload?.title === 'Hard delete user');
+
+    expect(hardDeleteDialogCall).toBeTruthy();
+    const hardDeleteMessageText = normalizeMessageText(extractNodeText(hardDeleteDialogCall?.message));
+    expect(hardDeleteMessageText).toMatch(/Are you sure you want to hard-delete\s*"Traveler One"\?/);
+    expect(hardDeleteMessageText).toContain('Use soft delete instead if you may need to restore this user later.');
+    expect(hardDeleteMessageText).toContain('This action cannot be undone.');
   });
 });
