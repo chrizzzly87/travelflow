@@ -5,6 +5,7 @@ import {
   listUserChangeSecondaryActions,
   resolveUserChangeActionPresentation,
   resolveUserChangeSecondaryActions,
+  summarizeTimelineDiffCoverage,
 } from '../../services/adminUserChangeLog';
 
 const makeRecord = (overrides: Partial<AdminUserChangeRecord> = {}): AdminUserChangeRecord => ({
@@ -371,5 +372,41 @@ describe('services/adminUserChangeLog', () => {
     const presentation = resolveUserChangeActionPresentation(record, []);
 
     expect(presentation.label).toBe('Trip Shared Link Rotated');
+  });
+
+  it('summarizes timeline diff coverage for v1 and legacy-only rows', () => {
+    const coverage = summarizeTimelineDiffCoverage([
+      makeRecord({
+        action: 'trip.updated',
+        metadata: {
+          timeline_diff_v1: {
+            schema: 'timeline_diff_v1',
+            version: 1,
+            transport_mode_changes: [],
+          },
+        },
+      }),
+      makeRecord({
+        action: 'trip.updated',
+        metadata: {
+          timeline_diff: {
+            transport_mode_changes: [],
+          },
+        },
+      }),
+      makeRecord({
+        action: 'profile.updated',
+        metadata: {
+          timeline_diff: {
+            transport_mode_changes: [],
+          },
+        },
+      }),
+    ]);
+
+    expect(coverage).toEqual({
+      v1Rows: 1,
+      legacyOnlyRows: 1,
+    });
   });
 });

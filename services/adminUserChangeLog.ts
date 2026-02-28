@@ -17,6 +17,11 @@ export interface UserChangeSecondaryActionPresentation {
     className: string;
 }
 
+export interface TimelineDiffCoverageSummary {
+    v1Rows: number;
+    legacyOnlyRows: number;
+}
+
 const NOISY_DIFF_KEYS = new Set([
     'updated_at',
     'created_at',
@@ -398,6 +403,32 @@ export const listUserChangeSecondaryActions = (
 ): UserChangeSecondaryActionPresentation[] => {
     const diffEntries = buildUserChangeDiffEntries(record);
     return resolveUserChangeSecondaryActions(record, diffEntries);
+};
+
+export const summarizeTimelineDiffCoverage = (
+    records: AdminUserChangeRecord[]
+): TimelineDiffCoverageSummary => {
+    let v1Rows = 0;
+    let legacyOnlyRows = 0;
+
+    records.forEach((record) => {
+        const normalizedAction = record.action.trim().toLowerCase();
+        if (normalizedAction !== 'trip.updated' && normalizedAction !== 'trip.update') return;
+        const metadata = asRecord(record.metadata);
+        const v1Diff = asRecord(metadata.timeline_diff_v1 as Record<string, unknown> | null | undefined);
+        const legacyDiff = asRecord(metadata.timeline_diff as Record<string, unknown> | null | undefined);
+        const hasV1 = Object.keys(v1Diff).length > 0;
+        const hasLegacy = Object.keys(legacyDiff).length > 0;
+        if (hasV1) {
+            v1Rows += 1;
+            return;
+        }
+        if (hasLegacy) {
+            legacyOnlyRows += 1;
+        }
+    });
+
+    return { v1Rows, legacyOnlyRows };
 };
 
 export const buildUserChangeDiffEntries = (record: AdminUserChangeRecord): UserChangeDiffEntry[] => {

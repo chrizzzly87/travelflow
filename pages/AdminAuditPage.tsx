@@ -28,6 +28,7 @@ import {
     listUserChangeSecondaryActions,
     resolveUserChangeActionPresentation,
     resolveUserChangeSecondaryActions,
+    summarizeTimelineDiffCoverage,
 } from '../services/adminUserChangeLog';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
@@ -688,6 +689,10 @@ export const AdminAuditPage: React.FC = () => {
         () => timelineEntries.filter((entry) => isIsoDateInRange(getTimelineCreatedAt(entry), dateRange)),
         [dateRange, timelineEntries]
     );
+    const timelineDiffCoverage = useMemo(
+        () => summarizeTimelineDiffCoverage(userChangeLogs),
+        [userChangeLogs]
+    );
     const pagedLogs = useMemo(
         () => visibleLogs.slice(offset, offset + AUDIT_PAGE_SIZE),
         [offset, visibleLogs]
@@ -878,6 +883,15 @@ export const AdminAuditPage: React.FC = () => {
                     {message}
                 </section>
             )}
+            <section className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+                Timeline diff readiness: {timelineDiffCoverage.v1Rows} v1 row{timelineDiffCoverage.v1Rows === 1 ? '' : 's'}
+                {', '}
+                {timelineDiffCoverage.legacyOnlyRows} legacy-only row{timelineDiffCoverage.legacyOnlyRows === 1 ? '' : 's'}
+                {' '}in loaded window.
+                {timelineDiffCoverage.legacyOnlyRows === 0
+                    ? ' Fallback removal is safe for this window.'
+                    : ' Keep legacy fallback until this reaches zero across environments.'}
+            </section>
 
             <section className="mb-3 flex flex-wrap items-center gap-2">
                 <AdminFilterMenu
