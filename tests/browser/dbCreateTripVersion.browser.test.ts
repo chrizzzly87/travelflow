@@ -245,6 +245,8 @@ describe('services/dbService dbCreateTripVersion', () => {
         }),
       }),
     }));
+    const insertedPayload = mocks.eventInsert.mock.calls[0]?.[0] as { metadata?: Record<string, unknown> } | undefined;
+    expect(insertedPayload?.metadata?.timeline_diff).toBeUndefined();
   });
 
   it('captures visual-only version commits in typed timeline diff metadata', async () => {

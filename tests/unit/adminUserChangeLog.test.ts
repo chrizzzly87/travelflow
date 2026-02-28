@@ -152,6 +152,76 @@ describe('services/adminUserChangeLog', () => {
     ]);
   });
 
+  it('prefers timeline_diff_v1 over legacy timeline_diff when both are present', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-both',
+        timeline_diff_v1: {
+          schema: 'timeline_diff_v1',
+          version: 1,
+          transport_mode_changes: [
+            {
+              item_id: 'travel-v1',
+              title: 'V1 Segment',
+              before_mode: 'bus',
+              after_mode: 'train',
+            },
+          ],
+        },
+        timeline_diff: {
+          transport_mode_changes: [
+            {
+              item_id: 'travel-legacy',
+              title: 'Legacy Segment',
+              before_mode: 'boat',
+              after_mode: 'plane',
+            },
+          ],
+        },
+      },
+    }));
+
+    expect(entries).toEqual([
+      {
+        key: 'transport_mode · V1 Segment',
+        beforeValue: 'bus',
+        afterValue: 'train',
+      },
+    ]);
+  });
+
+  it('falls back to legacy timeline_diff when v1 payload is absent', () => {
+    const entries = buildUserChangeDiffEntries(makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        version_id: 'version-legacy-only',
+        timeline_diff: {
+          transport_mode_changes: [
+            {
+              item_id: 'travel-legacy',
+              title: 'Legacy Segment',
+              before_mode: 'boat',
+              after_mode: 'plane',
+            },
+          ],
+        },
+      },
+    }));
+
+    expect(entries).toEqual([
+      {
+        key: 'transport_mode · Legacy Segment',
+        beforeValue: 'boat',
+        afterValue: 'plane',
+      },
+    ]);
+  });
+
   it('derives visual-only diff entries from visual version labels when snapshots are unchanged', () => {
     const entries = buildUserChangeDiffEntries(makeRecord({
       action: 'trip.updated',

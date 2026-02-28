@@ -66,6 +66,7 @@ This document is the operational source of truth for:
   - `counts`
 - Legacy `timeline_diff` remains read-compatible in admin rendering paths for older records only.
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
+- See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 
 ## Snapshot vs Diff Strategy
 - Canonical history remains snapshot-based in `trip_versions.data` (immutable per version row).
