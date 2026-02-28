@@ -9,6 +9,7 @@ import {
     Flask,
     ImageSquare,
     List,
+    Palette,
     Scroll,
     StackSimple,
     SuitcaseRolling,
@@ -71,6 +72,7 @@ const itemIcon = (icon: (typeof ADMIN_NAV_ITEMS)[number]['icon']) => {
     if (icon === 'tiers') return <StackSimple size={16} weight="duotone" />;
     if (icon === 'audit') return <Scroll size={16} weight="duotone" />;
     if (icon === 'og_tools') return <ImageSquare size={16} weight="duotone" />;
+    if (icon === 'design_system') return <Palette size={16} weight="duotone" />;
     return <Flask size={16} weight="duotone" />;
 };
 

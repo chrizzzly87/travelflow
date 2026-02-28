@@ -8,4 +8,11 @@ describe('admin navigation config', () => {
     expect(ogTools?.path).toBe('/admin/og-tools');
     expect(ogTools?.section).toBe('tools');
   });
+
+  it('includes design playground entry in tools section', () => {
+    const designPlayground = ADMIN_NAV_ITEMS.find((item) => item.id === 'design_system_playground');
+    expect(designPlayground).toBeTruthy();
+    expect(designPlayground?.path).toBe('/admin/design-system-playground');
+    expect(designPlayground?.section).toBe('tools');
+  });
 });

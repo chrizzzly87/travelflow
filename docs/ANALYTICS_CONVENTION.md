@@ -144,6 +144,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `admin__menu--{target}` | `dashboard`, `ai_benchmark`, `access` | — | `AdminMenu.tsx` |
 | `admin__menu--brand` | — | — | `AdminMenu.tsx` |
 | `admin__menu--back_to_platform` | — | — | `AdminMenu.tsx` |
+| `admin__design_playground--open` | — | — | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_component_group--view` | — | `{ group_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
+| `admin__design_playground_toast--trigger` | — | `{ scenario_id }` | `AdminDesignSystemPlaygroundPage.tsx` |
 
 ### Trip View
 | Event | Detail | Payload | File |
