@@ -2356,7 +2356,13 @@ begin
           'trip_expires_at_before', v_trip_expires_before,
           'trip_expires_at_after', v_trip_expires_after,
           'source_kind_before', v_source_kind_before,
-          'source_kind_after', v_source_kind_after
+          'source_kind_after', v_source_kind_after,
+          'event_schema_version', 1,
+          'event_id', gen_random_uuid()::text,
+          'event_kind', 'trip.updated',
+          'correlation_id', concat('tx-', txid_current()::text),
+          'causation_id', concat('tx-', txid_current()::text),
+          'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
         )
       );
     end if;
@@ -2425,7 +2431,13 @@ begin
         'status_after', v_status_after,
         'title_after', v_title_after,
         'trip_expires_at_after', v_trip_expires_after,
-        'source_kind_after', v_source_kind_after
+        'source_kind_after', v_source_kind_after,
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'trip.created',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
       )
     );
   end if;
@@ -4508,6 +4520,14 @@ begin
     v_before,
     v_after,
     jsonb_build_object('changed_fields', v_changed_fields)
+      || jsonb_build_object(
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'profile.updated',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, 'profile.settings')
+      )
   );
 
   return new;
@@ -4815,7 +4835,13 @@ begin
           'trip_expires_at_before', v_trip_expires_before,
           'trip_expires_at_after', v_trip_expires_after,
           'source_kind_before', v_source_kind_before,
-          'source_kind_after', v_source_kind_after
+          'source_kind_after', v_source_kind_after,
+          'event_schema_version', 1,
+          'event_id', gen_random_uuid()::text,
+          'event_kind', 'trip.updated',
+          'correlation_id', concat('tx-', txid_current()::text),
+          'causation_id', concat('tx-', txid_current()::text),
+          'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
         )
       );
     end if;
@@ -4888,7 +4914,13 @@ begin
         'title_after', v_title_after,
         'show_on_public_profile_after', v_visibility_after,
         'trip_expires_at_after', v_trip_expires_after,
-        'source_kind_after', v_source_kind_after
+        'source_kind_after', v_source_kind_after,
+        'event_schema_version', 1,
+        'event_id', gen_random_uuid()::text,
+        'event_kind', 'trip.created',
+        'correlation_id', concat('tx-', txid_current()::text),
+        'causation_id', concat('tx-', txid_current()::text),
+        'source_surface', coalesce(v_source, p_source_kind, 'trip.editor')
       )
     );
   end if;
@@ -4950,7 +4982,23 @@ begin
       coalesce(p_metadata, '{}'::jsonb)
         || jsonb_build_object(
           'trip_id', p_trip_id,
-          'reason', 'not_owned_or_missing'
+          'reason', 'not_owned_or_missing',
+          'event_schema_version', 1,
+          'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+          'event_kind', 'trip.archive_failed',
+          'correlation_id', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+            concat('tx-', txid_current()::text)
+          ),
+          'causation_id', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+            concat('tx-', txid_current()::text)
+          ),
+          'source_surface', coalesce(
+            nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+            nullif(btrim(coalesce(p_source, '')), '')
+          )
         )
     );
     raise exception 'Trip not found or not owned by current user';
@@ -4983,7 +5031,23 @@ begin
       || jsonb_build_object(
         'trip_id', v_trip_row.id,
         'status_before', v_status_before,
-        'status_after', 'archived'
+        'status_after', 'archived',
+        'event_schema_version', 1,
+        'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+        'event_kind', 'trip.archived',
+        'correlation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'causation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'source_surface', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+          nullif(btrim(coalesce(p_source, '')), '')
+        )
       )
   )
   returning id into v_event_id;
@@ -5040,7 +5104,23 @@ begin
         'target_type', coalesce(nullif(btrim(coalesce(p_target_type, '')), ''), 'unknown'),
         'target_id', nullif(btrim(coalesce(p_target_id, '')), ''),
         'error_code', nullif(btrim(coalesce(p_error_code, '')), ''),
-        'error_message', nullif(btrim(coalesce(p_error_message, '')), '')
+        'error_message', nullif(btrim(coalesce(p_error_message, '')), ''),
+        'event_schema_version', 1,
+        'event_id', coalesce(nullif(coalesce(p_metadata, '{}'::jsonb)->>'event_id', ''), gen_random_uuid()::text),
+        'event_kind', coalesce(nullif(btrim(coalesce(p_action, '')), ''), 'user.action_failed'),
+        'correlation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'causation_id', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'causation_id', ''),
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'correlation_id', ''),
+          concat('tx-', txid_current()::text)
+        ),
+        'source_surface', coalesce(
+          nullif(coalesce(p_metadata, '{}'::jsonb)->>'source_surface', ''),
+          nullif(btrim(coalesce(p_source, '')), '')
+        )
       )
   )
   returning id into v_event_id;

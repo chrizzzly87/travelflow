@@ -70,6 +70,7 @@ This document is the operational source of truth for:
 - New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
 - New trip update rows also persist `metadata.domain_events_v1` for explicit sub-event semantics suitable for export/query without adding extra timeline rows.
 - Trip/failure event writes now include a stable envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for traceability.
+- Server-side SQL event writers in `docs/supabase.sql` now apply the same envelope defaults for profile/trip/failure log rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 - See `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md` for mutation logging checklists and PR acceptance criteria.
 

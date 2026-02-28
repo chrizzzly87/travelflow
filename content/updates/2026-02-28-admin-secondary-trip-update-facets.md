@@ -17,5 +17,6 @@ summary: "Admin timelines now surface compact secondary trip-update facets while
 - [ ] [Internal] 🧾 Trip update event writers now persist `secondary_actions` codes so facet rendering is deterministic for new rows and only falls back to key parsing for legacy data.
 - [ ] [Internal] 🧬 Added a stable event envelope for trip/failure logs (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) to improve tracing and future schema evolution.
 - [ ] [Internal] 🧱 Added structured `domain_events_v1` payload writes on `trip.updated` events for explicit domain sub-event semantics without adding duplicate timeline rows.
+- [ ] [Internal] 🗄️ Updated DB-native event writers in `supabase.sql` to apply the same envelope defaults for profile/trip/failure logs when events are generated server-side.
 - [ ] [Internal] 📚 Expanded logging architecture docs with Phase 2 facet-rendering rules and roadmap status updates.
 - [ ] [Internal] ✅ Added a dedicated user/trip logging implementation playbook with required metadata, tests, and DoD checklist to prevent missed audit events.

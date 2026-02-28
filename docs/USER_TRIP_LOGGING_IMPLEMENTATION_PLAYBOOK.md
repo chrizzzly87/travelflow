@@ -11,6 +11,7 @@ This is the guardrail doc for any future mutation work. If a change touches user
 ## Non-Negotiable Rule
 - Any user-facing mutation for profile or trip data must write an audit event in the same request flow.
 - No silent state mutations without a corresponding log event.
+- This applies to both client fallback writers and DB-native writers (`docs/supabase.sql` trigger/function paths).
 
 ## Canonical Event Model
 - Primary trip actions (stable pills):
