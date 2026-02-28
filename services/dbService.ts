@@ -541,6 +541,17 @@ const createEventCorrelationId = (): string => {
     return `corr-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+const createEventId = (): string => {
+    try {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+    } catch {
+        // fallback below
+    }
+    return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const normalizeCorrelationId = (value: unknown): string | null => {
     if (typeof value !== 'string') return null;
     const trimmed = value.trim();
@@ -889,9 +900,30 @@ const writeTripEventFallback = async (
         const existingCorrelationId = typeof payload.metadata.correlation_id === 'string'
             ? payload.metadata.correlation_id.trim()
             : '';
+        const correlationId = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+        const existingEventId = typeof payload.metadata.event_id === 'string'
+            ? payload.metadata.event_id.trim()
+            : '';
+        const existingEventKind = typeof payload.metadata.event_kind === 'string'
+            ? payload.metadata.event_kind.trim()
+            : '';
+        const existingCausationId = typeof payload.metadata.causation_id === 'string'
+            ? payload.metadata.causation_id.trim()
+            : '';
+        const existingSourceSurface = typeof payload.metadata.source_surface === 'string'
+            ? payload.metadata.source_surface.trim()
+            : '';
+        const existingSchemaVersion = typeof payload.metadata.event_schema_version === 'number'
+            ? payload.metadata.event_schema_version
+            : 1;
         const metadataWithCorrelation: Record<string, unknown> = {
             ...payload.metadata,
-            correlation_id: existingCorrelationId || payload.correlationId || createEventCorrelationId(),
+            event_schema_version: Number.isFinite(existingSchemaVersion) ? Math.max(1, Math.trunc(existingSchemaVersion)) : 1,
+            event_id: existingEventId || createEventId(),
+            event_kind: existingEventKind || payload.action,
+            correlation_id: correlationId,
+            causation_id: existingCausationId || correlationId,
+            source_surface: existingSourceSurface || payload.source,
         };
 
         await client.from('trip_user_events').insert({
@@ -1566,7 +1598,31 @@ const logUserActionFailure = async (
         const existingCorrelationId = typeof metadataWithCorrelation.correlation_id === 'string'
             ? metadataWithCorrelation.correlation_id.trim()
             : '';
-        metadataWithCorrelation.correlation_id = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+        const correlationId = existingCorrelationId || payload.correlationId || createEventCorrelationId();
+        const existingEventId = typeof metadataWithCorrelation.event_id === 'string'
+            ? metadataWithCorrelation.event_id.trim()
+            : '';
+        const existingEventKind = typeof metadataWithCorrelation.event_kind === 'string'
+            ? metadataWithCorrelation.event_kind.trim()
+            : '';
+        const existingCausationId = typeof metadataWithCorrelation.causation_id === 'string'
+            ? metadataWithCorrelation.causation_id.trim()
+            : '';
+        const existingSourceSurface = typeof metadataWithCorrelation.source_surface === 'string'
+            ? metadataWithCorrelation.source_surface.trim()
+            : '';
+        const existingSchemaVersion = typeof metadataWithCorrelation.event_schema_version === 'number'
+            ? metadataWithCorrelation.event_schema_version
+            : 1;
+
+        metadataWithCorrelation.event_schema_version = Number.isFinite(existingSchemaVersion)
+            ? Math.max(1, Math.trunc(existingSchemaVersion))
+            : 1;
+        metadataWithCorrelation.event_id = existingEventId || createEventId();
+        metadataWithCorrelation.event_kind = existingEventKind || payload.action;
+        metadataWithCorrelation.correlation_id = correlationId;
+        metadataWithCorrelation.causation_id = existingCausationId || correlationId;
+        metadataWithCorrelation.source_surface = existingSourceSurface || payload.source;
 
         await client.rpc('log_user_action_failure', {
             p_action: payload.action,

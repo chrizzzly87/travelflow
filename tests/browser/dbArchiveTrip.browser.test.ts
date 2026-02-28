@@ -186,7 +186,11 @@ describe('services/dbService dbArchiveTrip', () => {
         trip_id: 'trip-noop',
         source: 'my_trips',
         archive_metadata: { correlation_id: correlationId },
+        event_schema_version: 1,
+        event_kind: 'trip.archive_failed',
         correlation_id: correlationId,
+        causation_id: correlationId,
+        source_surface: 'my_trips',
       }),
     });
   });

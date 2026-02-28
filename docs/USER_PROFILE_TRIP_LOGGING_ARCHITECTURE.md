@@ -144,7 +144,8 @@ This document is the operational source of truth for:
 - [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
 - [x] Typed trip timeline envelope introduced (`timeline_diff_v1`) with visual-change support and backward compatibility.
 - [x] `timeline_diff_v1` is now the active write format for trip update event metadata.
-- [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
+- [x] Deterministic correlation identifiers are propagated across upsert/version/archive paths.
+- [x] Client fallback event writers now attach event envelope fields (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`).
 
 ## Remaining Implementation Plan
 

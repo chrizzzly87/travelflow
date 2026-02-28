@@ -14,7 +14,13 @@ Use this as the mandatory implementation checklist whenever code changes user, p
   - Write `profile.updated` into `profile_user_events` with before/after data and `metadata.changed_fields`.
 - Trip lifecycle updates:
   - `trip.created`, `trip.updated`, `trip.archived`, `trip.share_created` in `trip_user_events`.
-  - Include `metadata.correlation_id` on every write.
+  - Include immutable envelope fields on every write:
+    - `event_schema_version`
+    - `event_id`
+    - `event_kind`
+    - `correlation_id`
+    - `causation_id`
+    - `source_surface`
   - Use deterministic conventions where available (`trip-upsert-*`, `trip-version-*`) and preserve caller correlation IDs on archive flows.
 - Trip version commits (`dbCreateTripVersion`):
   - Write `trip.updated` with:

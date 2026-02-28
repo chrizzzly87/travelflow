@@ -54,6 +54,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🧼 Retired legacy `timeline_diff` read fallback so admin/user timeline parsing now uses `timeline_diff_v1` exclusively.
 - [ ] [Internal] 🧬 Added per-operation correlation IDs to trip and failure event metadata for easier cross-table incident tracing.
 - [ ] [Internal] 🔗 Correlation IDs now follow deterministic conventions for upsert/version events and archive flows now preserve caller-provided correlation IDs.
+- [ ] [Internal] 🧾 Client fallback event writers now add the full immutable event envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for parity with DB event writers.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.
 - [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.

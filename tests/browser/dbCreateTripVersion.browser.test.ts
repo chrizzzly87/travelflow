@@ -140,7 +140,11 @@ describe('services/dbService dbCreateTripVersion', () => {
     }));
     expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({
+        event_schema_version: 1,
+        event_kind: 'trip.updated',
         correlation_id: 'trip-version-trip-1-version-1',
+        causation_id: 'trip-version-trip-1-version-1',
+        source_surface: 'created',
         trip_id: 'trip-1',
         version_id: 'version-1',
         previous_version_id: 'version-prev',
