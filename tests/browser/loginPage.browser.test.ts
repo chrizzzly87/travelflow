@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => ({
   },
   runOpportunisticTripQueueCleanup: vi.fn().mockResolvedValue(undefined),
   processQueuedTripGenerationAfterAuth: vi.fn(),
+  runOpportunisticAnonymousAssetClaimCleanup: vi.fn().mockResolvedValue(undefined),
+  processAnonymousAssetClaimAfterAuth: vi.fn(),
+  resolveAnonymousAssetClaimErrorCode: vi.fn().mockReturnValue('default'),
   trackEvent: vi.fn(),
 }));
 
@@ -49,6 +52,12 @@ vi.mock('../../services/analyticsService', () => ({
 vi.mock('../../services/tripGenerationQueueService', () => ({
   processQueuedTripGenerationAfterAuth: mocks.processQueuedTripGenerationAfterAuth,
   runOpportunisticTripQueueCleanup: mocks.runOpportunisticTripQueueCleanup,
+}));
+
+vi.mock('../../services/anonymousAssetClaimService', () => ({
+  processAnonymousAssetClaimAfterAuth: mocks.processAnonymousAssetClaimAfterAuth,
+  resolveAnonymousAssetClaimErrorCode: mocks.resolveAnonymousAssetClaimErrorCode,
+  runOpportunisticAnonymousAssetClaimCleanup: mocks.runOpportunisticAnonymousAssetClaimCleanup,
 }));
 
 vi.mock('../../services/authNavigationService', () => ({
@@ -111,5 +120,39 @@ describe('pages/LoginPage keyboard submit', () => {
     await waitFor(() => {
       expect(mocks.auth.loginWithPassword).toHaveBeenCalledWith('traveler@example.com', 'password123');
     });
+  });
+
+  it('processes asset claim before queued generation claim after auth callback', async () => {
+    mocks.auth.isAuthenticated = true;
+    mocks.auth.isAnonymous = false;
+    mocks.searchParams = new URLSearchParams({
+      asset_claim: '8d4d4796-5fe3-4e5d-856d-2c6d6a0138d6',
+      claim: 'queue-claim-1',
+    });
+    mocks.processAnonymousAssetClaimAfterAuth.mockResolvedValue({
+      claimId: '8d4d4796-5fe3-4e5d-856d-2c6d6a0138d6',
+      status: 'claimed',
+      transferredTrips: 2,
+      transferredTripEvents: 0,
+      transferredProfileEvents: 0,
+      transferredTripVersions: 0,
+      transferredTripShares: 0,
+      transferredCollaborators: 0,
+      deduplicatedCollaborators: 0,
+    });
+    mocks.processQueuedTripGenerationAfterAuth.mockResolvedValue({ tripId: 'trip-123' });
+
+    render(React.createElement(LoginPage));
+
+    await waitFor(() => {
+      expect(mocks.processAnonymousAssetClaimAfterAuth).toHaveBeenCalledWith('8d4d4796-5fe3-4e5d-856d-2c6d6a0138d6');
+    });
+    await waitFor(() => {
+      expect(mocks.processQueuedTripGenerationAfterAuth).toHaveBeenCalledWith('queue-claim-1');
+    });
+    expect(mocks.processAnonymousAssetClaimAfterAuth.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.processQueuedTripGenerationAfterAuth.mock.invocationCallOrder[0],
+    );
+    expect(mocks.navigate).toHaveBeenCalledWith('/trip/trip-123', { replace: true });
   });
 });

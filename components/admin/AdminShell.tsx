@@ -270,6 +270,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                             fullWidth
                             showLabel
                             menuPlacement="right-end"
+                            labelMode="identity"
+                            showRecentTripsSection={false}
+                            showCurrentPageSummary={false}
                             className="w-full"
                         />
                     </div>
@@ -312,6 +315,9 @@ export const AdminShell: React.FC<AdminShellProps> = ({
                                     showLabel={!isSidebarCollapsed}
                                     fullWidth={!isSidebarCollapsed}
                                     menuPlacement="right-end"
+                                    labelMode="identity"
+                                    showRecentTripsSection={false}
+                                    showCurrentPageSummary={false}
                                     className={isSidebarCollapsed ? 'mx-auto' : 'w-full'}
                                 />
                             </div>

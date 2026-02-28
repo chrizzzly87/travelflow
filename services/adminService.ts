@@ -1,5 +1,5 @@
 import type { PlanTierKey } from '../types';
-import { dbGetAccessToken, ensureDbSession } from './dbService';
+import { dbGetAccessToken, ensureExistingDbSession } from './dbService';
 import { normalizeProfileCountryCode } from './profileCountryService';
 import { isSimulatedLoggedIn } from './simulatedLoginService';
 import { supabase } from './supabaseClient';
@@ -57,6 +57,34 @@ export interface AdminAuditRecord {
     after_data: Record<string, unknown> | null;
     metadata: Record<string, unknown> | null;
     created_at: string;
+}
+
+export interface AdminUserChangeRecord {
+    id: string;
+    owner_user_id: string;
+    owner_email: string | null;
+    action: string;
+    source: string | null;
+    target_type: string;
+    target_id: string | null;
+    before_data: Record<string, unknown> | null;
+    after_data: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export interface AdminTripVersionSnapshotRecord {
+    trip_id: string;
+    before_version_id: string | null;
+    after_version_id: string | null;
+    before_snapshot: Record<string, unknown> | null;
+    after_snapshot: Record<string, unknown> | null;
+    before_view_settings: Record<string, unknown> | null;
+    after_view_settings: Record<string, unknown> | null;
+    before_label: string | null;
+    after_label: string | null;
+    before_created_at: string | null;
+    after_created_at: string | null;
 }
 
 export interface AdminTierReapplyPreview {
@@ -427,10 +455,66 @@ export const adminListAuditLogs = async (
     return (Array.isArray(data) ? data : []) as AdminAuditRecord[];
 };
 
+export const adminListUserChangeLogs = async (
+    options: {
+        limit?: number;
+        offset?: number;
+        action?: string;
+        ownerUserId?: string;
+    } = {}
+): Promise<AdminUserChangeRecord[]> => {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_list_user_change_logs', {
+        p_limit: options.limit ?? 200,
+        p_offset: options.offset ?? 0,
+        p_action: options.action ?? null,
+        p_owner_user_id: options.ownerUserId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load user change logs.');
+    return (Array.isArray(data) ? data : []) as AdminUserChangeRecord[];
+};
+
+export const adminGetTripVersionSnapshots = async (
+    payload: {
+        tripId: string;
+        afterVersionId?: string | null;
+        beforeVersionId?: string | null;
+    }
+): Promise<AdminTripVersionSnapshotRecord | null> => {
+    const tripId = payload.tripId.trim();
+    if (!tripId) return null;
+
+    if (shouldUseAdminMockData()) {
+        return {
+            trip_id: tripId,
+            before_version_id: payload.beforeVersionId ?? 'mock-before',
+            after_version_id: payload.afterVersionId ?? 'mock-after',
+            before_snapshot: { id: tripId, title: 'Before snapshot', items: [] },
+            after_snapshot: { id: tripId, title: 'After snapshot', items: [] },
+            before_view_settings: { mapStyle: 'minimal', timelineView: 'vertical' },
+            after_view_settings: { mapStyle: 'clean', timelineView: 'horizontal' },
+            before_label: 'Mock before',
+            after_label: 'Mock after',
+            before_created_at: new Date(Date.now() - 60_000).toISOString(),
+            after_created_at: new Date().toISOString(),
+        };
+    }
+
+    const client = requireSupabase();
+    const { data, error } = await client.rpc('admin_get_trip_version_snapshots', {
+        p_trip_id: tripId,
+        p_after_version_id: payload.afterVersionId ?? null,
+        p_before_version_id: payload.beforeVersionId ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not load trip version snapshots.');
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as AdminTripVersionSnapshotRecord) : null;
+};
+
 const callAdminIdentityApi = async (
     body: Record<string, unknown>
 ): Promise<{ ok: boolean; error?: string; data?: Record<string, unknown> }> => {
-    await ensureDbSession();
+    await ensureExistingDbSession();
     const token = await dbGetAccessToken();
     if (!token) {
         throw new Error('No active access token found for admin operation.');

@@ -30,6 +30,13 @@ interface TripInfoHistoryItem {
     isCurrent: boolean;
 }
 
+interface TripInfoAdminMeta {
+    ownerUserId?: string | null;
+    ownerUsername?: string | null;
+    ownerEmail?: string | null;
+    accessSource?: string | null;
+}
+
 export interface TripInfoModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -59,6 +66,9 @@ export interface TripInfoModalProps {
     formatHistoryTime: (timestamp: number) => string;
     countryInfo?: Partial<ICountryInfo> | ICountryInfo;
     isPaywallLocked: boolean;
+    ownerSummary?: string | null;
+    ownerHint?: string | null;
+    adminMeta?: TripInfoAdminMeta | null;
 }
 
 export const TripInfoModal: React.FC<TripInfoModalProps> = ({
@@ -90,6 +100,9 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
     formatHistoryTime,
     countryInfo,
     isPaywallLocked,
+    ownerSummary,
+    ownerHint,
+    adminMeta,
 }) => {
     const editTitleInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -165,6 +178,30 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                 )}
             </section>
 
+            {adminMeta && (
+                <section className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <h4 className="mb-2 text-sm font-semibold text-slate-800">Admin debug</h4>
+                    <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                        <div className="rounded-lg border border-slate-200 bg-white p-2">
+                            <dt className="text-slate-500">Owner username</dt>
+                            <dd className="mt-1 break-all font-semibold text-slate-900">{adminMeta.ownerUsername || 'n/a'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-2">
+                            <dt className="text-slate-500">Owner email</dt>
+                            <dd className="mt-1 break-all font-semibold text-slate-900">{adminMeta.ownerEmail || 'n/a'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-2">
+                            <dt className="text-slate-500">Owner user id</dt>
+                            <dd className="mt-1 break-all font-mono text-[11px] font-semibold text-slate-900">{adminMeta.ownerUserId || 'n/a'}</dd>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 bg-white p-2">
+                            <dt className="text-slate-500">Access source</dt>
+                            <dd className="mt-1 break-all font-semibold text-slate-900">{adminMeta.accessSource || 'n/a'}</dd>
+                        </div>
+                    </dl>
+                </section>
+            )}
+
             <section className="rounded-xl border border-gray-200 p-3">
                 <h4 className="mb-2 text-sm font-semibold text-gray-800">Trip meta</h4>
                 <dl className="grid grid-cols-2 gap-2 text-xs">
@@ -184,7 +221,16 @@ export const TripInfoModal: React.FC<TripInfoModalProps> = ({
                         <dt className="text-gray-500">Total distance</dt>
                         <dd className="mt-1 font-semibold text-gray-900">{tripMeta.distanceLabel || '—'}</dd>
                     </div>
+                    {ownerSummary && (
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 p-2 col-span-2">
+                            <dt className="text-gray-500">Owner</dt>
+                            <dd className="mt-1 break-all font-semibold text-gray-900">{ownerSummary}</dd>
+                        </div>
+                    )}
                 </dl>
+                {ownerHint && (
+                    <p className="mt-2 text-[11px] text-gray-600">{ownerHint}</p>
+                )}
             </section>
 
             {aiMeta && (

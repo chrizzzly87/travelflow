@@ -5,6 +5,11 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { MarketingLayout } from '../components/marketing/MarketingLayout';
 import { useAuth } from '../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
+import {
+    processAnonymousAssetClaimAfterAuth,
+    resolveAnonymousAssetClaimErrorCode,
+    runOpportunisticAnonymousAssetClaimCleanup,
+} from '../services/anonymousAssetClaimService';
 import { processQueuedTripGenerationAfterAuth, runOpportunisticTripQueueCleanup } from '../services/tripGenerationQueueService';
 import type { OAuthProviderId } from '../services/authService';
 import {
@@ -105,8 +110,8 @@ export const LoginPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isQueueProcessing, setIsQueueProcessing] = useState(false);
-    const [hasQueueAttempted, setHasQueueAttempted] = useState(false);
+    const [isPostAuthProcessing, setIsPostAuthProcessing] = useState(false);
+    const [hasPostAuthAttempted, setHasPostAuthAttempted] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [lastUsedProvider, setLastUsedProvider] = useState<OAuthProviderId | null>(() => getLastUsedOAuthProvider());
@@ -114,6 +119,7 @@ export const LoginPage: React.FC = () => {
     const oauthButtons = useMemo(() => getOAuthButtons(i18n.language), [i18n.language]);
 
     const claimRequestId = (searchParams.get('claim') || '').trim() || null;
+    const assetClaimId = (searchParams.get('asset_claim') || '').trim() || null;
     const stateFrom = (location.state as { from?: string } | null)?.from || '';
     const rememberedNextPath = useMemo(() => getRememberedAuthReturnPath(), []);
     const nextPath = resolvePreferredNextPath(
@@ -133,9 +139,10 @@ export const LoginPage: React.FC = () => {
     );
 
     useEffect(() => {
-        trackEvent('auth__page--view', { has_claim: Boolean(claimRequestId) });
+        trackEvent('auth__page--view', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
+        void runOpportunisticAnonymousAssetClaimCleanup();
         void runOpportunisticTripQueueCleanup();
-    }, [claimRequestId]);
+    }, [assetClaimId, claimRequestId]);
 
     useEffect(() => {
         rememberAuthReturnPath(nextPath);
@@ -153,56 +160,80 @@ export const LoginPage: React.FC = () => {
         const callbackError = searchParams.get('error_description') || searchParams.get('error');
         if (callbackError) {
             clearPendingOAuthProvider();
-            trackEvent('auth__callback--error', { has_claim: Boolean(claimRequestId) });
+            trackEvent('auth__callback--error', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
             setErrorMessage(decodeURIComponent(callbackError));
             return;
         }
         const hasCallbackCode = Boolean(searchParams.get('code'));
         if (hasCallbackCode || (typeof window !== 'undefined' && window.location.hash.includes('access_token='))) {
-            trackEvent('auth__callback--received', { has_claim: Boolean(claimRequestId) });
+            trackEvent('auth__callback--received', { has_claim: Boolean(claimRequestId), has_asset_claim: Boolean(assetClaimId) });
         }
-    }, [searchParams, claimRequestId]);
+    }, [searchParams, assetClaimId, claimRequestId]);
 
-    const processQueuedRequest = useCallback(async () => {
-        if (!claimRequestId) return;
-        if (hasQueueAttempted) return;
+    const processPostAuthClaims = useCallback(async () => {
+        if (!assetClaimId && !claimRequestId) return;
+        if (hasPostAuthAttempted) return;
 
-        setHasQueueAttempted(true);
-        setIsQueueProcessing(true);
+        setHasPostAuthAttempted(true);
+        setIsPostAuthProcessing(true);
         setErrorMessage(null);
         setInfoMessage(t('states.queuedProcessing'));
 
         try {
-            const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
-            trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
-            setInfoMessage(t('states.queuedSuccess'));
+            if (assetClaimId) {
+                try {
+                    const claimResult = await processAnonymousAssetClaimAfterAuth(assetClaimId);
+                    trackEvent('auth__asset_claim--fulfilled', {
+                        claim_id: assetClaimId,
+                        status: claimResult?.status ?? 'claimed',
+                        transferred_trips: claimResult?.transferredTrips ?? 0,
+                    });
+                } catch (error) {
+                    trackEvent('auth__asset_claim--failed', {
+                        claim_id: assetClaimId,
+                        error_code: resolveAnonymousAssetClaimErrorCode(error),
+                    });
+                }
+            }
+
+            if (claimRequestId) {
+                const result = await processQueuedTripGenerationAfterAuth(claimRequestId);
+                trackEvent('auth__queue--fulfilled', { request_id: claimRequestId });
+                setInfoMessage(t('states.queuedSuccess'));
+                clearRememberedAuthReturnPath();
+                navigate(`/trip/${result.tripId}`, { replace: true });
+                return;
+            }
+
+            setInfoMessage(t('states.alreadyAuthenticated'));
             clearRememberedAuthReturnPath();
-            navigate(`/trip/${result.tripId}`, { replace: true });
+            navigate(nextPath, { replace: true });
         } catch (error) {
             trackEvent('auth__queue--failed', { request_id: claimRequestId });
             setErrorMessage(t('errors.queue_claim_failed'));
         } finally {
-            setIsQueueProcessing(false);
+            setIsPostAuthProcessing(false);
         }
-    }, [claimRequestId, hasQueueAttempted, navigate, t]);
+    }, [assetClaimId, claimRequestId, hasPostAuthAttempted, navigate, nextPath, t]);
 
     useEffect(() => {
         if (isLoading) return;
         if (!isAuthenticated || isAnonymous) return;
-        if (claimRequestId) {
-            void processQueuedRequest();
+        if (assetClaimId || claimRequestId) {
+            void processPostAuthClaims();
             return;
         }
         clearRememberedAuthReturnPath();
         navigate(nextPath, { replace: true });
     }, [
+        assetClaimId,
         claimRequestId,
         isAnonymous,
         isAuthenticated,
         isLoading,
         navigate,
         nextPath,
-        processQueuedRequest,
+        processPostAuthClaims,
     ]);
 
     const handleModeChange = (nextMode: AuthMode) => {
@@ -214,7 +245,7 @@ export const LoginPage: React.FC = () => {
 
     const handlePasswordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (isSubmitting || isQueueProcessing) return;
+        if (isSubmitting || isPostAuthProcessing) return;
         if (!email.trim() || !password.trim()) {
             setErrorMessage(t('errors.default'));
             return;
@@ -390,7 +421,7 @@ export const LoginPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('forgot_password')}
-                                        disabled={isSubmitting || isQueueProcessing}
+                                        disabled={isSubmitting || isPostAuthProcessing}
                                         className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'forgot_password' })}
                                     >
@@ -399,7 +430,7 @@ export const LoginPage: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => void handlePasswordResetRequest('set_password')}
-                                        disabled={isSubmitting || isQueueProcessing}
+                                        disabled={isSubmitting || isPostAuthProcessing}
                                         className="font-semibold text-accent-700 hover:text-accent-800 disabled:cursor-not-allowed disabled:opacity-60"
                                         {...getAnalyticsDebugAttributes('auth__password_reset--request', { source: 'page', intent: 'set_password' })}
                                     >
@@ -412,11 +443,11 @@ export const LoginPage: React.FC = () => {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || isQueueProcessing}
+                            disabled={isSubmitting || isPostAuthProcessing}
                             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-60"
                             {...getAnalyticsDebugAttributes(`auth__password--${mode}`)}
                         >
-                            {(isSubmitting || isQueueProcessing) ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+                            {(isSubmitting || isPostAuthProcessing) ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                             {isSubmitting ? t('actions.submitting') : mode === 'login' ? t('actions.submitLogin') : t('actions.submitRegister')}
                         </button>
                     </form>
@@ -435,7 +466,7 @@ export const LoginPage: React.FC = () => {
                                     key={item.provider}
                                     type="button"
                                     onClick={() => void handleOAuthLogin(item.provider)}
-                                    disabled={isSubmitting || isQueueProcessing}
+                                    disabled={isSubmitting || isPostAuthProcessing}
                                     className={`relative inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
                                         isLastUsed
                                             ? 'border-slate-400 bg-white'

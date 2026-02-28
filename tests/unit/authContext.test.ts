@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   isAuthBootstrapCriticalPath,
-  shouldAutoClearSimulatedLoginOnRealAdminSession,
+  resolveAuthContextValue,
+  shouldAutoClearSimulatedLoginOnRealSession,
   shouldEnableDevAdminBypass,
   shouldUseDevAdminBypassSession,
 } from '../../contexts/AuthContext';
@@ -27,27 +28,27 @@ describe('contexts/AuthContext auth bootstrap critical paths', () => {
 });
 
 describe('contexts/AuthContext simulated-login cleanup', () => {
-  it('clears simulated-login for real admin sessions', () => {
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+  it('clears simulated-login for real non-anonymous sessions', () => {
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       'real-admin-user-id',
     )).toBe(true);
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
+      { role: 'user', isAnonymous: false },
+      'real-user-id',
+    )).toBe(true);
   });
 
-  it('does not clear for non-admin, anonymous, or dev-bypass sessions', () => {
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
-      { role: 'user', isAnonymous: false },
-      'user-id',
-    )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+  it('does not clear for anonymous, dev-bypass, or missing session users', () => {
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: true },
       'admin-id',
     )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       'dev-admin-id',
     )).toBe(false);
-    expect(shouldAutoClearSimulatedLoginOnRealAdminSession(
+    expect(shouldAutoClearSimulatedLoginOnRealSession(
       { role: 'admin', isAnonymous: false },
       null,
     )).toBe(false);
@@ -64,5 +65,18 @@ describe('contexts/AuthContext dev bypass session precedence', () => {
   it('does not use bypass for real authenticated users', () => {
     expect(shouldUseDevAdminBypassSession(true, 'real-admin-user-id')).toBe(false);
     expect(shouldUseDevAdminBypassSession(false, null)).toBe(false);
+  });
+});
+
+describe('contexts/AuthContext fallback resolution', () => {
+  it('returns an anonymous-safe fallback instead of throwing when provider is missing', async () => {
+    const fallback = resolveAuthContextValue(null);
+
+    expect(fallback.isAuthenticated).toBe(false);
+    expect(fallback.isAdmin).toBe(false);
+    expect(fallback.access).toBeNull();
+
+    const loginResult = await fallback.loginWithPassword('user@example.com', 'secret');
+    expect(loginResult.error).toBeInstanceOf(Error);
   });
 });
