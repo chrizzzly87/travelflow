@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 import { TransportModeIcon } from '../TransportModeIcon';
 import type { ITrip } from '../../types';
+import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
 import { buildTimelineListModel } from './timelineListViewModel';
 
 interface TripTimelineListViewProps {
@@ -33,6 +34,22 @@ const formatTransferDuration = (durationHours: number | null): string | null => 
         : `${durationHours.toFixed(1)}h`;
 };
 
+const areTransferPositionsEqual = (
+    previous: Record<string, number>,
+    next: Record<string, number>,
+): boolean => {
+    const previousKeys = Object.keys(previous);
+    const nextKeys = Object.keys(next);
+    if (previousKeys.length !== nextKeys.length) return false;
+
+    for (const key of previousKeys) {
+        if (!(key in next)) return false;
+        if (Math.abs(previous[key] - next[key]) > 0.5) return false;
+    }
+
+    return true;
+};
+
 const MARKDOWN_COMPONENTS = {
     a: ({ node, ...props }: any) => (
         <a
@@ -56,9 +73,45 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     onSelect,
 }) => {
     const model = useMemo(() => buildTimelineListModel(trip), [trip]);
+    const sectionContainerRef = useRef<HTMLDivElement | null>(null);
     const viewportRef = useRef<HTMLDivElement | null>(null);
     const markerRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const hasAutoScrolledToTodayRef = useRef(false);
+    const [transferMidpoints, setTransferMidpoints] = useState<Record<string, number>>({});
+    const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+    const titleHoverShiftClass = isRtl
+        ? 'group-hover:-translate-x-1 group-focus-visible:-translate-x-1'
+        : 'group-hover:translate-x-1 group-focus-visible:translate-x-1';
+
+    const showCountryRooftitle = useMemo(() => {
+        const countryLabels = new Set(
+            model.sections
+                .map((section) => section.city.countryName?.trim() || section.city.countryCode?.trim() || '')
+                .map((value) => value.toLowerCase())
+                .filter(Boolean),
+        );
+        return countryLabels.size > 1;
+    }, [model.sections]);
+
+    const updateTransferMidpoints = useCallback(() => {
+        const nextMidpoints: Record<string, number> = {};
+
+        model.sections.forEach((section, index) => {
+            if (index === 0 || !section.incomingTransfer) return;
+            const previousSection = model.sections[index - 1];
+            const previousDot = markerRefs.current[`city-${previousSection.city.id}`];
+            const currentDot = markerRefs.current[`city-${section.city.id}`];
+            if (!previousDot || !currentDot) return;
+
+            const previousCenter = previousDot.offsetTop + (previousDot.offsetHeight / 2);
+            const currentCenter = currentDot.offsetTop + (currentDot.offsetHeight / 2);
+            nextMidpoints[section.city.id] = (previousCenter + currentCenter) / 2;
+        });
+
+        setTransferMidpoints((previous) => (
+            areTransferPositionsEqual(previous, nextMidpoints) ? previous : nextMidpoints
+        ));
+    }, [model.sections]);
 
     useEffect(() => {
         if (hasAutoScrolledToTodayRef.current) return;
@@ -79,6 +132,36 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
         });
     }, [model.todayMarkerId, model.sections.length]);
 
+    useLayoutEffect(() => {
+        updateTransferMidpoints();
+    }, [updateTransferMidpoints]);
+
+    useEffect(() => {
+        const sectionContainer = sectionContainerRef.current;
+        if (!sectionContainer) return;
+
+        updateTransferMidpoints();
+
+        const handleResize = () => {
+            updateTransferMidpoints();
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        let observer: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(() => {
+                updateTransferMidpoints();
+            });
+            observer.observe(sectionContainer);
+        }
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            observer?.disconnect();
+        };
+    }, [updateTransferMidpoints]);
+
     return (
         <div
             ref={viewportRef}
@@ -91,66 +174,112 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                     </div>
                 )}
                 {model.sections.length > 0 && (
-                    <div className="relative">
+                    <div ref={sectionContainerRef} className="relative">
                         <div aria-hidden className="absolute inset-y-0 start-8 w-px bg-slate-200" />
+                        <div className="pointer-events-none absolute inset-0 z-10">
+                            {model.sections.map((section, index) => {
+                                if (index === 0 || !section.incomingTransfer) return null;
+                                const transfer = section.incomingTransfer;
+                                const transferDuration = formatTransferDuration(transfer.durationHours ?? null);
+                                const transferTop = transferMidpoints[section.city.id];
+                                if (!Number.isFinite(transferTop)) return null;
+
+                                const handleTransferSelect = () => {
+                                    if (!transfer.itemId) return;
+                                    trackEvent('trip_view__timeline_transfer--open', {
+                                        trip_id: trip.id,
+                                        item_id: transfer.itemId,
+                                        city_id: section.city.id,
+                                        mode: transfer.mode,
+                                    });
+                                    onSelect(transfer.itemId);
+                                };
+
+                                return (
+                                    <div
+                                        key={`transfer-pill-${section.city.id}`}
+                                        className="absolute start-8 -translate-x-1/2 -translate-y-1/2"
+                                        style={{ top: transferTop }}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={handleTransferSelect}
+                                            disabled={!transfer.itemId}
+                                            aria-label={`Open ${transfer.modeLabel} transfer details`}
+                                            className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
+                                                transfer.itemId
+                                                    ? 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
+                                                    : 'border-slate-200 text-slate-400'
+                                            }`}
+                                            {...getAnalyticsDebugAttributes('trip_view__timeline_transfer--open', {
+                                                trip_id: trip.id,
+                                                item_id: transfer.itemId,
+                                                city_id: section.city.id,
+                                                mode: transfer.mode,
+                                            })}
+                                        >
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap">
+                                                <TransportModeIcon mode={transfer.mode} size={12} />
+                                                <span>{transfer.modeLabel}</span>
+                                                {transferDuration && (
+                                                    <span className="text-[10px] font-medium text-slate-500">{transferDuration}</span>
+                                                )}
+                                            </span>
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
                         {model.sections.map((section, index) => {
                             const cityStartDay = Math.max(1, Math.floor(section.city.startDateOffset) + 1);
                             const cityEndDay = Math.max(cityStartDay, Math.ceil(section.city.startDateOffset + Math.max(0, section.city.duration)));
                             const cityTitle = section.city.title || section.city.location || `Stop ${index + 1}`;
+                            const countryLabel = section.city.countryName?.trim() || section.city.countryCode?.trim() || null;
                             const citySelected = selectedItemId === section.city.id;
-                            const transfer = section.incomingTransfer;
-                            const transferDuration = formatTransferDuration(transfer?.durationHours ?? null);
+                            const citySummaryMarkdown = section.city.description?.trim() || section.arrivalDescription || '';
+
+                            const handleCitySelect = () => {
+                                trackEvent('trip_view__timeline_city--open', {
+                                    trip_id: trip.id,
+                                    city_id: section.city.id,
+                                });
+                                onSelect(section.city.id, { isCity: true });
+                            };
+
                             return (
                                 <React.Fragment key={section.city.id}>
-                                    {index > 0 && transfer && (
-                                        <div className="relative h-24 ps-14">
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (!transfer.itemId) return;
-                                                    onSelect(transfer.itemId);
-                                                }}
-                                                disabled={!transfer.itemId}
-                                                aria-label={`Open ${transfer.modeLabel} transfer details`}
-                                                className={`absolute top-1/2 start-8 -translate-x-1/2 -translate-y-1/2 origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
-                                                    transfer.itemId
-                                                        ? 'border-slate-300 text-slate-700 hover:border-accent-300 hover:text-accent-700'
-                                                        : 'border-slate-200 text-slate-400'
-                                                }`}
-                                            >
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] whitespace-nowrap">
-                                                    <TransportModeIcon mode={transfer.mode} size={12} />
-                                                    <span>{transfer.modeLabel}</span>
-                                                    {transferDuration && (
-                                                        <span className="text-[10px] font-medium text-slate-500">{transferDuration}</span>
-                                                    )}
-                                                </span>
-                                            </button>
-                                        </div>
-                                    )}
-                                    <section className="relative ps-14 pb-10">
+                                    <section className="relative ps-14 pb-12">
                                         <div
                                             ref={(node) => {
                                                 markerRefs.current[`city-${section.city.id}`] = node;
                                             }}
-                                            className="absolute start-8 top-5 size-3 rounded-full border-2 border-white shadow-sm"
+                                            className="absolute start-8 top-5 z-20 size-3 rounded-full border-2 border-white shadow-sm"
                                             style={{
                                                 backgroundColor: section.colorHex,
                                                 transform: 'translateX(-50%)',
                                             }}
                                         />
 
-                                        <header className="sticky top-0 z-20 bg-white/95 pb-3 pt-2 backdrop-blur-sm">
+                                        <header className="sticky top-0 z-20 bg-white/95 py-2 backdrop-blur-sm">
+                                            {showCountryRooftitle && countryLabel && (
+                                                <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] leading-6 text-slate-400">
+                                                    {countryLabel}
+                                                </p>
+                                            )}
                                             <button
                                                 type="button"
                                                 className="group w-full cursor-pointer text-left"
-                                                onClick={() => onSelect(section.city.id, { isCity: true })}
+                                                onClick={handleCitySelect}
                                                 onKeyDown={(event) => {
                                                     if (event.key === 'Enter' || event.key === ' ') {
                                                         event.preventDefault();
-                                                        onSelect(section.city.id, { isCity: true });
+                                                        handleCitySelect();
                                                     }
                                                 }}
+                                                {...getAnalyticsDebugAttributes('trip_view__timeline_city--open', {
+                                                    trip_id: trip.id,
+                                                    city_id: section.city.id,
+                                                })}
                                             >
                                                 <div className="flex flex-wrap items-end justify-between gap-3">
                                                     <h3 className={`text-2xl font-semibold tracking-tight underline-offset-4 decoration-2 transition-all group-hover:underline ${citySelected ? 'text-accent-700 decoration-accent-500' : 'text-slate-900 decoration-slate-400'}`}>
@@ -168,14 +297,15 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                     </div>
                                                 </div>
                                             </button>
-                                            {(section.city.description || section.arrivalDescription) && (
-                                                <div className="mt-3 text-sm text-slate-600">
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
-                                                        {section.city.description?.trim() || section.arrivalDescription || ''}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            )}
                                         </header>
+
+                                        {citySummaryMarkdown && (
+                                            <div className="pb-2 text-sm text-slate-600">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                                                    {citySummaryMarkdown}
+                                                </ReactMarkdown>
+                                            </div>
+                                        )}
 
                                         <div className="pt-1">
                                             {section.activities.length === 0 ? (
@@ -196,8 +326,20 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                             >
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => onSelect(activity.item.id)}
-                                                                    className="w-full py-4 text-left"
+                                                                    onClick={() => {
+                                                                        trackEvent('trip_view__timeline_activity--open', {
+                                                                            trip_id: trip.id,
+                                                                            item_id: activity.item.id,
+                                                                            city_id: section.city.id,
+                                                                        });
+                                                                        onSelect(activity.item.id);
+                                                                    }}
+                                                                    className="group w-full py-4 text-left"
+                                                                    {...getAnalyticsDebugAttributes('trip_view__timeline_activity--open', {
+                                                                        trip_id: trip.id,
+                                                                        item_id: activity.item.id,
+                                                                        city_id: section.city.id,
+                                                                    })}
                                                                 >
                                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                                         <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">
@@ -209,7 +351,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    <p className={`mt-1 text-[17px] leading-7 ${isSelected ? 'font-semibold text-accent-700' : 'font-medium text-slate-900'}`}>
+                                                                    <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-all ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-slate-900 decoration-slate-300'}`}>
                                                                         {activity.item.title}
                                                                     </p>
                                                                     {activity.item.description && (

@@ -160,6 +160,9 @@ All analytics events use a **BEM-inspired** naming format enforced by a TypeScri
 | `trip_view__layout_direction--horizontal` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
 | `trip_view__layout_direction--vertical` | — | `{ trip_id, target }` | `TripView.tsx`, `ItineraryMap.tsx` |
 | `trip_view__zoom` | — | `{ trip_id, direction, timeline_mode }` | `TripView.tsx` |
+| `trip_view__timeline_city--open` | — | `{ trip_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_activity--open` | — | `{ trip_id, item_id, city_id }` | `TripTimelineListView.tsx` |
+| `trip_view__timeline_transfer--open` | — | `{ trip_id, item_id, city_id, mode }` | `TripTimelineListView.tsx` |
 
 ### Profile
 | Event | Detail | Payload | File |
