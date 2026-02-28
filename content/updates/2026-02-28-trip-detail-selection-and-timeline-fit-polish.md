@@ -1,6 +1,6 @@
 ---
 id: rel-2026-02-28-trip-detail-selection-and-timeline-fit-polish
-version: v0.67.0
+version: v0.68.0
 title: "Trip Detail Selection + Timeline Fit Polish"
 date: 2026-02-28
 published_at: 2026-02-28T06:57:40Z
