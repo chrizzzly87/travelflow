@@ -3,8 +3,8 @@ id: rel-2026-02-28-admin-playground-app-dialog-coverage
 version: v0.70.0
 title: "Admin playground app dialog coverage follow-up"
 date: 2026-02-28
-published_at: 2026-02-28T08:30:00Z
-status: draft
+published_at: 2026-02-28T14:05:16Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Extended the admin design playground with real shared confirm/prompt dialog variants used across app and admin flows."
