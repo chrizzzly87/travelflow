@@ -454,4 +454,69 @@ describe('services/dbService dbCreateTripVersion', () => {
       }),
     }));
   });
+
+  it('logs timeline control visual changes to trip_user_events metadata', async () => {
+    mocks.versionMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'version-prev-controls',
+        label: 'Data: Previous',
+        data: {
+          id: 'trip-controls',
+          title: 'Controls Trip',
+          startDate: '2026-02-01',
+          items: [],
+          createdAt: 80,
+          updatedAt: 120,
+          sourceKind: 'created',
+        },
+      },
+      error: null,
+    });
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{ version_id: 'version-controls-next' }],
+      error: null,
+    });
+
+    const { dbCreateTripVersion } = await import('../../services/dbService');
+    await dbCreateTripVersion({
+      id: 'trip-controls',
+      title: 'Controls Trip',
+      startDate: '2026-02-01',
+      items: [],
+      createdAt: 80,
+      updatedAt: 220,
+      sourceKind: 'created',
+    }, undefined, 'Visual: Timeline mode: calendar → timeline · Timeline layout: horizontal → vertical · Zoomed in');
+
+    expect(mocks.eventInsert).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'trip.updated',
+      metadata: expect.objectContaining({
+        correlation_id: expect.any(String),
+        version_label: 'Visual: Timeline mode: calendar → timeline · Timeline layout: horizontal → vertical · Zoomed in',
+        timeline_diff_v1: expect.objectContaining({
+          schema: 'timeline_diff_v1',
+          version: 1,
+          counts: expect.objectContaining({
+            visual_changes: 3,
+          }),
+          visual_changes: expect.arrayContaining([
+            expect.objectContaining({
+              field: 'timeline_mode',
+              before_value: 'calendar',
+              after_value: 'timeline',
+            }),
+            expect.objectContaining({
+              field: 'timeline_layout',
+              before_value: 'horizontal',
+              after_value: 'vertical',
+            }),
+            expect.objectContaining({
+              field: 'zoom_level',
+              after_value: 'Zoomed in',
+            }),
+          ]),
+        }),
+      }),
+    }));
+  });
 });

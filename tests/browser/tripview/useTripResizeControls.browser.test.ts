@@ -9,6 +9,7 @@ const makeHookOptions = (
   overrides: Partial<Parameters<typeof useTripResizeControls>[0]> = {},
 ): Parameters<typeof useTripResizeControls>[0] => ({
   layoutMode: 'horizontal',
+  timelineMode: 'calendar',
   timelineView: 'horizontal',
   horizontalTimelineDayCount: 10,
   zoomLevel: 1,
@@ -159,6 +160,32 @@ describe('components/tripview/useTripResizeControls', () => {
       timelineView: 'horizontal',
       layoutMode: 'horizontal',
       isZoomDirty: true,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1100, height: 620 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        timelineView: 'vertical',
+      });
+    });
+
+    expect(setZoomLevel).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-fit timeline zoom in timeline list mode', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineMode: 'timeline',
+      timelineView: 'horizontal',
+      layoutMode: 'horizontal',
+      isZoomDirty: false,
     });
     const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
       initialProps,
