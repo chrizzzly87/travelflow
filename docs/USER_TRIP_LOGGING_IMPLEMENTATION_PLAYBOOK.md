@@ -48,6 +48,7 @@ Use this as the mandatory implementation checklist whenever code changes user, p
 ## Admin rendering requirements
 - User/admin timelines must read `timeline_diff_v1` only.
 - “Show complete diff” must resolve snapshot compare from `trip_versions` when version IDs exist.
+- Table-level diff rows should use typed value formatters for structured timeline items (no raw JSON blobs in primary list rows).
 
 ## Tests required for behavioral changes
 - Add/adjust browser tests for event writer payloads in:

@@ -72,6 +72,58 @@ const hasOwn = (value: Record<string, unknown>, key: string): boolean => (
 
 const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
 
+const formatDateLikeString = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '—';
+    const parsed = Date.parse(trimmed);
+    if (Number.isFinite(parsed) && /^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+        return new Date(parsed).toLocaleString();
+    }
+    return trimmed;
+};
+
+const summarizeStructuredValue = (value: unknown): string | null => {
+    if (!value || typeof value !== 'object') return null;
+    if (Array.isArray(value)) {
+        const itemCount = value.length;
+        return itemCount === 0
+            ? 'No items'
+            : `${itemCount} item${itemCount === 1 ? '' : 's'}`;
+    }
+
+    const record = value as Record<string, unknown>;
+    const type = asText(record.type);
+    const title = asText(record.title);
+    const id = asText(record.id);
+    const segments: string[] = [];
+
+    if (type) segments.push(type);
+    if (title) {
+        segments.push(title);
+    } else if (id) {
+        segments.push(id);
+    }
+
+    const dayOffset = typeof record.start_date_offset === 'number' ? record.start_date_offset : null;
+    if (dayOffset !== null && Number.isFinite(dayOffset)) {
+        segments.push(`Day +${dayOffset}`);
+    }
+    const duration = typeof record.duration === 'number' ? record.duration : null;
+    if (duration !== null && Number.isFinite(duration)) {
+        segments.push(`${duration}d`);
+    }
+    const transport = asText(record.transport_mode);
+    if (transport) {
+        segments.push(`Mode: ${transport}`);
+    }
+
+    if (segments.length > 0) return segments.join(' · ');
+
+    const keys = Object.keys(record).slice(0, 4);
+    if (keys.length === 0) return null;
+    return `Structured fields: ${keys.join(', ')}`;
+};
+
 const normalizeActionLabel = (action: string): string => {
     const cleaned = action.trim().replace(/[._]+/g, ' ');
     if (!cleaned) return 'User change';
@@ -409,6 +461,31 @@ export const resolveUserChangeActionPresentation = (
         label: normalizeActionLabel(record.action),
         className: 'border-slate-300 bg-slate-100 text-slate-800',
     };
+};
+
+export const formatUserChangeDiffValue = (
+    entry: UserChangeDiffEntry,
+    value: unknown
+): string => {
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') return formatDateLikeString(value);
+
+    const key = entry.key.trim().toLowerCase();
+    if (
+        key.startsWith('deleted_')
+        || key.startsWith('added_')
+        || key.startsWith('updated_')
+    ) {
+        const summary = summarizeStructuredValue(value);
+        if (summary) return summary;
+        return 'Structured item';
+    }
+
+    const summary = summarizeStructuredValue(value);
+    if (summary) return summary;
+    return 'Structured value';
 };
 
 export const resolveUserChangeSecondaryFacets = (

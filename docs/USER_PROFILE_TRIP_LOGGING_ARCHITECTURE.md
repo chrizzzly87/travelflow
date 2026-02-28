@@ -151,7 +151,7 @@ This document is the operational source of truth for:
 
 ### Phase 1 (remaining)
 - [x] Remove legacy `timeline_diff` compatibility reads once all active environments have no legacy event rows.
-- Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
+- [x] Replace any residual raw JSON fallback rendering paths with typed field renderers only (including any remaining legacy update surfaces).
 - [x] Add deterministic correlation IDs between upsert/version/archive operations.
 
 ### Phase 2

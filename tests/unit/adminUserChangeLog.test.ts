@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
   buildUserChangeDiffEntries,
+  formatUserChangeDiffValue,
   resolveUserChangeActionPresentation,
   resolveUserChangeSecondaryFacets,
 } from '../../services/adminUserChangeLog';
@@ -295,5 +296,22 @@ describe('services/adminUserChangeLog', () => {
       expect.objectContaining({ code: 'trip.activity.deleted', label: 'Activity deleted' }),
       expect.objectContaining({ code: 'trip.segment.deleted', label: 'Segment deleted' }),
     ]);
+  });
+
+  it('formats structured deleted-item values without raw JSON fallback', () => {
+    const entry = {
+      key: 'deleted_activity · Night market',
+      beforeValue: {
+        id: 'activity-1',
+        type: 'activity',
+        title: 'Night market',
+        start_date_offset: 2,
+        duration: 1,
+      },
+      afterValue: null,
+    };
+
+    expect(formatUserChangeDiffValue(entry, entry.beforeValue)).toBe('activity · Night market · Day +2 · 1d');
+    expect(formatUserChangeDiffValue(entry, entry.afterValue)).toBe('—');
   });
 });

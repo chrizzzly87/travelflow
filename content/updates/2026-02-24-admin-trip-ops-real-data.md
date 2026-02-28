@@ -56,6 +56,8 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🔗 Correlation IDs now follow deterministic conventions for upsert/version events and archive flows now preserve caller-provided correlation IDs.
 - [ ] [Internal] 🧾 Client fallback event writers now add the full immutable event envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for parity with DB event writers.
 - [ ] [Internal] 🧷 Immutable fallback event envelopes now include actor/target IDs and a redaction policy field for complete Phase 3 metadata.
+- [ ] [Internal] 🧩 User change-table diff rows now use typed structured-value formatters (instead of raw JSON blobs) across admin audit and user drawer surfaces.
+- [ ] [Internal] 🧪 Hardened long-running admin browser tests with explicit timeouts to stabilize `pnpm test:core` runs in CI-like load.
 - [ ] [Internal] 🧭 Added explicit worktree/branch startup guard documentation so future chats must verify and report execution context before coding.
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.

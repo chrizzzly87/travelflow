@@ -25,6 +25,7 @@ import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
+    formatUserChangeDiffValue,
     resolveUserChangeActionPresentation,
     resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
@@ -1004,11 +1005,19 @@ export const AdminAuditPage: React.FC = () => {
                                                             <div className="mt-1 grid gap-1 lg:grid-cols-2">
                                                                 <div className="rounded border border-rose-200 bg-rose-50 px-1.5 py-1 text-[11px] text-rose-900">
                                                                     <span className="font-semibold">Before: </span>
-                                                                    <span className="break-all">{formatAuditValue(entry.beforeValue)}</span>
+                                                                    <span className="break-all">
+                                                                        {timelineEntry.kind === 'user'
+                                                                            ? formatUserChangeDiffValue(entry, entry.beforeValue)
+                                                                            : formatAuditValue(entry.beforeValue)}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="rounded border border-emerald-200 bg-emerald-50 px-1.5 py-1 text-[11px] text-emerald-900">
                                                                     <span className="font-semibold">After: </span>
-                                                                    <span className="break-all">{formatAuditValue(entry.afterValue)}</span>
+                                                                    <span className="break-all">
+                                                                        {timelineEntry.kind === 'user'
+                                                                            ? formatUserChangeDiffValue(entry, entry.afterValue)
+                                                                            : formatAuditValue(entry.afterValue)}
+                                                                    </span>
                                                                 </div>
                                                             </div>
                                                         </article>
