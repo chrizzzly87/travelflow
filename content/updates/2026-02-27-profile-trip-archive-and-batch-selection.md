@@ -3,8 +3,8 @@ id: rel-2026-02-27-profile-trip-archive-and-batch-selection
 version: v0.67.0
 title: "Profile trip archive controls and batch selection"
 date: 2026-02-27
-published_at: 2026-02-27T20:30:00Z
-status: draft
+published_at: 2026-02-28T06:51:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Profile now supports hover-based multi-select actions, public-only preview filtering, clearer hidden/private states, and Sonner-based archive/history progress feedback."
@@ -24,6 +24,7 @@ summary: "Profile now supports hover-based multi-select actions, public-only pre
 - [x] [Improved] 🧭 Updated toast icon spacing/sizing, removed trailing title dots, and switched undo/redo feedback to directional arrow icons.
 - [x] [Improved] ♻️ Restored trip history change toasts for timeline edits and hardened delete undo so it recovers reliably even with fast follow-up clicks.
 - [x] [Improved] 🔔 Fixed missing trip-change toasts on planner edits so updates like duration and transport mode now surface consistently again.
+- [x] [Improved] ↩️ Added default Undo actions to planner toasts so trip-page feedback can jump back through history without extra clicks.
 - [ ] [Internal] 🗃️ Added DB-backed user trip archive event logging and archive RPC coverage for durable recovery/audit context.
 - [ ] [Internal] 🧪 Added regression coverage for profile archive controls, multi-select quick actions, and card-level hidden/selection states.
 - [ ] [Internal] 📚 Added a follow-up open issue spec for trip collections/folders (default + custom organization model).

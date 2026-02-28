@@ -29,7 +29,8 @@ Use this file as the source of truth for new UI components, banners, and marketi
 - Do not import `sonner` directly outside `components/ui/appToast.tsx` and `components/ui/sonner.tsx`.
 - Toast containers stay subtle: white/glass surface, soft border, colored icon badge, no fully tinted card backgrounds.
 - Title must be short and action-oriented; description should contain concrete context (for example trip title/count).
-- For destructive flows (archive/remove), use tone `remove` and provide an inline undo action where restoration is possible.
+- On trip planner routes (`/trip/*`), attach inline `Undo` actions by default so users can jump to the previous history state from toast feedback.
+- Outside trip planner routes, default inline `Undo` actions to destructive flows (archive/remove) where restoration is possible.
 - Use Lucide icons in toast metadata for visual consistency with neutral stroke-based iconography.
 
 ## CI Guardrail

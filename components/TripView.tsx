@@ -31,6 +31,7 @@ import { useTripEditModalState } from './tripview/useTripEditModalState';
 import { useTripLayoutControlsState } from './tripview/useTripLayoutControlsState';
 import { useTripCityForceFill } from './tripview/useTripCityForceFill';
 import { useTripFavoriteHandler } from './tripview/useTripFavoriteHandler';
+import { resolveTripToastUndoAction } from './tripview/tripToastUndoAction';
 import { useTripItemMutationHandlers } from './tripview/useTripItemMutationHandlers';
 import { useTripItemUpdateHandlers } from './tripview/useTripItemUpdateHandlers';
 import { useTripRouteStatusState } from './tripview/useTripRouteStatusState';
@@ -853,6 +854,7 @@ const useTripViewRender = ({
     const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const pendingCommitRef = useRef<{ trip: ITrip; view: IViewSettings } | null>(null);
     const suppressCommitRef = useRef(false);
+    const navigateHistoryRef = useRef<((action: 'undo' | 'redo', options?: { silent?: boolean }) => boolean) | null>(null);
     const skipViewDiffRef = useRef(false);
     const appliedViewKeyRef = useRef<string | null>(null);
     const prevViewRef = useRef<IViewSettings | null>(null);
@@ -904,15 +906,21 @@ const useTripViewRender = ({
         title?: string;
         iconVariant?: 'undo' | 'redo';
         action?: { label: string; onClick: () => void };
+        disableDefaultUndo?: boolean;
     }) => {
         if (suppressToasts) return;
+        const action = resolveTripToastUndoAction({
+            action: options?.action,
+            disableDefaultUndo: options?.disableDefaultUndo,
+            onUndo: () => navigateHistoryRef.current?.('undo') ?? false,
+        });
         showAppToast({
             tone: options?.tone || 'info',
             title: options?.title || 'Saved',
             description: message,
             duration: 3200,
             iconVariant: options?.iconVariant,
-            action: options?.action,
+            action,
         });
     }, [suppressToasts]);
 
@@ -971,6 +979,7 @@ const useTripViewRender = ({
         stripHistoryPrefix,
         showToast,
     });
+    navigateHistoryRef.current = navigateHistory;
 
     const setPendingLabel = useCallback((label: string) => {
         pendingHistoryLabelRef.current = label;
