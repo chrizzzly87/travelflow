@@ -68,6 +68,7 @@ This document is the operational source of truth for:
 - Admin diff builders ignore noisy after-only fields for update events to prevent misleading “Before: —” rows.
 - Admin logs now derive secondary update facets from diff keys (for example `Updated transport`, `Deleted activity`, `Updated trip view`) while keeping the primary `trip.updated` pill compact.
 - New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
+- New trip update rows also persist `metadata.domain_events_v1` for explicit sub-event semantics suitable for export/query without adding extra timeline rows.
 - Trip/failure event writes now include a stable envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for traceability.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
 - See `docs/USER_TRIP_LOGGING_IMPLEMENTATION_PLAYBOOK.md` for mutation logging checklists and PR acceptance criteria.
@@ -148,6 +149,7 @@ This document is the operational source of truth for:
 - [x] Admin logs now render compact secondary trip-update facets from typed diff keys.
 - [x] Trip update writers now persist deterministic `secondary_actions` facet codes with diff-key fallback for legacy rows.
 - [x] Trip and failure event writer paths now include deterministic event envelope fields (including causation/correlation IDs).
+- [x] Trip update writers now persist structured `domain_events_v1` payloads for explicit sub-event semantics.
 
 ## Remaining Implementation Plan
 

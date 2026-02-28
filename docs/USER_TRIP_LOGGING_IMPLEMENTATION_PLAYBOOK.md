@@ -43,6 +43,7 @@ This is the guardrail doc for any future mutation work. If a change touches user
   - `trip_id`, `version_id`, `previous_version_id`, `version_label`
   - `source_kind_after`, `status_after`, `updated_at_after`
   - `timeline_diff_v1`
+  - `domain_events_v1`
   - `secondary_actions`
   - `correlation_id`
 - Archive failure (`trip.archive_failed`):
@@ -56,6 +57,11 @@ This is the guardrail doc for any future mutation work. If a change touches user
   - `trip.item.added|updated|deleted`
   - `trip.view.updated`
 - Admin consumers read `secondary_actions` first, then fallback to derived diff keys for legacy rows.
+
+## Domain Sub-Event Payload
+- `domain_events_v1` is the structured sub-event payload for `trip.updated` rows.
+- Use it for strict export/query semantics while keeping one primary timeline row.
+- Keep payload compact, deterministic, and capped (`truncated: true` when capped).
 
 ## Definition of Done for Mutation PRs
 1. Mutation writes/updates the correct event action.

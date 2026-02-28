@@ -791,6 +791,120 @@ const mapTimelineEntryTypeToDomain = (itemType: string | null): 'activity' | 'tr
     return 'item';
 };
 
+const readTimelineEntryText = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    return trimmed || null;
+};
+
+const resolveTimelineDomainEventItemId = (entry: Record<string, unknown>): string | null => {
+    const raw = readTimelineEntryText(entry.item_id);
+    if (raw) return raw;
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const after = entry.after as Record<string, unknown> | null | undefined;
+    return readTimelineEntryText(before?.id) || readTimelineEntryText(after?.id);
+};
+
+const resolveTimelineDomainEventTitle = (entry: Record<string, unknown>): string | null => {
+    const raw = readTimelineEntryText(entry.title);
+    if (raw) return raw;
+    const before = entry.before as Record<string, unknown> | null | undefined;
+    const after = entry.after as Record<string, unknown> | null | undefined;
+    return readTimelineEntryText(before?.title) || readTimelineEntryText(after?.title);
+};
+
+const MAX_DOMAIN_EVENTS = 24;
+
+const buildTripDomainEventsV1 = (
+    timelineDiff: TripTimelineDiffSummary | null,
+    visualChanges: TripTimelineVisualChange[]
+): Record<string, unknown> | null => {
+    if (!timelineDiff && visualChanges.length === 0) return null;
+    const events: Array<Record<string, unknown>> = [];
+
+    const pushEvent = (event: Record<string, unknown>) => {
+        if (events.length >= MAX_DOMAIN_EVENTS) return;
+        events.push(event);
+    };
+
+    timelineDiff?.transport_mode_changes.forEach((entry) => {
+        pushEvent({
+            action: 'trip.transport.updated',
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            field: 'transport_mode',
+            before_value: entry.before_mode ?? null,
+            after_value: entry.after_mode ?? null,
+        });
+    });
+
+    timelineDiff?.added_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        pushEvent({
+            action: `trip.${domain}.added`,
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            before_value: null,
+            after_value: entry.after ?? null,
+        });
+    });
+
+    timelineDiff?.deleted_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry));
+        pushEvent({
+            action: `trip.${domain}.deleted`,
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            before_value: entry.before ?? null,
+            after_value: null,
+        });
+    });
+
+    timelineDiff?.updated_items.forEach((entry) => {
+        const domain = mapTimelineEntryTypeToDomain(normalizeTimelineEntryType(entry, { fallbackToAfter: true }));
+        const changedFields = Array.isArray(entry.changed_fields)
+            ? entry.changed_fields
+                .filter((value): value is string => typeof value === 'string')
+                .map((value) => value.trim())
+                .filter(Boolean)
+            : [];
+
+        pushEvent({
+            action: `trip.${domain}.updated`,
+            item_id: resolveTimelineDomainEventItemId(entry),
+            title: resolveTimelineDomainEventTitle(entry),
+            changed_fields: changedFields,
+            before_value: entry.before ?? null,
+            after_value: entry.after ?? null,
+        });
+    });
+
+    visualChanges.forEach((entry) => {
+        pushEvent({
+            action: 'trip.view.updated',
+            field: entry.field,
+            label: entry.label,
+            before_value: entry.before_value,
+            after_value: entry.after_value,
+        });
+    });
+
+    const totalEventCount = (
+        (timelineDiff?.transport_mode_changes.length ?? 0)
+        + (timelineDiff?.added_items.length ?? 0)
+        + (timelineDiff?.deleted_items.length ?? 0)
+        + (timelineDiff?.updated_items.length ?? 0)
+        + visualChanges.length
+    );
+
+    return {
+        schema: 'trip_domain_events_v1',
+        version: 1,
+        events,
+        truncated: totalEventCount > MAX_DOMAIN_EVENTS,
+    };
+};
+
 const buildTripSecondaryActionCodes = (
     timelineDiff: TripTimelineDiffSummary | null,
     visualChanges: TripTimelineVisualChange[]
@@ -1281,6 +1395,7 @@ export const dbCreateTripVersion = async (
         const timelineDiff = buildTripTimelineDiffSummary(previousVersionSnapshot?.trip ?? null, normalizedTrip);
         const visualChanges = parseVisualChangesFromLabel(label ?? null);
         const timelineDiffV1 = buildTripTimelineDiffV1(timelineDiff, visualChanges);
+        const domainEventsV1 = buildTripDomainEventsV1(timelineDiff, visualChanges);
         const secondaryActions = buildTripSecondaryActionCodes(timelineDiff, visualChanges);
         const correlationId = createEventCorrelationId();
         await writeTripEventFallback(client, {
@@ -1299,6 +1414,7 @@ export const dbCreateTripVersion = async (
                 status_after: normalizedTrip.status ?? 'active',
                 updated_at_after: normalizedTrip.updatedAt,
                 timeline_diff_v1: timelineDiffV1,
+                domain_events_v1: domainEventsV1,
                 secondary_actions: secondaryActions,
             },
             dedupeWindowMs: 0,

@@ -248,6 +248,18 @@ describe('services/dbService dbCreateTripVersion', () => {
           'trip.transport.updated',
           'trip.activity.deleted',
         ]),
+        domain_events_v1: expect.objectContaining({
+          schema: 'trip_domain_events_v1',
+          version: 1,
+          events: expect.arrayContaining([
+            expect.objectContaining({
+              action: 'trip.transport.updated',
+            }),
+            expect.objectContaining({
+              action: 'trip.activity.deleted',
+            }),
+          ]),
+        }),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,
@@ -307,6 +319,20 @@ describe('services/dbService dbCreateTripVersion', () => {
         secondary_actions: expect.arrayContaining([
           'trip.view.updated',
         ]),
+        domain_events_v1: expect.objectContaining({
+          schema: 'trip_domain_events_v1',
+          version: 1,
+          events: expect.arrayContaining([
+            expect.objectContaining({
+              action: 'trip.view.updated',
+              field: 'map_view',
+            }),
+            expect.objectContaining({
+              action: 'trip.view.updated',
+              field: 'timeline_layout',
+            }),
+          ]),
+        }),
         timeline_diff_v1: expect.objectContaining({
           schema: 'timeline_diff_v1',
           version: 1,

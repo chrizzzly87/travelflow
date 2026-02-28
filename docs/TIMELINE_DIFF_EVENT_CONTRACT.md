@@ -48,6 +48,35 @@
 - These are derived at write-time from timeline diff payloads and used for deterministic admin facet pills.
 - Consumer fallback remains available by deriving facets from diff keys when older rows do not have `secondary_actions`.
 
+## Domain sub-events (structured)
+- Trip update events may include `metadata.domain_events_v1` with explicit structured sub-events for querying/export.
+- Current shape:
+```json
+{
+  "schema": "trip_domain_events_v1",
+  "version": 1,
+  "events": [
+    {
+      "action": "trip.transport.updated",
+      "item_id": "travel-1",
+      "title": "Bangkok to Chiang Mai",
+      "field": "transport_mode",
+      "before_value": "bus",
+      "after_value": "train"
+    },
+    {
+      "action": "trip.activity.deleted",
+      "item_id": "activity-1",
+      "title": "Night market",
+      "before_value": { "id": "activity-1", "type": "activity" },
+      "after_value": null
+    }
+  ],
+  "truncated": false
+}
+```
+- Sub-events are written inside the primary `trip.updated` row to avoid timeline spam while still preserving explicit domain semantics.
+
 ## Correlation tracing
 - `trip_user_events.metadata` must include `correlation_id`.
 - Archive failure metadata in `profile_user_events` (via `log_user_action_failure`) must also include `correlation_id`.
@@ -59,6 +88,7 @@
   - verifies no regression to legacy write format
   - verifies event envelope fields (`event_schema_version`, event/correlation/causation IDs)
   - verifies deterministic `secondary_actions` writes
+  - verifies `domain_events_v1` structured sub-event payload writes
 - `tests/browser/dbArchiveTrip.browser.test.ts`
   - verifies archive and archive-failure metadata includes correlation IDs
 - `tests/unit/adminUserChangeLog.test.ts`
