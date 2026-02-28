@@ -744,7 +744,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
       if (roundTripContext?.isRoundTrip && roundTripContext.isFirstCity && roundTripContext.lastCityId && !isUnchanged) {
           const shouldSyncLastCity = await confirmDialog({
               title: 'Update Roundtrip Endpoint?',
-              message: `This trip looks like a roundtrip. Also change the final city to "${nextDraft.title}"?`,
+              message: (
+                  <div className="space-y-2">
+                      <p>This trip looks like a roundtrip.</p>
+                      <p>Also change the final city to <strong>"{nextDraft.title}"</strong>?</p>
+                  </div>
+              ),
               confirmLabel: 'Yes, Update Last City',
               cancelLabel: 'No, Keep As Is',
           });
@@ -981,7 +986,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
       const applyToCities = await confirmDialog({
           title: 'Apply palette to current cities?',
-          message: 'Choose “Apply automatically” to recolor all cities now. Choose “Manual selection” to keep existing city colors and only switch the active palette.',
+          message: (
+              <div className="space-y-2">
+                  <p>Choose <strong>Apply automatically</strong> to recolor all cities now.</p>
+                  <p>Choose <strong>Manual selection</strong> to keep existing city colors and only switch the active palette.</p>
+              </div>
+          ),
           confirmLabel: 'Apply automatically',
           cancelLabel: 'Manual selection',
       });

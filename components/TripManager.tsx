@@ -964,7 +964,14 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     const shouldDelete = await confirm({
       title: 'Archive Trip?',
-      message: 'This trip will be removed from your list and can be restored later.',
+      message: (
+        <div className="space-y-2">
+          <p>
+            Are you sure you want to archive <strong>"{tripToArchive.title}"</strong>?
+          </p>
+          <p>This trip will be removed from your list and can be restored later.</p>
+        </div>
+      ),
       confirmLabel: 'Archive Trip',
       cancelLabel: 'Cancel',
       tone: 'danger',

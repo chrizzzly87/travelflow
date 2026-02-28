@@ -9,7 +9,7 @@ type ConfirmPresetInput = Omit<ConfirmDialogOptions, 'tone'>;
 
 type TransferTargetPromptInput = {
     title: string;
-    message: string;
+    message: PromptDialogOptions['message'];
     confirmLabel: string;
     cancelLabel?: string;
     tone?: DialogTone;
@@ -20,7 +20,7 @@ type TransferTargetPromptInput = {
 
 type UrlPromptInput = {
     title?: string;
-    message?: string;
+    message?: PromptDialogOptions['message'];
     label?: string;
     placeholder?: string;
     defaultValue?: string;
@@ -82,4 +82,3 @@ export const buildUrlPromptDialog = (
         }
     },
 });
-

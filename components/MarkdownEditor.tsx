@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Bot, Sparkles, Bold, Italic, List, CheckSquare, Heading1, Heading2, Heading3, Link2 } from 'lucide-react';
 import { useAppDialog } from './AppDialogProvider';
+import { buildUrlPromptDialog } from '../services/appDialogPresets';
 
 export interface MarkdownAiAction {
     id: string;
@@ -385,28 +386,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         const selectedText = selection?.toString().trim() || '';
         const selectionRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0).cloneRange() : null;
 
-        const url = await prompt({
-            title: 'Insert Link',
-            message: 'Enter a URL for the selected text or insert a new link.',
-            label: 'URL',
-            placeholder: 'https://example.com',
-            defaultValue: 'https://',
-            confirmLabel: 'Insert Link',
-            cancelLabel: 'Cancel',
-            inputType: 'url',
-            validate: (value) => {
-                if (!value) return 'Please enter a URL.';
-                try {
-                    const parsed = new URL(value);
-                    if (!parsed.protocol.startsWith('http')) {
-                        return 'URL must start with http:// or https://';
-                    }
-                    return null;
-                } catch {
-                    return 'Please enter a valid URL.';
-                }
-            },
-        });
+        const url = await prompt(buildUrlPromptDialog({
+            message: (
+                <div className="space-y-2">
+                    <p>Enter a URL for the selected text or insert a new link.</p>
+                    <p>The link opens in a new tab with secure defaults.</p>
+                </div>
+            ),
+        }));
         if (!url) return;
 
         focusEditor();

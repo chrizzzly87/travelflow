@@ -28,3 +28,5 @@ summary: "Extended the admin design playground with real shared confirm/prompt d
 - [ ] [Internal] 🪪 Prevented dev-admin bypass from masking real authenticated admin sessions when a non-bypass Supabase session is present.
 - [ ] [Internal] 📚 Documented current app dialog variants and harmonization targets in the admin playground follow-up issue doc.
 - [ ] [Internal] 🧪 Added regression coverage for triggering shared confirm/prompt dialog samples in the playground.
+- [ ] [Internal] 🧭 Harmonized remaining user-facing app dialog callsites (Profile archive, My Trips archive, Details panel confirms, Create Trip notifications) to use structured message nodes instead of plain strings.
+- [ ] [Internal] 🔗 Switched Markdown link insertion prompt to the shared URL app-dialog preset so validation/copy behavior stays consistent with admin and playground samples.
