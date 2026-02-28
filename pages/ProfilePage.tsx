@@ -826,7 +826,7 @@ export const ProfilePage: React.FC = () => {
     if (isProfileLoading && !profile) {
         return (
             <div className="flex min-h-screen flex-col bg-slate-50">
-                <SiteHeader hideCreateTrip />
+                <SiteHeader />
                 <main className="mx-auto w-full max-w-7xl flex-1 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                     <div className="h-24" aria-hidden="true" />
                 </main>
@@ -837,7 +837,7 @@ export const ProfilePage: React.FC = () => {
 
     return (
         <div className="flex min-h-screen flex-col bg-slate-50">
-            <SiteHeader hideCreateTrip />
+            <SiteHeader />
             <main data-testid="profile-page-container" className="mx-auto w-full max-w-7xl flex-1 space-y-8 px-5 pb-14 pt-12 md:px-8 md:pt-14">
                 <ProfileHero
                     greeting={greeting.greeting}
@@ -886,7 +886,6 @@ export const ProfilePage: React.FC = () => {
                         { id: 'likes_earned', label: t('stats.likesEarned'), value: 0, accent: true },
                     ]}
                     labels={{
-                        createTrip: t('common:createTrip'),
                         editProfile: t('summary.editProfile'),
                         viewPublicProfile: t('summary.viewPublicProfile'),
                         shareProfile: t('summary.shareProfile'),
@@ -900,11 +899,7 @@ export const ProfilePage: React.FC = () => {
                         stampsDescription: t('summary.stampsDescription'),
                         stampsOpen: t('summary.stampsOpen'),
                     }}
-                    createTripHref={buildPath('createTrip')}
                     editProfileHref={buildPath('profileSettings')}
-                    onCreateTripClick={() => {
-                        trackEvent('profile__summary--create_trip');
-                    }}
                     viewPublicProfileHref={publicProfilePath || buildPath('profileSettings')}
                     onEditProfileClick={() => {
                         trackEvent('profile__summary--edit_profile');

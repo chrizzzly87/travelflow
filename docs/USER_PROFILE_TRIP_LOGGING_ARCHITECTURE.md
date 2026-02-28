@@ -129,15 +129,23 @@ This document is the operational source of truth for:
   - check `trip_user_events` inserts for `trip.updated`/`trip.created`/`trip.archived`,
   - confirm `admin_list_user_change_logs` returns trip union rows.
 
-## Known Gaps and Improvement Plan
+## Logging Roadmap Status (as of 2026-02-28)
+- [x] Ownership hardening shipped (authenticated profile views only DB-owned trips).
+- [x] Anonymous-to-registered claim transfer shipped (including OAuth callback claim handoff).
+- [x] Failure logging shipped (`trip.archive_failed`) and visible in admin user drawer + global audit.
+- [x] Snapshot-aware diff UX shipped with focused diff rows and full side-by-side snapshot modal.
+- [ ] Stable typed diff envelope (`timeline_diff_v1`) is not finalized yet.
+- [ ] Deterministic causation/correlation identifiers are not propagated across all write paths yet.
 
-### Phase 1 (next)
-- Promote timeline diff to stable typed schema version (`timeline_diff_v1`) for forward compatibility.
-- Add dedicated UI renderer for timeline diff entries (transport, item delete/add/update) instead of raw JSON blocks.
-- Add deterministic event correlation IDs between upsert/version/archive operations.
+## Remaining Implementation Plan
+
+### Phase 1 (remaining)
+- Finalize and enforce stable typed timeline diff schema version (`timeline_diff_v1`) for all trip-update writers.
+- Replace any residual raw JSON fallback rendering paths with typed field renderers only.
+- Add deterministic correlation IDs between upsert/version/archive operations.
 
 ### Phase 2
-- Introduce domain event writers per operation class:
+- Introduce secondary domain event writers per operation class:
   - `trip.city.updated`,
   - `trip.activity.updated`,
   - `trip.activity.deleted`,
