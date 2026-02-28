@@ -3,6 +3,7 @@ import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
   buildUserChangeDiffEntries,
   resolveUserChangeActionPresentation,
+  resolveUserChangeSecondaryActions,
 } from '../../services/adminUserChangeLog';
 
 const makeRecord = (overrides: Partial<AdminUserChangeRecord> = {}): AdminUserChangeRecord => ({
@@ -238,6 +239,52 @@ describe('services/adminUserChangeLog', () => {
       { key: 'visual_map_view', beforeValue: 'minimal', afterValue: 'clean' },
       { key: 'visual_timeline_layout', beforeValue: 'vertical', afterValue: 'horizontal' },
     ]);
+  });
+
+  it('derives secondary trip-update labels from diff entries', () => {
+    const record = makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+    });
+    const diffEntries = [
+      { key: 'transport_mode · Bangkok to Chiang Mai', beforeValue: 'bus', afterValue: 'train' },
+      { key: 'deleted_activity · Night market', beforeValue: { id: 'a1' }, afterValue: null },
+      { key: 'visual_map_view', beforeValue: 'minimal', afterValue: 'clean' },
+    ];
+
+    const secondaryActions = resolveUserChangeSecondaryActions(record, diffEntries);
+
+    expect(secondaryActions).toEqual([
+      {
+        key: 'transport_updated',
+        label: 'Updated transport',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+      {
+        key: 'deleted_activity',
+        label: 'Deleted activity',
+        className: 'border-rose-200 bg-rose-50 text-rose-800',
+      },
+      {
+        key: 'trip_view',
+        label: 'Updated trip view',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+    ]);
+  });
+
+  it('does not create secondary labels for non trip-update actions', () => {
+    const record = makeRecord({
+      action: 'profile.updated',
+      target_type: 'user',
+      target_id: 'user-1',
+    });
+    const secondaryActions = resolveUserChangeSecondaryActions(record, [
+      { key: 'username', beforeValue: 'old', afterValue: 'new' },
+    ]);
+
+    expect(secondaryActions).toEqual([]);
   });
 
   it('formats unknown actions into readable labels', () => {

@@ -72,6 +72,7 @@ import { showAppToast } from '../components/ui/appToast';
 import {
     buildUserChangeDiffEntries,
     resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryActions,
 } from '../services/adminUserChangeLog';
 
 type SortKey = 'name' | 'email' | 'total_trips' | 'activation_status' | 'last_sign_in_at' | 'created_at' | 'tier_key' | 'system_role' | 'account_status';
@@ -1228,11 +1229,13 @@ export const AdminUsersPage: React.FC = () => {
     const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
         const diffEntries = buildUserChangeDiffEntries(log);
         const actionPresentation = resolveUserChangeActionPresentation(log, diffEntries);
+        const secondaryActions = resolveUserChangeSecondaryActions(log, diffEntries);
         const visibleDiffEntries = diffEntries.slice(0, 4);
         const hiddenDiffCount = Math.max(0, diffEntries.length - visibleDiffEntries.length);
         return {
             log,
             actionPresentation,
+            secondaryActions,
             visibleDiffEntries,
             hiddenDiffCount,
         };
@@ -3221,7 +3224,7 @@ export const AdminUsersPage: React.FC = () => {
                                         <div className="text-sm text-slate-500">No user-originated changes recorded for this account yet.</div>
                                     ) : (
                                         <div className="space-y-2">
-                                            {selectedUserChangeEntries.map(({ log, actionPresentation, visibleDiffEntries, hiddenDiffCount }) => (
+                                            {selectedUserChangeEntries.map(({ log, actionPresentation, secondaryActions, visibleDiffEntries, hiddenDiffCount }) => (
                                                 <article key={log.id} className="rounded-lg border border-slate-200 p-3">
                                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                                         <div className="text-[11px] font-semibold text-slate-500">
@@ -3231,6 +3234,19 @@ export const AdminUsersPage: React.FC = () => {
                                                             {actionPresentation.label}
                                                         </span>
                                                     </div>
+                                                    {secondaryActions.length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                            {secondaryActions.map((secondaryAction) => (
+                                                                <span
+                                                                    key={`${log.id}-${secondaryAction.key}`}
+                                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${secondaryAction.className}`}
+                                                                    title="Secondary trip update action"
+                                                                >
+                                                                    {secondaryAction.label}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                     <div className="mt-2 space-y-1 text-[11px] text-slate-600">
                                                         <div><span className="font-semibold text-slate-700">Action:</span> <span className="font-mono">{log.action}</span></div>
                                                         {log.source && (

@@ -14,6 +14,7 @@
   - `services/dbService.ts` (`dbCreateTripVersion`) writes `timeline_diff_v1`.
 - Consumer:
   - `services/adminUserChangeLog.ts` reads `timeline_diff_v1` first, then falls back to legacy `timeline_diff`.
+  - `resolveUserChangeSecondaryActions(...)` derives compact secondary labels (for example `Updated transport`, `Deleted activity`, `Updated trip view`) from diff keys.
 
 ## `timeline_diff_v1` shape
 ```json
@@ -54,6 +55,7 @@
   - verifies archive and archive-failure metadata includes correlation IDs
 - `tests/unit/adminUserChangeLog.test.ts`
   - verifies v1 parsing, legacy fallback parsing, and v1 precedence when both payloads exist
+  - verifies deterministic secondary-action derivation from trip update diff keys
 
 ## Migration safety notes
 - Keep legacy read fallback until you confirm all active environments no longer contain legacy-only rows.

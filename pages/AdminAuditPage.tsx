@@ -26,6 +26,7 @@ import { useAppDialog } from '../components/AppDialogProvider';
 import {
     buildUserChangeDiffEntries,
     resolveUserChangeActionPresentation,
+    resolveUserChangeSecondaryActions,
 } from '../services/adminUserChangeLog';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
@@ -884,6 +885,9 @@ export const AdminAuditPage: React.FC = () => {
                                 const actionPresentation = timelineEntry.kind === 'admin'
                                     ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
                                     : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
+                                const secondaryActions = timelineEntry.kind === 'user'
+                                    ? resolveUserChangeSecondaryActions(timelineEntry.log, diffEntries)
+                                    : [];
                                 const targetLabel = getTargetLabel(log.target_type);
                                 const visibleDiffEntries = diffEntries.slice(0, 5);
                                 const hiddenDiffCount = Math.max(diffEntries.length - visibleDiffEntries.length, 0);
@@ -913,6 +917,19 @@ export const AdminAuditPage: React.FC = () => {
                                             >
                                                 {actionPresentation.label}
                                             </span>
+                                            {secondaryActions.length > 0 && (
+                                                <div className="mt-1 flex flex-wrap items-center gap-1">
+                                                    {secondaryActions.map((secondaryAction) => (
+                                                        <span
+                                                            key={`${timelineEntry.kind}-${log.id}-${secondaryAction.key}`}
+                                                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${secondaryAction.className}`}
+                                                            title="Secondary trip update action"
+                                                        >
+                                                            {secondaryAction.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                                                 <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
                                                     {eventTypeLabel}
