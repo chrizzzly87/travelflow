@@ -394,6 +394,7 @@ interface TripEventSnapshot {
     title: string;
     status: 'active' | 'archived' | 'expired';
     showOnPublicProfile: boolean;
+    startDate: string | null;
     tripExpiresAt: string | null;
     sourceKind: string | null;
 }
@@ -443,6 +444,9 @@ type TripSecondaryActionCode =
     | 'trip.item.added'
     | 'trip.item.updated'
     | 'trip.item.deleted'
+    | 'trip.settings.updated'
+    | 'trip.visibility.updated'
+    | 'trip.trip_dates.updated'
     | 'trip.view.updated';
 
 const createEventCorrelationId = (): string => {
@@ -508,6 +512,9 @@ const toTripEventSnapshotFromTrip = (trip: ITrip): TripEventSnapshot => ({
         ? trip.status
         : 'active',
     showOnPublicProfile: trip.showOnPublicProfile !== false,
+    startDate: typeof trip.startDate === 'string' && trip.startDate.trim()
+        ? trip.startDate.trim().split('T')[0]
+        : null,
     tripExpiresAt: typeof trip.tripExpiresAt === 'string' ? trip.tripExpiresAt : null,
     sourceKind: typeof trip.sourceKind === 'string' && trip.sourceKind.trim()
         ? trip.sourceKind.trim()
@@ -527,7 +534,7 @@ const readOwnedTripEventSnapshot = async (
 ): Promise<TripEventSnapshot | null> => {
     const { data, error } = await client
         .from('trips')
-        .select('title, status, show_on_public_profile, trip_expires_at, source_kind')
+        .select('title, status, show_on_public_profile, start_date, trip_expires_at, source_kind')
         .eq('id', tripId)
         .eq('owner_id', ownerId)
         .maybeSingle();
@@ -540,8 +547,107 @@ const readOwnedTripEventSnapshot = async (
         title: typeof data.title === 'string' && data.title.trim() ? data.title.trim() : 'Untitled trip',
         status,
         showOnPublicProfile: data.show_on_public_profile !== false,
+        startDate: typeof data.start_date === 'string' && data.start_date.trim()
+            ? data.start_date.trim().split('T')[0]
+            : null,
         tripExpiresAt: typeof data.trip_expires_at === 'string' ? data.trip_expires_at : null,
         sourceKind: typeof data.source_kind === 'string' && data.source_kind.trim() ? data.source_kind.trim() : null,
+    };
+};
+
+const buildTripLifecycleSecondaryActions = (
+    before: TripEventSnapshot,
+    after: TripEventSnapshot
+): TripSecondaryActionCode[] => {
+    const codes: TripSecondaryActionCode[] = [];
+    const pushUnique = (code: TripSecondaryActionCode) => {
+        if (codes.includes(code)) return;
+        codes.push(code);
+    };
+
+    if (
+        before.title !== after.title
+        || before.status !== after.status
+        || before.sourceKind !== after.sourceKind
+    ) {
+        pushUnique('trip.settings.updated');
+    }
+    if (before.showOnPublicProfile !== after.showOnPublicProfile) {
+        pushUnique('trip.visibility.updated');
+    }
+    if (
+        before.startDate !== after.startDate
+        || before.tripExpiresAt !== after.tripExpiresAt
+    ) {
+        pushUnique('trip.trip_dates.updated');
+    }
+
+    return codes;
+};
+
+const buildTripLifecycleDomainEventsV1 = (
+    before: TripEventSnapshot,
+    after: TripEventSnapshot
+): Record<string, unknown> | null => {
+    const events: Array<Record<string, unknown>> = [];
+    const pushIfChanged = (payload: {
+        action: string;
+        field: string;
+        beforeValue: unknown;
+        afterValue: unknown;
+    }) => {
+        if (toComparableValue(payload.beforeValue) === toComparableValue(payload.afterValue)) return;
+        events.push({
+            action: payload.action,
+            field: payload.field,
+            before_value: payload.beforeValue ?? null,
+            after_value: payload.afterValue ?? null,
+        });
+    };
+
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'status',
+        beforeValue: before.status,
+        afterValue: after.status,
+    });
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'title',
+        beforeValue: before.title,
+        afterValue: after.title,
+    });
+    pushIfChanged({
+        action: 'trip.settings.updated',
+        field: 'source_kind',
+        beforeValue: before.sourceKind,
+        afterValue: after.sourceKind,
+    });
+    pushIfChanged({
+        action: 'trip.visibility.updated',
+        field: 'show_on_public_profile',
+        beforeValue: before.showOnPublicProfile,
+        afterValue: after.showOnPublicProfile,
+    });
+    pushIfChanged({
+        action: 'trip.trip_dates.updated',
+        field: 'start_date',
+        beforeValue: before.startDate,
+        afterValue: after.startDate,
+    });
+    pushIfChanged({
+        action: 'trip.trip_dates.updated',
+        field: 'trip_expires_at',
+        beforeValue: before.tripExpiresAt,
+        afterValue: after.tripExpiresAt,
+    });
+
+    if (events.length === 0) return null;
+    return {
+        schema: 'trip_domain_events_v1',
+        version: 1,
+        events,
+        truncated: false,
     };
 };
 
@@ -560,6 +666,8 @@ const toTimelineDiffItemSnapshot = (item: ITimelineItem): Record<string, unknown
 const arraysEqual = (left: string[], right: string[]): boolean => (
     left.length === right.length && left.every((value, index) => value === right[index])
 );
+
+const toComparableValue = (value: unknown): string => JSON.stringify(value ?? null);
 
 const buildTripTimelineDiffSummary = (
     previousTrip: ITrip | null,
@@ -1046,6 +1154,7 @@ const writeTripLifecycleEventFallback = async (
                 status_after: after.status,
                 title_after: after.title,
                 show_on_public_profile_after: after.showOnPublicProfile,
+                start_date_after: after.startDate,
                 trip_expires_at_after: after.tripExpiresAt,
                 source_kind_after: after.sourceKind,
             },
@@ -1057,10 +1166,14 @@ const writeTripLifecycleEventFallback = async (
         before.status !== after.status
         || before.title !== after.title
         || before.showOnPublicProfile !== after.showOnPublicProfile
+        || before.startDate !== after.startDate
         || before.tripExpiresAt !== after.tripExpiresAt
         || before.sourceKind !== after.sourceKind
     );
     if (!hasDiff) return;
+
+    const secondaryActions = buildTripLifecycleSecondaryActions(before, after);
+    const domainEventsV1 = buildTripLifecycleDomainEventsV1(before, after);
 
     await writeTripEventFallback(client, {
         ownerId: payload.ownerId,
@@ -1076,10 +1189,14 @@ const writeTripLifecycleEventFallback = async (
             title_after: after.title,
             show_on_public_profile_before: before.showOnPublicProfile,
             show_on_public_profile_after: after.showOnPublicProfile,
+            start_date_before: before.startDate,
+            start_date_after: after.startDate,
             trip_expires_at_before: before.tripExpiresAt,
             trip_expires_at_after: after.tripExpiresAt,
             source_kind_before: before.sourceKind,
             source_kind_after: after.sourceKind,
+            secondary_actions: secondaryActions,
+            ...(domainEventsV1 ? { domain_events_v1: domainEventsV1 } : {}),
         },
     });
 };

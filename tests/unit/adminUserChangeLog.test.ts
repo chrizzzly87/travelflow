@@ -100,12 +100,15 @@ describe('services/adminUserChangeLog', () => {
         status_after: 'expired',
         title_before: 'Old title',
         title_after: 'New title',
+        start_date_before: '2026-03-01',
+        start_date_after: '2026-03-05',
       },
     }));
 
     expect(entries).toEqual([
       { key: 'status', beforeValue: 'active', afterValue: 'expired' },
       { key: 'title', beforeValue: 'Old title', afterValue: 'New title' },
+      { key: 'start_date', beforeValue: '2026-03-01', afterValue: '2026-03-05' },
     ]);
   });
 
@@ -296,7 +299,9 @@ describe('services/adminUserChangeLog', () => {
       target_id: 'trip-1',
       metadata: {
         secondary_actions: [
+          'trip.visibility.updated',
           'trip.transport.updated',
+          'trip.trip_dates.updated',
           'trip.view.updated',
           'trip.transport.updated',
         ],
@@ -305,10 +310,20 @@ describe('services/adminUserChangeLog', () => {
 
     const secondaryActions = resolveUserChangeSecondaryActions(record, []);
 
-    expect(secondaryActions).toEqual([
+    expect(secondaryActions).toEqual(expect.arrayContaining([
       {
         key: 'transport_updated',
         label: 'Updated transport',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+      {
+        key: 'trip_dates_updated',
+        label: 'Updated trip dates',
+        className: 'border-sky-200 bg-sky-50 text-sky-800',
+      },
+      {
+        key: 'trip_visibility_updated',
+        label: 'Updated visibility',
         className: 'border-sky-200 bg-sky-50 text-sky-800',
       },
       {
@@ -316,7 +331,31 @@ describe('services/adminUserChangeLog', () => {
         label: 'Updated trip view',
         className: 'border-sky-200 bg-sky-50 text-sky-800',
       },
-    ]);
+    ]));
+    expect(secondaryActions).toHaveLength(4);
+  });
+
+  it('derives visibility/date/settings secondary labels from lifecycle metadata diffs', () => {
+    const record = makeRecord({
+      action: 'trip.updated',
+      target_type: 'trip',
+      target_id: 'trip-1',
+      metadata: {
+        title_before: 'Before',
+        title_after: 'After',
+        show_on_public_profile_before: false,
+        show_on_public_profile_after: true,
+        start_date_before: '2026-03-01',
+        start_date_after: '2026-03-05',
+      },
+    });
+
+    const secondaryActions = listUserChangeSecondaryActions(record);
+    const keys = secondaryActions.map((entry) => entry.key);
+
+    expect(keys).toContain('trip_settings_updated');
+    expect(keys).toContain('trip_visibility_updated');
+    expect(keys).toContain('trip_dates_updated');
   });
 
   it('lists secondary actions directly from a user-change record', () => {

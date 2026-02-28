@@ -60,6 +60,7 @@ const buildTripMetadataDiffEntries = (
     }> = [
         { key: 'status', beforeKey: 'status_before', afterKey: 'status_after' },
         { key: 'title', beforeKey: 'title_before', afterKey: 'title_after' },
+        { key: 'start_date', beforeKey: 'start_date_before', afterKey: 'start_date_after' },
         {
             key: 'show_on_public_profile',
             beforeKey: 'show_on_public_profile_before',
@@ -280,9 +281,16 @@ const buildTripTimelineDiffEntries = (metadata: Record<string, unknown>): UserCh
 const TRIP_SETTINGS_KEYS = new Set([
     'status',
     'title',
-    'show_on_public_profile',
-    'trip_expires_at',
     'source_kind',
+]);
+
+const TRIP_VISIBILITY_KEYS = new Set([
+    'show_on_public_profile',
+]);
+
+const TRIP_DATE_KEYS = new Set([
+    'start_date',
+    'trip_expires_at',
 ]);
 
 const normalizeEntityLabel = (rawEntity: string): string => {
@@ -319,6 +327,9 @@ const SECONDARY_ACTION_CODE_PRESENTATION: Record<string, UserChangeSecondaryActi
     'trip.item.added': makeSecondaryAction('added_item', 'Added itinerary item', 'added'),
     'trip.item.updated': makeSecondaryAction('updated_item', 'Updated itinerary item', 'updated'),
     'trip.item.deleted': makeSecondaryAction('deleted_item', 'Deleted itinerary item', 'deleted'),
+    'trip.settings.updated': makeSecondaryAction('trip_settings_updated', 'Updated trip settings', 'updated'),
+    'trip.visibility.updated': makeSecondaryAction('trip_visibility_updated', 'Updated visibility', 'updated'),
+    'trip.trip_dates.updated': makeSecondaryAction('trip_dates_updated', 'Updated trip dates', 'updated'),
     'trip.view.updated': makeSecondaryAction('trip_view', 'Updated trip view', 'updated'),
 };
 
@@ -331,6 +342,12 @@ const resolveSecondaryActionFromDiffKey = (diffKey: string): UserChangeSecondary
     }
     if (normalized.startsWith('transport_mode')) {
         return makeSecondaryAction('transport_updated', 'Updated transport', 'updated');
+    }
+    if (TRIP_VISIBILITY_KEYS.has(normalized)) {
+        return makeSecondaryAction('trip_visibility_updated', 'Updated visibility', 'updated');
+    }
+    if (TRIP_DATE_KEYS.has(normalized)) {
+        return makeSecondaryAction('trip_dates_updated', 'Updated trip dates', 'updated');
     }
     if (TRIP_SETTINGS_KEYS.has(normalized)) {
         return makeSecondaryAction('trip_settings_updated', 'Updated trip settings', 'updated');

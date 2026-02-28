@@ -14,6 +14,7 @@
 ## Producer and consumer
 - Producer:
   - `services/dbService.ts` (`dbCreateTripVersion`) writes `timeline_diff_v1`.
+  - `services/dbService.ts` (`dbUpsertTrip`) writes lifecycle `secondary_actions` + `domain_events_v1` for settings/date/visibility updates.
 - Consumer:
   - `services/adminUserChangeLog.ts` reads `timeline_diff_v1` first, then falls back to legacy `timeline_diff`.
   - `resolveUserChangeSecondaryActions(...)` reads `metadata.secondary_actions` first, then falls back to diff-key derivation for legacy rows.
@@ -44,12 +45,15 @@
 - If older events only have `version_label` text (for example `Visual: Map view: minimal → clean`), consumer fallback parses that label into structured diff rows.
 
 ## Secondary action facets
-- Trip update events may include `metadata.secondary_actions` with compact codes (for example `trip.transport.updated`, `trip.activity.deleted`, `trip.view.updated`).
+- Trip update events may include `metadata.secondary_actions` with compact codes (for example `trip.transport.updated`, `trip.activity.deleted`, `trip.view.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`).
 - These are derived at write-time from timeline diff payloads and used for deterministic admin facet pills.
+- Lifecycle updates from `dbUpsertTrip` also write `trip.settings.updated` when title/status/source-kind changes.
 - Consumer fallback remains available by deriving facets from diff keys when older rows do not have `secondary_actions`.
 
 ## Domain sub-events (structured)
 - Trip update events may include `metadata.domain_events_v1` with explicit structured sub-events for querying/export.
+- Version commits use itinerary-level actions (`trip.transport.updated`, `trip.activity.deleted`, etc.).
+- Lifecycle updates use field-level actions (`trip.settings.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`).
 - Current shape:
 ```json
 {
@@ -83,6 +87,8 @@
 - Correlation IDs connect related write attempts across event tables for incident tracing.
 
 ## Test coverage (must keep)
+- `tests/browser/dbUpsertTrip.browser.test.ts`
+  - verifies lifecycle update metadata includes deterministic `secondary_actions` and `domain_events_v1`
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
   - verifies `timeline_diff_v1` writes
   - verifies no regression to legacy write format

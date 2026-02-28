@@ -69,6 +69,7 @@ This document is the operational source of truth for:
 - Admin logs now derive secondary update facets from diff keys (for example `Updated transport`, `Deleted activity`, `Updated trip view`) while keeping the primary `trip.updated` pill compact.
 - New trip update rows also persist `metadata.secondary_actions` (for example `trip.transport.updated`) so facet rendering is deterministic without relying only on display-key parsing.
 - New trip update rows also persist `metadata.domain_events_v1` for explicit sub-event semantics suitable for export/query without adding extra timeline rows.
+- Lifecycle trip updates now persist `start_date_before|after` and typed lifecycle facets/sub-events (`trip.settings.updated`, `trip.visibility.updated`, `trip.trip_dates.updated`) in `secondary_actions` + `domain_events_v1`.
 - Trip/failure event writes now include a stable envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for traceability.
 - Server-side SQL event writers in `docs/supabase.sql` now apply the same envelope defaults for profile/trip/failure log rows.
 - See `docs/TIMELINE_DIFF_EVENT_CONTRACT.md` for the canonical producer/consumer contract, schema, and migration rules.
@@ -151,6 +152,7 @@ This document is the operational source of truth for:
 - [x] Trip update writers now persist deterministic `secondary_actions` facet codes with diff-key fallback for legacy rows.
 - [x] Trip and failure event writer paths now include deterministic event envelope fields (including causation/correlation IDs).
 - [x] Trip update writers now persist structured `domain_events_v1` payloads for explicit sub-event semantics.
+- [x] Lifecycle `trip.updated` rows now include typed date/visibility/settings secondary actions and domain sub-events.
 
 ## Remaining Implementation Plan
 
@@ -161,14 +163,15 @@ This document is the operational source of truth for:
 
 ### Phase 2
 - [x] Render secondary trip-update facets from typed diff metadata in admin timelines.
-- Introduce secondary domain event writers per operation class:
+- Introduce remaining secondary domain event writers per operation class:
   - `trip.city.updated`,
   - `trip.activity.updated`,
   - `trip.activity.deleted`,
   - `trip.transport.updated`,
   - `trip.segment.deleted`,
-  - `trip.trip_dates.updated`,
-  - `trip.visibility.updated`.
+  - `trip.trip_dates.updated` [x],
+  - `trip.visibility.updated` [x],
+  - `trip.settings.updated` [x].
 - Keep primary pill compact (`trip.updated`) and render secondary action facets from typed metadata.
 
 ### Phase 3

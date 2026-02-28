@@ -43,6 +43,7 @@ This is the guardrail doc for any future mutation work. If a change touches user
 - Trip update (`trip.updated`):
   - `trip_id`, `version_id`, `previous_version_id`, `version_label`
   - `source_kind_after`, `status_after`, `updated_at_after`
+  - lifecycle rows: `start_date_before|after`, `show_on_public_profile_before|after`, `trip_expires_at_before|after`
   - `timeline_diff_v1`
   - `domain_events_v1`
   - `secondary_actions`
@@ -56,6 +57,9 @@ This is the guardrail doc for any future mutation work. If a change touches user
   - `trip.transport.added|updated|deleted`
   - `trip.city.added|updated|deleted`
   - `trip.item.added|updated|deleted`
+  - `trip.settings.updated`
+  - `trip.visibility.updated`
+  - `trip.trip_dates.updated`
   - `trip.view.updated`
 - Admin consumers read `secondary_actions` first, then fallback to derived diff keys for legacy rows.
 
@@ -73,6 +77,7 @@ This is the guardrail doc for any future mutation work. If a change touches user
 6. Docs updated when taxonomy/schema behavior changes.
 
 ## Minimum Test Coverage
+- `tests/browser/dbUpsertTrip.browser.test.ts`
 - `tests/browser/dbCreateTripVersion.browser.test.ts`
 - `tests/browser/dbArchiveTrip.browser.test.ts`
 - `tests/unit/adminUserChangeLog.test.ts`
