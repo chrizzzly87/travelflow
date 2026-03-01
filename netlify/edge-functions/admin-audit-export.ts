@@ -11,19 +11,23 @@ const JSON_HEADERS = {
 
 const AUTH_HEADER = "authorization";
 const MAX_FILTER_VALUES = 200;
+const MAX_SELECTED_EVENT_IDS = 2000;
 const MAX_SEARCH_LENGTH = 160;
 const DEFAULT_SOURCE_LIMIT = 500;
 const MAX_SOURCE_LIMIT = 2000;
 
-type AdminDateRange = "7d" | "30d" | "90d" | "all";
+type AdminDateRange = "24h" | "7d" | "30d" | "90d" | "all" | "custom";
 type AuditActorFilter = "admin" | "user";
 
 interface AdminAuditReplayExportRequestBody {
   search?: string | null;
   dateRange?: AdminDateRange | null;
+  customStartDate?: string | null;
+  customEndDate?: string | null;
   actionFilters?: string[] | null;
   targetFilters?: string[] | null;
   actorFilters?: AuditActorFilter[] | null;
+  selectedEventIds?: string[] | null;
   sourceLimit?: number | null;
 }
 
@@ -71,9 +75,12 @@ interface TimelineEntry {
 interface NormalizedExportRequest {
   searchToken: string;
   dateRange: AdminDateRange;
+  customStartTs: number | null;
+  customEndTs: number | null;
   actionFilters: string[];
   targetFilters: string[];
   actorFilters: AuditActorFilter[];
+  selectedEventIds: string[];
   sourceLimit: number;
 }
 
@@ -336,18 +343,44 @@ const clampSourceLimit = (value: unknown): number => {
 };
 
 const normalizeDateRange = (value: unknown): AdminDateRange => {
-  if (value === "7d" || value === "30d" || value === "90d" || value === "all") return value;
+  if (value === "24h" || value === "7d" || value === "30d" || value === "90d" || value === "all" || value === "custom") return value;
   return "30d";
+};
+
+const parseDateInputToTimestamp = (value: unknown, asEndOfDay: boolean): number | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Date.parse(`${trimmed}T${asEndOfDay ? "23:59:59.999" : "00:00:00.000"}`);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeSelectedEventIds = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const set = new Set<string>();
+  value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .slice(0, MAX_SELECTED_EVENT_IDS)
+    .forEach((entry) => set.add(entry));
+  return Array.from(set);
 };
 
 const normalizeExportRequest = (body: AdminAuditReplayExportRequestBody | null): NormalizedExportRequest => {
   const search = typeof body?.search === "string" ? body.search.trim().toLowerCase().slice(0, MAX_SEARCH_LENGTH) : "";
+  const dateRange = normalizeDateRange(body?.dateRange);
+  const customStartTs = parseDateInputToTimestamp(body?.customStartDate, false);
+  const customEndTs = parseDateInputToTimestamp(body?.customEndDate, true);
   return {
     searchToken: search,
-    dateRange: normalizeDateRange(body?.dateRange),
+    dateRange,
+    customStartTs,
+    customEndTs,
     actionFilters: normalizeStringArray(body?.actionFilters),
     targetFilters: normalizeStringArray(body?.targetFilters),
     actorFilters: normalizeActorFilters(body?.actorFilters),
+    selectedEventIds: normalizeSelectedEventIds(body?.selectedEventIds),
     sourceLimit: clampSourceLimit(body?.sourceLimit),
   };
 };
@@ -355,12 +388,28 @@ const normalizeExportRequest = (body: AdminAuditReplayExportRequestBody | null):
 const getDateRangeStart = (dateRange: AdminDateRange): number | null => {
   if (dateRange === "all") return null;
   const now = Date.now();
+  if (dateRange === "24h") return now - DAY_MS;
   if (dateRange === "7d") return now - (7 * DAY_MS);
   if (dateRange === "30d") return now - (30 * DAY_MS);
   return now - (90 * DAY_MS);
 };
 
-const isDateInRange = (isoDate: string | null | undefined, dateRange: AdminDateRange): boolean => {
+const isDateInRange = (
+  isoDate: string | null | undefined,
+  dateRange: AdminDateRange,
+  customStartTs: number | null,
+  customEndTs: number | null,
+): boolean => {
+  if (dateRange === "custom") {
+    if (!customStartTs || !customEndTs) return false;
+    if (!isoDate) return false;
+    const timestamp = Date.parse(isoDate);
+    if (!Number.isFinite(timestamp)) return false;
+    const lower = Math.min(customStartTs, customEndTs);
+    const upper = Math.max(customStartTs, customEndTs);
+    return timestamp >= lower && timestamp <= upper;
+  }
+
   const rangeStart = getDateRangeStart(dateRange);
   if (rangeStart === null) return true;
   if (!isoDate) return false;
@@ -406,9 +455,15 @@ export const filterTimelineEntriesForExport = (
   entries: TimelineEntry[],
   filters: NormalizedExportRequest,
 ): TimelineEntry[] => {
+  const selectedEntryKeySet = new Set(filters.selectedEventIds);
+
   return entries
     .filter((entry) => {
-      if (!isDateInRange(entry.created_at, filters.dateRange)) return false;
+      if (selectedEntryKeySet.size > 0) {
+        const keyedId = `${entry.source}:${entry.id}`;
+        if (!selectedEntryKeySet.has(keyedId) && !selectedEntryKeySet.has(entry.id)) return false;
+      }
+      if (!isDateInRange(entry.created_at, filters.dateRange, filters.customStartTs, filters.customEndTs)) return false;
       if (filters.actionFilters.length > 0 && !filters.actionFilters.includes(entry.action)) return false;
       if (filters.targetFilters.length > 0 && !filters.targetFilters.includes(entry.target_type)) return false;
       if (filters.actorFilters.length > 0 && !filters.actorFilters.includes(entry.source)) return false;
@@ -550,9 +605,12 @@ const persistExportAuditEntry = async (
         source_limit: payload.filters.sourceLimit,
         search: payload.filters.searchToken || null,
         date_range: payload.filters.dateRange,
+        custom_start_ts: payload.filters.customStartTs,
+        custom_end_ts: payload.filters.customEndTs,
         action_filters: payload.filters.actionFilters,
         target_filters: payload.filters.targetFilters,
         actor_filters: payload.filters.actorFilters,
+        selected_event_ids_count: payload.filters.selectedEventIds.length,
         source_counts: {
           admin: payload.adminSourceCount,
           user: payload.userSourceCount,
@@ -630,9 +688,12 @@ export default async (request: Request): Promise<Response> => {
         filters: {
           search: normalizedRequest.searchToken || null,
           date_range: normalizedRequest.dateRange,
+          custom_start_ts: normalizedRequest.customStartTs,
+          custom_end_ts: normalizedRequest.customEndTs,
           action_filters: normalizedRequest.actionFilters,
           target_filters: normalizedRequest.targetFilters,
           actor_filters: normalizedRequest.actorFilters,
+          selected_event_ids_count: normalizedRequest.selectedEventIds.length,
           source_limit: normalizedRequest.sourceLimit,
         },
       },

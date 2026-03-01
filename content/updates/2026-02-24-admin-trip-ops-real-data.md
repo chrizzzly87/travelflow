@@ -44,6 +44,11 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Fixed] 🚫 Trip creation-limit checks no longer create anonymous DB accounts during read-only eligibility checks.
 - [ ] [Fixed] 🧯 Added a safe auth-context fallback so rare route recovery states no longer crash with “useAuthContext must be used within AuthProvider.”
 - [ ] [Improved] ➕ Profile now keeps the top-right navigation “Create Trip” action visible for signed-in users on `/profile` for consistent access.
+- [ ] [Improved] 🧱 Admin audit table now supports column resize handles, column visibility toggles, and wider default space for `Diff & details` so dense rows stay readable.
+- [ ] [Improved] ⏱️ Admin audit filters now include `Last 24 hours`, `Last 7 days`, `Last 30 days`, `All time`, and a custom date-range picker for faster incident slicing.
+- [ ] [Improved] 📤 Admin replay export now supports full-filter exports, selected-row exports, and single-row exports directly from table row actions.
+- [ ] [Improved] 🔁 Added confirm-based undo actions in admin audit rows for supported user-originated changes (`trip.updated`, `trip.archived`, `profile.updated`) with new audit entries for each revert.
+- [ ] [Improved] 🔔 Replay export and undo success paths now use app toasts instead of persistent top-page banners.
 - [x] [Fixed] 📱 On mobile, the signed-in profile button is now hidden in the header to keep layout spacing stable, with account actions available in the menu.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
