@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { AdminUserChangeRecord } from '../../services/adminService';
 import {
+  buildDiffEntryRenderKey,
+  buildSecondaryFacetRenderKey,
   buildUserChangeDiffEntries,
   formatUserChangeDiffValue,
   resolveUserChangeActionPresentation,
@@ -296,6 +298,24 @@ describe('services/adminUserChangeLog', () => {
       expect.objectContaining({ code: 'trip.activity.deleted', label: 'Activity deleted' }),
       expect.objectContaining({ code: 'trip.segment.deleted', label: 'Segment deleted' }),
     ]);
+  });
+
+  it('builds collision-safe render keys for duplicate diff entries and facets', () => {
+    const duplicateDiffEntry = {
+      key: 'transport_mode · Train Travel',
+      beforeValue: 'bus',
+      afterValue: 'train',
+    };
+    expect(buildDiffEntryRenderKey(duplicateDiffEntry, 0)).toBe('transport_mode · Train Travel::0');
+    expect(buildDiffEntryRenderKey(duplicateDiffEntry, 1)).toBe('transport_mode · Train Travel::1');
+
+    const duplicateFacet = {
+      code: 'trip.transport.updated',
+      label: 'Transport updated',
+      className: 'border-cyan-300 bg-cyan-50 text-cyan-800',
+    };
+    expect(buildSecondaryFacetRenderKey(duplicateFacet, 0)).toBe('trip.transport.updated::0');
+    expect(buildSecondaryFacetRenderKey(duplicateFacet, 1)).toBe('trip.transport.updated::1');
   });
 
   it('formats structured deleted-item values without raw JSON fallback', () => {
