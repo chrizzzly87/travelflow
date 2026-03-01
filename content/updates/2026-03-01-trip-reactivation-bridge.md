@@ -3,8 +3,8 @@ id: rel-2026-03-01-trip-reactivation-bridge
 version: v0.74.0
 title: "Expired trip reactivation bridge for signed-in users"
 date: 2026-03-01
-published_at: 2026-03-01T18:30:00Z
-status: draft
+published_at: 2026-03-01T12:27:17Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Signed-in travelers can now reactivate expired trips instantly while we prepare the full subscription upgrade flow."
