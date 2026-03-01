@@ -115,4 +115,5 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
   });
+
 });

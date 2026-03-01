@@ -21,6 +21,8 @@ interface ItineraryMapProps {
     onShowCityNamesChange?: (enabled: boolean) => void;
     isExpanded?: boolean;
     onToggleExpanded?: () => void;
+    mapDockMode?: 'docked' | 'floating';
+    onMapDockModeToggle?: () => void;
     focusLocationQuery?: string;
     fitToRouteKey?: string;
     onRouteMetrics?: (travelItemId: string, metrics: { routeDistanceKm?: number; routeDurationHours?: number; mode?: string; routeKey?: string }) => void;
@@ -304,6 +306,8 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
     onShowCityNamesChange,
     isExpanded = false,
     onToggleExpanded,
+    mapDockMode = 'docked',
+    onMapDockModeToggle,
     focusLocationQuery,
     fitToRouteKey,
     onRouteMetrics,
@@ -1145,8 +1149,25 @@ export const ItineraryMap: React.FC<ItineraryMapProps> = ({
             )}
             
             {/* Controls */}
-            <div className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
+            <div data-floating-map-control="true" className="absolute top-4 end-4 z-[40] flex flex-col gap-2 pointer-events-none">
                 <div className="flex flex-col gap-2 pointer-events-auto">
+                    {onMapDockModeToggle && (
+                        <button
+                            type="button"
+                            onClick={onMapDockModeToggle}
+                            data-testid="map-dock-toggle-button"
+                            data-floating-map-control="true"
+                            className="p-2 rounded-lg shadow-md border bg-white border-gray-200 text-gray-600 hover:text-accent-600 hover:bg-gray-50 transition-colors flex items-center justify-center"
+                            aria-label={mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}
+                            {...getAnalyticsDebugAttributes(
+                                mapDockMode === 'docked' ? 'trip_view__map_preview--minimize' : 'trip_view__map_preview--maximize',
+                                { surface: 'map_controls' },
+                            )}
+                        >
+                            {mapDockMode === 'docked' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                            <span className="sr-only">{mapDockMode === 'docked' ? 'Minimize map preview' : 'Maximize map preview'}</span>
+                        </button>
+                    )}
                     {showLayoutControls && onLayoutChange && (
                         <>
                             <button
