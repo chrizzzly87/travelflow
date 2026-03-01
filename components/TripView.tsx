@@ -1915,15 +1915,6 @@ const useTripViewRender = ({
                                     layout_mode: layoutMode,
                                 }
                             );
-                            const documentWithViewTransition = document as Document & {
-                                startViewTransition?: (updateCallback: () => void) => { finished: Promise<void> };
-                            };
-                            if (typeof documentWithViewTransition.startViewTransition === 'function') {
-                                documentWithViewTransition.startViewTransition(() => {
-                                    setMapDockMode(mode);
-                                });
-                                return;
-                            }
                             setMapDockMode(mode);
                         }}
                         timelineMode={timelineMode}
