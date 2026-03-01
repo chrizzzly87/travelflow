@@ -2590,6 +2590,7 @@ begin
     case when coalesce(p_bypass_username_cooldown, false) then 'true' else 'false' end,
     true
   );
+  perform set_config('app.username_reserved_bypass', 'true', true);
 
   if p_system_role is not null and p_system_role not in ('admin', 'user') then
     raise exception 'Invalid system role';
@@ -2626,6 +2627,10 @@ begin
      set first_name = coalesce(p_first_name, p.first_name),
          last_name = coalesce(p_last_name, p.last_name),
          username = coalesce(p_username, p.username),
+         username_display = case
+           when p_username is null then p.username_display
+           else nullif(regexp_replace(btrim(coalesce(p_username, '')), '^@+', ''), '')
+         end,
          gender = coalesce(p_gender, p.gender),
          country = coalesce(v_country_normalized, p.country),
          city = coalesce(p_city, p.city),
@@ -3452,6 +3457,12 @@ alter table public.profiles add column if not exists bio text;
 alter table public.profiles add column if not exists public_profile_enabled boolean not null default true;
 alter table public.profiles add column if not exists default_public_trip_visibility boolean not null default true;
 alter table public.profiles add column if not exists username_changed_at timestamptz;
+alter table public.profiles add column if not exists username_display text;
+
+update public.profiles p
+set username_display = p.username
+where p.username is not null
+  and nullif(btrim(coalesce(p.username_display, '')), '') is null;
 
 update public.profiles p
 set country = upper(btrim(p.country))
@@ -3528,6 +3539,169 @@ create index if not exists profile_handle_redirects_user_idx
 create index if not exists profile_handle_redirects_expiry_idx
   on public.profile_handle_redirects (expires_at desc);
 
+create table if not exists public.username_blocked_terms (
+  id uuid primary key default gen_random_uuid(),
+  term text not null,
+  category text not null default 'profanity',
+  severity smallint not null default 2 check (severity between 1 and 5),
+  source text not null default 'manual',
+  notes text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists username_blocked_terms_term_uidx
+  on public.username_blocked_terms (lower(term));
+create index if not exists username_blocked_terms_category_idx
+  on public.username_blocked_terms (category, active);
+
+create table if not exists public.username_reserved_handles (
+  id uuid primary key default gen_random_uuid(),
+  handle text not null,
+  category text not null default 'system_owner',
+  owner_assignable boolean not null default true,
+  source text not null default 'manual',
+  notes text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists username_reserved_handles_handle_uidx
+  on public.username_reserved_handles (lower(handle));
+create index if not exists username_reserved_handles_category_idx
+  on public.username_reserved_handles (category, active);
+
+insert into public.username_reserved_handles (handle, category, owner_assignable, source, notes)
+values
+  ('admin', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('administrator', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('admins', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('owner', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('team', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('staff', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
+  ('moderator', 'security', true, 'seed_v1', 'Moderation namespace'),
+  ('mod', 'security', true, 'seed_v1', 'Moderation namespace'),
+  ('support', 'support', true, 'seed_v1', 'Support namespace'),
+  ('help', 'support', true, 'seed_v1', 'Support namespace'),
+  ('helpdesk', 'support', true, 'seed_v1', 'Support namespace'),
+  ('help-desk', 'support', true, 'seed_v1', 'Support namespace'),
+  ('helpcenter', 'support', true, 'seed_v1', 'Support namespace'),
+  ('help-center', 'support', true, 'seed_v1', 'Support namespace'),
+  ('supportteam', 'support', true, 'seed_v1', 'Support namespace'),
+  ('support-team', 'support', true, 'seed_v1', 'Support namespace'),
+  ('customersupport', 'support', true, 'seed_v1', 'Support namespace'),
+  ('customer-support', 'support', true, 'seed_v1', 'Support namespace'),
+  ('service', 'support', true, 'seed_v1', 'Support namespace'),
+  ('security', 'security', true, 'seed_v1', 'Security namespace'),
+  ('safety', 'security', true, 'seed_v1', 'Safety namespace'),
+  ('trust', 'security', true, 'seed_v1', 'Trust namespace'),
+  ('trustandsafety', 'security', true, 'seed_v1', 'Trust and safety namespace'),
+  ('trust-safety', 'security', true, 'seed_v1', 'Trust and safety namespace'),
+  ('compliance', 'security', true, 'seed_v1', 'Compliance namespace'),
+  ('official', 'security', true, 'seed_v1', 'Official namespace'),
+  ('officialteam', 'security', true, 'seed_v1', 'Official namespace'),
+  ('official-team', 'security', true, 'seed_v1', 'Official namespace'),
+  ('verification', 'security', true, 'seed_v1', 'Verification namespace'),
+  ('verify', 'security', true, 'seed_v1', 'Verification namespace'),
+  ('verified', 'security', true, 'seed_v1', 'Verification namespace'),
+  ('adminsupport', 'security', true, 'seed_v1', 'Impersonation-prone support namespace'),
+  ('admin-support', 'security', true, 'seed_v1', 'Impersonation-prone support namespace'),
+  ('system', 'system_owner', true, 'seed_v1', 'System namespace'),
+  ('noreply', 'system_owner', true, 'seed_v1', 'System namespace'),
+  ('no-reply', 'system_owner', true, 'seed_v1', 'System namespace'),
+  ('status', 'system_owner', true, 'seed_v1', 'Status namespace'),
+  ('statuspage', 'system_owner', true, 'seed_v1', 'Status namespace'),
+  ('billing', 'finance', true, 'seed_v1', 'Payments/billing namespace'),
+  ('payments', 'finance', true, 'seed_v1', 'Payments/billing namespace'),
+  ('refund', 'finance', true, 'seed_v1', 'Payments/billing namespace'),
+  ('auth', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('oauth', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('login', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('logout', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('signup', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('signin', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('register', 'auth', true, 'seed_v1', 'Authentication namespace'),
+  ('settings', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('profile', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('profiles', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('account', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('accounts', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('api', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('www', 'platform', true, 'seed_v1', 'Web namespace'),
+  ('about', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('contact', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('careers', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('jobs', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('blog', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('trip', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('trips', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('create', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('privacy', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('terms', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('cookies', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('imprint', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('u', 'platform', true, 'seed_v1', 'Route namespace'),
+  ('travelflow', 'brand', true, 'seed_v1', 'Brand namespace'),
+  ('travelflowapp', 'brand', true, 'seed_v1', 'Brand namespace'),
+  ('travelplanner', 'brand', true, 'seed_v1', 'Brand namespace'),
+  ('tripplanner', 'brand', true, 'seed_v1', 'Brand namespace')
+on conflict ((lower(handle)))
+do update
+set
+  category = excluded.category,
+  owner_assignable = excluded.owner_assignable,
+  source = excluded.source,
+  notes = excluded.notes,
+  active = true,
+  updated_at = now();
+
+insert into public.username_blocked_terms (term, category, severity, source, notes)
+values
+  ('airdrop', 'scam', 3, 'seed_v1', 'Crypto scam keyword'),
+  ('giveaway', 'scam', 3, 'seed_v1', 'Giveaway impersonation keyword'),
+  ('bitcoin', 'scam', 3, 'seed_v1', 'Crypto scam keyword'),
+  ('ethereum', 'scam', 3, 'seed_v1', 'Crypto scam keyword'),
+  ('nft', 'scam', 3, 'seed_v1', 'Crypto scam keyword'),
+  ('token', 'scam', 3, 'seed_v1', 'Crypto scam keyword'),
+  ('wallet', 'scam', 3, 'seed_v1', 'Credential/financial scam keyword'),
+  ('metamask', 'scam', 3, 'seed_v1', 'Credential/financial scam keyword'),
+  ('coinbase', 'scam', 3, 'seed_v1', 'Credential/financial scam keyword'),
+  ('binance', 'scam', 3, 'seed_v1', 'Credential/financial scam keyword'),
+  ('recovery', 'scam', 3, 'seed_v1', 'Credential recovery impersonation keyword'),
+  ('otp', 'scam', 3, 'seed_v1', 'Credential recovery impersonation keyword'),
+  ('2fa', 'scam', 3, 'seed_v1', 'Credential recovery impersonation keyword'),
+  ('mfa', 'scam', 3, 'seed_v1', 'Credential recovery impersonation keyword'),
+  ('escrow', 'scam', 3, 'seed_v1', 'Financial scam keyword'),
+  ('investment', 'scam', 3, 'seed_v1', 'Financial scam keyword'),
+  ('freemoney', 'scam', 3, 'seed_v1', 'Financial scam keyword'),
+  ('doubling', 'scam', 3, 'seed_v1', 'Financial scam keyword'),
+  ('nigger', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('nigga', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('chink', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('gook', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('spic', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('wetback', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('kike', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('paki', 'hate_speech', 5, 'seed_v1', 'Racial slur'),
+  ('faggot', 'hate_speech', 5, 'seed_v1', 'LGBTQ+ slur'),
+  ('tranny', 'hate_speech', 5, 'seed_v1', 'LGBTQ+ slur'),
+  ('retard', 'hate_speech', 5, 'seed_v1', 'Ableist slur'),
+  ('kkk', 'hate_speech', 5, 'seed_v1', 'Extremist hate abbreviation'),
+  ('neonazi', 'hate_speech', 5, 'seed_v1', 'Extremist hate keyword'),
+  ('hitler', 'hate_speech', 5, 'seed_v1', 'Extremist hate keyword'),
+  ('siegheil', 'hate_speech', 5, 'seed_v1', 'Extremist hate slogan')
+on conflict ((lower(term)))
+do update
+set
+  category = excluded.category,
+  severity = excluded.severity,
+  source = excluded.source,
+  notes = excluded.notes,
+  active = true,
+  updated_at = now();
+
 alter table public.profile_handle_redirects enable row level security;
 
 drop policy if exists "Profile handle redirects active read" on public.profile_handle_redirects;
@@ -3574,10 +3748,16 @@ as $$
 declare
   v_now timestamptz := now();
   v_old_username text := null;
-  v_new_username text := nullif(lower(btrim(coalesce(new.username, ''))), '');
+  v_raw_display text := nullif(regexp_replace(btrim(coalesce(new.username_display, new.username, '')), '^@+', ''), '');
+  v_new_username text := case
+    when v_raw_display is null then null
+    else lower(v_raw_display)
+  end;
   v_is_self boolean := auth.uid() = coalesce(case when tg_op = 'INSERT' then new.id else old.id end, new.id);
   v_is_admin boolean := public.is_admin(auth.uid());
   v_bypass_cooldown boolean := coalesce(current_setting('app.username_cooldown_bypass', true), 'false') = 'true';
+  v_reserved_bypass boolean := coalesce(current_setting('app.username_reserved_bypass', true), 'false') = 'true';
+  v_reserved_owner_assignable boolean := false;
   v_cooldown_ends_at timestamptz;
 begin
   if tg_op <> 'INSERT' then
@@ -3585,19 +3765,67 @@ begin
   end if;
 
   if v_new_username is not null then
-    if v_new_username !~ '^[a-z0-9_-]{3,30}$' then
-      raise exception 'Username must be 3-30 chars and use only lowercase letters, numbers, underscores, or hyphens';
+    if v_raw_display !~ '^[A-Za-z0-9_-]{3,20}$' then
+      raise exception 'Username must be 3-20 chars and use only letters, numbers, underscores, or hyphens';
+    end if;
+
+    if v_new_username !~ '^[a-z0-9_-]{3,20}$' then
+      raise exception 'Username must be 3-20 chars and use only letters, numbers, underscores, or hyphens';
+    end if;
+
+    if v_new_username !~ '[a-z0-9]' then
+      raise exception 'Username must include at least one letter or number';
+    end if;
+
+    select coalesce(urh.owner_assignable, false)
+      into v_reserved_owner_assignable
+      from public.username_reserved_handles urh
+     where lower(urh.handle) = v_new_username
+       and urh.active = true
+     limit 1;
+
+    if found and not (
+      v_is_admin
+      and v_reserved_bypass
+      and v_reserved_owner_assignable
+    ) then
+      raise exception 'Username is reserved';
+    end if;
+
+    if exists (
+      select 1
+      from public.username_blocked_terms ubt
+      where lower(ubt.term) = v_new_username
+        and ubt.active = true
+    ) then
+      raise exception 'Username is blocked';
     end if;
 
     if v_new_username in (
-      'admin','support','settings','profile','profiles','login','logout','signup',
-      'api','trip','trips','create','privacy','terms','cookies','imprint','u'
-    ) then
+      'admin','administrator','admins','owner','team','staff',
+      'moderator','mod',
+      'support','help','helpdesk','help-desk','helpcenter','help-center',
+      'supportteam','support-team','customersupport','customer-support',
+      'service',
+      'security','safety','trust','trustandsafety','trust-safety','compliance',
+      'official','officialteam','official-team','verification','verify','verified',
+      'adminsupport','admin-support',
+      'system','noreply','no-reply','status','statuspage',
+      'billing','payments','refund',
+      'settings','profile','profiles','account','accounts',
+      'login','logout','signup','signin','register','auth','oauth',
+      'api','www','about','contact','careers','jobs','blog',
+      'trip','trips','create',
+      'privacy','terms','cookies','imprint',
+      'travelflow','travelflowapp','travelplanner','tripplanner',
+      'u'
+    ) and not (v_is_admin and v_reserved_bypass) then
       raise exception 'Username is reserved';
     end if;
   end if;
 
   new.username := v_new_username;
+  new.username_display := v_raw_display;
 
   if tg_op = 'INSERT' then
     if v_new_username is not null and new.username_changed_at is null then
@@ -3638,7 +3866,7 @@ $$;
 
 drop trigger if exists profile_apply_username_rules on public.profiles;
 create trigger profile_apply_username_rules
-before insert or update of username
+before insert or update of username, username_display
 on public.profiles
 for each row execute function public.profile_apply_username_rules();
 
@@ -3665,14 +3893,54 @@ begin
     return;
   end if;
 
-  if v_username !~ '^[a-z0-9_-]{3,30}$' then
+  if v_username !~ '^[a-z0-9_-]{3,20}$' then
     return query select 'invalid'::text, 'format'::text, null::timestamptz;
     return;
   end if;
 
+  if v_username !~ '[a-z0-9]' then
+    return query select 'invalid'::text, 'format'::text, null::timestamptz;
+    return;
+  end if;
+
+  if exists (
+    select 1
+    from public.username_reserved_handles urh
+    where lower(urh.handle) = v_username
+      and urh.active = true
+  ) then
+    return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
+    return;
+  end if;
+
+  if exists (
+    select 1
+    from public.username_blocked_terms ubt
+    where lower(ubt.term) = v_username
+      and ubt.active = true
+  ) then
+    return query select 'reserved'::text, 'blocked'::text, null::timestamptz;
+    return;
+  end if;
+
   if v_username in (
-    'admin','support','settings','profile','profiles','login','logout','signup',
-    'api','trip','trips','create','privacy','terms','cookies','imprint','u'
+    'admin','administrator','admins','owner','team','staff',
+    'moderator','mod',
+    'support','help','helpdesk','help-desk','helpcenter','help-center',
+    'supportteam','support-team','customersupport','customer-support',
+    'service',
+    'security','safety','trust','trustandsafety','trust-safety','compliance',
+    'official','officialteam','official-team','verification','verify','verified',
+    'adminsupport','admin-support',
+    'system','noreply','no-reply','status','statuspage',
+    'billing','payments','refund',
+    'settings','profile','profiles','account','accounts',
+    'login','logout','signup','signin','register','auth','oauth',
+    'api','www','about','contact','careers','jobs','blog',
+    'trip','trips','create',
+    'privacy','terms','cookies','imprint',
+    'travelflow','travelflowapp','travelplanner','tripplanner',
+    'u'
   ) then
     return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
     return;
@@ -3733,6 +4001,7 @@ returns table(
   first_name text,
   last_name text,
   username text,
+  username_display text,
   bio text,
   country text,
   city text,
@@ -3750,8 +4019,8 @@ declare
   v_handle text := nullif(lower(btrim(coalesce(p_handle, ''))), '');
   v_redirect_user_id uuid;
 begin
-  if v_handle is null or v_handle !~ '^[a-z0-9_-]{3,30}$' then
-    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+  if v_handle is null or v_handle !~ '^[a-z0-9_-]{3,20}$' then
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
     return;
   end if;
 
@@ -3767,6 +4036,7 @@ begin
     p.first_name,
     p.last_name,
     p.username,
+    p.username_display,
     p.bio,
     p.country,
     p.city,
@@ -3791,7 +4061,7 @@ begin
    limit 1;
 
   if v_redirect_user_id is null then
-    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
     return;
   end if;
 
@@ -3807,6 +4077,7 @@ begin
     p.first_name,
     p.last_name,
     p.username,
+    p.username_display,
     p.bio,
     p.country,
     p.city,
@@ -3819,7 +4090,7 @@ begin
   limit 1;
 
   if not found then
-    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
+    return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
   end if;
 end;
 $$;

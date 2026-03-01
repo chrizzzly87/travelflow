@@ -35,6 +35,21 @@ This file intentionally contains offensive, hateful, sexual, and scam-related te
 - Additional hate/abuse terms: 49
 - Total custom overlays (unique): 199
 
+## Reserved Handle Categories (Owner/Admin Assignable)
+These are enforced in backend via `username_reserved_handles` and include category metadata.
+- `system_owner`: admin/system/owner namespace, platform-critical names.
+- `support`: support/help/helpdesk/customer-support impersonation names.
+- `security`: verification/official/trust/safety/security-team impersonation names.
+- `finance`: billing/payments/refund and payment-support impersonation names.
+- `auth`: login/signin/signup/register/auth namespace.
+- `platform`: route/platform pages (`api`, `www`, `about`, `profile`, `settings`, etc.).
+- `brand`: product/brand namespaces (for example `travelflow`, `travelplanner`).
+
+## Rule Notes
+- Username format enforcement is `^[A-Za-z0-9_-]{3,20}$` for display and lowercase canonical routing/uniqueness.
+- Handles without any letters or digits are rejected (for example `___` and `---`).
+- DB submit-time validation is mandatory; frontend validation is pre-submit UX only.
+
 ## Effective Combined Username Denylist
 Total unique terms: **2743**
 

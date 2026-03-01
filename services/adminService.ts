@@ -86,7 +86,7 @@ const normalizeProfileGender = (value: string | null | undefined): string | null
 
 const normalizeUsernameHandle = (value: string | null | undefined): string | null => {
     if (typeof value !== 'string') return null;
-    const normalized = value.trim().toLowerCase().replace(/^@+/, '');
+    const normalized = value.trim().replace(/^@+/, '');
     return normalized || null;
 };
 
