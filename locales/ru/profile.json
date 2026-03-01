@@ -1,0 +1,325 @@
+{
+  "hero": {
+    "loading": "Загрузка профиля...",
+    "inspirationIntro": "Звучит отлично? Посмотрите наши",
+    "inspirationCta": "Вдохновения для {country}",
+    "greetingFacts": {
+      "haw-aloha": "Используется на Гавайях для обозначения здравия, прощания и тепла в повседневной жизни.",
+      "kor-annyeong": "Вежливое корейское приветствие, используемое в большинстве повседневных ситуаций.",
+      "jpn-konnichiwa": "Стандартное дневное японское приветствие в дружеском тоне.",
+      "tha-sawasdee": "Тайское приветствие, используемое в течение дня, часто в сочетании с вай; говорящие добавляют вежливые окончания по своему полу (храп для мужчин, ха для женщин).",
+      "hin-namaste": "Уважительное приветствие в Индии, часто используемое в формальной и неформальной обстановке.",
+      "spa-hola": "Простое испанское приветствие, используемое практически в любом социальном контексте.",
+      "deu-guten-tag": "Официальное немецкое приветствие, используемое в дневных разговорах.",
+      "fra-bonjour": "Распространенное французское дневное приветствие, используемое как в повседневной, так и в официальной обстановке.",
+      "ita-ciao": "Итальянское приветствие, обычно используемое для приветствия и прощания.",
+      "ara-marhaba": "Теплое арабское приветствие, широко понятное во всех регионах.",
+      "deu-moin": "Классика в Северной Германии в любое время; местные жители шутят, что «Мойн-Мойн» в основном говорят туристы.",
+      "gsw-gruezi": "Вежливое швейцарско-немецкое приветствие часто можно услышать в магазинах, поездах и горных городках.",
+      "eus-kaixo": "Баскское приветствие, используемое в Эускади; услышать это — быстрый признак того, что регион сохраняет свой язык.",
+      "gle-dia-dhuit": "По-ирландски «привет», буквально «Бог с тобой», оно до сих пор распространено в районах Гельтахта.",
+      "cym-shwmae": "Дружелюбное валлийское приветствие, которое часто появляется на двуязычных вывесках и в заставках на местном радио.",
+      "isl-godan-daginn": "исландское «добрый день»; местные жители часто сокращают его в повседневной речи, особенно в кафе Рейкьявика.",
+      "ces-ahoj": "Популярное чешское приветствие среди друзей; оно началось как призыв моряков и вошло в повседневную речь.",
+      "swe-hej": "Шведское приветствие по умолчанию для друзей и коллег, часто дублируемое веселым «хе-хе-хе».",
+      "nld-hoi": "Обычное голландское приветствие распространено в Нидерландах и Фландрии, особенно среди молодых говорящих.",
+      "mri-kia-ora": "Приветствие маори в Новой Зеландии используется для обозначения приветствия, благодарности и общей позитивной энергии.",
+      "khm-suostei": "Кхмерское приветствие раздается по всей Камбодже; уважительный тон имеет такое же значение, как и слова.",
+      "lao-sabaidee": "Лаосское приветствие также связано с благополучием и отражает спокойный и дружелюбный стиль общения.",
+      "swa-jambo": "Широко признанное приветствие на суахили в Восточной Африке; многие местные жители также используют «Худжамбо?» для «Как дела?»",
+      "yue-nei-hou": "Кантонское приветствие распространено в Гонконге; Тон имеет значение, поэтому произношение быстро меняет смысл.",
+      "zho-ni-hao": "Приветствие на китайском языке используется по всему Китаю; в случайных чатах люди могут сразу перейти к вопросам повседневной жизни.",
+      "fallback": "Универсальное приветствие, которое положит начало вашей следующей поездке."
+    }
+  },
+  "tabs": {
+    "recent": "Недавние",
+    "favorites": "Избранное",
+    "all": "Все поездки",
+    "liked": "Понравившиеся поездки",
+    "comingSoon": "Скоро"
+  },
+  "filters": {
+    "showOnlyPublic": "Показывать только публичные"
+  },
+  "recentSort": {
+    "created": "Созданные",
+    "updated": "Обновлённые"
+  },
+  "sections": {
+    "highlights": "Закреплённые подборки",
+    "highlightsCount": "{count}/3 закреплено"
+  },
+  "cards": {
+    "pinnedTag": "Закреплено",
+    "mapUnavailable": "Предварительный просмотр карты недоступен.",
+    "mapLoading": "Загрузка предварительного просмотра...",
+    "creatorPrefix": "К",
+    "actions": {
+      "open": "Открыть",
+      "favorite": "Любимый",
+      "unfavorite": "Удалить из избранного",
+      "pin": "Приколоть",
+      "unpin": "Открепить",
+      "makePublic": "Общественный",
+      "makePrivate": "Частный",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
+    },
+    "source": {
+      "createdByYou": "Создано вами",
+      "copiedFromShared": "Скопировано из совместной поездки",
+      "copiedFromYourTrip": "Скопировано из вашей поездки",
+      "startedFromExample": "Начал с примера",
+      "copiedFromTraveler": "Скопировано из совместной поездки",
+      "copiedFromExample": "Начал с примера",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
+    },
+    "expiredTag": "Истекло",
+    "expiredFallbackTitle": "Черновик поездки истек",
+    "hiddenTag": "Hidden"
+  },
+  "actions": {
+    "title": "Быстрые действия",
+    "settings": "Настройки профиля",
+    "planner": "Перейти в планировщик",
+    "stamps": "Штампы паспорта",
+    "adminWorkspace": "Открыть админ-панель"
+  },
+  "summary": {
+    "editProfile": "Редактировать профиль",
+    "viewPublicProfile": "Открыть публичный профиль",
+    "shareProfile": "Поделиться ссылкой профиля",
+    "memberSinceLabel": "Участник с",
+    "memberSinceUnknown": "Нет в наличии",
+    "usernamePrefix": "@",
+    "roleLabel": "Роль",
+    "bioLabel": "Био",
+    "bioFallback": "Добавьте краткую биографию, чтобы другие могли понять ваш стиль путешествий.",
+    "locationLabel": "Расположение",
+    "locationUnknown": "Вероятно, планета Земля",
+    "distanceLabel": "Общее расстояние",
+    "distanceUnknown": "Пока нет отслеживаемой дистанции",
+    "countriesLabel": "Посещённые страны",
+    "countriesEmpty": "Пока нет отмеченных стран",
+    "stampsTitle": "Штампы паспорта",
+    "stampsDescription": "Ваши последние достижения собираются как штампы туристического паспорта.",
+    "stampsOpen": "Открыть коллекцию штампов",
+    "stampsEmpty": "Создайте свою первую поездку, чтобы разблокировать свою первую марку.",
+    "follow": "Подписаться",
+    "message": "Сообщение",
+    "shareCopied": "Ссылка на профиль скопирована в буфер обмена.",
+    "shareOpened": "Публичный профиль открыт в новой вкладке.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
+  },
+  "stats": {
+    "totalTrips": "Всего поездок",
+    "likesSaved": "Сохранённые лайки",
+    "followers": "Подписчики",
+    "likesEarned": "Полученные лайки"
+  },
+  "publicProfile": {
+    "loading": "Загрузка публичного профиля...",
+    "title": "Публичный профиль",
+    "privateTitle": "Этот профиль приватный",
+    "privateDescription": "Этот путешественник пока скрыл публичный профиль.",
+    "notFoundTitle": "Профиль не найден",
+    "notFoundDescription": "Мы не нашли профиль для этого имени пользователя.",
+    "ctaExploreInspirations": "Смотреть вдохновения",
+    "ctaBackProfile": "Перейти в ваш профиль",
+    "tripsTitle": "Публичные поездки",
+    "emptyTrips": "Пока нет публичных поездок.",
+    "followHint": "Функции подписки и сообщений появятся скоро.",
+    "ctaRegisterFree": "Зарегистрироваться бесплатно",
+    "sourceCreatedByTraveler": "Создано путешественником",
+    "notFoundFunTitle": "Похоже, этот пользователь уже нашёл своё следующее путешествие.",
+    "notFoundFunSubtitle": "Не ждите дольше",
+    "ctaPlanTrip": "Спланировать поездку",
+    "ctaGetInspired": "Вдохновиться",
+    "visibilityPrivate": "Приватный профиль",
+    "visibilityPublic": "Публичный профиль",
+    "notFoundInvalidPassportTitle": "Этот паспорт недействителен"
+  },
+  "settings": {
+    "title": "Настройки профиля",
+    "description": "Обновите данные своего профиля, общедоступный URL-адрес и настройки видимости по умолчанию.",
+    "onboardingTitle": "Заполните свой профиль",
+    "onboardingDescription": "Прежде чем использовать TravelFlow, добавьте основные данные своего профиля, чтобы персонализация работала надежно.",
+    "fields": {
+      "firstName": "Имя *",
+      "lastName": "Фамилия *",
+      "username": "Имя пользователя *",
+      "bio": "Био",
+      "gender": "Пол",
+      "unspecified": "Не указано",
+      "country": "Страна/регион *",
+      "city": "Город *",
+      "preferredLanguage": "Предпочитаемый язык *"
+    },
+    "usernameHelp": "Используйте от 3 до 30 букв, цифр, знаков подчеркивания или дефисов. Никаких пробелов.",
+    "usernameCooldownHint": "Вы можете снова изменить свое имя пользователя {date}.",
+    "bioHelp": "Поделитесь кратким вступительным словом, которое путешественники смогут увидеть в вашем общедоступном профиле.",
+    "publicProfileToggleTitle": "Включить общедоступный профиль",
+    "publicProfileToggleDescription": "Разрешите другим видеть ваш общедоступный профиль и видимые поездки.",
+    "defaultVisibilityToggleTitle": "Видимость поездки по умолчанию",
+    "defaultVisibilityToggleDescription": "Выберите, будут ли новые поездки публиковаться в вашем профиле по умолчанию.",
+    "publicUrlLabel": "Публичный URL-адрес",
+    "publicUrlEmpty": "Задайте имя пользователя для создания URL-адреса общедоступного профиля.",
+    "viewPublicProfile": "Открыть общедоступный профиль",
+    "requiredHint": "Заполните все обязательные поля, чтобы продолжить.",
+    "actions": {
+      "save": "Сохранить настройки профиля",
+      "saveAndContinue": "Сохранить и продолжить"
+    },
+    "messages": {
+      "saved": "Настройки профиля успешно сохранены.",
+      "onboardingSaved": "Профиль успешно заполнен.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
+    },
+    "errors": {
+      "required": "Пожалуйста, заполните все обязательные поля.",
+      "usernameUnavailable": "Перед сохранением выберите доступное имя пользователя.",
+      "saveFailed": "Не удалось обновить ваш профиль."
+    },
+    "usernameStatus": {
+      "idle": "Установите свое имя пользователя, чтобы претендовать на URL-адрес общедоступного профиля.",
+      "checking": "Проверка доступности имени пользователя...",
+      "available": "Отлично, это имя пользователя доступно.",
+      "taken": "Это имя пользователя уже занято.",
+      "reserved": "Это имя пользователя зарезервировано.",
+      "invalid": "Используйте от 3 до 30 букв, цифр, знаков подчеркивания или дефисов.",
+      "unchanged": "Это ваше текущее имя пользователя.",
+      "cooldown": "Изменение имени пользователя в настоящее время находится на стадии восстановления.",
+      "cooldownDate": "Изменение имени пользователя приостановлено до {date}.",
+      "failed": "Не удалось проверить доступность имени пользователя прямо сейчас."
+    },
+    "breadcrumb": {
+      "profile": "Профиль",
+      "settings": "Настройки"
+    },
+    "usernameEdit": "Редактировать",
+    "usernameLockedHint": "Ваше имя пользователя заблокировано. Используйте Edit, чтобы запросить изменение.",
+    "usernameRecoveryHint": {
+      "taken": "Попробуйте добавить цифру или подчеркивание.",
+      "reserved": "Выберите другой незарезервированный дескриптор.",
+      "invalid": "Используйте от 3 до 30 букв, цифр, знаков подчеркивания или дефисов без пробелов.",
+      "cooldown": "Изменения имени пользователя заблокированы во время периода восстановления."
+    },
+    "countryRegionSearchPlaceholder": "Поиск страны или региона",
+    "countryRegionClear": "Очистить страну/регион",
+    "countryRegionEmpty": "Подходящая страна или регион не найдены.",
+    "countryRegionToggle": "Переключить параметры страны/региона",
+    "usernameChange": "Изменить имя пользователя",
+    "usernameSuggestionsTitle": "Попробуйте один из этих доступных вариантов:"
+  },
+  "stamps": {
+    "eyebrow": "Коллекция паспортов",
+    "title": "Ваш загранпаспорт",
+    "description": "{name}, эти марки отражают ваши основные этапы TravelFlow и то, насколько они редки в сообществе.",
+    "passportTitle": "Обложка для паспорта",
+    "passportDescription": "Последние три разблокированные марки. Перетащите, чтобы расположить макет наклейки.",
+    "unlockedCount": "Открыто {count} из {total} марок",
+    "lastUpdated": "Показано {count} последних марок",
+    "passportEmpty": "Штампов пока нет. Создавайте или сохраняйте поездки, чтобы разблокировать свое первое достижение.",
+    "detailTitle": "Детали штампа",
+    "backToProfile": "Вернуться к профилю",
+    "detailRarity": "Редкость",
+    "detailProgress": "Прогресс",
+    "detailUnlocked": "Разблокировано",
+    "cardUnlockedOn": "Разблокировано",
+    "detailUnlockedNow": "Только что разблокировано",
+    "detailLocked": "Заблокировано",
+    "selectHint": "Выберите марку, чтобы просмотреть подробности и редкость.",
+    "sortLabel": "Сортировать",
+    "groupLabel": "Группа",
+    "empty": "Пока нет марок, соответствующих этому фильтру.",
+    "sort": {
+      "date": "Последний разблокирован",
+      "rarity": "Самый редкий первый",
+      "group": "Группа"
+    },
+    "group": {
+      "all": "Все группы",
+      "trips": "Путешествия",
+      "curation": "Курирование",
+      "exploration": "Разведка",
+      "social": "Социальные",
+      "momentum": "Импульс"
+    },
+    "selectionTitle": "Указано на обложке паспорта",
+    "selectionCount": "{count}/{total} выбрано",
+    "selectionEmpty": "Разблокируйте марки, чтобы выбрать, что будет отображаться на обложке вашего паспорта.",
+    "selectionLimitNotice": "Выберите до {count} марок для своей обложки.",
+    "selectionSaveFailed": "Не удалось сохранить выбранную вами обложку для штампа.",
+    "selectionSaving": "Сохранение выбора обложки для паспорта...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Предыдущая страница",
+    "nextPage": "Следующая страница",
+    "emptySlot": "Слот для штампа",
+    "backToPublicProfile": "Вернуться к общедоступному профилю"
+  },
+  "likedPlaceholder": {
+    "title": "Понравившиеся поездки скоро появятся",
+    "description": "Скоро вы сможете сохранять и пересматривать здесь поездки других путешественников."
+  },
+  "empty": {
+    "title": "В этом разделе пока нет поездок",
+    "description": "Создайте поездку или отметьте её как избранную, чтобы заполнить этот раздел."
+  },
+  "messages": {
+    "pinEvicted": "Самая старая закреплённая поездка была откреплена, чтобы оставить максимум три выделения."
+  },
+  "errors": {
+    "profileLoad": "Не удалось загрузить профиль."
+  },
+  "fallback": {
+    "displayName": "Путешественник",
+    "email": "Нет доступной электронной почты"
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Ваша поездка \"{title}\" была успешно архивирована."
+  }
+}

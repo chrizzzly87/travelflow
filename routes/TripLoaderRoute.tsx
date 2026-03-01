@@ -8,7 +8,6 @@ import { DB_ENABLED } from '../config/db';
 import {
     dbGetTrip,
     dbGetTripVersion,
-    ensureDbSession,
     type DbTripAccess,
 } from '../services/dbApi';
 import { findHistoryEntryByUrl } from '../services/historyService';
@@ -143,7 +142,6 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             }
 
             if (DB_ENABLED && connectivityState !== 'offline') {
-                await ensureDbSession();
                 if (versionId && isUuid(versionId)) {
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
@@ -160,7 +158,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 }
                 const dbTrip = await dbGetTrip(tripId);
                 if (dbTrip?.trip) {
-                    saveTrip(dbTrip.trip);
+                    if (dbTrip.access.source === 'owner') {
+                        saveTrip(dbTrip.trip);
+                    }
                     const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = dbTrip.trip.updatedAt ?? 0;
@@ -218,7 +218,8 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
 
     if (!trip) return null;
     const adminFallbackAccess = tripAccess?.source === 'admin_fallback' ? tripAccess : undefined;
-    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : 'default'}`;
+    const isPublicReadView = tripAccess?.source === 'public_read';
+    const tripViewKey = `${trip.id}:${adminFallbackAccess ? 'admin-fallback' : isPublicReadView ? 'public-read' : 'default'}`;
 
     return (
         <TripView
@@ -235,8 +236,10 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             onOpenManager={onOpenManager}
             onOpenSettings={onOpenSettings}
             appLanguage={appLanguage}
-            canShare={!adminFallbackAccess}
+            readOnly={Boolean(isPublicReadView)}
+            canShare={!adminFallbackAccess && !isPublicReadView}
             adminAccess={adminFallbackAccess}
+            tripAccess={tripAccess || undefined}
         />
     );
 };

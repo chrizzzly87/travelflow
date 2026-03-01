@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AirplaneTakeoff, CaretDown, GearSix, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
+import { AirplaneTakeoff, CaretDown, GearSix, SealCheck, ShieldCheck, SignOut, User } from '@phosphor-icons/react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
-import { buildLocalizedMarketingPath, extractLocaleFromPath } from '../../config/routes';
+import { buildLocalizedMarketingPath, buildPath, extractLocaleFromPath } from '../../config/routes';
 import { DEFAULT_LOCALE } from '../../config/locales';
+import { getAllTrips } from '../../services/storageService';
+import type { ITrip } from '../../types';
 
 interface AccountMenuProps {
     email: string | null;
@@ -14,19 +16,94 @@ interface AccountMenuProps {
     showLabel?: boolean;
     fullWidth?: boolean;
     menuPlacement?: 'bottom-end' | 'right-end';
+    labelMode?: 'route' | 'identity';
+    showRecentTripsSection?: boolean;
+    showCurrentPageSummary?: boolean;
     className?: string;
 }
 
 type AnalyticsEventName = `${string}__${string}` | `${string}__${string}--${string}`;
 
-const computeInitial = (email: string | null, userId?: string | null): string => {
-    const normalized = (email || '').trim();
-    if (!normalized) {
-        const fallback = (userId || '').trim();
-        if (fallback) return fallback.charAt(0).toUpperCase();
-        return 'U';
+const sortByCreatedDesc = (trips: ITrip[]): ITrip[] =>
+    [...trips].sort((a, b) => {
+        const byCreated = (Number.isFinite(b.createdAt) ? b.createdAt : 0) - (Number.isFinite(a.createdAt) ? a.createdAt : 0);
+        if (byCreated !== 0) return byCreated;
+        return (Number.isFinite(b.updatedAt) ? b.updatedAt : 0) - (Number.isFinite(a.updatedAt) ? a.updatedAt : 0);
+    });
+
+const computeInitial = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const firstName = typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+    const lastName = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+    if (firstName && lastName) {
+        return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
     }
-    return normalized.charAt(0).toUpperCase();
+    if (firstName) {
+        return firstName.slice(0, 2).toUpperCase();
+    }
+    if (lastName) {
+        return lastName.slice(0, 2).toUpperCase();
+    }
+
+    const displayName = typeof profile?.displayName === 'string' ? profile.displayName.trim() : '';
+    if (displayName) {
+        const words = displayName.split(/\s+/).filter(Boolean);
+        if (words.length >= 2) {
+            return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase();
+        }
+        return words[0].slice(0, 2).toUpperCase();
+    }
+
+    const username = typeof profile?.username === 'string' ? profile.username.trim().replace(/^@+/, '') : '';
+    if (username) {
+        return username.slice(0, 2).toUpperCase();
+    }
+
+    const normalized = (email || '').trim();
+    if (normalized) {
+        return normalized.charAt(0).toUpperCase();
+    }
+
+    const fallback = (userId || '').trim();
+    if (fallback) return fallback.charAt(0).toUpperCase();
+    return 'U';
+};
+
+const buildAccountDisplayName = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const firstName = typeof profile?.firstName === 'string' ? profile.firstName.trim() : '';
+    const lastName = typeof profile?.lastName === 'string' ? profile.lastName.trim() : '';
+    const fullName = [firstName, lastName].filter(Boolean).join(' ').trim();
+    if (fullName) return fullName;
+
+    const displayName = typeof profile?.displayName === 'string' ? profile.displayName.trim() : '';
+    if (displayName) return displayName;
+
+    const username = typeof profile?.username === 'string' ? profile.username.trim() : '';
+    if (username) return username.startsWith('@') ? username : `@${username}`;
+
+    const normalizedEmail = (email || '').trim();
+    if (normalizedEmail) return normalizedEmail;
+
+    const fallbackUserId = (userId || '').trim();
+    if (fallbackUserId) return `User ${fallbackUserId.slice(0, 8)}`;
+    return 'Signed-in account';
+};
+
+const buildAccountTriggerName = (
+    profile: { firstName?: string; lastName?: string; displayName?: string | null; username?: string | null } | null,
+    email: string | null,
+    userId?: string | null
+): string => {
+    const username = typeof profile?.username === 'string' ? profile.username.trim() : '';
+    if (username) return username.startsWith('@') ? username : `@${username}`;
+    return buildAccountDisplayName(profile, email, userId);
 };
 
 const labelFromPath = (pathname: string): string => {
@@ -50,15 +127,32 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
     showLabel,
     fullWidth = false,
     menuPlacement = 'bottom-end',
+    labelMode = 'identity',
+    showRecentTripsSection = true,
+    showCurrentPageSummary = true,
     className,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { logout } = useAuth();
+    const { logout, profile } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
+    const [recentTrips, setRecentTrips] = useState<ITrip[]>(() => (
+        showRecentTripsSection
+            ? sortByCreatedDesc(getAllTrips()).slice(0, 5)
+            : []
+    ));
     const containerRef = useRef<HTMLDivElement | null>(null);
 
     const accountLabel = useMemo(() => labelFromPath(location.pathname), [location.pathname]);
+    const accountDisplayName = useMemo(
+        () => buildAccountDisplayName(profile, email, userId),
+        [email, profile, userId]
+    );
+    const accountTriggerName = useMemo(
+        () => buildAccountTriggerName(profile, email, userId),
+        [email, profile, userId]
+    );
+    const triggerLabel = labelMode === 'identity' ? accountTriggerName : accountLabel;
     const shouldShowLabel = showLabel ?? !compact;
 
     useEffect(() => {
@@ -80,10 +174,41 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         };
     }, [isOpen]);
 
+    useEffect(() => {
+        if (!showRecentTripsSection) {
+            setRecentTrips([]);
+            return;
+        }
+        if (typeof window === 'undefined') return;
+        const refreshRecentTrips = () => {
+            setRecentTrips(sortByCreatedDesc(getAllTrips()).slice(0, 5));
+        };
+
+        refreshRecentTrips();
+        window.addEventListener('storage', refreshRecentTrips);
+        window.addEventListener('tf:trips-updated', refreshRecentTrips);
+        return () => {
+            window.removeEventListener('storage', refreshRecentTrips);
+            window.removeEventListener('tf:trips-updated', refreshRecentTrips);
+        };
+    }, [showRecentTripsSection]);
+
+    const publicProfilePath = useMemo(() => {
+        const normalizedUsername = profile?.username?.trim().toLowerCase();
+        if (!normalizedUsername) return null;
+        return buildPath('publicProfile', { username: normalizedUsername });
+    }, [profile?.username]);
+
     const navigateTo = (path: string, eventName: AnalyticsEventName) => {
         trackEvent(eventName);
         setIsOpen(false);
         navigate(path);
+    };
+
+    const navigateToRecentTrip = (trip: ITrip) => {
+        trackEvent('navigation__account_menu--recent_trip', { trip_id: trip.id });
+        setIsOpen(false);
+        navigate(`/trip/${encodeURIComponent(trip.id)}`);
     };
 
     const handleLogout = async () => {
@@ -94,12 +219,20 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         navigate(buildLocalizedMarketingPath('home', locale));
     };
 
+    const handleViewPublicProfile = () => {
+        if (publicProfilePath) {
+            navigateTo(publicProfilePath, 'navigation__account_menu--public_profile');
+            return;
+        }
+        navigateTo('/profile/settings', 'navigation__account_menu--public_profile_setup');
+    };
+
     const accountIdentityLabel = useMemo(() => {
         const normalizedEmail = (email || '').trim();
         if (normalizedEmail) return normalizedEmail;
         const normalizedUserId = (userId || '').trim();
-        if (normalizedUserId) return `User ${normalizedUserId.slice(0, 8)}`;
-        return 'Signed-in account';
+        if (normalizedUserId) return `User ID ${normalizedUserId.slice(0, 8)}`;
+        return null;
     }, [email, userId]);
 
     return (
@@ -122,9 +255,9 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                 aria-expanded={isOpen}
             >
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-100 text-xs font-black text-accent-900">
-                    {computeInitial(email, userId)}
+                    {computeInitial(profile, email, userId)}
                 </span>
-                {shouldShowLabel && <span className="truncate">{accountLabel}</span>}
+                {shouldShowLabel && <span className="truncate">{triggerLabel}</span>}
                 <CaretDown size={14} />
             </button>
 
@@ -140,9 +273,48 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                     ].join(' ')}
                 >
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                        <div className="truncate text-sm font-semibold text-slate-800">{accountIdentityLabel}</div>
-                        <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
+                        <div className="truncate text-sm font-semibold text-slate-800">{accountDisplayName}</div>
+                        {accountIdentityLabel && (
+                            <div className="truncate text-xs text-slate-500">{accountIdentityLabel}</div>
+                        )}
+                        {showCurrentPageSummary && (
+                            <div className="text-xs text-slate-500">Current page: {accountLabel}</div>
+                        )}
                     </div>
+
+                    {showRecentTripsSection && (
+                        <div className="mt-1.5 space-y-1 border-t border-slate-200 pt-1.5">
+                            <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Recent trips
+                            </div>
+                            {recentTrips.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-slate-500">No recent trips yet.</div>
+                            ) : (
+                                recentTrips.map((trip) => (
+                                    <button
+                                        key={`account-recent-${trip.id}`}
+                                        type="button"
+                                        onClick={() => navigateToRecentTrip(trip)}
+                                        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                        {...getAnalyticsDebugAttributes('navigation__account_menu--recent_trip', { trip_id: trip.id })}
+                                    >
+                                        <span className="truncate">{trip.title}</span>
+                                        <span className="text-[11px] text-slate-400">
+                                            {new Date(trip.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </button>
+                                ))
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => navigateTo('/profile?tab=recent', 'navigation__account_menu--recent_view_all')}
+                                className="mt-0.5 w-full rounded-md border border-slate-200 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                {...getAnalyticsDebugAttributes('navigation__account_menu--recent_view_all')}
+                            >
+                                View all trips
+                            </button>
+                        </div>
+                    )}
 
                     <div className="mt-1.5 space-y-0.5">
                         <button
@@ -162,6 +334,24 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
                         >
                             <GearSix size={16} />
                             Settings
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => navigateTo('/profile/stamps', 'navigation__account_menu--stamps')}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            {...getAnalyticsDebugAttributes('navigation__account_menu--stamps')}
+                        >
+                            <SealCheck size={16} weight="duotone" />
+                            Stamps
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleViewPublicProfile}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            {...getAnalyticsDebugAttributes(publicProfilePath ? 'navigation__account_menu--public_profile' : 'navigation__account_menu--public_profile_setup')}
+                        >
+                            <User size={16} />
+                            View public profile
                         </button>
                         <button
                             type="button"

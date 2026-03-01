@@ -120,6 +120,9 @@ export interface ITrip {
   createdAt: number;
   updatedAt: number;
   isFavorite?: boolean;
+  isPinned?: boolean;
+  pinnedAt?: number;
+  showOnPublicProfile?: boolean;
   forkedFromTripId?: string;
   forkedFromShareToken?: string;
   forkedFromShareVersionId?: string;
@@ -132,6 +135,8 @@ export interface ITrip {
   tripExpiresAt?: string | null;
   sourceKind?: 'created' | 'duplicate_shared' | 'duplicate_trip' | 'example' | 'ai_benchmark';
   sourceTemplateId?: string | null;
+  sourceOwnerType?: 'user' | 'system_catalog';
+  sourceOwnerHandle?: string | null;
   requiredTierKey?: TripAccessClassKey;
   isExample?: boolean;
   exampleTemplateId?: string;
@@ -152,7 +157,8 @@ export type DeleteStrategy = 'extend-prev' | 'extend-next' | 'move-rest';
 
 export interface IViewSettings {
     layoutMode: 'vertical' | 'horizontal';
-    timelineView: 'horizontal' | 'vertical'; // Dashboard vs List
+    timelineMode?: 'calendar' | 'timeline';
+    timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
     routeMode?: RouteMode;
@@ -185,6 +191,7 @@ export interface IUserSettings {
     mapStyle?: MapStyle;
     routeMode?: RouteMode;
     layoutMode?: 'vertical' | 'horizontal';
+    timelineMode?: 'calendar' | 'timeline';
     timelineView?: 'horizontal' | 'vertical';
     showCityNames?: boolean;
     zoomLevel?: number;

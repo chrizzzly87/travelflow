@@ -25,6 +25,7 @@
 @source not "./pages/TermsPage.tsx";
 @source not "./pages/CookiesPage.tsx";
 @source not "./pages/ProfilePage.tsx";
+@source not "./pages/PublicProfilePage.tsx";
 @source not "./pages/ProfileSettingsPage.tsx";
 @source not "./pages/ProfileOnboardingPage.tsx";
 @source not "./pages/AdminWorkspaceRouter.tsx";
@@ -438,6 +439,312 @@ h6,
   }
 }
 
+@keyframes profile-greeting-letter-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.profile-greeting-letter {
+  opacity: 0;
+  animation: profile-greeting-letter-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes profile-avatar-orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.profile-avatar-orbit {
+  transform-origin: 50% 50%;
+  animation: profile-avatar-orbit-spin 26s linear infinite;
+}
+
+.profile-stamp-card {
+  /*
+   * The base rotate/translate randomizes stamp placement slightly
+   * so they don't look perfectly lined up.
+   */
+  --stamp-base-rotate: 0deg;
+  --stamp-base-x: 0px;
+  --stamp-base-y: 0px;
+  transform:
+    rotate(var(--stamp-base-rotate, 0deg))
+    translate3d(var(--stamp-base-x, 0px), var(--stamp-base-y, 0px), 0)
+    perspective(1200px);
+  transform-style: preserve-3d;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  will-change: transform;
+}
+
+.profile-stamp-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--stamp-shine-x) var(--stamp-shine-y), rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0) 46%),
+    linear-gradient(125deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.13), rgba(236, 72, 153, 0.15));
+  mix-blend-mode: screen;
+  opacity: var(--stamp-shine-opacity);
+}
+
+.profile-passport-cover {
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+@keyframes profile-passport-dialog-stage-enter {
+  from {
+    opacity: 0;
+    transform: perspective(2000px) translateY(28px) scale(0.24);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(2000px) translateY(0) scale(1);
+  }
+}
+
+.profile-passport-dialog-shell {
+  position: relative;
+}
+
+.profile-passport-dialog-stage {
+  position: relative;
+  display: grid;
+  place-items: start center;
+  min-block-size: min(78vh, 760px);
+  padding-top: 8px;
+  animation: profile-passport-dialog-stage-enter 620ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+  transform-style: preserve-3d;
+}
+
+.profile-passport-dialog-book {
+  inline-size: min(96vw, 1020px);
+  max-inline-size: 100%;
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  animation: profile-passport-dialog-book-enter 680ms cubic-bezier(0.16, 1, 0.3, 1) 220ms both;
+}
+
+.profile-passport-dialog-opening-book {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  inline-size: min(96vw, 1020px);
+  max-inline-size: 100%;
+  aspect-ratio: 16 / 10;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  perspective: 2200px;
+  animation: profile-passport-dialog-book-enter 680ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-passport-dialog-opening-spine {
+  position: absolute;
+  inset-block: 6%;
+  inset-inline-start: calc(50% - 2px);
+  inline-size: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(148 163 184 / 48%), rgb(148 163 184 / 20%));
+  box-shadow: 0 0 0 1px rgb(148 163 184 / 24%);
+}
+
+.profile-passport-dialog-opening-cover,
+.profile-passport-dialog-opening-page {
+  position: absolute;
+  inset-block: 6%;
+  inline-size: 50%;
+  border: 1px solid rgb(148 163 184 / 28%);
+  border-radius: 14px;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.profile-passport-dialog-opening-cover {
+  inset-inline-start: 0;
+  transform-origin: right center;
+  background:
+    linear-gradient(142deg, rgb(37 99 235 / 30%) 0%, rgb(15 23 42 / 82%) 46%, rgb(15 23 42 / 92%) 100%);
+  box-shadow: 0 34px 64px -38px rgb(15 23 42 / 90%);
+  animation: profile-passport-dialog-open-cover 820ms cubic-bezier(0.16, 1, 0.3, 1) 120ms forwards;
+}
+
+.profile-passport-dialog-opening-page {
+  background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 96%));
+  box-shadow: 0 22px 48px -34px rgb(15 23 42 / 66%);
+}
+
+.profile-passport-dialog-opening-page--front {
+  inset-inline-start: 0;
+  transform-origin: right center;
+  animation: profile-passport-dialog-open-page 790ms cubic-bezier(0.18, 1, 0.3, 1) 140ms forwards;
+}
+
+.profile-passport-dialog-opening-page--back {
+  inset-inline-start: 50%;
+  opacity: 0.92;
+  transform: rotateY(0deg);
+}
+
+@keyframes profile-passport-dialog-book-enter {
+  from {
+    opacity: 0;
+    transform: perspective(2000px) translateY(20px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(2000px) translateY(0) scale(1);
+  }
+}
+
+@keyframes profile-passport-dialog-open-cover {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(-180deg);
+  }
+}
+
+@keyframes profile-passport-dialog-close-cover {
+  0% {
+    transform: rotateY(-180deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes profile-passport-dialog-open-page {
+  0% {
+    transform: rotateY(0deg);
+  }
+  100% {
+    transform: rotateY(-166deg);
+  }
+}
+
+@keyframes profile-passport-dialog-close-page {
+  0% {
+    transform: rotateY(-166deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+
+@keyframes profile-passport-dialog-book-exit {
+  from {
+    opacity: 1;
+    transform: perspective(2000px) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: perspective(2000px) translateY(20px) scale(0.94);
+  }
+}
+
+@keyframes profile-passport-dialog-content-enter {
+  0% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--passport-origin-x, 50vw) - 50vw), 
+        calc(-50% + var(--passport-origin-y, 50vh) - 50vh)
+      )
+      scale(calc(var(--passport-origin-w, 208px) / (min(96vw, 1120px) * 0.5)))
+      perspective(2000px) rotateY(-15deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      scale(1)
+      perspective(2000px) rotateY(0deg);
+  }
+}
+
+.profile-passport-dialog-content[data-state="open"] {
+  animation: profile-passport-dialog-content-enter 620ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="closed"] .profile-passport-dialog-book {
+  animation: profile-passport-dialog-book-exit 680ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-state="closed"] .profile-passport-dialog-opening-cover {
+  animation: profile-passport-dialog-close-cover 820ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-state="closed"] .profile-passport-dialog-opening-page--front {
+  animation: profile-passport-dialog-close-page 790ms cubic-bezier(0.18, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-greeting-letter {
+    opacity: 1;
+    animation: none;
+    transform: none;
+    filter: none;
+  }
+
+  .profile-avatar-orbit {
+    animation: none;
+    transform: none;
+  }
+
+  .profile-stamp-card {
+    transform: none !important;
+    transition: none;
+  }
+
+  .profile-stamp-card::after {
+    opacity: 0.18;
+  }
+
+  .profile-passport-sticker {
+    transition: none;
+    transform: none !important;
+  }
+
+  .profile-passport-cover--interactive,
+  .profile-passport-cover-tilt,
+  .profile-passport-fake-page,
+  .profile-passport-cover-face,
+  .profile-passport-cover-shimmer,
+  .profile-passport-dialog-stage,
+  .profile-passport-dialog-opening-book,
+  .profile-passport-dialog-opening-cover,
+  .profile-passport-dialog-opening-page--front,
+  .profile-passport-dialog-shell,
+  .profile-passport-dialog-book,
+  .stamp-book-sheet--opened,
+  .stamp-book-turn-layer--next-current,
+  .stamp-book-turn-layer--next-next,
+  .stamp-book-turn-layer--prev-current,
+  .stamp-book-turn-layer--prev-next {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 @keyframes hand-drawn-zigzag {
   from {
     stroke-dashoffset: 360;
@@ -729,4 +1036,302 @@ h6,
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.profile-passport-cover--interactive {
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 18px 34px -26px rgb(15 23 42 / 70%);
+}
+
+.profile-passport-stack {
+  position: relative;
+  block-size: 100%;
+  transform-style: preserve-3d;
+  overflow: visible;
+}
+
+.profile-passport-cover-tilt {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform-style: preserve-3d;
+  transform-origin: left center;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-passport-cover-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transform-style: preserve-3d;
+}
+
+
+.profile-passport-page-stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+.profile-passport-fake-page {
+  position: absolute;
+  inset-block: 6px;
+  inset-inline: 10px 6px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(255 255 255), rgb(248 250 252));
+  border: 1px solid rgb(148 163 184 / 24%);
+  box-shadow: 0 10px 20px -16px rgb(15 23 42 / 56%);
+  transform-origin: left center;
+  transform:
+    translate3d(
+      calc(var(--passport-page-index) * 0.55px),
+      calc(var(--passport-page-index) * 0.25px),
+      calc(var(--passport-page-index) * -1px)
+    )
+    rotateY(calc(var(--passport-page-index) * -0.18deg));
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-passport-cover-face {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+  transform-style: preserve-3d;
+}
+
+.profile-passport-cover--interactive:disabled {
+  cursor: default;
+}
+
+[data-passport-open="true"] .profile-passport-cover {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.profile-passport-cover--interactive:hover {
+  transform: translateY(-3px) scale(1.004);
+  box-shadow: 0 36px 62px -36px rgb(15 23 42 / 86%);
+}
+
+.profile-passport-cover--interactive:hover .profile-passport-cover-tilt {
+  transform: perspective(1700px) rotateY(-30deg);
+}
+
+.profile-passport-cover--interactive:hover .profile-passport-fake-page {
+  transform:
+    translate3d(
+      calc((var(--passport-page-index) * 0.7px) + var(--passport-page-hover-x, 0px)),
+      calc(var(--passport-page-index) * 0.25px),
+      calc(var(--passport-page-index) * -1px)
+    )
+    rotateY(var(--passport-page-hover-rotate, 0deg));
+}
+
+.profile-passport-cover-noise {
+  opacity: 0.25;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='0.75'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+  mix-blend-mode: color-burn;
+}
+
+.profile-passport-cover-shimmer {
+  opacity: 0.34;
+  background-image: linear-gradient(
+    112deg,
+    rgb(255 255 255 / 0) 22%,
+    rgb(255 250 230 / 0.32) 48%,
+    rgb(255 255 255 / 0) 74%
+  );
+  background-size: 210% 100%;
+  animation: profile-passport-cover-shimmer 7.4s linear infinite;
+}
+
+.profile-passport-cover-fiber {
+  opacity: 0.24;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgb(255 255 255 / 10%) 0%,
+      rgb(255 255 255 / 0%) 7%,
+      rgb(255 255 255 / 9%) 16%,
+      rgb(255 255 255 / 0%) 23%
+    );
+  background-size: 180px 100%;
+  background-repeat: repeat-x;
+}
+
+.profile-passport-cover-edge {
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 12%) 0%,
+    rgb(255 255 255 / 34%) 20%,
+    rgb(255 255 255 / 14%) 100%
+  );
+  opacity: 0.8;
+}
+
+@keyframes profile-passport-cover-shimmer {
+  0% {
+    background-position: 150% 0%;
+  }
+  100% {
+    background-position: -120% 0%;
+  }
+}
+
+.stamp-book-stage {
+  position: relative;
+  perspective: 1800px;
+}
+
+.stamp-book-sheet {
+  position: relative;
+  transform-style: preserve-3d;
+  min-block-size: 430px;
+}
+
+.stamp-book-sheet--opening {
+  opacity: 0;
+  transform: perspective(1800px) rotateY(-72deg) scale(0.96) translateY(12px);
+}
+
+.stamp-book-sheet--opened {
+  opacity: 1;
+  perspective: 2000px;
+  transform: rotateY(0deg) scale(1) translateY(0);
+  transition:
+    opacity 420ms ease,
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stamp-book-spread {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stamp-book-page {
+  border: 1px solid rgb(148 163 184 / 28%);
+  background: 
+    repeating-linear-gradient(
+      transparent,
+      transparent 23px,
+      rgb(148 163 184 / 20%) 23px,
+      rgb(148 163 184 / 20%) 24px
+    ),
+    linear-gradient(180deg, rgb(248 250 252 / 96%), rgb(241 245 249 / 96%));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 50%);
+  padding: 10px;
+}
+
+.stamp-book-page--left {
+  border-radius: 16px 12px 12px 16px;
+}
+
+.stamp-book-page--right {
+  border-radius: 12px 16px 16px 12px;
+}
+
+.stamp-book-page-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stamp-book--compact .stamp-book-page {
+}
+
+.stamp-book--compact .stamp-book-page-grid {
+  gap: 7px;
+}
+
+.stamp-book--compact .stamp-book-spread {
+  gap: 9px;
+}
+
+.stamp-book-hit-area {
+  position: absolute;
+  inset-block: 0;
+  inline-size: clamp(56px, 14%, 120px);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 4;
+}
+
+.stamp-book-hit-area--prev {
+  inset-inline-start: 0;
+}
+
+.stamp-book-hit-area--next {
+  inset-inline-end: 0;
+}
+
+.stamp-book-hit-area:disabled {
+  cursor: default;
+}
+
+.stamp-book-flipper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(50% - 5px);
+  transform-style: preserve-3d;
+  z-index: 10;
+}
+
+.stamp-book-flipper--next {
+  right: 0;
+  transform-origin: -5px center;
+  animation: stamp-book-flip-next 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.stamp-book-flipper--prev {
+  left: 0;
+  transform-origin: calc(100% + 5px) center;
+  animation: stamp-book-flip-prev 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.stamp-book-flipper-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  background: white;
+  border-radius: 12px;
+}
+
+.stamp-book-flipper-face--front {
+  transform: rotateY(0deg);
+}
+
+.stamp-book-flipper-face--back {
+  transform: rotateY(180deg);
+}
+
+@keyframes stamp-book-flip-next {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(-180deg); }
+}
+
+@keyframes stamp-book-flip-prev {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(180deg); }
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] {
+  inline-size: 2rem !important;
+  block-size: 2rem !important;
+  margin-inline-end: 0.75rem !important;
+  flex-shrink: 0 !important;
+}
+
+[data-sonner-toast][data-styled='true'] [data-icon] > * {
+  inline-size: 100% !important;
+  block-size: 100% !important;
 }

@@ -1,4 +1,4 @@
-import { dbCreateTripVersion, dbGetTrip, dbUpsertTrip, ensureDbSession } from './dbApi';
+import { dbCreateTripVersion, dbGetTrip, dbUpsertTripWithStatus, ensureDbSession } from './dbApi';
 import {
   enqueueTripCommit,
   getConflictBackups,
@@ -100,11 +100,15 @@ const setSyncSnapshot = (updater: (previous: SyncRunSnapshot) => SyncRunSnapshot
   return syncSnapshot;
 };
 
+const getRetryablePendingCount = (entries: OfflineTripQueueEntry[]): number => (
+  entries.filter(isEntryRetryable).length
+);
+
 const refreshCounts = (): SyncRunSnapshot => {
   const queue = getQueueSnapshot();
   return setSyncSnapshot((previous) => ({
     ...previous,
-    pendingCount: queue.pendingCount,
+    pendingCount: getRetryablePendingCount(queue.entries),
     failedCount: queue.failedCount,
     hasConflictBackups: getConflictBackups().length > 0,
   }));
@@ -215,8 +219,14 @@ const replaySingleEntryOnce = async (entry: OfflineTripQueueEntry): Promise<void
     });
   }
 
-  const upserted = await dbUpsertTrip(entry.tripSnapshot, entry.viewSnapshot ?? undefined);
-  if (!upserted) {
+  const upsertResult = await dbUpsertTripWithStatus(entry.tripSnapshot, entry.viewSnapshot ?? undefined);
+  if (!upsertResult.tripId) {
+    if (upsertResult.isPermissionError) {
+      const permissionError = new Error('Trip upsert denied during replay');
+      (permissionError as { code?: string; details?: string | null }).code = upsertResult.error?.code ?? 'P0001';
+      (permissionError as { code?: string; details?: string | null }).details = upsertResult.error?.details ?? null;
+      throw permissionError;
+    }
     throw new Error('Trip upsert failed during replay');
   }
 
@@ -248,6 +258,16 @@ const replaySingleEntryWithRetries = async (entry: OfflineTripQueueEntry): Promi
         lastError: null,
       };
     } catch (error) {
+      if (isPermissionLikeSyncError(error)) {
+        lastError = resolveErrorMessage(error);
+        removeQueuedTripCommit(entry.id);
+        return {
+          success: false,
+          attemptsUsed: attemptCount + 1,
+          lastError,
+        };
+      }
+
       attemptCount += 1;
       lastError = resolveErrorMessage(error);
       if (shouldMarkConnectivityFailureForReplay(error)) {
@@ -310,8 +330,8 @@ const runSyncInternal = async (
     if (entries.length === 0) {
       const refreshed = refreshCounts();
       const emptyRunSnapshot = setSyncSnapshot((previous) => ({
-        ...refreshed,
         ...previous,
+        ...refreshed,
         isSyncing: false,
         processingEntryId: null,
         processingTripId: null,
@@ -388,7 +408,7 @@ const runSyncInternal = async (
       isSyncing: false,
       processingEntryId: null,
       processingTripId: null,
-      pendingCount: finalQueueSnapshot.pendingCount,
+      pendingCount: getRetryablePendingCount(finalQueueSnapshot.entries),
       failedCount: finalQueueSnapshot.failedCount,
       hasConflictBackups: getConflictBackups().length > 0,
       successCount,

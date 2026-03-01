@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, LifeBuoy, Mail, WifiOff, X } from 'lucide-react';
+import { AlertTriangle, LifeBuoy, WifiOff, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -37,13 +37,12 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
   const hasRetryableFailures = sync.failedCount > 0;
   const showOutageState = connectivity.state !== 'online';
   const showSyncState = !showOutageState && (sync.isSyncing || hasPendingQueue);
+  const isBrowserOffline = connectivity.reason === 'browser_offline';
+  const showSupportActions = showOutageState && !isBrowserOffline;
   const isDismissed = dismissedForState === connectivity.state && showOutageState;
-  const queueCountVariant = sync.pendingCount === 0 ? 'None' : (sync.pendingCount === 1 ? 'One' : 'Many');
   const syncCountVariant = sync.pendingCount === 1 ? 'One' : 'Many';
   const activeLocale = normalizeLocale(i18n.resolvedLanguage ?? i18n.language);
   const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
-  const supportEmail = t('contact.emailValue');
-  const supportEmailHref = `mailto:${supportEmail}`;
 
   useEffect(() => {
     if (!showOutageState) return;
@@ -76,20 +75,24 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
   if (!showOutageState && !showSyncState) return null;
   if (isDismissed) return null;
 
-  const title = showOutageState
-    ? t(`connectivity.banner.${connectivity.state}.title`)
-    : t('connectivity.banner.syncing.title');
+  const title = showOutageState ? (
+    connectivity.state === 'offline'
+      ? t(isBrowserOffline ? 'connectivity.banner.offline.browserTitle' : 'connectivity.banner.offline.serviceTitle')
+      : t('connectivity.banner.degraded.title')
+  ) : t('connectivity.banner.syncing.title');
 
-  const message = showOutageState
-    ? t(`connectivity.banner.${connectivity.state}.message${queueCountVariant}`, { count: sync.pendingCount })
-    : t(`connectivity.banner.syncing.message${syncCountVariant}`, { count: sync.pendingCount });
+  const message = showOutageState ? (
+    connectivity.state === 'offline'
+      ? t(isBrowserOffline ? 'connectivity.banner.offline.browserMessage' : 'connectivity.banner.offline.serviceMessage')
+      : t('connectivity.banner.degraded.serviceMessage')
+  ) : t(`connectivity.banner.syncing.message${syncCountVariant}`, { count: sync.pendingCount });
 
   const syncingProgressLabel = t(`connectivity.banner.syncing.progress${syncCountVariant}`, { count: sync.pendingCount });
 
   return (
-    <div className={`border-b px-4 py-2 sm:px-6 ${bannerTone.wrapper}`}>
+    <div className={`border-b px-3 py-2 sm:px-6 ${bannerTone.wrapper}`}>
       <div className="mx-auto w-full max-w-[1200px]">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               {connectivity.state === 'offline' ? (
@@ -101,9 +104,9 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
               )}
               <p className="text-sm font-semibold">{title}</p>
             </div>
-            <p className="mt-1 text-xs opacity-95 sm:text-sm">{message}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] opacity-90">
-              {showOutageState && (
+            <p className="mt-0.5 text-xs opacity-95 sm:text-sm">{message}</p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] opacity-90">
+              {showOutageState && !isBrowserOffline && (
                 <span className="inline-flex items-center gap-1">
                   <Spinner className="h-3.5 w-3.5" />
                   {t('connectivity.banner.retryHint')}
@@ -118,7 +121,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {hasRetryableFailures && (
               <button
                 type="button"
@@ -141,7 +144,7 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
               </button>
             )}
 
-            {showOutageState && (
+            {showSupportActions && (
               <Link
                 to={supportContactPath}
                 onClick={() => {
@@ -159,26 +162,6 @@ export const ConnectivityStatusBanner: React.FC<ConnectivityStatusBannerProps> =
                 <LifeBuoy className="h-3.5 w-3.5" />
                 {t('connectivity.banner.actions.contact')}
               </Link>
-            )}
-
-            {showOutageState && (
-              <a
-                href={supportEmailHref}
-                onClick={() => {
-                  trackEvent('trip_connectivity__banner--email', {
-                    connectivity_state: connectivity.state,
-                    pending_count: sync.pendingCount,
-                  });
-                }}
-                className={`inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs font-semibold ${bannerTone.button}`}
-                {...getAnalyticsDebugAttributes('trip_connectivity__banner--email', {
-                  connectivity_state: connectivity.state,
-                  pending_count: sync.pendingCount,
-                })}
-              >
-                <Mail className="h-3.5 w-3.5" />
-                {t('connectivity.banner.actions.email')}
-              </a>
             )}
 
             {showOutageState && (

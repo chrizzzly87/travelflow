@@ -9,7 +9,6 @@ import { DEFAULT_LOCALE } from '../config/locales';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
 import { getCurrentAccessContext } from '../services/authService';
-import { getCurrentUserProfile } from '../services/profileService';
 
 const CONTACT_FORM_NAME = 'contact';
 const MESSAGE_MAX_LENGTH = 5000;
@@ -58,7 +57,7 @@ export const ContactPage: React.FC = () => {
     const { t } = useTranslation('common');
     const location = useLocation();
     const locale = extractLocaleFromPath(location.pathname) ?? DEFAULT_LOCALE;
-    const { access } = useAuth();
+    const { access, profile } = useAuth();
 
     const [formState, setFormState] = useState<ContactFormState>({
         reason: '',
@@ -102,10 +101,9 @@ export const ContactPage: React.FC = () => {
     useEffect(() => {
         let active = true;
 
-        void Promise.all([
-            getCurrentAccessContext().catch(() => null),
-            getCurrentUserProfile().catch(() => null),
-        ]).then(([accessContext, profile]) => {
+        void getCurrentAccessContext()
+            .catch(() => null)
+            .then((accessContext) => {
             if (!active) return;
 
             if (accessContext && accessContext.userId && !accessContext.isAnonymous) {
@@ -123,23 +121,23 @@ export const ContactPage: React.FC = () => {
                 }
             }
 
-            const derivedProfileName = (
-                profile?.displayName
-                || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ').trim()
-            ).trim();
+            });
 
-            if (derivedProfileName.length > 0) {
-                setFormState((current) => {
-                    if (nameTouchedRef.current || current.name.trim().length > 0) return current;
-                    return { ...current, name: derivedProfileName };
-                });
-            }
-        });
+        const derivedProfileName = (
+            profile?.displayName
+            || [profile?.firstName || '', profile?.lastName || ''].filter(Boolean).join(' ').trim()
+        ).trim();
+        if (derivedProfileName.length > 0) {
+            setFormState((current) => {
+                if (nameTouchedRef.current || current.name.trim().length > 0) return current;
+                return { ...current, name: derivedProfileName };
+            });
+        }
 
         return () => {
             active = false;
         };
-    }, []);
+    }, [profile?.displayName, profile?.firstName, profile?.lastName]);
 
     const handleReasonChange = (value: string) => {
         setSubmitStatus('idle');

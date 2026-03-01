@@ -54,6 +54,9 @@ export const buildShareUrl = (token: string, versionId?: string | null): string 
 const isLayoutMode = (value: string | null): value is IViewSettings['layoutMode'] =>
     value === 'vertical' || value === 'horizontal';
 
+const isTimelineMode = (value: string | null): value is NonNullable<IViewSettings['timelineMode']> =>
+    value === 'calendar' || value === 'timeline';
+
 const isTimelineViewMode = (value: string | null): value is IViewSettings['timelineView'] =>
     value === 'vertical' || value === 'horizontal';
 
@@ -70,6 +73,8 @@ export const applyViewSettingsToSearchParams = (
     if (!view) return;
 
     if (isLayoutMode(view.layoutMode ?? null)) params.set('layout', view.layoutMode);
+    if (isTimelineMode(view.timelineMode ?? null)) params.set('timelineMode', view.timelineMode);
+    else params.delete('timelineMode');
     if (isTimelineViewMode(view.timelineView ?? null)) params.set('timelineView', view.timelineView);
     if (isMapStyleValue(view.mapStyle ?? null)) params.set('mapStyle', view.mapStyle);
 

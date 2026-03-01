@@ -14,10 +14,15 @@ const messages: Record<string, string> = {
   'connectivity.banner.offline.messageNone': 'Planner stays usable with cached data.',
   'connectivity.banner.offline.messageOne': '{count} change is queued and will sync after reconnect.',
   'connectivity.banner.offline.messageMany': '{count} changes are queued and will sync after reconnect.',
+  'connectivity.banner.offline.browserTitle': 'You are offline. Changes stay local.',
+  'connectivity.banner.offline.browserMessage': 'Reconnect to continue cloud sync. We will retry automatically.',
+  'connectivity.banner.offline.serviceTitle': 'Cloud sync is temporarily unavailable.',
+  'connectivity.banner.offline.serviceMessage': 'Your internet works, but the sync service is not responding. Edits stay queued and safe.',
   'connectivity.banner.degraded.title': 'Connection is unstable. Saving in resilient mode.',
   'connectivity.banner.degraded.messageNone': 'Planner stays usable while we retry in the background.',
   'connectivity.banner.degraded.messageOne': '{count} queued change will sync when Supabase stabilizes.',
   'connectivity.banner.degraded.messageMany': '{count} queued changes will sync when Supabase stabilizes.',
+  'connectivity.banner.degraded.serviceMessage': 'Cloud sync is unstable right now. We keep retrying in the background.',
   'connectivity.banner.syncing.title': 'Sync in progress',
   'connectivity.banner.syncing.messageOne': '{count} change is waiting to sync.',
   'connectivity.banner.syncing.messageMany': '{count} changes are waiting to sync.',
@@ -49,7 +54,7 @@ vi.mock('react-i18next', () => ({
 
 const makeConnectivitySnapshot = (overrides?: Partial<ConnectivitySnapshot>): ConnectivitySnapshot => ({
   state: 'offline',
-  reason: null,
+  reason: 'browser_offline',
   lastSuccessAt: null,
   lastFailureAt: null,
   consecutiveFailures: 0,
@@ -81,7 +86,7 @@ describe('ConnectivityStatusBanner', () => {
     cleanup();
   });
 
-  it('renders offline copy without leaking raw ICU plural syntax', () => {
+  it('renders browser-offline copy without leaking raw ICU plural syntax', () => {
     render(
       <MemoryRouter>
         <ConnectivityStatusBanner
@@ -93,26 +98,27 @@ describe('ConnectivityStatusBanner', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Planner stays usable with cached data.')).toBeInTheDocument();
+    expect(screen.getByText('Reconnect to continue cloud sync. We will retry automatically.')).toBeInTheDocument();
     expect(screen.queryByText(/one \{/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/plural/i)).not.toBeInTheDocument();
   });
 
-  it('shows queued count and quick contact actions during outage', () => {
+  it('shows service-outage message and support action when internet is up', () => {
     render(
       <MemoryRouter>
         <ConnectivityStatusBanner
           isPlannerRoute
-          connectivity={makeConnectivitySnapshot()}
+          connectivity={makeConnectivitySnapshot({ reason: 'forced_offline' })}
           sync={makeSyncSnapshot({ pendingCount: 2 })}
           onRetrySync={() => undefined}
         />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('2 changes are queued and will sync after reconnect.')).toBeInTheDocument();
+    expect(screen.getByText('Cloud sync is temporarily unavailable.')).toBeInTheDocument();
+    expect(screen.getByText('Your internet works, but the sync service is not responding. Edits stay queued and safe.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute('href', '/contact');
-    expect(screen.getByRole('link', { name: 'Email support' })).toHaveAttribute('href', 'mailto:contact@wizz.art');
+    expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
   });
 
   it('shows degraded state copy and forced mode hint', () => {
@@ -133,7 +139,7 @@ describe('ConnectivityStatusBanner', () => {
     );
 
     expect(screen.getByText('Connection is unstable. Saving in resilient mode.')).toBeInTheDocument();
-    expect(screen.getByText('1 queued change will sync when Supabase stabilizes.')).toBeInTheDocument();
+    expect(screen.getByText('Cloud sync is unstable right now. We keep retrying in the background.')).toBeInTheDocument();
     expect(screen.getByText('Supabase outage simulation is currently forced in debugger mode.')).toBeInTheDocument();
   });
 
@@ -170,6 +176,22 @@ describe('ConnectivityStatusBanner', () => {
 
     expect(screen.getByText('Sync in progress')).toBeInTheDocument();
     expect(screen.getByText('2 changes are waiting to sync.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Contact' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
+  });
+
+  it('hides support actions when browser is offline', () => {
+    render(
+      <MemoryRouter>
+        <ConnectivityStatusBanner
+          isPlannerRoute
+          connectivity={makeConnectivitySnapshot({ state: 'offline', reason: 'browser_offline' })}
+          sync={makeSyncSnapshot({ pendingCount: 2 })}
+          onRetrySync={() => undefined}
+        />
+      </MemoryRouter>,
+    );
+
     expect(screen.queryByRole('link', { name: 'Contact' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Email support' })).not.toBeInTheDocument();
   });

@@ -4,6 +4,7 @@ import {
   removeLocalStorageItem,
   writeLocalStorageItem,
 } from './browserStorageService';
+import { getEffectiveBrowserOnlineState, subscribeBrowserConnectivityStatus } from './networkStatus';
 import { supabase } from './supabaseClient';
 
 export type ConnectivityState = 'online' | 'degraded' | 'offline';
@@ -53,7 +54,7 @@ const isBrowser = (): boolean => typeof window !== 'undefined';
 
 const browserOnline = (): boolean => {
   if (!isBrowser()) return true;
-  return window.navigator.onLine;
+  return getEffectiveBrowserOnlineState(window.navigator);
 };
 
 const normalizeOverride = (value: unknown): ConnectivityState | null => {
@@ -364,6 +365,35 @@ export const startSupabaseHealthMonitor = (): void => {
   });
 
   window.addEventListener('offline', () => {
+    setSnapshot((prev) => ({
+      ...prev,
+      state: resolveState({
+        consecutiveFailures: Math.max(prev.consecutiveFailures, OFFLINE_FAILURE_THRESHOLD),
+        isForced: prev.isForced,
+        forcedState: prev.forcedState,
+      }),
+      reason: 'browser_offline',
+      lastFailureAt: Date.now(),
+      consecutiveFailures: Math.max(prev.consecutiveFailures, OFFLINE_FAILURE_THRESHOLD),
+    }));
+    clearHealthTimer();
+  });
+
+  subscribeBrowserConnectivityStatus((browserSnapshot) => {
+    if (browserSnapshot.isOnline) {
+      setSnapshot((prev) => ({
+        ...prev,
+        reason: prev.isForced ? prev.reason : 'browser_online',
+        state: resolveState({
+          consecutiveFailures: prev.consecutiveFailures,
+          isForced: prev.isForced,
+          forcedState: prev.forcedState,
+        }),
+      }));
+      void probeSupabaseHealth();
+      return;
+    }
+
     setSnapshot((prev) => ({
       ...prev,
       state: resolveState({

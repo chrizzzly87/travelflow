@@ -18,6 +18,7 @@ type HistoryToastTone = 'add' | 'remove' | 'update' | 'neutral' | 'info';
 interface HistoryToastOptions {
     tone?: HistoryToastTone;
     title?: string;
+    iconVariant?: 'undo' | 'redo';
 }
 
 interface UseTripHistoryControllerOptions {
@@ -36,7 +37,7 @@ interface UseTripHistoryControllerResult {
     showAllHistory: boolean;
     setShowAllHistory: Dispatch<SetStateAction<boolean>>;
     refreshHistory: () => void;
-    navigateHistory: (action: HistoryAction) => void;
+    navigateHistory: (action: HistoryAction, options?: { silent?: boolean }) => boolean;
     formatHistoryTime: (timestamp: number) => string;
     displayHistoryEntries: HistoryEntry[];
 }
@@ -101,22 +102,29 @@ export const useTripHistoryController = ({
         return resolvedHistoryEntries[nextIndex];
     }, [getHistoryIndex, resolvedHistoryEntries]);
 
-    const navigateHistory = useCallback((action: HistoryAction) => {
+    const navigateHistory = useCallback((action: HistoryAction, options?: { silent?: boolean }) => {
         const target = getHistoryEntryForAction(action);
         if (!target) {
-            showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
-                tone: 'neutral',
-                title: action === 'undo' ? 'Undo' : 'Redo',
-            });
-            return;
+            if (!options?.silent) {
+                showToast(action === 'undo' ? 'No earlier history' : 'No later history', {
+                    tone: 'neutral',
+                    title: action === 'undo' ? 'Undo' : 'Redo',
+                    iconVariant: action,
+                });
+            }
+            return false;
         }
 
         suppressCommitRef.current = true;
         navigate(target.url, { replace: true });
-        showToast(stripHistoryPrefix(target.label), {
-            tone: 'neutral',
-            title: action === 'undo' ? 'Undo' : 'Redo',
-        });
+        if (!options?.silent) {
+            showToast(stripHistoryPrefix(target.label), {
+                tone: 'neutral',
+                title: action === 'undo' ? 'Undo' : 'Redo',
+                iconVariant: action,
+            });
+        }
+        return true;
     }, [getHistoryEntryForAction, navigate, showToast, stripHistoryPrefix, suppressCommitRef]);
 
     const formatHistoryTime = useCallback((timestamp: number) => {
@@ -206,8 +214,6 @@ export const useTripHistoryController = ({
             const isShareRoute = nextPath.startsWith('/s/');
 
             if ((!isTripRoute && !isShareRoute) || (isTripRoute && !nextPath.startsWith(expectedTripPrefix))) {
-                navigate(currentUrlRef.current || '/', { replace: true });
-                showToast('Reached start of history', { tone: 'neutral', title: 'Undo' });
                 return;
             }
 
@@ -223,6 +229,7 @@ export const useTripHistoryController = ({
                 showToast(stripHistoryPrefix(entry.label), {
                     tone: 'neutral',
                     title: inferredAction === 'redo' ? 'Redo' : 'Undo',
+                    iconVariant: inferredAction === 'redo' ? 'redo' : 'undo',
                 });
             }
         };

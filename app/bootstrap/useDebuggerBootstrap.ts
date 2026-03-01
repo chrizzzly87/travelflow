@@ -3,6 +3,11 @@ import { useLocation } from 'react-router-dom';
 import { readLocalStorageItem } from '../../services/browserStorageService';
 import { isSimulatedLoggedIn, toggleSimulatedLogin } from '../../services/simulatedLoginService';
 import {
+    getBrowserConnectivitySnapshot,
+    setBrowserConnectivityOverride,
+    type BrowserConnectivityOverride,
+} from '../../services/networkStatus';
+import {
     applyConnectivityOverrideFromSearch,
     clearConnectivityOverride,
     getConnectivitySnapshot,
@@ -14,6 +19,8 @@ type AppDebugWindow = Window & typeof globalThis & {
     debug?: (command?: AppDebugCommand) => unknown;
     toggleSimulatedLogin?: (force?: boolean) => boolean;
     getSimulatedLoginState?: () => 'simulated_logged_in' | 'anonymous';
+    toggleBrowserConnectivity?: (mode?: BrowserConnectivityOverride | 'clear') => 'online' | 'offline';
+    getBrowserConnectivityState?: () => 'online' | 'offline';
     toggleSupabaseConnectivity?: (mode?: ConnectivityState | 'clear') => ConnectivityState;
     getSupabaseConnectivityState?: () => ConnectivityState;
 };
@@ -27,6 +34,7 @@ type AppDebugCommand =
         a11y?: boolean;
         simulatedLogin?: boolean;
         offline?: boolean | 'offline' | 'degraded' | 'online';
+        network?: boolean | 'offline' | 'online';
     };
 
 const DEBUG_AUTO_OPEN_STORAGE_KEY = 'tf_debug_auto_open';
@@ -123,6 +131,18 @@ export const useDebuggerBootstrap = ({ appName, isDev }: { appName: string; isDe
             return next;
         };
         host.getSimulatedLoginState = () => (isSimulatedLoggedIn() ? 'simulated_logged_in' : 'anonymous');
+        host.toggleBrowserConnectivity = (mode?: BrowserConnectivityOverride | 'clear') => {
+            const current = getBrowserConnectivitySnapshot(window.navigator);
+            const resolvedMode = mode
+                ?? (current.override ? 'clear' : 'offline');
+            const nextSnapshot = setBrowserConnectivityOverride(resolvedMode);
+            const nextState = nextSnapshot.isOnline ? 'online' : 'offline';
+            if (isDev) {
+                console.info(`[${appName}] toggleBrowserConnectivity(${mode || 'toggle'}) -> ${nextState.toUpperCase()}`);
+            }
+            return nextState;
+        };
+        host.getBrowserConnectivityState = () => (getBrowserConnectivitySnapshot(window.navigator).isOnline ? 'online' : 'offline');
         host.toggleSupabaseConnectivity = (mode?: ConnectivityState | 'clear') => {
             let nextState: ConnectivityState;
             if (!mode) {
@@ -149,6 +169,8 @@ export const useDebuggerBootstrap = ({ appName, isDev }: { appName: string; isDe
         return () => {
             delete host.toggleSimulatedLogin;
             delete host.getSimulatedLoginState;
+            delete host.toggleBrowserConnectivity;
+            delete host.getBrowserConnectivityState;
             delete host.toggleSupabaseConnectivity;
             delete host.getSupabaseConnectivityState;
         };

@@ -24,7 +24,7 @@ import {
     dbAdminOverrideTripCommit,
     dbCanCreateTrip,
     dbCreateTripVersion,
-    dbUpsertTrip,
+    dbUpsertTripWithStatus,
     dbUpsertUserSettings,
     ensureDbSession,
 } from './services/dbApi';
@@ -41,6 +41,7 @@ import { AppRoutes } from './app/routes/AppRoutes';
 import { isFirstLoadCriticalPath } from './app/prefetch/isFirstLoadCriticalPath';
 import { useConnectivityStatus } from './hooks/useConnectivityStatus';
 import { enqueueTripCommitAndSync } from './services/tripSyncManager';
+import { GlobalConnectivityBadge } from './components/GlobalConnectivityBadge';
 const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const lazyWithRecovery = <TModule extends { default: React.ComponentType<any> },>(
@@ -335,13 +336,14 @@ const AppContent: React.FC = () => {
             isInitialLanguageRef.current = false;
             return;
         }
-        if (DB_ENABLED) {
+        if (DB_ENABLED && isAuthenticated && access && !access.isAnonymous) {
             void dbUpsertUserSettings({ language: appLanguage });
         }
-    }, [appLanguage]);
+    }, [access, appLanguage, isAuthenticated]);
 
     const handleViewSettingsChange = (settings: IViewSettings) => {
         if (!DB_ENABLED) return;
+        if (!isAuthenticated || !access || access.isAnonymous) return;
         if (userSettingsSaveRef.current) {
             clearTimeout(userSettingsSaveRef.current);
         }
@@ -350,6 +352,7 @@ const AppContent: React.FC = () => {
                 mapStyle: settings.mapStyle,
                 routeMode: settings.routeMode,
                 layoutMode: settings.layoutMode,
+                timelineMode: settings.timelineMode,
                 timelineView: settings.timelineView,
                 showCityNames: settings.showCityNames,
                 zoomLevel: settings.zoomLevel,
@@ -359,11 +362,19 @@ const AppContent: React.FC = () => {
         }, 800);
     };
 
-    const handleUpdateTrip = (updatedTrip: ITrip, options?: { persist?: boolean }) => {
+    const handleUpdateTrip = useCallback((updatedTrip: ITrip, options?: { persist?: boolean }) => {
         setTrip(updatedTrip);
         if (options?.persist === false) return;
         saveTrip(updatedTrip);
-    };
+    }, []);
+
+    const handleTripManagerUpdate = useCallback((updatedTrip: ITrip) => {
+        setTrip((currentTrip) => {
+            if (!currentTrip || currentTrip.id !== updatedTrip.id) return currentTrip;
+            if (Object.is(currentTrip, updatedTrip)) return currentTrip;
+            return updatedTrip;
+        });
+    }, []);
 
     const enqueueTripCommitFallback = useCallback((updatedTrip: ITrip, view: IViewSettings | undefined, label: string) => {
         enqueueTripCommitAndSync({
@@ -391,9 +402,16 @@ const AppContent: React.FC = () => {
             return false;
         }
 
-        const upserted = await dbUpsertTrip(updatedTrip, view);
+        const upsertResult = await dbUpsertTripWithStatus(updatedTrip, view);
+        if (!upsertResult.tripId) {
+            if (upsertResult.isPermissionError) {
+                return false;
+            }
+            enqueueTripCommitFallback(updatedTrip, view, label);
+            return false;
+        }
         const versionId = await dbCreateTripVersion(updatedTrip, view, label);
-        if (!upserted || !versionId) {
+        if (!versionId) {
             enqueueTripCommitFallback(updatedTrip, view, label);
             return false;
         }
@@ -514,6 +532,7 @@ const AppContent: React.FC = () => {
 
     return (
         <TripManagerProvider openTripManager={openTripManager} prewarmTripManager={prewarmTripManager}>
+            <GlobalConnectivityBadge />
             <ViewTransitionHandler enabled={isWarmupEnabled} />
             {isWarmupEnabled && (
                 <Suspense fallback={null}>
@@ -541,10 +560,7 @@ const AppContent: React.FC = () => {
                         onClose={() => setIsManagerOpen(false)}
                         onSelectTrip={handleLoadTrip}
                         currentTripId={trip?.id}
-                        onUpdateTrip={(updatedTrip) => {
-                            if (!trip || trip.id !== updatedTrip.id) return;
-                            handleUpdateTrip(updatedTrip, { persist: false });
-                        }}
+                        onUpdateTrip={handleTripManagerUpdate}
                         appLanguage={appLanguage}
                     />
                 </Suspense>

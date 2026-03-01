@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
 
-const OFFLINE_TITLE = 'You are offline. Changes will be queued.';
+const OFFLINE_TITLE = 'Cloud sync is temporarily unavailable.';
 const RETRY_HINT = 'Retrying Supabase connection every 30s while this tab stays open.';
 
 test.describe('Supabase outage resilience', () => {
-    test('forced outage query shows offline banner, retry cadence hint, and support actions', async ({ page }) => {
+    test('forced outage query shows outage banner, retry cadence hint, and support action', async ({ page }) => {
         await page.goto('/create-trip?offline=offline');
 
         await expect(page.getByText(OFFLINE_TITLE)).toBeVisible();
         await expect(page.getByText(RETRY_HINT)).toBeVisible();
         await expect(page.getByRole('link', { name: 'Contact' }).first()).toHaveAttribute('href', /\/contact$/);
-        await expect(page.getByRole('link', { name: 'Email support' })).toHaveAttribute('href', /^mailto:/);
+        await expect(page.getByRole('link', { name: 'Email support' })).toHaveCount(0);
     });
 
     test('navigator.onLine network emulation toggles browser online status', async ({ context, page }) => {
@@ -60,5 +60,27 @@ test.describe('Supabase outage resilience', () => {
 
         await page.reload();
         await expect(page.getByText(OFFLINE_TITLE)).toHaveCount(0);
+    });
+
+    test('create-trip action is disabled while browser is offline and re-enabled after reconnect', async ({ context, page }) => {
+        await page.goto('/create-trip');
+
+        const destinationSearch = page.getByPlaceholder('Search country or island');
+        await destinationSearch.fill('france');
+        await destinationSearch.press('Enter');
+        await expect(page.getByText('France').first()).toBeVisible();
+
+        await expect(page.getByRole('button', { name: 'Create my trip' }).first()).toBeEnabled();
+
+        await context.setOffline(true);
+        await expect.poll(async () => page.evaluate(() => navigator.onLine)).toBe(false);
+
+        const cta = page.getByRole('button', { name: 'Offline' }).first();
+        await expect(cta).toBeDisabled();
+
+        await context.setOffline(false);
+        await expect.poll(async () => page.evaluate(() => navigator.onLine)).toBe(true);
+
+        await expect(page.getByRole('button', { name: 'Create my trip' }).first()).toBeEnabled();
     });
 });

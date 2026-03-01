@@ -1,5 +1,6 @@
 import React from 'react';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
+import { AlertTriangle, WifiOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { normalizeLocale } from '../../config/locales';
@@ -42,6 +43,7 @@ interface TripViewStatusBannersProps {
     ) => void;
     tripId: string;
     connectivityState?: ConnectivityState;
+    connectivityReason?: string | null;
     connectivityForced?: boolean;
     pendingSyncCount?: number;
     failedSyncCount?: number;
@@ -80,6 +82,7 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     onPaywallLoginClick,
     tripId,
     connectivityState,
+    connectivityReason,
     connectivityForced = false,
     pendingSyncCount = 0,
     failedSyncCount = 0,
@@ -93,10 +96,27 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
     const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
     const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
-    const queueCountVariant = pendingSyncCount === 0 ? 'None' : (pendingSyncCount === 1 ? 'One' : 'Many');
     const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
+    const isBrowserOffline = connectivityReason === 'browser_offline';
     const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
     const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
+    const stripMessage = shouldShowConnectivityStrip ? (
+        connectivityState === 'offline'
+            ? t(isBrowserOffline ? 'connectivity.tripStrip.offline.browser' : 'connectivity.tripStrip.offline.service')
+            : t('connectivity.tripStrip.degraded.service')
+    ) : (
+        isSyncingQueue
+            ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
+            : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount })
+    );
+    const showContactAction = shouldShowConnectivityStrip && !isBrowserOffline;
+    const stripIcon = shouldShowConnectivityStrip
+        ? (
+            connectivityState === 'offline'
+                ? <WifiOff className="h-3.5 w-3.5 shrink-0" />
+                : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        )
+        : (isSyncingQueue ? <Spinner className="h-3.5 w-3.5 shrink-0" /> : null);
 
     return (
         <>
@@ -109,16 +129,12 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
                             : 'border-sky-200 bg-sky-50 text-sky-900'
                 }`}>
                     <span className="inline-flex items-center gap-2">
-                        {isSyncingQueue && <Spinner className="h-3.5 w-3.5" />}
-                        {shouldShowConnectivityStrip
-                            ? t(`connectivity.tripStrip.${connectivityState}.message${queueCountVariant}`, { count: pendingSyncCount })
-                            : (isSyncingQueue
-                                ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
-                                : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount }))}
+                        {stripIcon}
+                        {stripMessage}
                         {connectivityForced && IS_DEV ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
                     </span>
                     <div className="flex items-center gap-2">
-                        {shouldShowConnectivityStrip && (
+                        {showContactAction && (
                             <a
                                 href={supportContactPath}
                                 onClick={() => {

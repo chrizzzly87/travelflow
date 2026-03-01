@@ -6,7 +6,6 @@ import { MemoryRouter } from 'react-router-dom';
 
 const useAuthMock = vi.fn();
 const getCurrentAccessContextMock = vi.fn();
-const getCurrentUserProfileMock = vi.fn();
 const trackEventMock = vi.fn();
 
 const translations: Record<string, string> = {
@@ -69,10 +68,6 @@ vi.mock('../../../services/authService', () => ({
   getCurrentAccessContext: () => getCurrentAccessContextMock(),
 }));
 
-vi.mock('../../../services/profileService', () => ({
-  getCurrentUserProfile: () => getCurrentUserProfileMock(),
-}));
-
 vi.mock('../../../services/analyticsService', () => ({
   trackEvent: (...args: unknown[]) => trackEventMock(...args),
   getAnalyticsDebugAttributes: () => ({}),
@@ -90,17 +85,15 @@ describe('pages/ContactPage', () => {
   beforeEach(() => {
     useAuthMock.mockReset();
     getCurrentAccessContextMock.mockReset();
-    getCurrentUserProfileMock.mockReset();
     trackEventMock.mockReset();
 
-    useAuthMock.mockReturnValue({ access: null });
+    useAuthMock.mockReturnValue({ access: null, profile: null });
     getCurrentAccessContextMock.mockResolvedValue({
       userId: null,
       email: null,
       isAnonymous: true,
       tierKey: 'tier_free',
     });
-    getCurrentUserProfileMock.mockResolvedValue(null);
 
     vi.stubGlobal('fetch', vi.fn());
   });
@@ -132,17 +125,17 @@ describe('pages/ContactPage', () => {
         isAnonymous: false,
         tierKey: 'tier_mid',
       },
+      profile: {
+        displayName: 'Casey Rivera',
+        firstName: 'Casey',
+        lastName: 'Rivera',
+      },
     });
     getCurrentAccessContextMock.mockResolvedValue({
       userId: 'user-123',
       email: 'prefilled@example.com',
       isAnonymous: false,
       tierKey: 'tier_mid',
-    });
-    getCurrentUserProfileMock.mockResolvedValue({
-      displayName: 'Casey Rivera',
-      firstName: 'Casey',
-      lastName: 'Rivera',
     });
 
     renderContactPage();

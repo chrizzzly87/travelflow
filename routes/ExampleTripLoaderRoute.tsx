@@ -194,6 +194,8 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
                 exampleTemplateId: templateId,
                 exampleTemplateCountries: templateCountries,
                 sourceKind: 'example',
+                sourceOwnerType: 'system_catalog',
+                sourceOwnerHandle: 'travelflow_examples',
                 defaultView: resolvedView,
             };
 
@@ -240,6 +242,8 @@ export const ExampleTripLoaderRoute: React.FC<ExampleTripLoaderRouteProps> = ({
             tripExpiresAt: resolveTripExpiry(now),
             sourceKind: 'duplicate_trip',
             sourceTemplateId: templateId,
+            sourceOwnerType: 'system_catalog',
+            sourceOwnerHandle: 'travelflow_examples',
             exampleTemplateId: undefined,
             exampleTemplateCountries: undefined,
             forkedFromExampleTemplateId: templateId,

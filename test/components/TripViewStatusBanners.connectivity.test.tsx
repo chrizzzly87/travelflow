@@ -16,9 +16,12 @@ const messages: Record<string, string> = {
   'connectivity.tripStrip.offline.messageNone': 'Offline mode enabled. Trip data is served from local cache.',
   'connectivity.tripStrip.offline.messageOne': 'Offline mode enabled. {count} change is queued for sync.',
   'connectivity.tripStrip.offline.messageMany': 'Offline mode enabled. {count} changes are queued for sync.',
+  'connectivity.tripStrip.offline.browser': 'Offline mode enabled. Your latest edits are saved locally until reconnect.',
+  'connectivity.tripStrip.offline.service': 'Cloud sync is currently unavailable. Your latest edits are queued safely.',
   'connectivity.tripStrip.degraded.messageNone': 'Connection is degraded. Edits are protected with local queue fallback.',
   'connectivity.tripStrip.degraded.messageOne': 'Connection is degraded. {count} change is queued for replay.',
   'connectivity.tripStrip.degraded.messageMany': 'Connection is degraded. {count} changes are queued for replay.',
+  'connectivity.tripStrip.degraded.service': 'Connection is degraded. We are retrying queued edits in the background.',
   'connectivity.tripStrip.forcedSuffix': '(forced by debugger)',
   'connectivity.tripStrip.retry': 'Retry failed sync',
   'connectivity.tripStrip.syncingOne': 'Syncing {count} queued change to Supabase...',
@@ -89,13 +92,14 @@ describe('TripViewStatusBanners connectivity strips', () => {
       <TripViewStatusBanners
         {...makeProps({
           connectivityState: 'offline',
+          connectivityReason: 'browser_offline',
           pendingSyncCount: 1,
           connectivityForced: true,
         })}
       />,
     );
 
-    expect(screen.getByText(/Offline mode enabled. 1 change is queued for sync./i)).toBeInTheDocument();
+    expect(screen.getByText(/Offline mode enabled. Your latest edits are saved locally until reconnect./i)).toBeInTheDocument();
     expect(screen.getByText(/\(forced by debugger\)/i)).toBeInTheDocument();
   });
 
@@ -130,6 +134,20 @@ describe('TripViewStatusBanners connectivity strips', () => {
     fireEvent.click(retryButtons[0]);
     expect(onRetrySyncQueue).toHaveBeenCalledTimes(1);
     expect(trackEventMock).toHaveBeenCalled();
+  });
+
+  it('hides support contact action for browser-offline strip', () => {
+    render(
+      <TripViewStatusBanners
+        {...makeProps({
+          connectivityState: 'offline',
+          connectivityReason: 'browser_offline',
+          pendingSyncCount: 2,
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: /contact/i })).not.toBeInTheDocument();
   });
 
   it('shows server-backup restore action and calls handler', () => {

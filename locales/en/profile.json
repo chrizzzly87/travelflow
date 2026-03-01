@@ -1,0 +1,321 @@
+{
+  "hero": {
+    "loading": "Loading profile...",
+    "inspirationIntro": "Sounds good? Check our",
+    "inspirationCta": "Inspirations for {country}",
+    "greetingFacts": {
+      "haw-aloha": "Used in Hawaii for hello, goodbye, and warmth in everyday life.",
+      "kor-annyeong": "A polite Korean greeting used in most daily situations.",
+      "jpn-konnichiwa": "A standard daytime Japanese greeting with a friendly tone.",
+      "tha-sawasdee": "Thai greeting used throughout the day, often paired with a wai; speakers add polite endings by their own gender (khrap for men, kha for women).",
+      "hin-namaste": "A respectful greeting in India often used in formal and informal settings.",
+      "spa-hola": "A simple Spanish greeting used in almost any social context.",
+      "deu-guten-tag": "A formal German greeting used in daytime conversations.",
+      "fra-bonjour": "A common French daytime greeting used in both casual and formal settings.",
+      "ita-ciao": "Italian greeting used casually for hello and goodbye.",
+      "ara-marhaba": "A warm Arabic greeting broadly understood across regions.",
+      "deu-moin": "Classic in Northern Germany at any hour; locals joke that “Moin Moin” is mostly said by tourists.",
+      "gsw-gruezi": "A polite Swiss German hello often heard in shops, trains, and mountain towns.",
+      "eus-kaixo": "Basque greeting used in Euskadi; hearing it is a quick sign the region keeps its language alive.",
+      "gle-dia-dhuit": "Irish for “hello,” literally “God be with you,” and still common in Gaeltacht areas.",
+      "cym-shwmae": "Friendly Welsh hello that often appears on bilingual signs and local radio intros.",
+      "isl-godan-daginn": "Icelandic “good day”; locals often shorten it in casual speech, especially in Reykjavík cafés.",
+      "ces-ahoj": "Popular Czech hello among friends; it began as a sailors’ call and stuck in daily speech.",
+      "swe-hej": "Default Swedish hello for both friends and coworkers, often doubled in cheerful “hej hej.”",
+      "nld-hoi": "Casual Dutch greeting common in the Netherlands and Flanders, especially among younger speakers.",
+      "mri-kia-ora": "Māori greeting in New Zealand used for hello, thanks, and general positive energy.",
+      "khm-suostei": "Khmer greeting heard across Cambodia; respectful tone matters as much as the words.",
+      "lao-sabaidee": "Lao greeting also tied to well-being, reflecting a calm and friendly social style.",
+      "swa-jambo": "Widely recognized Swahili greeting in East Africa; many locals also use “Hujambo?” for “How are you?”",
+      "yue-nei-hou": "Cantonese greeting common in Hong Kong; tones matter, so pronunciation changes meaning fast.",
+      "zho-ni-hao": "Mandarin greeting used across China; in casual chats people may jump straight to daily-life questions.",
+      "fallback": "A universal greeting to kick off your next trip idea."
+    }
+  },
+  "tabs": {
+    "recent": "Recent",
+    "favorites": "Favorites",
+    "all": "All trips",
+    "liked": "Liked trips",
+    "comingSoon": "Soon"
+  },
+  "filters": {
+    "showOnlyPublic": "Show only public"
+  },
+  "recentSort": {
+    "created": "Created",
+    "updated": "Updated"
+  },
+  "sections": {
+    "highlights": "Pinned highlights",
+    "highlightsCount": "{count}/3 pinned"
+  },
+  "cards": {
+    "pinnedTag": "Pinned",
+    "mapUnavailable": "Map preview unavailable",
+    "mapLoading": "Loading preview...",
+    "creatorPrefix": "By",
+    "actions": {
+      "open": "Open",
+      "favorite": "Favorite",
+      "unfavorite": "Unfavorite",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "makePublic": "Public",
+      "makePrivate": "Private",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
+    },
+    "source": {
+      "createdByYou": "Created by you",
+      "copiedFromTraveler": "Copied from another traveler",
+      "copiedFromYourTrip": "Copied from your trip",
+      "copiedFromExample": "Copied from example",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
+    },
+    "hiddenTag": "Hidden",
+    "expiredTag": "Expired",
+    "expiredFallbackTitle": "Expired trip draft"
+  },
+  "actions": {
+    "title": "Quick actions",
+    "settings": "Profile settings",
+    "planner": "Go to planner",
+    "stamps": "Passport stamps",
+    "adminWorkspace": "Open admin workspace"
+  },
+  "summary": {
+    "editProfile": "Edit profile",
+    "viewPublicProfile": "View public profile",
+    "shareProfile": "Share profile URL",
+    "memberSinceLabel": "Member since",
+    "memberSinceUnknown": "Not available",
+    "usernamePrefix": "@",
+    "roleLabel": "Role",
+    "bioLabel": "Bio",
+    "bioFallback": "Add a short bio so others can understand your travel style.",
+    "locationLabel": "Location",
+    "locationUnknown": "Probably Planet Earth",
+    "distanceLabel": "Total distance",
+    "distanceUnknown": "No tracked distance yet",
+    "countriesLabel": "Countries visited",
+    "countriesEmpty": "No countries tracked yet",
+    "stampsTitle": "Passport stamps",
+    "stampsDescription": "Your latest achievements are collected as travel passport stamps.",
+    "stampsOpen": "Open stamp collection",
+    "stampsEmpty": "Create your first trip to unlock your first stamp.",
+    "follow": "Follow",
+    "message": "Message",
+    "shareCopiedTitle": "Profile link copied",
+    "shareCopied": "Profile URL copied to clipboard.",
+    "shareOpenedTitle": "Profile opened",
+    "shareOpened": "Public profile opened in a new tab."
+  },
+  "stats": {
+    "totalTrips": "Total trips",
+    "likesSaved": "Likes saved",
+    "followers": "Followers",
+    "likesEarned": "Likes earned"
+  },
+  "publicProfile": {
+    "loading": "Loading public profile...",
+    "title": "Public profile",
+    "privateTitle": "This profile is private",
+    "privateDescription": "This traveler has hidden their public profile for now.",
+    "visibilityPrivate": "Private profile",
+    "visibilityPublic": "Public profile",
+    "notFoundTitle": "Profile not found",
+    "notFoundDescription": "We could not find a profile for this handle.",
+    "ctaExploreInspirations": "Explore inspirations",
+    "ctaBackProfile": "Go to your profile",
+    "tripsTitle": "Public trips",
+    "emptyTrips": "No public trips yet.",
+    "followHint": "Follow and message actions are coming soon.",
+    "ctaRegisterFree": "Register for free",
+    "sourceCreatedByTraveler": "Created by traveler",
+    "notFoundFunTitle": "Seems like this user already found their next trip.",
+    "notFoundInvalidPassportTitle": "This passport is invalid",
+    "notFoundFunSubtitle": "Don't wait any longer",
+    "ctaPlanTrip": "Plan your trip",
+    "ctaGetInspired": "Get inspired"
+  },
+  "settings": {
+    "title": "Profile settings",
+    "description": "Update your profile details, public URL, and visibility defaults.",
+    "onboardingTitle": "Complete your profile",
+    "onboardingDescription": "Before using TravelFlow, add your core profile details so personalization works reliably.",
+    "fields": {
+      "firstName": "First name *",
+      "lastName": "Last name *",
+      "username": "Username *",
+      "bio": "Bio",
+      "gender": "Gender",
+      "unspecified": "Unspecified",
+      "country": "Country/Region *",
+      "city": "City *",
+      "preferredLanguage": "Preferred language *"
+    },
+    "usernameHelp": "Use 3-30 letters, numbers, underscores, or hyphens. No spaces.",
+    "usernameCooldownHint": "You can change your username again on {date}.",
+    "bioHelp": "Share a short intro travelers can see on your public profile.",
+    "publicProfileToggleTitle": "Enable public profile",
+    "publicProfileToggleDescription": "Allow others to discover your public profile and visible trips.",
+    "defaultVisibilityToggleTitle": "Default trip visibility",
+    "defaultVisibilityToggleDescription": "Choose whether new trips are public on your profile by default.",
+    "publicUrlLabel": "Public URL",
+    "publicUrlEmpty": "Set a username to generate your public profile URL.",
+    "viewPublicProfile": "Open public profile",
+    "requiredHint": "Complete all required fields to continue.",
+    "actions": {
+      "save": "Save profile settings",
+      "saveAndContinue": "Save and continue"
+    },
+    "messages": {
+      "saved": "Profile settings saved successfully.",
+      "onboardingSaved": "Profile completed successfully.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
+    },
+    "errors": {
+      "required": "Please fill all required fields.",
+      "usernameUnavailable": "Choose an available username before saving.",
+      "saveFailed": "Could not update your profile."
+    },
+    "usernameStatus": {
+      "idle": "Set your username to claim a public profile URL.",
+      "checking": "Checking username availability...",
+      "available": "Great, this username is available.",
+      "taken": "This username is already taken.",
+      "reserved": "This username is reserved.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens.",
+      "unchanged": "This is your current username.",
+      "cooldown": "Username changes are currently on cooldown.",
+      "cooldownDate": "Username changes are on cooldown until {date}.",
+      "failed": "Could not verify username availability right now."
+    },
+    "breadcrumb": {
+      "profile": "Profile",
+      "settings": "Settings"
+    },
+    "usernameEdit": "Edit",
+    "usernameLockedHint": "Your username is locked. Use Edit to request a change.",
+    "usernameRecoveryHint": {
+      "taken": "Try adding a number or underscore.",
+      "reserved": "Choose another handle that is not reserved.",
+      "invalid": "Use 3-30 letters, numbers, underscores, or hyphens with no spaces.",
+      "cooldown": "Username edits are locked during the cooldown window."
+    },
+    "countryRegionSearchPlaceholder": "Search country or region",
+    "countryRegionClear": "Clear country/region",
+    "countryRegionEmpty": "No matching country or region found.",
+    "countryRegionToggle": "Toggle country/region options",
+    "usernameChange": "Change username",
+    "usernameSuggestionsTitle": "Try one of these available options:"
+  },
+  "stamps": {
+    "eyebrow": "Passport collection",
+    "title": "Your travel passport",
+    "description": "{name}, these stamps track your TravelFlow milestones and how rare they are across the community.",
+    "passportTitle": "Passport cover",
+    "passportDescription": "Last three unlocked stamps. Drag to position your sticker layout.",
+    "unlockedCount": "{count} of {total} stamps unlocked",
+    "lastUpdated": "{count} recent stamps shown",
+    "passportEmpty": "No stamps yet. Create or save trips to unlock your first achievement.",
+    "detailTitle": "Stamp details",
+    "backToProfile": "Back to profile",
+    "detailRarity": "Rarity",
+    "detailProgress": "Progress",
+    "detailUnlocked": "Unlocked",
+    "cardUnlockedOn": "Unlocked on",
+    "detailUnlockedNow": "Just unlocked",
+    "detailLocked": "Locked",
+    "selectHint": "Select a stamp to view details and rarity.",
+    "sortLabel": "Sort",
+    "groupLabel": "Group",
+    "empty": "No stamps match this filter yet.",
+    "sort": {
+      "date": "Latest unlocked",
+      "rarity": "Rarest first",
+      "group": "Group"
+    },
+    "group": {
+      "all": "All groups",
+      "trips": "Trips",
+      "curation": "Curation",
+      "exploration": "Exploration",
+      "social": "Social",
+      "momentum": "Momentum"
+    },
+    "selectionTitle": "Shown on passport cover",
+    "selectionCount": "{count}/{total} selected",
+    "selectionEmpty": "Unlock stamps to choose what appears on your passport cover.",
+    "selectionLimitNotice": "Choose up to {count} stamps for your cover.",
+    "selectionSaveFailed": "Could not save your stamp cover selection.",
+    "selectionSaving": "Saving passport cover selection...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "emptySlot": "Stamp slot",
+    "backToPublicProfile": "Back to public profile"
+  },
+  "likedPlaceholder": {
+    "title": "Liked trips are coming soon",
+    "description": "You will soon be able to save and revisit trips from other travelers here."
+  },
+  "empty": {
+    "title": "No trips in this section yet",
+    "description": "Create a trip or mark one as favorite to populate this view."
+  },
+  "messages": {
+    "pinEvicted": "The oldest pinned trip was unpinned to keep your highlights at three."
+  },
+  "errors": {
+    "profileLoad": "Could not load profile."
+  },
+  "fallback": {
+    "displayName": "Traveler",
+    "email": "No email available"
+  },
+  "selection": {
+    "selectedCount": "{count}/{total} selected",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "archiveSelected": "Archive selected",
+    "end": "Clear selection",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc clears selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorTitle": "Archive failed",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Your trip \"{title}\" was archived successfully."
+  }
+}

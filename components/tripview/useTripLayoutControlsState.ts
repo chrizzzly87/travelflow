@@ -41,6 +41,15 @@ export const useTripLayoutControlsState = ({
         return 'horizontal';
     });
 
+    const [timelineMode, setTimelineMode] = useState<'calendar' | 'timeline'>(() => {
+        if (initialViewSettings?.timelineMode) return initialViewSettings.timelineMode;
+        if (typeof window !== 'undefined') {
+            const stored = readLocalStorageItem('tf_timeline_mode');
+            if (stored === 'calendar' || stored === 'timeline') return stored;
+        }
+        return 'calendar';
+    });
+
     const [timelineView, setTimelineView] = useState<'horizontal' | 'vertical'>(() => {
         if (initialViewSettings) return initialViewSettings.timelineView;
         if (typeof window !== 'undefined') {
@@ -81,6 +90,8 @@ export const useTripLayoutControlsState = ({
     return {
         layoutMode,
         setLayoutMode,
+        timelineMode,
+        setTimelineMode,
         timelineView,
         setTimelineView,
         mapStyle,

@@ -4,8 +4,8 @@ This project includes a global debug toolbar for developer-only QA flows.
 
 ## Panel layout
 - The toolbar is grouped into three tabs to reduce noise:
-- `Testing`: simulated login, forced Supabase connectivity, trip-sync replay, trip-expired toggle.
-- `Tracking`: analytics overlay, Umami shortcut, navigation prefetch diagnostics, view-transition diagnostics.
+- `Testing`: simulated login, forced browser connectivity, forced Supabase connectivity, trip-sync replay, trip-expired toggle.
+- `Tracking`: analytics overlay (off by default), Umami shortcut, navigation prefetch diagnostics, view-transition diagnostics.
 - `SEO`: OG playground, SEO/a11y checks, H1 marker, Lighthouse shortcut.
 
 ## Source of truth
@@ -22,13 +22,15 @@ Opens and controls the toolbar.
 Supported calls:
 - `debug()` -> open toolbar
 - `debug(true|false)` -> force open/close
-- `debug({ open, tracking, seo, a11y, simulatedLogin, viewTransition, offline })`
+- `debug({ open, tracking, seo, a11y, simulatedLogin, viewTransition, offline, network })`
 
 Examples:
 - `debug()`
 - `debug({ tracking: false })`
 - `debug({ seo: true, a11y: true })`
 - `debug({ simulatedLogin: true })`
+- `debug({ network: 'offline' })`
+- `debug({ network: 'online' })`
 - `debug({ offline: 'offline' })`
 - `debug({ offline: 'degraded' })`
 - `debug({ offline: 'online' })`
@@ -43,6 +45,8 @@ Current methods:
 - `setTracking(boolean)`
 - `toggleSimulatedLogin(next?)`
 - `getSimulatedLogin()`
+- `setBrowserConnectivity(mode)` (`offline` | `online` | `clear`)
+- `getBrowserConnectivity()`
 - `setSupabaseConnectivity(mode)` (`offline` | `degraded` | `clear`)
 - `getSupabaseConnectivity()`
 - `retryTripSync()`
@@ -67,8 +71,19 @@ Behavior:
 Safe call pattern when debug APIs may be stripped in production:
 - `window.toggleSimulatedLogin?.()`
 - `window.toggleExpired?.(true)`
+- `window.toggleBrowserConnectivity?.('offline')`
 - `window.toggleSupabaseConnectivity?.('offline')`
 - `window.retryTripSyncNow?.()`
+
+### `window.toggleBrowserConnectivity(mode?)`
+Defined globally on all routes.
+
+Behavior:
+- `toggleBrowserConnectivity('offline')` forces browser offline simulation mode.
+- `toggleBrowserConnectivity('online')` forces browser online simulation mode.
+- `toggleBrowserConnectivity('clear')` clears the forced browser override and returns to real browser network state.
+- Returns resulting browser state (`online` | `offline`).
+- Persists to local storage key `tf_debug_browser_connectivity_override`.
 
 ### `window.toggleSupabaseConnectivity(mode?)`
 Defined globally on all routes.
@@ -98,6 +113,7 @@ The toolbar now saves toggle state in `localStorage` and restores it after reloa
 - `tf_debug_panel_expanded` (`Expand/Collapse`)
 - `tf_debug_h1_highlight` (`Mark/Unmark H1`)
 - `tf_debug_simulated_login` (`Enable/Disable Sim Login`)
+- `tf_debug_browser_connectivity_override` (`Force browser online/offline mode`)
 - `tf_debug_supabase_connectivity_override` (`Force Supabase connectivity mode`)
 
 ## Route-aware behavior
@@ -235,6 +251,8 @@ Consumer:
 - On `/trip/:id`, `Set Trip Expired` is visible in `Testing`.
 - `window.toggleExpired(true)` shows expired banner and disables editing.
 - `window.toggleSimulatedLogin(true)` sets simulated login to enabled.
+- `window.toggleBrowserConnectivity('offline')` forces browser-level offline mode (Supabase becomes unreachable as a consequence).
 - `window.toggleSupabaseConnectivity('offline')` forces outage mode for planner resilience checks.
 - `window.retryTripSyncNow()` retries failed queued trip sync entries.
 - On marketing pages, Meta + H1 tools are visible and H1 highlight works.
+- Tracking boxes are disabled by default when opening the debugger.

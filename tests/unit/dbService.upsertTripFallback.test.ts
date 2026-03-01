@@ -64,18 +64,25 @@ describe('services/dbService dbUpsertTrip', () => {
       data: { id: 'trip-fallback' },
       error: null,
     });
-    mockState.select.mockReturnValue({
+    const eqOwner = vi.fn().mockReturnValue({
       maybeSingle: mockState.maybeSingle,
+    });
+    const eqTrip = vi.fn().mockReturnValue({
+      eq: eqOwner,
+    });
+    mockState.select.mockReturnValue({
+      eq: eqTrip,
     });
     mockState.upsert.mockReturnValue({
       select: mockState.select,
     });
     mockState.from.mockReturnValue({
       upsert: mockState.upsert,
+      select: mockState.select,
     });
   });
 
-  it('falls back to table upsert when RPC overload resolution returns PGRST203', async () => {
+  it('falls back through legacy RPC signatures when overload resolution returns PGRST203', async () => {
     const overloadError = {
       code: 'PGRST203',
       details: null,
@@ -85,20 +92,15 @@ describe('services/dbService dbUpsertTrip', () => {
 
     mockState.rpc
       .mockResolvedValueOnce({ data: null, error: overloadError })
-      .mockResolvedValueOnce({ data: null, error: overloadError });
+      .mockResolvedValueOnce({ data: null, error: overloadError })
+      .mockResolvedValueOnce({ data: { id: 'trip-fallback' }, error: null });
 
     const trip = makeTrip({ id: 'trip-fallback', title: 'Fallback Trip' });
     const result = await dbUpsertTrip(trip, null);
 
     expect(result).toBe('trip-fallback');
-    expect(mockState.rpc).toHaveBeenCalledTimes(2);
+    expect(mockState.rpc).toHaveBeenCalledTimes(3);
     expect(mockState.from).toHaveBeenCalledWith('trips');
-    expect(mockState.upsert).toHaveBeenCalledTimes(1);
-    expect(mockState.upsert.mock.calls[0][1]).toEqual({ onConflict: 'id' });
-    expect(mockState.upsert.mock.calls[0][0]).toMatchObject({
-      id: trip.id,
-      owner_id: 'user-1',
-      title: trip.title,
-    });
+    expect(mockState.upsert).not.toHaveBeenCalled();
   });
 });

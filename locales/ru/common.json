@@ -59,6 +59,11 @@
     "cta": "Сообщить об ошибке перевода",
     "ctaShort": "Сообщить"
   },
+  "networkStatus": {
+    "offlineTitle": "Вы не в сети.",
+    "offlineDescription": "Вход и облачная синхронизация сейчас недоступны. Мы продолжим проверять сеть и автоматически переподключимся.",
+    "offlineChecking": "Проверяем подключение..."
+  },
   "contact": {
     "title": "Контакты",
     "description": "Свяжитесь с нами по вопросам продукта, багам, партнёрствам или переводам.",
@@ -101,19 +106,59 @@
       "validationMessageLength": "Сообщение слишком длинное. Максимум: {max} символов."
     }
   },
+  "appDialog": {
+    "tripArchive": {
+      "title": "Архивировать поездку?",
+      "confirmLabel": "Архивировать поездку",
+      "cancelLabel": "Отмена",
+      "messageQuestion": "Вы уверены, что хотите архивировать <strong>\"{title}\"</strong>?",
+      "messageDetail": "Эта поездка будет удалена из вашего списка, и её можно будет восстановить позже."
+    },
+    "roundTripSync": {
+      "title": "Обновить конечный пункт кругового маршрута?",
+      "messageLead": "Похоже, это круговой маршрут.",
+      "messageQuestion": "Также изменить последний город на <strong>\"{title}\"</strong>?",
+      "confirmLabel": "Да, обновить последний город",
+      "cancelLabel": "Нет, оставить как есть"
+    },
+    "cityPaletteApply": {
+      "title": "Применить палитру к текущим городам?",
+      "messageAuto": "Выберите <strong>Применить автоматически</strong>, чтобы перекрасить все города сейчас.",
+      "messageManual": "Выберите <strong>Ручной выбор</strong>, чтобы сохранить текущие цвета и только переключить активную палитру.",
+      "confirmLabel": "Применить автоматически",
+      "cancelLabel": "Ручной выбор"
+    },
+    "markdownLink": {
+      "title": "Вставить ссылку",
+      "messageLine1": "Введите URL для выделенного текста или вставьте новую ссылку.",
+      "messageLine2": "Ссылка откроется в новой вкладке с безопасными настройками по умолчанию.",
+      "label": "URL",
+      "placeholder": "https://example.com",
+      "confirmLabel": "Вставить ссылку",
+      "cancelLabel": "Отмена",
+      "validationRequired": "Пожалуйста, введите URL.",
+      "validationProtocol": "URL должен начинаться с http:// или https://",
+      "validationInvalid": "Пожалуйста, введите корректный URL."
+    }
+  },
   "connectivity": {
     "banner": {
       "offline": {
         "title": "You are offline. Changes will be queued.",
         "messageNone": "Planner stays usable with cached data.",
         "messageOne": "{count} change is queued and will sync after reconnect.",
-        "messageMany": "{count} changes are queued and will sync after reconnect."
+        "messageMany": "{count} changes are queued and will sync after reconnect.",
+        "browserTitle": "You are offline. Changes stay local.",
+        "browserMessage": "Reconnect to continue cloud sync. We will retry automatically.",
+        "serviceTitle": "Cloud sync is temporarily unavailable.",
+        "serviceMessage": "Your internet works, but the sync service is not responding. Edits stay queued and safe."
       },
       "degraded": {
         "title": "Connection is unstable. Saving in resilient mode.",
         "messageNone": "Planner stays usable while we retry in the background.",
         "messageOne": "{count} queued change will sync when Supabase stabilizes.",
-        "messageMany": "{count} queued changes will sync when Supabase stabilizes."
+        "messageMany": "{count} queued changes will sync when Supabase stabilizes.",
+        "serviceMessage": "Cloud sync is unstable right now. We keep retrying in the background."
       },
       "syncing": {
         "title": "Sync in progress",
@@ -135,12 +180,15 @@
       "offline": {
         "messageNone": "Offline mode enabled. Trip data is served from local cache.",
         "messageOne": "Offline mode enabled. {count} change is queued for sync.",
-        "messageMany": "Offline mode enabled. {count} changes are queued for sync."
+        "messageMany": "Offline mode enabled. {count} changes are queued for sync.",
+        "browser": "Offline mode enabled. Your latest edits are saved locally until reconnect.",
+        "service": "Cloud sync is currently unavailable. Your latest edits are queued safely."
       },
       "degraded": {
         "messageNone": "Connection is degraded. Edits are protected with local queue fallback.",
         "messageOne": "Connection is degraded. {count} change is queued for replay.",
-        "messageMany": "Connection is degraded. {count} changes are queued for replay."
+        "messageMany": "Connection is degraded. {count} changes are queued for replay.",
+        "service": "Connection is degraded. We are retrying queued edits in the background."
       },
       "forcedSuffix": "(forced by debugger)",
       "retry": "Retry failed sync",
@@ -159,6 +207,17 @@
       "syncStartedMany": "Reconnect detected. Replaying {count} queued changes.",
       "syncPartialFailureOne": "{count} queued change still failed. You can retry.",
       "syncPartialFailureMany": "{count} queued changes still failed. You can retry."
+    },
+    "globalBadge": {
+      "offline": "Offline",
+      "syncing": "Syncing...",
+      "online": "Online",
+      "details": {
+        "offlineBrowser": "You are offline. Edits are stored locally and replayed once you reconnect.",
+        "offlineService": "Your internet is up, but cloud sync appears unavailable. We will keep retrying queued edits.",
+        "syncingQueue": "Syncing queued edits now. Pending items: {count}.",
+        "online": "Connection is healthy and sync is up to date."
+      }
     }
   }
 }

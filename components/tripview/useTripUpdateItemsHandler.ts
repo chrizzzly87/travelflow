@@ -59,13 +59,13 @@ export const useTripUpdateItemsHandler = ({
 
     if (added.length === 1) {
         const addedItem = added[0];
-        if (addedItem.type === 'city') setPendingLabel(`Data: Added city ${addedItem.title}`);
-        else if (addedItem.type === 'activity') setPendingLabel(`Data: Added activity ${addedItem.title}`);
+        if (addedItem.type === 'city') setPendingLabel(`Data: Added city "${addedItem.title}"`);
+        else if (addedItem.type === 'activity') setPendingLabel(`Data: Added activity "${addedItem.title}"`);
         else setPendingLabel('Data: Added transport');
     } else if (removed.length === 1) {
         const removedItem = removed[0];
-        if (removedItem.type === 'city') setPendingLabel(`Data: Removed city ${removedItem.title}`);
-        else if (removedItem.type === 'activity') setPendingLabel(`Data: Removed activity ${removedItem.title}`);
+        if (removedItem.type === 'city') setPendingLabel(`Data: Removed city "${removedItem.title}"`);
+        else if (removedItem.type === 'activity') setPendingLabel(`Data: Removed activity "${removedItem.title}"`);
         else setPendingLabel('Data: Removed transport');
     } else {
         for (const nextItem of normalizedItems) {
@@ -77,18 +77,18 @@ export const useTripUpdateItemsHandler = ({
                 const startChanged = prevItem.startDateOffset !== nextItem.startDateOffset;
                 if (durationChanged || startChanged) {
                     if (durationChanged) {
-                        setPendingLabel(`Data: Changed city duration in ${nextItem.title}`);
+                        setPendingLabel(`Data: Changed city duration in "${nextItem.title}"`);
                     } else {
-                        setPendingLabel(`Data: Rescheduled city ${nextItem.title}`);
+                        setPendingLabel(`Data: Rescheduled city "${nextItem.title}"`);
                     }
                     break;
                 }
                 if (JSON.stringify(prevItem.hotels || []) !== JSON.stringify(nextItem.hotels || [])) {
-                    setPendingLabel(`Data: Updated accommodation in ${nextItem.title}`);
+                    setPendingLabel(`Data: Updated accommodation in "${nextItem.title}"`);
                     break;
                 }
                 if ((prevItem.description || '') !== (nextItem.description || '')) {
-                    setPendingLabel(`Data: Updated notes for ${nextItem.title}`);
+                    setPendingLabel(`Data: Updated notes for "${nextItem.title}"`);
                     break;
                 }
             }
@@ -102,15 +102,15 @@ export const useTripUpdateItemsHandler = ({
 
             if (nextItem.type === 'activity') {
                 if (prevItem.title !== nextItem.title || (prevItem.description || '') !== (nextItem.description || '')) {
-                    setPendingLabel(`Data: Updated activity ${nextItem.title}`);
+                    setPendingLabel(`Data: Updated activity "${nextItem.title}"`);
                     break;
                 }
                 if (JSON.stringify(normalizeActivityTypes(prevItem.activityType)) !== JSON.stringify(normalizeActivityTypes(nextItem.activityType))) {
-                    setPendingLabel(`Data: Updated activity types for ${nextItem.title}`);
+                    setPendingLabel(`Data: Updated activity types for "${nextItem.title}"`);
                     break;
                 }
                 if (prevItem.startDateOffset !== nextItem.startDateOffset || prevItem.duration !== nextItem.duration) {
-                    setPendingLabel(`Data: Rescheduled activity ${nextItem.title}`);
+                    setPendingLabel(`Data: Rescheduled activity "${nextItem.title}"`);
                     break;
                 }
             }

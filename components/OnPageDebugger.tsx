@@ -43,6 +43,14 @@ import {
     type SyncRunSnapshot,
 } from '../services/tripSyncManager';
 import {
+    BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY,
+    getBrowserConnectivitySnapshot,
+    setBrowserConnectivityOverride,
+    subscribeBrowserConnectivityStatus,
+    type BrowserConnectivityOverride,
+    type BrowserConnectivitySnapshot,
+} from '../services/networkStatus';
+import {
     PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
     PREFETCH_STATS_DEBUG_EVENT,
     getPrefetchStats,
@@ -171,6 +179,8 @@ interface OnPageDebuggerApi {
     setTracking: (enabled: boolean) => void;
     toggleSimulatedLogin: (next?: boolean) => boolean;
     getSimulatedLogin: () => boolean;
+    setBrowserConnectivity: (mode: BrowserConnectivityOverride | 'clear') => 'online' | 'offline';
+    getBrowserConnectivity: () => 'online' | 'offline';
     setSupabaseConnectivity: (mode: ConnectivityState | 'clear') => ConnectivityState;
     getSupabaseConnectivity: () => ConnectivityState;
     retryTripSync: () => Promise<SyncRunSnapshot>;
@@ -193,6 +203,7 @@ type DebugCommand =
         simulatedLogin?: boolean;
         viewTransition?: boolean;
         offline?: boolean | 'offline' | 'degraded' | 'online';
+        network?: boolean | 'offline' | 'online';
     };
 
 declare global {
@@ -202,6 +213,8 @@ declare global {
         toggleExpired?: (next?: boolean) => boolean;
         toggleSimulatedLogin?: (next?: boolean) => boolean;
         getSimulatedLogin?: () => boolean;
+        toggleBrowserConnectivity?: (mode?: BrowserConnectivityOverride | 'clear') => 'online' | 'offline';
+        getBrowserConnectivityState?: () => 'online' | 'offline';
         toggleSupabaseConnectivity?: (mode?: ConnectivityState | 'clear') => ConnectivityState;
         getSupabaseConnectivityState?: () => ConnectivityState;
         retryTripSyncNow?: () => Promise<SyncRunSnapshot>;
@@ -586,7 +599,7 @@ export const OnPageDebugger: React.FC = () => {
         readStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, false)
     );
     const [trackingEnabled, setTrackingEnabled] = useState(() =>
-        readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, true)
+        readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, false)
     );
     const [autoOpenEnabled, setAutoOpenEnabled] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_AUTO_OPEN_STORAGE_KEY, false)
@@ -602,6 +615,9 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [browserConnectivitySnapshot, setBrowserConnectivitySnapshot] = useState<BrowserConnectivitySnapshot>(() =>
+        getBrowserConnectivitySnapshot()
+    );
     const [connectivitySnapshot, setConnectivitySnapshot] = useState<ConnectivitySnapshot>(() => getConnectivitySnapshot());
     const [offlineQueueSnapshot, setOfflineQueueSnapshot] = useState<OfflineQueueSnapshot>(() => getQueueSnapshot());
     const [syncRunSnapshot, setSyncRunSnapshot] = useState<SyncRunSnapshot>(() => getSyncRunSnapshot());
@@ -664,7 +680,7 @@ export const OnPageDebugger: React.FC = () => {
     }, [prefetchOverlayEnabled]);
 
     useEffect(() => {
-        persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, true);
+        persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, false);
     }, [trackingEnabled]);
 
     useEffect(() => {
@@ -700,6 +716,9 @@ export const OnPageDebugger: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        const unsubscribeBrowserConnectivity = subscribeBrowserConnectivityStatus((next) => {
+            setBrowserConnectivitySnapshot(next);
+        });
         const unsubscribeConnectivity = subscribeConnectivityStatus((next) => {
             setConnectivitySnapshot(next);
         });
@@ -710,6 +729,7 @@ export const OnPageDebugger: React.FC = () => {
             setSyncRunSnapshot(next);
         });
         return () => {
+            unsubscribeBrowserConnectivity();
             unsubscribeConnectivity();
             unsubscribeQueue();
             unsubscribeSync();
@@ -943,6 +963,14 @@ export const OnPageDebugger: React.FC = () => {
         return setSimulatedLogin(resolved);
     }, [setSimulatedLogin]);
 
+    const setBrowserConnectivityMode = useCallback((mode?: BrowserConnectivityOverride | 'clear'): 'online' | 'offline' => {
+        const current = getBrowserConnectivitySnapshot(window.navigator);
+        const resolvedMode = mode
+            ?? (current.override ? 'clear' : 'offline');
+        const nextSnapshot = setBrowserConnectivityOverride(resolvedMode);
+        return nextSnapshot.isOnline ? 'online' : 'offline';
+    }, []);
+
     const setSupabaseConnectivityMode = useCallback((mode?: ConnectivityState | 'clear'): ConnectivityState => {
         if (!mode) {
             const current = getConnectivitySnapshot();
@@ -1065,13 +1093,14 @@ export const OnPageDebugger: React.FC = () => {
         show: () => {
             setIsOpen(true);
             setIsExpanded(true);
-            setTrackingEnabled(true);
         },
         hide: () => setIsOpen(false),
         toggle: () => setIsOpen((prev) => !prev),
         setTracking: (enabled: boolean) => setTrackingEnabled(enabled),
         toggleSimulatedLogin,
         getSimulatedLogin: () => simulatedLoggedInRef.current,
+        setBrowserConnectivity: setBrowserConnectivityMode,
+        getBrowserConnectivity: () => (getBrowserConnectivitySnapshot(window.navigator).isOnline ? 'online' : 'offline'),
         setSupabaseConnectivity: setSupabaseConnectivityMode,
         getSupabaseConnectivity: () => getConnectivitySnapshot().state,
         retryTripSync: retryTripSyncNow,
@@ -1082,14 +1111,13 @@ export const OnPageDebugger: React.FC = () => {
         runA11yAudit: runA11yAuditAndStore,
         runViewTransitionAudit: runViewTransitionAuditAndStore,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setSupabaseConnectivityMode, toggleSimulatedLogin, trackingEnabled]);
+    }), [isOpen, openLighthouse, openOgPlayground, openUmami, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, toggleSimulatedLogin, trackingEnabled]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
             if (typeof command === 'boolean') {
                 setIsOpen(command);
                 if (command) {
-                    setTrackingEnabled(true);
                     setIsExpanded(true);
                 }
                 return api;
@@ -1106,6 +1134,11 @@ export const OnPageDebugger: React.FC = () => {
                 }
                 if (typeof command.simulatedLogin === 'boolean') {
                     toggleSimulatedLogin(command.simulatedLogin);
+                }
+                if (typeof command.network === 'boolean') {
+                    setBrowserConnectivityMode(command.network ? 'offline' : 'clear');
+                } else if (command.network === 'offline' || command.network === 'online') {
+                    setBrowserConnectivityMode(command.network);
                 }
                 if (typeof command.offline === 'boolean') {
                     setSupabaseConnectivityMode(command.offline ? 'offline' : 'clear');
@@ -1128,7 +1161,6 @@ export const OnPageDebugger: React.FC = () => {
 
             setIsOpen(true);
             setIsExpanded(true);
-            setTrackingEnabled(true);
             return api;
         };
 
@@ -1136,6 +1168,8 @@ export const OnPageDebugger: React.FC = () => {
         window.onPageDebugger = api;
         window.toggleSimulatedLogin = (next?: boolean) => toggleSimulatedLogin(next);
         window.getSimulatedLogin = () => simulatedLoggedInRef.current;
+        window.toggleBrowserConnectivity = (mode?: BrowserConnectivityOverride | 'clear') => setBrowserConnectivityMode(mode);
+        window.getBrowserConnectivityState = () => (getBrowserConnectivitySnapshot(window.navigator).isOnline ? 'online' : 'offline');
         window.toggleSupabaseConnectivity = (mode?: ConnectivityState | 'clear') => setSupabaseConnectivityMode(mode);
         window.getSupabaseConnectivityState = () => getConnectivitySnapshot().state;
         window.retryTripSyncNow = () => retryTripSyncNow();
@@ -1144,11 +1178,13 @@ export const OnPageDebugger: React.FC = () => {
             delete window.onPageDebugger;
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
+            delete window.toggleBrowserConnectivity;
+            delete window.getBrowserConnectivityState;
             delete window.toggleSupabaseConnectivity;
             delete window.getSupabaseConnectivityState;
             delete window.retryTripSyncNow;
         };
-    }, [api, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setSupabaseConnectivityMode, showSeoTools, toggleSimulatedLogin]);
+    }, [api, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, showSeoTools, toggleSimulatedLogin]);
 
     useEffect(() => {
         return () => {
@@ -1284,6 +1320,14 @@ export const OnPageDebugger: React.FC = () => {
                             Sim login {simulatedLoggedIn ? 'on' : 'off'}
                         </span>
                         <span className={`rounded-md border px-2 py-1 text-xs ${
+                            browserConnectivitySnapshot.isOnline
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-rose-300 bg-rose-50 text-rose-700'
+                        }`}>
+                            Browser {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
+                            {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
                             connectivitySnapshot.state === 'offline'
                                 ? 'border-rose-300 bg-rose-50 text-rose-700'
                                 : connectivitySnapshot.state === 'degraded'
@@ -1414,6 +1458,45 @@ export const OnPageDebugger: React.FC = () => {
 
                                         <button
                                             type="button"
+                                            onClick={() => setBrowserConnectivityMode('offline')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override === 'offline'
+                                                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Force Browser Offline
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setBrowserConnectivityMode('online')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override === 'online'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Force Browser Online
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setBrowserConnectivityMode('clear')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            {browserConnectivitySnapshot.override ? 'Clear Browser Override' : 'Follow Browser Network'}
+                                        </button>
+
+                                        <button
+                                            type="button"
                                             onClick={() => setSupabaseConnectivityMode('degraded')}
                                             className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
                                                 connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
@@ -1428,14 +1511,10 @@ export const OnPageDebugger: React.FC = () => {
                                         <button
                                             type="button"
                                             onClick={() => setSupabaseConnectivityMode('clear')}
-                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                                connectivitySnapshot.isForced
-                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                            }`}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
                                         >
                                             <Flask size={16} weight="duotone" />
-                                            {connectivitySnapshot.isForced ? 'Clear Supabase Override' : 'Force Supabase Online'}
+                                            Set Supabase Normal
                                         </button>
 
                                         <button
@@ -1475,7 +1554,16 @@ export const OnPageDebugger: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-4">
+                                    <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-6">
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Browser:</strong>{' '}
+                                            {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
+                                            {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
+                                        </div>
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Browser key:</strong>{' '}
+                                            <code>{BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY}</code>
+                                        </div>
                                         <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
                                             <strong className="text-slate-900">Connectivity:</strong>{' '}
                                             {connectivitySnapshot.state}
@@ -1845,14 +1933,6 @@ export const OnPageDebugger: React.FC = () => {
                                 </>
                             )}
 
-                            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                                Console: run <code className="rounded bg-slate-200 px-1 py-0.5">debug()</code>,{' '}
-                                <code className="rounded bg-slate-200 px-1 py-0.5">toggleSupabaseConnectivity('offline')</code>,{' '}
-                                <code className="rounded bg-slate-200 px-1 py-0.5">toggleSupabaseConnectivity('degraded')</code>,{' '}
-                                <code className="rounded bg-slate-200 px-1 py-0.5">toggleSupabaseConnectivity('clear')</code>,{' '}
-                                <code className="rounded bg-slate-200 px-1 py-0.5">retryTripSyncNow()</code>,{' '}
-                                <code className="rounded bg-slate-200 px-1 py-0.5">onPageDebugger.runSeoAudit()</code>.
-                            </div>
                         </div>
                     )}
                 </div>

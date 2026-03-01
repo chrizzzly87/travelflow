@@ -1,15 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { useLocation } from 'react-router-dom';
 import { trackEvent } from '../services/analyticsService';
 import { appendAuthTraceEntry } from '../services/authTraceService';
 import type { UserAccessContext } from '../types';
 import { stripLocalePrefix } from '../config/routes';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn } from '../services/simulatedLoginService';
+import type { UserProfileRecord } from '../services/profileService';
 
 type AuthServiceModule = typeof import('../services/authService');
+type ProfileServiceModule = typeof import('../services/profileService');
 type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
 let authServicePromise: Promise<AuthServiceModule> | null = null;
+let profileServicePromise: Promise<ProfileServiceModule> | null = null;
 
 const loadAuthService = async (): Promise<AuthServiceModule> => {
     if (!authServicePromise) {
@@ -18,16 +22,24 @@ const loadAuthService = async (): Promise<AuthServiceModule> => {
     return authServicePromise;
 };
 
+const loadProfileService = async (): Promise<ProfileServiceModule> => {
+    if (!profileServicePromise) {
+        profileServicePromise = import('../services/profileService');
+    }
+    return profileServicePromise;
+};
+
 const loadSupabaseClient = async () => {
     const { supabase } = await import('../services/supabaseClient');
     return supabase;
 };
 
-const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
+export const isAuthBootstrapCriticalPath = (pathname: string): boolean => {
     const normalizedPath = stripLocalePrefix(pathname || '/');
     if (normalizedPath === '/login') return true;
     if (normalizedPath.startsWith('/auth/')) return true;
     if (normalizedPath.startsWith('/profile')) return true;
+    if (normalizedPath.startsWith('/u/')) return true;
     if (normalizedPath.startsWith('/admin')) return true;
     if (normalizedPath.startsWith('/trip')) return true;
     if (normalizedPath.startsWith('/create-trip')) return true;
@@ -48,27 +60,42 @@ const DEV_ADMIN_BYPASS_USER_ID = 'dev-admin-id';
 export const shouldEnableDevAdminBypass = (
     isDevRuntime = import.meta.env.DEV,
     bypassEnvValue = import.meta.env.VITE_DEV_ADMIN_BYPASS,
-    bypassDisabled = false
-): boolean => isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled;
+    bypassDisabled = false,
+    pathname = '/'
+): boolean => {
+    const normalizedPath = stripLocalePrefix(pathname || '/');
+    const isAdminRoute = normalizedPath.startsWith('/admin');
+    return isDevRuntime && bypassEnvValue === 'true' && !bypassDisabled && isAdminRoute;
+};
 
-export const shouldAutoClearSimulatedLoginOnRealAdminSession = (
+export const shouldAutoClearSimulatedLoginOnRealSession = (
     access: Pick<UserAccessContext, 'role' | 'isAnonymous'> | null,
     sessionUserId: string | null | undefined
 ): boolean => (
     Boolean(sessionUserId)
-    && access?.role === 'admin'
     && access?.isAnonymous !== true
     && sessionUserId !== DEV_ADMIN_BYPASS_USER_ID
+);
+
+export const shouldUseDevAdminBypassSession = (
+    bypassEnabled: boolean,
+    sessionUserId: string | null | undefined
+): boolean => (
+    bypassEnabled
+    && (!sessionUserId || sessionUserId === DEV_ADMIN_BYPASS_USER_ID)
 );
 
 interface AuthContextValue {
     session: Session | null;
     access: UserAccessContext | null;
+    profile: UserProfileRecord | null;
     isLoading: boolean;
+    isProfileLoading: boolean;
     isAuthenticated: boolean;
     isAnonymous: boolean;
     isAdmin: boolean;
     refreshAccess: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
     loginWithPassword: (email: string, password: string) => Promise<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>;
     registerWithPassword: (
         email: string,
@@ -86,12 +113,50 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+let hasWarnedMissingAuthProvider = false;
+
+const buildMissingAuthProviderResult = <T,>(): T => ({
+    data: null,
+    error: new Error('Auth provider unavailable.'),
+} as unknown as T);
+
+const MISSING_AUTH_PROVIDER_FALLBACK: AuthContextValue = {
+    session: null,
+    access: null,
+    profile: null,
+    isLoading: false,
+    isProfileLoading: false,
+    isAuthenticated: false,
+    isAnonymous: false,
+    isAdmin: false,
+    refreshAccess: async () => undefined,
+    refreshProfile: async () => undefined,
+    loginWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithEmailPassword']>>>(),
+    registerWithPassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signUpWithEmailPassword']>>>(),
+    loginWithOAuth: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['signInWithOAuth']>>>(),
+    sendPasswordResetEmail: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['requestPasswordResetEmail']>>>(),
+    updatePassword: async () => buildMissingAuthProviderResult<Awaited<ReturnType<AuthServiceModule['updateCurrentUserPassword']>>>(),
+    logout: async () => undefined,
+};
+
+export const resolveAuthContextValue = (context: AuthContextValue | null): AuthContextValue => {
+    if (context) return context;
+    if (!hasWarnedMissingAuthProvider) {
+        hasWarnedMissingAuthProvider = true;
+        console.error('useAuthContext was used without an AuthProvider. Falling back to anonymous-safe auth context.');
+    }
+    return MISSING_AUTH_PROVIDER_FALLBACK;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const location = useLocation();
     const [session, setSession] = useState<Session | null>(null);
     const [access, setAccess] = useState<UserAccessContext | null>(null);
+    const [profile, setProfile] = useState<UserProfileRecord | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isProfileLoading, setIsProfileLoading] = useState(false);
     const [isDevAdminBypassDisabled, setIsDevAdminBypassDisabled] = useState<boolean>(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return false;
+        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return false;
         if (typeof window === 'undefined') return false;
         try {
             return window.sessionStorage.getItem(DEV_ADMIN_BYPASS_DISABLED_STORAGE_KEY) === '1';
@@ -101,9 +166,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const hasBootstrappedRef = useRef(false);
     const isBootstrappingRef = useRef(false);
+    const profileLoadRequestIdRef = useRef(0);
+
+    const resetProfileState = useCallback(() => {
+        profileLoadRequestIdRef.current += 1;
+        setProfile(null);
+        setIsProfileLoading(false);
+    }, []);
 
     useEffect(() => {
-        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) return;
+        if (!shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, '/admin')) return;
         if (typeof window === 'undefined') return;
         try {
             if (isDevAdminBypassDisabled) {
@@ -118,7 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const sessionUserId = session?.user?.id;
-        if (!shouldAutoClearSimulatedLoginOnRealAdminSession(access, sessionUserId)) return;
+        if (!shouldAutoClearSimulatedLoginOnRealSession(access, sessionUserId)) return;
         if (!isSimulatedLoggedIn()) return;
         setSimulatedLoggedIn(false);
     }, [access, session?.user?.id]);
@@ -147,11 +219,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }, []);
 
+    const refreshProfile = useCallback(async () => {
+        const requestId = profileLoadRequestIdRef.current + 1;
+        profileLoadRequestIdRef.current = requestId;
+        setIsProfileLoading(true);
+
+        try {
+            const profileService = await loadProfileService();
+            const nextProfile = await profileService.getCurrentUserProfile();
+            if (profileLoadRequestIdRef.current !== requestId) return;
+            setProfile(nextProfile);
+        } catch {
+            if (profileLoadRequestIdRef.current !== requestId) return;
+            setProfile(null);
+        } finally {
+            if (profileLoadRequestIdRef.current === requestId) {
+                setIsProfileLoading(false);
+            }
+        }
+    }, []);
+
     const refreshAccess = useCallback(async () => {
         const authService = await loadAuthService();
         const nextAccess = await authService.getCurrentAccessContext();
         setAccess(nextAccess);
-    }, []);
+        if (nextAccess?.userId && !nextAccess.isAnonymous) {
+            await refreshProfile();
+            return;
+        }
+        resetProfileState();
+    }, [refreshProfile, resetProfileState]);
 
     useEffect(() => {
         let cancelled = false;
@@ -160,6 +257,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isAnonymousSession = (value: Session | null): boolean => {
             const user = value?.user as (Session['user'] & { is_anonymous?: boolean }) | undefined;
             if (!user) return false;
+            const email = typeof user.email === 'string' ? user.email.trim() : '';
+            const phone = typeof user.phone === 'string' ? user.phone.trim() : '';
+            if (email || phone) return false;
             if (user.is_anonymous === true) return true;
             const metadata = user.app_metadata as Record<string, unknown> | undefined;
             const provider = typeof metadata?.provider === 'string' ? metadata.provider.trim().toLowerCase() : '';
@@ -209,13 +309,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { accessToken, refreshToken };
         };
 
-        const clearDeferredBootstrapTriggers = (): void => {
-            if (typeof window === 'undefined') return;
-            window.removeEventListener('pointerdown', triggerBootstrap, true);
-            window.removeEventListener('keydown', triggerBootstrap, true);
-            window.removeEventListener('touchstart', triggerBootstrap, true);
-        };
-
         const bootstrap = async () => {
             try {
                 const [authService, supabase] = await Promise.all([
@@ -228,6 +321,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     if (!cancelled) {
                         setSession(null);
                         setAccess(null);
+                        resetProfileState();
                         setIsLoading(false);
                     }
                     hasBootstrappedRef.current = true;
@@ -285,6 +379,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await refreshAccess();
                 } else {
                     setAccess(null);
+                    resetProfileState();
                 }
                 if (!cancelled) setIsLoading(false);
                 if (cancelled) return;
@@ -307,6 +402,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         return;
                     }
                     setAccess(null);
+                    resetProfileState();
                 });
 
                 hasBootstrappedRef.current = true;
@@ -324,7 +420,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (cancelled) return;
             if (hasBootstrappedRef.current || isBootstrappingRef.current) return;
             isBootstrappingRef.current = true;
-            clearDeferredBootstrapTriggers();
             setIsLoading(true);
             void bootstrap();
         };
@@ -343,18 +438,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         const shouldBootstrapImmediately = hasAuthCallbackPayload() || isAuthBootstrapCriticalPath(window.location.pathname);
-        if (shouldBootstrapImmediately) {
-            triggerBootstrap();
-        } else {
-            setIsLoading(false);
-            window.addEventListener('pointerdown', triggerBootstrap, true);
-            window.addEventListener('keydown', triggerBootstrap, true);
-            window.addEventListener('touchstart', triggerBootstrap, true);
+        if (!shouldBootstrapImmediately) {
+            appendAuthTraceEntry({
+                ts: new Date().toISOString(),
+                flowId: 'auth-bootstrap',
+                attemptId: 'immediate-bootstrap',
+                step: 'bootstrap_non_critical_path',
+                result: 'success',
+                provider: 'supabase',
+                metadata: {
+                    pathname: window.location.pathname,
+                    reason: 'always_initialize_on_page_load',
+                },
+            });
         }
+        triggerBootstrap();
 
         return () => {
             cancelled = true;
-            clearDeferredBootstrapTriggers();
             // React Strict Mode re-runs effects in dev. If a bootstrap run was
             // cancelled during that cycle, allow the next effect pass to start it.
             if (!hasBootstrappedRef.current) {
@@ -362,7 +463,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             unsubscribe();
         };
-    }, [logAuthStateEvent, refreshAccess]);
+    }, [logAuthStateEvent, refreshAccess, resetProfileState]);
 
     const loginWithPassword = useCallback(async (email: string, password: string) => {
         const authService = await loadAuthService();
@@ -409,17 +510,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.signOut();
         } finally {
-            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false)) {
+            if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, false, location.pathname)) {
                 setIsDevAdminBypassDisabled(true);
             }
             setAccess(null);
             setSession(null);
+            resetProfileState();
         }
-    }, []);
+    }, [location.pathname, resetProfileState]);
 
     const value = useMemo<AuthContextValue>(() => {
+        const bypassEnabled = shouldEnableDevAdminBypass(
+            import.meta.env.DEV,
+            import.meta.env.VITE_DEV_ADMIN_BYPASS,
+            isDevAdminBypassDisabled,
+            location.pathname
+        );
+        const useDevAdminBypass = shouldUseDevAdminBypassSession(bypassEnabled, session?.user?.id);
         // Development bypass for local admin testing.
-        if (shouldEnableDevAdminBypass(import.meta.env.DEV, import.meta.env.VITE_DEV_ADMIN_BYPASS, isDevAdminBypassDisabled)) {
+        if (useDevAdminBypass) {
             return {
                 session: {
                     access_token: 'dev-bypass-token',
@@ -443,11 +552,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     tierKey: 'free',
                     entitlements: {},
                 } as any,
+                profile: null,
                 isLoading: false,
+                isProfileLoading: false,
                 isAuthenticated: true,
                 isAnonymous: false,
                 isAdmin: true,
                 refreshAccess,
+                refreshProfile,
                 loginWithPassword,
                 registerWithPassword,
                 loginWithOAuth,
@@ -473,11 +585,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
             session,
             access,
+            profile,
             isLoading,
+            isProfileLoading,
             isAuthenticated,
             isAnonymous,
             isAdmin,
             refreshAccess,
+            refreshProfile,
             loginWithPassword,
             registerWithPassword,
             loginWithOAuth,
@@ -487,12 +602,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
     }, [
         access,
+        profile,
         isDevAdminBypassDisabled,
         isLoading,
+        isProfileLoading,
+        location.pathname,
         loginWithOAuth,
         loginWithPassword,
         logout,
         refreshAccess,
+        refreshProfile,
         registerWithPassword,
         sendPasswordResetEmail,
         session,
@@ -507,9 +626,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuthContext = (): AuthContextValue => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuthContext must be used within AuthProvider.');
-    }
-    return context;
+    return resolveAuthContextValue(useContext(AuthContext));
 };

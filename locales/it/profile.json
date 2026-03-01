@@ -1,0 +1,325 @@
+{
+  "hero": {
+    "loading": "Caricamento profilo...",
+    "inspirationIntro": "Ti piace? Scopri le nostre",
+    "inspirationCta": "Ispirazioni per {country}",
+    "greetingFacts": {
+      "haw-aloha": "Utilizzato alle Hawaii per dire ciao, arrivederci e calore nella vita di tutti i giorni.",
+      "kor-annyeong": "Un saluto coreano educato utilizzato nella maggior parte delle situazioni quotidiane.",
+      "jpn-konnichiwa": "Un saluto giapponese standard diurno dal tono amichevole.",
+      "tha-sawasdee": "Saluto tailandese usato durante il giorno, spesso abbinato a un wai; gli oratori aggiungono finali educati in base al proprio genere (khrap per gli uomini, kha per le donne).",
+      "hin-namaste": "Un saluto rispettoso in India spesso utilizzato in contesti formali e informali.",
+      "spa-hola": "Un semplice saluto spagnolo utilizzato in quasi tutti i contesti sociali.",
+      "deu-guten-tag": "Un saluto tedesco formale utilizzato nelle conversazioni diurne.",
+      "fra-bonjour": "Un comune saluto diurno francese utilizzato sia in contesti informali che formali.",
+      "ita-ciao": "Saluto italiano usato casualmente per ciao e arrivederci.",
+      "ara-marhaba": "Un caloroso saluto arabo ampiamente compreso in tutte le regioni.",
+      "deu-moin": "Classico nel nord della Germania a qualsiasi ora; la gente del posto scherza dicendo che \"Moin Moin\" è detto principalmente dai turisti.",
+      "gsw-gruezi": "Un saluto educato svizzero tedesco spesso sentito nei negozi, nei treni e nelle città di montagna.",
+      "eus-kaixo": "Saluto basco usato in Euskadi; sentirlo è un rapido segno che la regione mantiene viva la sua lingua.",
+      "gle-dia-dhuit": "Irlandese significa \"ciao\", letteralmente \"Dio sia con te\", ed è ancora comune nelle aree del Gaeltacht.",
+      "cym-shwmae": "Amichevole saluto gallese che appare spesso sui cartelli bilingue e nelle introduzioni radiofoniche locali.",
+      "isl-godan-daginn": "“buona giornata” islandese; la gente del posto spesso lo abbrevia in discorsi informali, soprattutto nei caffè di Reykjavík.",
+      "ces-ahoj": "Ciao ceco popolare tra amici; è iniziato come il richiamo dei marinai ed è rimasto nel discorso quotidiano.",
+      "swe-hej": "Saluto svedese predefinito sia per amici che per colleghi, spesso raddoppiato in un allegro \"hej hej\".",
+      "nld-hoi": "Saluto olandese informale comune nei Paesi Bassi e nelle Fiandre, soprattutto tra i parlanti più giovani.",
+      "mri-kia-ora": "Saluto Maori in Nuova Zelanda usato per ciao, ringraziamento ed energia positiva in generale.",
+      "khm-suostei": "Saluto Khmer sentito in tutta la Cambogia; il tono rispettoso conta tanto quanto le parole.",
+      "lao-sabaidee": "Il saluto laotiano è legato anche al benessere, riflettendo uno stile sociale calmo e amichevole.",
+      "swa-jambo": "Saluto swahili ampiamente riconosciuto nell'Africa orientale; molti locali usano anche “Hujambo?” per \"Come stai?\"",
+      "yue-nei-hou": "Saluto cantonese comune a Hong Kong; i toni contano, quindi la pronuncia cambia significato velocemente.",
+      "zho-ni-hao": "Saluto in mandarino utilizzato in tutta la Cina; nelle chat informali le persone possono passare direttamente alle domande della vita quotidiana.",
+      "fallback": "Un saluto universale per dare il via alla tua prossima idea di viaggio."
+    }
+  },
+  "tabs": {
+    "recent": "Recenti",
+    "favorites": "Preferiti",
+    "all": "Tutti i viaggi",
+    "liked": "Viaggi con like",
+    "comingSoon": "Presto"
+  },
+  "filters": {
+    "showOnlyPublic": "Mostra solo pubblici"
+  },
+  "recentSort": {
+    "created": "Creati",
+    "updated": "Aggiornati"
+  },
+  "sections": {
+    "highlights": "In evidenza fissati",
+    "highlightsCount": "{count}/3 fissati"
+  },
+  "cards": {
+    "pinnedTag": "Appuntato",
+    "mapUnavailable": "Anteprima della mappa non disponibile",
+    "mapLoading": "Caricamento anteprima...",
+    "creatorPrefix": "Di",
+    "actions": {
+      "open": "Aprire",
+      "favorite": "Preferito",
+      "unfavorite": "Sfavorito",
+      "pin": "Spillo",
+      "unpin": "Sblocca",
+      "makePublic": "Pubblico",
+      "makePrivate": "Privato",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
+    },
+    "source": {
+      "createdByYou": "Creato da te",
+      "copiedFromShared": "Copiato dal viaggio condiviso",
+      "copiedFromYourTrip": "Copiato dal tuo viaggio",
+      "startedFromExample": "Iniziato dall'esempio",
+      "copiedFromTraveler": "Copiato dal viaggio condiviso",
+      "copiedFromExample": "Iniziato dall'esempio",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
+    },
+    "expiredTag": "Scaduto",
+    "expiredFallbackTitle": "Bozza di viaggio scaduta",
+    "hiddenTag": "Hidden"
+  },
+  "actions": {
+    "title": "Azioni rapide",
+    "settings": "Impostazioni del profilo",
+    "planner": "Vai al planner",
+    "stamps": "Timbri passaporto",
+    "adminWorkspace": "Apri area admin"
+  },
+  "summary": {
+    "editProfile": "Modifica profilo",
+    "viewPublicProfile": "Vedi profilo pubblico",
+    "shareProfile": "Condividi URL profilo",
+    "memberSinceLabel": "Membro dal",
+    "memberSinceUnknown": "Non disponibile",
+    "usernamePrefix": "@",
+    "roleLabel": "Ruolo",
+    "bioLabel": "Bio",
+    "bioFallback": "Aggiungi una breve biografia in modo che gli altri possano capire il tuo stile di viaggio.",
+    "locationLabel": "Posizione",
+    "locationUnknown": "Probabilmente pianeta Terra",
+    "distanceLabel": "Distanza totale",
+    "distanceUnknown": "Nessuna distanza tracciata",
+    "countriesLabel": "Paesi visitati",
+    "countriesEmpty": "Nessun paese tracciato",
+    "stampsTitle": "Timbri passaporto",
+    "stampsDescription": "I tuoi ultimi traguardi vengono raccolti come timbri del passaporto.",
+    "stampsOpen": "Apri raccolta timbri",
+    "stampsEmpty": "Crea il tuo primo viaggio per sbloccare il tuo primo timbro.",
+    "follow": "Segui",
+    "message": "Messaggio",
+    "shareCopied": "URL del profilo copiato negli appunti.",
+    "shareOpened": "Profilo pubblico aperto in una nuova scheda.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
+  },
+  "stats": {
+    "totalTrips": "Viaggi totali",
+    "likesSaved": "Like salvati",
+    "followers": "Follower",
+    "likesEarned": "Like ricevuti"
+  },
+  "publicProfile": {
+    "loading": "Caricamento profilo pubblico...",
+    "title": "Profilo pubblico",
+    "privateTitle": "Questo profilo è privato",
+    "privateDescription": "Questo viaggiatore ha nascosto per ora il profilo pubblico.",
+    "notFoundTitle": "Profilo non trovato",
+    "notFoundDescription": "Non abbiamo trovato un profilo per questo nome utente.",
+    "ctaExploreInspirations": "Esplora ispirazioni",
+    "ctaBackProfile": "Vai al tuo profilo",
+    "tripsTitle": "Viaggi pubblici",
+    "emptyTrips": "Nessun viaggio pubblico per ora.",
+    "followHint": "Le azioni Segui e Messaggio arriveranno presto.",
+    "ctaRegisterFree": "Registrati gratis",
+    "sourceCreatedByTraveler": "Creato dal viaggiatore",
+    "notFoundFunTitle": "Sembra che questo utente abbia già trovato il prossimo viaggio.",
+    "notFoundFunSubtitle": "Non aspettare oltre",
+    "ctaPlanTrip": "Pianifica il tuo viaggio",
+    "ctaGetInspired": "Trova ispirazione",
+    "visibilityPrivate": "Profilo privato",
+    "visibilityPublic": "Profilo pubblico",
+    "notFoundInvalidPassportTitle": "Questo passaporto non è valido"
+  },
+  "settings": {
+    "title": "Impostazioni del profilo",
+    "description": "Aggiorna i dettagli del tuo profilo, l'URL pubblico e le impostazioni predefinite di visibilità.",
+    "onboardingTitle": "Completa il tuo profilo",
+    "onboardingDescription": "Prima di utilizzare TravelFlow, aggiungi i dettagli principali del tuo profilo in modo che la personalizzazione funzioni in modo affidabile.",
+    "fields": {
+      "firstName": "Nome di battesimo *",
+      "lastName": "Cognome *",
+      "username": "Nome utente *",
+      "bio": "Bio",
+      "gender": "Genere",
+      "unspecified": "Non specificato",
+      "country": "Paese/regione *",
+      "city": "Città *",
+      "preferredLanguage": "Lingua preferita *"
+    },
+    "usernameHelp": "Utilizza da 3 a 30 lettere, numeri, trattini bassi o trattini. Nessuno spazio.",
+    "usernameCooldownHint": "Puoi modificare nuovamente il tuo nome utente su {date}.",
+    "bioHelp": "Condividi una breve introduzione che i viaggiatori potranno vedere sul tuo profilo pubblico.",
+    "publicProfileToggleTitle": "Abilita profilo pubblico",
+    "publicProfileToggleDescription": "Consenti ad altri di scoprire il tuo profilo pubblico e i viaggi visibili.",
+    "defaultVisibilityToggleTitle": "Visibilità di viaggio predefinita",
+    "defaultVisibilityToggleDescription": "Scegli se i nuovi viaggi sono pubblici sul tuo profilo per impostazione predefinita.",
+    "publicUrlLabel": "URL pubblico",
+    "publicUrlEmpty": "Imposta un nome utente per generare l'URL del tuo profilo pubblico.",
+    "viewPublicProfile": "Apri profilo pubblico",
+    "requiredHint": "Completa tutti i campi obbligatori per continuare.",
+    "actions": {
+      "save": "Salva le impostazioni del profilo",
+      "saveAndContinue": "Salva e continua"
+    },
+    "messages": {
+      "saved": "Impostazioni del profilo salvate correttamente.",
+      "onboardingSaved": "Profilo completato con successo.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
+    },
+    "errors": {
+      "required": "Si prega di compilare tutti i campi obbligatori.",
+      "usernameUnavailable": "Scegli un nome utente disponibile prima di salvare.",
+      "saveFailed": "Impossibile aggiornare il tuo profilo."
+    },
+    "usernameStatus": {
+      "idle": "Imposta il tuo nome utente per richiedere l'URL di un profilo pubblico.",
+      "checking": "Verifica disponibilità nome utente...",
+      "available": "Ottimo, questo nome utente è disponibile.",
+      "taken": "Questo nome utente è già utilizzato.",
+      "reserved": "Questo nome utente è riservato.",
+      "invalid": "Utilizza da 3 a 30 lettere, numeri, trattini bassi o trattini.",
+      "unchanged": "Questo è il tuo nome utente attuale.",
+      "cooldown": "Le modifiche al nome utente sono attualmente in fase di recupero.",
+      "cooldownDate": "Le modifiche al nome utente saranno in attesa fino al {date}.",
+      "failed": "Impossibile verificare la disponibilità del nome utente in questo momento."
+    },
+    "breadcrumb": {
+      "profile": "Profilo",
+      "settings": "Impostazioni"
+    },
+    "usernameEdit": "Modificare",
+    "usernameLockedHint": "Il tuo nome utente è bloccato. Utilizza Modifica per richiedere una modifica.",
+    "usernameRecoveryHint": {
+      "taken": "Prova ad aggiungere un numero o un carattere di sottolineatura.",
+      "reserved": "Scegli un altro handle che non sia riservato.",
+      "invalid": "Utilizza da 3 a 30 lettere, numeri, trattini bassi o trattini senza spazi.",
+      "cooldown": "Le modifiche al nome utente sono bloccate durante la finestra di raffreddamento."
+    },
+    "countryRegionSearchPlaceholder": "Cerca paese o regione",
+    "countryRegionClear": "Cancella paese/regione",
+    "countryRegionEmpty": "Nessun paese o regione corrispondente trovato.",
+    "countryRegionToggle": "Attiva/disattiva le opzioni del paese/regione",
+    "usernameChange": "Cambia nome utente",
+    "usernameSuggestionsTitle": "Prova una di queste opzioni disponibili:"
+  },
+  "stamps": {
+    "eyebrow": "Ritiro del passaporto",
+    "title": "Il tuo passaporto di viaggio",
+    "description": "{name}, questi timbri tengono traccia dei tuoi traguardi TravelFlow e della loro rarità nella comunità.",
+    "passportTitle": "Copertina del passaporto",
+    "passportDescription": "Ultimi tre francobolli sbloccati. Trascina per posizionare il layout dell'adesivo.",
+    "unlockedCount": "{count} di {total} francobolli sbloccati",
+    "lastUpdated": "{count} timbri recenti mostrati",
+    "passportEmpty": "Ancora nessun francobollo. Crea o salva viaggi per sbloccare il tuo primo obiettivo.",
+    "detailTitle": "Dettagli del timbro",
+    "backToProfile": "Torna al profilo",
+    "detailRarity": "Rarità",
+    "detailProgress": "Progressi",
+    "detailUnlocked": "Sbloccato",
+    "cardUnlockedOn": "Sbloccato",
+    "detailUnlockedNow": "Appena sbloccato",
+    "detailLocked": "Bloccato",
+    "selectHint": "Seleziona un francobollo per visualizzare i dettagli e la rarità.",
+    "sortLabel": "Ordinare",
+    "groupLabel": "Gruppo",
+    "empty": "Nessun francobollo corrisponde ancora a questo filtro.",
+    "sort": {
+      "date": "Ultimo sbloccato",
+      "rarity": "Prima i più rari",
+      "group": "Gruppo"
+    },
+    "group": {
+      "all": "Tutti i gruppi",
+      "trips": "Viaggi",
+      "curation": "Cura",
+      "exploration": "Esplorazione",
+      "social": "Sociale",
+      "momentum": "Slancio"
+    },
+    "selectionTitle": "Mostrato sulla copertina del passaporto",
+    "selectionCount": "{count}/{total} selezionato",
+    "selectionEmpty": "Sblocca i timbri per scegliere cosa appare sulla copertina del tuo passaporto.",
+    "selectionLimitNotice": "Scegli fino a {count} francobolli per la tua copertina.",
+    "selectionSaveFailed": "Impossibile salvare la selezione della copertina del francobollo.",
+    "selectionSaving": "Salvataggio della selezione della copertina del passaporto...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Pagina precedente",
+    "nextPage": "Pagina successiva",
+    "emptySlot": "Slot per timbri",
+    "backToPublicProfile": "Torna al profilo pubblico"
+  },
+  "likedPlaceholder": {
+    "title": "I viaggi con like arrivano presto",
+    "description": "Presto potrai salvare e ritrovare qui i viaggi di altri viaggiatori."
+  },
+  "empty": {
+    "title": "Nessun viaggio in questa sezione",
+    "description": "Crea un viaggio o aggiungine uno ai preferiti per popolare questa vista."
+  },
+  "messages": {
+    "pinEvicted": "Il viaggio fissato più vecchio è stato rimosso per mantenere i tuoi highlights a tre."
+  },
+  "errors": {
+    "profileLoad": "Impossibile caricare il profilo."
+  },
+  "fallback": {
+    "displayName": "Viaggiatore",
+    "email": "Nessuna e-mail disponibile"
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Il tuo viaggio \"{title}\" è stato archiviato con successo."
+  }
+}

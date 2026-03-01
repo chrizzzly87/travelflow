@@ -1,0 +1,325 @@
+{
+  "hero": {
+    "loading": "프로필을 불러오는 중...",
+    "inspirationIntro": "마음에 드시나요? 우리의",
+    "inspirationCta": "{country} 영감 보기",
+    "greetingFacts": {
+      "haw-aloha": "하와이에서는 일상생활에서 안녕, 안녕, 따뜻함을 의미하는 데 사용됩니다.",
+      "kor-annyeong": "대부분의 일상 상황에서 사용되는 정중한 한국어 인사말입니다.",
+      "jpn-konnichiwa": "친근한 말투로 하는 낮의 표준적인 일본어 인사말입니다.",
+      "tha-sawasdee": "하루 종일 사용되는 태국 인사말로, 종종 와이(wai)와 짝을 이룹니다. 화자는 자신의 성별에 따라 정중한 어미를 추가합니다(남성의 경우 khrap, 여성의 경우 kha).",
+      "hin-namaste": "인도의 공손한 인사말은 공식 및 비공식 상황에서 자주 사용됩니다.",
+      "spa-hola": "거의 모든 사회적 맥락에서 사용되는 간단한 스페인어 인사말입니다.",
+      "deu-guten-tag": "낮 시간 대화에 사용되는 공식적인 독일어 인사말입니다.",
+      "fra-bonjour": "일상적인 상황과 공식적인 상황 모두에서 사용되는 일반적인 프랑스어 주간 인사말입니다.",
+      "ita-ciao": "안녕하세요, 작별 인사를 위해 일상적으로 사용되는 이탈리아어 인사말입니다.",
+      "ara-marhaba": "따뜻한 아랍어 인사말은 지역 전반에 걸쳐 널리 이해됩니다.",
+      "deu-moin": "언제든지 북부 독일의 클래식; 현지인들은 '모인모인'을 관광객들이 주로 쓴다고 농담한다.",
+      "gsw-gruezi": "상점, 기차, 산간 마을에서 자주 들을 수 있는 정중한 스위스 독일식 안녕하세요.",
+      "eus-kaixo": "Euskadi에서 사용되는 바스크어 인사말; 그것을 듣는 것은 그 지역이 그 언어를 살아있게 한다는 빠른 신호입니다.",
+      "gle-dia-dhuit": "\"안녕하세요\"를 뜻하는 아일랜드어 문자 그대로 \"신이 함께 하시길\"을 의미하며 여전히 Gaeltacht 지역에서 흔히 볼 수 있습니다.",
+      "cym-shwmae": "이중 언어 표지판과 지역 라디오 소개에 자주 등장하는 친근한 웨일스어 안녕하세요.",
+      "isl-godan-daginn": "아이슬란드어 “좋은 날”; 현지인들은 특히 레이캬비크 카페에서 일상적인 대화에서 이 말을 단축하는 경우가 많습니다.",
+      "ces-ahoj": "친구들 사이에서 인기 있는 체코어 안녕하세요; 그것은 선원들의 부름으로 시작되어 매일의 연설에 갇혔습니다.",
+      "swe-hej": "친구와 동료 모두를 위한 기본 스웨덴어 안녕하세요. 종종 쾌활한 \"hej hej\"로 두 배로 늘어납니다.",
+      "nld-hoi": "네덜란드와 플랑드르에서는 특히 젊은 사용자들 사이에서 흔히 사용되는 캐주얼한 네덜란드 인사말입니다.",
+      "mri-kia-ora": "뉴질랜드의 마오리 인사말은 안녕하세요, 감사, 일반적인 긍정적인 에너지를 의미합니다.",
+      "khm-suostei": "크메르 인사는 캄보디아 전역에서 들립니다. 존중하는 어조는 말만큼 중요합니다.",
+      "lao-sabaidee": "라오스 인사는 웰빙과도 관련이 있으며 차분하고 친근한 사회 스타일을 반영합니다.",
+      "swa-jambo": "동아프리카에서 널리 알려진 스와힐리어 인사말입니다. 많은 현지인들도 \"Hujambo?\"를 사용합니다. “잘 지내세요?”",
+      "yue-nei-hou": "홍콩에서 흔히 볼 수 있는 광둥식 인사말; 성조가 중요하므로 발음의 의미가 빠르게 변합니다.",
+      "zho-ni-hao": "중국 전역에서 사용되는 중국어 인사말; 일상적인 채팅에서 사람들은 곧바로 일상생활 질문으로 넘어갈 수 있습니다.",
+      "fallback": "다음 여행 아이디어를 시작하는 보편적인 인사말입니다."
+    }
+  },
+  "tabs": {
+    "recent": "최근",
+    "favorites": "즐겨찾기",
+    "all": "모든 여행",
+    "liked": "좋아요한 여행",
+    "comingSoon": "곧 제공"
+  },
+  "filters": {
+    "showOnlyPublic": "공개만 보기"
+  },
+  "recentSort": {
+    "created": "생성순",
+    "updated": "업데이트순"
+  },
+  "sections": {
+    "highlights": "고정 하이라이트",
+    "highlightsCount": "{count}/3 고정됨"
+  },
+  "cards": {
+    "pinnedTag": "고정됨",
+    "mapUnavailable": "지도 미리보기를 사용할 수 없습니다.",
+    "mapLoading": "미리보기 로드 중...",
+    "creatorPrefix": "에 의해",
+    "actions": {
+      "open": "열려 있는",
+      "favorite": "가장 좋아하는",
+      "unfavorite": "즐겨찾기 안함",
+      "pin": "핀",
+      "unpin": "고정 해제",
+      "makePublic": "공공의",
+      "makePrivate": "사적인",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
+    },
+    "source": {
+      "createdByYou": "당신이 만든",
+      "copiedFromShared": "공유 여행에서 복사됨",
+      "copiedFromYourTrip": "여행에서 복사됨",
+      "startedFromExample": "예제에서 시작됨",
+      "copiedFromTraveler": "공유 여행에서 복사됨",
+      "copiedFromExample": "예제에서 시작됨",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
+    },
+    "expiredTag": "만료됨",
+    "expiredFallbackTitle": "만료된 여행 초안",
+    "hiddenTag": "Hidden"
+  },
+  "actions": {
+    "title": "빠른 작업",
+    "settings": "프로필 설정",
+    "planner": "플래너로 이동",
+    "stamps": "여권 스탬프",
+    "adminWorkspace": "관리자 워크스페이스 열기"
+  },
+  "summary": {
+    "editProfile": "프로필 수정",
+    "viewPublicProfile": "공개 프로필 보기",
+    "shareProfile": "프로필 URL 공유",
+    "memberSinceLabel": "가입일",
+    "memberSinceUnknown": "사용할 수 없음",
+    "usernamePrefix": "@",
+    "roleLabel": "역할",
+    "bioLabel": "바이오",
+    "bioFallback": "다른 사람들이 귀하의 여행 스타일을 이해할 수 있도록 짧은 소개를 추가하세요.",
+    "locationLabel": "위치",
+    "locationUnknown": "아마도 지구 어딘가",
+    "distanceLabel": "총 거리",
+    "distanceUnknown": "아직 기록된 이동 거리가 없습니다",
+    "countriesLabel": "방문한 국가",
+    "countriesEmpty": "아직 기록된 국가가 없습니다",
+    "stampsTitle": "여권 스탬프",
+    "stampsDescription": "최근 업적이 여행 여권 스탬프로 수집됩니다.",
+    "stampsOpen": "스탬프 컬렉션 열기",
+    "stampsEmpty": "첫 번째 여행을 만들어 첫 번째 스탬프를 잠금 해제하세요.",
+    "follow": "팔로우",
+    "message": "메시지",
+    "shareCopied": "프로필 URL이 클립보드에 복사되었습니다.",
+    "shareOpened": "공개 프로필이 새 탭에서 열렸습니다.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
+  },
+  "stats": {
+    "totalTrips": "총 여행 수",
+    "likesSaved": "저장한 좋아요",
+    "followers": "팔로워",
+    "likesEarned": "받은 좋아요"
+  },
+  "publicProfile": {
+    "loading": "공개 프로필을 불러오는 중...",
+    "title": "공개 프로필",
+    "privateTitle": "이 프로필은 비공개입니다",
+    "privateDescription": "이 여행자는 현재 공개 프로필을 숨겨두었습니다.",
+    "notFoundTitle": "프로필을 찾을 수 없습니다",
+    "notFoundDescription": "이 핸들에 해당하는 프로필을 찾지 못했습니다.",
+    "ctaExploreInspirations": "영감 둘러보기",
+    "ctaBackProfile": "내 프로필로 이동",
+    "tripsTitle": "공개 여행",
+    "emptyTrips": "아직 공개된 여행이 없습니다.",
+    "followHint": "팔로우 및 메시지 기능은 곧 제공됩니다.",
+    "ctaRegisterFree": "무료로 가입하기",
+    "sourceCreatedByTraveler": "여행자가 만든 여행",
+    "notFoundFunTitle": "이 사용자는 이미 다음 여행을 찾은 것 같아요.",
+    "notFoundFunSubtitle": "더 이상 기다리지 마세요",
+    "ctaPlanTrip": "여행 계획하기",
+    "ctaGetInspired": "영감 받기",
+    "visibilityPrivate": "비공개 프로필",
+    "visibilityPublic": "공개 프로필",
+    "notFoundInvalidPassportTitle": "이 여권은 유효하지 않습니다"
+  },
+  "settings": {
+    "title": "프로필 설정",
+    "description": "프로필 세부정보, 공개 URL, 공개 여부 기본값을 업데이트하세요.",
+    "onboardingTitle": "프로필을 작성하세요",
+    "onboardingDescription": "TravelFlow를 사용하기 전에 핵심 프로필 세부정보를 추가하여 개인화가 안정적으로 작동하도록 하세요.",
+    "fields": {
+      "firstName": "이름 *",
+      "lastName": "성 *",
+      "username": "사용자 이름 *",
+      "bio": "바이오",
+      "gender": "성별",
+      "unspecified": "지정되지 않음",
+      "country": "국가/지역 *",
+      "city": "도시 *",
+      "preferredLanguage": "선호하는 언어 *"
+    },
+    "usernameHelp": "3~30자의 문자, 숫자, 밑줄, 하이픈을 사용하세요. 공백이 없습니다.",
+    "usernameCooldownHint": "{date}에 사용자 이름을 다시 변경할 수 있습니다.",
+    "bioHelp": "여행자가 공개 프로필에서 볼 수 있는 짧은 소개를 공유하세요.",
+    "publicProfileToggleTitle": "공개 프로필 활성화",
+    "publicProfileToggleDescription": "다른 사람들이 귀하의 공개 프로필과 눈에 보이는 여행을 발견할 수 있도록 허용하세요.",
+    "defaultVisibilityToggleTitle": "기본 여행 공개",
+    "defaultVisibilityToggleDescription": "기본적으로 새 여행을 프로필에 공개할지 여부를 선택하세요.",
+    "publicUrlLabel": "공개 URL",
+    "publicUrlEmpty": "공개 프로필 URL을 생성하려면 사용자 이름을 설정하세요.",
+    "viewPublicProfile": "공개 프로필 열기",
+    "requiredHint": "계속하려면 모든 필수 필드를 완료하세요.",
+    "actions": {
+      "save": "프로필 설정 저장",
+      "saveAndContinue": "저장하고 계속하세요"
+    },
+    "messages": {
+      "saved": "프로필 설정이 성공적으로 저장되었습니다.",
+      "onboardingSaved": "프로필이 성공적으로 완료되었습니다.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
+    },
+    "errors": {
+      "required": "필수 입력란을 모두 작성해 주세요.",
+      "usernameUnavailable": "저장하기 전에 사용 가능한 사용자 이름을 선택하세요.",
+      "saveFailed": "프로필을 업데이트할 수 없습니다."
+    },
+    "usernameStatus": {
+      "idle": "공개 프로필 URL을 신청하려면 사용자 이름을 설정하세요.",
+      "checking": "사용자 이름 사용 가능 여부 확인 중...",
+      "available": "좋습니다. 이 사용자 이름을 사용할 수 있습니다.",
+      "taken": "이 사용자 이름은 이미 사용 중입니다.",
+      "reserved": "이 사용자 이름은 예약되어 있습니다.",
+      "invalid": "3~30자의 문자, 숫자, 밑줄, 하이픈을 사용하세요.",
+      "unchanged": "현재 사용자 이름입니다.",
+      "cooldown": "사용자 이름 변경은 현재 대기 중입니다.",
+      "cooldownDate": "사용자 이름 변경은 {date}까지 휴지 상태입니다.",
+      "failed": "지금은 사용자 이름 사용 가능 여부를 확인할 수 없습니다."
+    },
+    "breadcrumb": {
+      "profile": "윤곽",
+      "settings": "설정"
+    },
+    "usernameEdit": "편집하다",
+    "usernameLockedHint": "귀하의 사용자 이름이 잠겨 있습니다. 변경을 요청하려면 편집을 사용하세요.",
+    "usernameRecoveryHint": {
+      "taken": "숫자나 밑줄을 추가해 보세요.",
+      "reserved": "예약되지 않은 다른 핸들을 선택하세요.",
+      "invalid": "공백 없이 3~30자의 문자, 숫자, 밑줄 또는 하이픈을 사용하세요.",
+      "cooldown": "대기 시간 동안에는 사용자 이름 편집이 잠깁니다."
+    },
+    "countryRegionSearchPlaceholder": "국가 또는 지역 검색",
+    "countryRegionClear": "국가/지역 지우기",
+    "countryRegionEmpty": "일치하는 국가 또는 지역을 찾을 수 없습니다.",
+    "countryRegionToggle": "국가/지역 옵션 전환",
+    "usernameChange": "사용자 이름 변경",
+    "usernameSuggestionsTitle": "다음 옵션 중 하나를 시도해 보세요."
+  },
+  "stamps": {
+    "eyebrow": "여권 수령",
+    "title": "여행 여권",
+    "description": "{name}, 이 우표는 TravelFlow 이정표와 커뮤니티 전체에서 얼마나 희귀한지 추적합니다.",
+    "passportTitle": "여권 커버",
+    "passportDescription": "마지막으로 잠금 해제된 스탬프 3개. 드래그하여 스티커 레이아웃의 위치를 ​​지정하세요.",
+    "unlockedCount": "{total} 스탬프 중 {count} 잠금 해제됨",
+    "lastUpdated": "{count} 최근 우표 표시됨",
+    "passportEmpty": "아직 스탬프가 없습니다. 첫 번째 업적을 달성하려면 여행을 생성하거나 저장하세요.",
+    "detailTitle": "스탬프 세부정보",
+    "backToProfile": "프로필로 돌아가기",
+    "detailRarity": "희박",
+    "detailProgress": "진전",
+    "detailUnlocked": "잠금 해제됨",
+    "cardUnlockedOn": "잠금 해제 날짜",
+    "detailUnlockedNow": "방금 잠금 해제됨",
+    "detailLocked": "잠김",
+    "selectHint": "세부정보와 희귀도를 보려면 스탬프를 선택하세요.",
+    "sortLabel": "종류",
+    "groupLabel": "그룹",
+    "empty": "아직 이 필터와 일치하는 스탬프가 없습니다.",
+    "sort": {
+      "date": "최신 잠금 해제",
+      "rarity": "가장 희귀한 것부터",
+      "group": "그룹"
+    },
+    "group": {
+      "all": "모든 그룹",
+      "trips": "여행",
+      "curation": "큐레이션",
+      "exploration": "탐구",
+      "social": "사회의",
+      "momentum": "기세"
+    },
+    "selectionTitle": "여권 표지에 표시됨",
+    "selectionCount": "{count}/{total} 선택됨",
+    "selectionEmpty": "여권 표지에 표시되는 내용을 선택하려면 스탬프를 잠금 해제하세요.",
+    "selectionLimitNotice": "표지에 최대 {count}개의 스탬프를 선택하세요.",
+    "selectionSaveFailed": "스탬프 표지 선택을 저장할 수 없습니다.",
+    "selectionSaving": "여권 커버 선택 사항을 저장하는 중...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "이전 페이지",
+    "nextPage": "다음 페이지",
+    "emptySlot": "스탬프 슬롯",
+    "backToPublicProfile": "공개 프로필로 돌아가기"
+  },
+  "likedPlaceholder": {
+    "title": "좋아요한 여행 기능이 곧 제공됩니다",
+    "description": "곧 다른 여행자의 여행을 저장하고 여기에서 다시 볼 수 있습니다."
+  },
+  "empty": {
+    "title": "이 섹션에는 아직 여행이 없습니다",
+    "description": "여행을 만들거나 즐겨찾기로 표시해 이 화면을 채워보세요."
+  },
+  "messages": {
+    "pinEvicted": "하이라이트를 3개로 유지하기 위해 가장 오래된 고정 여행이 해제되었습니다."
+  },
+  "errors": {
+    "profileLoad": "프로필을 불러오지 못했습니다."
+  },
+  "fallback": {
+    "displayName": "여행자",
+    "email": "사용할 수 있는 이메일이 없습니다."
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "여행 \"{title}\"이(가) 성공적으로 보관 처리되었습니다."
+  }
+}

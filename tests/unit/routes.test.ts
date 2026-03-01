@@ -20,6 +20,8 @@ describe('config/routes', () => {
     expect(buildPath('imprint')).toBe('/imprint');
     expect(buildPath('blogPost', { slug: 'spring-guide' })).toBe('/blog/spring-guide');
     expect(buildPath('tripDetail', { tripId: 'abc 123' })).toBe('/trip/abc%20123');
+    expect(buildPath('publicProfile', { username: 'traveler_1' })).toBe('/u/traveler_1');
+    expect(buildPath('publicProfileStamps', { username: 'traveler_1' })).toBe('/u/traveler_1/stamps');
   });
 
   it('buildPath handles all declared route keys', () => {
@@ -63,9 +65,13 @@ describe('config/routes', () => {
       buildPath('adminTiers'),
       buildPath('adminAudit'),
       buildPath('adminAiBenchmark'),
+      buildPath('adminDesignSystemPlayground'),
       buildPath('profile'),
+      buildPath('profileStamps'),
       buildPath('profileSettings'),
       buildPath('profileOnboarding'),
+      buildPath('publicProfile', { username: 'traveler' }),
+      buildPath('publicProfileStamps', { username: 'traveler' }),
     ];
 
     expect(routeResults.every((path) => path.startsWith('/'))).toBe(true);
@@ -115,6 +121,8 @@ describe('config/routes', () => {
     expect(getNamespacesForMarketingPath('/login')).toEqual(['common', 'auth']);
     expect(getNamespacesForMarketingPath('/inspirations')).toEqual(['common', 'pages']);
     expect(getNamespacesForToolPath('/create-trip')).toEqual(['common', 'createTrip']);
+    expect(getNamespacesForToolPath('/profile?tab=recent')).toEqual(['common', 'profile']);
+    expect(getNamespacesForToolPath('/u/traveler')).toEqual(['common', 'profile']);
     expect(getNamespacesForToolPath('/trip/abc')).toEqual(['common']);
   });
 

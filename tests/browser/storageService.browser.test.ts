@@ -70,7 +70,16 @@ describe('services/storageService', () => {
       'travelflow_trips_v1',
       JSON.stringify([
         { id: 'arch', title: 'Archived', items: [], status: 'archived', tripExpiresAt: '2026-01-01T00:00:00Z' },
-        { id: 'fallback', title: 'Fallback', items: [], status: 'weird', isFavorite: 0, tripExpiresAt: 1234 },
+        {
+          id: 'fallback',
+          title: 'Fallback',
+          items: [],
+          status: 'weird',
+          isFavorite: 0,
+          isPinned: 1,
+          pinnedAt: 'invalid',
+          tripExpiresAt: 1234,
+        },
       ])
     );
 
@@ -83,6 +92,39 @@ describe('services/storageService', () => {
     expect(fallback?.status).toBe('active');
     expect(fallback?.tripExpiresAt).toBeNull();
     expect(fallback?.isFavorite).toBe(false);
+    expect(fallback?.isPinned).toBe(true);
+    expect(fallback?.pinnedAt).toBeUndefined();
+    expect(fallback?.showOnPublicProfile).toBe(true);
+  });
+
+  it('persists favorite and pin metadata through storage sync', () => {
+    const trip = makeTrip({
+      id: 'sync-trip',
+      isFavorite: false,
+      isPinned: true,
+      pinnedAt: 1000,
+    });
+
+    saveTrip(trip, { preserveUpdatedAt: true });
+    saveTrip({ ...trip, isFavorite: true, pinnedAt: 2000 }, { preserveUpdatedAt: true });
+
+    const syncedTrip = getTripById('sync-trip');
+    expect(syncedTrip?.isFavorite).toBe(true);
+    expect(syncedTrip?.isPinned).toBe(true);
+    expect(syncedTrip?.pinnedAt).toBe(2000);
+  });
+
+  it('persists trip public visibility through storage sync', () => {
+    const trip = makeTrip({
+      id: 'visibility-trip',
+      showOnPublicProfile: false,
+    });
+
+    saveTrip(trip, { preserveUpdatedAt: true });
+    saveTrip({ ...trip, showOnPublicProfile: true }, { preserveUpdatedAt: true });
+
+    const syncedTrip = getTripById('visibility-trip');
+    expect(syncedTrip?.showOnPublicProfile).toBe(true);
   });
 
   it('swallows quota/storage write failures for save/delete/set-all', () => {

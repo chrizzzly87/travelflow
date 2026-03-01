@@ -5,7 +5,7 @@ const mockState = vi.hoisted(() => ({
   connectivityState: 'offline' as 'online' | 'degraded' | 'offline',
   dbEnsureSession: vi.fn(),
   dbGetTrip: vi.fn(),
-  dbUpsertTrip: vi.fn(),
+  dbUpsertTripWithStatus: vi.fn(),
   dbCreateTripVersion: vi.fn(),
   syncTripsFromDb: vi.fn(),
   markConnectivityFailure: vi.fn(),
@@ -15,7 +15,7 @@ const mockState = vi.hoisted(() => ({
 vi.mock('../../services/dbApi', () => ({
   ensureDbSession: mockState.dbEnsureSession,
   dbGetTrip: mockState.dbGetTrip,
-  dbUpsertTrip: mockState.dbUpsertTrip,
+  dbUpsertTripWithStatus: mockState.dbUpsertTripWithStatus,
   dbCreateTripVersion: mockState.dbCreateTripVersion,
 }));
 
@@ -68,7 +68,11 @@ describe('services/tripSyncManager', () => {
 
     mockState.dbEnsureSession.mockResolvedValue('session-1');
     mockState.dbGetTrip.mockResolvedValue(null);
-    mockState.dbUpsertTrip.mockResolvedValue('trip-1');
+    mockState.dbUpsertTripWithStatus.mockResolvedValue({
+      tripId: 'trip-1',
+      error: null,
+      isPermissionError: false,
+    });
     mockState.dbCreateTripVersion.mockResolvedValue('version-1');
   });
 
@@ -97,8 +101,8 @@ describe('services/tripSyncManager', () => {
     mockState.connectivityState = 'online';
     await retrySyncNow();
 
-    expect(mockState.dbUpsertTrip).toHaveBeenCalledTimes(1);
-    expect(mockState.dbUpsertTrip).toHaveBeenCalledWith(failedTrip, undefined);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledWith(failedTrip, undefined);
 
     const queue = getQueueSnapshot();
     expect(queue.entries.some((entry) => entry.tripId === 'trip-fresh')).toBe(true);
@@ -115,7 +119,7 @@ describe('services/tripSyncManager', () => {
     mockState.connectivityState = 'online';
     await retrySyncNow();
 
-    expect(mockState.dbUpsertTrip).not.toHaveBeenCalled();
+    expect(mockState.dbUpsertTripWithStatus).not.toHaveBeenCalled();
     expect(getQueueSnapshot().pendingCount).toBe(1);
   });
 
@@ -139,8 +143,8 @@ describe('services/tripSyncManager', () => {
 
     await syncQueuedTripsNow();
 
-    expect(mockState.dbUpsertTrip).toHaveBeenCalledTimes(1);
-    expect(mockState.dbUpsertTrip).toHaveBeenCalledWith(clientTrip, undefined);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledWith(clientTrip, undefined);
     expect(getQueueSnapshot().pendingCount).toBe(0);
 
     const backups = getConflictBackups();
@@ -167,7 +171,7 @@ describe('services/tripSyncManager', () => {
     mockState.connectivityState = 'online';
     await retrySyncNow();
 
-    expect(mockState.dbUpsertTrip).toHaveBeenCalledTimes(1);
+    expect(mockState.dbUpsertTripWithStatus).toHaveBeenCalledTimes(1);
     expect(mockState.dbCreateTripVersion).toHaveBeenCalledTimes(1);
     expect(getQueueSnapshot().pendingCount).toBe(0);
   });
@@ -181,11 +185,39 @@ describe('services/tripSyncManager', () => {
     });
 
     mockState.connectivityState = 'online';
-    mockState.dbUpsertTrip.mockResolvedValue(null);
+    mockState.dbUpsertTripWithStatus.mockResolvedValue({
+      tripId: null,
+      error: null,
+      isPermissionError: false,
+    });
 
     await syncQueuedTripsNow();
 
     expect(mockState.markConnectivityFailure).not.toHaveBeenCalled();
     expect(getQueueSnapshot().pendingCount).toBe(1);
+  });
+
+  it('drops queued entries immediately when replay is denied by permission checks', async () => {
+    const deniedTrip = makeTrip({ id: 'trip-permission-denied', title: 'Denied' });
+    enqueueTripCommit({
+      tripId: deniedTrip.id,
+      tripSnapshot: deniedTrip,
+      label: 'Data: Offline edit',
+    });
+
+    mockState.connectivityState = 'online';
+    mockState.dbUpsertTripWithStatus.mockResolvedValue({
+      tripId: null,
+      error: {
+        code: 'P0001',
+        message: 'Not allowed',
+      },
+      isPermissionError: true,
+    });
+
+    await syncQueuedTripsNow();
+
+    expect(mockState.markConnectivityFailure).not.toHaveBeenCalled();
+    expect(getQueueSnapshot().pendingCount).toBe(0);
   });
 });

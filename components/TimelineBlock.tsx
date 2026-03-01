@@ -172,7 +172,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
       style.top = `calc(${cityInsetPx}px + ${normalizedCityStackIndex} * (${citySlotHeightExpr} + ${cityStackGapPx}px))`;
       style.height = citySlotHeightExpr;
   }
-  const selectedCityOutline = isCity && isSelected
+  const selectedOutline = isSelected
       ? '0 0 0 3px rgb(37 99 235 / 0.98)'
       : '';
   const isInactiveItem = item.isApproved === false;
@@ -244,7 +244,7 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
             ? '0 1px 2px rgb(15 23 42 / 0.32)'
             : '0 1px 0 rgb(255 255 255 / 0.28)',
           boxShadow: [
-            selectedCityOutline,
+            selectedOutline,
             'inset 0 1px 0 rgb(255 255 255 / 0.32)',
           ].filter(Boolean).join(', '),
           opacity: isInactiveItem ? 0.74 : (isUncertainCity ? 0.86 : 0.96),
@@ -273,11 +273,14 @@ export const TimelineBlock: React.FC<TimelineBlockProps> = ({
               textShadow: inactiveActivityShouldUseWhiteText
                   ? '0 1px 1px rgb(15 23 42 / 0.28)'
                   : '0 1px 0 rgb(255 255 255 / 0.18)',
-              boxShadow: 'inset 0 1px 0 rgb(255 255 255 / 0.26)',
+              boxShadow: [
+                  selectedOutline,
+                  'inset 0 1px 0 rgb(255 255 255 / 0.26)',
+              ].filter(Boolean).join(', '),
               opacity: 0.88,
           }
-      : (selectedCityOutline
-          ? { ...style, boxShadow: selectedCityOutline }
+      : (selectedOutline
+          ? { ...style, boxShadow: selectedOutline }
           : style));
   const finalStyle: React.CSSProperties = viewTransitionName
       ? { ...mergedStyle, viewTransitionName }

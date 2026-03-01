@@ -6,18 +6,6 @@ import { Loader2 } from 'lucide-react';
 import type { ShareMode } from '../../types';
 import { trackEvent } from '../../services/analyticsService';
 
-interface TripViewToastState {
-    title: string;
-    message: string;
-}
-
-interface TripViewActiveToastMeta {
-    Icon: React.ComponentType<{ size?: number }>;
-    iconClass: string;
-    toastBorderClass: string;
-    toastTitleClass: string;
-}
-
 interface TripViewHudOverlaysProps {
     shareStatus?: ShareMode;
     onCopyTrip?: () => void;
@@ -34,10 +22,6 @@ interface TripViewHudOverlaysProps {
     loadingDestinationSummary: string;
     tripDateRange: string;
     tripTotalDaysLabel: string;
-    suppressToasts: boolean;
-    toastState: TripViewToastState | null;
-    activeToastMeta: TripViewActiveToastMeta | null;
-    onDismissToast: () => void;
 }
 
 export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
@@ -52,10 +36,6 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
     loadingDestinationSummary,
     tripDateRange,
     tripTotalDaysLabel,
-    suppressToasts,
-    toastState,
-    activeToastMeta,
-    onDismissToast,
 }) => {
     return (
         <>
@@ -150,28 +130,6 @@ export const TripViewHudOverlays: React.FC<TripViewHudOverlaysProps> = ({
                         <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
                             <div className="h-full w-1/2 bg-gradient-to-r from-accent-500 to-accent-600 animate-pulse rounded-full" />
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {!suppressToasts && toastState && activeToastMeta && (
-                <div className={`fixed bottom-6 right-6 z-[1600] w-[340px] max-w-[calc(100vw-2rem)] rounded-xl border bg-white/95 shadow-2xl backdrop-blur px-4 py-3 ${activeToastMeta.toastBorderClass}`}>
-                    <div className="flex items-start gap-3">
-                        <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${activeToastMeta.iconClass}`}>
-                            <activeToastMeta.Icon size={16} />
-                        </div>
-                        <div className="min-w-0">
-                            <div className={`text-[11px] uppercase tracking-[0.08em] font-semibold ${activeToastMeta.toastTitleClass}`}>{toastState.title}</div>
-                            <div className="text-sm font-semibold text-gray-900 leading-snug">{toastState.message}</div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={onDismissToast}
-                            className="ml-auto text-xs text-gray-400 hover:text-gray-600"
-                            aria-label="Dismiss notification"
-                        >
-                            ×
-                        </button>
                     </div>
                 </div>
             )}

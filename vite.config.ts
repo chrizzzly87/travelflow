@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => {
                     changeOrigin: true,
                     secure: false,
                 },
+                '/api/internal/admin/audit/replay-export': {
+                    target: 'http://localhost:8888',
+                    changeOrigin: true,
+                    secure: false,
+                },
             },
         },
         plugins: [react(), tailwindcss()],

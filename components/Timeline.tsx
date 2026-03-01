@@ -1000,7 +1000,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleSelectOrCreateTravel(link.fromCity, link.toCity, travel); }}
                                         className={`absolute z-10 -translate-y-1/2 rounded-full border text-[11px] font-semibold flex items-center transition-colors pointer-events-auto
-                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
+                                            ${isSelected ? 'bg-accent-50 border-accent-300 text-accent-700 shadow-sm opacity-100 ring-2 ring-blue-600 ring-offset-1' : (isUndefinedTransfer ? 'bg-slate-50 border-slate-300 border-dashed text-slate-400 opacity-65 shadow-none justify-center' : 'bg-white border-gray-200 text-gray-600 shadow-sm')}
                                             ${showIconOnly ? `justify-center gap-0 ${pillPaddingClass}` : `gap-1.5 ${pillPaddingClass}`}
                                             ${travel || canEdit ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed opacity-60'}
                                         `}

@@ -209,6 +209,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_timeline_mode',
+      purpose: 'Persists selected timeline mode (calendar or timeline list).',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_city_names',
       purpose: 'Persists map label visibility preference for city names.',
       duration: 'Persistent',
@@ -331,6 +338,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
     {
       name: 'admin.audit.cache.v1',
       purpose: 'Caches admin audit log table data to reduce repeat fetches.',
+      duration: 'Persistent (refreshable cache)',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
+      name: 'admin.user_changes.cache.v1',
+      purpose: 'Caches admin user change log data to reduce repeat fetches.',
       duration: 'Persistent (refreshable cache)',
       provider: 'TravelFlow',
       storage: 'localStorage',

@@ -1,0 +1,325 @@
+{
+  "hero": {
+    "loading": "Carregando perfil...",
+    "inspirationIntro": "Gostou? Veja nossas",
+    "inspirationCta": "Inspirações para {country}",
+    "greetingFacts": {
+      "haw-aloha": "Usado no Havaí para olá, adeus e calor na vida cotidiana.",
+      "kor-annyeong": "Uma saudação coreana educada usada na maioria das situações cotidianas.",
+      "jpn-konnichiwa": "Uma saudação japonesa padrão diurna com um tom amigável.",
+      "tha-sawasdee": "Saudação tailandesa usada ao longo do dia, geralmente combinada com wai; os falantes adicionam terminações educadas de acordo com seu próprio gênero (khrap para homens, kha para mulheres).",
+      "hin-namaste": "Uma saudação respeitosa na Índia, frequentemente usada em ambientes formais e informais.",
+      "spa-hola": "Uma simples saudação em espanhol usada em quase todos os contextos sociais.",
+      "deu-guten-tag": "Uma saudação formal em alemão usada em conversas diurnas.",
+      "fra-bonjour": "Uma saudação diurna francesa comum, usada tanto em ambientes casuais quanto formais.",
+      "ita-ciao": "Saudação italiana usada casualmente para olá e adeus.",
+      "ara-marhaba": "Uma calorosa saudação árabe amplamente compreendida em todas as regiões.",
+      "deu-moin": "Clássico no norte da Alemanha a qualquer hora; os moradores locais brincam que “Moin Moin” é dito principalmente por turistas.",
+      "gsw-gruezi": "Um olá educado suíço-alemão frequentemente ouvido em lojas, trens e cidades montanhosas.",
+      "eus-kaixo": "Saudação basca usada em Euskadi; ouvi-lo é um sinal rápido de que a região mantém viva a sua língua.",
+      "gle-dia-dhuit": "Irlandês para “olá”, literalmente “Deus esteja com você”, e ainda comum nas áreas de Gaeltacht.",
+      "cym-shwmae": "Olá galês amigável que frequentemente aparece em cartazes bilíngues e introduções de rádios locais.",
+      "isl-godan-daginn": "“bom dia” islandês; os moradores locais costumam abreviá-lo em discursos casuais, especialmente nos cafés de Reykjavík.",
+      "ces-ahoj": "Olá tcheco popular entre amigos; começou como uma chamada de marinheiros e permaneceu no discurso diário.",
+      "swe-hej": "Olá sueco padrão para amigos e colegas de trabalho, muitas vezes duplicado em alegre “hej hej”.",
+      "nld-hoi": "Saudação casual em holandês, comum na Holanda e na Flandres, especialmente entre falantes mais jovens.",
+      "mri-kia-ora": "Saudação Māori na Nova Zelândia usada para olá, agradecimento e energia positiva geral.",
+      "khm-suostei": "Khmer greeting heard across Cambodia; respectful tone matters as much as the words.",
+      "lao-sabaidee": "A saudação do Laos também está ligada ao bem-estar, refletindo um estilo social calmo e amigável.",
+      "swa-jambo": "Saudação suaíli amplamente reconhecida na África Oriental; muitos moradores locais também usam “Hujambo?” para “Como você está?”",
+      "yue-nei-hou": "Saudação cantonesa comum em Hong Kong; os tons são importantes, então a pronúncia muda de significado rapidamente.",
+      "zho-ni-hao": "Saudação em mandarim usada em toda a China; em bate-papos casuais, as pessoas podem pular direto para questões da vida cotidiana.",
+      "fallback": "Uma saudação universal para dar início à sua próxima ideia de viagem."
+    }
+  },
+  "tabs": {
+    "recent": "Recentes",
+    "favorites": "Favoritos",
+    "all": "Todas as viagens",
+    "liked": "Viagens curtidas",
+    "comingSoon": "Em breve"
+  },
+  "filters": {
+    "showOnlyPublic": "Mostrar apenas públicos"
+  },
+  "recentSort": {
+    "created": "Criadas",
+    "updated": "Atualizadas"
+  },
+  "sections": {
+    "highlights": "Destaques fixados",
+    "highlightsCount": "{count}/3 fixados"
+  },
+  "cards": {
+    "pinnedTag": "Fixado",
+    "mapUnavailable": "Visualização do mapa indisponível",
+    "mapLoading": "Carregando visualização...",
+    "creatorPrefix": "Por",
+    "actions": {
+      "open": "Abrir",
+      "favorite": "Favorito",
+      "unfavorite": "Não favorito",
+      "pin": "Alfinete",
+      "unpin": "Liberar",
+      "makePublic": "Público",
+      "makePrivate": "Privado",
+      "archive": "Archive",
+      "selectTrip": "Select trip"
+    },
+    "source": {
+      "createdByYou": "Criado por você",
+      "copiedFromShared": "Copiado da viagem compartilhada",
+      "copiedFromYourTrip": "Copiado da sua viagem",
+      "startedFromExample": "Começou a partir do exemplo",
+      "copiedFromTraveler": "Copiado da viagem compartilhada",
+      "copiedFromExample": "Começou a partir do exemplo",
+      "fromTravelflowCatalog": "TravelFlow inspiration template"
+    },
+    "expiredTag": "Expirado",
+    "expiredFallbackTitle": "Rascunho de viagem expirado",
+    "hiddenTag": "Hidden"
+  },
+  "actions": {
+    "title": "Ações rápidas",
+    "settings": "Configurações de perfil",
+    "planner": "Ir para o planejador",
+    "stamps": "Selos do passaporte",
+    "adminWorkspace": "Abrir área admin"
+  },
+  "summary": {
+    "editProfile": "Editar perfil",
+    "viewPublicProfile": "Ver perfil público",
+    "shareProfile": "Compartilhar URL do perfil",
+    "memberSinceLabel": "Membro desde",
+    "memberSinceUnknown": "Não disponível",
+    "usernamePrefix": "@",
+    "roleLabel": "Papel",
+    "bioLabel": "Biografia",
+    "bioFallback": "Adicione uma breve biografia para que outras pessoas possam entender seu estilo de viagem.",
+    "locationLabel": "Localização",
+    "locationUnknown": "Provavelmente planeta Terra",
+    "distanceLabel": "Distância total",
+    "distanceUnknown": "Ainda sem distância rastreada",
+    "countriesLabel": "Países visitados",
+    "countriesEmpty": "Ainda sem países registrados",
+    "stampsTitle": "Selos do passaporte",
+    "stampsDescription": "Suas últimas conquistas são coletadas como selos de passaporte de viagem.",
+    "stampsOpen": "Abrir coleção de selos",
+    "stampsEmpty": "Crie sua primeira viagem para desbloquear seu primeiro selo.",
+    "follow": "Seguir",
+    "message": "Mensagem",
+    "shareCopied": "URL do perfil copiada para a área de transferência.",
+    "shareOpened": "Perfil público aberto em uma nova aba.",
+    "shareCopiedTitle": "Profile link copied",
+    "shareOpenedTitle": "Profile opened"
+  },
+  "stats": {
+    "totalTrips": "Total de viagens",
+    "likesSaved": "Curtidas salvas",
+    "followers": "Seguidores",
+    "likesEarned": "Curtidas recebidas"
+  },
+  "publicProfile": {
+    "loading": "Carregando perfil público...",
+    "title": "Perfil público",
+    "privateTitle": "Este perfil é privado",
+    "privateDescription": "Este viajante ocultou o perfil público por enquanto.",
+    "notFoundTitle": "Perfil não encontrado",
+    "notFoundDescription": "Não encontramos um perfil para este usuário.",
+    "ctaExploreInspirations": "Explorar inspirações",
+    "ctaBackProfile": "Ir para seu perfil",
+    "tripsTitle": "Viagens públicas",
+    "emptyTrips": "Ainda não há viagens públicas.",
+    "followHint": "As ações de seguir e mensagem chegarão em breve.",
+    "ctaRegisterFree": "Cadastre-se grátis",
+    "sourceCreatedByTraveler": "Criado pelo viajante",
+    "notFoundFunTitle": "Parece que este usuário já encontrou a próxima viagem.",
+    "notFoundFunSubtitle": "Não espere mais",
+    "ctaPlanTrip": "Planeje sua viagem",
+    "ctaGetInspired": "Inspire-se",
+    "visibilityPrivate": "Perfil privado",
+    "visibilityPublic": "Perfil público",
+    "notFoundInvalidPassportTitle": "Este passaporte é inválido"
+  },
+  "settings": {
+    "title": "Configurações de perfil",
+    "description": "Atualize os detalhes do seu perfil, URL público e padrões de visibilidade.",
+    "onboardingTitle": "Complete seu perfil",
+    "onboardingDescription": "Antes de usar o TravelFlow, adicione os detalhes principais do seu perfil para que a personalização funcione de maneira confiável.",
+    "fields": {
+      "firstName": "Primeiro nome *",
+      "lastName": "Sobrenome *",
+      "username": "Nome de usuário *",
+      "bio": "Biografia",
+      "gender": "Gênero",
+      "unspecified": "Não especificado",
+      "country": "País/Região *",
+      "city": "Cidade *",
+      "preferredLanguage": "Idioma preferido *"
+    },
+    "usernameHelp": "Use de 3 a 30 letras, números, sublinhados ou hifens. Sem espaços.",
+    "usernameCooldownHint": "Você pode alterar seu nome de usuário novamente em {date}.",
+    "bioHelp": "Compartilhe uma breve introdução que os viajantes podem ver em seu perfil público.",
+    "publicProfileToggleTitle": "Ativar perfil público",
+    "publicProfileToggleDescription": "Permita que outras pessoas descubram seu perfil público e suas viagens visíveis.",
+    "defaultVisibilityToggleTitle": "Visibilidade de viagem padrão",
+    "defaultVisibilityToggleDescription": "Escolha se as novas viagens serão públicas no seu perfil por padrão.",
+    "publicUrlLabel": "URL público",
+    "publicUrlEmpty": "Defina um nome de usuário para gerar o URL do seu perfil público.",
+    "viewPublicProfile": "Abrir perfil público",
+    "requiredHint": "Preencha todos os campos obrigatórios para continuar.",
+    "actions": {
+      "save": "Salvar configurações de perfil",
+      "saveAndContinue": "Salvar e continuar"
+    },
+    "messages": {
+      "saved": "Configurações de perfil salvas com sucesso.",
+      "onboardingSaved": "Perfil concluído com sucesso.",
+      "savedTitle": "Profile updated",
+      "onboardingSavedTitle": "Profile completed"
+    },
+    "errors": {
+      "required": "Por favor preencha todos os campos obrigatórios.",
+      "usernameUnavailable": "Escolha um nome de usuário disponível antes de salvar.",
+      "saveFailed": "Não foi possível atualizar seu perfil."
+    },
+    "usernameStatus": {
+      "idle": "Defina seu nome de usuário para reivindicar um URL de perfil público.",
+      "checking": "Verificando a disponibilidade do nome de usuário...",
+      "available": "Ótimo, este nome de usuário está disponível.",
+      "taken": "Este nome de usuário já está em uso.",
+      "reserved": "Este nome de usuário é reservado.",
+      "invalid": "Use de 3 a 30 letras, números, sublinhados ou hifens.",
+      "unchanged": "Este é o seu nome de usuário atual.",
+      "cooldown": "As alterações de nome de usuário estão atualmente em espera.",
+      "cooldownDate": "As alterações de nome de usuário estão em espera até {date}.",
+      "failed": "Não foi possível verificar a disponibilidade do nome de usuário no momento."
+    },
+    "breadcrumb": {
+      "profile": "Perfil",
+      "settings": "Configurações"
+    },
+    "usernameEdit": "Editar",
+    "usernameLockedHint": "Your username is locked. Use Editar para solicitar uma alteração.",
+    "usernameRecoveryHint": {
+      "taken": "Tente adicionar um número ou sublinhado.",
+      "reserved": "Escolha outro identificador que não esteja reservado.",
+      "invalid": "Use de 3 a 30 letras, números, sublinhados ou hífens sem espaços.",
+      "cooldown": "As edições de nome de usuário são bloqueadas durante a janela de espera."
+    },
+    "countryRegionSearchPlaceholder": "Pesquisar país ou região",
+    "countryRegionClear": "Limpar país/região",
+    "countryRegionEmpty": "Nenhum país ou região correspondente encontrado.",
+    "countryRegionToggle": "Alternar opções de país/região",
+    "usernameChange": "Alterar nome de usuário",
+    "usernameSuggestionsTitle": "Experimente uma destas opções disponíveis:"
+  },
+  "stamps": {
+    "eyebrow": "Coleta de passaporte",
+    "title": "Seu passaporte de viagem",
+    "description": "{name}, esses selos rastreiam seus marcos no TravelFlow e quão raros eles são na comunidade.",
+    "passportTitle": "Capa para passaporte",
+    "passportDescription": "Últimos três selos desbloqueados. Arraste para posicionar o layout do seu adesivo.",
+    "unlockedCount": "{count} de {total} selos desbloqueados",
+    "lastUpdated": "{count} selos recentes mostrados",
+    "passportEmpty": "Ainda não há selos. Crie ou salve viagens para desbloquear sua primeira conquista.",
+    "detailTitle": "Detalhes do carimbo",
+    "backToProfile": "Voltar ao perfil",
+    "detailRarity": "Raridade",
+    "detailProgress": "Progresso",
+    "detailUnlocked": "Desbloqueado",
+    "cardUnlockedOn": "Desbloqueado em",
+    "detailUnlockedNow": "Acabei de desbloqueado",
+    "detailLocked": "Bloqueado",
+    "selectHint": "Selecione um selo para ver detalhes e raridade.",
+    "sortLabel": "Organizar",
+    "groupLabel": "Grupo",
+    "empty": "Nenhum selo corresponde a este filtro ainda.",
+    "sort": {
+      "date": "Último desbloqueado",
+      "rarity": "Mais raro primeiro",
+      "group": "Grupo"
+    },
+    "group": {
+      "all": "Todos os grupos",
+      "trips": "Viagens",
+      "curation": "Curadoria",
+      "exploration": "Exploração",
+      "social": "Social",
+      "momentum": "Momento"
+    },
+    "selectionTitle": "Mostrado na capa do passaporte",
+    "selectionCount": "{count}/{total} selecionado",
+    "selectionEmpty": "Desbloqueie os selos para escolher o que aparece na capa do seu passaporte.",
+    "selectionLimitNotice": "Escolha até {count} selos para sua capa.",
+    "selectionSaveFailed": "Não foi possível salvar a seleção da capa do seu carimbo.",
+    "selectionSaving": "Salvando seleção de capa de passaporte...",
+    "pageIndicator": "{page}/{total}",
+    "previousPage": "Página anterior",
+    "nextPage": "Próxima página",
+    "emptySlot": "Slot de carimbo",
+    "backToPublicProfile": "Voltar ao perfil público"
+  },
+  "likedPlaceholder": {
+    "title": "Viagens curtidas em breve",
+    "description": "Em breve você poderá salvar e revisitar aqui viagens de outros viajantes."
+  },
+  "empty": {
+    "title": "Nenhuma viagem nesta seção ainda",
+    "description": "Crie uma viagem ou marque uma como favorita para preencher esta visualização."
+  },
+  "messages": {
+    "pinEvicted": "A viagem fixada mais antiga foi removida para manter seus destaques em três."
+  },
+  "errors": {
+    "profileLoad": "Não foi possível carregar o perfil."
+  },
+  "fallback": {
+    "displayName": "Viajante",
+    "email": "Nenhum e-mail disponível"
+  },
+  "selection": {
+    "enable": "Select trips",
+    "disable": "Done selecting",
+    "selectedCount": "{count}/{total} selected",
+    "archiveSelected": "Archive selected",
+    "hotkeyHint": "Delete/Backspace archives selected trips, Esc exits select mode",
+    "selectVisible": "Select visible",
+    "selectExpired": "Select expired",
+    "selectExamples": "Select examples",
+    "toggleFavorites": "Toggle favorites",
+    "toggleVisibility": "Toggle visibility",
+    "end": "Clear selection",
+    "favoriteBatchUpdatedTitle": "Favorites updated",
+    "favoriteBatchUpdatedMessage": "Updated favorites for {count} selected trips.",
+    "visibilityBatchUpdatedTitle": "Visibility updated",
+    "visibilityBatchUpdatedMessage": "Updated visibility for {count} selected trips."
+  },
+  "archive": {
+    "confirmSingleTitle": "Archive trip?",
+    "confirmSingleMessage": "This trip will be removed from your list and can be restored later. {title}",
+    "confirmSingleButton": "Archive trip",
+    "confirmBatchTitle": "Archive selected trips?",
+    "confirmBatchMessage": "Archive {count} selected trips? You can restore them later.",
+    "confirmBatchButton": "Archive {count} trips",
+    "cancel": "Cancel",
+    "successSingle": "Trip archived.",
+    "successBatch": "{count} trips archived.",
+    "errorSingle": "Could not archive this trip.",
+    "errorBatch": "Could not archive selected trips.",
+    "inProgressSingleTitle": "Archiving trip",
+    "inProgressSingleMessage": "Saving changes for {title}...",
+    "inProgressBatchTitle": "Archiving selected trips",
+    "inProgressBatchMessage": "Saving changes for {count} selected trips...",
+    "successTitle": "Archive complete",
+    "errorTitle": "Archive failed",
+    "undoLabel": "Undo",
+    "undoSuccessTitle": "Archive undone",
+    "undoSuccessSingleMessage": "“{title}” restored.",
+    "undoSuccessBatchMessage": "{count} trip(s) restored.",
+    "undoErrorTitle": "Undo failed",
+    "undoErrorSingle": "Could not restore this trip.",
+    "undoErrorBatch": "Could not restore selected trips.",
+    "successSingleMessage": "Sua viagem \"{title}\" foi arquivada com sucesso."
+  }
+}

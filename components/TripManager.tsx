@@ -1,16 +1,30 @@
 import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { AppLanguage, ITrip, ITimelineItem } from '../types';
 import { X, Trash2, Star, Search, ChevronDown, ChevronRight, MapPin, CalendarDays, History } from 'lucide-react';
 import { readLocalStorageItem, writeLocalStorageItem } from '../services/browserStorageService';
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
-import { DB_ENABLED, dbDeleteTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
 import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
 import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useAuth } from '../hooks/useAuth';
+import { trackEvent } from '../services/analyticsService';
+import { showAppToast } from './ui/appToast';
+import {
+  buildMiniMapUrl,
+  formatTripDateRange,
+  formatTripSummaryLine,
+  getTripCityItems,
+  getTripCityStops,
+  getTripDateRange,
+} from './profile/tripPreviewUtils';
+
+export { buildMiniMapUrl, getTripCityStops } from './profile/tripPreviewUtils';
 
 interface TripManagerProps {
   isOpen: boolean;
@@ -22,11 +36,6 @@ interface TripManagerProps {
 }
 
 type TripSortMode = 'updated' | 'travelDate';
-
-interface TripRangeOffsets {
-  startOffset: number;
-  endOffset: number;
-}
 
 interface HoverAnchor {
   tripId: string;
@@ -50,6 +59,18 @@ type CountryCacheStore = Record<string, { countryCode: string; countryName: stri
 
 const COUNTRY_CACHE_KEY = 'travelflow_country_cache_v1';
 const TRIP_SKELETON_ROWS = [0, 1, 2, 3, 4, 5];
+const MAX_GEOCODE_LOOKUPS_PER_PASS = 24;
+
+export const shouldAttemptTripManagerReverseGeocode = (
+  item: Pick<ITimelineItem, 'coordinates'>,
+  hasStoredOrParsedCountry: boolean,
+  remainingLookups: number
+): boolean => {
+  if (hasStoredOrParsedCountry) return false;
+  if (remainingLookups <= 0) return false;
+  if (!item.coordinates) return false;
+  return Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng);
+};
 
 export const readTripManagerCountryCache = (): CountryCacheStore => {
   const raw = readLocalStorageItem(COUNTRY_CACHE_KEY);
@@ -71,87 +92,11 @@ export const writeTripManagerCountryCache = (cache: CountryCacheStore): void => 
   }
 };
 
-const TOOLTIP_CLEAN_STYLE = [
-  'style=element:geometry|color:0xf9f9f9',
-  'style=element:labels.icon|visibility:off',
-  'style=element:labels.text.fill|color:0x757575',
-  'style=element:labels.text.stroke|color:0xf9f9f9|weight:2',
-  'style=feature:administrative|element:geometry|visibility:off',
-  'style=feature:administrative.country|element:geometry.stroke|color:0xa8a8a8|weight:1.6|visibility:on',
-  'style=feature:administrative.province|element:geometry|visibility:off',
-  'style=feature:administrative.province|element:labels|visibility:off',
-  'style=feature:administrative.land_parcel|element:labels.text.fill|color:0xbdbdbd',
-  'style=feature:poi|visibility:off',
-  'style=feature:road|visibility:off',
-  'style=feature:transit|visibility:off',
-  'style=feature:water|element:geometry|color:0xdcefff',
-  'style=feature:water|element:geometry.stroke|color:0x8fb6d9|weight:2.2|visibility:on',
-  'style=feature:landscape.natural|element:geometry.stroke|color:0xa7c9e6|weight:1.4|visibility:on',
-  'style=feature:water|element:labels.text.fill|color:0x9e9e9e',
-].join('&');
-
 const TOOLTIP_WIDTH = 620;
 const TOOLTIP_MIN_HEIGHT = 270;
 const TOOLTIP_MAX_HEIGHT = 420;
 const TOOLTIP_BASE_HEIGHT = 180;
 const TOOLTIP_PER_CITY_HEIGHT = 26;
-
-const stripColorPrefix = (value: string): string => value.replace(/^0x/i, '').replace(/^#/, '').trim();
-
-const normalizeCssColorToHex = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  const hexMatch = trimmed.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-  if (hexMatch) {
-    const rawHex = hexMatch[1];
-    return rawHex.length === 3
-      ? rawHex.split('').map(char => `${char}${char}`).join('').toLowerCase()
-      : rawHex.toLowerCase();
-  }
-
-  const rgbMatch = trimmed.match(/^rgba?\(([^)]+)\)$/i);
-  if (!rgbMatch) return null;
-
-  const channels = rgbMatch[1]
-    .split(',')
-    .map(part => Number(part.trim()))
-    .slice(0, 3);
-
-  if (channels.length !== 3 || channels.some(channel => !Number.isFinite(channel))) {
-    return null;
-  }
-
-  return channels
-    .map(channel => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, '0'))
-    .join('');
-};
-
-const resolveTooltipMapColors = () => {
-  const fallback = {
-    start: '4f46e5',
-    end: 'a5b4fc',
-    waypoint: '6366f1',
-    route: '4f46e5',
-  };
-
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return fallback;
-  }
-
-  const styles = window.getComputedStyle(document.documentElement);
-  const fromVar = (varName: string, fallbackHex: string) => {
-    const normalized = normalizeCssColorToHex(styles.getPropertyValue(varName));
-    return normalized || stripColorPrefix(fallbackHex);
-  };
-
-  return {
-    start: fromVar('--tf-accent-600', fallback.start),
-    end: fromVar('--tf-accent-300', fallback.end),
-    waypoint: fromVar('--tf-accent-500', fallback.waypoint),
-    route: fromVar('--tf-accent-600', fallback.route),
-  };
-};
 
 const COUNTRY_BY_NAME = new Map(
   COUNTRIES.map(country => [normalizeCountryToken(country.name), country] as const)
@@ -174,120 +119,10 @@ function normalizeCountryToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z]/g, '');
 }
 
-const parseLocalDate = (dateStr: string): Date => {
-  if (!dateStr) return new Date();
-  const parts = dateStr.split('-').map(Number);
-  if (parts.length === 3 && parts.every(part => Number.isFinite(part))) {
-    return new Date(parts[0], parts[1] - 1, parts[2]);
-  }
-  const parsed = new Date(dateStr);
-  return isNaN(parsed.getTime()) ? new Date() : parsed;
-};
-
 const startOfDay = (date: Date): Date => {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
   return next;
-};
-
-const addDays = (date: Date, days: number): Date => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-};
-
-const getTripCityItems = (trip: ITrip): ITimelineItem[] =>
-  trip.items
-    .filter(item => item.type === 'city')
-    .sort((a, b) => a.startDateOffset - b.startDateOffset);
-
-const getTripRangeOffsets = (trip: ITrip): TripRangeOffsets => {
-  const cityItems = getTripCityItems(trip);
-  const source = cityItems.length > 0 ? cityItems : trip.items;
-
-  if (source.length === 0) {
-    return { startOffset: 0, endOffset: 1 };
-  }
-
-  let minStart = Number.POSITIVE_INFINITY;
-  let maxEnd = Number.NEGATIVE_INFINITY;
-
-  source.forEach(item => {
-    if (!Number.isFinite(item.startDateOffset) || !Number.isFinite(item.duration)) return;
-    minStart = Math.min(minStart, item.startDateOffset);
-    maxEnd = Math.max(maxEnd, item.startDateOffset + item.duration);
-  });
-
-  if (!Number.isFinite(minStart) || !Number.isFinite(maxEnd) || maxEnd <= minStart) {
-    return { startOffset: 0, endOffset: 1 };
-  }
-
-  return { startOffset: minStart, endOffset: maxEnd };
-};
-
-const getTripDateRange = (trip: ITrip): { start: Date; end: Date } => {
-  const baseStart = parseLocalDate(trip.startDate);
-  const range = getTripRangeOffsets(trip);
-  const start = addDays(baseStart, Math.floor(range.startOffset));
-  const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
-  return { start, end };
-};
-
-const getTripDurationDays = (trip: ITrip): number => {
-  const range = getTripRangeOffsets(trip);
-  return Math.max(1, Math.ceil(range.endOffset - range.startOffset));
-};
-
-export const getTripCityStops = (trip: ITrip) =>
-  getTripCityItems(trip).map(item => ({
-    id: item.id,
-    title: item.title || item.location || 'City stop',
-    startDateOffset: item.startDateOffset,
-    duration: item.duration,
-  }));
-
-const formatTripDateRange = (trip: ITrip, locale: AppLanguage): string => {
-  const baseStart = parseLocalDate(trip.startDate);
-  const range = getTripRangeOffsets(trip);
-  const start = addDays(baseStart, Math.floor(range.startOffset));
-  const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
-
-  const currentYear = new Date().getFullYear();
-  const includeYear = start.getFullYear() !== currentYear || end.getFullYear() !== currentYear;
-  const fmt: Intl.DateTimeFormatOptions = includeYear
-    ? { month: 'short', day: 'numeric', year: 'numeric' }
-    : { month: 'short', day: 'numeric' };
-  return `${start.toLocaleDateString(locale, fmt)} - ${end.toLocaleDateString(locale, fmt)}`;
-};
-
-const formatTripMonths = (trip: ITrip, locale: AppLanguage): string => {
-  const baseStart = parseLocalDate(trip.startDate);
-  const range = getTripRangeOffsets(trip);
-  const start = addDays(baseStart, Math.floor(range.startOffset));
-  const end = addDays(baseStart, Math.ceil(range.endOffset) - 1);
-
-  const names: string[] = [];
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-  const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
-
-  while (cursor <= endMonth) {
-    names.push(cursor.toLocaleDateString(locale, { month: 'long' }));
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-
-  return names.join('/');
-};
-
-const formatTripSummaryLine = (trip: ITrip, locale: AppLanguage): string => {
-  const days = getTripDurationDays(trip);
-  const cityCount = getTripCityItems(trip).length;
-  const cityLabel = cityCount === 1 ? 'city' : 'cities';
-  const totalDistanceKm = getTripDistanceKm(trip.items);
-  const distanceLabel = totalDistanceKm > 0
-    ? formatDistance(totalDistanceKm, DEFAULT_DISTANCE_UNIT, { maximumFractionDigits: 0 })
-    : null;
-  const distancePart = distanceLabel ? ` • ${distanceLabel}` : '';
-  return `${days} ${days === 1 ? 'day' : 'days'} • ${formatTripMonths(trip, locale)} • ${cityCount} ${cityLabel}${distancePart}`;
 };
 
 const formatCityStayLabel = (duration: number): string => {
@@ -362,55 +197,6 @@ const getTripFlagCodes = (trip: ITrip): string[] => {
   });
 
   return codes;
-};
-
-export const buildMiniMapUrl = (trip: ITrip, mapLanguage: AppLanguage): string | null => {
-  const apiKey = getGoogleMapsApiKey();
-  if (!apiKey) return null;
-
-  const coordinates = getTripCityItems(trip)
-    .map(item => item.coordinates)
-    .filter((coord): coord is { lat: number; lng: number } =>
-      Boolean(coord && Number.isFinite(coord.lat) && Number.isFinite(coord.lng))
-    );
-
-  if (coordinates.length === 0) return null;
-
-  const routeCoordinates = coordinates.slice(0, 30);
-  const formatCoord = (coord: { lat: number; lng: number }) =>
-    `${coord.lat.toFixed(6)},${coord.lng.toFixed(6)}`;
-
-  const markerParams: string[] = [];
-  const visibleParams: string[] = [];
-  const start = routeCoordinates[0];
-  const end = routeCoordinates[routeCoordinates.length - 1];
-  const mapColors = resolveTooltipMapColors();
-
-  markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.start}|label:S|${formatCoord(start)}`)}`);
-  if (routeCoordinates.length > 1) {
-    markerParams.push(`markers=${encodeURIComponent(`size:mid|color:0x${mapColors.end}|label:E|${formatCoord(end)}`)}`);
-  }
-
-  routeCoordinates.slice(1, -1).slice(0, 18).forEach(coord => {
-    markerParams.push(`markers=${encodeURIComponent(`size:tiny|color:0x${mapColors.waypoint}|${formatCoord(coord)}`)}`);
-  });
-
-  routeCoordinates.forEach(coord => {
-    visibleParams.push(`visible=${encodeURIComponent(formatCoord(coord))}`);
-  });
-
-  const pathParams: string[] = [];
-  if (routeCoordinates.length > 1) {
-    pathParams.push(
-      `path=${encodeURIComponent(`color:0x${mapColors.route}|weight:4|${routeCoordinates.map(formatCoord).join('|')}`)}`
-    );
-  }
-
-  const markerQuery = markerParams.join('&');
-  const visibleQuery = visibleParams.join('&');
-  const pathQuery = pathParams.length > 0 ? `&${pathParams.join('&')}` : '';
-
-  return `https://maps.googleapis.com/maps/api/staticmap?size=480x640&scale=2&maptype=roadmap&${TOOLTIP_CLEAN_STYLE}&language=${encodeURIComponent(mapLanguage)}&${visibleQuery}&${markerQuery}${pathQuery}&key=${encodeURIComponent(apiKey)}`;
 };
 
 const compareByUpdatedDesc = (a: ITrip, b: ITrip): number => {
@@ -574,7 +360,7 @@ const FolderHeader: React.FC<FolderHeaderProps> = ({ label, count, isOpen, onTog
     <button
       type="button"
       onClick={onToggle}
-      className="p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
+      className="cursor-pointer p-1 rounded text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all"
       aria-label={isOpen ? `Collapse ${label}` : `Expand ${label}`}
       title={isOpen ? `Collapse ${label}` : `Expand ${label}`}
     >
@@ -631,7 +417,7 @@ const TripRow: React.FC<TripRowProps> = ({
       <button
         type="button"
         onClick={() => onSelectTrip(trip)}
-        className="min-w-0 flex-1 text-left"
+        className="min-w-0 flex-1 cursor-pointer text-left"
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="inline-flex items-center gap-1.5">
@@ -666,7 +452,7 @@ const TripRow: React.FC<TripRowProps> = ({
         <button
           type="button"
           onClick={(e) => onDelete(e, trip.id)}
-          className="p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
+          className="cursor-pointer p-1.5 rounded-md text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100" aria-label="Archive trip"
         >
           <Trash2 size={14} />
         </button>
@@ -676,7 +462,7 @@ const TripRow: React.FC<TripRowProps> = ({
             e.stopPropagation();
             onToggleFavorite(trip);
           }}
-          className={`p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
+          className={`cursor-pointer p-1.5 rounded-md hover:bg-amber-50 transition-colors ${
             showFavoriteByDefault ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
           title={trip.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -916,6 +702,8 @@ export const TripManager: React.FC<TripManagerProps> = ({
   appLanguage = DEFAULT_APP_LANGUAGE,
 }) => {
   const { confirm } = useAppDialog();
+  const { t } = useTranslation('common');
+  const { isAuthenticated } = useAuth();
   const [trips, setTrips] = React.useState<ITrip[]>([]);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [favoritesOpen, setFavoritesOpen] = React.useState(true);
@@ -1019,7 +807,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
   }, [getCountryCacheKey, persistCountryCache]);
 
   const refreshTrips = React.useCallback(async () => {
-    if (DB_ENABLED) {
+    if (DB_ENABLED && isAuthenticated) {
       await syncTripsFromDb();
     }
     const loadedTrips = getAllTrips();
@@ -1027,7 +815,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
       setTrips(loadedTrips);
     });
     return loadedTrips;
-  }, [startTransition]);
+  }, [isAuthenticated, startTransition]);
 
   const enrichTripsWithCountryData = React.useCallback(async (sourceTrips: ITrip[]) => {
     if (isEnrichingRef.current) return;
@@ -1035,6 +823,8 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     try {
       let hasChanges = false;
+      let geocodeLookupsRemaining = MAX_GEOCODE_LOOKUPS_PER_PASS;
+      const geocodePassCache = new Map<string, CountryMatch | null>();
 
       for (const trip of sourceTrips) {
         let tripChanged = false;
@@ -1046,12 +836,22 @@ export const TripManager: React.FC<TripManagerProps> = ({
             continue;
           }
 
-          const parsed = parseCountryFromText(item);
-          const geocoded = item.coordinates && Number.isFinite(item.coordinates.lat) && Number.isFinite(item.coordinates.lng)
-            ? await reverseGeocodeCountry(item.coordinates.lat, item.coordinates.lng)
-            : null;
           const stored = getCountryFromStoredFields(item);
-          const resolved = geocoded || parsed || stored;
+          const parsed = stored ? null : parseCountryFromText(item);
+          let geocoded: CountryMatch | null = null;
+
+          if (shouldAttemptTripManagerReverseGeocode(item, Boolean(stored || parsed), geocodeLookupsRemaining)) {
+            const geocodeCacheKey = `${item.coordinates.lat.toFixed(4)},${item.coordinates.lng.toFixed(4)}`;
+            if (geocodePassCache.has(geocodeCacheKey)) {
+              geocoded = geocodePassCache.get(geocodeCacheKey) ?? null;
+            } else {
+              geocodeLookupsRemaining -= 1;
+              geocoded = await reverseGeocodeCountry(item.coordinates.lat, item.coordinates.lng);
+              geocodePassCache.set(geocodeCacheKey, geocoded);
+            }
+          }
+
+          const resolved = stored || parsed || geocoded;
 
           if (!resolved) {
             nextItems.push(item);
@@ -1076,7 +876,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
         const updatedTrip: ITrip = { ...trip, items: nextItems };
         saveTrip(updatedTrip, { preserveUpdatedAt: true });
-        if (DB_ENABLED) {
+        if (DB_ENABLED && isAuthenticated) {
           void dbUpsertTrip(updatedTrip);
         }
         if (onUpdateTrip && currentTripId === updatedTrip.id) {
@@ -1093,7 +893,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     } finally {
       isEnrichingRef.current = false;
     }
-  }, [currentTripId, onUpdateTrip, reverseGeocodeCountry, startTransition]);
+  }, [currentTripId, isAuthenticated, onUpdateTrip, reverseGeocodeCountry, startTransition]);
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -1163,47 +963,118 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    const tripToArchive = trips.find((trip) => trip.id === id);
+    if (!tripToArchive) return;
+
     const shouldDelete = await confirm({
-      title: 'Archive Trip?',
-      message: 'This trip will be removed from your list and can be restored later.',
-      confirmLabel: 'Archive Trip',
-      cancelLabel: 'Cancel',
+      title: t('appDialog.tripArchive.title'),
+      message: (
+        <div className="space-y-2">
+          <p><Trans
+            ns="common"
+            i18nKey="appDialog.tripArchive.messageQuestion"
+            values={{ title: tripToArchive.title }}
+            components={{ strong: <strong /> }}
+          /></p>
+          <p>{t('appDialog.tripArchive.messageDetail')}</p>
+        </div>
+      ),
+      confirmLabel: t('appDialog.tripArchive.confirmLabel'),
+      cancelLabel: t('appDialog.tripArchive.cancelLabel'),
       tone: 'danger',
     });
     if (!shouldDelete) return;
 
-    const tripToArchive = trips.find((trip) => trip.id === id);
-    deleteTrip(id);
+    const toastId = showAppToast({
+      tone: 'loading',
+      title: 'Archiving trip',
+      description: 'Saving your change and removing this trip from your list...',
+      dismissible: false,
+    });
+
+    const archivedSnapshot: ITrip = {
+      ...tripToArchive,
+      status: 'archived',
+      updatedAt: Date.now(),
+    };
+
+    let archivedRemotely = !DB_ENABLED;
+    let queuedForReplay = false;
+
     if (DB_ENABLED) {
-      const archivedSnapshot = tripToArchive
-        ? {
-            ...tripToArchive,
-            status: 'archived' as const,
-            updatedAt: Date.now(),
-          }
-        : null;
       const connectivityState = getConnectivitySnapshot().state;
-      if (archivedSnapshot && connectivityState !== 'online') {
+      if (connectivityState !== 'online') {
         enqueueTripCommitAndSync({
           tripId: archivedSnapshot.id,
           tripSnapshot: archivedSnapshot,
           viewSnapshot: archivedSnapshot.defaultView ?? null,
           label: 'Data: Archived trip',
         });
+        queuedForReplay = true;
       } else {
-        const deleted = await dbDeleteTrip(id);
-        if (!deleted && archivedSnapshot) {
+        const archived = await dbArchiveTrip(id, {
+          source: 'my_trips',
+          metadata: { surface: 'trip_manager' },
+        });
+        if (archived) {
+          archivedRemotely = true;
+        } else {
           enqueueTripCommitAndSync({
             tripId: archivedSnapshot.id,
             tripSnapshot: archivedSnapshot,
             viewSnapshot: archivedSnapshot.defaultView ?? null,
             label: 'Data: Archived trip',
           });
+          queuedForReplay = true;
         }
       }
     }
+
+    deleteTrip(id);
+    trackEvent('my_trips__trip_archive--single', { trip_id: id });
     if (hoverAnchor?.tripId === id) hideHoverNow();
     void refreshTrips();
+    showAppToast({
+      id: toastId,
+      tone: 'remove',
+      title: 'Trip archived',
+      description: queuedForReplay
+        ? `Your trip "${tripToArchive.title}" was archived locally and will sync when connection is restored.`
+        : (archivedRemotely
+          ? `Your trip "${tripToArchive.title}" was archived successfully.`
+          : `Your trip "${tripToArchive.title}" was archived locally.`),
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          void (async () => {
+            const restoredTrip: ITrip = {
+              ...tripToArchive,
+              status: 'active',
+              updatedAt: Date.now(),
+            };
+            saveTrip(restoredTrip, { preserveUpdatedAt: true });
+            if (DB_ENABLED) {
+              const upserted = await dbUpsertTrip(restoredTrip);
+              if (!upserted) {
+                showAppToast({
+                  tone: 'error',
+                  title: 'Undo failed',
+                  description: 'Could not restore this trip right now.',
+                });
+                return;
+              }
+            }
+            trackEvent('my_trips__trip_archive--undo', { trip_id: id });
+            void refreshTrips();
+            showAppToast({
+              tone: 'add',
+              title: 'Archive undone',
+              description: `“${tripToArchive.title}” restored to My Trips.`,
+            });
+          })();
+        },
+      },
+    });
   };
 
   const handleToggleFavorite = async (trip: ITrip) => {
