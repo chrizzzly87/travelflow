@@ -78,6 +78,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     const modeGroup = calendarModeButton.parentElement;
     const controlsRoot = modeGroup?.parentElement;
     expect(controlsRoot?.lastElementChild).toBe(modeGroup);
+    expect(modeGroup).toHaveClass('gap-1');
   });
 
   it('hides calendar-only controls in timeline list mode', () => {

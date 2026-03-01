@@ -78,6 +78,9 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const { access } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
+    const lastRouteTargetRef = useRef<string | null>(null);
+    const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
+    const hasInSessionViewOverrideRef = useRef(false);
     const [routeState, setRouteState] = useState<SharedTripRouteState>(() => createInitialSharedTripRouteState());
     const {
         shareMode,
@@ -86,10 +89,10 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         snapshotState,
         sourceShareVersionId,
     } = routeState;
-    const resetRouteState = useCallback(() => {
+    const resetRouteState = useCallback((options?: { preserveViewSettings?: boolean }) => {
         setRouteState((prev) => ({
             ...prev,
-            viewSettings: undefined,
+            viewSettings: options?.preserveViewSettings ? prev.viewSettings : undefined,
             snapshotState: null,
             sourceShareVersionId: null,
         }));
@@ -97,6 +100,10 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const applyRouteState = useCallback((next: SharedTripRouteState) => {
         setRouteState(next);
     }, []);
+
+    useEffect(() => {
+        latestViewSettingsRef.current = viewSettings;
+    }, [viewSettings]);
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -110,6 +117,9 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
         const loadKey = `${token}:${location.search}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
+        const routeTargetKey = `${token}:${versionId || ''}`;
+        const didRouteTargetChange = lastRouteTargetRef.current !== routeTargetKey;
+        lastRouteTargetRef.current = routeTargetKey;
 
         const load = async () => {
             const connectivityState = connectivitySnapshot.state;
@@ -123,7 +133,20 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 return;
             }
 
-            resetRouteState();
+            // Keep in-session view choices while reconnecting on the same shared
+            // route target so delayed loader refreshes do not override controls.
+            resetRouteState({ preserveViewSettings: !didRouteTargetChange });
+            if (didRouteTargetChange) {
+                latestViewSettingsRef.current = undefined;
+                hasInSessionViewOverrideRef.current = false;
+            }
+
+            const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
+                if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
+                    return latestViewSettingsRef.current ?? resolvedView ?? fallbackView;
+                }
+                return resolvedView ?? fallbackView;
+            };
             const shared = await dbGetSharedTrip(token);
             if (!shared) {
                 if (connectivityState !== 'online') {
@@ -149,7 +172,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId && isUuid(versionId)) {
                 const sharedVersion = await dbGetSharedTripVersion(token, versionId);
                 if (sharedVersion?.trip) {
-                    const resolvedView = sharedVersion.view ?? sharedVersion.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(sharedVersion.view, sharedVersion.trip.defaultView);
                     const latestVersionId = sharedVersion.latestVersionId ?? shared.latestVersionId ?? null;
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
@@ -171,7 +194,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                     const sharedUpdatedAt = typeof shared.trip.updatedAt === 'number' ? shared.trip.updatedAt : null;
                     const snapshotUpdatedAt = typeof version.trip.updatedAt === 'number' ? version.trip.updatedAt : null;
                     const newerByTimestamp = sharedUpdatedAt !== null && snapshotUpdatedAt !== null && sharedUpdatedAt > snapshotUpdatedAt;
-                    const resolvedView = version.view ?? version.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(version.view, version.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -190,7 +213,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             if (versionId) {
                 const localEntry = findHistoryEntryByUrl(shared.trip.id, buildShareUrl(token, versionId));
                 if (localEntry?.snapshot?.trip) {
-                    const resolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
                     const nextState: SharedTripRouteState = {
                         ...baseRouteState,
                         viewSettings: resolvedView,
@@ -206,7 +229,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
                 }
             }
 
-            const resolvedView = shared.view ?? shared.trip.defaultView;
+            const resolvedView = resolveEffectiveView(shared.view, shared.trip.defaultView);
             applyRouteState({
                 ...baseRouteState,
                 viewSettings: resolvedView,
@@ -297,6 +320,7 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             onUpdateTrip={(updatedTrip) => onTripLoaded(updatedTrip, viewSettings ?? updatedTrip.defaultView)}
             onCommitState={handleCommitShared}
             onViewSettingsChange={(settings) => {
+                hasInSessionViewOverrideRef.current = true;
                 setRouteState((prev) => ({ ...prev, viewSettings: settings }));
                 onViewSettingsChange(settings);
             }}

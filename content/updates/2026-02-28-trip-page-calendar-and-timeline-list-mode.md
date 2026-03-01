@@ -22,6 +22,15 @@ summary: "Trip planning now supports a modern timeline list mode with today-focu
 - [x] [Improved] 🔲 Timeline transfer pills now show a clear selected outline state to match calendar-style selection feedback.
 - [x] [Improved] 🟢 "Today" is highlighted with a badge and the timeline list auto-scrolls to today when opened.
 - [x] [Improved] 🎛️ Calendar/list mode switching now uses icon-only controls with accessible labels, with the mode toggle pinned to the far right.
+- [x] [Improved] 🗺️ Scrolling through timeline list sections now keeps map focus in sync by highlighting the city currently in view.
+- [x] [Fixed] 🔁 Calendar mode now stays selected reliably instead of occasionally snapping back to timeline mode after background refreshes.
+- [x] [Improved] ↔️ Calendar and list mode icon tabs now use consistent spacing so the controls no longer feel crowded.
+- [x] [Improved] 🎯 Switching from calendar to timeline list now keeps the active selection and scrolls to the selected city or activity automatically.
+- [x] [Improved] 🧭 Timeline list now opens in a neutral state with no auto-selected details unless you already selected something.
+- [x] [Improved] 🔴 Timeline list "Today" badges now match the calendar-style red emphasis with uppercase visual treatment.
+- [x] [Fixed] 📍 Timeline list now reliably smooth-scrolls to the current-day marker after load when that marker starts outside the visible viewport.
+- [x] [Improved] 🧩 Scrolling through timeline chapters now updates details only when a selection is already open, avoiding unwanted panel opens from passive scrolling.
+- [x] [Fixed] 🧵 Versioned trip links now keep the selected calendar/list mode stable even when delayed sync refreshes arrive.
 - [x] [Improved] 🗺️ Map controls now stay visible even when the map is unavailable, while map-only actions stay safely disabled until map load succeeds.
 - [ ] [Internal] 💾 Active view mode is now saved with each trip view state so reloads restore the selected mode.
 - [ ] [Internal] ♻️ Undo and redo history now includes view-mode changes together with other planner view updates.
