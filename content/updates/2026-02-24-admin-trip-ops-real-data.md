@@ -71,3 +71,4 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🧱 Added admin snapshot lookup RPC for version-based trip updates so full diff modals resolve canonical before/after snapshots on demand.
 - [ ] [Internal] 🧹 Added admin reset/cleanup SQL controls to purge anonymous users and clear audit/user log tables for clean test passes.
 - [ ] [Internal] 📚 Added architecture docs for auth/session ownership, profile trip visibility rules, and audit/log event taxonomy.
+- [ ] [Internal] ✅ Added `supabase:validate` + `supabase:check-main-sync` guardrails and runbook instructions so `docs/supabase.sql` stays complete and main-synced before merges.

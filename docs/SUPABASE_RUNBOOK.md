@@ -39,6 +39,22 @@ Notes:
 - The file is idempotent for policies (`drop policy if exists ...` then create).
 - It also creates required RPC functions and grants execute permissions.
 
+### 2a. Repo guardrails for `docs/supabase.sql`
+
+Run these checks before opening/merging a PR with DB changes:
+
+```bash
+pnpm supabase:validate
+pnpm supabase:check-main-sync --fetch
+```
+
+What they enforce:
+
+- `supabase:validate`: catches truncation/conflict-marker issues and verifies required RPC signatures/GRANTs.
+- `supabase:check-main-sync`: fails if `origin/main` contains newer `docs/supabase.sql` commits that are not in your branch yet.
+
+If `supabase:check-main-sync` fails, merge/rebase `main` first, resolve `docs/supabase.sql`, then rerun both commands.
+
 ### 3. Verify required DB primitives
 
 Run these checks in SQL Editor:
