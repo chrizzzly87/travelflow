@@ -99,6 +99,7 @@ const USER_ROW = {
   last_name: 'One',
   display_name: 'Traveler One',
   username: 'traveler_one',
+  username_display: 'TravelerOne',
   gender: null,
   country: null,
   city: null,
@@ -127,6 +128,7 @@ const USER_ROW_2 = {
   last_name: 'Two',
   display_name: 'Traveler Two',
   username: 'traveler_two',
+  username_display: 'TravelerTwo',
   total_trips: 3,
   active_trips: 3,
 } as const;
@@ -275,5 +277,39 @@ describe('pages/AdminUsersPage soft delete toasts', () => {
     expect(bulkMessageText).toContain('Selected users: 2');
     expect(bulkMessageText).toContain('Cancel and transfer trips from each user drawer if you need to preserve trip data.');
     expect(bulkMessageText).toContain('This action cannot be undone.');
+  }, 20000);
+
+  it('hydrates admin username input from username_display and preserves mixed casing on save', async () => {
+    const user = userEvent.setup();
+    const mixedCaseUser = {
+      ...USER_ROW,
+      first_name: null,
+      last_name: null,
+      display_name: null,
+      username: 'exampleuser',
+      username_display: 'ExAmPleUser',
+    };
+    mocks.adminListUsers.mockResolvedValue([mixedCaseUser]);
+    mocks.adminGetUserProfile.mockResolvedValue(mixedCaseUser);
+
+    renderPage();
+
+    await screen.findAllByRole('button', { name: /ExAmPleUser/i });
+    const openDetailButtons = screen.getAllByRole('button', { name: /ExAmPleUser/i });
+    await user.click(openDetailButtons[0]);
+
+    const usernameInput = await screen.findByLabelText('Username');
+    expect(usernameInput).toHaveValue('ExAmPleUser');
+
+    await user.clear(usernameInput);
+    await user.type(usernameInput, 'NeWMiXeDcAsE');
+    await user.click(screen.getByRole('button', { name: 'Save user' }));
+
+    await waitFor(() => {
+      expect(mocks.adminUpdateUserProfile).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({ username: 'NeWMiXeDcAsE' }),
+      );
+    });
   }, 20000);
 });

@@ -17,6 +17,7 @@ export interface AdminUserRecord {
     first_name?: string | null;
     last_name?: string | null;
     username?: string | null;
+    username_display?: string | null;
     gender?: string | null;
     country?: string | null;
     city?: string | null;
@@ -162,6 +163,8 @@ export const adminListUsers = async (
             entitlements_override: null,
             first_name: `TestName${i}`,
             last_name: `LastName${i}`,
+            username: `test_user_${i}`,
+            username_display: `TestUser${i}`,
         }));
         return mockUsers;
     }
@@ -272,6 +275,8 @@ export const adminGetUserProfile = async (userId: string): Promise<AdminUserReco
             entitlements_override: null,
             first_name: `MockUser`,
             last_name: `Profile`,
+            username: 'mockuserprofile',
+            username_display: 'MockUserProfile',
         };
     }
     const client = requireSupabase();

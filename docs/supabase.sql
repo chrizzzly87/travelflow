@@ -2871,6 +2871,8 @@ begin
 end;
 $$;
 
+alter table public.profiles add column if not exists username_display text;
+
 drop function if exists public.admin_list_users(integer, integer, text);
 create or replace function public.admin_list_users(
   p_limit integer default 100,
@@ -2889,6 +2891,7 @@ returns table(
   first_name text,
   last_name text,
   username text,
+  username_display text,
   gender text,
   country text,
   city text,
@@ -2957,6 +2960,7 @@ begin
     p.first_name,
     p.last_name,
     p.username,
+    p.username_display,
     p.gender,
     p.country,
     p.city,
@@ -3021,6 +3025,7 @@ returns table(
   first_name text,
   last_name text,
   username text,
+  username_display text,
   gender text,
   country text,
   city text,
@@ -3089,6 +3094,7 @@ begin
     p.first_name,
     p.last_name,
     p.username,
+    p.username_display,
     p.gender,
     p.country,
     p.city,

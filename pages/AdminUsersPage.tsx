@@ -320,6 +320,7 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
     if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username_display?.trim()) return user.username_display.trim();
     if (user.username?.trim()) return user.username.trim();
     return 'Unnamed user';
 };
@@ -1341,7 +1342,7 @@ export const AdminUsersPage: React.FC = () => {
         setProfileDraft({
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
-            username: selectedUser.username || '',
+            username: selectedUser.username_display || selectedUser.username || '',
             gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
@@ -1358,7 +1359,7 @@ export const AdminUsersPage: React.FC = () => {
                 setProfileDraft({
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
-                    username: fullProfile.username || '',
+                    username: fullProfile.username_display || fullProfile.username || '',
                     gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
