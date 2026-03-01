@@ -7,11 +7,11 @@ import { BASE_PIXELS_PER_DAY, DEFAULT_CITY_COLOR_PALETTE_ID, DEFAULT_DISTANCE_UN
 import { getExampleMapViewTransitionName, getExampleTitleViewTransitionName } from '../shared/viewTransitionNames';
 import { type DbTripAccessMetadata } from '../services/dbApi';
 import {
+    buildDirectReactivatedTrip,
     buildPaywalledTripDisplay,
     resolveTripPaywallActivationMode,
     type TripPaywallActivationMode,
 } from '../config/paywall';
-import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { trackEvent } from '../services/analyticsService';
 import { removeLocalStorageItem } from '../services/browserStorageService';
 import { useLoginModal } from '../hooks/useLoginModal';
@@ -841,17 +841,19 @@ const useTripViewRender = ({
         event.preventDefault();
         if (paywallActivationMode === 'direct_reactivate') {
             const now = Date.now();
-            const reactivatedTrip: ITrip = {
-                ...tripRef.current,
-                status: 'active',
-                tripExpiresAt: resolveTripExpiryFromEntitlements(
-                    now,
-                    undefined,
-                    access?.entitlements.tripExpirationDays
-                ),
-                updatedAt: now,
-            };
+            const reactivatedTrip = buildDirectReactivatedTrip({
+                trip: tripRef.current,
+                nowMs: now,
+                tripExpirationDays: access?.entitlements.tripExpirationDays,
+            });
             onUpdateTrip(reactivatedTrip);
+            if (onCommitState) {
+                onCommitState(
+                    reactivatedTrip,
+                    reactivatedTrip.defaultView ?? initialViewSettings ?? trip.defaultView,
+                    { label: 'Lifecycle: Reactivated expired trip' }
+                );
+            }
             showAppToast({
                 tone: 'add',
                 title: t('tripPaywall.reactivate.toast.title'),
@@ -871,13 +873,16 @@ const useTripViewRender = ({
         });
     }, [
         access?.entitlements.tripExpirationDays,
+        initialViewSettings,
         location.hash,
         location.pathname,
         location.search,
+        onCommitState,
         onUpdateTrip,
         openLoginModal,
         paywallActivationMode,
         t,
+        trip.defaultView,
         trip.id,
     ]);
 

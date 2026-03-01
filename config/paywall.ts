@@ -1,5 +1,5 @@
 import { ITrip, ITimelineItem } from '../types';
-import { isTripExpiredByTimestamp } from './productLimits';
+import { isTripExpiredByTimestamp, resolveTripExpiryFromEntitlements } from './productLimits';
 import {
     readLocalStorageItem,
     removeLocalStorageItem,
@@ -27,6 +27,12 @@ interface ActivationModeOptions {
     isAuthenticated: boolean;
     isAnonymous: boolean;
     isTripDetailRoute: boolean;
+}
+
+interface BuildDirectReactivatedTripOptions {
+    trip: ITrip;
+    nowMs: number;
+    tripExpirationDays?: number | null;
 }
 
 const PAYWALL_LOCATION_LABEL = 'Location hidden';
@@ -174,6 +180,21 @@ export const resolveTripPaywallActivationMode = ({
     if (!isTripDetailRoute) return 'login_modal';
     return 'direct_reactivate';
 };
+
+export const buildDirectReactivatedTrip = ({
+    trip,
+    nowMs,
+    tripExpirationDays,
+}: BuildDirectReactivatedTripOptions): ITrip => ({
+    ...trip,
+    status: 'active',
+    tripExpiresAt: resolveTripExpiryFromEntitlements(
+        nowMs,
+        undefined,
+        tripExpirationDays
+    ),
+    updatedAt: nowMs,
+});
 
 export const buildPaywalledTripDisplay = (trip: ITrip): ITrip => {
     const cityIndexByItemId = new Map<string, number>();

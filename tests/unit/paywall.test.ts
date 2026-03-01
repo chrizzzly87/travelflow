@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+    buildDirectReactivatedTrip,
     buildPaywalledTripDisplay,
     getTripLifecycleState,
     resolveTripPaywallActivationMode,
     shouldShowTripPaywall,
 } from '../../config/paywall';
+import { buildTripExpiryIso } from '../../config/productLimits';
 import { makeActivityItem, makeCityItem, makeTrip, makeTravelItem } from '../helpers/tripFixtures';
 
 describe('config/paywall', () => {
@@ -61,6 +63,24 @@ describe('config/paywall', () => {
       isAnonymous: false,
       isTripDetailRoute: true,
     })).toBe('direct_reactivate');
+  });
+
+  it('builds a direct reactivation payload with refreshed expiry', () => {
+    const sourceTrip = makeTrip({
+      status: 'expired',
+      tripExpiresAt: '2026-02-01T00:00:00.000Z',
+      updatedAt: Date.parse('2026-02-01T00:00:00.000Z'),
+    });
+    const nowMs = Date.parse('2026-03-01T12:00:00.000Z');
+    const reactivated = buildDirectReactivatedTrip({
+      trip: sourceTrip,
+      nowMs,
+      tripExpirationDays: 30,
+    });
+
+    expect(reactivated.status).toBe('active');
+    expect(reactivated.updatedAt).toBe(nowMs);
+    expect(reactivated.tripExpiresAt).toBe(buildTripExpiryIso(nowMs, 30));
   });
 
   it('builds deterministic paywalled trip masking', () => {
