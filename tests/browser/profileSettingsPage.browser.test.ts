@@ -140,7 +140,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle');
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('new_handle', { logBlockedAttempt: true });
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'new_handle',
         usernameDisplay: 'new_handle',
@@ -170,7 +170,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh');
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('chrizzzly_hh', { logBlockedAttempt: true });
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'chrizzzly_hh',
         usernameDisplay: 'chrizzzly_hh',
@@ -203,7 +203,7 @@ describe('pages/ProfileSettingsPage username governance', () => {
     await user.click(screen.getByRole('button', { name: 'settings.actions.save' }));
 
     await waitFor(() => {
-      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('admin_support');
+      expect(mocks.checkUsernameAvailability).toHaveBeenCalledWith('admin_support', { logBlockedAttempt: true });
       expect(mocks.updateCurrentUserProfile).toHaveBeenCalledWith(expect.objectContaining({
         username: 'admin_support',
         usernameDisplay: 'AdMiN_support',

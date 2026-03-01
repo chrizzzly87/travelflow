@@ -70,8 +70,8 @@ export interface PublicTripsPageResult {
     nextOffset: number;
 }
 
-const USERNAME_PATTERN = /^[a-z0-9_-]{3,20}$/;
-const USERNAME_DISPLAY_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
+const USERNAME_PATTERN = /^[a-z0-9_-]{3,40}$/;
+const USERNAME_DISPLAY_PATTERN = /^[A-Za-z0-9_-]{3,40}$/;
 const USERNAME_RESERVED = new Set([
     'admin',
     'administrator',
@@ -140,11 +140,26 @@ const USERNAME_RESERVED = new Set([
     'terms',
     'cookies',
     'imprint',
+    'tamtam',
+    'tamtamapp',
+    'tamtam_admin',
+    'tamtam-admin',
+    'admin_tamtam',
+    'admin-tamtam',
+    'tamtam_support',
+    'tamtam-support',
+    'support_tamtam',
+    'support-tamtam',
+    'tamtam_help',
+    'tamtam-help',
+    'help_tamtam',
+    'help-tamtam',
+    'tamtam_helpdesk',
+    'tamtam-helpdesk',
     'travelflow',
     'travelflowapp',
     'travelplanner',
     'tripplanner',
-    'u',
 ]);
 const USERNAME_COOLDOWN_DAYS = 90;
 const DEFAULT_PUBLIC_TRIPS_PAGE_LIMIT = 12;
@@ -606,7 +621,10 @@ export const updateCurrentUserPassportStickerSelection = async (
     }
 };
 
-export const checkUsernameAvailability = async (candidateRaw: string): Promise<UsernameAvailabilityResult> => {
+export const checkUsernameAvailability = async (
+    candidateRaw: string,
+    options: { logBlockedAttempt?: boolean } = {}
+): Promise<UsernameAvailabilityResult> => {
     const normalizedUsername = normalizeUsername(candidateRaw);
     const validationFailure = validateUsername(normalizedUsername);
     if (validationFailure) return validationFailure;
@@ -645,6 +663,7 @@ export const checkUsernameAvailability = async (candidateRaw: string): Promise<U
 
     const rpcAttempt = await supabase.rpc('profile_check_username_availability', {
         p_username: normalizedUsername,
+        p_log_attempt: options.logBlockedAttempt === true,
     });
 
     if (!rpcAttempt.error) {

@@ -12,14 +12,14 @@ Harden username handling end-to-end so handles are:
 
 ## Current State (Baseline)
 1. Frontend and backend currently normalize usernames to lowercase.
-2. Existing validation pattern is effectively lowercase-only and currently allows 3-30 chars.
+2. Existing validation pattern is effectively lowercase-only and currently allows 3-40 chars.
 3. Existing reserved list is small and static.
 4. Public profile routes resolve canonical lowercase handle values and support redirect lookups for previous handles.
 5. No dedicated DB-managed denylist governance model exists yet.
 
 ## Target Contract (Decision Locked)
 1. Allowed characters: `A-Z`, `a-z`, `0-9`, `_`, `-`.
-2. Length: min `3`, max `20`.
+2. Length: min `3`, max `40`.
 3. No spaces or other symbols.
 4. Case-insensitive uniqueness everywhere (`ADMIN`, `admin`, `AdMiN` are the same canonical handle).
 5. Preserve user-entered casing for display.
@@ -80,7 +80,7 @@ Harden username handling end-to-end so handles are:
 6. Remove temporary compatibility logic after stabilization.
 
 ## Acceptance Criteria
-1. DB trigger/RPC rejects invalid charset, too-short (<3), too-long (>20), blocked, and reserved terms.
+1. DB trigger/RPC rejects invalid charset, too-short (<3), too-long (>40), blocked, and reserved terms.
 2. Case-insensitive uniqueness enforced across create/update.
 3. Mixed-case username persists display casing while canonical is lowercase.
 4. Public profile routes redirect uppercase/mixed-case URLs to lowercase canonical URLs.
@@ -120,7 +120,7 @@ Username security hardening with canonical lowercase routing and display-casing 
 Implement end-to-end username hardening across frontend, backend, database, and profile routing.
 
 Scope:
-- Enforce username contract: `A-Z`, `a-z`, `0-9`, `_`, `-`, length `3-20`.
+- Enforce username contract: `A-Z`, `a-z`, `0-9`, `_`, `-`, length `3-40`.
 - Introduce display/canonical model:
   - `username_display` keeps user casing.
   - lowercase canonical handle is used for uniqueness, lookup, and URLs.

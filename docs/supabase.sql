@@ -4367,7 +4367,7 @@ where term is not null and term <> lower(btrim(term));
 
 delete from public.username_blocked_terms
 where nullif(btrim(coalesce(term, '')), '') is null
-   or lower(btrim(term)) !~ '^[a-z0-9_-]{3,20}$'
+   or lower(btrim(term)) !~ '^[a-z0-9_-]{3,40}$'
    or lower(btrim(term)) !~ '[a-z0-9]';
 
 do $$
@@ -4381,7 +4381,7 @@ begin
     alter table public.username_blocked_terms
       add constraint username_blocked_terms_term_format_check
       check (
-        lower(btrim(term)) ~ '^[a-z0-9_-]{3,20}$'
+        lower(btrim(term)) ~ '^[a-z0-9_-]{3,40}$'
         and lower(btrim(term)) ~ '[a-z0-9]'
       );
   end if;
@@ -4394,7 +4394,7 @@ where handle is not null and handle <> lower(btrim(handle));
 
 delete from public.username_reserved_handles
 where nullif(btrim(coalesce(handle, '')), '') is null
-   or lower(btrim(handle)) !~ '^[a-z0-9_-]{3,20}$'
+   or lower(btrim(handle)) !~ '^[a-z0-9_-]{3,40}$'
    or lower(btrim(handle)) !~ '[a-z0-9]';
 
 do $$
@@ -4408,7 +4408,7 @@ begin
     alter table public.username_reserved_handles
       add constraint username_reserved_handles_handle_format_check
       check (
-        lower(btrim(handle)) ~ '^[a-z0-9_-]{3,20}$'
+        lower(btrim(handle)) ~ '^[a-z0-9_-]{3,40}$'
         and lower(btrim(handle)) ~ '[a-z0-9]'
       );
   end if;
@@ -4484,6 +4484,22 @@ values
   ('terms', 'platform', true, 'seed_v1', 'Platform namespace'),
   ('cookies', 'platform', true, 'seed_v1', 'Platform namespace'),
   ('imprint', 'platform', true, 'seed_v1', 'Platform namespace'),
+  ('tamtam', 'brand', true, 'seed_v1', 'Future brand namespace'),
+  ('tamtamapp', 'brand', true, 'seed_v1', 'Future brand namespace'),
+  ('tamtam_admin', 'security', true, 'seed_v1', 'Brand impersonation admin namespace'),
+  ('tamtam-admin', 'security', true, 'seed_v1', 'Brand impersonation admin namespace'),
+  ('admin_tamtam', 'security', true, 'seed_v1', 'Brand impersonation admin namespace'),
+  ('admin-tamtam', 'security', true, 'seed_v1', 'Brand impersonation admin namespace'),
+  ('tamtam_support', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('tamtam-support', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('support_tamtam', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('support-tamtam', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('tamtam_help', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('tamtam-help', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('help_tamtam', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('help-tamtam', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('tamtam_helpdesk', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
+  ('tamtam-helpdesk', 'support', true, 'seed_v1', 'Brand impersonation support namespace'),
   ('travelflow', 'brand', true, 'seed_v1', 'Brand namespace'),
   ('travelflowapp', 'brand', true, 'seed_v1', 'Brand namespace'),
   ('travelplanner', 'brand', true, 'seed_v1', 'Brand namespace'),
@@ -4606,12 +4622,12 @@ begin
   end if;
 
   if v_new_username is not null then
-    if v_raw_display !~ '^[A-Za-z0-9_-]{3,20}$' then
-      raise exception 'Username must be 3-20 chars and use only letters, numbers, underscores, or hyphens';
+    if v_raw_display !~ '^[A-Za-z0-9_-]{3,40}$' then
+      raise exception 'Username must be 3-40 chars and use only letters, numbers, underscores, or hyphens';
     end if;
 
-    if v_new_username !~ '^[a-z0-9_-]{3,20}$' then
-      raise exception 'Username must be 3-20 chars and use only letters, numbers, underscores, or hyphens';
+    if v_new_username !~ '^[a-z0-9_-]{3,40}$' then
+      raise exception 'Username must be 3-40 chars and use only letters, numbers, underscores, or hyphens';
     end if;
 
     if v_new_username !~ '[a-z0-9]' then
@@ -4658,6 +4674,11 @@ begin
       'api','www','about','contact','careers','jobs','blog',
       'trip','trips','create',
       'privacy','terms','cookies','imprint',
+      'tamtam','tamtamapp',
+      'tamtam_admin','tamtam-admin','admin_tamtam','admin-tamtam',
+      'tamtam_support','tamtam-support','support_tamtam','support-tamtam',
+      'tamtam_help','tamtam-help','help_tamtam','help-tamtam',
+      'tamtam_helpdesk','tamtam-helpdesk',
       'travelflow','travelflowapp','travelplanner','tripplanner'
     ) and not (v_is_admin and v_reserved_bypass) then
       raise exception 'Username is reserved';
@@ -4799,7 +4820,12 @@ create trigger profile_log_user_changes
 after update on public.profiles
 for each row execute function public.profile_log_user_changes();
 
-create or replace function public.profile_check_username_availability(p_username text)
+drop function if exists public.profile_check_username_availability(text);
+drop function if exists public.profile_check_username_availability(text, boolean);
+create or replace function public.profile_check_username_availability(
+  p_username text,
+  p_log_attempt boolean default false
+)
 returns table(
   availability text,
   reason text,
@@ -4816,18 +4842,49 @@ declare
   v_current_username text;
   v_username_changed_at timestamptz;
   v_cooldown_ends_at timestamptz;
+  v_log_reason text;
 begin
   if v_username is null then
+    v_log_reason := 'empty';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'invalid'::text, 'empty'::text, null::timestamptz;
     return;
   end if;
 
-  if v_username !~ '^[a-z0-9_-]{3,20}$' then
+  if v_username !~ '^[a-z0-9_-]{3,40}$' then
+    v_log_reason := 'format';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'invalid'::text, 'format'::text, null::timestamptz;
     return;
   end if;
 
   if v_username !~ '[a-z0-9]' then
+    v_log_reason := 'format';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'invalid'::text, 'format'::text, null::timestamptz;
     return;
   end if;
@@ -4838,6 +4895,16 @@ begin
     where lower(urh.handle) = v_username
       and urh.active = true
   ) then
+    v_log_reason := 'reserved';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
     return;
   end if;
@@ -4848,6 +4915,16 @@ begin
     where lower(ubt.term) = v_username
       and ubt.active = true
   ) then
+    v_log_reason := 'blocked';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'reserved'::text, 'blocked'::text, null::timestamptz;
     return;
   end if;
@@ -4868,8 +4945,23 @@ begin
     'api','www','about','contact','careers','jobs','blog',
     'trip','trips','create',
     'privacy','terms','cookies','imprint',
+    'tamtam','tamtamapp',
+    'tamtam_admin','tamtam-admin','admin_tamtam','admin-tamtam',
+    'tamtam_support','tamtam-support','support_tamtam','support-tamtam',
+    'tamtam_help','tamtam-help','help_tamtam','help-tamtam',
+    'tamtam_helpdesk','tamtam-helpdesk',
     'travelflow','travelflowapp','travelplanner','tripplanner'
   ) then
+    v_log_reason := 'reserved';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
     return;
   end if;
@@ -4889,6 +4981,20 @@ begin
     if v_current_username is not null and v_username_changed_at is not null and not public.is_admin(v_uid) then
       v_cooldown_ends_at := v_username_changed_at + interval '90 days';
       if now() < v_cooldown_ends_at then
+        if p_log_attempt then
+          insert into public.profile_user_events (owner_id, action, source, metadata)
+          values (
+            v_uid,
+            'profile.username_change_blocked',
+            'profile.username.validation',
+            jsonb_build_object(
+              'username_candidate', coalesce(p_username, ''),
+              'canonical_candidate', v_username,
+              'reason', 'cooldown',
+              'cooldown_ends_at', v_cooldown_ends_at
+            )
+          );
+        end if;
         return query select 'cooldown'::text, 'cooldown'::text, v_cooldown_ends_at;
         return;
       end if;
@@ -4901,6 +5007,16 @@ begin
     where lower(coalesce(p.username, '')) = v_username
       and (v_uid is null or p.id <> v_uid)
   ) then
+    v_log_reason := 'taken';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'taken'::text, null::text, null::timestamptz;
     return;
   end if;
@@ -4912,6 +5028,16 @@ begin
       and phr.expires_at > now()
       and (v_uid is null or phr.user_id <> v_uid)
   ) then
+    v_log_reason := 'redirect_reserved';
+    if p_log_attempt and v_uid is not null then
+      insert into public.profile_user_events (owner_id, action, source, metadata)
+      values (
+        v_uid,
+        'profile.username_change_blocked',
+        'profile.username.validation',
+        jsonb_build_object('username_candidate', coalesce(p_username, ''), 'canonical_candidate', v_username, 'reason', v_log_reason)
+      );
+    end if;
     return query select 'reserved'::text, 'redirect_reserved'::text, null::timestamptz;
     return;
   end if;
@@ -4948,7 +5074,7 @@ declare
   v_handle text := nullif(lower(btrim(coalesce(p_handle, ''))), '');
   v_redirect_user_id uuid;
 begin
-  if v_handle is null or v_handle !~ '^[a-z0-9_-]{3,20}$' then
+  if v_handle is null or v_handle !~ '^[a-z0-9_-]{3,40}$' then
     return query select 'not_found'::text, null::text, null::uuid, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::boolean, null::text, null::timestamptz;
     return;
   end if;
@@ -5372,7 +5498,7 @@ begin
 end;
 $$;
 
-grant execute on function public.profile_check_username_availability(text) to anon, authenticated;
+grant execute on function public.profile_check_username_availability(text, boolean) to anon, authenticated;
 grant execute on function public.profile_resolve_public_handle(text) to anon, authenticated;
 grant execute on function public.upsert_trip(text, jsonb, jsonb, text, date, boolean, boolean, text, text, text, timestamptz, text, text) to anon, authenticated;
 grant execute on function public.archive_trip_for_user(text, text, jsonb) to authenticated;

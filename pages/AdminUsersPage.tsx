@@ -1224,7 +1224,7 @@ export const AdminUsersPage: React.FC = () => {
     }, [selectedUser]);
     const selectedUserPublicProfilePath = useMemo(() => {
         const normalizedUsername = (selectedUser?.username || '').trim().toLowerCase();
-        if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) return null;
+        if (!/^[a-z0-9_-]{3,40}$/.test(normalizedUsername)) return null;
         return buildPath('publicProfile', { username: normalizedUsername });
     }, [selectedUser?.username]);
     const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {

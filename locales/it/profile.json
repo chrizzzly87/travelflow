@@ -157,7 +157,7 @@
       "city": "Città *",
       "preferredLanguage": "Lingua preferita *"
     },
-    "usernameHelp": "Utilizza da 3 a 20 lettere, numeri, trattini bassi o trattini. Nessuno spazio.",
+    "usernameHelp": "Utilizza da 3 a 40 lettere, numeri, trattini bassi o trattini. Nessuno spazio.",
     "usernameCooldownHint": "Puoi modificare nuovamente il tuo nome utente su {date}.",
     "bioHelp": "Condividi una breve introduzione che i viaggiatori potranno vedere sul tuo profilo pubblico.",
     "publicProfileToggleTitle": "Abilita profilo pubblico",
@@ -189,7 +189,7 @@
       "available": "Ottimo, questo nome utente è disponibile.",
       "taken": "Questo nome utente è già utilizzato.",
       "reserved": "Questo nome utente è riservato.",
-      "invalid": "Utilizza da 3 a 30 lettere, numeri, trattini bassi o trattini.",
+      "invalid": "Utilizza da 3 a 40 lettere, numeri, trattini bassi o trattini.",
       "unchanged": "Questo è il tuo nome utente attuale.",
       "cooldown": "Le modifiche al nome utente sono attualmente in fase di recupero.",
       "cooldownDate": "Le modifiche al nome utente saranno in attesa fino al {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Prova ad aggiungere un numero o un carattere di sottolineatura.",
       "reserved": "Scegli un altro handle che non sia riservato.",
-      "invalid": "Utilizza da 3 a 30 lettere, numeri, trattini bassi o trattini senza spazi.",
+      "invalid": "Utilizza da 3 a 40 lettere, numeri, trattini bassi o trattini senza spazi.",
       "cooldown": "Le modifiche al nome utente sono bloccate durante la finestra di raffreddamento."
     },
     "countryRegionSearchPlaceholder": "Cerca paese o regione",

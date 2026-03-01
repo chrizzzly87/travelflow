@@ -157,7 +157,7 @@
       "city": "Ville *",
       "preferredLanguage": "Langue préférée *"
     },
-    "usernameHelp": "Utilisez 3 à 20 lettres, chiffres, traits de soulignement ou traits d'union. Pas d'espaces.",
+    "usernameHelp": "Utilisez 3 à 40 lettres, chiffres, traits de soulignement ou traits d'union. Pas d'espaces.",
     "usernameCooldownHint": "Vous pourrez à nouveau modifier votre nom d'utilisateur le {date}.",
     "bioHelp": "Partagez une courte introduction que les voyageurs peuvent voir sur votre profil public.",
     "publicProfileToggleTitle": "Activer le profil public",
@@ -189,7 +189,7 @@
       "available": "Super, ce nom d'utilisateur est disponible.",
       "taken": "Ce nom d'utilisateur est déjà pris.",
       "reserved": "Ce nom d'utilisateur est réservé.",
-      "invalid": "Utilisez 3 à 30 lettres, chiffres, traits de soulignement ou traits d'union.",
+      "invalid": "Utilisez 3 à 40 lettres, chiffres, traits de soulignement ou traits d'union.",
       "unchanged": "Il s'agit de votre nom d'utilisateur actuel.",
       "cooldown": "Les changements de nom d'utilisateur sont actuellement en période de recharge.",
       "cooldownDate": "Les changements de nom d'utilisateur sont en attente jusqu'au {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Essayez d'ajouter un numéro ou un trait de soulignement.",
       "reserved": "Choisissez une autre poignée qui n'est pas réservée.",
-      "invalid": "Utilisez 3 à 30 lettres, chiffres, traits de soulignement ou traits d’union sans espaces.",
+      "invalid": "Utilisez 3 à 40 lettres, chiffres, traits de soulignement ou traits d’union sans espaces.",
       "cooldown": "Les modifications du nom d'utilisateur sont verrouillées pendant la fenêtre de recharge."
     },
     "countryRegionSearchPlaceholder": "Rechercher un pays ou une région",

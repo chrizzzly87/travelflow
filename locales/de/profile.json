@@ -157,7 +157,7 @@
       "city": "Stadt *",
       "preferredLanguage": "Bevorzugte Sprache *"
     },
-    "usernameHelp": "Verwenden Sie 3–20 Buchstaben, Zahlen, Unterstriche oder Bindestriche. Keine Leerzeichen.",
+    "usernameHelp": "Verwenden Sie 3–40 Buchstaben, Zahlen, Unterstriche oder Bindestriche. Keine Leerzeichen.",
     "usernameCooldownHint": "Sie können Ihren Benutzernamen am {date} erneut ändern.",
     "bioHelp": "Teilen Sie eine kurze Einführung, die Reisende in Ihrem öffentlichen Profil sehen können.",
     "publicProfileToggleTitle": "Öffentliches Profil aktivieren",
@@ -189,7 +189,7 @@
       "available": "Großartig, dieser Benutzername ist verfügbar.",
       "taken": "Dieser Benutzername ist bereits vergeben.",
       "reserved": "Dieser Benutzername ist reserviert.",
-      "invalid": "Verwenden Sie 3–30 Buchstaben, Zahlen, Unterstriche oder Bindestriche.",
+      "invalid": "Verwenden Sie 3–40 Buchstaben, Zahlen, Unterstriche oder Bindestriche.",
       "unchanged": "Dies ist Ihr aktueller Benutzername.",
       "cooldown": "Änderungen des Benutzernamens unterliegen derzeit der Abklingzeit.",
       "cooldownDate": "Änderungen des Benutzernamens unterliegen einer Abklingzeit bis {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Füge eine Zahl oder einen Unterstrich hinzu.",
       "reserved": "Wähle einen anderen Handle, der nicht reserviert ist.",
-      "invalid": "Verwenden Sie 3–30 Buchstaben, Zahlen, Unterstriche oder Bindestriche ohne Leerzeichen.",
+      "invalid": "Verwenden Sie 3–40 Buchstaben, Zahlen, Unterstriche oder Bindestriche ohne Leerzeichen.",
       "cooldown": "Benutzernamen können erst nach dem Cooldown wieder geändert werden."
     },
     "countryRegionSearchPlaceholder": "Land oder Region suchen",

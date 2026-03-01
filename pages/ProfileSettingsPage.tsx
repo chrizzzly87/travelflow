@@ -70,8 +70,8 @@ const REQUIRED_FIELDS: Array<keyof Pick<ProfileFormState, 'firstName' | 'lastNam
 ];
 
 const USERNAME_COOLDOWN_DAYS = 90;
-const USERNAME_ALLOWED_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
-const USERNAME_CANONICAL_PATTERN = /^[a-z0-9_-]{3,20}$/;
+const USERNAME_ALLOWED_PATTERN = /^[A-Za-z0-9_-]{3,40}$/;
+const USERNAME_CANONICAL_PATTERN = /^[a-z0-9_-]{3,40}$/;
 const normalizeUsernameInput = (value: string): string => value.trim().toLowerCase().replace(/^@+/, '');
 const normalizeUsernameDisplayInput = (value: string): string => value.trim().replace(/^@+/, '');
 const sanitizeUsernameInput = (value: string): string => (
@@ -284,7 +284,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
         return Array.from(new Set(
             rawCandidates
                 .map((candidate) => sanitize(candidate))
-                .filter((candidate) => candidate.length >= 3 && candidate.length <= 20 && USERNAME_CANONICAL_PATTERN.test(candidate))
+                .filter((candidate) => candidate.length >= 3 && candidate.length <= 40 && USERNAME_CANONICAL_PATTERN.test(candidate))
                 .filter((candidate) => candidate !== current)
         ));
     };
@@ -375,7 +375,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                     error: null,
                 });
 
-                const checkResult = await checkUsernameAvailability(normalizedUsername);
+                const checkResult = await checkUsernameAvailability(normalizedUsername, { logBlockedAttempt: true });
                 setUsernameCheck({
                     loading: false,
                     result: checkResult,
@@ -550,7 +550,7 @@ export const ProfileSettingsPage: React.FC<ProfileSettingsPageProps> = ({ mode =
                                                 error: null,
                                             });
                                         }}
-                                        pattern="[A-Za-z0-9_-]{3,20}"
+                                        pattern="[A-Za-z0-9_-]{3,40}"
                                         autoCapitalize="none"
                                         spellCheck={false}
                                         readOnly={isUsernameLocked}
