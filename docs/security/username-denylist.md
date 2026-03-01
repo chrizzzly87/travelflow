@@ -50,6 +50,28 @@ These are enforced in backend via `username_reserved_handles` and include catego
 - Handles without any letters or digits are rejected (for example `___` and `---`).
 - DB submit-time validation is mandatory; frontend validation is pre-submit UX only.
 
+## Effective Enforcement Scope (Current)
+- Allowed username charset is ASCII Latin letters + digits + `_` + `-` only.
+- Minimum length is `3`, maximum length is `20`.
+- Terms that do not match `^[a-z0-9_-]{3,20}$` (after lowercase/trim normalization) are not effective under current username policy.
+- Backend denylist/reserved storage is category-separated in DB tables:
+  - `username_reserved_handles` (reserved owner/admin/system/support/security namespaces).
+  - `username_blocked_terms` (abuse/hate/scam terms).
+- SQL migration enforces format constraints on both tables and removes invalid legacy rows before constraints are applied.
+
+## Seeded DB Category Counts (Current SQL)
+- Reserved handles total: `71`
+  - `platform`: `19`
+  - `security`: `16`
+  - `system_owner`: `11`
+  - `support`: `11`
+  - `auth`: `7`
+  - `brand`: `4`
+  - `finance`: `3`
+- Blocked terms total: `33`
+  - `scam`: `18`
+  - `hate_speech`: `15`
+
 ## Effective Combined Username Denylist
 Total unique terms: **2743**
 

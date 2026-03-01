@@ -4361,6 +4361,60 @@ create unique index if not exists username_reserved_handles_handle_uidx
 create index if not exists username_reserved_handles_category_idx
   on public.username_reserved_handles (category, active);
 
+update public.username_blocked_terms
+set term = lower(btrim(term))
+where term is not null and term <> lower(btrim(term));
+
+delete from public.username_blocked_terms
+where nullif(btrim(coalesce(term, '')), '') is null
+   or lower(btrim(term)) !~ '^[a-z0-9_-]{3,20}$'
+   or lower(btrim(term)) !~ '[a-z0-9]';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'username_blocked_terms_term_format_check'
+      and conrelid = 'public.username_blocked_terms'::regclass
+  ) then
+    alter table public.username_blocked_terms
+      add constraint username_blocked_terms_term_format_check
+      check (
+        lower(btrim(term)) ~ '^[a-z0-9_-]{3,20}$'
+        and lower(btrim(term)) ~ '[a-z0-9]'
+      );
+  end if;
+end;
+$$;
+
+update public.username_reserved_handles
+set handle = lower(btrim(handle))
+where handle is not null and handle <> lower(btrim(handle));
+
+delete from public.username_reserved_handles
+where nullif(btrim(coalesce(handle, '')), '') is null
+   or lower(btrim(handle)) !~ '^[a-z0-9_-]{3,20}$'
+   or lower(btrim(handle)) !~ '[a-z0-9]';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'username_reserved_handles_handle_format_check'
+      and conrelid = 'public.username_reserved_handles'::regclass
+  ) then
+    alter table public.username_reserved_handles
+      add constraint username_reserved_handles_handle_format_check
+      check (
+        lower(btrim(handle)) ~ '^[a-z0-9_-]{3,20}$'
+        and lower(btrim(handle)) ~ '[a-z0-9]'
+      );
+  end if;
+end;
+$$;
+
 insert into public.username_reserved_handles (handle, category, owner_assignable, source, notes)
 values
   ('admin', 'system_owner', true, 'seed_v1', 'System owner/admin namespace'),
@@ -4430,7 +4484,6 @@ values
   ('terms', 'platform', true, 'seed_v1', 'Platform namespace'),
   ('cookies', 'platform', true, 'seed_v1', 'Platform namespace'),
   ('imprint', 'platform', true, 'seed_v1', 'Platform namespace'),
-  ('u', 'platform', true, 'seed_v1', 'Route namespace'),
   ('travelflow', 'brand', true, 'seed_v1', 'Brand namespace'),
   ('travelflowapp', 'brand', true, 'seed_v1', 'Brand namespace'),
   ('travelplanner', 'brand', true, 'seed_v1', 'Brand namespace'),
@@ -4605,8 +4658,7 @@ begin
       'api','www','about','contact','careers','jobs','blog',
       'trip','trips','create',
       'privacy','terms','cookies','imprint',
-      'travelflow','travelflowapp','travelplanner','tripplanner',
-      'u'
+      'travelflow','travelflowapp','travelplanner','tripplanner'
     ) and not (v_is_admin and v_reserved_bypass) then
       raise exception 'Username is reserved';
     end if;
@@ -4816,8 +4868,7 @@ begin
     'api','www','about','contact','careers','jobs','blog',
     'trip','trips','create',
     'privacy','terms','cookies','imprint',
-    'travelflow','travelflowapp','travelplanner','tripplanner',
-    'u'
+    'travelflow','travelflowapp','travelplanner','tripplanner'
   ) then
     return query select 'reserved'::text, 'reserved'::text, null::timestamptz;
     return;
