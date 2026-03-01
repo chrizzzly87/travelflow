@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-24-admin-trip-ops-real-data
-version: v0.57.0
+version: v0.72.0
 title: "Admin trips real-data recovery and action controls"
 date: 2026-02-24
-published_at: 2026-02-24T12:55:00Z
-status: draft
+published_at: 2026-03-01T09:50:00Z
+status: published
 notify_in_app: false
 in_app_hours: 24
 summary: "Admin overview and trip operations now stay on live records, with expanded trip actions in both the table and side panel."
