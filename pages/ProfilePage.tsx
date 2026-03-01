@@ -873,7 +873,7 @@ export const ProfilePage: React.FC = () => {
 
                 <ProfileOwnerSummary
                     displayName={displayName}
-                    username={profile?.username || ''}
+                    username={profile?.usernameDisplay || profile?.username || ''}
                     initials={initialsFrom(profile, access?.email || null)}
                     status={profileStatus}
                     memberSince={memberSince}

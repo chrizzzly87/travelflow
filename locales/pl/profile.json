@@ -157,7 +157,7 @@
       "city": "Miasto *",
       "preferredLanguage": "Preferowany język *"
     },
-    "usernameHelp": "Użyj od 3 do 30 liter, cyfr, podkreśleń i łączników. Brak spacji.",
+    "usernameHelp": "Użyj od 3 do 40 liter, cyfr, podkreśleń i łączników. Brak spacji.",
     "usernameCooldownHint": "Możesz ponownie zmienić swoją nazwę użytkownika na {date}.",
     "bioHelp": "Udostępnij krótkie wprowadzenie, które podróżni mogą zobaczyć w Twoim profilu publicznym.",
     "publicProfileToggleTitle": "Włącz profil publiczny",
@@ -189,7 +189,7 @@
       "available": "Świetnie, ta nazwa użytkownika jest dostępna.",
       "taken": "Ta nazwa użytkownika jest już zajęta.",
       "reserved": "Ta nazwa użytkownika jest zastrzeżona.",
-      "invalid": "Użyj od 3 do 30 liter, cyfr, podkreśleń i łączników.",
+      "invalid": "Użyj od 3 do 40 liter, cyfr, podkreśleń i łączników.",
       "unchanged": "To jest Twoja aktualna nazwa użytkownika.",
       "cooldown": "Zmiany nazwy użytkownika obecnie trwają.",
       "cooldownDate": "Zmiana nazwy użytkownika trwa do {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Spróbuj dodać cyfrę lub podkreślenie.",
       "reserved": "Wybierz inny uchwyt, który nie jest zarezerwowany.",
-      "invalid": "Użyj od 3 do 30 liter, cyfr, podkreśleń lub łączników bez spacji.",
+      "invalid": "Użyj od 3 do 40 liter, cyfr, podkreśleń lub łączników bez spacji.",
       "cooldown": "Zmiany nazwy użytkownika są zablokowane w czasie oczekiwania."
     },
     "countryRegionSearchPlaceholder": "Wyszukaj kraj lub region",

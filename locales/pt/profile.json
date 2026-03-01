@@ -157,7 +157,7 @@
       "city": "Cidade *",
       "preferredLanguage": "Idioma preferido *"
     },
-    "usernameHelp": "Use de 3 a 30 letras, números, sublinhados ou hifens. Sem espaços.",
+    "usernameHelp": "Use de 3 a 40 letras, números, sublinhados ou hifens. Sem espaços.",
     "usernameCooldownHint": "Você pode alterar seu nome de usuário novamente em {date}.",
     "bioHelp": "Compartilhe uma breve introdução que os viajantes podem ver em seu perfil público.",
     "publicProfileToggleTitle": "Ativar perfil público",
@@ -189,7 +189,7 @@
       "available": "Ótimo, este nome de usuário está disponível.",
       "taken": "Este nome de usuário já está em uso.",
       "reserved": "Este nome de usuário é reservado.",
-      "invalid": "Use de 3 a 30 letras, números, sublinhados ou hifens.",
+      "invalid": "Use de 3 a 40 letras, números, sublinhados ou hifens.",
       "unchanged": "Este é o seu nome de usuário atual.",
       "cooldown": "As alterações de nome de usuário estão atualmente em espera.",
       "cooldownDate": "As alterações de nome de usuário estão em espera até {date}.",
@@ -204,7 +204,7 @@
     "usernameRecoveryHint": {
       "taken": "Tente adicionar um número ou sublinhado.",
       "reserved": "Escolha outro identificador que não esteja reservado.",
-      "invalid": "Use de 3 a 30 letras, números, sublinhados ou hífens sem espaços.",
+      "invalid": "Use de 3 a 40 letras, números, sublinhados ou hífens sem espaços.",
       "cooldown": "As edições de nome de usuário são bloqueadas durante a janela de espera."
     },
     "countryRegionSearchPlaceholder": "Pesquisar país ou região",

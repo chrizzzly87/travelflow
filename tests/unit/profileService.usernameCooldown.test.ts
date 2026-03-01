@@ -134,6 +134,8 @@ describe('services/profileService username cooldown fallback', () => {
     expect(profile?.usernameChangedAt).toBe('2026-01-15T00:00:00Z');
     expect(profile?.publicProfileEnabled).toBe(false);
     expect(profile?.defaultPublicTripVisibility).toBe(false);
+    expect(profile?.usernameDisplay).toBe('traveler');
+    expect(profile?.usernameCanonical).toBe('traveler');
   });
 
   it('normalizes legacy visibility values to booleans', async () => {
@@ -174,6 +176,68 @@ describe('services/profileService username cooldown fallback', () => {
     expect(supabaseMocks.lookupMaybeSingle).not.toHaveBeenCalled();
   });
 
+  it('rejects usernames longer than 40 chars before RPC', async () => {
+    const result = await checkUsernameAvailability('a'.repeat(41));
+
+    expect(result.availability).toBe('invalid');
+    expect(result.reason).toBe('format');
+    expect(supabaseMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it('accepts 40-char usernames as format-valid', async () => {
+    const result = await checkUsernameAvailability('a'.repeat(40));
+
+    expect(result.availability).not.toBe('invalid');
+  });
+
+  it('treats tamtam-admin namespace as reserved before RPC', async () => {
+    const result = await checkUsernameAvailability('tamtam_admin');
+
+    expect(result.availability).toBe('reserved');
+    expect(result.reason).toBe('reserved');
+    expect(supabaseMocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it('passes p_log_attempt=true to availability RPC when requested', async () => {
+    supabaseMocks.legacyMaybeSingle.mockResolvedValueOnce({
+      data: {
+        id: 'user-1',
+        display_name: 'Chris',
+        first_name: 'Chris',
+        last_name: 'W',
+        username: 'traveler',
+        bio: '',
+        gender: '',
+        country: 'DE',
+        city: 'Hamburg',
+        preferred_language: 'en',
+        onboarding_completed_at: '2026-01-01T00:00:00Z',
+        account_status: 'active',
+        public_profile_enabled: false,
+        default_public_trip_visibility: false,
+        username_changed_at: '2025-01-01T00:00:00Z',
+      },
+      error: null,
+    });
+    supabaseMocks.rpc.mockResolvedValueOnce({
+      data: [
+        {
+          availability: 'available',
+          reason: null,
+          cooldown_ends_at: null,
+        },
+      ],
+      error: null,
+    });
+
+    await checkUsernameAvailability('new_handle', { logBlockedAttempt: true });
+
+    expect(supabaseMocks.rpc).toHaveBeenCalledWith('profile_check_username_availability', {
+      p_username: 'new_handle',
+      p_log_attempt: true,
+    });
+  });
+
   it('still returns profile data when username_changed_at is unavailable in legacy fallback', async () => {
     supabaseMocks.legacyMaybeSingle.mockResolvedValueOnce({
       data: null,
@@ -210,6 +274,7 @@ describe('services/profileService username cooldown fallback', () => {
               first_name: 'Chris',
               last_name: 'W',
               username: 'traveler',
+              username_display: 'TrAvElEr',
               bio: '',
               country: 'DE',
               city: 'Hamburg',
@@ -234,6 +299,8 @@ describe('services/profileService username cooldown fallback', () => {
     expect(result.status).toBe('found');
     expect(result.profile?.id).toBe('user-1');
     expect(result.profile?.username).toBe('traveler');
+    expect(result.profile?.usernameDisplay).toBe('TrAvElEr');
+    expect(result.profile?.usernameCanonical).toBe('traveler');
     expect(result.canonicalUsername).toBe('traveler');
   });
 });

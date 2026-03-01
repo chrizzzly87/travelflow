@@ -36,6 +36,7 @@ import {
     adminListUserChangeLogs,
     adminListUserTrips,
     adminListUsers,
+    adminResetUserUsernameCooldown,
     adminUpdateTrip,
     adminUpdateUserOverrides,
     adminUpdateUserProfile,
@@ -89,6 +90,7 @@ const PAGE_SIZE = 25;
 const USER_CHANGE_LOG_DRAWER_LIMIT = 20;
 const GENDER_UNSET_VALUE = '__gender_unset__';
 const USERS_CACHE_KEY = 'admin.users.cache.v1';
+const USERNAME_CHANGE_COOLDOWN_DAYS = 90;
 const USER_ROLE_VALUES = ['admin', 'user'] as const;
 const USER_STATUS_VALUES: ReadonlyArray<UserAccountStatus> = ['active', 'disabled', 'deleted'];
 const USER_ACTIVATION_VALUES: ReadonlyArray<UserActivationStatus> = ['activated', 'invited', 'pending', 'anonymous'];
@@ -268,6 +270,31 @@ const formatTimestamp = (value: string | null | undefined): string => {
     return new Date(parsed).toLocaleString();
 };
 
+const formatOptionalTimestamp = (value: string | null | undefined): string => {
+    if (!value) return 'Not set';
+    const parsed = Date.parse(value);
+    if (!Number.isFinite(parsed)) return 'Unknown';
+    return new Date(parsed).toLocaleString();
+};
+
+const getUsernameCooldownMeta = (usernameChangedAt: string | null | undefined): {
+    isActive: boolean;
+    endsAt: string | null;
+} => {
+    const parsed = Date.parse(usernameChangedAt || '');
+    if (!Number.isFinite(parsed)) {
+        return {
+            isActive: false,
+            endsAt: null,
+        };
+    }
+    const endsDate = new Date(parsed + USERNAME_CHANGE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
+    return {
+        isActive: Date.now() < endsDate.getTime(),
+        endsAt: endsDate.toISOString(),
+    };
+};
+
 const formatFieldLabel = (value: string): string => (
     value
         .replace(/_/g, ' ')
@@ -320,6 +347,7 @@ const getUserDisplayName = (user: AdminUserRecord): string => {
     const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
     if (fullName) return fullName;
     if (user.display_name?.trim()) return user.display_name.trim();
+    if (user.username_display?.trim()) return user.username_display.trim();
     if (user.username?.trim()) return user.username.trim();
     return 'Unnamed user';
 };
@@ -1207,6 +1235,10 @@ export const AdminUsersPage: React.FC = () => {
         () => users.find((user) => user.user_id === selectedUserId) || null,
         [selectedUserId, users]
     );
+    const selectedUserUsernameCooldown = useMemo(
+        () => getUsernameCooldownMeta(selectedUser?.username_changed_at),
+        [selectedUser?.username_changed_at]
+    );
     const selectedUserTripStats = useMemo(() => {
         const fallbackTotal = selectedUser ? getUserTotalTrips(selectedUser) : 0;
         const fallbackActive = selectedUser ? getUserActiveTrips(selectedUser) : 0;
@@ -1224,7 +1256,7 @@ export const AdminUsersPage: React.FC = () => {
     }, [selectedUser]);
     const selectedUserPublicProfilePath = useMemo(() => {
         const normalizedUsername = (selectedUser?.username || '').trim().toLowerCase();
-        if (!/^[a-z0-9_]{3,30}$/.test(normalizedUsername)) return null;
+        if (!/^[a-z0-9_-]{3,40}$/.test(normalizedUsername)) return null;
         return buildPath('publicProfile', { username: normalizedUsername });
     }, [selectedUser?.username]);
     const selectedUserChangeEntries = useMemo(() => userChangeLogs.map((log) => {
@@ -1341,7 +1373,7 @@ export const AdminUsersPage: React.FC = () => {
         setProfileDraft({
             firstName: selectedUser.first_name || '',
             lastName: selectedUser.last_name || '',
-            username: selectedUser.username || '',
+            username: selectedUser.username_display || selectedUser.username || '',
             gender: toProfileGenderDraft(selectedUser.gender),
             country: selectedUser.country || '',
             city: selectedUser.city || '',
@@ -1358,7 +1390,7 @@ export const AdminUsersPage: React.FC = () => {
                 setProfileDraft({
                     firstName: fullProfile.first_name || '',
                     lastName: fullProfile.last_name || '',
-                    username: fullProfile.username || '',
+                    username: fullProfile.username_display || fullProfile.username || '',
                     gender: toProfileGenderDraft(fullProfile.gender),
                     country: fullProfile.country || '',
                     city: fullProfile.city || '',
@@ -1722,6 +1754,41 @@ export const AdminUsersPage: React.FC = () => {
             await loadUsers();
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not save user.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleResetUsernameCooldown = async () => {
+        if (!selectedUser) return;
+        const userName = getUserDisplayName(selectedUser);
+        setIsSaving(true);
+        setErrorMessage(null);
+        setMessage(null);
+        const loadingToastId = showAppToast({
+            tone: 'loading',
+            title: 'Resetting username cooldown',
+            description: `Allowing "${userName}" to change username immediately.`,
+        });
+        try {
+            await adminResetUserUsernameCooldown(selectedUser.user_id, 'admin.manual_reset');
+            setMessage('Username cooldown reset. The user can change username immediately.');
+            await loadUsers();
+            showAppToast({
+                id: loadingToastId,
+                tone: 'success',
+                title: 'Username cooldown reset',
+                description: `"${userName}" can now change username immediately.`,
+            });
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : 'Could not reset username cooldown.';
+            setErrorMessage(reason);
+            showAppToast({
+                id: loadingToastId,
+                tone: 'error',
+                title: 'Cooldown reset failed',
+                description: reason,
+            });
         } finally {
             setIsSaving(false);
         }
@@ -2968,6 +3035,15 @@ export const AdminUsersPage: React.FC = () => {
                                             className="h-9 w-full rounded-lg border border-slate-300 px-3 text-sm"
                                         />
                                     </label>
+                                    <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600 sm:col-span-2">
+                                        <div>Self-service username changes are limited to once every {USERNAME_CHANGE_COOLDOWN_DAYS} days.</div>
+                                        <div>Last recorded username change: {formatOptionalTimestamp(selectedUser.username_changed_at)}.</div>
+                                        <div>
+                                            {selectedUserUsernameCooldown.isActive
+                                                ? `Cooldown ends: ${formatOptionalTimestamp(selectedUserUsernameCooldown.endsAt)}.`
+                                                : 'Cooldown is currently not active.'}
+                                        </div>
+                                    </div>
                                     <label className="space-y-1">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Gender</span>
                                         <Select
@@ -3099,6 +3175,14 @@ export const AdminUsersPage: React.FC = () => {
                                     className="rounded-lg bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-700 disabled:opacity-50"
                                 >
                                     Save user
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleResetUsernameCooldown()}
+                                    disabled={isSaving}
+                                    className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                    Reset username cooldown
                                 </button>
                                 <button
                                     type="button"
