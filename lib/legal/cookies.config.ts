@@ -380,6 +380,14 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       notes: 'Debug-only key.',
     },
     {
+      name: 'tf_debug_browser_connectivity_override',
+      purpose: 'Stores forced browser online/offline mode for network simulation in debugger testing.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+      notes: 'Debug-only key.',
+    },
+    {
       name: 'tf_debug_trip_expired_overrides_v1',
       purpose: 'Stores debug overrides for trip expiry simulation.',
       duration: 'Persistent',
