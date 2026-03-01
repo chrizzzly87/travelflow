@@ -8,6 +8,10 @@ It mirrors seeded database data in `public.username_reserved_handles` and `publi
 - Allowed charset: `A-Z`, `a-z`, `0-9`, `_`, `-`
 - Length: min `3`, max `40`
 - Canonical form: lowercase
+- Blocked terms are enforced on canonical usernames with separator-aware boundaries: `(^|[-_])term($|[-_])`
+- Matching examples:
+  - blocked: `hitler`, `super_hitler`, `adolf-hitler`, `hitler_foo`, `foo-hitler`
+  - not blocked by boundary rule alone: `shitler`, `adolfhitler`
 - Terms that do not match `^[a-z0-9_-]{3,40}$` are excluded from effective denylist seeds.
 
 ## Source Metadata

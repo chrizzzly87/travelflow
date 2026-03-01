@@ -1,7 +1,7 @@
 # Username Security and Canonical Handle Governance (Follow-up)
 
 ## Status
-Open issue (follow-up). Not yet implemented.
+Implemented via PR #211. Track follow-up tuning only if new edge cases appear.
 GitHub issue: https://github.com/chrizzzly87/travelflow/issues/208
 
 ## Objective
@@ -41,8 +41,9 @@ Harden username handling end-to-end so handles are:
 ## Backend Enforcement Scope
 1. Keep DB trigger and RPC path as source of truth (never frontend-only trust).
 2. Enforce charset, min/max length, denylist, reserved handles, and case-insensitive uniqueness in DB layer.
-3. Continue cooldown and redirect handling for username changes.
-4. Normalize comparisons to lowercase canonical value before collision checks.
+3. Use separator-aware blocked-term matching (`(^|[-_])term($|[-_])`) to block abusive tokens in handle segments while avoiding false positives from arbitrary in-word substrings.
+4. Continue cooldown and redirect handling for username changes.
+5. Normalize comparisons to lowercase canonical value before collision checks.
 
 ## Frontend Scope
 1. Immediate username feedback while typing.
