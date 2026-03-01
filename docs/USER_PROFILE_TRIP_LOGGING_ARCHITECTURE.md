@@ -43,8 +43,27 @@ This document is the operational source of truth for:
   - mixed timeline (admin + user actions),
   - page size 50 with offset paging,
   - actor filters (`admin`, `user`),
-  - target/action filters and date range filtering,
-  - replay export button for current filtered timeline (`admin_forensics_replay_v1` JSON bundle) backed by `/api/internal/admin/audit/replay-export`.
+  - target/action filters and time filtering (`24h`, `7d`, `30d`, `all`, `custom` date-range picker),
+  - resizable table columns + show/hide column filter,
+  - replay export for:
+    - current filtered timeline,
+    - selected table rows,
+    - single row export from row actions,
+  - replay export writes `admin.audit.export` rows via `/api/internal/admin/audit/replay-export`.
+
+## Admin Undo/Revert Model
+- Audit row actions provide confirm-based undo for supported entries.
+- Undo writes a fresh admin audit event (append-only model).
+- Supported user-originated undo targets:
+  - `trip.updated` (snapshot rollback through `admin_override_trip_commit`),
+  - `trip.archived` (status restore via `admin_update_trip`),
+  - `profile.updated` (field rollback via `admin_update_user_profile` for supported profile fields).
+- Supported admin-originated undo targets:
+  - `admin.trip.override_commit`,
+  - `admin.trip.update`,
+  - `admin.user.update_profile`,
+  - `admin.user.update_tier`.
+- Non-supported actions remain non-destructive/read-only in row actions.
 
 ## Current User Action Taxonomy
 - Primary trip actions:

@@ -1,15 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
 import { useSearchParams } from 'react-router-dom';
-import { AdminShell, type AdminDateRange } from '../components/admin/AdminShell';
-import { isIsoDateInRange } from '../components/admin/adminDateRange';
+import { AdminShell } from '../components/admin/AdminShell';
 import {
     adminExportAuditReplay,
+    adminOverrideTripCommit,
     adminGetTripVersionSnapshots,
     adminGetUserProfile,
     adminListAuditLogs,
     adminListUserChangeLogs,
     adminListTrips,
+    adminUpdateTrip,
     adminUpdateUserProfile,
     type AdminAuditRecord,
     type AdminTripRecord,
@@ -22,6 +23,11 @@ import { AdminFilterMenu, type AdminFilterMenuOption } from '../components/admin
 import { readAdminCache, writeAdminCache } from '../components/admin/adminLocalCache';
 import { CopyableUuid } from '../components/admin/CopyableUuid';
 import { Drawer, DrawerContent } from '../components/ui/drawer';
+import { Checkbox } from '../components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { DateRangePicker } from '../components/DateRangePicker';
+import { showAppToast } from '../components/ui/appToast';
 import { AdminJsonDiffModal } from '../components/admin/AdminJsonDiffModal';
 import { useAppDialog } from '../components/AppDialogProvider';
 import {
@@ -39,8 +45,38 @@ const USER_CHANGE_CACHE_KEY = 'admin.user_changes.cache.v1';
 const AUDIT_PAGE_SIZE = 50;
 const AUDIT_SOURCE_MAX_ROWS = 500;
 const ACTOR_FILTER_VALUES = ['admin', 'user'] as const;
+const AUDIT_TIME_PRESETS = ['24h', '7d', '30d', 'all', 'custom'] as const;
+const AUDIT_VISIBLE_COLUMN_IDS = ['when', 'actor', 'action', 'target', 'diff', 'rowActions'] as const;
+const RESIZABLE_AUDIT_COLUMN_IDS = ['when', 'actor', 'action', 'target', 'diff'] as const;
+const AUDIT_COLUMN_OPTIONS: Array<{ value: AuditVisibleColumnId; label: string }> = [
+    { value: 'when', label: 'When' },
+    { value: 'actor', label: 'Actor' },
+    { value: 'action', label: 'Action' },
+    { value: 'target', label: 'Target' },
+    { value: 'diff', label: 'Diff & details' },
+    { value: 'rowActions', label: 'Actions' },
+];
+const DEFAULT_VISIBLE_COLUMNS: AuditVisibleColumnId[] = [...AUDIT_VISIBLE_COLUMN_IDS];
+const AUDIT_COLUMN_WIDTH_DEFAULTS: Record<AuditResizableColumnId, number> = {
+    when: 176,
+    actor: 236,
+    action: 296,
+    target: 250,
+    diff: 620,
+};
+const AUDIT_COLUMN_WIDTH_MIN: Record<AuditResizableColumnId, number> = {
+    when: 124,
+    actor: 170,
+    action: 190,
+    target: 180,
+    diff: 360,
+};
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 type AuditActorFilter = typeof ACTOR_FILTER_VALUES[number];
+type AuditTimePreset = typeof AUDIT_TIME_PRESETS[number];
+type AuditVisibleColumnId = typeof AUDIT_VISIBLE_COLUMN_IDS[number];
+type AuditResizableColumnId = typeof RESIZABLE_AUDIT_COLUMN_IDS[number];
 
 const ACTION_FILTER_LABELS: Record<string, string> = {
     'admin.user.hard_delete': 'Hard-deleted user',
@@ -94,6 +130,70 @@ const parseNonNegativeOffset = (value: string | null): number => {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return 0;
     return Math.max(0, Math.floor(parsed));
+};
+
+const parseAuditTimePreset = (value: string | null): AuditTimePreset => {
+    if (value === '24h' || value === '7d' || value === '30d' || value === 'all' || value === 'custom') return value;
+    return '30d';
+};
+
+const parseAuditVisibleColumns = (value: string | null): AuditVisibleColumnId[] => {
+    const parsed = parseQueryMultiValue(value)
+        .filter((columnId): columnId is AuditVisibleColumnId => (
+            AUDIT_VISIBLE_COLUMN_IDS.includes(columnId as AuditVisibleColumnId)
+        ));
+    return parsed.length > 0 ? parsed : [...DEFAULT_VISIBLE_COLUMNS];
+};
+
+const toDateInputValue = (value: Date): string => {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const parseDateInputToTimestamp = (value: string, asEndOfDay: boolean): number | null => {
+    if (!value) return null;
+    const parsed = new Date(`${value}T${asEndOfDay ? '23:59:59.999' : '00:00:00.000'}`);
+    const timestamp = parsed.getTime();
+    return Number.isFinite(timestamp) ? timestamp : null;
+};
+
+const getDefaultCustomStartDate = (): string => {
+    const date = new Date();
+    date.setDate(date.getDate() - 6);
+    return toDateInputValue(date);
+};
+
+const getDefaultCustomEndDate = (): string => toDateInputValue(new Date());
+
+const formatAuditCustomRangeLabel = (startDate: string, endDate: string): string => {
+    const startTs = parseDateInputToTimestamp(startDate, false);
+    const endTs = parseDateInputToTimestamp(endDate, true);
+    if (!startTs || !endTs) return 'Choose custom range';
+    return `${new Date(startTs).toLocaleDateString()} - ${new Date(endTs).toLocaleDateString()}`;
+};
+
+const isIsoDateInAuditRange = (
+    isoDate: string | null | undefined,
+    dateRange: AuditTimePreset,
+    customStartDate: string,
+    customEndDate: string
+): boolean => {
+    if (!isoDate) return false;
+    const timestamp = Date.parse(isoDate);
+    if (!Number.isFinite(timestamp)) return false;
+
+    if (dateRange === 'all') return true;
+    if (dateRange === '24h') return timestamp >= (Date.now() - DAY_MS);
+    if (dateRange === '7d') return timestamp >= (Date.now() - (7 * DAY_MS));
+    if (dateRange === '30d') return timestamp >= (Date.now() - (30 * DAY_MS));
+
+    const startTs = parseDateInputToTimestamp(customStartDate, false);
+    const endTs = parseDateInputToTimestamp(customEndDate, true);
+    if (!startTs || !endTs) return false;
+    if (startTs <= endTs) return timestamp >= startTs && timestamp <= endTs;
+    return timestamp >= endTs && timestamp <= startTs;
 };
 
 const asRecord = (value: Record<string, unknown> | null | undefined): Record<string, unknown> => {
@@ -315,6 +415,84 @@ const getTimelineActionLabel = (entry: AuditTimelineEntry): string => {
     return resolveUserChangeActionPresentation(entry.log, diffEntries).label;
 };
 
+const getTimelineEntryKey = (entry: AuditTimelineEntry): string => `${entry.kind}:${entry.log.id}`;
+
+const extractRevertibleProfilePatch = (
+    beforeData: Record<string, unknown> | null | undefined
+): Parameters<typeof adminUpdateUserProfile>[1] | null => {
+    const source = asRecord(beforeData);
+    const patch: Parameters<typeof adminUpdateUserProfile>[1] = {};
+    const hasOwn = (key: string) => Object.prototype.hasOwnProperty.call(source, key);
+    const toTextOrNull = (value: unknown): string | null => {
+        if (value === null) return null;
+        if (typeof value !== 'string') return null;
+        const trimmed = value.trim();
+        return trimmed || null;
+    };
+    const toStatusOrNull = (value: unknown): 'active' | 'disabled' | 'deleted' | null => (
+        value === 'active' || value === 'disabled' || value === 'deleted' ? value : null
+    );
+    const toRoleOrNull = (value: unknown): 'admin' | 'user' | null => (
+        value === 'admin' || value === 'user' ? value : null
+    );
+
+    if (hasOwn('first_name')) patch.firstName = toTextOrNull(source.first_name);
+    if (hasOwn('last_name')) patch.lastName = toTextOrNull(source.last_name);
+    if (hasOwn('username')) patch.username = toTextOrNull(source.username);
+    if (hasOwn('gender')) patch.gender = toTextOrNull(source.gender);
+    if (hasOwn('country')) patch.country = toTextOrNull(source.country);
+    if (hasOwn('city')) patch.city = toTextOrNull(source.city);
+    if (hasOwn('preferred_language')) patch.preferredLanguage = toTextOrNull(source.preferred_language);
+    if (hasOwn('account_status')) patch.accountStatus = toStatusOrNull(source.account_status);
+    if (hasOwn('system_role')) patch.systemRole = toRoleOrNull(source.system_role);
+    if (hasOwn('tier_key')) patch.tierKey = toTextOrNull(source.tier_key) as Parameters<typeof adminUpdateUserProfile>[1]['tierKey'];
+
+    return Object.keys(patch).length > 0 ? patch : null;
+};
+
+const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
+    const log = entry.log;
+    const action = log.action.trim().toLowerCase();
+
+    if (entry.kind === 'user') {
+        if (action === 'trip.archived') return Boolean(log.target_id);
+        if (action === 'trip.updated') {
+            const metadata = asRecord(log.metadata);
+            return Boolean(log.target_id && asString(metadata.version_id));
+        }
+        if (action === 'profile.updated') {
+            return Boolean(log.target_id && extractRevertibleProfilePatch(log.before_data));
+        }
+        return false;
+    }
+
+    if (!log.target_id) return false;
+    if (action === 'admin.trip.override_commit') {
+        const before = asRecord(log.before_data);
+        return Object.keys(asRecord(before.data)).length > 0;
+    }
+    if (action === 'admin.trip.update') {
+        const before = asRecord(log.before_data);
+        return (
+            Object.prototype.hasOwnProperty.call(before, 'status')
+            || Object.prototype.hasOwnProperty.call(before, 'trip_expires_at')
+            || Object.prototype.hasOwnProperty.call(before, 'owner_id')
+        );
+    }
+    if (action === 'admin.user.update_profile' || action === 'admin.user.update_tier') {
+        return Boolean(extractRevertibleProfilePatch(log.before_data));
+    }
+    return false;
+};
+
+const getUndoActionLabel = (entry: AuditTimelineEntry): string => {
+    const action = entry.log.action.trim().toLowerCase();
+    if (action === 'trip.archived') return 'Undo archive';
+    if (action === 'profile.updated') return 'Undo profile';
+    if (action === 'admin.trip.override_commit') return 'Undo override';
+    return 'Undo change';
+};
+
 const toForensicsReplayFileName = (generatedAtIso: string): string => {
     const safeTimestamp = generatedAtIso.replace(/[:]/g, '-').replace(/\.\d+Z$/, 'Z');
     return `admin-audit-replay-${safeTimestamp}.json`;
@@ -329,11 +507,10 @@ export const AdminAuditPage: React.FC = () => {
     );
     const [isLoading, setIsLoading] = useState(() => logs.length === 0 && userChangeLogs.length === 0);
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
-    const [dateRange, setDateRange] = useState<AdminDateRange>(() => {
-        const value = searchParams.get('range');
-        if (value === '7d' || value === '30d' || value === '90d' || value === 'all') return value;
-        return '30d';
-    });
+    const [timePreset, setTimePreset] = useState<AuditTimePreset>(() => parseAuditTimePreset(searchParams.get('range')));
+    const [customStartDate, setCustomStartDate] = useState(() => searchParams.get('start') || getDefaultCustomStartDate());
+    const [customEndDate, setCustomEndDate] = useState(() => searchParams.get('end') || getDefaultCustomEndDate());
+    const [isCustomRangeDialogOpen, setIsCustomRangeDialogOpen] = useState(false);
     const [actionFilters, setActionFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('action')));
     const [targetFilters, setTargetFilters] = useState<string[]>(() => parseQueryMultiValue(searchParams.get('target')));
     const [actorFilters, setActorFilters] = useState<AuditActorFilter[]>(
@@ -341,9 +518,20 @@ export const AdminAuditPage: React.FC = () => {
             (value): value is AuditActorFilter => ACTOR_FILTER_VALUES.includes(value as AuditActorFilter)
         )
     );
+    const [visibleColumns, setVisibleColumns] = useState<AuditVisibleColumnId[]>(
+        () => parseAuditVisibleColumns(searchParams.get('cols'))
+    );
+    const [columnWidths, setColumnWidths] = useState<Record<AuditResizableColumnId, number>>(
+        () => ({ ...AUDIT_COLUMN_WIDTH_DEFAULTS })
+    );
+    const resizeStateRef = useRef<{
+        columnId: AuditResizableColumnId;
+        startX: number;
+        startWidth: number;
+    } | null>(null);
+    const [selectedEntryKeys, setSelectedEntryKeys] = useState<string[]>([]);
     const [offset, setOffset] = useState(() => parseNonNegativeOffset(searchParams.get('offset')));
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [message, setMessage] = useState<string | null>(null);
     const [dataSourceNotice, setDataSourceNotice] = useState<string | null>(null);
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
     const [selectedUserLog, setSelectedUserLog] = useState<AdminAuditRecord | null>(null);
@@ -367,19 +555,39 @@ export const AdminAuditPage: React.FC = () => {
     const [diffModalBeforeValue, setDiffModalBeforeValue] = useState<unknown>({});
     const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
     const [isExportingReplay, setIsExportingReplay] = useState(false);
+    const [revertingEntryKey, setRevertingEntryKey] = useState<string | null>(null);
 
     useEffect(() => {
         const next = new URLSearchParams();
         const trimmedSearch = searchValue.trim();
         if (trimmedSearch) next.set('q', trimmedSearch);
-        if (dateRange !== '30d') next.set('range', dateRange);
+        if (timePreset !== '30d') next.set('range', timePreset);
+        if (timePreset === 'custom') {
+            if (customStartDate) next.set('start', customStartDate);
+            if (customEndDate) next.set('end', customEndDate);
+        }
         if (actionFilters.length > 0) next.set('action', actionFilters.join(','));
         if (targetFilters.length > 0) next.set('target', targetFilters.join(','));
         if (actorFilters.length > 0) next.set('actor', actorFilters.join(','));
+        if (visibleColumns.length !== DEFAULT_VISIBLE_COLUMNS.length) {
+            next.set('cols', visibleColumns.join(','));
+        }
         if (offset > 0) next.set('offset', String(offset));
         if (next.toString() === searchParams.toString()) return;
         setSearchParams(next, { replace: true });
-    }, [actionFilters, actorFilters, dateRange, offset, searchParams, searchValue, setSearchParams, targetFilters]);
+    }, [
+        actionFilters,
+        actorFilters,
+        customEndDate,
+        customStartDate,
+        offset,
+        searchParams,
+        searchValue,
+        setSearchParams,
+        targetFilters,
+        timePreset,
+        visibleColumns,
+    ]);
 
     const loadLogs = async () => {
         setIsLoading(true);
@@ -439,7 +647,6 @@ export const AdminAuditPage: React.FC = () => {
 
     const openTargetDrawer = (log: AdminAuditRecord) => {
         if (!canOpenTargetDrawer(log)) return;
-        setMessage(null);
         setErrorMessage(null);
         if (log.target_type === 'user') {
             setSelectedTripLog(null);
@@ -546,14 +753,17 @@ export const AdminAuditPage: React.FC = () => {
         }));
         if (!confirmed) return;
         setIsRestoringUser(true);
-        setMessage(null);
         setErrorMessage(null);
         setUserDrawerError(null);
         try {
             await adminUpdateUserProfile(userId, { accountStatus: 'active' });
             const refreshedProfile = await adminGetUserProfile(userId);
             setSelectedUserProfile(refreshedProfile);
-            setMessage('User restored to active status.');
+            showAppToast({
+                tone: 'success',
+                title: 'User restored',
+                description: 'Account status has been set to active and recorded in audit logs.',
+            });
             await loadLogs();
         } catch (error) {
             setUserDrawerError(error instanceof Error ? error.message : 'Could not restore user.');
@@ -651,7 +861,7 @@ export const AdminAuditPage: React.FC = () => {
             const actorUserId = getTimelineActorUserId(entry);
             const actorType = entry.kind;
 
-            if (!isIsoDateInRange(createdAt, dateRange)) return false;
+            if (!isIsoDateInAuditRange(createdAt, timePreset, customStartDate, customEndDate)) return false;
             if (actionFilters.length > 0 && !actionFilters.includes(action)) return false;
             if (targetFilters.length > 0 && !targetFilters.includes(targetType)) return false;
             if (actorFilters.length > 0 && !actorFilters.includes(actorType)) return false;
@@ -666,18 +876,37 @@ export const AdminAuditPage: React.FC = () => {
                 || (actorUserId || '').toLowerCase().includes(token)
             );
         });
-    }, [actionFilters, actorFilters, dateRange, searchValue, targetFilters, timelineEntries]);
+    }, [
+        actionFilters,
+        actorFilters,
+        customEndDate,
+        customStartDate,
+        searchValue,
+        targetFilters,
+        timePreset,
+        timelineEntries,
+    ]);
 
-    const logsInDateRange = useMemo(
-        () => timelineEntries.filter((entry) => isIsoDateInRange(getTimelineCreatedAt(entry), dateRange)),
-        [dateRange, timelineEntries]
+    const logsInTimeRange = useMemo(
+        () => timelineEntries.filter((entry) => isIsoDateInAuditRange(getTimelineCreatedAt(entry), timePreset, customStartDate, customEndDate)),
+        [customEndDate, customStartDate, timePreset, timelineEntries]
     );
+
     const pagedLogs = useMemo(
         () => visibleLogs.slice(offset, offset + AUDIT_PAGE_SIZE),
         [offset, visibleLogs]
     );
     const hasPreviousPage = offset > 0;
     const hasNextPage = offset + AUDIT_PAGE_SIZE < visibleLogs.length;
+
+    const selectedEntryKeySet = useMemo(() => new Set(selectedEntryKeys), [selectedEntryKeys]);
+    const pagedEntryKeys = useMemo(() => pagedLogs.map((entry) => getTimelineEntryKey(entry)), [pagedLogs]);
+    const selectedOnPageCount = useMemo(
+        () => pagedEntryKeys.filter((key) => selectedEntryKeySet.has(key)).length,
+        [pagedEntryKeys, selectedEntryKeySet]
+    );
+    const areAllPageRowsSelected = pagedEntryKeys.length > 0 && selectedOnPageCount === pagedEntryKeys.length;
+    const hasSomePageRowsSelected = selectedOnPageCount > 0 && !areAllPageRowsSelected;
 
     useEffect(() => {
         if (visibleLogs.length === 0) {
@@ -690,9 +919,15 @@ export const AdminAuditPage: React.FC = () => {
         }
     }, [offset, visibleLogs.length]);
 
+    useEffect(() => {
+        if (selectedEntryKeys.length === 0) return;
+        const availableKeys = new Set(visibleLogs.map((entry) => getTimelineEntryKey(entry)));
+        setSelectedEntryKeys((current) => current.filter((key) => availableKeys.has(key)));
+    }, [selectedEntryKeys.length, visibleLogs]);
+
     const actionFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const counts = new Map<string, number>();
-        logsInDateRange.forEach((entry) => {
+        logsInTimeRange.forEach((entry) => {
             const action = getTimelineAction(entry);
             const nextValue = (counts.get(action) || 0) + 1;
             counts.set(action, nextValue);
@@ -700,18 +935,18 @@ export const AdminAuditPage: React.FC = () => {
         return Array.from(counts.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([value, count]) => {
-                const matchingEntry = logsInDateRange.find((entry) => getTimelineAction(entry) === value);
+                const matchingEntry = logsInTimeRange.find((entry) => getTimelineAction(entry) === value);
                 return {
                     value,
                     label: matchingEntry ? getTimelineActionLabel(matchingEntry) : getActionFilterLabel(value),
                     count,
                 };
             });
-    }, [logsInDateRange]);
+    }, [logsInTimeRange]);
 
     const targetFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
         const counts = new Map<string, number>();
-        logsInDateRange.forEach((entry) => {
+        logsInTimeRange.forEach((entry) => {
             const targetType = getTimelineTargetType(entry);
             const nextValue = (counts.get(targetType) || 0) + 1;
             counts.set(targetType, nextValue);
@@ -719,24 +954,33 @@ export const AdminAuditPage: React.FC = () => {
         return Array.from(counts.entries())
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([value, count]) => ({ value, label: getTargetLabel(value), count }));
-    }, [logsInDateRange]);
+    }, [logsInTimeRange]);
 
     const actorFilterOptions = useMemo<AdminFilterMenuOption[]>(() => {
-        const adminCount = logsInDateRange.filter((entry) => entry.kind === 'admin').length;
-        const userCount = logsInDateRange.filter((entry) => entry.kind === 'user').length;
+        const adminCount = logsInTimeRange.filter((entry) => entry.kind === 'admin').length;
+        const userCount = logsInTimeRange.filter((entry) => entry.kind === 'user').length;
         return [
             { value: 'admin', label: 'Admin actor', count: adminCount },
             { value: 'user', label: 'User actor', count: userCount },
         ];
-    }, [logsInDateRange]);
+    }, [logsInTimeRange]);
+
+    const visibleColumnOptions = useMemo<AdminFilterMenuOption[]>(
+        () => AUDIT_COLUMN_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+        []
+    );
 
     const handleSearchValueChange = (value: string) => {
         setSearchValue(value);
         setOffset(0);
     };
 
-    const handleDateRangeChange = (value: AdminDateRange) => {
-        setDateRange(value);
+    const handleTimePresetChange = (value: AuditTimePreset) => {
+        setTimePreset(value);
+        if (value !== 'custom') {
+            setCustomStartDate(getDefaultCustomStartDate());
+            setCustomEndDate(getDefaultCustomEndDate());
+        }
         setOffset(0);
     };
 
@@ -757,6 +1001,13 @@ export const AdminAuditPage: React.FC = () => {
         setOffset(0);
     };
 
+    const handleVisibleColumnsChange = (values: string[]) => {
+        const nextValues = values.filter(
+            (value): value is AuditVisibleColumnId => AUDIT_VISIBLE_COLUMN_IDS.includes(value as AuditVisibleColumnId)
+        );
+        setVisibleColumns(nextValues.length > 0 ? nextValues : [...DEFAULT_VISIBLE_COLUMNS]);
+    };
+
     const copyToClipboard = async (value: string, token: string) => {
         if (!value.trim() || typeof navigator === 'undefined' || !navigator.clipboard) return;
         try {
@@ -770,37 +1021,216 @@ export const AdminAuditPage: React.FC = () => {
         }
     };
 
-    const exportReplayBundle = async () => {
-        if (visibleLogs.length === 0) {
+    const beginColumnResize = (columnId: AuditResizableColumnId, clientX: number) => {
+        resizeStateRef.current = {
+            columnId,
+            startX: clientX,
+            startWidth: columnWidths[columnId],
+        };
+
+        const onPointerMove = (event: MouseEvent) => {
+            if (!resizeStateRef.current) return;
+            const resizeState = resizeStateRef.current;
+            const delta = event.clientX - resizeState.startX;
+            const minWidth = AUDIT_COLUMN_WIDTH_MIN[resizeState.columnId];
+            const nextWidth = Math.max(minWidth, Math.round(resizeState.startWidth + delta));
+            setColumnWidths((current) => (
+                current[resizeState.columnId] === nextWidth
+                    ? current
+                    : {
+                        ...current,
+                        [resizeState.columnId]: nextWidth,
+                    }
+            ));
+        };
+
+        const onPointerUp = () => {
+            resizeStateRef.current = null;
+            window.removeEventListener('mousemove', onPointerMove);
+            window.removeEventListener('mouseup', onPointerUp);
+        };
+
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+    };
+
+    const exportReplayBundle = async (options?: { selectedEventIds?: string[] }) => {
+        const selectedEventIds = options?.selectedEventIds ?? [];
+        if (selectedEventIds.length === 0 && visibleLogs.length === 0) {
             setErrorMessage('No audit entries match the current filters.');
+            return;
+        }
+        if (selectedEventIds.length > 0 && selectedEventIds.length > AUDIT_SOURCE_MAX_ROWS) {
+            setErrorMessage(`Too many selected entries (${selectedEventIds.length}). Please select up to ${AUDIT_SOURCE_MAX_ROWS}.`);
             return;
         }
 
         setIsExportingReplay(true);
-        setMessage(null);
         setErrorMessage(null);
         try {
             const { bundle, exportAuditId } = await adminExportAuditReplay({
                 search: searchValue.trim() || null,
-                dateRange: dateRange,
+                dateRange: timePreset,
+                customStartDate: timePreset === 'custom' ? customStartDate : null,
+                customEndDate: timePreset === 'custom' ? customEndDate : null,
                 actionFilters,
                 targetFilters,
                 actorFilters,
+                selectedEventIds: selectedEventIds.length > 0 ? selectedEventIds : null,
                 sourceLimit: AUDIT_SOURCE_MAX_ROWS,
             });
             const downloaded = downloadAdminForensicsReplayBundle(bundle, toForensicsReplayFileName(bundle.generated_at));
             if (!downloaded) {
                 throw new Error('Replay export is only available in browser context.');
             }
-            setMessage(
-                `Exported ${bundle.totals.event_count} event${bundle.totals.event_count === 1 ? '' : 's'} `
-                + `across ${bundle.totals.correlation_count} correlation trace${bundle.totals.correlation_count === 1 ? '' : 's'}`
-                + `${exportAuditId ? ` (audit id ${exportAuditId}).` : '.'}`
-            );
+            showAppToast({
+                tone: 'success',
+                title: 'Replay export ready',
+                description:
+                    `Exported ${bundle.totals.event_count} event${bundle.totals.event_count === 1 ? '' : 's'} `
+                    + `across ${bundle.totals.correlation_count} trace${bundle.totals.correlation_count === 1 ? '' : 's'}`
+                    + `${exportAuditId ? ` (audit id ${exportAuditId})` : ''}.`,
+            });
         } catch (error) {
             setErrorMessage(error instanceof Error ? error.message : 'Could not export replay bundle.');
         } finally {
             setIsExportingReplay(false);
+        }
+    };
+
+    const exportSelectedReplayBundle = async () => {
+        if (selectedEntryKeys.length === 0) {
+            setErrorMessage('Select at least one row to export.');
+            return;
+        }
+        await exportReplayBundle({ selectedEventIds: selectedEntryKeys });
+    };
+
+    const exportSingleReplayEntry = async (entry: AuditTimelineEntry) => {
+        await exportReplayBundle({ selectedEventIds: [getTimelineEntryKey(entry)] });
+    };
+
+    const toggleRowSelection = (entryKey: string) => {
+        setSelectedEntryKeys((current) => (
+            current.includes(entryKey)
+                ? current.filter((key) => key !== entryKey)
+                : [...current, entryKey]
+        ));
+    };
+
+    const togglePageSelection = (checked: boolean) => {
+        setSelectedEntryKeys((current) => {
+            const currentSet = new Set(current);
+            if (checked) {
+                pagedEntryKeys.forEach((entryKey) => currentSet.add(entryKey));
+            } else {
+                pagedEntryKeys.forEach((entryKey) => currentSet.delete(entryKey));
+            }
+            return Array.from(currentSet);
+        });
+    };
+
+    const undoTimelineEntry = async (entry: AuditTimelineEntry) => {
+        if (!canUndoTimelineEntry(entry)) return;
+        const entryKey = getTimelineEntryKey(entry);
+        const action = entry.log.action.trim().toLowerCase();
+        const confirmed = await confirmDialog(buildDecisionConfirmDialog({
+            title: 'Undo this change?',
+            message: 'This creates a new admin action that reverts the selected row. Continue?',
+            confirmLabel: 'Undo change',
+        }));
+        if (!confirmed) return;
+
+        setRevertingEntryKey(entryKey);
+        setErrorMessage(null);
+        try {
+            if (entry.kind === 'user') {
+                if (action === 'trip.archived') {
+                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    await adminUpdateTrip(entry.log.target_id, { status: 'active' });
+                } else if (action === 'trip.updated') {
+                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    const metadata = asRecord(entry.log.metadata);
+                    const versionId = asString(metadata.version_id);
+                    const previousVersionId = asString(metadata.previous_version_id);
+                    if (!versionId) throw new Error('Version id missing for undo.');
+                    const versionSnapshots = await adminGetTripVersionSnapshots({
+                        tripId: entry.log.target_id,
+                        afterVersionId: versionId,
+                        beforeVersionId: previousVersionId,
+                    });
+                    if (!versionSnapshots) {
+                        throw new Error('Version snapshots unavailable for undo.');
+                    }
+                    const beforeSnapshot = asRecord(versionSnapshots.before_snapshot);
+                    if (Object.keys(beforeSnapshot).length === 0) {
+                        throw new Error('No previous snapshot found for undo.');
+                    }
+                    await adminOverrideTripCommit({
+                        tripId: entry.log.target_id,
+                        data: beforeSnapshot,
+                        viewSettings: asRecord(versionSnapshots.before_view_settings),
+                        label: `Audit undo ${entry.log.id}`,
+                    });
+                } else if (action === 'profile.updated') {
+                    if (!entry.log.target_id) throw new Error('User id missing for undo.');
+                    const patch = extractRevertibleProfilePatch(entry.log.before_data);
+                    if (!patch) throw new Error('No revertible profile fields found for this row.');
+                    await adminUpdateUserProfile(entry.log.target_id, patch);
+                } else {
+                    throw new Error('Undo is not supported for this action.');
+                }
+            } else {
+                if (!entry.log.target_id) throw new Error('Target id missing for undo.');
+                if (action === 'admin.trip.override_commit') {
+                    const before = asRecord(entry.log.before_data);
+                    const tripData = asRecord(before.data);
+                    if (Object.keys(tripData).length === 0) {
+                        throw new Error('No previous trip snapshot found for this undo.');
+                    }
+                    await adminOverrideTripCommit({
+                        tripId: entry.log.target_id,
+                        data: tripData,
+                        viewSettings: asRecord(before.view_settings),
+                        label: `Audit undo ${entry.log.id}`,
+                    });
+                } else if (action === 'admin.trip.update') {
+                    const before = asRecord(entry.log.before_data);
+                    const patch: Parameters<typeof adminUpdateTrip>[1] = {};
+                    if (Object.prototype.hasOwnProperty.call(before, 'status')) {
+                        const status = asString(before.status);
+                        if (status === 'active' || status === 'archived' || status === 'expired') {
+                            patch.status = status;
+                        }
+                    }
+                    if (Object.prototype.hasOwnProperty.call(before, 'trip_expires_at')) {
+                        patch.tripExpiresAt = asString(before.trip_expires_at);
+                    }
+                    if (Object.prototype.hasOwnProperty.call(before, 'owner_id')) {
+                        patch.ownerId = asString(before.owner_id);
+                    }
+                    if (Object.keys(patch).length === 0) {
+                        throw new Error('No revertible trip fields found for this row.');
+                    }
+                    await adminUpdateTrip(entry.log.target_id, patch);
+                } else if (action === 'admin.user.update_profile' || action === 'admin.user.update_tier') {
+                    const patch = extractRevertibleProfilePatch(entry.log.before_data);
+                    if (!patch) throw new Error('No revertible user fields found for this row.');
+                    await adminUpdateUserProfile(entry.log.target_id, patch);
+                } else {
+                    throw new Error('Undo is not supported for this action.');
+                }
+            }
+            showAppToast({
+                tone: 'success',
+                title: 'Undo completed',
+                description: 'A new admin audit entry was written for this revert operation.',
+            });
+            await loadLogs();
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : 'Could not undo this change.');
+        } finally {
+            setRevertingEntryKey(null);
         }
     };
 
@@ -838,14 +1268,17 @@ export const AdminAuditPage: React.FC = () => {
         sourceKind: selectedTripRecord?.source_kind || asString(selectedTripSnapshot.source_kind) || null,
     }), [selectedTripLog?.target_id, selectedTripRecord, selectedTripSnapshot]);
 
+    const visibleColumnSet = useMemo(() => new Set(visibleColumns), [visibleColumns]);
+    const isColumnVisible = (columnId: AuditVisibleColumnId): boolean => visibleColumnSet.has(columnId);
+    const tableColumnCount = 1 + visibleColumns.length;
+
     return (
         <AdminShell
             title="Admin Audit Log"
             description="Unified timeline of admin actions and user-originated account/trip changes for incident replay and support tracing."
             searchValue={searchValue}
             onSearchValueChange={handleSearchValueChange}
-            dateRange={dateRange}
-            onDateRangeChange={handleDateRangeChange}
+            showDateRange={false}
             actions={(
                 <div className="flex flex-wrap items-center gap-2">
                     <button
@@ -853,12 +1286,22 @@ export const AdminAuditPage: React.FC = () => {
                         onClick={() => void exportReplayBundle()}
                         disabled={isLoading || isExportingReplay || visibleLogs.length === 0}
                         className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        title="Download current filtered timeline for incident replay"
                     >
                         {isExportingReplay
                             ? <SpinnerGap size={14} className="animate-spin" />
                             : <DownloadSimple size={14} />}
                         Export replay
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => void exportSelectedReplayBundle()}
+                        disabled={isLoading || isExportingReplay || selectedEntryKeys.length === 0}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        {isExportingReplay
+                            ? <SpinnerGap size={14} className="animate-spin" />
+                            : <DownloadSimple size={14} />}
+                        Export selected ({selectedEntryKeys.length})
                     </button>
                     <AdminReloadButton
                         onClick={() => void loadLogs()}
@@ -878,13 +1321,31 @@ export const AdminAuditPage: React.FC = () => {
                     {dataSourceNotice}
                 </section>
             )}
-            {message && (
-                <section className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-                    {message}
-                </section>
-            )}
 
             <section className="mb-3 flex flex-wrap items-center gap-2">
+                <div className="inline-flex min-w-[176px] items-center gap-2">
+                    <Select value={timePreset} onValueChange={(value) => handleTimePresetChange(value as AuditTimePreset)}>
+                        <SelectTrigger className="h-8 w-[180px]">
+                            <SelectValue placeholder="Time range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="24h">Last 24 hours</SelectItem>
+                            <SelectItem value="7d">Last 7 days</SelectItem>
+                            <SelectItem value="30d">Last 30 days</SelectItem>
+                            <SelectItem value="all">All time</SelectItem>
+                            <SelectItem value="custom">Custom range</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {timePreset === 'custom' && (
+                        <button
+                            type="button"
+                            onClick={() => setIsCustomRangeDialogOpen(true)}
+                            className="inline-flex h-8 items-center rounded-md border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            {formatAuditCustomRangeLabel(customStartDate, customEndDate)}
+                        </button>
+                    )}
+                </div>
                 <AdminFilterMenu
                     label="Action"
                     icon={<Info size={14} className="mr-2 shrink-0 text-slate-500" weight="duotone" />}
@@ -906,12 +1367,24 @@ export const AdminAuditPage: React.FC = () => {
                     selectedValues={actorFilters}
                     onSelectedValuesChange={handleActorFiltersChange}
                 />
+                <AdminFilterMenu
+                    label="Columns"
+                    options={visibleColumnOptions}
+                    selectedValues={visibleColumns}
+                    onSelectedValuesChange={handleVisibleColumnsChange}
+                />
                 <button
                     type="button"
                     onClick={() => {
                         setActionFilters([]);
                         setTargetFilters([]);
                         setActorFilters([]);
+                        setTimePreset('30d');
+                        setCustomStartDate(getDefaultCustomStartDate());
+                        setCustomEndDate(getDefaultCustomEndDate());
+                        setVisibleColumns([...DEFAULT_VISIBLE_COLUMNS]);
+                        setSelectedEntryKeys([]);
+                        setColumnWidths({ ...AUDIT_COLUMN_WIDTH_DEFAULTS });
                         setOffset(0);
                     }}
                     className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
@@ -921,16 +1394,138 @@ export const AdminAuditPage: React.FC = () => {
                 </button>
             </section>
 
+            <Dialog open={isCustomRangeDialogOpen} onOpenChange={setIsCustomRangeDialogOpen}>
+                <DialogContent className="w-[min(96vw,640px)] overflow-hidden rounded-2xl p-0">
+                    <DialogHeader className="border-b border-slate-200">
+                        <DialogTitle className="text-base font-black text-slate-900">Custom time range</DialogTitle>
+                        <DialogDescription className="text-sm text-slate-600">
+                            Pick the start and end date used by the audit filters and replay export.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="px-5 py-4">
+                        <DateRangePicker
+                            startDate={customStartDate}
+                            endDate={customEndDate}
+                            onChange={(start, end) => {
+                                setCustomStartDate(start);
+                                setCustomEndDate(end);
+                                setOffset(0);
+                            }}
+                            showLabel={false}
+                        />
+                    </div>
+                    <DialogFooter className="border-t border-slate-200">
+                        <button
+                            type="button"
+                            onClick={() => setIsCustomRangeDialogOpen(false)}
+                            className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        >
+                            Done
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3 text-xs text-slate-600">
+                    <p>
+                        {selectedEntryKeys.length} selected • {visibleLogs.length} matching entr{visibleLogs.length === 1 ? 'y' : 'ies'}
+                    </p>
+                    <p>
+                        Tip: drag column handles to resize. Diff/details starts wider by default.
+                    </p>
+                </div>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full border-collapse text-left text-sm">
+                    <table className="min-w-full table-fixed border-collapse text-left text-sm">
+                        <colgroup>
+                            <col style={{ width: 44 }} />
+                            {isColumnVisible('when') && <col style={{ width: `${columnWidths.when}px` }} />}
+                            {isColumnVisible('actor') && <col style={{ width: `${columnWidths.actor}px` }} />}
+                            {isColumnVisible('action') && <col style={{ width: `${columnWidths.action}px` }} />}
+                            {isColumnVisible('target') && <col style={{ width: `${columnWidths.target}px` }} />}
+                            {isColumnVisible('diff') && <col style={{ width: `${columnWidths.diff}px` }} />}
+                            {isColumnVisible('rowActions') && <col style={{ width: 170 }} />}
+                        </colgroup>
                         <thead>
                             <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                                <th className="px-3 py-2">When</th>
-                                <th className="px-3 py-2">Actor</th>
-                                <th className="px-3 py-2">Action</th>
-                                <th className="px-3 py-2">Target</th>
-                                <th className="px-3 py-2">Diff & details</th>
+                                <th className="px-2 py-2">
+                                    <Checkbox
+                                        checked={areAllPageRowsSelected ? true : hasSomePageRowsSelected ? 'indeterminate' : false}
+                                        onCheckedChange={(checked) => togglePageSelection(Boolean(checked))}
+                                        aria-label="Select all rows on this page"
+                                    />
+                                </th>
+                                {isColumnVisible('when') && (
+                                    <th className="relative px-3 py-2">
+                                        When
+                                        <button
+                                            type="button"
+                                            onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                beginColumnResize('when', event.clientX);
+                                            }}
+                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            aria-label="Resize when column"
+                                        />
+                                    </th>
+                                )}
+                                {isColumnVisible('actor') && (
+                                    <th className="relative px-3 py-2">
+                                        Actor
+                                        <button
+                                            type="button"
+                                            onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                beginColumnResize('actor', event.clientX);
+                                            }}
+                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            aria-label="Resize actor column"
+                                        />
+                                    </th>
+                                )}
+                                {isColumnVisible('action') && (
+                                    <th className="relative px-3 py-2">
+                                        Action
+                                        <button
+                                            type="button"
+                                            onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                beginColumnResize('action', event.clientX);
+                                            }}
+                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            aria-label="Resize action column"
+                                        />
+                                    </th>
+                                )}
+                                {isColumnVisible('target') && (
+                                    <th className="relative px-3 py-2">
+                                        Target
+                                        <button
+                                            type="button"
+                                            onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                beginColumnResize('target', event.clientX);
+                                            }}
+                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            aria-label="Resize target column"
+                                        />
+                                    </th>
+                                )}
+                                {isColumnVisible('diff') && (
+                                    <th className="relative px-3 py-2">
+                                        Diff & details
+                                        <button
+                                            type="button"
+                                            onMouseDown={(event) => {
+                                                event.preventDefault();
+                                                beginColumnResize('diff', event.clientX);
+                                            }}
+                                            className="absolute inset-y-0 right-0 w-2 cursor-col-resize"
+                                            aria-label="Resize diff and details column"
+                                        />
+                                    </th>
+                                )}
+                                {isColumnVisible('rowActions') && <th className="px-3 py-2">Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -958,18 +1553,34 @@ export const AdminAuditPage: React.FC = () => {
                                 const actorUserId = getTimelineActorUserId(timelineEntry);
                                 const eventTypeLabel = timelineEntry.kind === 'admin' ? 'Admin action' : 'User action';
                                 const canShowFullDiff = canOpenFullDiffModal(timelineEntry);
+                                const entryKey = getTimelineEntryKey(timelineEntry);
+                                const isRowSelected = selectedEntryKeySet.has(entryKey);
+                                const canUndo = canUndoTimelineEntry(timelineEntry);
+                                const isUndoing = revertingEntryKey === entryKey;
 
                                 return (
-                                    <tr key={`${timelineEntry.kind}-${log.id}`} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
-                                        <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
-                                        <td className="px-3 py-2 text-xs text-slate-700">
-                                            {actorEmail || (
-                                                actorUserId
-                                                    ? <CopyableUuid value={actorUserId} textClassName="max-w-[220px] truncate text-xs" hintClassName="text-[9px]" />
-                                                    : 'unknown'
-                                            )}
+                                    <tr key={entryKey} className="border-b border-slate-100 align-top transition-colors hover:bg-slate-50">
+                                        <td className="px-2 py-2">
+                                            <Checkbox
+                                                checked={isRowSelected}
+                                                onCheckedChange={() => toggleRowSelection(entryKey)}
+                                                aria-label="Select row"
+                                            />
                                         </td>
-                                        <td className="px-3 py-2 text-xs">
+                                        {isColumnVisible('when') && (
+                                            <td className="px-3 py-2 text-xs text-slate-600">{new Date(log.created_at).toLocaleString()}</td>
+                                        )}
+                                        {isColumnVisible('actor') && (
+                                            <td className="px-3 py-2 text-xs text-slate-700">
+                                                {actorEmail || (
+                                                    actorUserId
+                                                        ? <CopyableUuid value={actorUserId} textClassName="max-w-[220px] truncate text-xs" hintClassName="text-[9px]" />
+                                                        : 'unknown'
+                                                )}
+                                            </td>
+                                        )}
+                                        {isColumnVisible('action') && (
+                                            <td className="px-3 py-2 text-xs">
                                             <span
                                                 className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${actionPresentation.className}`}
                                                 title={log.action}
@@ -1007,8 +1618,10 @@ export const AdminAuditPage: React.FC = () => {
                                                     ))}
                                                 </div>
                                             )}
-                                        </td>
-                                        <td className="px-3 py-2 text-xs text-slate-600">
+                                            </td>
+                                        )}
+                                        {isColumnVisible('target') && (
+                                            <td className="px-3 py-2 text-xs text-slate-600">
                                             <div className="inline-flex items-center gap-1.5">
                                                 <span
                                                     className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getTargetPillClass(log.target_type)}`}
@@ -1051,10 +1664,12 @@ export const AdminAuditPage: React.FC = () => {
                                                 )}
                                                 {copiedToken === `target-${timelineEntry.kind}-${log.id}` && <span className="text-emerald-700">Copied</span>}
                                             </div>
-                                        </td>
-                                        <td className="px-3 py-2">
+                                            </td>
+                                        )}
+                                        {isColumnVisible('diff') && (
+                                            <td className="px-3 py-2">
                                             {visibleDiffEntries.length > 0 ? (
-                                                <div className="max-w-[420px] space-y-2">
+                                                <div className="space-y-2">
                                                     {visibleDiffEntries.map((entry) => (
                                                         <article key={`${timelineEntry.kind}-${log.id}-${entry.key}`} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
                                                             <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -1103,20 +1718,49 @@ export const AdminAuditPage: React.FC = () => {
                                                     Trip impact: {ownedTripsBeforeDelete} owned trip{ownedTripsBeforeDelete === 1 ? '' : 's'} deleted with this account.
                                                 </p>
                                             )}
-                                        </td>
+                                            </td>
+                                        )}
+                                        {isColumnVisible('rowActions') && (
+                                            <td className="px-3 py-2">
+                                                <div className="flex flex-col gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => void exportSingleReplayEntry(timelineEntry)}
+                                                        disabled={isExportingReplay}
+                                                        className="inline-flex h-7 items-center justify-center rounded-md border border-slate-300 px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    >
+                                                        Export row
+                                                    </button>
+                                                    {canUndo ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void undoTimelineEntry(timelineEntry)}
+                                                            disabled={Boolean(revertingEntryKey)}
+                                                            className="inline-flex h-7 items-center justify-center rounded-md border border-amber-300 px-2 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                                        >
+                                                            {isUndoing ? 'Undoing...' : getUndoActionLabel(timelineEntry)}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="inline-flex h-7 items-center justify-center rounded-md border border-slate-200 px-2 text-[11px] font-medium text-slate-400">
+                                                            Undo n/a
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}
                             {visibleLogs.length === 0 && !isLoading && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={tableColumnCount}>
                                         No audit entries found for the current filters.
                                     </td>
                                 </tr>
                             )}
                             {isLoading && (
                                 <tr>
-                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={5}>
+                                    <td className="px-3 py-6 text-sm text-slate-500" colSpan={tableColumnCount}>
                                         <span className="inline-flex items-center gap-2">
                                             <SpinnerGap size={14} className="animate-spin" />
                                             Loading change logs...
