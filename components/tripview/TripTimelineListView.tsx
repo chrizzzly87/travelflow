@@ -67,6 +67,23 @@ const MARKDOWN_COMPONENTS = {
     pre: ({ node, ...props }: any) => <pre {...props} className="my-2 overflow-x-auto rounded-md bg-slate-100 p-2 text-[12px] text-slate-700" />,
 };
 
+const TODAY_BADGE_CLASS = 'rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700';
+
+const TodayBadge: React.FC = () => (
+    <span className={TODAY_BADGE_CLASS}>Today</span>
+);
+
+const scrollNodeIntoView = (node: Element, options: ScrollIntoViewOptions) => {
+    if (typeof (node as HTMLElement).scrollIntoView !== 'function') return;
+    (node as HTMLElement).scrollIntoView(options);
+};
+
+const isNodeVisibleInViewport = (node: Element, viewport: HTMLElement, padding = 24): boolean => {
+    const viewportRect = viewport.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    return nodeRect.top >= (viewportRect.top + padding) && nodeRect.bottom <= (viewportRect.bottom - padding);
+};
+
 export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     trip,
     selectedItemId,
@@ -76,6 +93,12 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
     const sectionContainerRef = useRef<HTMLDivElement | null>(null);
     const viewportRef = useRef<HTMLDivElement | null>(null);
     const markerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const transferButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const citySectionRefs = useRef<Record<string, HTMLElement | null>>({});
+    const scrollSelectionFrameRef = useRef<number | null>(null);
+    const lastAutoSelectedCityIdRef = useRef<string | null>(null);
+    const lastAutoScrolledSelectedItemRef = useRef<string | null>(null);
+    const userScrollSelectionEnabledRef = useRef(false);
     const hasAutoScrolledToTodayRef = useRef(false);
     const [transferMidpoints, setTransferMidpoints] = useState<Record<string, number>>({});
     const isRtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
@@ -127,12 +150,13 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
         const marker = markerRefs.current[model.todayMarkerId];
         if (!viewport || !marker) return;
 
-        const markerTop = marker.offsetTop;
-        const minimumDistanceForAutoScroll = Math.max(220, viewport.clientHeight * 0.4);
-        if ((markerTop - viewport.scrollTop) <= minimumDistanceForAutoScroll) return;
+        if (isNodeVisibleInViewport(marker, viewport, 24)) {
+            hasAutoScrolledToTodayRef.current = true;
+            return;
+        }
 
         hasAutoScrolledToTodayRef.current = true;
-        marker.scrollIntoView({
+        scrollNodeIntoView(marker, {
             block: 'start',
             behavior: 'smooth',
         });
@@ -167,6 +191,109 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
             observer?.disconnect();
         };
     }, [updateTransferMidpoints]);
+
+    const updateActiveCitySelection = useCallback(() => {
+        if (!userScrollSelectionEnabledRef.current) return;
+        if (!selectedItemId) return;
+
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const viewportRect = viewport.getBoundingClientRect();
+        const stickyAnchorTop = viewportRect.top + Math.min(96, viewport.clientHeight * 0.3);
+        let activeCityId: string | null = null;
+
+        for (const section of model.sections) {
+            const sectionNode = citySectionRefs.current[section.city.id];
+            if (!sectionNode) continue;
+            const sectionRect = sectionNode.getBoundingClientRect();
+
+            if (sectionRect.top <= stickyAnchorTop) {
+                activeCityId = section.city.id;
+                continue;
+            }
+
+            if (!activeCityId) activeCityId = section.city.id;
+            break;
+        }
+
+        if (!activeCityId) return;
+        if (activeCityId === lastAutoSelectedCityIdRef.current) return;
+
+        lastAutoSelectedCityIdRef.current = activeCityId;
+        if (selectedItemId === activeCityId) return;
+        onSelect(activeCityId, { isCity: true });
+    }, [model.sections, onSelect, selectedItemId]);
+
+    useEffect(() => {
+        hasAutoScrolledToTodayRef.current = false;
+        lastAutoSelectedCityIdRef.current = null;
+        lastAutoScrolledSelectedItemRef.current = null;
+        userScrollSelectionEnabledRef.current = false;
+    }, [trip.id, model.sections.length]);
+
+    useEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const queueSelectionUpdate = () => {
+            if (scrollSelectionFrameRef.current !== null) return;
+            scrollSelectionFrameRef.current = window.requestAnimationFrame(() => {
+                scrollSelectionFrameRef.current = null;
+                updateActiveCitySelection();
+            });
+        };
+
+        const enableSelectionSync = () => {
+            userScrollSelectionEnabledRef.current = true;
+        };
+
+        viewport.addEventListener('scroll', queueSelectionUpdate, { passive: true });
+        viewport.addEventListener('wheel', enableSelectionSync, { passive: true });
+        viewport.addEventListener('touchstart', enableSelectionSync, { passive: true });
+        viewport.addEventListener('pointerdown', enableSelectionSync, { passive: true });
+        viewport.addEventListener('mousedown', enableSelectionSync);
+
+        return () => {
+            viewport.removeEventListener('scroll', queueSelectionUpdate);
+            viewport.removeEventListener('wheel', enableSelectionSync);
+            viewport.removeEventListener('touchstart', enableSelectionSync);
+            viewport.removeEventListener('pointerdown', enableSelectionSync);
+            viewport.removeEventListener('mousedown', enableSelectionSync);
+            if (scrollSelectionFrameRef.current !== null) {
+                window.cancelAnimationFrame(scrollSelectionFrameRef.current);
+                scrollSelectionFrameRef.current = null;
+            }
+        };
+    }, [updateActiveCitySelection]);
+
+    useEffect(() => {
+        if (!selectedItemId) {
+            lastAutoScrolledSelectedItemRef.current = null;
+            return;
+        }
+        if (userScrollSelectionEnabledRef.current) return;
+        if (lastAutoScrolledSelectedItemRef.current === selectedItemId) return;
+
+        const targetNode = markerRefs.current[`activity-${selectedItemId}`]
+            || markerRefs.current[`city-${selectedItemId}`]
+            || transferButtonRefs.current[`transfer-${selectedItemId}`];
+        if (!targetNode) return;
+
+        const viewport = viewportRef.current;
+        if (viewport) {
+            const viewportRect = viewport.getBoundingClientRect();
+            const targetRect = targetNode.getBoundingClientRect();
+            const isVisible = targetRect.top >= (viewportRect.top + 32) && targetRect.bottom <= (viewportRect.bottom - 32);
+            if (isVisible) return;
+        }
+
+        lastAutoScrolledSelectedItemRef.current = selectedItemId;
+        scrollNodeIntoView(targetNode, {
+            block: 'center',
+            behavior: 'smooth',
+        });
+    }, [model.sections.length, selectedItemId]);
 
     return (
         <div
@@ -212,6 +339,10 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                             type="button"
                                             onClick={handleTransferSelect}
                                             disabled={!transfer.itemId}
+                                            ref={(node) => {
+                                                if (!transfer.itemId) return;
+                                                transferButtonRefs.current[`transfer-${transfer.itemId}`] = node;
+                                            }}
                                             aria-label={`Open ${transfer.modeLabel} transfer details`}
                                             className={`pointer-events-auto origin-center -rotate-90 rounded-full border bg-white/95 shadow-sm transition-colors ${
                                                 transfer.itemId
@@ -257,11 +388,18 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
 
                             return (
                                 <React.Fragment key={section.city.id}>
-                                    <section className="relative ps-14 pb-12">
+                                    <section
+                                        ref={(node) => {
+                                            citySectionRefs.current[section.city.id] = node;
+                                        }}
+                                        className="relative ps-14 pb-12"
+                                        data-city-section-id={section.city.id}
+                                    >
                                         <div
                                             ref={(node) => {
                                                 markerRefs.current[`city-${section.city.id}`] = node;
                                             }}
+                                            data-city-marker-id={section.city.id}
                                             className="absolute start-8 top-5 z-20 size-3 rounded-full border-2 border-white shadow-sm"
                                             style={{
                                                 backgroundColor: section.colorHex,
@@ -299,9 +437,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                             Days {cityStartDay} - {cityEndDay}
                                                         </span>
                                                         {section.hasToday && (
-                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                                                Today
-                                                            </span>
+                                                            <TodayBadge />
                                                         )}
                                                     </div>
                                                 </div>
@@ -332,6 +468,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                 ref={(node) => {
                                                                     markerRefs.current[markerId] = node;
                                                                 }}
+                                                                data-activity-marker-id={activity.item.id}
                                                             >
                                                                 <button
                                                                     type="button"
@@ -355,9 +492,7 @@ export const TripTimelineListView: React.FC<TripTimelineListViewProps> = ({
                                                                             {formatTripDayLabel(trip.startDate, activity.dayOffset)} · Day {activity.dayOffset + 1}
                                                                         </p>
                                                                         {activity.isToday && (
-                                                                            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                                                                                Today
-                                                                            </span>
+                                                                            <TodayBadge />
                                                                         )}
                                                                     </div>
                                                                     <p className={`mt-1 inline-flex cursor-pointer text-[17px] leading-7 underline-offset-4 decoration-2 transition-all ${titleHoverShiftClass} group-hover:underline ${isSelected ? 'font-semibold text-accent-700 decoration-accent-400' : 'font-medium text-slate-900 decoration-slate-300'}`}>

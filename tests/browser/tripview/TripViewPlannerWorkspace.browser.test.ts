@@ -80,6 +80,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     const modeGroup = calendarModeButton.parentElement;
     const controlsRoot = modeGroup?.parentElement;
     expect(controlsRoot?.lastElementChild).toBe(modeGroup);
+    expect(modeGroup).toHaveClass('gap-1');
   });
 
   it('hides calendar-only controls in timeline list mode', () => {
@@ -129,6 +130,59 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(floatingMap).toBeInTheDocument();
     expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
     expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
+  });
+
+  it('keeps the map component mounted while toggling dock mode', () => {
+    const mounts = vi.fn();
+    const unmounts = vi.fn();
+    const PersistentMap: React.FC = () => {
+      React.useEffect(() => {
+        mounts();
+        return () => {
+          unmounts();
+        };
+      }, []);
+      return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
+    };
+
+    const initialProps = {
+      ...baseProps(),
+      isMapBootstrapEnabled: true,
+      ItineraryMapComponent: PersistentMap,
+    };
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, initialProps));
+    expect(mounts).toHaveBeenCalledTimes(1);
+
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...initialProps,
+      mapDockMode: 'floating',
+    }));
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...initialProps,
+      mapDockMode: 'docked',
+    }));
+
+    expect(mounts).toHaveBeenCalledTimes(1);
+    expect(unmounts).toHaveBeenCalledTimes(0);
+  });
+
+  it('uses fused top grab-handle styling with uniform floating border thickness', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const floatingMap = screen.getByTestId('floating-map-container');
+    const dragHandle = screen.getByTestId('floating-map-drag-handle');
+    const gripBar = dragHandle.querySelector('span:not(.sr-only)');
+
+    expect(floatingMap).toHaveClass('border-[4px]');
+    expect(floatingMap).not.toHaveClass('border-t-[10px]');
+    expect(dragHandle).toHaveClass('rounded-t-none');
+    expect(dragHandle).toHaveClass('rounded-b-full');
+    expect(dragHandle).toHaveClass('border-t-0');
+    expect(gripBar).toHaveClass('group-hover:bg-accent-500');
   });
 
 });

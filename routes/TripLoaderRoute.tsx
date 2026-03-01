@@ -75,6 +75,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const { snapshot: connectivitySnapshot } = useConnectivityStatus();
     const lastLoadRef = useRef<string | null>(null);
+    const lastRouteTargetRef = useRef<string | null>(null);
+    const latestViewSettingsRef = useRef<IViewSettings | undefined>(undefined);
+    const hasInSessionViewOverrideRef = useRef(false);
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
         return params.get('v');
@@ -86,11 +89,18 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
     useDbSync(onLanguageLoaded);
 
     useEffect(() => {
+        latestViewSettingsRef.current = viewSettings;
+    }, [viewSettings]);
+
+    useEffect(() => {
         if (isAuthLoading) return;
         if (!tripId) return;
         const loadKey = `${tripId}:${versionId || ''}:${connectivitySnapshot.state}`;
         if (lastLoadRef.current === loadKey) return;
         lastLoadRef.current = loadKey;
+        const routeTargetKey = `${tripId}:${versionId || ''}`;
+        const didRouteTargetChange = lastRouteTargetRef.current !== routeTargetKey;
+        lastRouteTargetRef.current = routeTargetKey;
 
         const load = async () => {
             const connectivityState = connectivitySnapshot.state;
@@ -100,8 +110,22 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 hash: location.hash,
             });
 
-            setViewSettings(undefined);
-            setTripAccess(null);
+            // Preserve in-session view preferences during connectivity refreshes
+            // for the same route target so late loader responses cannot snap UI
+            // controls (e.g. timeline mode) back to stale defaults.
+            if (didRouteTargetChange) {
+                setViewSettings(undefined);
+                setTripAccess(null);
+                latestViewSettingsRef.current = undefined;
+                hasInSessionViewOverrideRef.current = false;
+            }
+
+            const resolveEffectiveView = (resolvedView?: IViewSettings, fallbackView?: IViewSettings) => {
+                if (!didRouteTargetChange && hasInSessionViewOverrideRef.current) {
+                    return latestViewSettingsRef.current ?? resolvedView ?? fallbackView;
+                }
+                return resolvedView ?? fallbackView;
+            };
 
             const sharedState = decompressTrip(tripId);
             if (sharedState) {
@@ -111,9 +135,9 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     ...loadedTrip,
                     isFavorite: localTrip?.isFavorite ?? loadedTrip.isFavorite ?? false,
                 };
-                const resolvedView = view ?? mergedTrip.defaultView;
-                setViewSettings(resolvedView);
-                onTripLoaded(mergedTrip, resolvedView);
+                const effectiveView = resolveEffectiveView(view, mergedTrip.defaultView);
+                setViewSettings(effectiveView);
+                onTripLoaded(mergedTrip, effectiveView);
                 return;
             }
 
@@ -125,17 +149,17 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                 if (localEntry?.snapshot?.trip) {
                     saveTrip(localEntry.snapshot.trip);
                     localResolvedTrip = localEntry.snapshot.trip;
-                    localResolvedView = localEntry.snapshot.view ?? localEntry.snapshot.trip.defaultView;
+                    localResolvedView = resolveEffectiveView(localEntry.snapshot.view, localEntry.snapshot.trip.defaultView);
                     setViewSettings(localResolvedView);
                     onTripLoaded(localResolvedTrip, localResolvedView);
-                    if (connectivityState === 'offline') return;
+                    return;
                 }
             }
 
             const localTrip = getTripById(tripId);
             if (!localResolvedTrip && localTrip && connectivityState !== 'online') {
                 localResolvedTrip = localTrip;
-                localResolvedView = localTrip.defaultView;
+                localResolvedView = resolveEffectiveView(localTrip.defaultView, localTrip.defaultView);
                 setViewSettings(localResolvedView);
                 onTripLoaded(localTrip, localResolvedView);
                 if (connectivityState === 'offline') return;
@@ -146,7 +170,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     const version = await dbGetTripVersion(tripId, versionId);
                     if (version?.trip) {
                         saveTrip(version.trip);
-                        const resolvedView = version.view ?? version.trip.defaultView;
+                        const resolvedView = resolveEffectiveView(version.view, version.trip.defaultView);
                         const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                         const dbUpdatedAt = version.trip.updatedAt ?? 0;
                         if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -161,7 +185,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
                     if (dbTrip.access.source === 'owner') {
                         saveTrip(dbTrip.trip);
                     }
-                    const resolvedView = dbTrip.view ?? dbTrip.trip.defaultView;
+                    const resolvedView = resolveEffectiveView(dbTrip.view, dbTrip.trip.defaultView);
                     const localUpdatedAt = localResolvedTrip?.updatedAt ?? 0;
                     const dbUpdatedAt = dbTrip.trip.updatedAt ?? 0;
                     if (!localResolvedTrip || dbUpdatedAt >= localUpdatedAt) {
@@ -230,6 +254,7 @@ export const TripLoaderRoute: React.FC<TripLoaderRouteProps> = ({
             onUpdateTrip={onUpdateTrip}
             onCommitState={onCommitState}
             onViewSettingsChange={(settings) => {
+                hasInSessionViewOverrideRef.current = true;
                 setViewSettings(settings);
                 onViewSettingsChange(settings);
             }}

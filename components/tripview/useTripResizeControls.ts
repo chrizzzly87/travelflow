@@ -186,12 +186,10 @@ export const useTripResizeControls = ({
     ]);
 
     useEffect(() => {
-        const previousLayoutMode = previousLayoutModeRef.current;
         const previousMapDockMode = previousMapDockModeRef.current;
         const previousTimelineMode = previousTimelineModeRef.current;
         const previousTimelineView = previousTimelineViewRef.current;
         const isFirstRenderAutoFit = !hasAutoFitRunRef.current;
-        const didLayoutModeChange = previousLayoutMode !== layoutMode;
         const didMapDockModeChange = previousMapDockMode !== mapDockMode;
         const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
@@ -199,7 +197,6 @@ export const useTripResizeControls = ({
             && !isZoomDirty
             && (
                 isFirstRenderAutoFit
-                || didLayoutModeChange
                 || didMapDockModeChange
                 || didTimelineModeChange
                 || didTimelineViewChange

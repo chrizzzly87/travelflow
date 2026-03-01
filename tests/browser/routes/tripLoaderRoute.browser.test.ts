@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 
 import type { IViewSettings } from '../../../types';
 import { makeTrip } from '../../helpers/tripFixtures';
@@ -224,6 +224,73 @@ describe('routes/TripLoaderRoute', () => {
     expect(props.onTripLoaded).not.toHaveBeenCalled();
   });
 
+  it('keeps local history snapshot view when loading an explicit version url', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-local-version';
+    mocks.route.pathname = '/trip/trip-local-version';
+    mocks.route.search = '?v=local-version';
+    const localView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      mapStyle: 'clean',
+      routeMode: 'realistic',
+      showCityNames: true,
+      zoomLevel: 1.3,
+      sidebarWidth: 540,
+      timelineHeight: 310,
+    };
+    const localTrip = makeTrip({
+      id: 'trip-local-version',
+      title: 'Snapshot trip',
+      updatedAt: 1000,
+      defaultView: {
+        ...localView,
+        timelineMode: 'timeline',
+      },
+    });
+    const dbTrip = makeTrip({
+      id: 'trip-local-version',
+      title: 'DB trip',
+      updatedAt: 2000,
+      defaultView: localTrip.defaultView,
+    });
+
+    mocks.findHistoryEntryByUrl.mockReturnValue({
+      id: 'entry-1',
+      tripId: 'trip-local-version',
+      url: '/trip/trip-local-version?v=local-version',
+      label: 'Snapshot',
+      ts: Date.now(),
+      snapshot: {
+        trip: localTrip,
+        view: localView,
+      },
+    });
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: dbTrip.defaultView,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'owner@example.com',
+        ownerUsername: 'owner',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    const props = makeRouteProps();
+    render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenCalledWith(localTrip, localView);
+    });
+    expect(props.onTripLoaded).toHaveBeenCalledTimes(1);
+    expect(mocks.dbGetTrip).not.toHaveBeenCalled();
+    expect(mocks.dbGetTripVersion).not.toHaveBeenCalled();
+  });
+
   it('refreshes from DB after reconnect when newer data is available', async () => {
     mocks.dbEnabled = true;
     mocks.route.tripId = 'trip-reconnect';
@@ -258,6 +325,82 @@ describe('routes/TripLoaderRoute', () => {
     await waitFor(() => {
       expect(props.onTripLoaded).toHaveBeenCalledWith(dbTrip, dbTrip.defaultView);
     });
+  });
+
+  it('preserves in-session view settings during reconnect refreshes', async () => {
+    mocks.dbEnabled = true;
+    mocks.route.tripId = 'trip-view-persistence';
+    mocks.route.pathname = '/trip/trip-view-persistence';
+
+    const timelineView: IViewSettings = {
+      layoutMode: 'horizontal',
+      timelineMode: 'timeline',
+      timelineView: 'horizontal',
+      mapStyle: 'standard',
+      routeMode: 'simple',
+      showCityNames: true,
+      zoomLevel: 1,
+      sidebarWidth: 500,
+      timelineHeight: 340,
+    };
+    const calendarView: IViewSettings = {
+      ...timelineView,
+      timelineMode: 'calendar',
+    };
+    const localTrip = makeTrip({
+      id: 'trip-view-persistence',
+      title: 'Local trip',
+      updatedAt: 1000,
+      defaultView: timelineView,
+    });
+    const dbTrip = makeTrip({
+      id: 'trip-view-persistence',
+      title: 'DB trip',
+      updatedAt: 2000,
+      defaultView: timelineView,
+    });
+
+    mocks.getTripById.mockReturnValue(localTrip);
+    mocks.dbGetTrip.mockResolvedValue({
+      trip: dbTrip,
+      view: dbTrip.defaultView,
+      access: {
+        source: 'owner',
+        ownerId: 'user-1',
+        ownerEmail: 'owner@example.com',
+        ownerUsername: 'owner',
+        canAdminWrite: false,
+        updatedAtIso: null,
+      },
+    });
+
+    mocks.connectivityState = 'offline';
+    const props = {
+      ...makeRouteProps(),
+      trip: localTrip,
+    };
+    const view = render(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(timelineView);
+    });
+
+    await act(async () => {
+      const callback = mocks.renderedTripViewProps?.onViewSettingsChange as ((settings: IViewSettings) => void) | undefined;
+      callback?.(calendarView);
+    });
+
+    await waitFor(() => {
+      expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(calendarView);
+    });
+
+    mocks.connectivityState = 'online';
+    view.rerender(React.createElement(TripLoaderRoute, props));
+
+    await waitFor(() => {
+      expect(props.onTripLoaded).toHaveBeenLastCalledWith(dbTrip, calendarView);
+    });
+    expect(mocks.renderedTripViewProps?.initialViewSettings).toEqual(calendarView);
   });
 
   it('enforces read-only mode when trip access source is public_read', async () => {
