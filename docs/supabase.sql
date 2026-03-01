@@ -4731,7 +4731,7 @@ begin
     if exists (
       select 1
       from public.username_blocked_terms ubt
-      where lower(ubt.term) = v_new_username
+      where v_new_username like ('%' || lower(ubt.term) || '%')
         and ubt.active = true
     ) then
       raise exception 'Username is blocked';
@@ -4991,7 +4991,7 @@ begin
   if exists (
     select 1
     from public.username_blocked_terms ubt
-    where lower(ubt.term) = v_username
+    where v_username like ('%' || lower(ubt.term) || '%')
       and ubt.active = true
   ) then
     v_log_reason := 'blocked';
