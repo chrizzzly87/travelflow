@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useDbSync } from '../hooks/useDbSync';
 import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
 import { DB_ENABLED } from '../config/db';
-import { ANONYMOUS_TRIP_EXPIRATION_DAYS, buildTripExpiryIso } from '../config/productLimits';
+import { resolveTripExpiryFromEntitlements } from '../config/productLimits';
 import { getTripLifecycleState } from '../config/paywall';
 import {
     dbCanCreateTrip,
@@ -97,16 +97,6 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
     const applyRouteState = useCallback((next: SharedTripRouteState) => {
         setRouteState(next);
     }, []);
-
-    const resolveTripExpiry = (createdAtMs: number, existingTripExpiry?: string | null): string | null => {
-        if (typeof existingTripExpiry === 'string' && existingTripExpiry) return existingTripExpiry;
-        const expirationDays = access?.entitlements.tripExpirationDays;
-        if (expirationDays === null) return null;
-        if (typeof expirationDays === 'number' && expirationDays > 0) {
-            return buildTripExpiryIso(createdAtMs, expirationDays);
-        }
-        return buildTripExpiryIso(createdAtMs, ANONYMOUS_TRIP_EXPIRATION_DAYS);
-    };
 
     const versionId = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -264,7 +254,11 @@ export const SharedTripLoaderRoute: React.FC<SharedTripLoaderRouteProps> = ({
             updatedAt: now,
             isFavorite: false,
             status: 'active',
-            tripExpiresAt: resolveTripExpiry(now),
+            tripExpiresAt: resolveTripExpiryFromEntitlements(
+                now,
+                undefined,
+                access?.entitlements.tripExpirationDays
+            ),
             sourceKind: 'duplicate_shared',
             forkedFromTripId: trip.id,
             forkedFromShareToken: token || undefined,
