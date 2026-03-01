@@ -182,7 +182,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     onDetailsResizeKeyDown,
     onTimelineResizeKeyDown,
 }) => {
-    const floatingMapRef = useRef<HTMLDivElement | null>(null);
     const dragCleanupRef = useRef<(() => void) | null>(null);
     const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const floatingMapPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -224,7 +223,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 
     const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
         if (isMobile || mapDockMode !== 'floating') return;
-        const panel = floatingMapRef.current;
+        const panel = mapViewportRef.current;
         if (!panel) return;
         event.preventDefault();
 
@@ -294,7 +293,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                 setIsFloatingMapSettling(false);
                 return;
             }
-            const resolvedPanel = floatingMapRef.current;
+            const resolvedPanel = mapViewportRef.current;
             const panelWidth = resolvedPanel?.offsetWidth ?? panelRect.width;
             const panelHeight = resolvedPanel?.offsetHeight ?? panelRect.height;
             const currentPosition = floatingMapPositionRef.current ?? basePosition;
@@ -365,7 +364,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     useEffect(() => {
         if (isMobile || mapDockMode !== 'floating') return;
         const resolvePosition = () => {
-            const panel = floatingMapRef.current;
+            const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
             setFloatingMapPosition((previous) => {
@@ -390,7 +389,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     useEffect(() => {
         if (isMobile || mapDockMode !== 'floating') return;
         const handleResize = () => {
-            const panel = floatingMapRef.current;
+            const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
             setFloatingMapPosition((previous) => {

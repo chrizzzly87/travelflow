@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
 
@@ -117,7 +117,7 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
   });
 
-  it('renders a dedicated floating map drag handle control', () => {
+  it('enters dragging state when the floating map drag handle is pressed', async () => {
     const props = baseProps();
     props.mapDockMode = 'floating';
 
@@ -129,6 +129,14 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(floatingMap).toBeInTheDocument();
     expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
     expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
+
+    fireEvent.pointerDown(dragHandle, { clientX: 300, clientY: 240 });
+
+    await waitFor(() => {
+      expect(dragHandle.className).toContain('cursor-grabbing');
+    });
+
+    fireEvent.pointerUp(window, { clientX: 300, clientY: 240 });
   });
 
 });
