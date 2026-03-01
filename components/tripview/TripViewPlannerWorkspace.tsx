@@ -65,6 +65,7 @@ const FLOATING_MAP_DRAG_THRESHOLD = 4;
 const FLOATING_MAP_MAX_ROTATION = 11;
 const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 20;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
+const FLOATING_MAP_SQUIRCLE_RADIUS = '24% / 16%';
 
 const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
@@ -222,11 +223,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     }, []);
 
     const beginFloatingMapDrag = useCallback((event: React.PointerEvent<HTMLElement>) => {
-        if (event.button !== 0 || isMobile || mapDockMode !== 'floating') return;
-        const target = event.target as HTMLElement | null;
-        if (target?.closest('[data-floating-map-control="true"]')) return;
+        if (isMobile || mapDockMode !== 'floating') return;
         const panel = floatingMapRef.current;
         if (!panel) return;
+        event.preventDefault();
 
         stopDraggingFloatingMap();
         clearFloatingMapSettleTimer();
@@ -415,6 +415,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
     const toggleMapDockMode = useCallback(() => {
         onMapDockModeChange(mapDockMode === 'docked' ? 'floating' : 'docked');
     }, [mapDockMode, onMapDockModeChange]);
+    const effectiveMapViewTransitionName = mapViewTransitionName ?? 'trip-map-dock-preview';
     const floatingMapTransform = `translateZ(0) rotate(${floatingMapRotationDeg.toFixed(2)}deg) scale(${isFloatingMapDragging ? 1.02 : 1})`;
     const floatingMapTransition = isFloatingMapDragging
         ? 'left 0ms linear, top 0ms linear, transform 0ms linear, box-shadow 140ms ease'
@@ -605,7 +606,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     onRouteStatus={onRouteStatus}
                     fitToRouteKey={tripId}
                     isPaywalled={isPaywallLocked}
-                    viewTransitionName={mapViewTransitionName}
+                    viewTransitionName={effectiveMapViewTransitionName}
                 />
             </Suspense>
         );
@@ -762,8 +763,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <div
                                 ref={mapViewportRef}
                                 data-testid="floating-map-container"
-                                onPointerDown={beginFloatingMapDrag}
-                                className={`fixed z-[1400] overflow-hidden bg-gray-100 border-4 border-white rounded-[2.25rem] ${
+                                className={`tf-floating-map-enter fixed z-[1400] overflow-hidden bg-gray-100 border-[4px] border-t-[10px] border-white ${
                                     isFloatingMapDragging
                                         ? 'shadow-[0_34px_70px_-28px_rgba(15,23,42,0.72),0_14px_30px_-16px_rgba(15,23,42,0.45)]'
                                         : 'shadow-[0_18px_50px_-22px_rgba(15,23,42,0.6),0_8px_22px_-12px_rgba(15,23,42,0.4)]'
@@ -776,12 +776,27 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                     transform: floatingMapTransform,
                                     transformOrigin: '50% 0%',
                                     transition: floatingMapTransition,
+                                    borderRadius: FLOATING_MAP_SQUIRCLE_RADIUS,
                                 }}
                             >
-                                <div className="pointer-events-none absolute top-2 inset-x-0 z-[90] flex justify-center">
-                                    <span className="inline-block h-1.5 w-14 rounded-full bg-white/75 shadow-sm backdrop-blur" />
+                                <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center pt-2">
+                                    <button
+                                        type="button"
+                                        data-testid="floating-map-drag-handle"
+                                        data-floating-map-control="true"
+                                        onPointerDown={beginFloatingMapDrag}
+                                        className={`pointer-events-auto inline-flex h-8 w-24 items-center justify-center rounded-full border border-white/80 bg-white/90 shadow-sm backdrop-blur-md touch-none ${
+                                            isFloatingMapDragging ? 'cursor-grabbing scale-[1.04]' : 'cursor-grab'
+                                        } transition-transform`}
+                                        aria-label="Move floating map preview"
+                                    >
+                                        <span className="inline-block h-1.5 w-14 rounded-full bg-slate-400/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]" />
+                                        <span className="sr-only">Move floating map preview</span>
+                                    </button>
                                 </div>
-                                {renderMap(layoutMode, false)}
+                                <div className="h-full w-full overflow-hidden" style={{ borderRadius: 'inherit' }}>
+                                    {renderMap(layoutMode, false)}
+                                </div>
                             </div>
                         )}
                     </>

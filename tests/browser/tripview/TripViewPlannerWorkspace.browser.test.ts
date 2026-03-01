@@ -112,8 +112,23 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     render(React.createElement(TripViewPlannerWorkspace, props));
 
     expect(screen.getByTestId('floating-map-container')).toBeInTheDocument();
+    expect(screen.getByTestId('floating-map-drag-handle')).toBeInTheDocument();
     expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
     expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
+  });
+
+  it('renders a dedicated floating map drag handle control', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const floatingMap = screen.getByTestId('floating-map-container');
+    const dragHandle = screen.getByTestId('floating-map-drag-handle');
+
+    expect(floatingMap).toBeInTheDocument();
+    expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
+    expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
   });
 
 });

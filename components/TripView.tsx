@@ -184,6 +184,29 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
     !event.shiftKey
 );
 
+type ViewTransitionDocument = Document & {
+    startViewTransition?: (update: () => void | Promise<void>) => unknown;
+};
+
+const runWithOptionalViewTransition = (update: () => void): void => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        update();
+        return;
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        update();
+        return;
+    }
+    const transitionDocument = document as ViewTransitionDocument;
+    if (typeof transitionDocument.startViewTransition !== 'function') {
+        update();
+        return;
+    }
+    transitionDocument.startViewTransition(() => {
+        update();
+    });
+};
+
 const parseTripStartDate = (value: string): Date => {
     if (!value) return new Date();
     const parts = value.split('-').map(Number);
@@ -1915,7 +1938,9 @@ const useTripViewRender = ({
                                     layout_mode: layoutMode,
                                 }
                             );
-                            setMapDockMode(mode);
+                            runWithOptionalViewTransition(() => {
+                                setMapDockMode(mode);
+                            });
                         }}
                         timelineMode={timelineMode}
                         timelineView={timelineView}
