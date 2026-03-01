@@ -27,20 +27,52 @@ export const parseUndoSourceEventId = (log: AdminAuditRecord): string | null => 
   return match?.[1] ?? null;
 };
 
+const invertDiffEntries = (entries: UserChangeDiffEntry[]): UserChangeDiffEntry[] => (
+  entries.map((entry) => ({
+    key: entry.key,
+    beforeValue: entry.afterValue,
+    afterValue: entry.beforeValue,
+  }))
+);
+
+const resolveEntryDiffEntries = (
+  entryId: string,
+  timelineEntriesById: Map<string, TimelineEntryLike>,
+  visited: Set<string>
+): UserChangeDiffEntry[] | null => {
+  if (visited.has(entryId)) return null;
+  visited.add(entryId);
+
+  const sourceEntry = timelineEntriesById.get(entryId);
+  if (!sourceEntry) return null;
+
+  if (sourceEntry.kind === 'user') {
+    const sourceDiffEntries = buildUserChangeDiffEntries(sourceEntry.log);
+    return sourceDiffEntries.length > 0 ? sourceDiffEntries : null;
+  }
+
+  if (sourceEntry.log.action.trim().toLowerCase() !== 'admin.trip.override_commit') {
+    return null;
+  }
+
+  const nestedSourceEventId = parseUndoSourceEventId(sourceEntry.log);
+  if (!nestedSourceEventId) return null;
+  const nestedDiffEntries = resolveEntryDiffEntries(nestedSourceEventId, timelineEntriesById, visited);
+  if (!nestedDiffEntries || nestedDiffEntries.length === 0) return null;
+  return invertDiffEntries(nestedDiffEntries);
+};
+
 export const resolveUndoDiffEntries = (
   undoLog: AdminAuditRecord,
   timelineEntriesById: Map<string, TimelineEntryLike>
 ): UserChangeDiffEntry[] | null => {
   const sourceEventId = parseUndoSourceEventId(undoLog);
   if (!sourceEventId) return null;
-  const sourceEntry = timelineEntriesById.get(sourceEventId);
-  if (!sourceEntry || sourceEntry.kind !== 'user') return null;
-
-  const sourceDiffEntries = buildUserChangeDiffEntries(sourceEntry.log);
-  if (sourceDiffEntries.length === 0) return null;
-  return sourceDiffEntries.map((entry) => ({
-    key: entry.key,
-    beforeValue: entry.afterValue,
-    afterValue: entry.beforeValue,
-  }));
+  const sourceDiffEntries = resolveEntryDiffEntries(
+    sourceEventId,
+    timelineEntriesById,
+    new Set<string>([undoLog.id])
+  );
+  if (!sourceDiffEntries || sourceDiffEntries.length === 0) return null;
+  return invertDiffEntries(sourceDiffEntries);
 };

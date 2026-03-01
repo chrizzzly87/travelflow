@@ -99,4 +99,86 @@ describe('services/adminAuditUndoDiff', () => {
       },
     ]);
   });
+
+  it('resolves chained undo rows and preserves fine-grained parity', () => {
+    const sourceEventId = 'source-user-event-2';
+    const firstUndoEventId = 'admin-undo-1';
+    const timelineEntriesById = new Map<string, any>([
+      [
+        sourceEventId,
+        {
+          kind: 'user',
+          log: {
+            id: sourceEventId,
+            owner_user_id: 'user-1',
+            owner_email: 'user@example.com',
+            action: 'trip.updated',
+            source: 'trip.editor',
+            target_type: 'trip',
+            target_id: 'trip-1',
+            before_data: null,
+            after_data: null,
+            metadata: {
+              timeline_diff_v1: {
+                transport_mode_changes: [
+                  {
+                    title: 'Plane Travel',
+                    before_mode: 'train',
+                    after_mode: 'plane',
+                  },
+                ],
+              },
+            },
+            created_at: new Date().toISOString(),
+          },
+        },
+      ],
+      [
+        firstUndoEventId,
+        {
+          kind: 'admin',
+          log: {
+            id: firstUndoEventId,
+            actor_user_id: 'admin-1',
+            actor_email: 'admin@example.com',
+            action: 'admin.trip.override_commit',
+            target_type: 'trip',
+            target_id: 'trip-1',
+            before_data: null,
+            after_data: null,
+            metadata: {
+              label: `Audit undo ${sourceEventId}`,
+            },
+            created_at: new Date().toISOString(),
+          },
+        },
+      ],
+    ]);
+
+    const secondUndo = resolveUndoDiffEntries(
+      {
+        id: 'admin-undo-2',
+        actor_user_id: 'admin-1',
+        actor_email: 'admin@example.com',
+        action: 'admin.trip.override_commit',
+        target_type: 'trip',
+        target_id: 'trip-1',
+        before_data: null,
+        after_data: null,
+        metadata: {
+          label: `Audit undo ${firstUndoEventId}`,
+        },
+        created_at: new Date().toISOString(),
+      },
+      timelineEntriesById
+    );
+
+    expect(secondUndo).toEqual([
+      {
+        key: 'transport_mode · Plane Travel',
+        beforeValue: 'train',
+        afterValue: 'plane',
+      },
+    ]);
+  });
 });
