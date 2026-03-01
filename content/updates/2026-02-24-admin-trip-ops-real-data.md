@@ -64,6 +64,7 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Internal] 🔗 Correlation IDs now follow deterministic conventions for upsert/version events and archive flows now preserve caller-provided correlation IDs.
 - [ ] [Internal] 🧾 Client fallback event writers now add the full immutable event envelope (`event_schema_version`, `event_id`, `event_kind`, `correlation_id`, `causation_id`, `source_surface`) for parity with DB event writers.
 - [ ] [Internal] 🧷 Immutable fallback event envelopes now include actor/target IDs and a redaction policy field for complete Phase 3 metadata.
+- [ ] [Internal] 🔁 Undo override commits now persist explicit source/root/parity metadata and use by-id source lookup fallback so out-of-window undo rows can still render fine-grained diffs.
 - [ ] [Internal] 📦 Admin audit replay export now runs via a server endpoint and persists `admin.audit.export` entries, while still downloading `admin_forensics_replay_v1` bundles with correlation-group summaries and redaction-aware payload shaping.
 - [ ] [Internal] 🧩 User change-table diff rows now use typed structured-value formatters (instead of raw JSON blobs) across admin audit and user drawer surfaces.
 - [ ] [Internal] 🧪 Hardened long-running admin browser tests with explicit timeouts to stabilize `pnpm test:core` runs in CI-like load.

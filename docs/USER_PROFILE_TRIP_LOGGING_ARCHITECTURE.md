@@ -69,6 +69,8 @@ This document is the operational source of truth for:
 - Non-supported actions remain non-destructive/read-only in row actions.
 - Undo rows for trip rollback resolve source event IDs and render inverted fine-grained diff entries (for example `transport_mode`) instead of only full JSON snapshots.
 - Chained undos (undoing a prior undo row) preserve fine-grained diff rendering by recursively resolving source events with parity-safe inversion.
+- New undo rows now persist explicit linkage metadata (`undo_source_event_id`, `undo_root_source_event_id`, `undo_parity`) so rendering does not depend on label parsing.
+- Admin audit UI also performs by-id lookup for missing source user-change events (out-of-window/history cases) before falling back to snapshot-only rendering.
 
 ## Current User Action Taxonomy
 - Primary trip actions:
