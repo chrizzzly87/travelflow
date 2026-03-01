@@ -1,9 +1,9 @@
 ---
 id: rel-2026-02-25-supabase-outage-resilience
-version: v0.72.0
+version: v0.73.0
 title: "Supabase outage resilience and offline trip replay"
 date: 2026-02-25
-published_at: 2026-03-01T09:40:00Z
+published_at: 2026-03-01T09:50:30Z
 status: published
 notify_in_app: false
 in_app_hours: 24
