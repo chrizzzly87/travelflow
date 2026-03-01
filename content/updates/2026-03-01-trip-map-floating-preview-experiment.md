@@ -1,10 +1,10 @@
 ---
 id: rel-2026-03-01-trip-map-floating-preview-experiment
-version: v0.64.0
+version: v0.76.0
 title: "Trip page floating map preview experiment"
 date: 2026-03-01
-published_at: 2026-03-01T16:10:00Z
-status: draft
+published_at: 2026-03-01T19:47:02Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip planner now includes an experimental map minimize mode with a draggable floating preview while the calendar expands to full workspace."
@@ -21,7 +21,7 @@ summary: "Trip planner now includes an experimental map minimize mode with a dra
 - [x] [Improved] 💾 Floating map preview now restores your last dock mode, snapped position, and chosen preview size after refresh.
 - [x] [Improved] ↘️ Floating map now has a top-left size toggle with a much smaller compact mode and a larger expanded mode for clearer size contrast.
 - [x] [Improved] 🔁 Floating map preview now includes a rotating portrait/landscape swap control that keeps the current preview size by swapping width and height.
-- [x] [Fixed] 📌 Floating map now keeps its snapped corner/edge anchor when the browser window is resized, including right-side and bottom-right placements.
+- [x] [Fixed] 📌 Floating map now keeps its snapped corner/edge anchor when the browser window is resized, including right-side, bottom-right, and bottom-center placements.
 - [x] [Fixed] 🧾 Automatic timeline auto-fit zoom now avoids creating separate “Zoomed in/out” save toasts and history noise, while still preserving combined visual updates.
 - [x] [Improved] ↩️ Docked/floating map preview mode changes are now included in undo history with localized visual-change labels.
 - [ ] [Internal] 📊 Map preview minimize, maximize, and reposition interactions now emit dedicated trip-view analytics events.
