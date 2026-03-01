@@ -67,12 +67,26 @@ const FLOATING_MAP_MAX_ROTATION = 11;
 const FLOATING_MAP_ROTATION_VELOCITY_FACTOR = 0.015;
 const FLOATING_MAP_SETTLE_DURATION_MS = 380;
 const FLOATING_MAP_BORDER_RADIUS = '1.125rem';
+const FLOATING_MAP_NAV_TOP_OFFSET = 92;
+
+const resolveFloatingMapTopBoundary = (): number => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return FLOATING_MAP_NAV_TOP_OFFSET;
+    }
+    const appHeader = document.querySelector<HTMLElement>('header');
+    if (!appHeader) return FLOATING_MAP_NAV_TOP_OFFSET;
+    const rect = appHeader.getBoundingClientRect();
+    if (rect.bottom <= 0 || rect.top > window.innerHeight * 0.5) {
+        return FLOATING_MAP_NAV_TOP_OFFSET;
+    }
+    return Math.max(FLOATING_MAP_NAV_TOP_OFFSET, Math.ceil(rect.bottom + 12));
+};
 
 const clampValue = (value: number, min: number, max: number): number => Math.max(min, Math.min(max, value));
 
 const resolveFloatingMapBounds = (panelWidth: number, panelHeight: number) => {
     const minX = FLOATING_MAP_MARGIN;
-    const minY = FLOATING_MAP_MARGIN;
+    const minY = Math.max(FLOATING_MAP_MARGIN, resolveFloatingMapTopBoundary());
     if (typeof window === 'undefined') {
         return {
             minX,
@@ -103,17 +117,11 @@ const clampFloatingMapPosition = (
 
 const resolveFloatingMapSnapTargets = (panelWidth: number, panelHeight: number): Array<{ x: number; y: number }> => {
     const { minX, minY, maxX, maxY } = resolveFloatingMapBounds(panelWidth, panelHeight);
-    const midX = minX + ((maxX - minX) / 2);
-    const midY = minY + ((maxY - minY) / 2);
     return [
         { x: minX, y: minY },
-        { x: midX, y: minY },
         { x: maxX, y: minY },
-        { x: maxX, y: midY },
         { x: maxX, y: maxY },
-        { x: midX, y: maxY },
         { x: minX, y: maxY },
-        { x: minX, y: midY },
     ];
 };
 
@@ -185,6 +193,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
 }) => {
     const dragSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const floatingMapPositionRef = useRef<{ x: number; y: number } | null>(null);
+    const floatingMapPanelSizeRef = useRef<{ width: number; height: number }>({
+        width: FLOATING_MAP_MIN_WIDTH,
+        height: (FLOATING_MAP_MIN_WIDTH * 3) / 2,
+    });
     const didMoveFloatingMapRef = useRef(false);
     const didTrackFloatingMapRepositionRef = useRef(false);
     const [isFloatingMapDragging, setIsFloatingMapDragging] = useState(false);
@@ -263,14 +275,12 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         _event: MouseEvent | TouchEvent | PointerEvent,
         info: PanInfo,
     ) => {
-        const panel = mapViewportRef.current;
-        if (!panel) return;
-        const panelRect = panel.getBoundingClientRect();
+        const { width: panelWidth, height: panelHeight } = floatingMapPanelSizeRef.current;
         const currentPosition = {
             x: floatingMapX.get(),
             y: floatingMapY.get(),
         };
-        const clampedPosition = clampFloatingMapPosition(currentPosition, panelRect.width, panelRect.height);
+        const clampedPosition = clampFloatingMapPosition(currentPosition, panelWidth, panelHeight);
         if (clampedPosition.x !== currentPosition.x) floatingMapX.set(clampedPosition.x);
         if (clampedPosition.y !== currentPosition.y) floatingMapY.set(clampedPosition.y);
         floatingMapPositionRef.current = clampedPosition;
@@ -293,7 +303,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         );
         const nextRotation = (floatingMapRotation.get() * 0.2) + (targetRotation * 0.8);
         floatingMapRotation.set(nextRotation);
-    }, [floatingMapRotation, floatingMapX, floatingMapY, mapViewportRef, tripId]);
+    }, [floatingMapRotation, floatingMapX, floatingMapY, tripId]);
 
     const handleFloatingMapDragEnd = useCallback(() => {
         setIsFloatingMapDragging(false);
@@ -302,6 +312,11 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             setIsFloatingMapSettling(false);
             return;
         }
+        const panelRect = panel.getBoundingClientRect();
+        floatingMapPanelSizeRef.current = {
+            width: panelRect.width,
+            height: panelRect.height,
+        };
         if (!didMoveFloatingMapRef.current) {
             animate(floatingMapRotation, 0, {
                 type: 'spring',
@@ -313,7 +328,6 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             return;
         }
 
-        const panelRect = panel.getBoundingClientRect();
         const currentPosition = clampFloatingMapPosition(
             { x: floatingMapX.get(), y: floatingMapY.get() },
             panelRect.width,
@@ -372,6 +386,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
+            floatingMapPanelSizeRef.current = {
+                width: panelRect.width,
+                height: panelRect.height,
+            };
             const previous = floatingMapPositionRef.current ?? {
                 x: floatingMapX.get(),
                 y: floatingMapY.get(),
@@ -395,6 +413,10 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
             const panel = mapViewportRef.current;
             if (!panel) return;
             const panelRect = panel.getBoundingClientRect();
+            floatingMapPanelSizeRef.current = {
+                width: panelRect.width,
+                height: panelRect.height,
+            };
             const previous = floatingMapPositionRef.current ?? {
                 x: floatingMapX.get(),
                 y: floatingMapY.get(),
@@ -784,6 +806,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                                         rotate: floatingMapRotation,
                                         transformOrigin: '50% 0%',
                                         borderRadius: FLOATING_MAP_BORDER_RADIUS,
+                                        willChange: isFloatingMapDragging || isFloatingMapSettling ? 'transform' : 'auto',
                                     }}
                                 >
                                     <div className="pointer-events-none absolute top-0 inset-x-0 z-[90] flex justify-center pt-2">
