@@ -48,6 +48,8 @@ summary: "Admin overview and trip operations now stay on live records, with expa
 - [ ] [Improved] ⏱️ Admin audit filters now include `Last 24 hours`, `Last 7 days`, `Last 30 days`, `All time`, and a custom date-range picker for faster incident slicing.
 - [ ] [Improved] 📤 Admin replay export now supports full-filter exports, selected-row exports, and single-row exports directly from table row actions.
 - [ ] [Improved] 🔁 Added confirm-based undo actions in admin audit rows for supported user-originated changes (`trip.updated`, `trip.archived`, `profile.updated`) with new audit entries for each revert.
+- [ ] [Improved] 🧭 Undo-generated trip rows now render inverted fine-grained `timeline_diff_v1` style details (for example transport mode changes) instead of only full snapshot blobs.
+- [ ] [Improved] 🧩 Extended undo coverage to additional actions, including `trip.created`, `admin.user.update_overrides`, and `admin.tier.update_entitlements`.
 - [ ] [Improved] 🔔 Replay export and undo success paths now use app toasts instead of persistent top-page banners.
 - [x] [Improved] ✉️ Login now better supports saved email autofill with stronger form accessibility labeling.
 - [ ] [Internal] 🧪 Added regression coverage for the admin mock-mode guard to prevent production mock-data leakage.
