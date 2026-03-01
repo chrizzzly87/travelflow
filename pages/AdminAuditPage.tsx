@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
 import type { PlanTierKey } from '../types';
 import {
+    adminGetUserChangeLog,
     adminExportAuditReplay,
     adminOverrideTripCommit,
     adminGetTripVersionSnapshots,
@@ -42,7 +43,12 @@ import {
     resolveUserChangeActionPresentation,
     resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
-import { parseUndoSourceEventId, resolveUndoDiffEntries } from '../services/adminAuditUndoDiff';
+import {
+    parseUndoRootSourceEventId,
+    parseUndoSourceEventId,
+    resolveUndoDiffEntries,
+    resolveUndoParity,
+} from '../services/adminAuditUndoDiff';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
 const USER_CHANGE_CACHE_KEY = 'admin.user_changes.cache.v1';
@@ -527,6 +533,7 @@ export const AdminAuditPage: React.FC = () => {
     const [userChangeLogs, setUserChangeLogs] = useState<AdminUserChangeRecord[]>(
         () => readAdminCache<AdminUserChangeRecord[]>(USER_CHANGE_CACHE_KEY, [])
     );
+    const [lookupUserChangeLogs, setLookupUserChangeLogs] = useState<AdminUserChangeRecord[]>([]);
     const [isLoading, setIsLoading] = useState(() => logs.length === 0 && userChangeLogs.length === 0);
     const [searchValue, setSearchValue] = useState(() => searchParams.get('q') || '');
     const [timePreset, setTimePreset] = useState<AuditTimePreset>(() => parseAuditTimePreset(searchParams.get('range')));
@@ -578,6 +585,7 @@ export const AdminAuditPage: React.FC = () => {
     const [diffModalAfterValue, setDiffModalAfterValue] = useState<unknown>({});
     const [isExportingReplay, setIsExportingReplay] = useState(false);
     const [revertingEntryKey, setRevertingEntryKey] = useState<string | null>(null);
+    const requestedUndoSourceIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         const next = new URLSearchParams();
@@ -615,6 +623,8 @@ export const AdminAuditPage: React.FC = () => {
         setIsLoading(true);
         setErrorMessage(null);
         setDataSourceNotice(null);
+        setLookupUserChangeLogs([]);
+        requestedUndoSourceIdsRef.current.clear();
         const notices: string[] = [];
         const hardFailures: string[] = [];
 
@@ -860,17 +870,25 @@ export const AdminAuditPage: React.FC = () => {
     };
 
     const timelineEntries = useMemo<AuditTimelineEntry[]>(() => {
-        const combined: AuditTimelineEntry[] = [
-            ...logs.map((log) => ({ kind: 'admin', log } as const)),
-            ...userChangeLogs.map((log) => ({ kind: 'user', log } as const)),
-        ];
+        const byId = new Map<string, AuditTimelineEntry>();
+        logs.forEach((log) => {
+            byId.set(log.id, { kind: 'admin', log });
+        });
+        userChangeLogs.forEach((log) => {
+            byId.set(log.id, { kind: 'user', log });
+        });
+        lookupUserChangeLogs.forEach((log) => {
+            if (!byId.has(log.id)) {
+                byId.set(log.id, { kind: 'user', log });
+            }
+        });
 
-        return combined.sort((a, b) => {
+        return Array.from(byId.values()).sort((a, b) => {
             const left = Date.parse(getTimelineCreatedAt(a)) || 0;
             const right = Date.parse(getTimelineCreatedAt(b)) || 0;
             return right - left;
         });
-    }, [logs, userChangeLogs]);
+    }, [logs, lookupUserChangeLogs, userChangeLogs]);
 
     const timelineEntriesById = useMemo(() => {
         const map = new Map<string, AuditTimelineEntry>();
@@ -879,6 +897,45 @@ export const AdminAuditPage: React.FC = () => {
         });
         return map;
     }, [timelineEntries]);
+
+    useEffect(() => {
+        const missingSourceIds = new Set<string>();
+        timelineEntries.forEach((entry) => {
+            if (entry.kind !== 'admin') return;
+            if (entry.log.action.trim().toLowerCase() !== 'admin.trip.override_commit') return;
+            const sourceId = parseUndoRootSourceEventId(entry.log) || parseUndoSourceEventId(entry.log);
+            if (!sourceId) return;
+            if (timelineEntriesById.has(sourceId)) return;
+            if (requestedUndoSourceIdsRef.current.has(sourceId)) return;
+            requestedUndoSourceIdsRef.current.add(sourceId);
+            missingSourceIds.add(sourceId);
+        });
+        if (missingSourceIds.size === 0) return;
+
+        let active = true;
+        void Promise.all(
+            Array.from(missingSourceIds).map(async (eventId) => {
+                try {
+                    return await adminGetUserChangeLog(eventId);
+                } catch {
+                    return null;
+                }
+            })
+        ).then((rows) => {
+            if (!active) return;
+            const nextRows = rows.filter((row): row is AdminUserChangeRecord => Boolean(row));
+            if (nextRows.length === 0) return;
+            setLookupUserChangeLogs((current) => {
+                const byId = new Map(current.map((row) => [row.id, row]));
+                nextRows.forEach((row) => byId.set(row.id, row));
+                return Array.from(byId.values());
+            });
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [timelineEntries, timelineEntriesById]);
 
     const visibleLogs = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
@@ -1160,6 +1217,32 @@ export const AdminAuditPage: React.FC = () => {
         });
     };
 
+    const buildUndoOverrideMetadata = (entry: AuditTimelineEntry): Record<string, unknown> => {
+        const metadata: Record<string, unknown> = {
+            undo_source_event_id: entry.log.id,
+        };
+        if (entry.kind === 'user') {
+            metadata.undo_root_source_event_id = entry.log.id;
+            metadata.undo_parity = 1;
+            return metadata;
+        }
+        if (entry.log.action.trim().toLowerCase() !== 'admin.trip.override_commit') {
+            return metadata;
+        }
+
+        const rootSourceEventId = parseUndoRootSourceEventId(entry.log) || parseUndoSourceEventId(entry.log);
+        if (rootSourceEventId) {
+            metadata.undo_root_source_event_id = rootSourceEventId;
+        }
+
+        const sourceParity = resolveUndoParity(entry.log, timelineEntriesById);
+        if (sourceParity !== null) {
+            metadata.undo_parity = (sourceParity + 1) % 2;
+        }
+
+        return metadata;
+    };
+
     const undoTimelineEntry = async (entry: AuditTimelineEntry) => {
         if (!canUndoTimelineEntry(entry)) return;
         const entryKey = getTimelineEntryKey(entry);
@@ -1204,6 +1287,7 @@ export const AdminAuditPage: React.FC = () => {
                         data: beforeSnapshot,
                         viewSettings: asRecord(versionSnapshots.before_view_settings),
                         label: `Audit undo ${entry.log.id}`,
+                        metadata: buildUndoOverrideMetadata(entry),
                     });
                 } else if (action === 'profile.updated') {
                     if (!entry.log.target_id) throw new Error('User id missing for undo.');
@@ -1226,6 +1310,7 @@ export const AdminAuditPage: React.FC = () => {
                         data: tripData,
                         viewSettings: asRecord(before.view_settings),
                         label: `Audit undo ${entry.log.id}`,
+                        metadata: buildUndoOverrideMetadata(entry),
                     });
                 } else if (action === 'admin.trip.update') {
                     const before = asRecord(entry.log.before_data);

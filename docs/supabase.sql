@@ -3431,14 +3431,16 @@ end;
 $$;
 
 drop function if exists public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text);
-create function public.admin_override_trip_commit(
+drop function if exists public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb);
+create or replace function public.admin_override_trip_commit(
   p_trip_id text,
   p_data jsonb,
   p_view jsonb default null,
   p_title text default null,
   p_start_date date default null,
   p_is_favorite boolean default null,
-  p_label text default null
+  p_label text default null,
+  p_metadata jsonb default null
 )
 returns table(
   trip_id text,
@@ -3458,6 +3460,7 @@ declare
   v_updated_at timestamptz;
   v_version_id uuid;
   v_effective_label text;
+  v_metadata jsonb;
 begin
   if not public.has_admin_permission('trips.write') then
     raise exception 'Not allowed';
@@ -3520,16 +3523,21 @@ begin
   )
   returning id into v_version_id;
 
+  v_metadata := jsonb_build_object(
+    'version_id', v_version_id,
+    'label', v_effective_label
+  );
+  if jsonb_typeof(coalesce(p_metadata, '{}'::jsonb)) = 'object' then
+    v_metadata := v_metadata || coalesce(p_metadata, '{}'::jsonb);
+  end if;
+
   perform public.admin_write_audit(
     'admin.trip.override_commit',
     'trip',
     p_trip_id,
     v_before,
     v_after,
-    jsonb_build_object(
-      'version_id', v_version_id,
-      'label', v_effective_label
-    )
+    v_metadata
   );
 
   return query
@@ -3817,6 +3825,90 @@ begin
   order by c.created_at desc
   limit greatest(coalesce(p_limit, 200), 1)
   offset greatest(coalesce(p_offset, 0), 0);
+end;
+$$;
+
+create or replace function public.admin_get_user_change_log(
+  p_event_id uuid
+)
+returns table(
+  id uuid,
+  owner_user_id uuid,
+  owner_email text,
+  action text,
+  source text,
+  target_type text,
+  target_id text,
+  before_data jsonb,
+  after_data jsonb,
+  metadata jsonb,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+set row_security = off
+as $$
+begin
+  if not public.has_admin_permission('audit.read') then
+    raise exception 'Not allowed';
+  end if;
+
+  return query
+  with profile_changes as (
+    select
+      e.id,
+      e.owner_id as owner_user_id,
+      u.email::text as owner_email,
+      e.action,
+      e.source,
+      'user'::text as target_type,
+      e.owner_id::text as target_id,
+      e.before_data,
+      e.after_data,
+      e.metadata,
+      e.created_at
+    from public.profile_user_events e
+    left join auth.users u on u.id = e.owner_id
+    where e.id = p_event_id
+  ),
+  trip_changes as (
+    select
+      e.id,
+      e.owner_id as owner_user_id,
+      u.email::text as owner_email,
+      e.action,
+      e.source,
+      'trip'::text as target_type,
+      e.trip_id::text as target_id,
+      null::jsonb as before_data,
+      null::jsonb as after_data,
+      e.metadata,
+      e.created_at
+    from public.trip_user_events e
+    left join auth.users u on u.id = e.owner_id
+    where e.id = p_event_id
+  ),
+  combined as (
+    select * from profile_changes
+    union all
+    select * from trip_changes
+  )
+  select
+    c.id,
+    c.owner_user_id,
+    c.owner_email,
+    c.action,
+    c.source,
+    c.target_type,
+    c.target_id,
+    c.before_data,
+    c.after_data,
+    c.metadata,
+    c.created_at
+  from combined c
+  order by c.created_at desc
+  limit 1;
 end;
 $$;
 
@@ -4222,11 +4314,12 @@ grant execute on function public.admin_update_plan_entitlements(text, jsonb) to 
 grant execute on function public.admin_list_trips(integer, integer, text, uuid, text) to authenticated;
 grant execute on function public.admin_list_user_trips(uuid, integer, integer, text) to authenticated;
 grant execute on function public.admin_get_trip_for_view(text) to authenticated;
-grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text) to authenticated;
+grant execute on function public.admin_override_trip_commit(text, jsonb, jsonb, text, date, boolean, text, jsonb) to authenticated;
 grant execute on function public.admin_update_trip(text, text, timestamptz, uuid, boolean, boolean, boolean) to authenticated;
 grant execute on function public.admin_hard_delete_trip(text) to authenticated;
 grant execute on function public.admin_list_audit_logs(integer, integer, text, text, uuid) to authenticated;
 grant execute on function public.admin_list_user_change_logs(integer, integer, text, uuid) to authenticated;
+grant execute on function public.admin_get_user_change_log(uuid) to authenticated;
 grant execute on function public.admin_get_trip_version_snapshots(text, uuid, uuid) to authenticated;
 grant execute on function public.admin_reapply_tier_to_users(text, boolean) to authenticated;
 grant execute on function public.admin_preview_tier_reapply(text) to authenticated;
