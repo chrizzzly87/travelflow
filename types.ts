@@ -161,6 +161,7 @@ export interface IViewSettings {
     timelineView: 'horizontal' | 'vertical'; // Calendar orientation
     mapStyle: MapStyle;
     zoomLevel: number;
+    mapDockMode?: 'docked' | 'floating';
     routeMode?: RouteMode;
     showCityNames?: boolean;
     sidebarWidth?: number;

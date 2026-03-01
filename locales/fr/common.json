@@ -252,5 +252,14 @@
         "description": "Le mode planification complet est de nouveau disponible."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Apercu de la carte: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "ancre",
+        "floating": "flottant"
+      }
+    }
   }
 }

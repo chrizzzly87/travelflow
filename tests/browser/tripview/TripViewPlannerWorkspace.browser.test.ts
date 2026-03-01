@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 import { TripViewPlannerWorkspace } from '../../../components/tripview/TripViewPlannerWorkspace';
 
@@ -21,6 +21,8 @@ const baseProps = (): PlannerProps => ({
   onZoomIn: vi.fn(),
   onTimelineModeChange: vi.fn(),
   onTimelineViewChange: vi.fn(),
+  mapDockMode: 'docked',
+  onMapDockModeChange: vi.fn(),
   timelineMode: 'calendar',
   timelineView: 'horizontal',
   mapViewportRef: { current: null },
@@ -59,8 +61,13 @@ const baseProps = (): PlannerProps => ({
 });
 
 describe('components/tripview/TripViewPlannerWorkspace', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   afterEach(() => {
     cleanup();
+    window.localStorage.clear();
   });
 
   it('renders calendar controls in calendar mode', () => {
@@ -94,4 +101,97 @@ describe('components/tripview/TripViewPlannerWorkspace', () => {
     expect(screen.queryByLabelText('Zoom out timeline')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Zoom in timeline')).not.toBeInTheDocument();
   });
+
+  it('minimizes map into floating mode when toggle is clicked', () => {
+    const props = baseProps();
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    fireEvent.click(screen.getByLabelText('Minimize map preview'));
+
+    expect(props.onMapDockModeChange).toHaveBeenCalledWith('floating');
+  });
+
+  it('renders floating map container in floating dock mode', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    expect(screen.getByTestId('floating-map-container')).toBeInTheDocument();
+    expect(screen.getByTestId('floating-map-drag-handle')).toBeInTheDocument();
+    expect(screen.getByTestId('planner-timeline-pane')).toBeInTheDocument();
+    expect(screen.getByLabelText('Maximize map preview')).toBeInTheDocument();
+  });
+
+  it('renders a dedicated floating map drag handle control', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const floatingMap = screen.getByTestId('floating-map-container');
+    const dragHandle = screen.getByTestId('floating-map-drag-handle');
+    const resizeHandle = screen.getByTestId('floating-map-resize-handle');
+    const orientationToggle = screen.getByTestId('floating-map-orientation-toggle');
+
+    expect(floatingMap).toBeInTheDocument();
+    expect(dragHandle).toHaveAttribute('aria-label', 'Move floating map preview');
+    expect(dragHandle).toHaveAttribute('data-floating-map-control', 'true');
+    expect(resizeHandle).toHaveAttribute('aria-label', 'Use compact floating map size');
+    expect(orientationToggle).toHaveAttribute('aria-label', 'Switch floating map preview to landscape');
+  });
+
+  it('keeps the map component mounted while toggling dock mode', () => {
+    const mounts = vi.fn();
+    const unmounts = vi.fn();
+    const PersistentMap: React.FC = () => {
+      React.useEffect(() => {
+        mounts();
+        return () => {
+          unmounts();
+        };
+      }, []);
+      return React.createElement('div', { 'data-testid': 'map-component' }, 'map');
+    };
+
+    const initialProps = {
+      ...baseProps(),
+      isMapBootstrapEnabled: true,
+      ItineraryMapComponent: PersistentMap,
+    };
+
+    const { rerender } = render(React.createElement(TripViewPlannerWorkspace, initialProps));
+    expect(mounts).toHaveBeenCalledTimes(1);
+
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...initialProps,
+      mapDockMode: 'floating',
+    }));
+    rerender(React.createElement(TripViewPlannerWorkspace, {
+      ...initialProps,
+      mapDockMode: 'docked',
+    }));
+
+    expect(mounts).toHaveBeenCalledTimes(1);
+    expect(unmounts).toHaveBeenCalledTimes(0);
+  });
+
+  it('uses fused top grab-handle styling with uniform floating border thickness', () => {
+    const props = baseProps();
+    props.mapDockMode = 'floating';
+
+    render(React.createElement(TripViewPlannerWorkspace, props));
+
+    const floatingMap = screen.getByTestId('floating-map-container');
+    const dragHandle = screen.getByTestId('floating-map-drag-handle');
+    const gripBar = dragHandle.querySelector('span:not(.sr-only)');
+
+    expect(floatingMap).toHaveClass('border-[4px]');
+    expect(floatingMap).not.toHaveClass('border-t-[10px]');
+    expect(dragHandle).toHaveClass('rounded-t-none');
+    expect(dragHandle).toHaveClass('rounded-b-full');
+    expect(dragHandle).toHaveClass('border-t-0');
+    expect(gripBar).toHaveClass('group-hover:bg-accent-500');
+  });
+
 });

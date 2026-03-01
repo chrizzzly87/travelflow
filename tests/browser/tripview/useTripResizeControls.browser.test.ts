@@ -9,6 +9,7 @@ const makeHookOptions = (
   overrides: Partial<Parameters<typeof useTripResizeControls>[0]> = {},
 ): Parameters<typeof useTripResizeControls>[0] => ({
   layoutMode: 'horizontal',
+  mapDockMode: 'docked',
   timelineMode: 'calendar',
   timelineView: 'horizontal',
   horizontalTimelineDayCount: 10,
@@ -99,8 +100,10 @@ describe('components/tripview/useTripResizeControls', () => {
 
   it('auto-fits vertical timeline zoom to the closest preset on timeline-view toggle', () => {
     const setZoomLevel = vi.fn();
+    const onAutoFitZoomApplied = vi.fn();
     const initialProps = makeHookOptions({
       setZoomLevel,
+      onAutoFitZoomApplied,
       timelineView: 'horizontal',
       layoutMode: 'horizontal',
       horizontalTimelineDayCount: 10,
@@ -121,8 +124,39 @@ describe('components/tripview/useTripResizeControls', () => {
     });
 
     expect(setZoomLevel).toHaveBeenCalledTimes(1);
+    expect(onAutoFitZoomApplied).toHaveBeenCalledTimes(1);
     const zoomUpdater = setZoomLevel.mock.calls[0][0] as (value: number) => number;
     expect(zoomUpdater(1)).toBe(1.5);
+  });
+
+  it('does not emit auto-fit zoom callback when computed zoom equals current zoom', () => {
+    const setZoomLevel = vi.fn();
+    const onAutoFitZoomApplied = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      onAutoFitZoomApplied,
+      timelineView: 'horizontal',
+      layoutMode: 'horizontal',
+      horizontalTimelineDayCount: 10,
+      zoomLevel: 1.5,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1000, height: 640 });
+    setZoomLevel.mockClear();
+    onAutoFitZoomApplied.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        timelineView: 'vertical',
+      });
+    });
+
+    expect(setZoomLevel).not.toHaveBeenCalled();
+    expect(onAutoFitZoomApplied).not.toHaveBeenCalled();
   });
 
   it('auto-fits horizontal timeline only when content is underfilling the viewport width', () => {
@@ -198,6 +232,63 @@ describe('components/tripview/useTripResizeControls', () => {
       rerender({
         ...initialProps,
         timelineView: 'vertical',
+      });
+    });
+
+    expect(setZoomLevel).not.toHaveBeenCalled();
+  });
+
+  it('auto-fits timeline zoom when map dock mode changes', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineView: 'horizontal',
+      timelineMode: 'calendar',
+      mapDockMode: 'docked',
+      isZoomDirty: false,
+      horizontalTimelineDayCount: 8,
+      zoomLevel: 1,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1120, height: 620 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        mapDockMode: 'floating',
+      });
+    });
+
+    expect(setZoomLevel).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not auto-fit timeline zoom when only map layout direction changes', () => {
+    const setZoomLevel = vi.fn();
+    const initialProps = makeHookOptions({
+      setZoomLevel,
+      timelineMode: 'calendar',
+      timelineView: 'horizontal',
+      layoutMode: 'horizontal',
+      mapDockMode: 'docked',
+      isZoomDirty: false,
+      horizontalTimelineDayCount: 8,
+      zoomLevel: 1,
+    });
+    const { result, rerender } = renderHook((props: Parameters<typeof useTripResizeControls>[0]) => useTripResizeControls(props), {
+      initialProps,
+    });
+
+    attachTimelineViewport(result, { width: 1120, height: 620 });
+    setZoomLevel.mockClear();
+
+    act(() => {
+      rerender({
+        ...initialProps,
+        layoutMode: 'vertical',
       });
     });
 

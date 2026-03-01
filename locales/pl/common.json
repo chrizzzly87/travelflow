@@ -250,5 +250,14 @@
         "description": "Pełny tryb planowania jest ponownie dostępny."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Podglad mapy: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "zadokowany",
+        "floating": "plywajacy"
+      }
+    }
   }
 }

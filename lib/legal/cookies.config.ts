@@ -251,6 +251,13 @@ export const COOKIE_REGISTRY: CookieRegistry = {
       storage: 'localStorage',
     },
     {
+      name: 'tf_map_preview_state_v1',
+      purpose: 'Persists floating map preview mode, snapped position, size preset, and orientation.',
+      duration: 'Persistent',
+      provider: 'TravelFlow',
+      storage: 'localStorage',
+    },
+    {
       name: 'tf_country_amount',
       purpose: 'Persists country info currency converter amount input.',
       duration: 'Persistent',

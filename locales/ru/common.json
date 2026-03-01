@@ -252,5 +252,14 @@
         "description": "Полный режим планирования снова доступен."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Karta predprosmotr: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "zakreplena",
+        "floating": "plavayuschaya"
+      }
+    }
   }
 }

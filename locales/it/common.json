@@ -252,5 +252,14 @@
         "description": "La modalità di pianificazione completa è di nuovo disponibile."
       }
     }
+  },
+  "tripView": {
+    "visualHistory": {
+      "mapPreviewState": "Anteprima mappa: {from} -> {to}",
+      "mapPreviewStateValue": {
+        "docked": "ancorata",
+        "floating": "fluttuante"
+      }
+    }
   }
 }

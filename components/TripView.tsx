@@ -50,6 +50,8 @@ import { useTripTitleEditorState } from './tripview/useTripTitleEditorState';
 import { useTripUpdateItemsHandler } from './tripview/useTripUpdateItemsHandler';
 import { useTripViewModeState } from './tripview/useTripViewModeState';
 import { useTimelinePinchZoom } from './tripview/useTimelinePinchZoom';
+import { buildVisualHistoryLabel, resolveVisualDiff, type ZoomChangeSource } from './tripview/viewChangeDiff';
+import { readFloatingMapPreviewState, writeFloatingMapPreviewState } from './tripview/floatingMapPreviewState';
 import { TRIP_SYNC_TOAST_EVENT, type SyncToastEventDetail } from '../services/tripSyncManager';
 import {
     ChangeTone,
@@ -183,6 +185,29 @@ const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>): boolean =
     !event.ctrlKey &&
     !event.shiftKey
 );
+
+type ViewTransitionDocument = Document & {
+    startViewTransition?: (update: () => void | Promise<void>) => unknown;
+};
+
+const runWithOptionalViewTransition = (update: () => void): void => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        update();
+        return;
+    }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        update();
+        return;
+    }
+    const transitionDocument = document as ViewTransitionDocument;
+    if (typeof transitionDocument.startViewTransition !== 'function') {
+        update();
+        return;
+    }
+    transitionDocument.startViewTransition(() => {
+        update();
+    });
+};
 
 const parseTripStartDate = (value: string): Date => {
     if (!value) return new Date();
@@ -988,13 +1013,44 @@ const useTripViewRender = ({
         initialViewSettings,
         defaultDetailsWidth: DEFAULT_DETAILS_WIDTH,
     });
+    const zoomChangeSourceRef = useRef<ZoomChangeSource>(null);
     const [isZoomDirty, setIsZoomDirty] = useState(false);
-    const markZoomDirty = useCallback(() => {
-        setIsZoomDirty(true);
+    const skipPersistMapDockModeRef = useRef(false);
+    const [mapDockMode, setMapDockMode] = useState<'docked' | 'floating'>(() => {
+        if (initialViewSettings?.mapDockMode === 'floating' || initialViewSettings?.mapDockMode === 'docked') {
+            return initialViewSettings.mapDockMode;
+        }
+        const persisted = readFloatingMapPreviewState().mode;
+        return persisted === 'floating' || persisted === 'docked' ? persisted : 'docked';
+    });
+    const markZoomDirty = useCallback((source: ZoomChangeSource = 'manual') => {
+        if (source) {
+            zoomChangeSourceRef.current = source;
+        }
+        if (source === 'manual') {
+            setIsZoomDirty(true);
+        }
+    }, []);
+    const markAutoFitZoomChange = useCallback(() => {
+        zoomChangeSourceRef.current = 'auto';
     }, []);
     useEffect(() => {
         setIsZoomDirty(false);
+        zoomChangeSourceRef.current = null;
     }, [trip.id]);
+    useEffect(() => {
+        if (!isMobileViewport || mapDockMode === 'docked') return;
+        skipPersistMapDockModeRef.current = true;
+        skipViewDiffRef.current = true;
+        setMapDockMode('docked');
+    }, [isMobileViewport, mapDockMode]);
+    useEffect(() => {
+        if (skipPersistMapDockModeRef.current) {
+            skipPersistMapDockModeRef.current = false;
+            return;
+        }
+        writeFloatingMapPreviewState({ mode: mapDockMode });
+    }, [mapDockMode]);
     const clampZoomLevel = useCallback((value: number) => {
         if (!Number.isFinite(value)) return 1;
         return Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, value));
@@ -1202,18 +1258,20 @@ const useTripViewRender = ({
         layoutMode,
         timelineMode,
         timelineView,
+        mapDockMode,
         mapStyle,
         routeMode,
         showCityNames,
         zoomLevel,
         sidebarWidth,
         timelineHeight
-    }), [layoutMode, timelineMode, timelineView, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
+    }), [layoutMode, timelineMode, timelineView, mapDockMode, mapStyle, routeMode, showCityNames, zoomLevel, sidebarWidth, timelineHeight]);
 
     useTripViewSettingsSync({
         layoutMode,
         timelineMode,
         timelineView,
+        mapDockMode,
         mapStyle,
         routeMode,
         showCityNames,
@@ -1229,6 +1287,7 @@ const useTripViewRender = ({
         setLayoutMode,
         setTimelineMode,
         setTimelineView,
+        setMapDockMode,
         setZoomLevel,
         setSidebarWidth,
         setTimelineHeight,
@@ -1238,6 +1297,16 @@ const useTripViewRender = ({
         appliedViewKeyRef,
         prevViewRef,
     });
+
+    const resolveMapDockModeLabel = useCallback((
+        fromMode: 'docked' | 'floating',
+        toMode: 'docked' | 'floating',
+    ): string => (
+        t('tripView.visualHistory.mapPreviewState', {
+            from: t(`tripView.visualHistory.mapPreviewStateValue.${fromMode}`),
+            to: t(`tripView.visualHistory.mapPreviewStateValue.${toMode}`),
+        })
+    ), [t]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -1402,25 +1471,43 @@ const useTripViewRender = ({
             return;
         }
 
-        const changes: string[] = [];
-        if (prev.mapStyle !== mapStyle) changes.push(`Map view: ${prev.mapStyle} → ${mapStyle}`);
-        if (prev.routeMode !== routeMode) changes.push(`Route view: ${prev.routeMode} → ${routeMode}`);
-        if (prev.showCityNames !== showCityNames) changes.push(`City names: ${prev.showCityNames ? 'on' : 'off'} → ${showCityNames ? 'on' : 'off'}`);
-        if (prev.layoutMode !== layoutMode) changes.push(`Map layout: ${prev.layoutMode} → ${layoutMode}`);
-        if ((prev.timelineMode || 'calendar') !== timelineMode) changes.push(`Timeline mode: ${prev.timelineMode || 'calendar'} → ${timelineMode}`);
-        if (prev.timelineView !== timelineView) changes.push(`Timeline layout: ${prev.timelineView} → ${timelineView}`);
-        if (prev.zoomLevel !== zoomLevel) changes.push(zoomLevel > prev.zoomLevel ? 'Zoomed in' : 'Zoomed out');
+        const {
+            changes,
+            isAutoZoomOnlyChange,
+        } = resolveVisualDiff({
+            previous: prev,
+            current: currentViewSettings,
+            zoomChangeSource: zoomChangeSourceRef.current,
+            resolveMapDockModeLabel,
+        });
 
-        if (changes.length === 1) {
-            setPendingLabel(`Visual: ${changes[0]}`);
-            scheduleCommit(undefined, currentViewSettings);
-        } else if (changes.length > 1) {
-            setPendingLabel(`Visual: ${changes.join(' · ')}`);
+        if (isAutoZoomOnlyChange) {
+            if (
+                commitTimerRef.current
+                && pendingCommitRef.current
+                && pendingHistoryLabelRef.current
+                && /^Visual:\s*/i.test(pendingHistoryLabelRef.current)
+            ) {
+                pendingCommitRef.current = {
+                    ...pendingCommitRef.current,
+                    view: currentViewSettings,
+                };
+                debugHistory('Merged auto-fit zoom into pending visual commit');
+            }
+            prevViewRef.current = currentViewSettings;
+            zoomChangeSourceRef.current = null;
+            return;
+        }
+
+        const nextVisualLabel = buildVisualHistoryLabel(pendingHistoryLabelRef.current, changes);
+        if (nextVisualLabel) {
+            setPendingLabel(nextVisualLabel);
             scheduleCommit(undefined, currentViewSettings);
         }
 
         prevViewRef.current = currentViewSettings;
-    }, [currentViewSettings, layoutMode, mapStyle, routeMode, showCityNames, timelineMode, timelineView, zoomLevel, setPendingLabel, scheduleCommit]);
+        zoomChangeSourceRef.current = null;
+    }, [currentViewSettings, debugHistory, resolveMapDockModeLabel, setPendingLabel, scheduleCommit]);
 
     const { handleToggleFavorite } = useTripFavoriteHandler({
         trip,
@@ -1576,6 +1663,7 @@ const useTripViewRender = ({
         handleTimelineResizeKeyDown,
     } = useTripResizeControls({
         layoutMode,
+        mapDockMode,
         timelineMode,
         timelineView,
         horizontalTimelineDayCount,
@@ -1603,6 +1691,7 @@ const useTripViewRender = ({
         verticalTimelineAutoFitPadding: VERTICAL_TIMELINE_AUTO_FIT_PADDING,
         zoomLevelPresets: TIMELINE_ZOOM_LEVEL_PRESETS,
         basePixelsPerDay: BASE_PIXELS_PER_DAY,
+        onAutoFitZoomApplied: markAutoFitZoomChange,
     });
 
     const isMobile = isMobileViewport;
@@ -1896,6 +1985,22 @@ const useTripViewRender = ({
                                 { trip_id: trip.id, target: 'timeline' }
                             );
                             setTimelineView(view);
+                        }}
+                        mapDockMode={mapDockMode}
+                        onMapDockModeChange={(mode) => {
+                            if (mode === mapDockMode) return;
+                            trackEvent(
+                                mode === 'floating'
+                                    ? 'trip_view__map_preview--minimize'
+                                    : 'trip_view__map_preview--maximize',
+                                {
+                                    trip_id: trip.id,
+                                    layout_mode: layoutMode,
+                                }
+                            );
+                            runWithOptionalViewTransition(() => {
+                                setMapDockMode(mode);
+                            });
                         }}
                         timelineMode={timelineMode}
                         timelineView={timelineView}

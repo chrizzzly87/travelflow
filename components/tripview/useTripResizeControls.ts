@@ -4,6 +4,7 @@ import { writeLocalStorageItem } from '../../services/browserStorageService';
 
 interface UseTripResizeControlsOptions {
     layoutMode: 'vertical' | 'horizontal';
+    mapDockMode: 'docked' | 'floating';
     timelineMode: 'calendar' | 'timeline';
     timelineView: 'horizontal' | 'vertical';
     horizontalTimelineDayCount: number;
@@ -31,6 +32,7 @@ interface UseTripResizeControlsOptions {
     verticalTimelineAutoFitPadding: number;
     zoomLevelPresets: number[];
     basePixelsPerDay: number;
+    onAutoFitZoomApplied?: () => void;
 }
 
 const MIN_AUTO_FIT_TIMELINE_WIDTH = 160;
@@ -67,6 +69,7 @@ const resolveAutoFitZoom = (
 
 export const useTripResizeControls = ({
     layoutMode,
+    mapDockMode,
     timelineMode,
     timelineView,
     horizontalTimelineDayCount,
@@ -94,12 +97,14 @@ export const useTripResizeControls = ({
     verticalTimelineAutoFitPadding,
     zoomLevelPresets,
     basePixelsPerDay,
+    onAutoFitZoomApplied,
 }: UseTripResizeControlsOptions) => {
     const verticalLayoutTimelineRef = useRef<HTMLDivElement | null>(null);
     const isResizingRef = useRef<'sidebar' | 'details' | 'timeline-h' | null>(null);
     const detailsResizeStartXRef = useRef(0);
     const detailsResizeStartWidthRef = useRef(detailsWidth);
     const previousLayoutModeRef = useRef(layoutMode);
+    const previousMapDockModeRef = useRef(mapDockMode);
     const previousTimelineModeRef = useRef(timelineMode);
     const previousTimelineViewRef = useRef(timelineView);
     const hasAutoFitRunRef = useRef(false);
@@ -168,6 +173,10 @@ export const useTripResizeControls = ({
         );
         if (!Number.isFinite(nextZoom)) return false;
 
+        if (Math.abs(zoomLevel - nextZoom) < 0.01) {
+            return false;
+        }
+        onAutoFitZoomApplied?.();
         setZoomLevel((previous) => (Math.abs(previous - nextZoom) < 0.01 ? previous : nextZoom));
         return true;
     }, [
@@ -176,6 +185,7 @@ export const useTripResizeControls = ({
         horizontalTimelineAutoFitPadding,
         horizontalTimelineDayCount,
         isZoomDirty,
+        onAutoFitZoomApplied,
         setZoomLevel,
         verticalTimelineAutoFitPadding,
         zoomLevel,
@@ -183,16 +193,21 @@ export const useTripResizeControls = ({
     ]);
 
     useEffect(() => {
-        const previousLayoutMode = previousLayoutModeRef.current;
+        const previousMapDockMode = previousMapDockModeRef.current;
         const previousTimelineMode = previousTimelineModeRef.current;
         const previousTimelineView = previousTimelineViewRef.current;
         const isFirstRenderAutoFit = !hasAutoFitRunRef.current;
-        const didLayoutModeChange = previousLayoutMode !== layoutMode;
+        const didMapDockModeChange = previousMapDockMode !== mapDockMode;
         const didTimelineModeChange = previousTimelineMode !== timelineMode;
         const didTimelineViewChange = previousTimelineView !== timelineView;
         const shouldAttemptAutoFit = timelineMode === 'calendar'
             && !isZoomDirty
-            && (isFirstRenderAutoFit || didLayoutModeChange || didTimelineModeChange || didTimelineViewChange);
+            && (
+                isFirstRenderAutoFit
+                || didMapDockModeChange
+                || didTimelineModeChange
+                || didTimelineViewChange
+            );
 
         if (shouldAttemptAutoFit) {
             const fitMode: 'horizontal' | 'vertical' = timelineView === 'vertical' ? 'vertical' : 'horizontal';
@@ -207,10 +222,11 @@ export const useTripResizeControls = ({
         }
 
         previousLayoutModeRef.current = layoutMode;
+        previousMapDockModeRef.current = mapDockMode;
         previousTimelineModeRef.current = timelineMode;
         previousTimelineViewRef.current = timelineView;
         hasAutoFitRunRef.current = true;
-    }, [autoFitTimelineZoom, isZoomDirty, layoutMode, timelineMode, timelineView]);
+    }, [autoFitTimelineZoom, isZoomDirty, layoutMode, mapDockMode, timelineMode, timelineView]);
 
     const startResizing = useCallback((type: 'sidebar' | 'details' | 'timeline-h', startClientX?: number) => {
         isResizingRef.current = type;
