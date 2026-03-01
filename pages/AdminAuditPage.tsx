@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowSquareOut, CopySimple, Crosshair, DownloadSimple, Info, SpinnerGap, User, X } from '@phosphor-icons/react';
 import { useSearchParams } from 'react-router-dom';
 import { AdminShell } from '../components/admin/AdminShell';
+import type { PlanTierKey } from '../types';
 import {
     adminExportAuditReplay,
     adminOverrideTripCommit,
@@ -10,7 +11,9 @@ import {
     adminListAuditLogs,
     adminListUserChangeLogs,
     adminListTrips,
+    adminUpdatePlanEntitlements,
     adminUpdateTrip,
+    adminUpdateUserOverrides,
     adminUpdateUserProfile,
     type AdminAuditRecord,
     type AdminTripRecord,
@@ -39,6 +42,7 @@ import {
     resolveUserChangeActionPresentation,
     resolveUserChangeSecondaryFacets,
 } from '../services/adminUserChangeLog';
+import { parseUndoSourceEventId, resolveUndoDiffEntries } from '../services/adminAuditUndoDiff';
 
 const AUDIT_CACHE_KEY = 'admin.audit.cache.v1';
 const USER_CHANGE_CACHE_KEY = 'admin.user_changes.cache.v1';
@@ -151,6 +155,10 @@ const toDateInputValue = (value: Date): string => {
     const day = String(value.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 };
+
+const isPlanTierKey = (value: string): value is PlanTierKey => (
+    value === 'tier_free' || value === 'tier_mid' || value === 'tier_premium'
+);
 
 const parseDateInputToTimestamp = (value: string, asEndOfDay: boolean): number | null => {
     if (!value) return null;
@@ -357,6 +365,9 @@ const resolveAuditActionPresentation = (
         return { label: 'Updated trip', className: 'border-slate-300 bg-slate-100 text-slate-800' };
     }
     if (raw === 'admin.trip.override_commit') {
+        if (parseUndoSourceEventId(log)) {
+            return { label: 'Undid trip change', className: 'border-emerald-300 bg-emerald-50 text-emerald-800' };
+        }
         return { label: 'Overrode trip content', className: 'border-violet-300 bg-violet-50 text-violet-800' };
     }
     if (raw === 'admin.tier.update_entitlements') {
@@ -455,6 +466,7 @@ const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
     const action = log.action.trim().toLowerCase();
 
     if (entry.kind === 'user') {
+        if (action === 'trip.created') return Boolean(log.target_id);
         if (action === 'trip.archived') return Boolean(log.target_id);
         if (action === 'trip.updated') {
             const metadata = asRecord(log.metadata);
@@ -468,6 +480,8 @@ const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
 
     if (!log.target_id) return false;
     if (action === 'admin.trip.override_commit') {
+        const sourceEventId = parseUndoSourceEventId(log);
+        if (sourceEventId) return true;
         const before = asRecord(log.before_data);
         return Object.keys(asRecord(before.data)).length > 0;
     }
@@ -481,6 +495,14 @@ const canUndoTimelineEntry = (entry: AuditTimelineEntry): boolean => {
     }
     if (action === 'admin.user.update_profile' || action === 'admin.user.update_tier') {
         return Boolean(extractRevertibleProfilePatch(log.before_data));
+    }
+    if (action === 'admin.user.update_overrides') {
+        const before = asRecord(log.before_data);
+        return Object.prototype.hasOwnProperty.call(before, 'entitlements_override');
+    }
+    if (action === 'admin.tier.update_entitlements') {
+        const before = asRecord(log.before_data);
+        return Boolean(log.target_id && typeof before.entitlements === 'object' && before.entitlements !== null);
     }
     return false;
 };
@@ -850,6 +872,14 @@ export const AdminAuditPage: React.FC = () => {
         });
     }, [logs, userChangeLogs]);
 
+    const timelineEntriesById = useMemo(() => {
+        const map = new Map<string, AuditTimelineEntry>();
+        timelineEntries.forEach((entry) => {
+            map.set(entry.log.id, entry);
+        });
+        return map;
+    }, [timelineEntries]);
+
     const visibleLogs = useMemo(() => {
         const token = searchValue.trim().toLowerCase();
         return timelineEntries.filter((entry) => {
@@ -1145,7 +1175,10 @@ export const AdminAuditPage: React.FC = () => {
         setErrorMessage(null);
         try {
             if (entry.kind === 'user') {
-                if (action === 'trip.archived') {
+                if (action === 'trip.created') {
+                    if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
+                    await adminUpdateTrip(entry.log.target_id, { status: 'archived' });
+                } else if (action === 'trip.archived') {
                     if (!entry.log.target_id) throw new Error('Trip id missing for undo.');
                     await adminUpdateTrip(entry.log.target_id, { status: 'active' });
                 } else if (action === 'trip.updated') {
@@ -1217,6 +1250,21 @@ export const AdminAuditPage: React.FC = () => {
                     const patch = extractRevertibleProfilePatch(entry.log.before_data);
                     if (!patch) throw new Error('No revertible user fields found for this row.');
                     await adminUpdateUserProfile(entry.log.target_id, patch);
+                } else if (action === 'admin.user.update_overrides') {
+                    const before = asRecord(entry.log.before_data);
+                    const overrides = asRecord(before.entitlements_override as Record<string, unknown> | null | undefined);
+                    await adminUpdateUserOverrides(entry.log.target_id, overrides);
+                } else if (action === 'admin.tier.update_entitlements') {
+                    const before = asRecord(entry.log.before_data);
+                    const entitlements = asRecord(before.entitlements as Record<string, unknown> | null | undefined);
+                    if (Object.keys(entitlements).length === 0) {
+                        throw new Error('No previous tier entitlements found for this row.');
+                    }
+                    const tierKey = entry.log.target_id;
+                    if (!tierKey || !isPlanTierKey(tierKey)) {
+                        throw new Error('Tier key missing or invalid for undo.');
+                    }
+                    await adminUpdatePlanEntitlements(tierKey, entitlements);
                 } else {
                     throw new Error('Undo is not supported for this action.');
                 }
@@ -1533,9 +1581,13 @@ export const AdminAuditPage: React.FC = () => {
                                 const log = timelineEntry.kind === 'admin'
                                     ? timelineEntry.log
                                     : mapUserChangeLogToAuditRecord(timelineEntry.log);
-                                const diffEntries = timelineEntry.kind === 'admin'
+                                const baseDiffEntries = timelineEntry.kind === 'admin'
                                     ? buildAuditDiffEntries(timelineEntry.log)
                                     : buildUserChangeDiffEntries(timelineEntry.log);
+                                const undoDiffEntries = timelineEntry.kind === 'admin'
+                                    ? resolveUndoDiffEntries(timelineEntry.log, timelineEntriesById)
+                                    : null;
+                                const diffEntries = undoDiffEntries ?? baseDiffEntries;
                                 const actionPresentation = timelineEntry.kind === 'admin'
                                     ? resolveAuditActionPresentation(timelineEntry.log, diffEntries)
                                     : resolveUserChangeActionPresentation(timelineEntry.log, diffEntries);
