@@ -90,10 +90,13 @@ export interface AdminTripVersionSnapshotRecord {
 
 export interface AdminAuditReplayExportRequest {
     search?: string | null;
-    dateRange?: '7d' | '30d' | '90d' | 'all' | null;
+    dateRange?: '24h' | '7d' | '30d' | 'all' | 'custom' | null;
+    customStartDate?: string | null;
+    customEndDate?: string | null;
     actionFilters?: string[] | null;
     targetFilters?: string[] | null;
     actorFilters?: Array<'admin' | 'user'> | null;
+    selectedEventIds?: string[] | null;
     sourceLimit?: number | null;
 }
 
@@ -371,6 +374,35 @@ export const adminUpdateTrip = async (
         p_apply_owner_id: Object.prototype.hasOwnProperty.call(patch, 'ownerId'),
     });
     if (error) throw new Error(error.message || 'Could not update trip.');
+};
+
+export const adminOverrideTripCommit = async (payload: {
+    tripId: string;
+    data: Record<string, unknown>;
+    viewSettings?: Record<string, unknown> | null;
+    title?: string | null;
+    startDate?: string | null;
+    isFavorite?: boolean | null;
+    label?: string | null;
+}): Promise<void> => {
+    if (shouldUseAdminMockData()) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return;
+    }
+    const client = requireSupabase();
+    const normalizedStartDate = typeof payload.startDate === 'string'
+        ? payload.startDate.trim().slice(0, 10) || null
+        : null;
+    const { error } = await client.rpc('admin_override_trip_commit', {
+        p_trip_id: payload.tripId,
+        p_data: payload.data,
+        p_view: payload.viewSettings ?? null,
+        p_title: payload.title ?? null,
+        p_start_date: normalizedStartDate,
+        p_is_favorite: typeof payload.isFavorite === 'boolean' ? payload.isFavorite : null,
+        p_label: payload.label ?? null,
+    });
+    if (error) throw new Error(error.message || 'Could not create admin override commit.');
 };
 
 export const adminHardDeleteTrip = async (tripId: string): Promise<void> => {
@@ -689,9 +721,12 @@ export const adminExportAuditReplay = async (
     }>('/api/internal/admin/audit/replay-export', {
         search: payload.search ?? null,
         dateRange: payload.dateRange ?? '30d',
+        customStartDate: payload.customStartDate ?? null,
+        customEndDate: payload.customEndDate ?? null,
         actionFilters: payload.actionFilters ?? [],
         targetFilters: payload.targetFilters ?? [],
         actorFilters: payload.actorFilters ?? [],
+        selectedEventIds: payload.selectedEventIds ?? [],
         sourceLimit: payload.sourceLimit ?? 500,
     });
 
