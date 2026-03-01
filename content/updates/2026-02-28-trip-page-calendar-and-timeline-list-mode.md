@@ -1,10 +1,10 @@
 ---
 id: rel-2026-02-28-trip-page-calendar-and-timeline-list-mode
-version: v0.63.0
+version: v0.75.0
 title: "Trip page calendar and timeline list mode"
-date: 2026-02-28
-published_at: 2026-02-28T18:30:00Z
-status: draft
+date: 2026-03-01
+published_at: 2026-03-01T17:05:17Z
+status: published
 notify_in_app: true
 in_app_hours: 24
 summary: "Trip planning now supports a modern timeline list mode with today-focused navigation and saved view preferences."
