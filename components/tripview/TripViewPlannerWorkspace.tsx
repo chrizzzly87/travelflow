@@ -109,7 +109,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
             {timelineMode === 'calendar' && (
                 <>
-                    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={() => onTimelineViewChange('horizontal')}
@@ -139,7 +139,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                             <ArrowUpDown size={16} />
                         </button>
                     </div>
-                    <div className="inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+                    <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={onZoomOut}
@@ -161,7 +161,7 @@ export const TripViewPlannerWorkspace: React.FC<TripViewPlannerWorkspaceProps> =
                     </div>
                 </>
             )}
-            <div className="ms-auto inline-flex items-center rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
+            <div className="ms-auto inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white/90 p-1 shadow-sm backdrop-blur">
                 <button
                     type="button"
                     onClick={() => onTimelineModeChange('calendar')}
