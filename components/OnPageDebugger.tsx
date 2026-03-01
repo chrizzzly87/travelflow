@@ -27,6 +27,29 @@ import {
 } from '../services/browserStorageService';
 import { APP_NAME } from '../config/appGlobals';
 import { isSimulatedLoggedIn, setSimulatedLoggedIn as setDbSimulatedLoggedIn } from '../services/simulatedLoginService';
+import { getQueueSnapshot, subscribeOfflineQueue, type OfflineQueueSnapshot } from '../services/offlineChangeQueue';
+import {
+    clearConnectivityOverride,
+    getConnectivitySnapshot,
+    setConnectivityOverride,
+    subscribeConnectivityStatus,
+    type ConnectivitySnapshot,
+    type ConnectivityState,
+} from '../services/supabaseHealthMonitor';
+import {
+    getSyncRunSnapshot,
+    retrySyncNow,
+    subscribeSyncStatus,
+    type SyncRunSnapshot,
+} from '../services/tripSyncManager';
+import {
+    BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY,
+    getBrowserConnectivitySnapshot,
+    setBrowserConnectivityOverride,
+    subscribeBrowserConnectivityStatus,
+    type BrowserConnectivityOverride,
+    type BrowserConnectivitySnapshot,
+} from '../services/networkStatus';
 import {
     PREFETCH_LINK_HIGHLIGHT_DEBUG_EVENT,
     PREFETCH_STATS_DEBUG_EVENT,
@@ -50,6 +73,7 @@ const SIMULATED_LOGIN_DEBUG_EVENT = 'tf:simulated-login-debug';
 const DEBUGGER_STATE_DEBUG_EVENT = 'tf:on-page-debugger-state';
 const VIEW_TRANSITION_DEBUG_EVENT = 'tf:view-transition-debug';
 const SIMULATED_LOGIN_STORAGE_KEY = 'tf_debug_simulated_login';
+const CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY = 'tf_debug_supabase_connectivity_override';
 
 interface TrackingBox {
     id: string;
@@ -76,6 +100,8 @@ interface DebugState {
     open: boolean;
     tracking: boolean;
 }
+
+type DebuggerTab = 'seo' | 'tracking' | 'testing';
 
 interface MetaSnapshot {
     title: string;
@@ -153,6 +179,11 @@ interface OnPageDebuggerApi {
     setTracking: (enabled: boolean) => void;
     toggleSimulatedLogin: (next?: boolean) => boolean;
     getSimulatedLogin: () => boolean;
+    setBrowserConnectivity: (mode: BrowserConnectivityOverride | 'clear') => 'online' | 'offline';
+    getBrowserConnectivity: () => 'online' | 'offline';
+    setSupabaseConnectivity: (mode: ConnectivityState | 'clear') => ConnectivityState;
+    getSupabaseConnectivity: () => ConnectivityState;
+    retryTripSync: () => Promise<SyncRunSnapshot>;
     openUmami: () => void;
     openOgPlayground: () => void;
     openLighthouse: () => void;
@@ -171,6 +202,8 @@ type DebugCommand =
         a11y?: boolean;
         simulatedLogin?: boolean;
         viewTransition?: boolean;
+        offline?: boolean | 'offline' | 'degraded' | 'online';
+        network?: boolean | 'offline' | 'online';
     };
 
 declare global {
@@ -180,6 +213,11 @@ declare global {
         toggleExpired?: (next?: boolean) => boolean;
         toggleSimulatedLogin?: (next?: boolean) => boolean;
         getSimulatedLogin?: () => boolean;
+        toggleBrowserConnectivity?: (mode?: BrowserConnectivityOverride | 'clear') => 'online' | 'offline';
+        getBrowserConnectivityState?: () => 'online' | 'offline';
+        toggleSupabaseConnectivity?: (mode?: ConnectivityState | 'clear') => ConnectivityState;
+        getSupabaseConnectivityState?: () => ConnectivityState;
+        retryTripSyncNow?: () => Promise<SyncRunSnapshot>;
     }
 }
 
@@ -550,6 +588,7 @@ export const OnPageDebugger: React.FC = () => {
     const [isExpanded, setIsExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PANEL_EXPANDED_STORAGE_KEY, true)
     );
+    const [activeTab, setActiveTab] = useState<DebuggerTab>('testing');
     const [prefetchSectionExpanded, setPrefetchSectionExpanded] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_PREFETCH_SECTION_EXPANDED_STORAGE_KEY, false)
     );
@@ -560,7 +599,7 @@ export const OnPageDebugger: React.FC = () => {
         readStoredDebuggerBoolean(DEBUG_PREFETCH_OVERLAY_STORAGE_KEY, false)
     );
     const [trackingEnabled, setTrackingEnabled] = useState(() =>
-        readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, true)
+        readStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, false)
     );
     const [autoOpenEnabled, setAutoOpenEnabled] = useState(() =>
         readStoredDebuggerBoolean(DEBUG_AUTO_OPEN_STORAGE_KEY, false)
@@ -576,6 +615,12 @@ export const OnPageDebugger: React.FC = () => {
     const [tripExpiredToggleAvailable, setTripExpiredToggleAvailable] = useState(false);
     const [tripExpiredDebug, setTripExpiredDebug] = useState(false);
     const [simulatedLoggedIn, setSimulatedLoggedIn] = useState(() => isSimulatedLoggedIn());
+    const [browserConnectivitySnapshot, setBrowserConnectivitySnapshot] = useState<BrowserConnectivitySnapshot>(() =>
+        getBrowserConnectivitySnapshot()
+    );
+    const [connectivitySnapshot, setConnectivitySnapshot] = useState<ConnectivitySnapshot>(() => getConnectivitySnapshot());
+    const [offlineQueueSnapshot, setOfflineQueueSnapshot] = useState<OfflineQueueSnapshot>(() => getQueueSnapshot());
+    const [syncRunSnapshot, setSyncRunSnapshot] = useState<SyncRunSnapshot>(() => getSyncRunSnapshot());
     const [prefetchStats, setPrefetchStats] = useState<PrefetchStats>(() => getPrefetchStats());
     const [prefetchHighlightBoxes, setPrefetchHighlightBoxes] = useState<PrefetchHighlightBox[]>([]);
     const [viewTransitionDiagnostics, setViewTransitionDiagnostics] = useState<ViewTransitionDiagnostics>(() =>
@@ -635,7 +680,7 @@ export const OnPageDebugger: React.FC = () => {
     }, [prefetchOverlayEnabled]);
 
     useEffect(() => {
-        persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, true);
+        persistStoredDebuggerBoolean(DEBUG_TRACKING_ENABLED_STORAGE_KEY, trackingEnabled, false);
     }, [trackingEnabled]);
 
     useEffect(() => {
@@ -667,6 +712,27 @@ export const OnPageDebugger: React.FC = () => {
         window.addEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
         return () => {
             window.removeEventListener(PREFETCH_STATS_DEBUG_EVENT, handler as EventListener);
+        };
+    }, []);
+
+    useEffect(() => {
+        const unsubscribeBrowserConnectivity = subscribeBrowserConnectivityStatus((next) => {
+            setBrowserConnectivitySnapshot(next);
+        });
+        const unsubscribeConnectivity = subscribeConnectivityStatus((next) => {
+            setConnectivitySnapshot(next);
+        });
+        const unsubscribeQueue = subscribeOfflineQueue((next) => {
+            setOfflineQueueSnapshot(next);
+        });
+        const unsubscribeSync = subscribeSyncStatus((next) => {
+            setSyncRunSnapshot(next);
+        });
+        return () => {
+            unsubscribeBrowserConnectivity();
+            unsubscribeConnectivity();
+            unsubscribeQueue();
+            unsubscribeSync();
         };
     }, []);
 
@@ -897,6 +963,32 @@ export const OnPageDebugger: React.FC = () => {
         return setSimulatedLogin(resolved);
     }, [setSimulatedLogin]);
 
+    const setBrowserConnectivityMode = useCallback((mode?: BrowserConnectivityOverride | 'clear'): 'online' | 'offline' => {
+        const current = getBrowserConnectivitySnapshot(window.navigator);
+        const resolvedMode = mode
+            ?? (current.override ? 'clear' : 'offline');
+        const nextSnapshot = setBrowserConnectivityOverride(resolvedMode);
+        return nextSnapshot.isOnline ? 'online' : 'offline';
+    }, []);
+
+    const setSupabaseConnectivityMode = useCallback((mode?: ConnectivityState | 'clear'): ConnectivityState => {
+        if (!mode) {
+            const current = getConnectivitySnapshot();
+            if (current.isForced) {
+                return clearConnectivityOverride().state;
+            }
+            return setConnectivityOverride('offline').state;
+        }
+        if (mode === 'clear') {
+            return clearConnectivityOverride().state;
+        }
+        return setConnectivityOverride(mode).state;
+    }, []);
+
+    const retryTripSyncNow = useCallback(async (): Promise<SyncRunSnapshot> => {
+        return retrySyncNow();
+    }, []);
+
     const handleTripExpiredEvent = useCallback((event: Event) => {
         const detail = (event as CustomEvent<TripExpiredDebugDetail>).detail;
         if (!detail) return;
@@ -1001,13 +1093,17 @@ export const OnPageDebugger: React.FC = () => {
         show: () => {
             setIsOpen(true);
             setIsExpanded(true);
-            setTrackingEnabled(true);
         },
         hide: () => setIsOpen(false),
         toggle: () => setIsOpen((prev) => !prev),
         setTracking: (enabled: boolean) => setTrackingEnabled(enabled),
         toggleSimulatedLogin,
         getSimulatedLogin: () => simulatedLoggedInRef.current,
+        setBrowserConnectivity: setBrowserConnectivityMode,
+        getBrowserConnectivity: () => (getBrowserConnectivitySnapshot(window.navigator).isOnline ? 'online' : 'offline'),
+        setSupabaseConnectivity: setSupabaseConnectivityMode,
+        getSupabaseConnectivity: () => getConnectivitySnapshot().state,
+        retryTripSync: retryTripSyncNow,
         openUmami,
         openOgPlayground,
         openLighthouse,
@@ -1015,14 +1111,13 @@ export const OnPageDebugger: React.FC = () => {
         runA11yAudit: runA11yAuditAndStore,
         runViewTransitionAudit: runViewTransitionAuditAndStore,
         getState: () => ({ open: isOpen, tracking: trackingEnabled }),
-    }), [isOpen, openLighthouse, openOgPlayground, openUmami, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, toggleSimulatedLogin, trackingEnabled]);
+    }), [isOpen, openLighthouse, openOgPlayground, openUmami, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, toggleSimulatedLogin, trackingEnabled]);
 
     useEffect(() => {
         const debugFn = (command?: DebugCommand): OnPageDebuggerApi => {
             if (typeof command === 'boolean') {
                 setIsOpen(command);
                 if (command) {
-                    setTrackingEnabled(true);
                     setIsExpanded(true);
                 }
                 return api;
@@ -1040,6 +1135,18 @@ export const OnPageDebugger: React.FC = () => {
                 if (typeof command.simulatedLogin === 'boolean') {
                     toggleSimulatedLogin(command.simulatedLogin);
                 }
+                if (typeof command.network === 'boolean') {
+                    setBrowserConnectivityMode(command.network ? 'offline' : 'clear');
+                } else if (command.network === 'offline' || command.network === 'online') {
+                    setBrowserConnectivityMode(command.network);
+                }
+                if (typeof command.offline === 'boolean') {
+                    setSupabaseConnectivityMode(command.offline ? 'offline' : 'clear');
+                } else if (command.offline === 'offline' || command.offline === 'degraded') {
+                    setSupabaseConnectivityMode(command.offline);
+                } else if (command.offline === 'online') {
+                    setSupabaseConnectivityMode('clear');
+                }
                 if (command.seo && showSeoTools) {
                     runSeoAuditAndStore();
                 }
@@ -1054,7 +1161,6 @@ export const OnPageDebugger: React.FC = () => {
 
             setIsOpen(true);
             setIsExpanded(true);
-            setTrackingEnabled(true);
             return api;
         };
 
@@ -1062,13 +1168,23 @@ export const OnPageDebugger: React.FC = () => {
         window.onPageDebugger = api;
         window.toggleSimulatedLogin = (next?: boolean) => toggleSimulatedLogin(next);
         window.getSimulatedLogin = () => simulatedLoggedInRef.current;
+        window.toggleBrowserConnectivity = (mode?: BrowserConnectivityOverride | 'clear') => setBrowserConnectivityMode(mode);
+        window.getBrowserConnectivityState = () => (getBrowserConnectivitySnapshot(window.navigator).isOnline ? 'online' : 'offline');
+        window.toggleSupabaseConnectivity = (mode?: ConnectivityState | 'clear') => setSupabaseConnectivityMode(mode);
+        window.getSupabaseConnectivityState = () => getConnectivitySnapshot().state;
+        window.retryTripSyncNow = () => retryTripSyncNow();
         return () => {
             delete window.debug;
             delete window.onPageDebugger;
             delete window.toggleSimulatedLogin;
             delete window.getSimulatedLogin;
+            delete window.toggleBrowserConnectivity;
+            delete window.getBrowserConnectivityState;
+            delete window.toggleSupabaseConnectivity;
+            delete window.getSupabaseConnectivityState;
+            delete window.retryTripSyncNow;
         };
-    }, [api, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, showSeoTools, toggleSimulatedLogin]);
+    }, [api, retryTripSyncNow, runA11yAuditAndStore, runSeoAuditAndStore, runViewTransitionAuditAndStore, setBrowserConnectivityMode, setSupabaseConnectivityMode, showSeoTools, toggleSimulatedLogin]);
 
     useEffect(() => {
         return () => {
@@ -1203,6 +1319,33 @@ export const OnPageDebugger: React.FC = () => {
                         }`}>
                             Sim login {simulatedLoggedIn ? 'on' : 'off'}
                         </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            browserConnectivitySnapshot.isOnline
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                : 'border-rose-300 bg-rose-50 text-rose-700'
+                        }`}>
+                            Browser {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
+                            {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            connectivitySnapshot.state === 'offline'
+                                ? 'border-rose-300 bg-rose-50 text-rose-700'
+                                : connectivitySnapshot.state === 'degraded'
+                                    ? 'border-amber-300 bg-amber-50 text-amber-700'
+                                    : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                        }`}>
+                            Supabase {connectivitySnapshot.state}
+                        </span>
+                        <span className="rounded-md border border-slate-300 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                            Queue {offlineQueueSnapshot.pendingCount}
+                        </span>
+                        <span className={`rounded-md border px-2 py-1 text-xs ${
+                            syncRunSnapshot.isSyncing
+                                ? 'border-sky-300 bg-sky-50 text-sky-700'
+                                : 'border-slate-300 bg-slate-50 text-slate-600'
+                        }`}>
+                            Sync {syncRunSnapshot.isSyncing ? 'running' : 'idle'}
+                        </span>
                         {isTripDetailRoute && tripExpiredToggleAvailable && (
                             <span className={`rounded-md border px-2 py-1 text-xs ${
                                 tripExpiredDebug
@@ -1234,153 +1377,47 @@ export const OnPageDebugger: React.FC = () => {
 
                     {isExpanded && (
                         <div className="border-t border-slate-200 p-3">
-                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="flex flex-wrap items-center gap-2">
                                 <button
                                     type="button"
-                                    onClick={openUmami}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <Globe size={16} weight="duotone" />
-                                    Open Umami
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={openAiBenchmark}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <Flask size={16} weight="duotone" />
-                                    Open AI Benchmark
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => setTrackingEnabled((prev) => !prev)}
-                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                        trackingEnabled
-                                            ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                                    onClick={() => setActiveTab('testing')}
+                                    className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
+                                        activeTab === 'testing'
+                                            ? 'border-slate-900 bg-slate-900 text-white'
                                             : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    <MagnifyingGlass size={16} weight="duotone" />
-                                    {trackingEnabled ? 'Hide Tracking Boxes' : 'Show Tracking Boxes'}
+                                    <Flask size={14} weight="duotone" />
+                                    Testing
                                 </button>
-
                                 <button
                                     type="button"
-                                    onClick={() => setPrefetchOverlayEnabled((prev) => !prev)}
-                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                        prefetchOverlayEnabled
-                                            ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                                    onClick={() => setActiveTab('tracking')}
+                                    className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
+                                        activeTab === 'tracking'
+                                            ? 'border-slate-900 bg-slate-900 text-white'
                                             : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    <RocketLaunch size={16} weight="duotone" />
-                                    {prefetchOverlayEnabled ? 'Hide Prefetch Overlay' : 'Show Prefetch Overlay'}
+                                    <MagnifyingGlass size={14} weight="duotone" />
+                                    Tracking
                                 </button>
-
                                 <button
                                     type="button"
-                                    onClick={() => toggleSimulatedLogin()}
-                                    className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                        simulatedLoggedIn
-                                            ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                    onClick={() => setActiveTab('seo')}
+                                    className={`inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs font-medium ${
+                                        activeTab === 'seo'
+                                            ? 'border-slate-900 bg-slate-900 text-white'
                                             : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                                     }`}
                                 >
-                                    <User size={16} weight="duotone" />
-                                    {simulatedLoggedIn ? 'Disable Sim Login' : 'Enable Sim Login'}
+                                    <Compass size={14} weight="duotone" />
+                                    SEO
                                 </button>
-
-                                <button
-                                    type="button"
-                                    onClick={openOgPlayground}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <ShareNetwork size={16} weight="duotone" />
-                                    Open OG Playground
-                                </button>
-
-                                {showSeoTools && (
-                                    <button
-                                        type="button"
-                                        onClick={runSeoAuditAndStore}
-                                        className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                    >
-                                        <Compass size={16} weight="duotone" />
-                                        Run SEO Check
-                                    </button>
-                                )}
-
-                                {showSeoTools && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setH1HighlightEnabled((prev) => !prev)}
-                                        className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                            h1HighlightEnabled
-                                                ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
-                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        <Compass size={16} weight="duotone" />
-                                        {h1HighlightEnabled ? 'Unmark H1' : 'Mark H1'}
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={runA11yAuditAndStore}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <ShieldCheck size={16} weight="duotone" />
-                                    Run A11y Check
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={runViewTransitionAuditAndStore}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <RocketLaunch size={16} weight="duotone" />
-                                    Refresh VT Diagnostics
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={openLighthouse}
-                                    className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                >
-                                    <RocketLaunch size={16} weight="duotone" />
-                                    Open Lighthouse (PSI)
-                                </button>
-
-                                {isTripDetailRoute && (
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleTripExpired()}
-                                        disabled={!tripExpiredToggleAvailable}
-                                        className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-                                            tripExpiredDebug
-                                                ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                                                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
-                                        } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
-                                    >
-                                        <Flask size={16} weight="duotone" />
-                                        {tripExpiredDebug ? 'Set Trip Active' : 'Set Trip Expired'}
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                                <span>
-                                    Console: run <code className="rounded bg-slate-200 px-1 py-0.5">debug()</code> to reopen,{' '}
-                                    <code className="rounded bg-slate-200 px-1 py-0.5">toggleSimulatedLogin()</code> to switch auth simulation,{' '}
-                                    <code className="rounded bg-slate-200 px-1 py-0.5">onPageDebugger.runViewTransitionAudit()</code> for transition anchors.
-                                </span>
                                 <button
                                     type="button"
                                     onClick={toggleAutoOpen}
-                                    className={`rounded border px-2 py-1 font-medium ${
+                                    className={`ml-auto rounded border px-2 py-1 text-xs font-medium ${
                                         autoOpenEnabled
                                             ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
                                             : 'border-slate-300 bg-white text-slate-700'
@@ -1390,238 +1427,512 @@ export const OnPageDebugger: React.FC = () => {
                                 </button>
                             </div>
 
-                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
-                                <button
-                                    type="button"
-                                    onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
-                                        <span
-                                            title="Navigation prefetch warms route chunks before a user navigates, based on hover/focus/touch/viewport/idle intent."
-                                            className="inline-flex items-center text-slate-500"
+                            {activeTab === 'testing' && (
+                                <>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleSimulatedLogin()}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                simulatedLoggedIn
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
                                         >
-                                            <Info size={14} weight="duotone" />
-                                        </span>
-                                        <span
-                                            title="Guardrails: skips prefetching when disabled by env, on hidden tabs, with Save-Data, or on 2g/slow-2g connections."
-                                            className="inline-flex items-center text-slate-500"
+                                            <User size={16} weight="duotone" />
+                                            {simulatedLoggedIn ? 'Disable Sim Login' : 'Enable Sim Login'}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setSupabaseConnectivityMode('offline')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'offline'
+                                                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
                                         >
-                                            <Info size={14} />
-                                        </span>
+                                            <Flask size={16} weight="duotone" />
+                                            Force Supabase Offline
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setBrowserConnectivityMode('offline')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override === 'offline'
+                                                    ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Force Browser Offline
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setBrowserConnectivityMode('online')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override === 'online'
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Force Browser Online
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setBrowserConnectivityMode('clear')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                browserConnectivitySnapshot.override
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            {browserConnectivitySnapshot.override ? 'Clear Browser Override' : 'Follow Browser Network'}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setSupabaseConnectivityMode('degraded')}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                connectivitySnapshot.isForced && connectivitySnapshot.forcedState === 'degraded'
+                                                    ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Force Supabase Degraded
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setSupabaseConnectivityMode('clear')}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Set Supabase Normal
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                void retryTripSyncNow();
+                                            }}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <RocketLaunch size={16} weight="duotone" />
+                                            Retry Trip Sync
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={openAiBenchmark}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <Flask size={16} weight="duotone" />
+                                            Open AI Benchmark
+                                        </button>
+
+                                        {isTripDetailRoute && (
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleTripExpired()}
+                                                disabled={!tripExpiredToggleAvailable}
+                                                className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                    tripExpiredDebug
+                                                        ? 'border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                } ${tripExpiredToggleAvailable ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                            >
+                                                <Flask size={16} weight="duotone" />
+                                                {tripExpiredDebug ? 'Set Trip Active' : 'Set Trip Expired'}
+                                            </button>
+                                        )}
                                     </div>
-                                    <span className="inline-flex items-center gap-1 text-slate-500">
-                                        {prefetchSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
-                                        {prefetchSectionExpanded ? 'Hide' : 'Show'}
-                                    </span>
-                                </button>
 
-                                {prefetchSectionExpanded && (
-                                    <div className="mt-2">
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
-                                            This warms likely next-route assets in the background to reduce follow-up navigation latency. The list below shows what was attempted in this session and why each attempt was used or skipped.
+                                    <div className="mt-3 grid gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700 sm:grid-cols-2 lg:grid-cols-6">
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Browser:</strong>{' '}
+                                            {browserConnectivitySnapshot.isOnline ? 'online' : 'offline'}
+                                            {browserConnectivitySnapshot.override ? ` (forced ${browserConnectivitySnapshot.override})` : ''}
                                         </div>
-
-                                        <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Attempts:</strong> {prefetchStats.attempts}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Completed:</strong> {prefetchStats.completed}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Skips:</strong> {totalPrefetchSkips}
-                                            </div>
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Browser key:</strong>{' '}
+                                            <code>{BROWSER_CONNECTIVITY_OVERRIDE_STORAGE_KEY}</code>
                                         </div>
-
-                                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Skip reasons:</strong>{' '}
-                                                disabled {prefetchStats.skippedDisabled}, network {prefetchStats.skippedNetwork}, budget {prefetchStats.skippedBudget}, unsupported {prefetchStats.skippedUnsupportedPath}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Triggers:</strong>{' '}
-                                                hover {prefetchStats.reasons.hover}, focus {prefetchStats.reasons.focus}, pointer {prefetchStats.reasons.pointerdown}, touch {prefetchStats.reasons.touchstart}, viewport {prefetchStats.reasons.viewport}, idle {prefetchStats.reasons.idle}
-                                            </div>
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Connectivity:</strong>{' '}
+                                            {connectivitySnapshot.state}
+                                            {connectivitySnapshot.isForced ? ' (forced)' : ''}
                                         </div>
-
-                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Recently warmed routes:</strong>{' '}
-                                            {recentlyWarmedRoutePaths.length > 0 ? recentlyWarmedRoutePaths.join(', ') : 'none yet'}
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Override key:</strong>{' '}
+                                            <code>{CONNECTIVITY_DEBUG_OVERRIDE_STORAGE_KEY}</code>
                                         </div>
-
-                                        <div className="mt-2 grid gap-2 lg:grid-cols-2">
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Prefetched target modules:</strong>{' '}
-                                                {prefetchStats.prefetchedTargetKeys.length > 0
-                                                    ? prefetchStats.prefetchedTargetKeys.slice(0, 16).join(', ')
-                                                    : 'none yet'}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Active queue:</strong>{' '}
-                                                queued {prefetchStats.queuedTargetKeys.length}, in-flight {prefetchStats.inFlightTargetKeys.length}
-                                            </div>
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Queue:</strong>{' '}
+                                            pending {offlineQueueSnapshot.pendingCount}, failed {offlineQueueSnapshot.failedCount}
                                         </div>
-
-                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Recent prefetch attempts:</strong>{' '}
-                                            {recentPrefetchAttempts.length === 0 ? 'none captured yet' : ''}
-                                            {recentPrefetchAttempts.length > 0 && (
-                                                <ul className="mt-1 space-y-0.5">
-                                                    {recentPrefetchAttempts.map((attempt) => (
-                                                        <li key={attempt.id}>
-                                                            <span className="font-medium text-slate-900">{formatPrefetchAttemptTime(attempt.timestampMs)}</span>{' '}
-                                                            <span className="font-medium">{attempt.reason}</span>{' '}
-                                                            <span>• {formatPrefetchAttemptOutcome(attempt.outcome)}</span>{' '}
-                                                            <span>• {attempt.path}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            )}
+                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                            <strong className="text-slate-900">Replay:</strong>{' '}
+                                            processed {syncRunSnapshot.processedCount}, ok {syncRunSnapshot.successCount}, failed {syncRunSnapshot.failedDuringRun}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                </>
+                            )}
 
-                            <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
-                                <button
-                                    type="button"
-                                    onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
-                                    className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-semibold uppercase tracking-wide text-slate-500">
-                                            View Transition Diagnostics
-                                        </h3>
-                                        <span className="text-slate-500">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
+                            {activeTab === 'tracking' && (
+                                <>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        <button
+                                            type="button"
+                                            onClick={openUmami}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <Globe size={16} weight="duotone" />
+                                            Open Umami
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setTrackingEnabled((prev) => !prev)}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                trackingEnabled
+                                                    ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <MagnifyingGlass size={16} weight="duotone" />
+                                            {trackingEnabled ? 'Hide Tracking Boxes' : 'Show Tracking Boxes'}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setPrefetchOverlayEnabled((prev) => !prev)}
+                                            className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                prefetchOverlayEnabled
+                                                    ? 'border-cyan-300 bg-cyan-50 text-cyan-700 hover:bg-cyan-100'
+                                                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <RocketLaunch size={16} weight="duotone" />
+                                            {prefetchOverlayEnabled ? 'Hide Prefetch Overlay' : 'Show Prefetch Overlay'}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={runViewTransitionAuditAndStore}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <RocketLaunch size={16} weight="duotone" />
+                                            Refresh VT Diagnostics
+                                        </button>
                                     </div>
-                                    <span className="inline-flex items-center gap-1 text-slate-500">
-                                        {viewTransitionSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
-                                        {viewTransitionSectionExpanded ? 'Hide' : 'Show'}
-                                    </span>
-                                </button>
 
-                                {viewTransitionSectionExpanded && (
-                                    <div className="mt-2">
-                                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">API:</strong>{' '}
-                                                {viewTransitionDiagnostics.supported ? 'available' : 'missing'}
+                                    <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPrefetchSectionExpanded((prev) => !prev)}
+                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold uppercase tracking-wide text-slate-500">Navigation Prefetch</span>
+                                                <span
+                                                    title="Navigation prefetch warms route chunks before a user navigates, based on hover/focus/touch/viewport/idle intent."
+                                                    className="inline-flex items-center text-slate-500"
+                                                >
+                                                    <Info size={14} weight="duotone" />
+                                                </span>
+                                                <span
+                                                    title="Guardrails: skips prefetching when disabled by env, on hidden tabs, with Save-Data, or on 2g/slow-2g connections."
+                                                    className="inline-flex items-center text-slate-500"
+                                                >
+                                                    <Info size={14} />
+                                                </span>
                                             </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Reduced motion:</strong>{' '}
-                                                {viewTransitionDiagnostics.prefersReducedMotion ? 'on' : 'off'}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Route:</strong> {viewTransitionDiagnostics.route}
-                                            </div>
-                                            <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                                <strong className="text-slate-900">Anchors:</strong>{' '}
-                                                map {viewTransitionDiagnostics.tripMapAnchors}, title {viewTransitionDiagnostics.tripTitleAnchors}, lanes {viewTransitionDiagnostics.tripCityLaneAnchors}
-                                            </div>
-                                        </div>
+                                            <span className="inline-flex items-center gap-1 text-slate-500">
+                                                {prefetchSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                                                {prefetchSectionExpanded ? 'Hide' : 'Show'}
+                                            </span>
+                                        </button>
 
-                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Tracked anchor names:</strong>{' '}
-                                            {viewTransitionDiagnostics.trackedAnchorNames.length > 0
-                                                ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
-                                                : 'none detected'}
-                                        </div>
+                                        {prefetchSectionExpanded && (
+                                            <div className="mt-2">
+                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600">
+                                                    This warms likely next-route assets in the background to reduce follow-up navigation latency. The list below shows what was attempted in this session and why each attempt was used or skipped.
+                                                </div>
 
-                                        {viewTransitionDiagnostics.duplicateAnchorNames.length > 0 && (
-                                            <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
-                                                <strong>Duplicate anchor names:</strong>{' '}
-                                                {viewTransitionDiagnostics.duplicateAnchorNames.join(', ')}
+                                                <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Enabled:</strong> {isPrefetchEnabled ? 'Yes' : 'No'}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Attempts:</strong> {prefetchStats.attempts}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Completed:</strong> {prefetchStats.completed}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Skips:</strong> {totalPrefetchSkips}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Skip reasons:</strong>{' '}
+                                                        disabled {prefetchStats.skippedDisabled}, network {prefetchStats.skippedNetwork}, budget {prefetchStats.skippedBudget}, unsupported {prefetchStats.skippedUnsupportedPath}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Triggers:</strong>{' '}
+                                                        hover {prefetchStats.reasons.hover}, focus {prefetchStats.reasons.focus}, pointer {prefetchStats.reasons.pointerdown}, touch {prefetchStats.reasons.touchstart}, viewport {prefetchStats.reasons.viewport}, idle {prefetchStats.reasons.idle}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Recently warmed routes:</strong>{' '}
+                                                    {recentlyWarmedRoutePaths.length > 0 ? recentlyWarmedRoutePaths.join(', ') : 'none yet'}
+                                                </div>
+
+                                                <div className="mt-2 grid gap-2 lg:grid-cols-2">
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Prefetched target modules:</strong>{' '}
+                                                        {prefetchStats.prefetchedTargetKeys.length > 0
+                                                            ? prefetchStats.prefetchedTargetKeys.slice(0, 16).join(', ')
+                                                            : 'none yet'}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Active queue:</strong>{' '}
+                                                        queued {prefetchStats.queuedTargetKeys.length}, in-flight {prefetchStats.inFlightTargetKeys.length}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Recent prefetch attempts:</strong>{' '}
+                                                    {recentPrefetchAttempts.length === 0 ? 'none captured yet' : ''}
+                                                    {recentPrefetchAttempts.length > 0 && (
+                                                        <ul className="mt-1 space-y-0.5">
+                                                            {recentPrefetchAttempts.map((attempt) => (
+                                                                <li key={attempt.id}>
+                                                                    <span className="font-medium text-slate-900">{formatPrefetchAttemptTime(attempt.timestampMs)}</span>{' '}
+                                                                    <span className="font-medium">{attempt.reason}</span>{' '}
+                                                                    <span>• {formatPrefetchAttemptOutcome(attempt.outcome)}</span>{' '}
+                                                                    <span>• {attempt.path}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
+                                    </div>
 
-                                        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Recent transition events:</strong>{' '}
-                                            {viewTransitionEvents.length === 0 ? 'none captured yet' : ''}
-                                            {viewTransitionEvents.length > 0 && (
-                                                <ul className="mt-1 space-y-0.5">
-                                                    {viewTransitionEvents.map((entry) => (
-                                                        <li key={entry.id}>
-                                                            <span className="font-medium text-slate-900">{entry.timestampLabel}</span>{' '}
-                                                            <span className="font-medium">{entry.detail.phase}</span>
-                                                            {entry.detail.templateId ? ` • ${entry.detail.templateId}` : ''}
-                                                            {entry.detail.durationMs ? ` • ${entry.detail.durationMs}ms` : ''}
-                                                            {typeof entry.detail.useExampleSharedTransition === 'boolean'
-                                                                ? ` • shared ${entry.detail.useExampleSharedTransition ? 'on' : 'off'}`
-                                                                : ''}
-                                                            {typeof entry.detail.expectedCityLaneCount === 'number'
-                                                                ? ` • lanes ${entry.detail.expectedCityLaneCount}`
-                                                                : ''}
-                                                            {entry.detail.reason ? ` • ${entry.detail.reason}` : ''}
-                                                            {entry.detail.error ? ` • ${entry.detail.error}` : ''}
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                    <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => setViewTransitionSectionExpanded((prev) => !prev)}
+                                            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1 text-left hover:bg-slate-50"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold uppercase tracking-wide text-slate-500">
+                                                    View Transition Diagnostics
+                                                </h3>
+                                                <span className="text-slate-500">Updated {viewTransitionDiagnostics.updatedAtLabel || 'n/a'}</span>
+                                            </div>
+                                            <span className="inline-flex items-center gap-1 text-slate-500">
+                                                {viewTransitionSectionExpanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                                                {viewTransitionSectionExpanded ? 'Hide' : 'Show'}
+                                            </span>
+                                        </button>
+
+                                        {viewTransitionSectionExpanded && (
+                                            <div className="mt-2">
+                                                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">API:</strong>{' '}
+                                                        {viewTransitionDiagnostics.supported ? 'available' : 'missing'}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Reduced motion:</strong>{' '}
+                                                        {viewTransitionDiagnostics.prefersReducedMotion ? 'on' : 'off'}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Route:</strong> {viewTransitionDiagnostics.route}
+                                                    </div>
+                                                    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                        <strong className="text-slate-900">Anchors:</strong>{' '}
+                                                        map {viewTransitionDiagnostics.tripMapAnchors}, title {viewTransitionDiagnostics.tripTitleAnchors}, lanes {viewTransitionDiagnostics.tripCityLaneAnchors}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Tracked anchor names:</strong>{' '}
+                                                    {viewTransitionDiagnostics.trackedAnchorNames.length > 0
+                                                        ? viewTransitionDiagnostics.trackedAnchorNames.join(', ')
+                                                        : 'none detected'}
+                                                </div>
+
+                                                {viewTransitionDiagnostics.duplicateAnchorNames.length > 0 && (
+                                                    <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-800">
+                                                        <strong>Duplicate anchor names:</strong>{' '}
+                                                        {viewTransitionDiagnostics.duplicateAnchorNames.join(', ')}
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Recent transition events:</strong>{' '}
+                                                    {viewTransitionEvents.length === 0 ? 'none captured yet' : ''}
+                                                    {viewTransitionEvents.length > 0 && (
+                                                        <ul className="mt-1 space-y-0.5">
+                                                            {viewTransitionEvents.map((entry) => (
+                                                                <li key={entry.id}>
+                                                                    <span className="font-medium text-slate-900">{entry.timestampLabel}</span>{' '}
+                                                                    <span className="font-medium">{entry.detail.phase}</span>
+                                                                    {entry.detail.templateId ? ` • ${entry.detail.templateId}` : ''}
+                                                                    {entry.detail.durationMs ? ` • ${entry.detail.durationMs}ms` : ''}
+                                                                    {typeof entry.detail.useExampleSharedTransition === 'boolean'
+                                                                        ? ` • shared ${entry.detail.useExampleSharedTransition ? 'on' : 'off'}`
+                                                                        : ''}
+                                                                    {typeof entry.detail.expectedCityLaneCount === 'number'
+                                                                        ? ` • lanes ${entry.detail.expectedCityLaneCount}`
+                                                                        : ''}
+                                                                    {entry.detail.reason ? ` • ${entry.detail.reason}` : ''}
+                                                                    {entry.detail.error ? ` • ${entry.detail.error}` : ''}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+
+                            {activeTab === 'seo' && (
+                                <>
+                                    <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                        <button
+                                            type="button"
+                                            onClick={openOgPlayground}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <ShareNetwork size={16} weight="duotone" />
+                                            Open OG Playground
+                                        </button>
+
+                                        {showSeoTools && (
+                                            <button
+                                                type="button"
+                                                onClick={runSeoAuditAndStore}
+                                                className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                            >
+                                                <Compass size={16} weight="duotone" />
+                                                Run SEO Check
+                                            </button>
+                                        )}
+
+                                        {showSeoTools && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setH1HighlightEnabled((prev) => !prev)}
+                                                className={`inline-flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
+                                                    h1HighlightEnabled
+                                                        ? 'border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100'
+                                                        : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                <Compass size={16} weight="duotone" />
+                                                {h1HighlightEnabled ? 'Unmark H1' : 'Mark H1'}
+                                            </button>
+                                        )}
+
+                                        <button
+                                            type="button"
+                                            onClick={runA11yAuditAndStore}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <ShieldCheck size={16} weight="duotone" />
+                                            Run A11y Check
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={openLighthouse}
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            <RocketLaunch size={16} weight="duotone" />
+                                            Open Lighthouse (PSI)
+                                        </button>
+                                    </div>
+
+                                    {!showSeoTools && (
+                                        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                            SEO checks are disabled on trip detail routes. Use a marketing page to run meta and heading checks.
+                                        </div>
+                                    )}
+
+                                    {showSeoTools && (
+                                        <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
+                                            <div className="font-semibold uppercase tracking-wide text-slate-500">Current Meta</div>
+                                            <div className="mt-2 grid gap-2">
+                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Title:</strong>{' '}
+                                                    {metaSnapshot.title || 'Missing <title>.'}
+                                                </div>
+                                                <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
+                                                    <strong className="text-slate-900">Description:</strong>{' '}
+                                                    {metaSnapshot.description || 'Missing meta description.'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(seoAudit || a11yAudit) && (
+                                        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                                            {showSeoTools && seoAudit && (
+                                                <div className="rounded-md border border-slate-200 bg-white p-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">SEO Checks</h3>
+                                                    <ul className="mt-2 space-y-1 text-xs">
+                                                        {seoAudit.checks.map((check) => (
+                                                            <li key={check.label} className="flex items-start gap-2">
+                                                                <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
+                                                                    {check.status === 'pass' ? 'PASS' : 'WARN'}
+                                                                </span>
+                                                                <span className="text-slate-700">
+                                                                    <strong>{check.label}:</strong> {check.detail}
+                                                                </span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+
+                                            {a11yAudit && (
+                                                <div className="rounded-md border border-slate-200 bg-white p-2">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accessibility Checks</h3>
+                                                    <ul className="mt-2 space-y-1 text-xs">
+                                                        {a11yAudit.checks.map((check) => (
+                                                            <li key={check.label} className="flex items-start gap-2">
+                                                                <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
+                                                                    {check.status === 'pass' ? 'PASS' : 'WARN'}
+                                                                </span>
+                                                                <span className="text-slate-700">
+                                                                    <strong>{check.label}:</strong> {check.detail}
+                                                                </span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
                                             )}
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {showSeoTools && (
-                                <div className="mt-3 rounded-md border border-slate-200 bg-white p-2 text-xs">
-                                    <div className="font-semibold uppercase tracking-wide text-slate-500">Current Meta</div>
-                                    <div className="mt-2 grid gap-2">
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Title:</strong>{' '}
-                                            {metaSnapshot.title || 'Missing <title>.'}
-                                        </div>
-                                        <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700">
-                                            <strong className="text-slate-900">Description:</strong>{' '}
-                                            {metaSnapshot.description || 'Missing meta description.'}
-                                        </div>
-                                    </div>
-                                </div>
+                                    )}
+                                </>
                             )}
 
-                            {(seoAudit || a11yAudit) && (
-                                <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                                    {showSeoTools && seoAudit && (
-                                        <div className="rounded-md border border-slate-200 bg-white p-2">
-                                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">SEO Checks</h3>
-                                            <ul className="mt-2 space-y-1 text-xs">
-                                                {seoAudit.checks.map((check) => (
-                                                    <li key={check.label} className="flex items-start gap-2">
-                                                        <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
-                                                            {check.status === 'pass' ? 'PASS' : 'WARN'}
-                                                        </span>
-                                                        <span className="text-slate-700">
-                                                            <strong>{check.label}:</strong> {check.detail}
-                                                        </span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-
-                                    {a11yAudit && (
-                                        <div className="rounded-md border border-slate-200 bg-white p-2">
-                                            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Accessibility Checks</h3>
-                                            <ul className="mt-2 space-y-1 text-xs">
-                                                {a11yAudit.checks.map((check) => (
-                                                    <li key={check.label} className="flex items-start gap-2">
-                                                        <span className={check.status === 'pass' ? 'text-emerald-600' : 'text-amber-600'}>
-                                                            {check.status === 'pass' ? 'PASS' : 'WARN'}
-                                                        </span>
-                                                        <span className="text-slate-700">
-                                                            <strong>{check.label}:</strong> {check.detail}
-                                                        </span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

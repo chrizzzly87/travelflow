@@ -169,11 +169,13 @@
   },
   "cta": {
     "label": "Créer mon voyage",
-    "loading": "Création..."
+    "loading": "Création...",
+    "offline": "Offline"
   },
   "errors": {
     "destinationRequired": "Ajoutez au moins une destination avant de créer votre voyage.",
-    "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer."
+    "genericGenerate": "La génération du voyage a échoué. Veuillez réessayer.",
+    "offlineCreateDisabled": "Trip creation is unavailable while offline. Reconnect and try again."
   },
   "prefillBadge": "Prérempli depuis : {label}",
   "labsBanner": {

@@ -80,6 +80,18 @@ export const dbUpsertTrip = async (...args: Parameters<DbServiceModule['dbUpsert
     return db.dbUpsertTrip(...args);
 };
 
+export const dbUpsertTripWithStatus = async (...args: Parameters<DbServiceModule['dbUpsertTripWithStatus']>) => {
+    if (!DB_ENABLED) {
+        return {
+            tripId: null,
+            error: null,
+            isPermissionError: false,
+        };
+    }
+    const db = await loadDbService();
+    return db.dbUpsertTripWithStatus(...args);
+};
+
 export const dbArchiveTrip = async (...args: Parameters<DbServiceModule['dbArchiveTrip']>) => {
     if (!DB_ENABLED) return true;
     const db = await loadDbService();

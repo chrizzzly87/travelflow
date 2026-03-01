@@ -96,7 +96,8 @@
     "title": "This shared trip is no longer available",
     "description": "The link may have expired or was deactivated by the trip owner. Please ask for a fresh link or create your own trip to continue planning.",
     "backToHomepage": "Back to homepage",
-    "createNewTrip": "Create new trip"
+    "createNewTrip": "Create new trip",
+    "offlineDescription": "This trip cannot be fetched right now because Supabase is unavailable. If you opened it before, local cached data may still load in planner routes."
   },
   "notFound": {
     "headline": "Looks like this page is already on vacation!",

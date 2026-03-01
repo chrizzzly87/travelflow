@@ -3,12 +3,14 @@ import { getFreePlanEntitlements } from '../config/planCatalog';
 import type { PlanTierKey, SystemRole, UserAccessContext } from '../types';
 import { trackEvent } from './analyticsService';
 import { appendAuthTraceEntry } from './authTraceService';
+import { appendClientErrorLog } from './clientErrorLogger';
 import {
     removeLocalStorageItem,
     removeSessionStorageItem,
 } from './browserStorageService';
 import { dbCreateAnonymousAssetClaim } from './dbApi';
 import { supabase } from './supabaseClient';
+import { markConnectivityFailure, markConnectivitySuccess } from './supabaseHealthMonitor';
 
 export type OAuthProviderId = 'google' | 'apple' | 'facebook' | 'kakao';
 
@@ -60,6 +62,21 @@ const hashEmail = (email?: string | null): string | null => {
     const normalized = email.trim().toLowerCase();
     if (!normalized) return null;
     return simpleHash(normalized);
+};
+
+const reportAuthSupabaseFailure = (error: unknown, operation: string): void => {
+    markConnectivityFailure(error, {
+        source: 'auth_service',
+        operation,
+    });
+    appendClientErrorLog({
+        errorType: `supabase_auth_${operation}`,
+        error,
+    });
+};
+
+const reportAuthSupabaseSuccess = (operation: string): void => {
+    markConnectivitySuccess(`auth:${operation}`);
 };
 
 export const clearSupabaseAuthStorage = (): void => {
@@ -306,6 +323,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
 
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError) {
+        reportAuthSupabaseFailure(authError, 'get_current_user');
         if (isLikelyStaleSessionError(authError)) {
             await recoverLocalAuthState();
             return defaultAccessContext(null);
@@ -345,6 +363,7 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
     try {
         const { data, error } = await supabase.rpc('get_current_user_access');
         if (error) {
+            reportAuthSupabaseFailure(error, 'get_current_user_access');
             if (isLikelyStaleSessionError(error)) {
                 await recoverLocalAuthState();
                 return defaultAccessContext(null);
@@ -367,6 +386,8 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                 ? 'tier_premium'
                 : 'tier_free';
 
+        reportAuthSupabaseSuccess('get_current_user_access');
+
         return {
             userId: resolvedUserId,
             email: row.email || authUser.email || session.user.email || metadataEmail || null,
@@ -383,7 +404,8 @@ export const getCurrentAccessContext = async (): Promise<UserAccessContext> => {
                     ? 'deleted'
                     : 'active',
         };
-    } catch {
+    } catch (error) {
+        reportAuthSupabaseFailure(error, 'get_current_user_access_exception');
         return defaultAccessContext(session);
     }
 };
@@ -423,6 +445,7 @@ export const signInWithEmailPassword = async (
         recoveredFromSessionNotFound = !retry.error;
     }
     if (error) {
+        reportAuthSupabaseFailure(error, 'sign_in_password');
         await logAuthFlow({
             ...flow,
             step: 'login_password',
@@ -433,6 +456,7 @@ export const signInWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
+    reportAuthSupabaseSuccess('sign_in_password');
     await logAuthFlow({
         ...flow,
         step: 'login_password',
@@ -458,6 +482,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         password,
     });
     if (error) {
+        reportAuthSupabaseFailure(error, 'upgrade_anonymous_password');
         await logAuthFlow({
             ...flow,
             step: 'anonymous_upgrade_password',
@@ -468,6 +493,7 @@ export const upgradeAnonymousUserWithEmailPassword = async (
         });
         return { data, error, ...flow };
     }
+    reportAuthSupabaseSuccess('upgrade_anonymous_password');
     await logAuthFlow({
         ...flow,
         step: 'anonymous_upgrade_password',
@@ -506,6 +532,7 @@ export const signUpWithEmailPassword = async (
     });
 
     if (error) {
+        reportAuthSupabaseFailure(error, 'sign_up_password');
         await logAuthFlow({
             ...flow,
             step: 'signup_password',
@@ -517,6 +544,7 @@ export const signUpWithEmailPassword = async (
         return { data, error, ...flow };
     }
 
+    reportAuthSupabaseSuccess('sign_up_password');
     await logAuthFlow({ ...flow, step: 'signup_password', result: 'success', provider: 'password', email });
     return { data, error: null, ...flow };
 };
@@ -558,6 +586,7 @@ export const signInWithOAuth = async (
     const response = await startStandardOAuth();
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'sign_in_oauth');
         await logAuthFlow({
             ...flow,
             step: 'oauth_start',
@@ -565,6 +594,8 @@ export const signInWithOAuth = async (
             provider,
             errorCode: normalizeErrorCode(response.error),
         });
+    } else {
+        reportAuthSupabaseSuccess('sign_in_oauth');
     }
 
     return { ...response, ...flow };
@@ -583,6 +614,7 @@ export const signOut = async () => {
     // with a clean state instead of staying stuck until hard refresh.
     if (isSessionNotFound) {
         clearSupabaseAuthStorage();
+        reportAuthSupabaseFailure(response.error, 'sign_out_session_not_found');
         await logAuthFlow({
             ...flow,
             step: 'logout',
@@ -594,6 +626,7 @@ export const signOut = async () => {
     }
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'sign_out');
         await logAuthFlow({
             ...flow,
             step: 'logout',
@@ -605,6 +638,7 @@ export const signOut = async () => {
     }
 
     clearSupabaseAuthStorage();
+    reportAuthSupabaseSuccess('sign_out');
     await logAuthFlow({ ...flow, step: 'logout', result: 'success', provider: 'supabase' });
     return response;
 };
@@ -632,6 +666,7 @@ export const requestPasswordResetEmail = async (
     });
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'request_password_reset');
         await logAuthFlow({
             ...flow,
             step: 'password_reset_request',
@@ -644,6 +679,7 @@ export const requestPasswordResetEmail = async (
         return { ...response, ...flow };
     }
 
+    reportAuthSupabaseSuccess('request_password_reset');
     await logAuthFlow({
         ...flow,
         step: 'password_reset_request',
@@ -672,6 +708,7 @@ export const updateCurrentUserPassword = async (
     const response = await supabase.auth.updateUser({ password });
 
     if (response.error) {
+        reportAuthSupabaseFailure(response.error, 'update_password');
         await logAuthFlow({
             ...flow,
             step: 'password_update',
@@ -682,6 +719,7 @@ export const updateCurrentUserPassword = async (
         return { ...response, ...flow };
     }
 
+    reportAuthSupabaseSuccess('update_password');
     await logAuthFlow({
         ...flow,
         step: 'password_update',
@@ -693,6 +731,11 @@ export const updateCurrentUserPassword = async (
 
 export const getCurrentUser = async (): Promise<User | null> => {
     if (!supabase) return null;
-    const { data } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+        reportAuthSupabaseFailure(error, 'get_current_user_simple');
+        return null;
+    }
+    reportAuthSupabaseSuccess('get_current_user_simple');
     return data.user ?? null;
 };

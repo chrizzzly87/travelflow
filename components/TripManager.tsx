@@ -6,6 +6,8 @@ import { readLocalStorageItem, writeLocalStorageItem } from '../services/browser
 import { getAllTrips, deleteTrip, saveTrip } from '../services/storageService';
 import { COUNTRIES, DEFAULT_APP_LANGUAGE, DEFAULT_DISTANCE_UNIT, formatDistance, getGoogleMapsApiKey, getTripDistanceKm } from '../utils';
 import { DB_ENABLED, dbArchiveTrip, dbUpsertTrip, syncTripsFromDb } from '../services/dbService';
+import { getConnectivitySnapshot } from '../services/supabaseHealthMonitor';
+import { enqueueTripCommitAndSync } from '../services/tripSyncManager';
 import { useAppDialog } from './AppDialogProvider';
 import { buildPaywalledTripDisplay, getTripLifecycleState, TRIP_EXPIRY_DEBUG_EVENT } from '../config/paywall';
 import { FlagIcon } from './flags/FlagIcon';
@@ -990,19 +992,41 @@ export const TripManager: React.FC<TripManagerProps> = ({
       dismissible: false,
     });
 
+    const archivedSnapshot: ITrip = {
+      ...tripToArchive,
+      status: 'archived',
+      updatedAt: Date.now(),
+    };
+
+    let archivedRemotely = !DB_ENABLED;
+    let queuedForReplay = false;
+
     if (DB_ENABLED) {
-      const archived = await dbArchiveTrip(id, {
-        source: 'my_trips',
-        metadata: { surface: 'trip_manager' },
-      });
-      if (!archived) {
-        showAppToast({
-          id: toastId,
-          tone: 'error',
-          title: 'Archive failed',
-          description: 'Could not archive this trip right now.',
+      const connectivityState = getConnectivitySnapshot().state;
+      if (connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: archivedSnapshot.id,
+          tripSnapshot: archivedSnapshot,
+          viewSnapshot: archivedSnapshot.defaultView ?? null,
+          label: 'Data: Archived trip',
         });
-        return;
+        queuedForReplay = true;
+      } else {
+        const archived = await dbArchiveTrip(id, {
+          source: 'my_trips',
+          metadata: { surface: 'trip_manager' },
+        });
+        if (archived) {
+          archivedRemotely = true;
+        } else {
+          enqueueTripCommitAndSync({
+            tripId: archivedSnapshot.id,
+            tripSnapshot: archivedSnapshot,
+            viewSnapshot: archivedSnapshot.defaultView ?? null,
+            label: 'Data: Archived trip',
+          });
+          queuedForReplay = true;
+        }
       }
     }
 
@@ -1014,7 +1038,11 @@ export const TripManager: React.FC<TripManagerProps> = ({
       id: toastId,
       tone: 'remove',
       title: 'Trip archived',
-      description: `Your trip "${tripToArchive.title}" was archived successfully.`,
+      description: queuedForReplay
+        ? `Your trip "${tripToArchive.title}" was archived locally and will sync when connection is restored.`
+        : (archivedRemotely
+          ? `Your trip "${tripToArchive.title}" was archived successfully.`
+          : `Your trip "${tripToArchive.title}" was archived locally.`),
       action: {
         label: 'Undo',
         onClick: () => {
@@ -1049,7 +1077,7 @@ export const TripManager: React.FC<TripManagerProps> = ({
     });
   };
 
-  const handleToggleFavorite = (trip: ITrip) => {
+  const handleToggleFavorite = async (trip: ITrip) => {
     const updatedTrip: ITrip = {
       ...trip,
       isFavorite: !trip.isFavorite,
@@ -1058,7 +1086,25 @@ export const TripManager: React.FC<TripManagerProps> = ({
 
     saveTrip(updatedTrip);
     if (DB_ENABLED) {
-      void dbUpsertTrip(updatedTrip);
+      const connectivityState = getConnectivitySnapshot().state;
+      if (connectivityState !== 'online') {
+        enqueueTripCommitAndSync({
+          tripId: updatedTrip.id,
+          tripSnapshot: updatedTrip,
+          viewSnapshot: updatedTrip.defaultView ?? null,
+          label: 'Data: Updated trip favorite',
+        });
+      } else {
+        const upserted = await dbUpsertTrip(updatedTrip);
+        if (!upserted) {
+          enqueueTripCommitAndSync({
+            tripId: updatedTrip.id,
+            tripSnapshot: updatedTrip,
+            viewSnapshot: updatedTrip.defaultView ?? null,
+            label: 'Data: Updated trip favorite',
+          });
+        }
+      }
     }
     if (onUpdateTrip && currentTripId === updatedTrip.id) {
       onUpdateTrip(updatedTrip);

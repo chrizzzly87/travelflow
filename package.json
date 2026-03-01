@@ -36,6 +36,7 @@
     "test:run": "vitest run",
     "test:core": "vitest run --coverage --reporter=default",
     "test:e2e": "playwright test",
+    "test:e2e:offline": "playwright test e2e/offline-resilience.spec.ts",
     "release:prepare": "pnpm build:blog-images && pnpm build",
     "build": "pnpm test:core && pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",
     "build:netlify": "pnpm flags:sync && pnpm inspirations:images:optimize && pnpm blog:images:optimize && pnpm build:image-placeholders && pnpm og:site:build && pnpm og:site:validate && pnpm i18n:validate && pnpm supabase:validate && pnpm plans:validate-sync && pnpm updates:validate && pnpm toasts:validate && pnpm storage:validate && pnpm blog:validate && pnpm edge:validate && pnpm sitemap:generate && vite build",

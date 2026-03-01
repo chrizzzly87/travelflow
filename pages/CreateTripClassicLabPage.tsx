@@ -53,7 +53,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '../components/ui/drawer';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger } from '../components/ui/select';
 import { Switch } from '../components/ui/switch';
+import { ConnectivityStatusBanner } from '../components/ConnectivityStatusBanner';
 import { useDbSync } from '../hooks/useDbSync';
+import { useConnectivityStatus } from '../hooks/useConnectivityStatus';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useSyncStatus } from '../hooks/useSyncStatus';
 import { generateItinerary } from '../services/aiService';
 import { getAnalyticsDebugAttributes, trackEvent } from '../services/analyticsService';
 import {
@@ -204,6 +208,7 @@ const MODEL_PREFERENCE_NOTE_KEY_BY_ID: Record<string, string> = {
 };
 const CREATE_TRIP_PREFERRED_MODEL_ID_SET = new Set(Object.keys(MODEL_PREFERENCE_NOTE_KEY_BY_ID));
 const CREATE_TRIP_MODELS = getCreateTripModelOptions(AI_MODEL_CATALOG);
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 const toIsoDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -331,6 +336,9 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const { t, i18n } = useTranslation('createTrip');
     const { confirm: confirmDialog } = useAppDialog();
     const [searchParams] = useSearchParams();
+    const { snapshot: connectivitySnapshot } = useConnectivityStatus();
+    const { snapshot: syncSnapshot, retrySyncNow } = useSyncStatus();
+    const { isOnline: isBrowserOnline } = useNetworkStatus({ probeWhileOffline: false });
 
     useDbSync(onLanguageLoaded);
 
@@ -526,6 +534,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
     const destinationComplete = orderedDestinations.length > 0;
     const datesComplete = Boolean(startDate && endDate);
     const canLockRoute = destinations.length > 1;
+    const isGenerationBlockedOffline = !isBrowserOnline;
 
     const travelerSummary = t(`traveler.options.${travelerType}`);
     const styleSummary = selectedStyles
@@ -1519,6 +1528,11 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
     const handleGenerateTrip = async () => {
         if (isSubmitting) return;
+        if (isGenerationBlockedOffline) {
+            showSubmitError(t('errors.offlineCreateDisabled'));
+            trackEvent('create_trip__cta--blocked_offline');
+            return;
+        }
         if (orderedDestinations.length === 0) {
             showSubmitError(t('errors.destinationRequired'));
             return;
@@ -1640,6 +1654,13 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
 
             <div className="relative z-10">
                 <SiteHeader variant="glass" onMyTripsClick={onOpenManager} />
+                <ConnectivityStatusBanner
+                    isPlannerRoute
+                    connectivity={connectivitySnapshot}
+                    sync={syncSnapshot}
+                    onRetrySync={() => retrySyncNow()}
+                    showDeveloperDetails={IS_DEV}
+                />
 
                 <main className="mx-auto w-full max-w-[1260px] px-4 pb-28 pt-8 sm:px-6 sm:pb-32 lg:px-8 lg:pb-14">
                     {prefillMeta?.label && (
@@ -2413,7 +2434,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                 <button
                                     type="button"
                                     onClick={handleGenerateTrip}
-                                    disabled={isSubmitting || !destinationComplete}
+                                    disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
                                     className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-3 text-sm font-semibold text-indigo-900 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-60"
                                     {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                         destination_count: orderedDestinations.length,
@@ -2422,7 +2443,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                         model: selectedAiModel.model,
                                     })}
                                 >
-                                    {isSubmitting ? t('cta.loading') : t('cta.label')}
+                                    {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
                                 </button>
                             </div>
                         </aside>
@@ -2551,7 +2572,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                             <button
                                 type="button"
                                 onClick={handleGenerateTrip}
-                                disabled={isSubmitting || !destinationComplete}
+                                disabled={isSubmitting || !destinationComplete || isGenerationBlockedOffline}
                                 className="rounded-xl bg-white px-3.5 py-2.5 text-sm font-semibold text-indigo-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
                                 {...getAnalyticsDebugAttributes('create_trip__cta--generate', {
                                     destination_count: orderedDestinations.length,
@@ -2561,7 +2582,7 @@ export const CreateTripClassicLabPage: React.FC<CreateTripClassicLabPageProps> =
                                     model: selectedAiModel.model,
                                 })}
                             >
-                                {isSubmitting ? t('cta.loading') : t('cta.label')}
+                                {isSubmitting ? t('cta.loading') : (isGenerationBlockedOffline ? t('cta.offline') : t('cta.label'))}
                             </button>
                         </div>
                         <button

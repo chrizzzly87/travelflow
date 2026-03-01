@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   dbArchiveTrip: vi.fn(),
   dbUpsertTrip: vi.fn(),
   syncTripsFromDb: vi.fn(),
+  enqueueTripCommitAndSync: vi.fn(),
   confirmDialog: vi.fn(),
   trackEvent: vi.fn(),
   showAppToast: vi.fn(() => 'toast-id'),
@@ -35,6 +36,10 @@ vi.mock('../../services/dbService', () => ({
   dbArchiveTrip: mocks.dbArchiveTrip,
   dbUpsertTrip: mocks.dbUpsertTrip,
   syncTripsFromDb: mocks.syncTripsFromDb,
+}));
+
+vi.mock('../../services/tripSyncManager', () => ({
+  enqueueTripCommitAndSync: mocks.enqueueTripCommitAndSync,
 }));
 
 vi.mock('../../components/AppDialogProvider', () => ({
@@ -99,7 +104,7 @@ describe('components/TripManager archive flow', () => {
     });
   });
 
-  it('does not remove locally when db archive fails', async () => {
+  it('queues local archive and removes locally when db archive fails', async () => {
     const user = userEvent.setup();
     mocks.dbArchiveTrip.mockResolvedValueOnce(false);
 
@@ -121,7 +126,8 @@ describe('components/TripManager archive flow', () => {
     await waitFor(() => {
       expect(mocks.dbArchiveTrip).toHaveBeenCalledTimes(1);
     });
-    expect(mocks.deleteTrip).not.toHaveBeenCalled();
+    expect(mocks.enqueueTripCommitAndSync).toHaveBeenCalledTimes(1);
+    expect(mocks.deleteTrip).toHaveBeenCalledWith('trip-1');
   });
 
   it('offers undo after archive and restores the trip when undo is clicked', async () => {

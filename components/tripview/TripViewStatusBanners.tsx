@@ -1,9 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { CopySimple, Sparkle } from '@phosphor-icons/react';
+import { AlertTriangle, WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
+import { normalizeLocale } from '../../config/locales';
+import { buildLocalizedMarketingPath } from '../../config/routes';
 import type { ShareMode } from '../../types';
 import { getAnalyticsDebugAttributes, trackEvent } from '../../services/analyticsService';
+import type { ConnectivityState } from '../../services/supabaseHealthMonitor';
+import { Spinner } from '../ui/spinner';
+
+const IS_DEV = Boolean((import.meta as any)?.env?.DEV);
 
 interface TripViewStatusBannersProps {
     shareStatus?: ShareMode;
@@ -35,6 +42,15 @@ interface TripViewStatusBannersProps {
         source: 'trip_paywall_strip' | 'trip_paywall_overlay'
     ) => void;
     tripId: string;
+    connectivityState?: ConnectivityState;
+    connectivityReason?: string | null;
+    connectivityForced?: boolean;
+    pendingSyncCount?: number;
+    failedSyncCount?: number;
+    isSyncingQueue?: boolean;
+    onRetrySyncQueue?: () => void;
+    hasConflictBackupForTrip?: boolean;
+    onRestoreConflictBackup?: () => void;
     exampleTripBanner?: {
         title: string;
         countries: string[];
@@ -65,10 +81,129 @@ export const TripViewStatusBanners: React.FC<TripViewStatusBannersProps> = ({
     expirationRelativeLabel,
     onPaywallLoginClick,
     tripId,
+    connectivityState,
+    connectivityReason,
+    connectivityForced = false,
+    pendingSyncCount = 0,
+    failedSyncCount = 0,
+    isSyncingQueue = false,
+    onRetrySyncQueue,
+    hasConflictBackupForTrip = false,
+    onRestoreConflictBackup,
     exampleTripBanner,
 }) => {
+    const { t, i18n } = useTranslation('common');
+    const shouldShowConnectivityStrip = Boolean(connectivityState && connectivityState !== 'online');
+    const shouldShowSyncStrip = pendingSyncCount > 0 || isSyncingQueue;
+    const showSyncStatusStrip = shouldShowConnectivityStrip || shouldShowSyncStrip;
+    const syncCountVariant = pendingSyncCount === 1 ? 'One' : 'Many';
+    const isBrowserOffline = connectivityReason === 'browser_offline';
+    const activeLocale = normalizeLocale(i18n?.resolvedLanguage ?? i18n?.language ?? 'en');
+    const supportContactPath = buildLocalizedMarketingPath('contact', activeLocale);
+    const stripMessage = shouldShowConnectivityStrip ? (
+        connectivityState === 'offline'
+            ? t(isBrowserOffline ? 'connectivity.tripStrip.offline.browser' : 'connectivity.tripStrip.offline.service')
+            : t('connectivity.tripStrip.degraded.service')
+    ) : (
+        isSyncingQueue
+            ? t(`connectivity.tripStrip.syncing${syncCountVariant}`, { count: pendingSyncCount })
+            : t(`connectivity.tripStrip.pending${syncCountVariant}`, { count: pendingSyncCount })
+    );
+    const showContactAction = shouldShowConnectivityStrip && !isBrowserOffline;
+    const stripIcon = shouldShowConnectivityStrip
+        ? (
+            connectivityState === 'offline'
+                ? <WifiOff className="h-3.5 w-3.5 shrink-0" />
+                : <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        )
+        : (isSyncingQueue ? <Spinner className="h-3.5 w-3.5 shrink-0" /> : null);
+
     return (
         <>
+            {showSyncStatusStrip && (
+                <div className={`px-4 py-2 text-xs sm:px-6 border-b flex items-center justify-between gap-3 ${
+                    connectivityState === 'offline'
+                        ? 'border-rose-200 bg-rose-50 text-rose-900'
+                        : connectivityState === 'degraded'
+                            ? 'border-amber-200 bg-amber-50 text-amber-900'
+                            : 'border-sky-200 bg-sky-50 text-sky-900'
+                }`}>
+                    <span className="inline-flex items-center gap-2">
+                        {stripIcon}
+                        {stripMessage}
+                        {connectivityForced && IS_DEV ? ` ${t('connectivity.tripStrip.forcedSuffix')}` : ''}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        {showContactAction && (
+                            <a
+                                href={supportContactPath}
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__banner--contact', {
+                                        trip_id: tripId,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState,
+                                        source: 'trip_strip',
+                                    });
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__banner--contact', {
+                                    trip_id: tripId,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState,
+                                    source: 'trip_strip',
+                                })}
+                            >
+                                {t('connectivity.banner.actions.contact')}
+                            </a>
+                        )}
+                        {failedSyncCount > 0 && onRetrySyncQueue && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    trackEvent('trip_connectivity__trip_strip--retry_sync', {
+                                        trip_id: tripId,
+                                        failed_count: failedSyncCount,
+                                        pending_count: pendingSyncCount,
+                                        connectivity_state: connectivityState || 'online',
+                                    });
+                                    onRetrySyncQueue();
+                                }}
+                                className="px-3 py-1 rounded-md bg-white text-xs font-semibold border border-current/20 hover:bg-white/80"
+                                {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--retry_sync', {
+                                    trip_id: tripId,
+                                    failed_count: failedSyncCount,
+                                    pending_count: pendingSyncCount,
+                                    connectivity_state: connectivityState || 'online',
+                                })}
+                            >
+                                {t('connectivity.tripStrip.retry')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {hasConflictBackupForTrip && onRestoreConflictBackup && (
+                <div className="px-4 sm:px-6 py-2 border-b border-violet-200 bg-violet-50 text-violet-900 text-xs flex items-center justify-between gap-3">
+                    <span>{t('connectivity.tripStrip.serverBackup')}</span>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            trackEvent('trip_connectivity__trip_strip--restore_backup', {
+                                trip_id: tripId,
+                            });
+                            onRestoreConflictBackup();
+                        }}
+                        className="px-3 py-1 rounded-md bg-violet-100 text-violet-900 text-xs font-semibold hover:bg-violet-200"
+                        {...getAnalyticsDebugAttributes('trip_connectivity__trip_strip--restore_backup', {
+                            trip_id: tripId,
+                        })}
+                    >
+                        {t('connectivity.tripStrip.restoreServerVersion')}
+                    </button>
+                </div>
+            )}
+
             {shareStatus && (
                 <div className="px-4 sm:px-6 py-2 border-b border-amber-200 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
                     <span>

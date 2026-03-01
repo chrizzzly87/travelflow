@@ -270,6 +270,16 @@ type DbErrorLike = {
     constraint?: string | null;
 };
 
+const isPermissionLikeDbError = (error: DbErrorLike | null): boolean => {
+    if (!error) return false;
+    const code = typeof error.code === 'string' ? error.code.trim().toUpperCase() : '';
+    if (code === '42501' || code === 'P0001') return true;
+    const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+    return message.includes('row-level security')
+        || message.includes('not allowed')
+        || message.includes('permission denied');
+};
+
 const isRlsViolation = (error: DbErrorLike | null) => {
     if (!error) return false;
     if (error.code === '42501') return true;
@@ -1048,10 +1058,36 @@ const applyTripAccessFields = (
 };
 
 export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => {
-    if (!DB_ENABLED) return null;
+    const result = await dbUpsertTripWithStatus(trip, view);
+    return result.tripId;
+};
+
+export interface DbUpsertTripResult {
+    tripId: string | null;
+    error: DbErrorLike | null;
+    isPermissionError: boolean;
+}
+
+export const dbUpsertTripWithStatus = async (
+    trip: ITrip,
+    view?: IViewSettings | null
+): Promise<DbUpsertTripResult> => {
+    if (!DB_ENABLED) {
+        return {
+            tripId: null,
+            error: null,
+            isPermissionError: false,
+        };
+    }
     const client = requireSupabase();
     const ownerId = await ensureDbSession();
-    if (!ownerId) return null;
+    if (!ownerId) {
+        return {
+            tripId: null,
+            error: null,
+            isPermissionError: false,
+        };
+    }
 
     debugLog('dbUpsertTrip:start', { tripId: trip.id, ownerId });
 
@@ -1118,13 +1154,29 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
     if (error) {
         if (isSimulatedLoggedIn() && /trip limit reached/i.test(error.message || '')) {
             debugLog('dbUpsertTrip:simulatedLoginLocalFallback', { tripId: trip.id, message: error.message });
-            return trip.id;
+            return {
+                tripId: trip.id,
+                error: null,
+                isPermissionError: false,
+            };
+        }
+        if (isPermissionLikeDbError(error)) {
+            debugLog('dbUpsertTrip:permissionDenied', { code: error.code, message: error.message });
+            return {
+                tripId: null,
+                error,
+                isPermissionError: true,
+            };
         }
         if (isRlsViolation(error)) {
             debugLog('dbUpsertTrip:rls', { code: error.code, message: error.message });
         }
         console.error('Failed to upsert trip', error);
-        return null;
+        return {
+            tripId: null,
+            error,
+            isPermissionError: false,
+        };
     }
 
     const row = Array.isArray(data) ? data[0] : data;
@@ -1144,7 +1196,11 @@ export const dbUpsertTrip = async (trip: ITrip, view?: IViewSettings | null) => 
         after: afterSnapshot ?? toTripEventSnapshotFromTrip(normalizedTrip),
         correlationId,
     });
-    return (row?.trip_id ?? row?.id) ?? null;
+    return {
+        tripId: (row?.trip_id ?? row?.id) ?? null,
+        error: null,
+        isPermissionError: false,
+    };
 };
 
 export const dbGetTrip = async (tripId: string): Promise<DbTripResult | null> => {

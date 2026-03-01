@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+    getBrowserConnectivityOverride,
+    getEffectiveBrowserOnlineState,
     DEFAULT_NETWORK_PROBE_PATH,
     getNavigatorConnection,
     isSlowNetworkConnection,
     probeNetworkReachability,
     readNetworkConnectionSnapshot,
+    subscribeBrowserConnectivityStatus,
     type NetworkConnectionSnapshot,
 } from '../services/networkStatus';
 
@@ -24,8 +27,7 @@ export interface UseNetworkStatusResult {
 export const DEFAULT_NETWORK_PROBE_INTERVAL_MS = 15000;
 
 const readInitialOnlineState = (): boolean => {
-    if (typeof navigator === 'undefined') return true;
-    return navigator.onLine !== false;
+    return getEffectiveBrowserOnlineState();
 };
 
 const readCurrentConnectionSnapshot = (): NetworkConnectionSnapshot | null => {
@@ -43,6 +45,13 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
     const [connection, setConnection] = useState<NetworkConnectionSnapshot | null>(readCurrentConnectionSnapshot);
     const [isProbePending, setIsProbePending] = useState(false);
 
+    const resolveOnlineStateFromEvent = (eventType: 'online' | 'offline'): boolean => {
+        const override = getBrowserConnectivityOverride();
+        if (override === 'online') return true;
+        if (override === 'offline') return false;
+        return eventType === 'online';
+    };
+
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -51,23 +60,28 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
         };
 
         const handleOnline = () => {
-            setIsOnline(true);
+            setIsOnline(resolveOnlineStateFromEvent('online'));
             refreshConnectionSnapshot();
         };
 
         const handleOffline = () => {
-            setIsOnline(false);
+            setIsOnline(resolveOnlineStateFromEvent('offline'));
             refreshConnectionSnapshot();
         };
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
+        const unsubscribeBrowserConnectivity = subscribeBrowserConnectivityStatus((snapshot) => {
+            setIsOnline(snapshot.isOnline);
+            refreshConnectionSnapshot();
+        });
 
         const networkConnection = getNavigatorConnection(navigator);
         if (!networkConnection || typeof networkConnection.addEventListener !== 'function') {
             return () => {
                 window.removeEventListener('online', handleOnline);
                 window.removeEventListener('offline', handleOffline);
+                unsubscribeBrowserConnectivity();
             };
         }
 
@@ -79,6 +93,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
+            unsubscribeBrowserConnectivity();
             if (typeof networkConnection.removeEventListener === 'function') {
                 networkConnection.removeEventListener('change', handleConnectionChange as EventListener);
             }
@@ -104,7 +119,8 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}): UseNetw
             setIsProbePending(false);
             isProbeInFlight = false;
             if (isReachable) {
-                setIsOnline(true);
+                const override = getBrowserConnectivityOverride();
+                setIsOnline(override === 'offline' ? false : true);
                 setConnection(readCurrentConnectionSnapshot());
             }
         };
